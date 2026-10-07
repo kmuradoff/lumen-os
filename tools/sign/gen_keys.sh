@@ -20,6 +20,16 @@
 # 'releasekey' replaces AOSP 'testkey'. 'ota' signs payloads + update manifests; 'ota_next'
 # is a spare certificate pre-installed in otacerts.zip for one future key rotation.
 # Subject: /O=Lumen OS/OU=kmuradoff/CN=Lumen OS <name>  (no e-mail, no country: certs are public)
+#
+# APEX keys (2026-10-07, docs/keys.md#apex), one pair per module listed in keymap.json "apex"."modules",
+# in KEYS_DIR/apex/ (mode 700):
+#   <m>.pem         payload key, RSA-4096 PEM (signs the AVB hashtree footer of apex_payload.img)
+#   <m>.avbpubkey   its public key in AVB format (= the apex_pubkey entry of the APEX)   [public]
+#   <m>.pubkey.pem  its public key in PEM (avbtool verify_image --key)                    [public]
+#   <m>.pk8         container key, RSA-4096 PKCS#8 DER (APK-style signature of the .apex/.capex)
+#   <m>.x509.pem    container certificate, CN=Lumen OS APEX <m>                           [public]
+# The [public] files are copied to tools/sign/release_certs/apex/ (+ FINGERPRINTS.txt); nothing else.
+# Existing keys are kept; a module added to keymap.json later just gets its keys on the next run.
 set -euo pipefail
 
 KD=${1:-$HOME/.lumen-keys}
@@ -73,12 +83,71 @@ done
   done
 } > "$KD/FINGERPRINTS.txt"
 chmod 644 "$KD/FINGERPRINTS.txt"
+# ---- APEX keys (payload + container per module)
+H=$(cd "$(dirname "$0")" && pwd)
+AVBTOOL=(python3 "$H/third_party/avbtool.py")
+[ "$(shasum -a 256 "$H/third_party/avbtool.py" | cut -d' ' -f1)" = f8e82d9eb64093972cc2e04fbcec5c86a10cb2cac9f871c7a55490bb3b6f48eb ] \
+  || die "third_party/avbtool.py is not the pinned AOSP avbtool"
+APEX_MODULES=$(python3 -c 'import json,sys; print("\n".join(json.load(open(sys.argv[1]))["apex"]["modules"]))' "$H/keymap.json")
+AK=$KD/apex
+mkdir -p "$AK"; chmod 700 "$AK"
+gen_apex() {  # module
+  local m=$1 tmp
+  case $m in *[!A-Za-z0-9._]*|.*) die "bad module name $m" ;; esac
+  if [ -e "$AK/$m.pem" ] || [ -e "$AK/$m.pk8" ]; then
+    [ -e "$AK/$m.pem" ] && [ -e "$AK/$m.pk8" ] && [ -e "$AK/$m.x509.pem" ] || die "incomplete APEX key set for $m in $AK"
+  else
+    tmp=$(mktemp -d "$AK/.tmp.XXXXXX")
+    "$OPENSSL" genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -pkeyopt rsa_keygen_pubexp:65537 -out "$tmp/payload.pem" 2>/dev/null
+    "$OPENSSL" genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -pkeyopt rsa_keygen_pubexp:65537 -out "$tmp/container.pem" 2>/dev/null
+    "$OPENSSL" req -new -x509 -sha256 -key "$tmp/container.pem" -days "$DAYS" \
+      -subj "/O=Lumen OS/OU=kmuradoff/CN=Lumen OS APEX $m" -out "$tmp/cert.pem"
+    "$OPENSSL" pkcs8 -in "$tmp/container.pem" -topk8 -outform DER -nocrypt -out "$tmp/container.pk8"
+    mv "$tmp/payload.pem" "$AK/$m.pem"
+    mv "$tmp/container.pk8" "$AK/$m.pk8"
+    mv "$tmp/cert.pem" "$AK/$m.x509.pem"
+    rm -rf "$tmp"
+    echo "generated APEX keys for $m (payload + container, RSA-4096)"
+  fi
+  chmod 600 "$AK/$m.pem" "$AK/$m.pk8"; chmod 644 "$AK/$m.x509.pem"
+  # public forms of the payload key (re-derived every run: they must match the private key)
+  "${AVBTOOL[@]}" extract_public_key --key "$AK/$m.pem" --output "$AK/$m.avbpubkey"
+  "$OPENSSL" pkey -in "$AK/$m.pem" -pubout -out "$AK/$m.pubkey.pem"
+  chmod 644 "$AK/$m.avbpubkey" "$AK/$m.pubkey.pem"
+  a=$("$OPENSSL" pkey -inform DER -in "$AK/$m.pk8" -pubout -outform DER | shasum -a 256 | cut -d' ' -f1)
+  b=$("$OPENSSL" x509 -in "$AK/$m.x509.pem" -pubkey -noout | "$OPENSSL" pkey -pubin -outform DER | shasum -a 256 | cut -d' ' -f1)
+  [ "$a" = "$b" ] || die "apex/$m.pk8 does not match apex/$m.x509.pem"
+  [ "$("$OPENSSL" pkey -in "$AK/$m.pem" -noout -text 2>/dev/null | head -n1)" = "Private-Key: (4096 bit, 2 primes)" ] \
+    || die "apex/$m.pem is not an RSA-4096 key"
+}
+for m in $APEX_MODULES; do gen_apex "$m"; done
+PUB=$H/release_certs/apex
+mkdir -p "$PUB"
+{
+  echo "# Lumen OS APEX keys (public). Per module: SHA-256 of the container certificate (DER) and of the"
+  echo "# payload public key (AVB format = the apex_pubkey entry)."
+  for m in $APEX_MODULES; do
+    cp "$AK/$m.x509.pem" "$AK/$m.avbpubkey" "$AK/$m.pubkey.pem" "$PUB/"
+    printf '%-40s container %s  payload %s\n' "$m" \
+      "$("$OPENSSL" x509 -in "$AK/$m.x509.pem" -outform DER | shasum -a 256 | cut -d' ' -f1)" \
+      "$(shasum -a 256 < "$AK/$m.avbpubkey" | cut -d' ' -f1)"
+  done
+} > "$AK/FINGERPRINTS.txt"
+cp "$AK/FINGERPRINTS.txt" "$PUB/FINGERPRINTS.txt"
+chmod 755 "$PUB"; chmod 644 "$PUB"/*
+chmod 644 "$AK/FINGERPRINTS.txt"
+if grep -rlE -- '-----BEGIN [A-Z ]*PRIVATE KEY-----' "$H/release_certs" >/dev/null 2>&1; then
+  die "a private key reached $H/release_certs"
+fi
+echo "APEX keys: $(echo "$APEX_MODULES" | wc -l | tr -d ' ') modules in $AK; public parts in $PUB"
+
 cat > "$KD/README.txt" <<'EOF'
 Lumen OS release keys (owner: kmuradoff). NO PASSWORDS: whoever has this folder can sign
 system updates for every Lumen OS projector. Keep it only on this Mac (mode 700) plus two
 offline backups (e.g. an encrypted USB stick and a password-manager attachment).
 Never copy it into the project tree, the build laptop, git, iCloud/Dropbox, or a chat.
-Generated by gsi/tools/sign/gen_keys.sh; used by gsi/tools/sign/sign_tar.py and gsi/tools/ota/*.
+apex/ holds one payload key (<m>.pem) and one container key (<m>.pk8) per APEX module.
+Generated by gsi/tools/sign/gen_keys.sh; used by gsi/tools/sign/{sign_tar,apex_sign}.py and gsi/tools/ota/*.
 EOF
 chmod 644 "$KD/README.txt"
 echo "keys in $KD:"
