@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v6.3.1 sound enhancement (module panel: SoundProfiles, quick panel Sound page), v6.4 AI sound + equalizer. English base;
+     translations: gsi/apps/i18n/langs/<locale>.txt @projector/strings_sound.xml. -->
+<resources>
+    <string name="sound_unknown_hint">The current sound enhancement is unknown. Choose a profile to apply it again.</string>
+    <!-- %1$s = "DTS Virtual:X". Stored, but the vendor runs it on the built-in speaker only. -->
+    <string name="sound_speaker_only">%1$s works on the built-in speaker only</string>
+    <!-- %1$s = "DTS Virtual:X". Stored, but the audio output has not been reported to the projector yet. -->
+    <string name="sound_output_not_ready">%1$s starts once the audio output is ready</string>
+    <string name="sound_not_confirmed">The projector did not confirm it, choose again</string>
+    <!-- v6.4 AI sound: the sound-mode option and tile show the sub-mode chosen for the current app.
+         %1$s = Movie / Music / Sports / Karaoke. -->
+    <string name="sound_ai_sub">AI · %1$s</string>
+    <!-- v6.4 equalizer page (quick panel > Sound > Equalizer) -->
+    <string name="eq_title">Equalizer</string>
+    <string name="eq_preset">Preset</string>
+    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_bass">Bass</string>
+    <string name="eq_preset_voice">Voice</string>
+    <string name="eq_preset_night">Night</string>
+    <string name="eq_preset_custom">Custom</string>
+    <!-- unit after a band value, e.g. "+1.5 dB" -->
+    <string name="eq_db">dB</string>
+    <!-- key hints of the band sliders (D-pad arrows + OK) -->
+    <string name="eq_hint_select">◀ ▶ band · OK adjust</string>
+    <string name="eq_hint_adjust">▲ ▼ change · OK done</string>
+    <string name="eq_reset">Reset equalizer</string>
+    <string name="eq_reset_done">Equalizer reset to Flat</string>
+    <string name="eq_limit">Limit reached: the total boost is capped at +6 dB</string>
+    <string name="eq_bass_limit">60 Hz is limited to +3 dB: the built-in speaker cannot reproduce deeper bass</string>
+    <string name="eq_dts_note">DTS Virtual:X uses the equalizer for its own tuning. Choose Harman Kardon to use it.</string>
+    <!-- value of the Equalizer row while DTS Virtual:X is on -->
+    <string name="eq_off_dts">Off (DTS)</string>
+    <string name="eq_no_mode">Choose a sound mode first</string>
+    <string name="eq_speaker_only">The equalizer works on the built-in speaker only</string>
+    <!-- %1$s = the sound mode (AI sound, Movie, ...): each mode keeps its own equalizer -->
+    <string name="eq_hint_mode">Saved for %1$s · built-in speaker</string>
+</resources>

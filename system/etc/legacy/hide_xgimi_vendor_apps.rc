@@ -1,0 +1,7 @@
+# XGIMI Z9X: XGIMI ships its own system apps (signed with the XGIMI platform key,
+# sharedUserId android.uid.system) in /vendor/app and /vendor/priv-app. A framework
+# signed with another key rejects them and PackageManager aborts the boot.
+# Hide both folders from this system; the vendor partition itself is not modified.
+on post-fs-data
+    mount none /system/etc/empty_dir /vendor/app bind
+    mount none /system/etc/empty_dir /vendor/priv-app bind

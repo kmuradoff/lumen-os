@@ -1,0 +1,11 @@
+# Z9X: временный журнал загрузки на флешку (FAT32 в синем порту USB 3.0), см. debuglog.sh.
+# Модули USB подгружает сам скрипт: по плану vendor они грузятся только на load_bpf_programs.
+on init
+    start z9x_debuglog
+
+service z9x_debuglog /system/bin/sh /system/etc/xgimi/debuglog.sh
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled

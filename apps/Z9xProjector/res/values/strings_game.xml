@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game" strings (v6.2, owner: the game module). English base; translations go to
+     values-<lang>/strings_game.xml. Prefix every name with "game_". -->
+<resources>
+    <string name="game_placeholder" translatable="false">game</string>
+
+    <!-- Quick panel, Game section: automatic game settings when a console is recognised on HDMI. -->
+    <string name="game_auto_console">Auto game mode for consoles</string>
+    <!-- Quick panel, Game section: the user marks the HDMI input on screen as a game console. -->
+    <string name="game_input_is_console">This input is a console</string>
+
+    <!-- "Play" cue after the game settings were applied: title when the console name is unknown. -->
+    <string name="game_cue_title">Game mode on</string>
+    <!-- Play cue chips (short). -->
+    <string name="game_chip_low_latency">Low latency</string>
+    <string name="game_chip_hz">%1$d Hz</string>
+    <string name="game_chip_top_speed">Top speed</string>
+    <string name="game_chip_allm" translatable="false">ALLM</string>
+
+    <!-- Console names (brands, not translated) when the console sent no name over HDMI-CEC. -->
+    <string name="game_brand_playstation" translatable="false">PlayStation</string>
+    <string name="game_brand_xbox" translatable="false">Xbox</string>
+    <string name="game_brand_nintendo" translatable="false">Nintendo Switch</string>
+    <!-- Quick panel, Game section: the console profile moves game speed Standard to Standard + HFR
+         so the console is offered 120 Hz. -->
+    <string name="game_hfr_consoles">120 Hz for consoles</string>
+    <!-- Notification: the game settings were refused several times on the HDMI input on screen. -->
+    <string name="game_unavailable">Game settings are unavailable on this input</string>
+</resources>

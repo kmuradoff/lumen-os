@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X v6.1: /system/product/etc/default-permissions/z9x-projector.xml
+     Runtime permissions of org.z9x.projector (/system/app, platform-signed, not priv-app) for the
+     BLE remote auto-pairing (module remote). Read by DefaultPermissionGrantPolicy
+     (getDefaultPermissionFiles reads /system, /vendor, /odm, /product, /system_ext and /oem
+     etc/default-permissions) when the permission defaults are (re)applied: first boot of a user or
+     a changed build fingerprint. The remote module also self-grants (GRANT_RUNTIME_PERMISSIONS),
+     so this file is an optimisation, not a single point of failure. -->
+<exceptions>
+    <exception package="org.z9x.projector">
+        <permission name="android.permission.BLUETOOTH_SCAN" fixed="false" />
+        <permission name="android.permission.BLUETOOTH_CONNECT" fixed="false" />
+    </exception>
+</exceptions>

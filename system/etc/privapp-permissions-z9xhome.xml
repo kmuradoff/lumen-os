@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0: /system/etc/permissions/privapp-permissions-z9xhome.xml
+     org.z9x.home (Lumen Home) lives in /system/priv-app/Z9xHome, platform-signed. The base image has
+     ro.control_privapp_permissions unset/disable, so this list is not enforced today; it is shipped so
+     that "enforce" in a future base does not break the boot (home spec 4.3).
+     ACCESS_ALL_EPG_DATA is signature|privileged against TvProvider's own certificate, so only the
+     privileged path can grant it to us. -->
+<permissions>
+    <privapp-permissions package="org.z9x.home">
+        <permission name="com.android.providers.tv.permission.ACCESS_ALL_EPG_DATA" />
+        <permission name="android.permission.GLOBAL_SEARCH" />
+        <permission name="android.permission.PACKAGE_USAGE_STATS" />
+        <permission name="android.permission.HDMI_CEC" />
+    </privapp-permissions>
+</permissions>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "screensaver": DreamService meta-data of org.z9x.projector.dream.ClockDream.
+     No settings activity (settings live in the quick panel), no preview image (no bitmaps).
+     showClockAndComplications=false: we draw our own clock, so a system dream overlay (if a
+     future build configures one) must not add a second clock or complications on top. -->
+<dream xmlns:android="http://schemas.android.com/apk/res/android"
+    android:showClockAndComplications="false" />

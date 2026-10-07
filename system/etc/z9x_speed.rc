@@ -1,0 +1,21 @@
+# Lumen OS 1.0 memory tuning (install as /system/etc/init/z9x_speed.rc). Speed spec v7 section 5.
+# Init builtins only (write): no exec, no service, nothing that can block or fail the boot.
+# Runs at sys.boot_completed=1, i.e. after the vendor's init.fusion.rc 'on boot' writes
+# (vm.swappiness 60, watermark_scale_factor 300).
+#
+# vm.swappiness [60 vendor] -> 100: prefer compressing idle anonymous pages into zram (hardware
+# mzc_hybrid, ~7:1 on this device: mm_stat 530 MB stored in 76 MB) over dropping file pages (app
+# code, .odex/.apk) that must then be re-read from eMMC on the next app switch.
+# Rollback without a reflash: echo 60 > /proc/sys/vm/swappiness (root), or drop this line.
+on property:sys.boot_completed=1
+    write /proc/sys/vm/swappiness 100
+
+# The lmkd values (ro.lmk.swap_free_low_percentage 10, thrashing_limit 30, psi_complete_stall_ms 700)
+# and the ART thread props are in /product/etc/build.prop (lumen_v1.sh, product_prop_v1.txt); the
+# cached-process cap (16) is in the framework RRO and the SimpleDeviceConfig RRO.
+#
+# [EXP E2, NOT active] watermark_scale_factor 385 keeps ~220 MB free at all times; 200 would keep
+# ~115 MB. Ships only after 4K HDR + Kinopoisk DRM + YouTube 4K pass without dma-buf/ion allocation
+# errors (speed spec 11 T8, with the user's approval on a test image).
+# on property:sys.boot_completed=1
+#     write /proc/sys/vm/watermark_scale_factor 200

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HTTPS only, except the third IP time-zone provider ip-api.com, which has no free HTTPS
+     endpoint (same provider chain as Lumen Home, PLAN C13). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">ip-api.com</domain>
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,24 @@
+# Z9X v6.5 boot reason for the Projector app (install as /system/etc/init/z9x_bootinfo.rc;
+# script /system/etc/xgimi/z9x_bootinfo.sh 0755 root:root).
+#
+# The app cannot read /sys/mtk_pm or the watchdog's sysfs itself, so this oneshot copies three
+# read-only values into properties at 'on boot':
+#   sys.z9x.wake_name     = /sys/mtk_pm/wakeup_reason/name  (e.g. keypad0, ir0, "(null)")
+#   sys.z9x.wdt_reset_chk = /sys/bus/platform/devices/1c400600.wdt0/wdt_extend/wdt_reset_chk
+#                           (pm51-wdt-reset / no-pm-wdt-reset; sticky, cleared only by AC loss)
+#   sys.z9x.boot_reason   = /sys/mtk_pm/boot_reason         (0xFF power-on, 0xD1 reboot, 0xF1 cold reset)
+# 0xF1 + no wake source + pm51-wdt-reset is the unattended reset seen after every failed STR attempt;
+# if the previous boot ended dark and ours (standby / sleep, or our power-off < 4 min before), the app
+# powers the projector off right after boot (kill switch persist.z9x.bootdark=0). An AC plug-in gives
+# 0xF1 + keypad0 + no-pm-wdt-reset and is left alone.
+# Background oneshot service (init only forks it, never 'exec'); every sysfs read is bounded by
+# 'timeout 1'. Domain u:r:su:s0 exists only on userdebug (this image), like z9x_diag / z9x_nui.
+on boot
+    start z9x_bootinfo
+
+service z9x_bootinfo /system/bin/sh /system/etc/xgimi/z9x_bootinfo.sh
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Leanback launcher banner 320x180dp: dark background with an HDMI connector outline. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="#FF1E2A38"
+        android:pathData="M0,0h320v180h-320z" />
+    <!-- connector shell (trapezoid) -->
+    <path
+        android:fillColor="#FFECEFF1"
+        android:pathData="M90,62 L230,62 L230,96 L212,118 L108,118 L90,96 Z" />
+    <!-- connector opening -->
+    <path
+        android:fillColor="#FF1E2A38"
+        android:pathData="M102,72 L218,72 L218,92 L206,106 L114,106 L102,92 Z" />
+    <!-- pins -->
+    <path
+        android:fillColor="#FFFFC107"
+        android:pathData="M118,80h84v8h-84z" />
+</vector>

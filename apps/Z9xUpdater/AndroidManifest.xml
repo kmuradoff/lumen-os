@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+  org.z9x.updater ("Lumen OS update") for Lumen OS 1.0 on the XGIMI Z9X.
+  Install: /system/app/Z9xUpdater/Z9xUpdater.apk (NOT priv-app), platform-signed, not persistent:
+  0 MB resident while idle (JobScheduler wakes it at most twice a day).
+  Build: VERSION_CODE=100 VERSION_NAME=1.0 sh ../build_apk.sh Z9xUpdater
+  Spec: research v7 ota/SPEC.md section 9, PLAN.md C16/C17; image side tools/ota/image/HANDOFF.md.
+
+  Entry points: TvSettings About > "Lumen OS update" (this activity's label, through
+  android.settings.SYSTEM_UPDATE_SETTINGS), the Lumen Home "Update ready" badge (StateProvider),
+  notifications.
+  Permissions (protection levels of Lineage 21 core/res): every non-normal one is "signature"
+  (granted by the platform key) or appop-on-signature; no privileged permission, so no
+  privapp-permissions XML. POST_NOTIFICATIONS is pre-granted by default-permissions/z9x-updater.xml.
+  UpdateEngine is a @SystemApi binder service; platform-signed apps are exempt from hidden-API checks.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.updater">
+
+    <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
+
+    <!-- other apps of this image (Lumen Home badge, org.z9x.projector power policy) read the OTA
+         state (provider call "state") and receive org.z9x.updater.action.OTA_STATE -->
+    <permission
+        android:name="org.z9x.updater.permission.OTA_STATE"
+        android:protectionLevel="signature" />
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <!-- W2: tell org.z9x.projector (power.OtaStateReceiver) "busy" so the SoC stays out of STR while
+         update_engine writes (signature permission defined by org.z9x.projector) -->
+    <uses-permission android:name="org.z9x.projector.permission.OTA_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- signature|privileged|...: the daily JobService may start the download service (FGS from
+         the background) -->
+    <uses-permission android:name="android.permission.START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
+    <!-- signature|privileged: PowerManager.reboot("z9x-ota") -->
+    <uses-permission android:name="android.permission.REBOOT" />
+    <!-- signature|appop|preinstalled: read update files from a USB stick (StorageVolume paths) -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_update"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
+        android:theme="@style/Theme.Lumen.Updater">
+
+        <activity
+            android:name=".UpdaterActivity"
+            android:label="@string/settings_title"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="locale|layoutDirection|keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode">
+            <intent-filter android:priority="10">
+                <action android:name="android.settings.SYSTEM_UPDATE_SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".UpdateService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <service
+            android:name=".CheckJob"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <provider
+            android:name=".StateProvider"
+            android:authorities="org.z9x.updater"
+            android:exported="true"
+            android:readPermission="org.z9x.updater.permission.OTA_STATE"
+            android:writePermission="org.z9x.updater.permission.OTA_STATE" />
+    </application>
+</manifest>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Quick panel tile icon "keystone" (v6.2, module panel). Own line drawing: 24-unit viewport,
+     2-unit round strokes, white; QuickPanel tiles tint it at runtime. No XGIMI assets. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M7.4,5.5 H16.6 L20.6,18.5 H3.4 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M5.6,5.5 A1.8,1.8 0 1 0 9.2,5.5 A1.8,1.8 0 1 0 5.6,5.5 Z M14.8,5.5 A1.8,1.8 0 1 0 18.4,5.5 A1.8,1.8 0 1 0 14.8,5.5 Z M18.8,18.5 A1.8,1.8 0 1 0 22.4,18.5 A1.8,1.8 0 1 0 18.8,18.5 Z M1.6,18.5 A1.8,1.8 0 1 0 5.2,18.5 A1.8,1.8 0 1 0 1.6,18.5 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

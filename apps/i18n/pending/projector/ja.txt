@@ -1,0 +1,24 @@
+# Lumen OS 1.0, lane L-PROJECTOR, Japanese: new strings of org.z9x.projector (W2 merges them into langs/ja.txt).
+# strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
+# strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
+# Product names stay untranslated: Lumen Home, Android TV.
+@projector/strings_recents.xml
+recents_title=最近使用したアプリ
+recents_close=閉じる
+recents_close_all=すべて閉じる
+recents_empty=開いているアプリはありません
+recents_now=たった今
+
+@projector/strings_home.xml
+launcher_row=ホーム画面
+launcher_lumen=Lumen Home
+launcher_classic=Android TV（クラシック）
+launcher_switch=切り替え
+launcher_confirm_classic=クラシックの Android TV ホーム画面がオンになり、Lumen Home はオフになります。ここからいつでも戻せます。
+launcher_confirm_lumen=Lumen Home がオンになり、クラシックのホーム画面はオフになります。ここからいつでも戻せます。
+launcher_switch_failed=ホーム画面を切り替えられませんでした
+search_unavailable=検索を利用できません
+
+@projector/strings_power.xml
+power_menu_sleep=スリープ
+power_sleep_summary=電源ボタン、スリープタイマー、無操作時間で光源が消え、プロジェクターはスリープします。電源ボタンを押すと数秒で、止めたところから再開します。

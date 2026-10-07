@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0: /system/etc/permissions/privapp-permissions-z9xsetup.xml
+     org.z9x.setup (first-run setup) is priv-app only so that its HOME filter may use priority 10
+     (ComponentResolver caps non-privileged apps). Every permission it requests is granted through
+     the platform signature; this list names the ones that are also "privileged", so that an
+     enforcing privapp policy in a future base cannot stop the boot (setup spec R8). -->
+<permissions>
+    <privapp-permissions package="org.z9x.setup">
+        <permission name="android.permission.WRITE_SECURE_SETTINGS" />
+        <permission name="android.permission.CHANGE_CONFIGURATION" />
+        <permission name="android.permission.SET_TIME_ZONE" />
+        <permission name="android.permission.CHANGE_COMPONENT_ENABLED_STATE" />
+        <permission name="android.permission.GET_ACCOUNTS_PRIVILEGED" />
+        <permission name="android.permission.READ_WIFI_CREDENTIAL" />
+    </privapp-permissions>
+</permissions>

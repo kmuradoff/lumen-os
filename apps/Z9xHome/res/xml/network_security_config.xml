@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HTTPS everywhere; cleartext ONLY for ip-api.com, the last IP-location fallback (SPEC 5.7, 11.5).
+     http:// poster URLs from apps are upgraded to https:// by the image loader. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">ip-api.com</domain>
+    </domain-config>
+</network-security-config>

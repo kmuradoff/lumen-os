@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0: Recent apps (long-press HOME; recents.RecentsActivity / RecentsView). English base;
+     translations: apps/i18n/pending/projector/<locale>.txt (merged into langs/ and gen.py in W2).
+     The card age ("5 min. ago") comes from DateUtils, so it is already localized. -->
+<resources>
+    <string name="recents_title">Recent apps</string>
+    <string name="recents_close">Close</string>
+    <string name="recents_close_all">Close all</string>
+    <string name="recents_empty">No open apps</string>
+    <!-- card age under a minute -->
+    <string name="recents_now">now</string>
+</resources>

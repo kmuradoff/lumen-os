@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- org.z9x.projector base strings: ENGLISH is the default (V61_REQUIREMENTS item 6).
+     Translations live in values-<lang>/strings.xml (values-ru is the reference translation).
+     Module strings are in strings_panel.xml, strings_ak.xml, strings_power.xml, strings_source.xml,
+     strings_sys.xml (one owner each, see V61_ARCH.md). -->
+<resources>
+    <string name="app_name">Projector</string>
+    <string name="version_line">Version %1$s</string>
+
+    <string name="sec_focus">Focus</string>
+    <string name="sec_keystone">Keystone</string>
+    <string name="sec_auto">Automation</string>
+    <string name="sec_keys">Remote keys</string>
+    <string name="sec_diag">Diagnostics</string>
+
+    <string name="act_af_now">Autofocus now</string>
+    <string name="act_manual_focus">Manual focus</string>
+    <string name="act_kst_now">Auto keystone now</string>
+    <string name="act_fit_now">Fit to screen now</string>
+    <string name="act_refresh">Refresh</string>
+
+    <string name="tg_power_on_af">Autofocus at power-on</string>
+    <string name="tg_power_on_ak">Auto keystone at power-on</string>
+    <string name="tg_move_af">Autofocus after moving</string>
+    <string name="tg_move_ak">Auto keystone after moving</string>
+    <string name="tg_curtain">Fit to the screen</string>
+    <string name="tg_obstacle">Obstacle avoidance</string>
+
+    <string name="val_on">On</string>
+    <string name="val_off">Off</string>
+    <string name="val_unknown">No data</string>
+    <string name="val_not_ready">Projector not ready</string>
+
+    <string name="key_slot3">iQIYI key</string>
+    <string name="key_slot4">bilibili key</string>
+    <string name="slot_default_fmt">%1$s (default)</string>
+    <string name="slot_default_item">Default: %1$s</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="app_not_found">No app found for this key</string>
+
+    <string name="diag_app_version">App version: %1$s</string>
+
+    <string name="manual_focus_panel">Manual focus   ◀ ▶     OK/Back: done</string>
+
+    <string name="toast_af">Autofocus</string>
+    <string name="toast_af_running">Autofocus…</string>
+    <string name="toast_af_failed">Autofocus failed</string>
+    <string name="toast_kst">Auto keystone…</string>
+    <string name="toast_fit">Fitting to the screen…</string>
+    <string name="toast_kst_busy">Please wait: auto keystone is running</string>
+    <string name="toast_wait_boot">The projector is still starting, try again later</string>
+    <string name="toast_need_curtain">Turn on “Fit to the screen” first</string>
+    <string name="toast_not_ready">The projector is not ready yet</string>
+    <string name="toast_failed">Could not do that</string>
+    <string name="toast_curtain_offer">The picture moved: Projector → Keystone → “Fit to screen now”</string>
+    <string name="toast_setup_running">Finish the setup first</string>
+</resources>

@@ -1,0 +1,97 @@
+# Z9X first boot over stock XGIMI data (install as /system/etc/init/z9x_setup.rc). v6.1.
+#
+# Everything here is init builtins only (no exec, no wait), runs before zygote / system_server,
+# and is idempotent: each block does its work on the first boot only and fails harmlessly
+# (one init log line per command: ENOENT / EEXIST / EISDIR) on every later boot.
+#
+# ---------------------------------------------------------------------------------------------
+# 1) Settings reset, once per /data (unchanged v6 mechanism + the SettingsProvider fix).
+#
+# The stock first-run wizard already wrote user_setup_complete=1 / device_provisioned=1
+# (settings_secure / settings_global), so SetupWraith would skip the normal Android TV setup.
+# Drop the stock settings files; SettingsProvider then recreates TV defaults and SetupWraith runs
+# the full first-run setup. Not touched: settings_ssaid.xml, settings_config.xml, bt_config.conf,
+# Wi-Fi, persist props, app data.
+#
+# The symlink can be created only while nothing is at that path, i.e. on the first boot; after
+# that a real directory sits there and every command below fails harmlessly. This file is parsed
+# after init.rc, so this action runs after init.rc's own post-fs-data block (creates /data/system).
+#
+# SettingsProvider crash fix (one system_server crash on the first boot after the reset, v6):
+#   Root cause (Lineage 21 frameworks/base/packages/SettingsProvider, SettingsProvider.java):
+#   - onCreate() calls migrateAllLegacySettingsIfNeededLocked() (line 413) when settings_global.xml
+#     is missing (3454-3459). That path runs migrateLegacySettingsForUserLocked (system, secure,
+#     global only) and then UpgradeController.upgradeIfNeededLocked() (3474-3476) WITHOUT
+#     ensureSettingsForUserLocked(), so no SettingsState exists yet for the SSAID table
+#     (it is created only at 3105-3107).
+#   - The fresh database is version 118 (DatabaseHelper.DATABASE_VERSION), so onUpgradeLocked runs
+#     the version-136 step. That step runs only when PackageManager.isDeviceUpgrading() is true
+#     (fingerprint differs from the one in packages.xml: PackageManagerService 2277-2278), which
+#     is exactly our case (stock -> Lineage, or a new image). It then calls
+#     getSsaidSettingsLocked(userId) = mSettingsStates.get(key) (3050-3052, 3895-3896) -> null ->
+#     NullPointerException at 4228 (ssaidSettings.getSettingLocked(uid)) -> system_server dies.
+#   - The next start succeeds only because PackageManager has saved the new fingerprint by then
+#     (isDeviceUpgrading() is false, the 136 step is skipped).
+#   Deleting settings_ssaid.xml or settings.db does not help: the SSAID SettingsState object is
+#   missing whether or not its file exists, and the database is always rebuilt at version 118.
+#   Fix: leave a minimal, valid settings_global.xml (<settings version='-1' />, text XML, which
+#   Xml.resolvePullParser accepts; the version attribute is mandatory: SettingsState 1352).
+#   SettingsState.stateFileExists() is then true, the migrate-all path is skipped, and
+#   ensureSettingsForUserLocked() (line 415) migrates the defaults (secure file is missing, 3490-
+#   3502) and creates the SSAID state BEFORE it runs the upgrade (3105-3111): no NPE. The global
+#   table still gets every default from the database (migrateLegacySettingsLocked) and is written
+#   back as a normal (ABX) file. Only Global.DATABASE_CREATION_BUILDID is not recorded.
+#   The stub is written through ".." of the symlink: /data/system/z9x_settings_reset/../0 is
+#   /data/system/users/0 only while z9x_settings_reset is the symlink (first boot). On later boots
+#   it is /data/system/0, which does not exist, so write/chown/chmod fail with ENOENT and nothing
+#   is created. (init 'write' = open(O_CREAT|O_TRUNC|O_NOFOLLOW, 0600) as root, hence chown/chmod;
+#   O_NOFOLLOW only applies to the last component.)
+on post-fs-data
+    symlink /data/system/users/0 /data/system/z9x_settings_reset
+    rm /data/system/z9x_settings_reset/settings_global.xml
+    rm /data/system/z9x_settings_reset/settings_global.xml.bak
+    rm /data/system/z9x_settings_reset/settings_global.xml.fallback
+    rm /data/system/z9x_settings_reset/settings_secure.xml
+    rm /data/system/z9x_settings_reset/settings_secure.xml.bak
+    rm /data/system/z9x_settings_reset/settings_secure.xml.fallback
+    rm /data/system/z9x_settings_reset/settings_system.xml
+    rm /data/system/z9x_settings_reset/settings_system.xml.bak
+    rm /data/system/z9x_settings_reset/settings_system.xml.fallback
+    write /data/system/z9x_settings_reset/../0/settings_global.xml "<settings version='-1' />"
+    chown system system /data/system/z9x_settings_reset/../0/settings_global.xml
+    chmod 0600 /data/system/z9x_settings_reset/../0/settings_global.xml
+    rm /data/system/z9x_settings_reset
+    mkdir /data/system/z9x_settings_reset 0700 system system
+
+# ---------------------------------------------------------------------------------------------
+# 2) Network policy reset, once per /data (V61_REQUIREMENTS item 11).
+#
+# Stock /data/system/netpolicy.xml carries stale REJECT_ALL uid policies; together with
+# restricted_networking_mode=1 they cut Google apps off the network. NetworkPolicyManagerService
+# recreates the file with defaults. AtomicFile: a leftover .bak would be restored on read, so it
+# goes too (.new is discarded by AtomicFile anyway).
+# Own marker (not the settings marker), so this also runs once on a /data that already booted v6
+# (the v6 settings reset must not run again there). Same symlink trick: the symlink only succeeds
+# while nothing is at the marker path.
+on post-fs-data
+    symlink /data/system /data/system/z9x_netpolicy_reset
+    rm /data/system/z9x_netpolicy_reset/netpolicy.xml
+    rm /data/system/z9x_netpolicy_reset/netpolicy.xml.bak
+    rm /data/system/z9x_netpolicy_reset
+    mkdir /data/system/z9x_netpolicy_reset 0700 system system
+
+# ---------------------------------------------------------------------------------------------
+# 3) Language and time zone, once per /data.
+#
+# The stock wizard persisted persist.sys.locale=zh-CN and Asia/Shanghai, which beat the defaults
+# in /product/etc/build.prop. Set English (the product default, V61_REQUIREMENTS 7a) and
+# Europe/Moscow once before zygote starts (persist props are already loaded at
+# load_bpf_programs; setup/check-in corrects the time zone by IP and the user picks the language
+# in the first-run setup). The user's later choice is kept because persist.z9x.firstrun
+# (default 1 from /system/build.prop) is then saved as 0. A /data that already ran v6 has 0, so
+# flashing v6.1 over v6 data keeps the user's language (ru-RU on the live device) and does not
+# re-run the setup wizard (block 1 is a no-op there too); see apps/V61_IMAGE_PLAN.md section 5.
+on load_bpf_programs && property:persist.z9x.firstrun=1
+    setprop persist.sys.locale en-US
+    setprop persist.sys.timezone Europe/Moscow
+    setprop persist.z9x.firstrun 0

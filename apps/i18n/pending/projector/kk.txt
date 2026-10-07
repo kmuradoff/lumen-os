@@ -1,0 +1,24 @@
+# Lumen OS 1.0, lane L-PROJECTOR, Kazakh: new strings of org.z9x.projector (W2 merges them into langs/kk.txt).
+# strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
+# strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
+# Product names stay untranslated: Lumen Home, Android TV.
+@projector/strings_recents.xml
+recents_title=Соңғы қолданбалар
+recents_close=Жабу
+recents_close_all=Барлығын жабу
+recents_empty=Ашық қолданбалар жоқ
+recents_now=қазір
+
+@projector/strings_home.xml
+launcher_row=Басты экран
+launcher_lumen=Lumen Home
+launcher_classic=Android TV (классикалық)
+launcher_switch=Ауыстыру
+launcher_confirm_classic=Android TV классикалық басты экраны қосылып, Lumen Home өшіріледі. Кез келген уақытта осы жерден қайтаруға болады.
+launcher_confirm_lumen=Lumen Home қосылып, классикалық басты экран өшіріледі. Кез келген уақытта осы жерден қайтаруға болады.
+launcher_switch_failed=Басты экранды ауыстыру мүмкін болмады
+search_unavailable=Іздеу қолжетімсіз
+
+@projector/strings_power.xml
+power_menu_sleep=Ұйқы
+power_sleep_summary=Қуат түймесі, ұйқы таймері және әрекетсіздік жарықты сөндіріп, проекторды ұйқы режиміне ауыстырады. Қуат түймесін басыңыз: ол бірнеше секундта тоқтаған жерден жалғастырады.

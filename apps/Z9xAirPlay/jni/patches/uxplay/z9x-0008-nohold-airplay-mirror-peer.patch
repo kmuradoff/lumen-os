@@ -1,0 +1,70 @@
+z9x-0008: no takeover through an AirPlay (video) connection; mirror data port only for the sender
+
+Ours (Z9xAirPlay), against FDH2/UxPlay master 3dbf7ce after z9x-0001..0007 (paths relative
+to UxPlay/lib). Applied by jni/build_native.sh inside a copy of UxPlay/lib with
+patch -p1 --fuzz=0.
+- raop.c: a new connection without CSeq but with X-Apple-Session-ID (AirPlay video) used to
+  stop the running sender's mirror, audio and NTP services unconditionally. Without
+  nohold it now gets 409 when a RAOP connection from another address exists.
+- raop_rtp_mirror.c: the mirror data socket accepted the first TCP connection from anyone;
+  a connection from an address other than the session's RTSP peer is closed and the port
+  keeps listening.
+SPDX-License-Identifier: GPL-3.0-or-later
+
+--- a/raop.c
++++ b/raop.c
+@@ -351,6 +351,25 @@
+             httpd_set_connection_type(raop->httpd, ptr, CONNECTION_TYPE_RAOP);
+             conn->connection_type = CONNECTION_TYPE_RAOP;
+         } else if (client_session_id) {
++            /* z9x: without nohold, an AirPlay (video) connection from another address must not
++               stop the running sender's mirror / audio services below */
++            if (!httpd_nohold(raop->httpd)) {
++                for (int i = 1; ; i++) {
++                    raop_conn_t *holder = (raop_conn_t *) httpd_get_connection_by_type(raop->httpd, CONNECTION_TYPE_RAOP, i);
++                    if (!holder) {
++                        break;
++                    }
++                    if (!z9x_same_peer(holder, conn)) {
++                        char ipaddr[40] = { '\0' };
++                        utils_ipaddress_to_string(conn->remotelen, conn->remote, conn->zone_id, ipaddr, (int) (sizeof(ipaddr)));
++                        logger_log(raop->logger, LOGGER_WARNING, "rejecting AirPlay connection request from %s"
++                                   " (another sender is connected)", ipaddr);
++                        *response = http_response_create();
++                        http_response_init(*response, protocol, 409, "Conflict: Server is connected to another client");
++                        goto finish;
++                    }
++                }
++            }
+             logger_log(raop->logger, LOGGER_DEBUG, "New connection %p identified as Connection type AirPlay", ptr);            
+             httpd_set_connection_type(raop->httpd, ptr, CONNECTION_TYPE_AIRPLAY);
+             conn->connection_type = CONNECTION_TYPE_AIRPLAY;
+--- a/raop_rtp_mirror.c
++++ b/raop_rtp_mirror.c
+@@ -249,6 +249,26 @@
+                 logger_log(raop_rtp_mirror->logger, LOGGER_ERR,
+                            "raop_rtp_mirror error in accept %d %s", sock_err, SOCKET_ERROR_STRING(sock_err));
+                 break;
++            }
++
++            /* z9x: only the sender of this session (the RTSP peer) may take the single mirror
++               data stream; anyone else is closed and the port keeps listening */
++            {
++                int peer_len = 0, own_len = 0;
++                unsigned int zone_id = 0;
++                const unsigned char *peer = netutils_get_address(&saddr, &peer_len, &zone_id, NULL);
++                const unsigned char *own = netutils_get_address(&raop_rtp_mirror->remote_saddr, &own_len, &zone_id, NULL);
++                if (!peer || !own || peer_len != own_len || memcmp(peer, own, (size_t) peer_len)) {
++                    char ipaddr[40] = { '\0' };
++                    if (peer) {
++                        utils_ipaddress_to_string(peer_len, (unsigned char *) peer, 0, ipaddr, (int) sizeof(ipaddr));
++                    }
++                    logger_log(raop_rtp_mirror->logger, LOGGER_WARNING,
++                               "raop_rtp_mirror: refusing a data connection from %s (not the sender)", ipaddr);
++                    CLOSESOCKET(stream_fd);
++                    stream_fd = -1;
++                    continue;
++                }
+             }
+ 
+             // We're calling recv for a certain amount of data, so we need a timeout

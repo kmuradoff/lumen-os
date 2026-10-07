@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "cec" (Lumen OS 1.0, HDMI-CEC phase 1; owner: the CEC lane). English base; the 16
+     translations come from apps/i18n/pending/cec (gen.py writes values-<lang>/strings_cec.xml).
+     Prefix every name with "cec_". -->
+<resources>
+    <!-- Quick panel > All settings: the entry row and the page title -->
+    <string name="cec_entry">HDMI devices (CEC)</string>
+    <string name="cec_title" translatable="false">HDMI-CEC</string>
+    <string name="cec_unavailable">HDMI-CEC is not available</string>
+    <string name="cec_master">HDMI-CEC control</string>
+    <string name="cec_wake">Turn on with an HDMI device</string>
+    <string name="cec_night">Night guard</string>
+    <string name="cec_night_off">Off</string>
+    <!-- %1$s / %2$s: start / end time of the night guard, e.g. 01:00 and 07:00 -->
+    <string name="cec_night_range" translatable="false">%1$s–%2$s</string>
+    <string name="cec_night_desc">During these hours HDMI devices cannot turn the projector on.</string>
+    <string name="cec_paused">Paused after several wake-ups without a picture. Using the remote turns it back on.</string>
+    <string name="cec_switch">Switch to a device when it turns on</string>
+    <string name="cec_send_standby">Turn off HDMI devices with the projector</string>
+    <string name="cec_follow_info">When the device you are watching turns off, the projector goes to sleep too.</string>
+    <string name="cec_soundbar">Soundbar or AV receiver (HDMI ARC)</string>
+    <string name="cec_avr_on">Turn on the soundbar with the projector</string>
+    <string name="cec_control">Control HDMI devices with this remote</string>
+    <string name="cec_internal_exit">Tell the device when you leave HDMI</string>
+    <string name="cec_devices">Connected devices</string>
+    <string name="cec_no_devices">No HDMI-CEC devices found</string>
+    <!-- device list value: %1$d = HDMI port number, %2$s = cec_state_on / cec_state_standby -->
+    <string name="cec_dev_value" translatable="false">HDMI %1$d · %2$s</string>
+    <string name="cec_dev_port" translatable="false">HDMI %1$d</string>
+    <string name="cec_state_on">on</string>
+    <string name="cec_state_standby">standby</string>
+    <string name="cec_dev_unnamed">HDMI device</string>
+    <string name="cec_dev_soundbar">Soundbar / AV receiver</string>
+    <!-- %1$s = the projector's device name, as HDMI devices show it -->
+    <string name="cec_name_on_hdmi">Name on HDMI: %1$s</string>
+    <string name="cec_hdmi_options">HDMI input options</string>
+    <!-- Card after a wake by an HDMI device with no picture and no remote key -->
+    <string name="cec_unattended_title">Turned on by an HDMI device</string>
+    <!-- %1$s = the device's name, or cec_device_generic -->
+    <string name="cec_unattended_msg">%1$s turned the projector on, but there is no picture. The projector goes back to sleep in 30 seconds.</string>
+    <string name="cec_stay_on">Stay on</string>
+    <string name="cec_device_generic">An HDMI device</string>
+</resources>

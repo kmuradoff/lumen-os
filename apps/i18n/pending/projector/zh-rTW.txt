@@ -1,0 +1,24 @@
+# Lumen OS 1.0, lane L-PROJECTOR, Traditional Chinese (Taiwan): new strings of org.z9x.projector (W2 merges them into langs/zh-rTW.txt).
+# strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
+# strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
+# Product names stay untranslated: Lumen Home, Android TV.
+@projector/strings_recents.xml
+recents_title=最近使用的應用程式
+recents_close=關閉
+recents_close_all=全部關閉
+recents_empty=沒有開啟的應用程式
+recents_now=剛剛
+
+@projector/strings_home.xml
+launcher_row=主畫面
+launcher_lumen=Lumen Home
+launcher_classic=Android TV（經典）
+launcher_switch=切換
+launcher_confirm_classic=將啟用經典 Android TV 主畫面並停用 Lumen Home。可隨時在這裡切換回來。
+launcher_confirm_lumen=將啟用 Lumen Home 並停用經典主畫面。可隨時在這裡切換回來。
+launcher_switch_failed=無法切換主畫面
+search_unavailable=無法使用搜尋
+
+@projector/strings_power.xml
+power_menu_sleep=睡眠
+power_sleep_summary=電源鍵、睡眠定時器和閒置時間會關閉光源並讓投影機進入睡眠。按下電源鍵，幾秒內就能從上次停下的地方繼續。

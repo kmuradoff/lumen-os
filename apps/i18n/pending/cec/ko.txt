@@ -1,0 +1,31 @@
+# Lumen OS 1.0, W2 lane CEC, Korean: strings of org.z9x.projector's HDMI-CEC page (module cec).
+# strings_cec.xml is a new file (gen.py generates values-<locale>/strings_cec.xml); keys cec_title,
+# cec_night_range, cec_dev_value, cec_dev_port are translatable="false" in the base.
+@projector/strings_cec.xml
+cec_entry=HDMI 기기(CEC)
+cec_unavailable=HDMI-CEC를 사용할 수 없습니다
+cec_master=HDMI-CEC 제어
+cec_wake=HDMI 기기로 전원 켜기
+cec_night=야간 보호
+cec_night_off=끄기
+cec_night_desc=이 시간에는 HDMI 기기가 프로젝터를 켤 수 없습니다.
+cec_paused=화면 없이 여러 번 켜져서 일시 중지되었습니다. 리모컨을 사용하면 다시 작동합니다.
+cec_switch=기기가 켜지면 해당 기기로 전환
+cec_send_standby=프로젝터와 함께 HDMI 기기 끄기
+cec_follow_info=보고 있는 기기가 꺼지면 프로젝터도 절전 모드로 전환됩니다.
+cec_soundbar=사운드바 또는 AV 리시버(HDMI ARC)
+cec_avr_on=프로젝터와 함께 사운드바 켜기
+cec_control=이 리모컨으로 HDMI 기기 제어
+cec_internal_exit=HDMI를 나갈 때 기기에 알리기
+cec_devices=연결된 기기
+cec_no_devices=HDMI-CEC 기기를 찾을 수 없습니다
+cec_state_on=켜짐
+cec_state_standby=대기
+cec_dev_unnamed=HDMI 기기
+cec_dev_soundbar=사운드바 / AV 리시버
+cec_name_on_hdmi=HDMI 표시 이름: %1$s
+cec_hdmi_options=HDMI 입력 옵션
+cec_unattended_title=HDMI 기기가 프로젝터를 켰습니다
+cec_unattended_msg=%1$s에서 프로젝터를 켰지만 화면이 없습니다. 30초 후 프로젝터가 다시 절전 모드로 전환됩니다.
+cec_stay_on=켜 두기
+cec_device_generic=HDMI 기기

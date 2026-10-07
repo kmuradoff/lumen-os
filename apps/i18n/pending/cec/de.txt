@@ -1,0 +1,31 @@
+# Lumen OS 1.0, W2 lane CEC, German: strings of org.z9x.projector's HDMI-CEC page (module cec).
+# strings_cec.xml is a new file (gen.py generates values-<locale>/strings_cec.xml); keys cec_title,
+# cec_night_range, cec_dev_value, cec_dev_port are translatable="false" in the base.
+@projector/strings_cec.xml
+cec_entry=HDMI-Geräte (CEC)
+cec_unavailable=HDMI-CEC ist nicht verfügbar
+cec_master=HDMI-CEC-Steuerung
+cec_wake=Mit einem HDMI-Gerät einschalten
+cec_night=Nachtschutz
+cec_night_off=Aus
+cec_night_desc=In diesen Stunden können HDMI-Geräte den Projektor nicht einschalten.
+cec_paused=Nach mehreren Einschaltvorgängen ohne Bild pausiert. Sobald Sie die Fernbedienung benutzen, ist es wieder aktiv.
+cec_switch=Zum Gerät wechseln, wenn es eingeschaltet wird
+cec_send_standby=HDMI-Geräte mit dem Projektor ausschalten
+cec_follow_info=Wenn das Gerät, das Sie gerade ansehen, ausgeschaltet wird, geht auch der Projektor in den Ruhemodus.
+cec_soundbar=Soundbar oder AV-Receiver (HDMI ARC)
+cec_avr_on=Soundbar mit dem Projektor einschalten
+cec_control=HDMI-Geräte mit dieser Fernbedienung steuern
+cec_internal_exit=Gerät beim Verlassen von HDMI benachrichtigen
+cec_devices=Verbundene Geräte
+cec_no_devices=Keine HDMI-CEC-Geräte gefunden
+cec_state_on=an
+cec_state_standby=Standby
+cec_dev_unnamed=HDMI-Gerät
+cec_dev_soundbar=Soundbar / AV-Receiver
+cec_name_on_hdmi=Name über HDMI: %1$s
+cec_hdmi_options=HDMI-Eingangsoptionen
+cec_unattended_title=Von einem HDMI-Gerät eingeschaltet
+cec_unattended_msg=%1$s hat den Projektor eingeschaltet, aber es gibt kein Bild. In 30 Sekunden geht der Projektor wieder in den Ruhemodus.
+cec_stay_on=Eingeschaltet lassen
+cec_device_generic=Ein HDMI-Gerät

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "panel" strings (owner: the panel module agent). English base; translations go to
+     values-<lang>/strings_panel.xml. Prefix every name with "panel_".
+     Stock XGIMI has no English/Russian texts for these items (FEATURE_SPEC 1.4): all wording is ours. -->
+<resources>
+    <string name="panel_placeholder" translatable="false">panel</string>
+
+    <string name="panel_title">Quick settings</string>
+
+    <!-- section headers -->
+    <string name="panel_sec_image_correction">Image correction</string>
+    <string name="panel_sec_picture">Picture</string>
+    <string name="panel_sec_game">Game (HDMI)</string>
+    <string name="panel_sec_sound">Sound</string>
+    <string name="panel_sec_general">General</string>
+
+    <!-- info line -->
+    <string name="panel_src_android" translatable="false">Android TV</string>
+    <string name="panel_src_hdmi1" translatable="false">HDMI 1</string>
+    <string name="panel_src_hdmi2" translatable="false">HDMI 2</string>
+
+    <!-- common values / buttons -->
+    <string name="panel_on">On</string>
+    <string name="panel_off">Off</string>
+    <string name="panel_auto">Auto</string>
+    <string name="panel_low">Low</string>
+    <string name="panel_medium">Medium</string>
+    <string name="panel_high">High</string>
+    <string name="panel_switch">Switch</string>
+    <string name="panel_reset">Reset</string>
+    <string name="panel_turn_on">Turn on</string>
+    <string name="panel_turn_off">Turn off</string>
+    <plurals name="panel_minutes">
+        <item quantity="one">%d min</item>
+        <item quantity="other">%d min</item>
+    </plurals>
+    <plurals name="panel_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+
+    <!-- image correction -->
+    <string name="panel_ak_now">Auto keystone now</string>
+    <string name="panel_fit_now">Fit to screen now</string>
+    <string name="panel_af_now">Autofocus now</string>
+    <string name="panel_manual_focus">Manual focus</string>
+    <string name="panel_image_correction_settings">Image correction settings</string>
+    <string name="panel_rt_keystone">Real-time keystone</string>
+    <string name="panel_power_on_keystone">Auto keystone at power-on</string>
+    <string name="panel_fit_screen">Fit to the screen</string>
+    <string name="panel_obstacle">Obstacle avoidance</string>
+    <string name="panel_move_af">Autofocus after moving</string>
+    <string name="panel_power_on_af">Autofocus at power-on</string>
+    <string name="panel_smart_af">Smart autofocus</string>
+    <string name="panel_manual_keystone">Manual keystone</string>
+    <string name="panel_reset_keystone">Reset keystone</string>
+    <string name="panel_reset_keystone_msg">The picture goes back to the full uncorrected frame. Continue?</string>
+    <string name="panel_reset_keystone_done">Keystone reset</string>
+
+    <!-- manual keystone card -->
+    <string name="panel_kst_manual">Manual keystone</string>
+    <string name="panel_kst_hint">Arrows: move corner · OK: next corner · Back: done</string>
+    <string name="panel_kst_wait">Reading the corners…</string>
+    <string name="panel_kst_corner_tl">Top left</string>
+    <string name="panel_kst_corner_tr">Top right</string>
+    <string name="panel_kst_corner_br">Bottom right</string>
+    <string name="panel_kst_corner_bl">Bottom left</string>
+    <string name="panel_kst_limit">This corner cannot move further</string>
+    <string name="panel_kst_unavailable">Manual keystone is not available right now</string>
+    <string name="panel_kst_game_mode">Keystone is off in the top-speed game mode</string>
+
+    <!-- projection mode -->
+    <string name="panel_projection_mode">Projection mode</string>
+    <string name="panel_proj_auto">Auto</string>
+    <string name="panel_proj_table">Table</string>
+    <string name="panel_proj_ceiling">Ceiling</string>
+    <string name="panel_proj_rear">Rear projection</string>
+    <string name="panel_proj_front_table">Front, table</string>
+    <string name="panel_proj_front_ceiling">Front, ceiling</string>
+    <string name="panel_proj_rear_table">Rear, table</string>
+    <string name="panel_proj_rear_ceiling">Rear, ceiling</string>
+    <string name="panel_proj_confirm_flip">The picture will be flipped. Continue?</string>
+    <string name="panel_proj_confirm_ceiling">Switch to ceiling mounting? The picture will be flipped and some functions, such as real-time keystone, will not be available.</string>
+
+    <!-- picture -->
+    <string name="panel_picture_mode">Picture mode</string>
+    <string name="panel_pm_ai">AI picture</string>
+    <string name="panel_pm_standard">Standard</string>
+    <string name="panel_pm_sport">Sport</string>
+    <string name="panel_pm_hdr_vivid" translatable="false">HDR Vivid</string>
+    <string name="panel_pm_color_accuracy">Color accuracy</string>
+    <string name="panel_pm_office">Office</string>
+    <string name="panel_pm_performance">Performance</string>
+    <!-- Tile value line (top level, one short line): shorter forms where the full name does not fit. -->
+    <string name="panel_tileval_pm_ai">AI picture</string>
+    <string name="panel_tileval_pm_color_accuracy">Color accuracy</string>
+    <string name="panel_tileval_pm_performance">Performance</string>
+    <string name="panel_tileval_sound_ai">AI sound</string>
+    <string name="panel_pm_performance_msg">Make sure the vents are not blocked and the room is not warmer than 25 °C. Do not use this mode for a long time.</string>
+    <string name="panel_lamp">Brightness</string>
+    <string name="panel_boost">Boost</string>
+    <string name="panel_boost_press_again">Press → again for Boost</string>
+    <string name="panel_boost_leave_press_again">Press ← again to leave Boost</string>
+    <string name="panel_boost_3d">Turn off 3D and try again</string>
+    <string name="panel_boost_hot">The projector is too warm for Boost. Try again later</string>
+    <string name="panel_ultra120">Ultra 120 Hz</string>
+    <string name="panel_ultra120_msg">The output switches to 1080p at 120 Hz and the screen goes dark for a few seconds. For HDMI games use the game mode instead.</string>
+    <string name="panel_ultra120_3d">Not available in 3D</string>
+    <string name="panel_ultra120_hdmi">Not available for an HDMI input. Use the game mode</string>
+    <string name="panel_ultra120_refused">Ultra 120 Hz is not available for this content</string>
+    <string name="panel_ultra120_unverified">Not yet tested on this projector.</string>
+    <string name="panel_game_hdmi_only">Available only while an HDMI input is shown</string>
+    <string name="panel_picture_settings">Picture settings</string>
+    <string name="panel_pq_brightness">Brightness</string>
+    <string name="panel_pq_contrast">Contrast</string>
+    <string name="panel_pq_saturation">Saturation</string>
+    <string name="panel_pq_sharpness">Sharpness</string>
+    <string name="panel_pq_blocked_ai">Basic settings are not available in the AI picture mode</string>
+    <string name="panel_pq_blocked_performance">Basic settings are not available in the Performance mode</string>
+    <string name="panel_ct_blocked_office">Color temperature is not available in the Office mode</string>
+    <string name="panel_color_temp">Color temperature</string>
+    <string name="panel_ct_d65" translatable="false">D65</string>
+    <string name="panel_ct_1">Color temp 1</string>
+    <string name="panel_memc">Motion smoothing</string>
+    <string name="panel_ai_contrast">AI contrast</string>
+    <string name="panel_super_resolution">Super resolution</string>
+    <string name="panel_picture_reset">Reset picture settings</string>
+    <string name="panel_picture_reset_msg">Brightness, contrast, saturation and sharpness go back to their defaults. Continue?</string>
+
+    <!-- game / HDMI -->
+    <string name="panel_game_mode">Game mode</string>
+    <string name="panel_game_speed">Game speed</string>
+    <string name="panel_speed_standard">Standard</string>
+    <string name="panel_speed_standard_hfr">Standard, high frame rate</string>
+    <string name="panel_speed_top">Top speed</string>
+    <string name="panel_speed_top_hfr">Top speed, high frame rate</string>
+    <string name="panel_speed_top_note">Top speed: keystone correction is off</string>
+    <string name="panel_allm">Auto game mode</string>
+    <string name="panel_allm_signal">On ALLM signal</string>
+    <string name="panel_allm_device">On game console</string>
+    <string name="panel_aspect">Aspect ratio</string>
+    <string name="panel_aspect_16_9" translatable="false">16:9</string>
+    <string name="panel_aspect_4_3" translatable="false">4:3</string>
+    <string name="panel_aspect_original">Original</string>
+
+    <!-- sound -->
+    <string name="panel_sound_mode">Sound mode</string>
+    <string name="panel_sound_ai">AI sound</string>
+    <string name="panel_sound_standard">Standard</string>
+    <string name="panel_sound_movie">Movie</string>
+    <string name="panel_sound_music">Music</string>
+    <string name="panel_sound_sports">Sports</string>
+    <string name="panel_sound_karaoke">Karaoke</string>
+    <string name="panel_sound_enhancement">Sound enhancement</string>
+    <string name="panel_harman" translatable="false">Harman Kardon</string>
+    <string name="panel_dts_vx" translatable="false">DTS Virtual:X</string>
+
+    <!-- general -->
+    <string name="panel_eye">Eye protection</string>
+    <string name="panel_eye_on_msg">Turn on eye protection? The light is dimmed when someone is in front of the lens.</string>
+    <string name="panel_eye_off_msg">Turn off eye protection? The light will no longer be dimmed when someone is in front of the lens.</string>
+    <string name="toast_rt_kst_ceiling">Real-time keystone is not available with a ceiling mount</string>
+    <string name="eye_notice_where">To change it: Quick settings &gt; Eye protection</string>
+    <string name="eye_notice_exit">Eye protection: light back on</string>
+    <!-- v6.2b eye protection mask (EyeGuard, focusEvent 500) and notices -->
+    <string name="eye_mask_title">Eye protection</string>
+    <string name="eye_mask_desc">Someone is in front of the lens, so the picture is hidden. It comes back when you step away.</string>
+    <string name="eye_mask_hint">Back or OK: show the picture · Hold the gear key: turn eye protection off</string>
+    <string name="eye_off_done">Eye protection is off</string>
+    <string name="eye_bright_reduced">Short projection distance: brightness lowered automatically</string>
+    <string name="eye_unavailable">Eye protection is not ready. Restart the projector and try again.</string>
+    <string name="panel_standby_off_after">Standby, then power off after</string>
+    <string name="panel_input">Input</string>
+    <string name="panel_projector_settings">Projector settings</string>
+    <string name="panel_all_settings">All settings</string>
+
+    <!-- v6.2 tile grid (top level of the quick panel) and its section pages -->
+    <string name="panel_tile_focus">Focus</string>
+    <string name="panel_tile_keystone">Keystone</string>
+    <string name="panel_tile_projection">Projection</string>
+    <!-- Tile labels for sections whose full name is too long for a tile in some languages
+         (Tile shrinks the label 26 -> 19 px, then ellipsizes). Same English as the section. -->
+    <string name="panel_tile_input">Input</string>
+    <string name="panel_tile_game">Game mode</string>
+    <string name="panel_tile_eye">Eye protection</string>
+    <string name="panel_tile_hdmi_only">HDMI only</string>
+    <string name="panel_src_hdmi" translatable="false">HDMI</string>
+    <string name="panel_system_settings">System settings</string>
+    <string name="panel_hdmi_settings">HDMI settings</string>
+    <string name="panel_lamp_hint">At 10, press → twice to turn on Boost.</string>
+    <string name="panel_eye_desc">The light is dimmed when someone is in front of the lens.</string>
+</resources>

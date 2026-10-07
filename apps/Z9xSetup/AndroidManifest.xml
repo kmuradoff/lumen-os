@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  org.z9x.setup ("Setup"): the Lumen OS first-run wizard (setup/SPEC.md, PLAN.md C1-C3, C6, C12-C14,
+  C17, C22, C23, C25). Built by gsi/apps/build_apk.sh: VERSION_CODE=100 VERSION_NAME=1.0.
+
+  Install: /system/priv-app/Z9xSetup/Z9xSetup.apk (priv-app ONLY so that the HOME priority 10 is not
+  capped: ComponentResolver.adjustPriority caps non-privileged apps to 0). Platform-signed (release
+  platform key of ~/.lumen-keys after sign_tar). Every permission below is 'signature' (plus other
+  flags) or 'normal' on the image, so the platform signature grants it; no privapp-permissions
+  allowlist entry is needed.
+
+  NO CATEGORY_SETUP_WIZARD: SetupWraith stays the platform's "setup wizard package" (it is required
+  for every Google sign-in on Android TV). NO receivers, services, providers or jobs: after setup the
+  single activity is disabled and the app never runs again (0 RAM).
+
+  NO MANAGE_ROLE_HOLDERS: per PLAN C1 the launcher switch lives only in Z9xProjector's
+  LauncherSwitcher (bridge set_launcher); this app has no fallback copy of it.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.setup"
+    android:versionCode="100"
+    android:versionName="1.0">
+
+    <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <!-- device_provisioned / user_setup_complete / tv_user_setup_complete, auto_time_zone, z9x_launcher
+         (signature|privileged|development|installer|role) -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <!-- LocalePicker.updateLocales -> AMS.updatePersistentConfiguration enforces BOTH
+         CHANGE_CONFIGURATION (signature|privileged|development|role) and WRITE_SETTINGS
+         (signature|preinstalled|appop|pre23); found on the emulator test, 2026-10-07 -->
+    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!-- AlarmManager.setTimeZone (signature|privileged|role) -->
+    <uses-permission android:name="android.permission.SET_TIME_ZONE" />
+    <!-- Wi-Fi: scan results without location, no scan throttle, connect/save, captive portal app,
+         unredacted SSID, wrong-password status of saved networks (signature) -->
+    <uses-permission android:name="android.permission.NETWORK_SETTINGS" />
+    <!-- WifiManager.getPrivilegedConfiguredNetworks: saved networks and their wrong-password
+         status (signature|privileged) -->
+    <uses-permission android:name="android.permission.READ_WIFI_CREDENTIAL" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- disable SetupWraith MainActivity (finish step 6) (signature|privileged|role) -->
+    <uses-permission android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE" />
+    <!-- "Signed in as" (accounts of other apps' authenticators) -->
+    <uses-permission android:name="android.permission.GET_ACCOUNTS_PRIVILEGED" />
+    <!-- GSF android_id for the uncertified-device helper, Gservices ip_timezone (normal) -->
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+    <!-- Z9xProjector SetupBridge (signature permission defined by org.z9x.projector) -->
+    <uses-permission android:name="org.z9x.projector.permission.SETUP_BRIDGE" />
+    <!-- installed/enabled checks of the launchers, GMS, SetupWraith (normal) -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
+    <queries>
+        <package android:name="org.z9x.projector" />
+        <package android:name="org.z9x.home" />
+        <package android:name="com.google.android.tvlauncher" />
+        <package android:name="com.google.android.gms" />
+        <package android:name="com.google.android.gsf" />
+        <package android:name="com.google.android.tungsten.setupwraith" />
+        <package android:name="com.android.tv.settings" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_setup"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:hardwareAccelerated="true"
+        android:largeHeap="false"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:theme="@style/Theme.Z9xSetup">
+
+        <!-- One activity; the steps are Views. configChanges so that a language switch re-binds the
+             strings instead of recreating the activity (no 1-2 s restart, no flicker).
+             HOME priority 10 (C3): Lumen Home 3, tvlauncher 2. -->
+        <activity
+            android:name=".SetupActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:stateNotNeeded="true"
+            android:resizeableActivity="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+            android:windowSoftInputMode="adjustNothing|stateHidden">
+            <intent-filter android:priority="10">
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

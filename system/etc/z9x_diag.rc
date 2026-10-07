@@ -1,0 +1,36 @@
+# Z9X boot logger (install as /system/etc/init/z9x_diag.rc; script /system/etc/xgimi/z9x_diag.sh 0755).
+#
+# Started at 'on boot', i.e. after early-boot (pwmchip8, z9x_base.rc) has been processed; nothing
+# here runs before early-boot. It is a background oneshot service: init only forks it (never
+# 'exec'), so it cannot block init. It never stops/restarts any vendor service.
+#
+# v6.1: PASSIVE log only. It never calls setprop and has no effect on behaviour (the v6 kill-switch
+# bookkeeping persist.z9x.lastboot / strike / featblock is gone).
+# It keeps the last 3 boots in /data/misc/z9x_diag/boot.{1,2,3} (boot.1 = current, 40 MB cap):
+# the previous boot's pstore + pmsg logcat, logcat -b all (rotated; Motion_det_ctl and
+# XGIMI_PERCEPTION_DEBUG silenced), dmesg (capped), a status line every 5 s (gmpf_main pid,
+# vendor.xgimi.ledOn, boot_completed, temperatures, ...), snapshots, tombstones and read-only
+# copies of XGIMI's /mnt/vendor/xgimisps/devErr*.xml. A HEALTHY marker file is written when
+# sys.boot_completed=1 + vendor.xgimi.ledOn=true seen + gmpf_main pid unchanged, held 90 s after
+# boot_completed. Logging ends 15 min after start once healthy (60 min at most). v6.5: then only a
+# light power watch stays (two getprop calls every 5 s; a "power:" line in history.txt and a
+# boot.N/wake_<time>_<state>.txt capture on every display / lamp change) until the projector shuts down.
+# Files are group log readable, so 'adb pull /data/misc/z9x_diag' works without adb root.
+# USB (opt-in): only a stick mounted by vold that already has a z9x_diag_logs/ folder, or any stick with
+# the developer prop persist.z9x.diag_usb=1, gets <stick>/z9x_diag_logs/<serial>/ (never mounts anything).
+#
+# Domain u:r:su:s0 exists only on userdebug/eng and is permissive there (system/sepolicy su.te).
+# On a user build the service simply fails to start, which is harmless for the boot.
+
+on boot
+    mkdir /data/misc/z9x_diag 0770 root log
+    start z9x_diag
+
+service z9x_diag /system/bin/sh /system/etc/xgimi/z9x_diag.sh
+    user root
+    group root log system readproc
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+    priority 10
+    ioprio be 7

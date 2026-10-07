@@ -1,0 +1,9 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * libz9xairplay.so exports only JNI_OnLoad; the natives of org.z9x.airplay.NativeBridge
+ * are bound with RegisterNatives, so no Java_* symbols are needed. */
+{
+  global:
+    JNI_OnLoad;
+  local:
+    *;
+};

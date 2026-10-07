@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X v6.1 / v6.2 power-key configuration (org.z9x.overlay.framework, static RRO on "android",
+     priority 2000, so these values win over TvFrameworkOverlay (0) and the Lineage product RRO (1)).
+     Names, types and values checked in the Lineage 21 source (~/lineage on the build laptop):
+       frameworks/base/core/res/res/values/config.xml:1150 config_longPressOnPowerBehavior (integer)
+       frameworks/base/core/res/res/values/config.xml:3641 config_globalActionsList (string-array,
+         translatable="false"); symbols.xml:453 / 1268.
+     Requirements: gsi/apps/V61_REQUIREMENTS.md "Power, long press"; research
+     research/v61/RESULT_power.json (verdict.corrected_decisions) and
+     research/v61/power/proposed/framework_overlay_power.xml. -->
+<resources>
+    <!-- v6.5 (review 6.5, PowerKey): 0 = SHORT_PRESS_POWER_NOTHING (Lineage 21 config.xml
+         config_shortPressOnPowerBehavior, PhoneWindowManager SHORT_PRESS_POWER_NOTHING). Every
+         user power key is KEYCODE_STB_POWER (org.z9x.projector: lamp-only standby, the display stays
+         on). What is still KEYCODE_POWER (the factory remotes, a phone remote app's POWER, and
+         KEYCODE_TV_POWER, which PhoneWindowManager turns into POWER on a leanback TV) used to call
+         goToSleep while Android is awake, also during our standby: a display-off sleep, and the next
+         wake power-cycles the display chain (LightsHAL panel off/on, PNL_CUST / VB1 / TCON, DLPC
+         re-lock), which leaves block noise in one quadrant. With 0 a short POWER while awake does
+         nothing; from a real sleep POWER still wakes (wake key, interceptKeyBeforeQueueing), and the
+         long press still opens the power menu (config_longPressOnPowerBehavior 1 below).
+         Accepted: the factory remotes and phone remote apps lose short-press sleep. Earlier note:
+         v6.1-6.4 kept the live value 1 (SHORT_PRESS_POWER_GO_TO_SLEEP). -->
+    <integer name="config_shortPressOnPowerBehavior">0</integer>
+
+    <!-- User decision (2026-10-04): short press = sleep (live value 1, lamp off through
+         org.z9x.projector PowerPolicy); long press = power menu with "Power off" and "Restart".
+         1 = LONG_PRESS_POWER_GLOBAL_ACTIONS (Lineage 21 config.xml:1150). Known issue to fix next:
+         a real shutdown on the Z9X powers itself back on after 20-40 s (a wake source; under test).
+         v6.2: these values now serve only KEYCODE_POWER, i.e. the IR remote, the keypad and the
+         factory remotes: the IR / keypad POWER fallback, which also works when org.z9x.projector is
+         down. The BT remote power key is KEYCODE_STB_POWER -> org.z9x.projector (own fade + sleep,
+         own 3-item power menu; res/xml/global_keys.xml). Values unchanged. -->
+    <integer name="config_longPressOnPowerBehavior">1</integer>
+
+    <!-- Power menu: exactly "power" (shut down) and "restart". Lineage reads this array through
+         LineageGlobalActionsService only while LineageSettings.Secure power_menu_actions is unset. -->
+    <string-array name="config_globalActionsList" translatable="false">
+        <item>power</item>
+        <item>restart</item>
+    </string-array>
+
+    <!-- ================= Lumen OS 1.0 (plan C9: this file is the single editor of framework values) ====
+
+         Speed (speed spec 5): 32 -> 16 cached processes (ActivityManagerConstants
+         CUR_MAX_CACHED_PROCESSES = this value, the empty-process limit becomes 8). On v6.4, 20 boot
+         leftovers lived until the cap of 32 was hit; a TV needs about 10 warm apps at most. The same
+         value is pinned in DeviceConfig by Z9xDeviceConfigOverlay (a server value would win over a
+         device_config default, not over this resource). -->
+    <integer name="config_customizedMaxCachedProcesses">16</integer>
+
+    <!-- Speed spec 3.3 / 6.1: the Google Assistant (Katniss) is removed from the image, so the
+         ASSISTANT role (roles.xml: defaultHolders = config_defaultAssistant,
+         fallBackToDefaultHolder = true) falls back to org.z9x.projector. Its RecentsActivity handles
+         android.intent.action.ASSIST: a long press on HOME (Lineage action SEARCH,
+         invocation_type 5) opens Recent apps; any other ASSIST opens Lumen Home search.
+         VoiceInteractionManagerService then writes Settings.Secure.assistant to that activity. -->
+    <string name="config_defaultAssistant" translatable="false">org.z9x.projector</string>
+
+    <!-- HDMI-CEC defaults (cec spec 3.3, phase 1; read by HdmiCecConfig in system_server; a value
+         stored earlier in /data wins, Lumen OS 1.0 is flashed with a userdata wipe).
+         "TV wake on One Touch Play" = "Turn on with an HDMI device": OFF by default (cec spec guard 8,
+         review 2026-10-07: the CEC wake detection after STR is not verified on the device yet) and
+         user-configurable (org.z9x.projector's CEC page and TvSettings show the same value). Once the
+         user turns it on, the vendor HAL's enableWakeupByOtp follows it, org.z9x.projector (cec.CecPolicy)
+         arms the PM51 wake source cec0 before every allowed sleep (init: z9x_power.rc, z9x_power_cec.rc)
+         and switches this value off for a sleep its guards refuse (night guard 01:00-07:00 by default,
+         storm limit, setup gate C14; restored at the next user wake), and a real power-off switches it
+         off until the next start (PLAN Q13). PowerPolicy's v6.5 one-shot switch-off is gone. -->
+    <bool name="config_cecTvWakeOnOneTouchPlay_userConfigurable">true</bool>
+    <bool name="config_cecTvWakeOnOneTouchPlayEnabled_default">false</bool>
+    <bool name="config_cecTvWakeOnOneTouchPlayDisabled_default">true</bool>
+    <!-- "Turn off devices with the projector" (tv_send_standby_on_sleep): ON, user-configurable;
+         the single source of truth for the framework and for org.z9x.projector's standby. -->
+    <bool name="config_cecTvSendStandbyOnSleep_userConfigurable">true</bool>
+    <bool name="config_cecTvSendStandbyOnSleepEnabled_default">true</bool>
+    <bool name="config_cecTvSendStandbyOnSleepDisabled_default">false</bool>
+    <!-- <Set Menu Language> broadcast OFF by default (a console would follow the projector's UI
+         language every time CEC starts). -->
+    <bool name="config_cecSetMenuLanguageEnabled_default">false</bool>
+    <bool name="config_cecSetMenuLanguageDisabled_default">true</bool>
+</resources>

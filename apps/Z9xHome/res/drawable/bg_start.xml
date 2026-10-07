@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen ambient: background + two soft glows (top-right blue, bottom-left violet), brand tokens. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><color android:color="@color/z9x_bg" /></item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient android:type="radial" android:centerX="0.82" android:centerY="0.18"
+                android:gradientRadius="80%p" android:startColor="@color/z9x_glow_a" android:endColor="#001B2A4A" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient android:type="radial" android:centerX="0.12" android:centerY="0.92"
+                android:gradientRadius="70%p" android:startColor="@color/z9x_glow_b" android:endColor="#002A1B3A" />
+        </shape>
+    </item>
+</layer-list>

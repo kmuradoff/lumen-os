@@ -1,0 +1,24 @@
+# Lumen OS 1.0, lane L-PROJECTOR, Ukrainian: new strings of org.z9x.projector (W2 merges them into langs/uk.txt).
+# strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
+# strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
+# Product names stay untranslated: Lumen Home, Android TV.
+@projector/strings_recents.xml
+recents_title=Нещодавні програми
+recents_close=Закрити
+recents_close_all=Закрити всі
+recents_empty=Немає відкритих програм
+recents_now=щойно
+
+@projector/strings_home.xml
+launcher_row=Головний екран
+launcher_lumen=Lumen Home
+launcher_classic=Android TV (класичний)
+launcher_switch=Перемкнути
+launcher_confirm_classic=Буде увімкнено класичний головний екран Android TV, а Lumen Home — вимкнено. Повернутися можна тут будь-коли.
+launcher_confirm_lumen=Буде увімкнено Lumen Home, а класичний головний екран — вимкнено. Повернутися можна тут будь-коли.
+launcher_switch_failed=Не вдалося змінити головний екран
+search_unavailable=Пошук недоступний
+
+@projector/strings_power.xml
+power_menu_sleep=Сон
+power_sleep_summary=Кнопка живлення, таймер сну та бездіяльність гасять світло й переводять проєктор у сон. Натисніть кнопку живлення — він прокинеться за кілька секунд там, де ви зупинилися.

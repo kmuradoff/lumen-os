@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game": қазақша translation of values/strings_game.xml. -->
+<resources>
+    <string name="game_auto_console">Консоль үшін авторежим</string>
+    <string name="game_input_is_console">Бұл кіріс — ойын консолі</string>
+    <string name="game_cue_title">Ойын режимі қосулы</string>
+    <string name="game_chip_low_latency">Төмен кідіріс</string>
+    <string name="game_chip_hz">%1$d Гц</string>
+    <string name="game_chip_top_speed">Турбо</string>
+    <string name="game_hfr_consoles">Консольдер үшін 120 Гц</string>
+    <string name="game_unavailable">Бұл кірісте ойын баптаулары қолжетімсіз</string>
+</resources>

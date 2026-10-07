@@ -1,0 +1,24 @@
+# Lumen OS 1.0, lane L-PROJECTOR, French: new strings of org.z9x.projector (W2 merges them into langs/fr.txt).
+# strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
+# strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
+# Product names stay untranslated: Lumen Home, Android TV.
+@projector/strings_recents.xml
+recents_title=Applications récentes
+recents_close=Fermer
+recents_close_all=Tout fermer
+recents_empty=Aucune application ouverte
+recents_now=maintenant
+
+@projector/strings_home.xml
+launcher_row=Écran d'accueil
+launcher_lumen=Lumen Home
+launcher_classic=Android TV (classique)
+launcher_switch=Changer
+launcher_confirm_classic=L'écran d'accueil classique d'Android TV sera activé et Lumen Home désactivé. Retour possible ici à tout moment.
+launcher_confirm_lumen=Lumen Home sera activé et l'écran d'accueil classique désactivé. Retour possible ici à tout moment.
+launcher_switch_failed=Impossible de changer d'écran d'accueil
+search_unavailable=La recherche n'est pas disponible
+
+@projector/strings_power.xml
+power_menu_sleep=Veille
+power_sleep_summary=Le bouton marche, la minuterie de veille et l'inactivité éteignent la lumière et mettent le projecteur en veille. Un appui sur marche le réveille en quelques secondes, là où vous en étiez.

@@ -1,0 +1,31 @@
+# Lumen OS 1.0, W2 lane CEC, Turkish: strings of org.z9x.projector's HDMI-CEC page (module cec).
+# strings_cec.xml is a new file (gen.py generates values-<locale>/strings_cec.xml); keys cec_title,
+# cec_night_range, cec_dev_value, cec_dev_port are translatable="false" in the base.
+@projector/strings_cec.xml
+cec_entry=HDMI cihazları (CEC)
+cec_unavailable=HDMI-CEC kullanılamıyor
+cec_master=HDMI-CEC kontrolü
+cec_wake=Bir HDMI cihazıyla aç
+cec_night=Gece koruması
+cec_night_off=Kapalı
+cec_night_desc=Bu saatlerde HDMI cihazları projektörü açamaz.
+cec_paused=Görüntü olmadan birkaç kez açıldığı için duraklatıldı. Kumandayı kullandığınızda yeniden etkinleşir.
+cec_switch=Açıldığında cihaza geç
+cec_send_standby=HDMI cihazlarını projektörle birlikte kapat
+cec_follow_info=İzlediğiniz cihaz kapandığında projektör de uyku moduna geçer.
+cec_soundbar=Soundbar veya AV alıcı (HDMI ARC)
+cec_avr_on=Soundbar’ı projektörle birlikte aç
+cec_control=HDMI cihazlarını bu kumandayla kontrol et
+cec_internal_exit=HDMI’dan çıkarken cihaza bildir
+cec_devices=Bağlı cihazlar
+cec_no_devices=HDMI-CEC cihazı bulunamadı
+cec_state_on=açık
+cec_state_standby=bekleme
+cec_dev_unnamed=HDMI cihazı
+cec_dev_soundbar=Soundbar / AV alıcı
+cec_name_on_hdmi=HDMI’daki ad: %1$s
+cec_hdmi_options=HDMI girişi seçenekleri
+cec_unattended_title=Bir HDMI cihazı tarafından açıldı
+cec_unattended_msg=%1$s projektörü açtı ancak görüntü yok. Projektör 30 saniye içinde yeniden uyku moduna geçecek.
+cec_stay_on=Açık kalsın
+cec_device_generic=Bir HDMI cihazı

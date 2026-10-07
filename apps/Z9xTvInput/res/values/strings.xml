@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- org.z9x.tvinput strings. v6.1: English is the base language (V61_REQUIREMENTS item 6);
+     Russian is in values-ru/strings.xml, other languages come from the translate phase. -->
+<resources>
+    <string name="app_name">HDMI</string>
+    <string name="service_label">HDMI inputs</string>
+    <string name="viewer_label">HDMI</string>
+    <string name="picker_label">Input</string>
+    <string name="settings_label">HDMI settings</string>
+
+    <string name="input_label">HDMI %1$d</string>
+    <string name="input_label_arc">HDMI %1$d (ARC)</string>
+
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_no_signal">No signal</string>
+    <string name="status_no_cable">No signal: cable not connected</string>
+    <string name="status_disconnected">Source disconnected</string>
+    <string name="status_disconnected_home">Source disconnected. Returning to the home screen…</string>
+    <string name="status_failed">Cannot open HDMI</string>
+    <string name="status_busy">The HDMI input is in use by another app</string>
+    <string name="status_bad_input">Unknown HDMI input</string>
+
+    <string name="state_connected">connected</string>
+    <string name="state_standby">standby</string>
+    <string name="state_disconnected">not connected</string>
+
+    <string name="picker_title">Input</string>
+    <string name="picker_home">Home screen</string>
+    <string name="picker_settings">HDMI settings</string>
+    <string name="picker_empty">No HDMI inputs found</string>
+
+    <string name="pref_auto_switch">Switch to HDMI automatically when a device is connected</string>
+    <string name="pref_return_home">Return to the home screen when the source is disconnected</string>
+    <string name="pref_cec_otp">HDMI-CEC: switch to HDMI when the device asks (One Touch Play)</string>
+    <string name="pref_cec_control">HDMI-CEC: control the device with the remote</string>
+    <string name="pref_cec_exit">HDMI-CEC: tell the device when leaving HDMI</string>
+    <string name="pref_open_on_boot">Open HDMI at power-on if a source is connected</string>
+    <string name="settings_inputs_header">Inputs:</string>
+    <string name="settings_safe_mode">Safe mode: after repeated failures, auto-switch is off until the next restart.</string>
+
+    <string name="toast_no_input">%1$s is not available</string>
+    <string name="toast_setup_running">Finish the setup first</string>
+</resources>

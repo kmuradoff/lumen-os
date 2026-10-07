@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Opaque, dark from the first frame (the window background is drawn before any View), no
+         title, no window animations of our own: the boot animation fades straight into this. -->
+    <style name="Theme.Z9xSetup" parent="@android:style/Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@color/z9x_bg</item>
+        <item name="android:colorBackground">@color/z9x_bg</item>
+        <item name="android:colorAccent">@color/z9x_accent</item>
+        <item name="android:colorPrimary">@color/z9x_bg</item>
+        <item name="android:colorPrimaryDark">@color/z9x_bg</item>
+        <item name="android:navigationBarColor">@color/z9x_bg</item>
+        <item name="android:statusBarColor">@color/z9x_bg</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowDisablePreview">false</item>
+        <item name="android:defaultFocusHighlightEnabled">false</item>
+        <item name="android:textCursorDrawable">@null</item>
+    </style>
+</resources>

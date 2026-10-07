@@ -1,0 +1,7 @@
+# Z9X: SetupWraith is 32-bit only; do not show the deprecated-ABI warning.
+debug.wm.disable_deprecated_abi_dialog=true
+# Z9X: the XGIMI BLE remote remembers the host address used at pairing and cannot resolve
+# private addresses, so with LE privacy it never reconnects after a reboot. Use the public address.
+bluetooth.core.gap.le.privacy.enabled=false
+# Z9X: the MediaTek output wakes up slower than a UI click lasts; keep it out of standby for an hour.
+ro.audio.flinger_standbytime_ms=3600000

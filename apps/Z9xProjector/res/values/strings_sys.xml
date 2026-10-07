@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "sys" strings (owner: the sys module agent). English base; translations go to
+     values-<lang>/strings_sys.xml. Prefix every name with "sys_". -->
+<resources>
+    <string name="sys_placeholder" translatable="false">sys</string>
+</resources>

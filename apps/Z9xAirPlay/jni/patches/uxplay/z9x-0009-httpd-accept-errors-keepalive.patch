@@ -1,0 +1,154 @@
+z9x-0009: httpd survives accept()/select() errors from the network; keepalive on connections
+
+Ours (Z9xAirPlay), against FDH2/UxPlay master 3dbf7ce after z9x-0001..0008 (paths relative
+to UxPlay/lib). Applied by jni/build_native.sh inside a copy of UxPlay/lib with
+patch -p1 --fuzz=0.
+- httpd.c: the httpd thread exited for good on any accept() failure or select() error,
+  leaving the receiver advertised but deaf. Only EBADF / EINVAL / ENOTSOCK / EFAULT from
+  accept() are fatal now; network errors pending on a queued connection, EINTR, EAGAIN
+  and EMFILE-class errors (after a 100 ms pause) are retried; EINTR from select() too.
+- httpd.c: accepted connections get SO_KEEPALIVE (15 s idle, 3 x 5 s) and
+  TCP_USER_TIMEOUT 30 s, so a sender that disappears without closing its connection
+  (left Wi-Fi, battery died) is dropped even when it never sends /feedback.
+- httpd.c/h, raop.c/h: httpd_is_serving() / raop_is_serving(): 0 once the httpd thread
+  has exited (raop_is_running() stays 1 until raop_stop_httpd joins it), so the host can
+  notice a dead server and restart it.
+SPDX-License-Identifier: GPL-3.0-or-later
+
+--- a/httpd.c
++++ b/httpd.c
+@@ -286,7 +286,29 @@
+     httpd->connections[i].staging[0] = '\0';
+     httpd->connections[i].last_active = time(NULL);
+     return 0;
++}
++
++#if !defined(WIN32)
++/* z9x: a peer that vanishes (Wi-Fi lost, battery dead) is noticed by the kernel, so its
++   connection is closed even when it was idle: keepalive after 15 s of silence, 3 probes 5 s
++   apart; unacknowledged data gives up after 30 s */
++static void
++z9x_set_keepalive(httpd_t *httpd, int fd)
++{
++    int on = 1, idle = 15, intvl = 5, cnt = 3;
++    if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on)) < 0 ||
++        setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle)) < 0 ||
++        setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &intvl, sizeof(intvl)) < 0 ||
++        setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &cnt, sizeof(cnt)) < 0) {
++        logger_log(httpd->logger, LOGGER_WARNING, "httpd: could not set keepalive on socket %d: %s",
++                   fd, strerror(errno));
++    }
++#ifdef TCP_USER_TIMEOUT
++    unsigned int user_timeout_ms = 30000;
++    setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &user_timeout_ms, sizeof(user_timeout_ms));
++#endif
+ }
++#endif
+ 
+ static int
+ httpd_accept_connection(httpd_t *httpd, int server_fd, int is_ipv6)
+@@ -308,8 +330,34 @@
+         int sock_err = SOCKET_GET_ERROR();
+         logger_log(httpd->logger, LOGGER_ERR, "httpd: error in accept: %d %s",
+                    sock_err, SOCKET_ERROR_STRING(sock_err));
++#if defined(WIN32)
+         return -1;
++#else
++        /* z9x: only a broken listening socket ends the server. Linux accept() also returns
++           network errors pending on a queued connection (ENETDOWN, EPROTO, ENOPROTOOPT,
++           EHOSTDOWN, ENONET, EHOSTUNREACH, EOPNOTSUPP, ENETUNREACH; ECONNABORTED), e.g. while
++           Wi-Fi goes down or changes; those, EINTR / EAGAIN and a temporary lack of fds or
++           memory are retried. */
++        switch (sock_err) {
++        case EBADF:
++        case EINVAL:
++        case ENOTSOCK:
++        case EFAULT:
++            return -1;
++        case EMFILE:
++        case ENFILE:
++        case ENOBUFS:
++        case ENOMEM:
++            usleep(100000);  /* the listening socket stays readable: do not spin */
++            return 0;
++        default:
++            return 0;
++        }
++#endif
+     }
++#if !defined(WIN32)
++    z9x_set_keepalive(httpd, fd);
++#endif
+ 
+     local_saddrlen = sizeof(local_saddr);
+     ret = getsockname(fd, (struct sockaddr *)&local_saddr, &local_saddrlen);
+@@ -434,6 +482,9 @@
+             continue;
+         } else if (nfds_set == -1) {
+             int sock_err = SOCKET_GET_ERROR();
++            if (sock_err == SOCKET_ERRORNAME(EINTR)) {
++                continue;  /* z9x: a signal is not a reason to stop serving */
++            }
+             logger_log(httpd->logger, LOGGER_ERR,
+                        "httpd error in select: %d %s", sock_err, SOCKET_ERROR_STRING(sock_err));
+             break;
+@@ -719,6 +770,20 @@
+ }
+ 
+ int
++httpd_is_serving(httpd_t *httpd)  /* z9x */
++{
++    int running;
++
++    assert(httpd);
++
++    MUTEX_LOCK(httpd->run_mutex);
++    running = httpd->running;
++    MUTEX_UNLOCK(httpd->run_mutex);
++
++    return running;
++}
++
++int
+ httpd_is_running(httpd_t *httpd)
+ {
+     int running;
+--- a/httpd.h
++++ b/httpd.h
+@@ -50,6 +50,9 @@
+ httpd_t *httpd_init(logger_t *logger, httpd_callbacks_t *callbacks, int  nohold);
+ 
+ int httpd_is_running(httpd_t *httpd);
++/* z9x: 1 while the httpd thread serves; 0 once it has exited (httpd_is_running stays 1 until
++   httpd_stop joins it) */
++int httpd_is_serving(httpd_t *httpd);
+ 
+ int httpd_start(httpd_t *httpd, unsigned short *port);
+ void httpd_stop(httpd_t *httpd);
+--- a/raop.c
++++ b/raop.c
+@@ -821,6 +821,13 @@
+     return httpd_is_running(raop->httpd);
+ }
+ 
++int
++raop_is_serving(raop_t *raop) {  /* z9x */
++    assert(raop);
++    assert(raop->httpd);
++    return httpd_is_serving(raop->httpd);
++}
++
+ void
+ raop_set_log_level(raop_t *raop, int level) {
+     assert(raop);
+--- a/raop.h
++++ b/raop.h
+@@ -157,6 +157,8 @@
+ RAOP_API void *raop_get_callback_cls(raop_t *raop);
+ RAOP_API int raop_start_httpd(raop_t *raop, unsigned short *port);
+ RAOP_API int raop_is_running(raop_t *raop);
++/* z9x: 1 while the RTSP/HTTP server thread is serving connections */
++RAOP_API int raop_is_serving(raop_t *raop);
+ RAOP_API void raop_stop_httpd(raop_t *raop);
+ RAOP_API void raop_set_dnssd(raop_t *raop, dnssd_t *dnssd);
+ RAOP_API void raop_destroy(raop_t *raop);

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Setup-only treatment (PLAN C7: the aurora background stays a setup-only look). -->
+<resources>
+    <color name="setup_bg_bottom">#FF141A24</color>
+    <color name="setup_error">#FFF28B82</color>
+    <color name="setup_ok">#FF81C995</color>
+</resources>

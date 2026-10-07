@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game": 日本語 translation of values/strings_game.xml. -->
+<resources>
+    <string name="game_auto_console">ゲーム機の自動ゲームモード</string>
+    <string name="game_input_is_console">この入力はゲーム機</string>
+    <string name="game_cue_title">ゲームモード オン</string>
+    <string name="game_chip_low_latency">低遅延</string>
+    <string name="game_chip_hz">%1$d Hz</string>
+    <string name="game_chip_top_speed">最速</string>
+    <string name="game_hfr_consoles">ゲーム機で120Hz</string>
+    <string name="game_unavailable">この入力ではゲーム設定を使用できません</string>
+</resources>

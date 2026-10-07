@@ -1,0 +1,53 @@
+{
+  "_comment": "SPDX-License-Identifier: Apache-2.0. Lumen OS: SHA-256 of the DER of each PUBLIC AOSP test certificate (build/make/target/product/security/*.x509.pem, Lineage 21 uses them unchanged; copies in tools/sign/testcerts) -> the Lumen release key (~/.lumen-keys/<name>.pk8 + .x509.pem) that replaces it. sign_tar.py re-signs every APK whose signer is a key here, rewrites the SELinux mac_permissions certs, and fails on any APK signed by an unmapped Android test-looking certificate.",
+  "test_certs": {
+    "c8a2e9bccf597c2fb6dc66bee293fc13f2fc47ec77bc6b2b0d52c11f51192ab8": {
+      "aosp": "platform",
+      "release": "platform"
+    },
+    "28bbfe4a7b97e74681dc55c2fbb6ccb8d6c74963733f6af6ae74d8c3a6e879fd": {
+      "aosp": "shared",
+      "release": "shared"
+    },
+    "465983f7791f2abeb43ea2cbdc7f21a8260b72bc08a55c839fc1a43bc741a81e": {
+      "aosp": "media",
+      "release": "media"
+    },
+    "e1dbadce60dc080d15b58a014b0dcf9400e24de23fa00b287a5a982bfebda2ee": {
+      "aosp": "networkstack",
+      "release": "networkstack"
+    },
+    "abf21f9e2af1d881cc673fddcefa6ed9c269a437bd64b279cf45844cfd589126": {
+      "aosp": "sdk_sandbox",
+      "release": "sdk_sandbox"
+    },
+    "a6ccc500ff0e7421200eb66a7fe174ef1b00e52ca91727070cbedf061ff76c35": {
+      "aosp": "bluetooth",
+      "release": "bluetooth"
+    },
+    "fae9122a8721d6e2a196d2224dffcf773c9127e2bb956cbddb40b009192ffdfd": {
+      "aosp": "nfc",
+      "release": "nfc"
+    },
+    "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc": {
+      "aosp": "testkey",
+      "release": "releasekey"
+    }
+  },
+  "known_test_only": {
+    "ce7b2b47ae2b7552c8f92cc29124279883041fb623a5f194a82c9bf15d492aa0": "cts_uicc_2021 (CTS carrier-privilege test cert; never signs a system APK; listed so the leftover scan knows it)"
+  },
+  "presigned_known": {
+    "91370e897e35bd90a262b73e8296661819c13d5467fd30a10df848de14f56776": "MindTheGapps release key (com.mtg.* overlays such as ATVOverlay; same DN as the AOSP test keys, but a third-party key: kept as shipped)"
+  },
+  "ota_certs": [
+    "ota",
+    "ota_next"
+  ],
+  "mac_permissions": [
+    "system/etc/selinux/plat_mac_permissions.xml",
+    "system/system_ext/etc/selinux/system_ext_mac_permissions.xml",
+    "system/product/etc/selinux/product_mac_permissions.xml"
+  ],
+  "otacerts": "system/etc/security/otacerts.zip"
+}

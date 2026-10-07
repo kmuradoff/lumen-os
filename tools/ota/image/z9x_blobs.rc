@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS PUBLIC images only (image path /system/etc/init/z9x_blobs.rc; script
+# /system/etc/z9x/z9x_blobs.sh 0755, allow-list /system/etc/z9x/blobs_allow.txt 0644, plus the six
+# 0-byte placeholders listed there, label system_lib_file). See z9x_blobs.sh.
+# exec at post-fs-data: the Codec2 / media services of class main start only after it returns.
+# Cost: < 100 ms, <= 4 MiB tmpfs (about 1 MB used).
+on post-fs-data
+    exec u:r:su:s0 root root -- /system/bin/sh /system/etc/z9x/z9x_blobs.sh

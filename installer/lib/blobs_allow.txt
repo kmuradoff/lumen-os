@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS: the MediaTek Codec2 files a PUBLIC image may bind-mount from the user's own z9x_blobs
+# partition (secure video, e.g. Kinopoisk HD). Hashes only; the files themselves are proprietary
+# and are never in git or in a public image. The installer copies them from the user's own stock
+# (or Z9X/Lumen dev) system with adb and refuses any file whose sha256 is not listed here.
+# Image path /system/etc/z9x/blobs_allow.txt; installer copy installer/lib/blobs_allow.txt (identical).
+#
+# set=<id> names this exact file set (sys.z9x.blobs.set, update manifest "blobs_set").
+# <sha256> <path inside the blobs tar = image path relative to /system/>  <stock source path>
+set=mtk-c2-v61558-a
+4d848dec4b480ed37690095d67702466bb1d17e924c6af42fa7e2c50e784b0ea system_ext/lib/libc2plugin_store.so /system_ext/lib/libc2plugin_store.so
+4f6d375fb4d7c0aae92ccd901ca01e9a0a8c368c145c1c45a666a8a1c0f66d5c system_ext/lib64/libc2plugin_store.so /system_ext/lib64/libc2plugin_store.so
+e8eb86b04fa79f33739df5a417381be8125938b7692ba29270b20c1790fbeaaa system_ext/lib/vendor.mediatek.hardware.c2.info@1.0.so /system_ext/lib/vendor.mediatek.hardware.c2.info@1.0.so
+f1e325c8955b1af57dafadc77bdd09efc9f8b3cd0119b1846d606abc34385c65 system_ext/lib64/vendor.mediatek.hardware.c2.info@1.0.so /system_ext/lib64/vendor.mediatek.hardware.c2.info@1.0.so
+66e9a1676bcaa8a7dddb724eab3e5d9f4b474ea857bf09eca1ea2e2372953b83 lib/libcodec2_soft_common.so /system/lib/libcodec2_soft_common.so
+21dffeba0d3fae032d53b607d838141d58aea2e826a0a44e803d9ae73e260645 lib64/libcodec2_soft_common.so /system/lib64/libcodec2_soft_common.so

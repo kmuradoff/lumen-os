@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  org.z9x.home "Lumen Home": the Google TV style launcher of Lumen OS (author kmuradoff).
+  Install: /system/priv-app/Z9xHome/Z9xHome.apk, platform-signed (release platform key after sign_tar),
+  NOT persistent, no sharedUserId. Image files: image/privapp-permissions-z9xhome.xml,
+  image/default-permissions-z9xhome.xml, and initial-package-state stopped=false (PLAN C6).
+
+  Components marked [launcher] are switched by org.z9x.projector's LauncherSwitcher (PLAN C1) and are
+  disabled in classic mode; .search.SearchActivity, .search.VoiceSearchAlias and .search.MicUpReceiver
+  stay enabled (mic key) and cost nothing until used. HOME priority 3: Lumen Setup 10 > Lumen Home 3 >
+  tvlauncher 2, so the fallback holder is deterministic (PLAN C3).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.home"
+    android:versionCode="100"
+    android:versionName="1.0">
+
+    <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
+
+    <!-- Only org.z9x.projector (platform-signed) may start voice search and signal the mic release. -->
+    <permission android:name="org.z9x.home.permission.MIC" android:protectionLevel="signature" />
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- TvProvider -->
+    <uses-permission android:name="com.android.providers.tv.permission.READ_EPG_DATA" />
+    <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" />
+    <!-- signature|privileged against TvProvider's own cert: granted only because we are a priv-app -->
+    <uses-permission android:name="com.android.providers.tv.permission.ACCESS_ALL_EPG_DATA" />
+    <!-- dangerous; only used by the "limited" fallback when the privileged one is missing -->
+    <uses-permission android:name="android.permission.READ_TV_LISTINGS" />
+    <!-- apps, usage, search providers, CEC names -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <uses-permission android:name="android.permission.GLOBAL_SEARCH" />
+    <uses-permission android:name="android.permission.HDMI_CEC" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <!-- network: posters, weather -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- voice search client: pre-granted by default-permissions, self-grant fallback (signature) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS" />
+    <!-- our other apps (signature permissions they define) -->
+    <uses-permission android:name="org.z9x.projector.permission.SHOW_PANEL" />
+    <uses-permission android:name="org.z9x.projector.permission.SHOW_SOURCE" />
+    <uses-permission android:name="org.z9x.projector.permission.SET_LAUNCHER" />
+    <uses-permission android:name="org.z9x.projector.permission.STANDBY_STATE" />
+    <uses-permission android:name="org.z9x.tvinput.permission.HDMI_STATE" />
+    <uses-permission android:name="org.z9x.updater.permission.OTA_STATE" />
+
+    <queries>
+        <intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LEANBACK_LAUNCHER" /></intent>
+        <intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent>
+        <intent><action android:name="android.intent.action.SEARCH" /></intent>
+        <intent><action android:name="android.media.tv.action.INITIALIZE_PROGRAMS" /></intent>
+        <intent><action android:name="android.speech.RecognitionService" /></intent>
+        <package android:name="com.google.android.youtube.tv" />
+        <package android:name="com.google.android.tvlauncher" />
+        <package android:name="com.google.android.apps.mediashell" />
+        <package android:name="org.z9x.projector" />
+        <package android:name="org.z9x.tvinput" />
+        <package android:name="org.z9x.airplay" />
+        <package android:name="org.z9x.updater" />
+    </queries>
+
+    <application
+        android:name=".App"
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_launcher"
+        android:banner="@drawable/banner"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:largeHeap="false"
+        android:hardwareAccelerated="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:theme="@style/Theme.Lumen.Home">
+
+        <!-- [launcher] HOME -->
+        <activity
+            android:name=".HomeActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:clearTaskOnLaunch="true"
+            android:excludeFromRecents="true"
+            android:resumeWhilePausing="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density"
+            android:windowSoftInputMode="adjustNothing">
+            <intent-filter android:priority="3">
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- [launcher] four-diamond key: PhoneWindowManager.launchAllAppsAction sends ACTION_ALL_APPS to the
+             package of the system HOME activity. -->
+        <activity-alias
+            android:name=".AllAppsAlias"
+            android:targetActivity=".HomeActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ALL_APPS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity
+            android:name=".customize.CustomizeActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Lumen.Panel"
+            android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density"
+            android:windowSoftInputMode="adjustNothing|stateHidden" />
+
+        <!-- ALWAYS enabled (also in classic mode): search. Listening only via VoiceSearchAlias (MIC perm). -->
+        <activity
+            android:name=".search.SearchActivity"
+            android:exported="true"
+            android:taskAffinity="org.z9x.home.search"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Lumen.Search"
+            android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density"
+            android:windowSoftInputMode="adjustNothing|stateHidden">
+            <intent-filter>
+                <action android:name="android.search.action.GLOBAL_SEARCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <!-- Katniss is gone (speed spec 3.3): web / voice-web search and SEARCH_LONG_PRESS land on Lumen
+                 search too (keyboard entry, SearchManager.QUERY prefilled; never listens) instead of the
+                 TvFrameworkPackageStubs "not supported" stub or ActivityNotFoundException -->
+            <intent-filter>
+                <action android:name="android.speech.action.WEB_SEARCH" />
+                <action android:name="android.intent.action.WEB_SEARCH" />
+                <action android:name="android.intent.action.SEARCH_LONG_PRESS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity-alias
+            android:name=".search.VoiceSearchAlias"
+            android:targetActivity=".search.SearchActivity"
+            android:exported="true"
+            android:permission="org.z9x.home.permission.MIC">
+            <intent-filter>
+                <action android:name="org.z9x.home.action.VOICE_SEARCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+        <receiver
+            android:name=".search.MicUpReceiver"
+            android:exported="true"
+            android:permission="org.z9x.home.permission.MIC">
+            <intent-filter><action android:name="org.z9x.home.action.MIC_UP" /></intent-filter>
+        </receiver>
+
+        <!-- [launcher] TvProvider plumbing that tvrecommendations used to provide (SPEC D6, 5.4) -->
+        <activity
+            android:name=".tvp.BrowsableRequestActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:noHistory="true">
+            <intent-filter>
+                <action android:name="android.media.tv.action.REQUEST_CHANNEL_BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <!-- sent by system_server (TvInputManagerService); the permission keeps ordinary apps from spoofing it -->
+        <receiver
+            android:name=".tvp.BrowsableRequestReceiver"
+            android:exported="true"
+            android:permission="android.permission.MODIFY_PARENTAL_CONTROLS">
+            <intent-filter><action android:name="android.media.tv.action.CHANNEL_BROWSABLE_REQUESTED" /></intent-filter>
+        </receiver>
+        <!-- [launcher] best effort only; the authoritative diff runs at every HomeActivity start -->
+        <receiver android:name=".tvp.PackageReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

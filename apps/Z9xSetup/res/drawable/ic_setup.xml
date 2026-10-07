@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App icon: a light beam over a dot (Lumen), on the brand surface. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#FF1E232C"
+        android:pathData="M24,2a22,22 0,1 1,0 44a22,22 0,1 1,0 -44z" />
+    <path android:fillColor="#FF8AB4F8"
+        android:pathData="M24,14a4,4 0,1 1,0 8a4,4 0,1 1,0 -8z" />
+    <path android:fillColor="#FFE8EAED"
+        android:pathData="M12,30h24v2.5h-24z" />
+    <path android:fillColor="#669AA0A6"
+        android:pathData="M17,35h14v2h-14z" />
+</vector>

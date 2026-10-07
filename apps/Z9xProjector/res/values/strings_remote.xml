@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "remote" strings (owner: the remote module agent). English base; translations go to
+     values-<lang>/strings_remote.xml. Prefix every name with "remote_". -->
+<resources>
+    <string name="remote_placeholder" translatable="false">remote</string>
+
+    <!-- Notification card titles / descriptions (RemoteAutoPair). -->
+    <string name="remote_connected">Remote connected</string>
+    <string name="remote_pairing">Pairing the remote…</string>
+    <string name="remote_pair_searching">Looking for the remote…</string>
+    <!-- Key combination as used by org.z9x.btpair (pairing proven on the device). -->
+    <string name="remote_pair_hint">Hold Back and Home on the remote</string>
+    <!-- Description of the card shown when the user starts pairing (RemoteAutoPair.MANUAL_MS = 2 min). -->
+    <string name="remote_pair_window">Searching for 2 minutes</string>
+    <string name="remote_pair_not_found">Remote not found</string>
+    <string name="remote_pair_failed">Could not pair the remote</string>
+    <string name="remote_bt_off">Bluetooth is off</string>
+    <!-- Optional quick-panel / settings item that calls RemoteAutoPair.startPairing. -->
+    <string name="remote_pair_action">Pair remote</string>
+</resources>

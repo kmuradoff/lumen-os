@@ -1,0 +1,6 @@
+# Lumen OS 1.0 review fixes (2026-10-07): search keyboard + push-to-talk strings of Lumen Home.
+@home/strings.xml
+voice_hold=Halte die Mikrofontaste gedrückt, während du sprichst
+kb_title=Tastatur
+kb_get_app=Tastatur für %1$s holen
+kb_no_play=Google Play ist nicht verfügbar. Installiere eine Tastatur-App, um in deiner Sprache zu tippen.

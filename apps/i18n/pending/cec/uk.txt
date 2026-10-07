@@ -1,0 +1,31 @@
+# Lumen OS 1.0, W2 lane CEC, Ukrainian: strings of org.z9x.projector's HDMI-CEC page (module cec).
+# strings_cec.xml is a new file (gen.py generates values-<locale>/strings_cec.xml); keys cec_title,
+# cec_night_range, cec_dev_value, cec_dev_port are translatable="false" in the base.
+@projector/strings_cec.xml
+cec_entry=HDMI-пристрої (CEC)
+cec_unavailable=HDMI-CEC недоступний
+cec_master=Керування HDMI-CEC
+cec_wake=Вмикатися від HDMI-пристрою
+cec_night=Нічний захист
+cec_night_off=Вимк.
+cec_night_desc=У ці години HDMI-пристрої не можуть увімкнути проєктор.
+cec_paused=Призупинено після кількох увімкнень без зображення. Відновиться, коли ви скористаєтеся пультом.
+cec_switch=Перемикатися на пристрій, коли він вмикається
+cec_send_standby=Вимикати HDMI-пристрої разом із проєктором
+cec_follow_info=Коли пристрій, який ви дивитеся, вимикається, проєктор теж засинає.
+cec_soundbar=Саундбар або AV-ресивер (HDMI ARC)
+cec_avr_on=Вмикати саундбар разом із проєктором
+cec_control=Керувати HDMI-пристроями цим пультом
+cec_internal_exit=Повідомляти пристрій про вихід з HDMI
+cec_devices=Підключені пристрої
+cec_no_devices=HDMI-CEC-пристроїв не знайдено
+cec_state_on=увімкнено
+cec_state_standby=очікування
+cec_dev_unnamed=HDMI-пристрій
+cec_dev_soundbar=Саундбар / AV-ресивер
+cec_name_on_hdmi=Ім’я в HDMI: %1$s
+cec_hdmi_options=Налаштування HDMI-входів
+cec_unattended_title=Увімкнено HDMI-пристроєм
+cec_unattended_msg=%1$s: проєктор увімкнено, але зображення немає. Через 30 секунд проєктор знову засне.
+cec_stay_on=Не вимикати
+cec_device_generic=HDMI-пристрій

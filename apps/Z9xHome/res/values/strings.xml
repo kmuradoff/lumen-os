@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen Home (org.z9x.home), English base. Translations: apps/i18n/pending/L-HOME/<locale>.txt
+     (gen.py source format, section @home/strings.xml); W2 merges them into apps/i18n/langs.
+     No ASCII double quotes in text (gen.py rule): use typographic quotes. -->
+<resources>
+    <string name="app_name" translatable="false">Lumen Home</string>
+    <string name="lumen_home" translatable="false">Lumen Home</string>
+    <string name="about_os" translatable="false">Lumen OS · kmuradoff</string>
+
+    <!-- top bar -->
+    <string name="tab_for_you">For you</string>
+    <string name="tab_apps">Apps</string>
+    <string name="tab_inputs">Inputs</string>
+    <string name="search">Search</string>
+    <string name="inputs_button">Inputs</string>
+    <string name="settings_button">Settings</string>
+    <string name="update_ready">Update ready</string>
+
+    <!-- rows -->
+    <string name="row_your_apps">Your apps</string>
+    <string name="row_continue">Continue watching</string>
+    <string name="row_inputs">Inputs</string>
+    <string name="row_projector">Projector</string>
+    <string name="customize_home">Customize Home</string>
+    <string name="badge_live">LIVE</string>
+    <string name="badge_new">NEW</string>
+    <string name="meta_live_now">Live now</string>
+    <string name="meta_season_episode">S%1$s · E%2$s</string>
+    <string name="meta_episode">Episode %1$s</string>
+    <string name="meta_left">%1$s left</string>
+    <string name="dur_min">%1$d min</string>
+    <string name="dur_h_min">%1$d h %2$d min</string>
+
+    <!-- hero -->
+    <string name="hero_watch">Watch</string>
+    <string name="hero_continue">Continue watching</string>
+    <string name="hero_open">Open</string>
+    <string name="hero_open_app">Open %1$s</string>
+    <string name="hero_how_to_cast">How to cast</string>
+    <string name="feature_cast_title">Cast from your phone</string>
+    <string name="feature_cast_desc">Chromecast built-in and AirPlay: send videos, music and your screen from a phone, tablet or laptop.</string>
+    <string name="feature_picture_title">Perfect picture</string>
+    <string name="feature_picture_desc">Autofocus and keystone correction square up and sharpen the image wherever the projector stands.</string>
+    <string name="feature_customize_title">Your apps, your way</string>
+    <string name="feature_customize_desc">Pick your favorite apps, hide rows you do not need and choose what the home screen shows.</string>
+
+    <!-- apps -->
+    <string name="apps_favorites">Favorites</string>
+    <string name="apps_all">All apps</string>
+    <string name="apps_az">A–Z</string>
+    <string name="apps_get_more">Get more apps</string>
+
+    <!-- inputs, cast, projector tiles -->
+    <string name="inputs_connected">Connected devices</string>
+    <string name="inputs_cast">Cast to this projector</string>
+    <string name="input_connected">Connected</string>
+    <string name="input_not_connected">Not connected</string>
+    <string name="input_standby">Standby</string>
+    <string name="cast_chromecast">Chromecast built-in</string>
+    <string name="cast_airplay">AirPlay</string>
+    <string name="cast_ready">“%1$s” · Ready</string>
+    <string name="cast_device_name">This projector is called “%1$s”</string>
+    <string name="cast_steps_chromecast">Connect your phone to the same Wi‑Fi network. In YouTube or another app, tap the Cast icon and choose “%1$s”.</string>
+    <string name="cast_steps_airplay">On an iPhone, iPad or Mac on the same Wi‑Fi network, open Screen Mirroring or tap AirPlay in a video app and choose “%1$s”.</string>
+    <string name="cast_airplay_settings">AirPlay settings</string>
+    <string name="tile_autofocus">Autofocus</string>
+    <string name="tile_keystone">Keystone</string>
+    <string name="tile_picture">Picture</string>
+    <string name="tile_sound">Sound</string>
+    <string name="tile_eye">Eye protection</string>
+    <string name="tile_sleep">Sleep</string>
+    <string name="tile_sleep_timer">Sleep timer</string>
+    <string name="tile_projector_settings">Projector settings</string>
+    <string name="tile_android_settings">Android settings</string>
+
+    <!-- context menu -->
+    <string name="menu_open">Open</string>
+    <string name="menu_add_favorite">Add to favorites</string>
+    <string name="menu_remove_favorite">Remove from favorites</string>
+    <string name="menu_move">Move</string>
+    <string name="menu_hide_app">Hide app</string>
+    <string name="menu_app_info">App info</string>
+    <string name="menu_uninstall">Uninstall</string>
+    <string name="menu_remove_continue">Remove from Continue watching</string>
+    <string name="menu_hide_item">Hide</string>
+    <string name="menu_hide_channel">Hide this channel</string>
+    <string name="menu_rename">Rename</string>
+    <string name="rename_hint">Name</string>
+    <string name="rename_reset">Use the original name</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="cannot_open">This can’t be opened</string>
+
+    <!-- weather -->
+    <string name="weather">Weather</string>
+    <string name="weather_today">Today</string>
+    <string name="weather_now">Now %1$s · feels like %2$s</string>
+    <string name="weather_city">City</string>
+    <string name="weather_city_auto">Automatic (by IP address)</string>
+    <string name="weather_city_hint">Type a city</string>
+    <string name="weather_city_sub">Type the name, then pick the city from the list</string>
+    <string name="weather_units">Units</string>
+    <string name="units_auto">Automatic</string>
+    <string name="units_c">Celsius (°C)</string>
+    <string name="units_f">Fahrenheit (°F)</string>
+    <string name="weather_turn_off">Turn off weather</string>
+    <string name="weather_show">Show weather</string>
+    <string name="weather_privacy">The location comes from your IP address. Only the location is sent, never anything that identifies you. A VPN can change it; choose the city by hand then.</string>
+    <string name="weather_attribution">Weather data: Open-Meteo.com (CC BY 4.0)</string>
+
+    <!-- search and voice -->
+    <string name="search_hint">Search apps, movies, shows…</string>
+    <string name="search_apps">Apps</string>
+    <string name="search_from_apps">From your apps</string>
+    <string name="search_in">Search in</string>
+    <string name="search_recent">Recent searches</string>
+    <string name="search_clear_recent">Clear recent searches</string>
+    <string name="search_clear">Clear</string>
+    <string name="search_no_results">Nothing found. Try another word or search in an app below.</string>
+    <string name="voice_search">Voice search</string>
+    <string name="voice_listening">Listening…</string>
+    <string name="voice_nothing_heard">Didn’t catch that. Hold the mic button and speak.</string>
+    <string name="voice_unavailable">Voice search isn’t available — type instead</string>
+    <string name="voice_unavailable_hint">Type your search. Voice search was unavailable recently.</string>
+    <string name="voice_hold">Hold the mic button while you speak</string>
+    <!-- search screen: own on-screen keyboard / keyboard app (review 2026-10-07) -->
+    <string name="kb_title">Keyboard</string>
+    <!-- %1$s = the UI language, e.g. "русский" -->
+    <string name="kb_get_app">Get a keyboard for %1$s</string>
+    <string name="kb_no_play">Google Play is not available. Install a keyboard app to type in your language.</string>
+
+    <!-- customize -->
+    <string name="cz_subtitle">Choose what the home screen shows</string>
+    <string name="cz_rows">Rows</string>
+    <string name="cz_rows_sub">Turn rows of your apps on or off</string>
+    <string name="cz_rows_empty">No rows yet. Apps add their rows after you open them once.</string>
+    <string name="cz_reorder">Row order</string>
+    <string name="cz_reorder_sub">Select a row, move it up or down, select again to drop it</string>
+    <string name="cz_favorites">Your apps</string>
+    <string name="cz_favorites_sub">Apps in the first row and at the top of Apps</string>
+    <string name="cz_hidden_apps">Hidden apps</string>
+    <string name="cz_hidden_sub">Hidden apps stay installed but are not shown</string>
+    <string name="cz_spotlight">Spotlight</string>
+    <string name="cz_hero_auto">Change slides automatically</string>
+    <string name="cz_trailers">Play trailers</string>
+    <string name="cz_trailers_sub">Silent previews in the Spotlight. Uses more memory.</string>
+    <string name="cz_home_screen">Home screen</string>
+    <string name="cz_lumen_home_sub">Fast and light, made for this projector</string>
+    <string name="classic_launcher">Classic Android TV</string>
+    <string name="cz_classic_sub">Google’s launcher with its recommendations</string>
+    <string name="cz_classic_missing">The classic launcher is not installed.</string>
+    <string name="cz_classic_confirm">The classic launcher will be turned on and Lumen Home switched off. You can switch back in Projector settings › Home screen.</string>
+    <string name="cz_switch">Switch</string>
+    <string name="cz_about">About this screen</string>
+    <string name="about_version">Lumen Home %1$s</string>
+    <string name="about_content">Rows show only what your installed apps publish. No ads, no tracking.</string>
+    <string name="about_geo">Location by IP: ipwho.is, ipapi.co, ip-api.com</string>
+
+    <!-- safe mode -->
+    <string name="safe_mode_title">Lumen Home had a problem</string>
+    <string name="safe_mode_desc">The home screen stopped several times in a row, so this simple list is shown instead.</string>
+    <string name="safe_mode_retry">Try again</string>
+    <string name="safe_mode_classic">Switch to the classic launcher</string>
+</resources>

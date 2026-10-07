@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v6.3 manual keystone (module panel: ManualKeystonePanel + its quick-panel tile). English base;
+     translations: gsi/apps/i18n/langs/<locale>.txt @projector/strings_kst.xml. Reasons are the
+     description line of the Notify card (max 2 lines of about 30 characters). -->
+<resources>
+    <string name="kst_tile">Manual keystone</string>
+    <string name="kst_hint_move">Arrows: move the corner · OK: next corner</string>
+    <string name="kst_hint_more">Hold OK: reset · Back: save and exit</string>
+    <string name="kst_refused">Manual keystone unavailable</string>
+    <string name="kst_reason_not_ready">The projector service is not connected yet</string>
+    <string name="kst_reason_ak_busy">Auto keystone is running, try again later</string>
+    <string name="kst_reason_window">The adjustment screen could not be opened</string>
+    <string name="kst_reason_game">Keystone is off in the top-speed game mode on HDMI</string>
+    <string name="kst_reason_read">The current corners could not be read</string>
+    <string name="kst_reason_range">The reported corners lie outside the picture</string>
+    <string name="kst_reason_shape">The reported corners are in an unexpected order</string>
+    <string name="kst_reason_outside">The current corners are beyond the manual range</string>
+    <string name="kst_reason_check">The projector rejects every corner check</string>
+    <string name="kst_reason_hal">The projector did not answer</string>
+    <string name="kst_reason_not_applied">The projector did not apply the corner</string>
+    <string name="kst_outside_title">Reset needed first</string>
+    <string name="kst_reset_first">Hold OK to reset to the full picture first</string>
+    <string name="kst_saved">Keystone saved</string>
+    <string name="kst_hint_view">Menu: grid / over the picture / test quad</string>
+</resources>

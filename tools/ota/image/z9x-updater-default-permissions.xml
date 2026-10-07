@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     Lumen OS: /system/product/etc/default-permissions/z9x-updater.xml
+     org.z9x.updater posts "Update ready / installed / restored" notifications without asking. -->
+<exceptions>
+    <exception package="org.z9x.updater">
+        <permission name="android.permission.POST_NOTIFICATIONS" fixed="false" />
+    </exception>
+</exceptions>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS (PLAN C6): lines for L-SYSTEM to merge into overlay/v1 z9x-sysconfig.xml (single owner).
+     config_stopSystemPackagesByDefault=true on this image: without this, a fresh system package starts
+     "stopped" and its receivers (MIC_UP, browsable requests, package diff) never run. -->
+<config>
+    <initial-package-state package="org.z9x.home" stopped="false" />
+</config>

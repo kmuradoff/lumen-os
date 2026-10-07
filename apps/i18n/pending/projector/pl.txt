@@ -1,0 +1,24 @@
+# Lumen OS 1.0, lane L-PROJECTOR, Polish: new strings of org.z9x.projector (W2 merges them into langs/pl.txt).
+# strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
+# strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
+# Product names stay untranslated: Lumen Home, Android TV.
+@projector/strings_recents.xml
+recents_title=Ostatnie aplikacje
+recents_close=Zamknij
+recents_close_all=Zamknij wszystkie
+recents_empty=Brak otwartych aplikacji
+recents_now=teraz
+
+@projector/strings_home.xml
+launcher_row=Ekran główny
+launcher_lumen=Lumen Home
+launcher_classic=Android TV (klasyczny)
+launcher_switch=Przełącz
+launcher_confirm_classic=Zostanie włączony klasyczny ekran główny Android TV, a Lumen Home wyłączony. Można tu wrócić w dowolnej chwili.
+launcher_confirm_lumen=Zostanie włączony Lumen Home, a klasyczny ekran główny wyłączony. Można tu wrócić w dowolnej chwili.
+launcher_switch_failed=Nie udało się zmienić ekranu głównego
+search_unavailable=Wyszukiwanie jest niedostępne
+
+@projector/strings_power.xml
+power_menu_sleep=Uśpij
+power_sleep_summary=Przycisk zasilania, wyłącznik czasowy i bezczynność gaszą światło i usypiają projektor. Naciśnij zasilanie, a w kilka sekund wróci dokładnie tam, gdzie skończyłeś.

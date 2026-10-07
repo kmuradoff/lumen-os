@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0: home screen choice (home.LauncherSwitcher; quick panel All settings and Projector
+     settings) and the mic key's search (home.HomeSearch). English base; translations:
+     apps/i18n/pending/projector/<locale>.txt. "Lumen Home" is the product name of org.z9x.home. -->
+<resources>
+    <string name="launcher_row">Home screen</string>
+    <string name="launcher_lumen">Lumen Home</string>
+    <string name="launcher_classic">Android TV (classic)</string>
+    <string name="launcher_switch">Switch</string>
+    <string name="launcher_confirm_classic">The classic Android TV home screen will be turned on and Lumen Home turned off. You can switch back here at any time.</string>
+    <string name="launcher_confirm_lumen">Lumen Home will be turned on and the classic home screen turned off. You can switch back here at any time.</string>
+    <string name="launcher_switch_failed">Could not switch the home screen</string>
+    <string name="search_unavailable">Search is not available</string>
+</resources>

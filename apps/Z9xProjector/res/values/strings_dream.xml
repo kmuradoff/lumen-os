@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "screensaver" strings (owner: the screensaver module, package org.z9x.projector.dream).
+     English base; translations in values-<lang>/strings_dream.xml. Prefix every name with "dream_".
+     The clock and date text itself needs no strings (ICU formats per locale). -->
+<resources>
+    <string name="dream_placeholder" translatable="false">dream</string>
+
+    <!-- Screensaver name in TvSettings > Device preferences > Screen saver (next to Backdrop, Colors). -->
+    <string name="dream_label">Clock</string>
+
+    <!-- Quick panel section "Screensaver" (panel module uses these with DreamSettings). -->
+    <string name="dream_section">Screensaver</string>
+    <string name="dream_start_now">Start screensaver</string>
+    <string name="dream_enabled">Screensaver</string>
+    <string name="dream_enabled_summary">When off, the projector goes to sleep after the idle time</string>
+    <string name="dream_delay">Start after</string>
+    <string name="dream_minutes">%1$d min</string>
+    <string name="dream_hours">%1$d h</string>
+    <string name="dream_never">Never</string>
+    <string name="dream_light">Screensaver light</string>
+    <string name="dream_light_summary">Lowers the projector brightness while the screensaver runs, to save power and keep it quiet</string>
+    <string name="dream_light_lowest">Lowest</string>
+    <string name="dream_light_low">Low</string>
+    <string name="dream_light_unchanged">Unchanged</string>
+    <!-- v6.5 review: the screensaver ends in the lamp-only standby (light off, ready to wake
+         instantly), followed by the separate "Standby, then power off after" window
+         (power_standby_summary); so this is "Standby after", not "Turn off after". No "Never". -->
+    <string name="dream_sleep_after">Standby after</string>
+    <string name="dream_use_clock">Use the clock screensaver</string>
+</resources>

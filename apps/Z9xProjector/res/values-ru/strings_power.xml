@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "power": Russian. -->
+<resources>
+    <string name="power_standby_now">Сразу</string>
+    <string name="power_standby_never">Никогда</string>
+    <string name="power_quick_wake_minutes">%1$d мин</string>
+    <string name="power_quick_wake_hours">%1$d ч</string>
+    <string name="power_standby_summary">Кнопка питания, таймер сна и время бездействия гасят свет, а проектор остаётся готовым к мгновенному включению. По истечении этого времени он выключается полностью.</string>
+    <!-- v6.2 power UI (own power key, power menu, sleep timer, wake curtain; PowerMenu / SleepTimer / PowerKey) -->
+    <string name="power_menu_off">Выключить</string>
+    <string name="power_menu_restart">Перезагрузить</string>
+    <string name="power_menu_timer">Таймер сна</string>
+    <string name="power_timer_min">%1$d мин</string>
+    <string name="power_timer_hours">%1$d ч</string>
+    <string name="power_timer_hours_min">%1$d ч %2$d мин</string>
+    <string name="power_timer_custom">Своё время</string>
+    <string name="power_timer_cancel">Выключить таймер</string>
+    <string name="power_timer_left">Осталось %1$s</string>
+    <string name="power_timer_hint">Когда время выйдет, звук и свет плавно погаснут, и проектор перейдёт в режим ожидания.</string>
+    <string name="power_timer_running">Выключится в %1$s</string>
+    <string name="power_timer_started">Таймер сна: %1$s</string>
+    <string name="power_timer_canceled">Таймер сна выключен</string>
+    <string name="power_timer_warn">Выключение через минуту</string>
+    <string name="power_timer_warn_desc">Удерживайте кнопку питания, чтобы изменить таймер</string>
+    <string name="power_action_failed">Не получилось. Попробуйте ещё раз.</string>
+    <!-- end v6.2 power UI -->
+    <string name="power_menu_sleep">Сон</string>
+    <string name="power_sleep_summary">Кнопка питания, таймер сна и бездействие гасят свет и переводят проектор в сон. Нажмите кнопку питания — он проснётся за несколько секунд там же, где вы остановились.</string>
+</resources>

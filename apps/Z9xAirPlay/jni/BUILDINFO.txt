@@ -1,0 +1,51 @@
+# Z9xAirPlay native build info (written by jni/build_native.sh, do not edit)
+built: 2026-10-05T23:35:26Z
+ndk: r29 29.0.14206865 (Android (13989888, +pgo, -bolt, +lto, -mlgo, based on r563880c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 5e96669f06077099aa41290cdb4c5e6fa0f59349))
+abis: arm64-v8a armeabi-v7a  platform: android-34  stl: c++_static  max-page-size: 16384
+
+sources:
+  UxPlay      1.74  3dbf7ceee65932154e85a2f83963d53520a799fa  https://github.com/FDH2/UxPlay  GPL-3.0 (lib/ LGPL-2.1+ origins; llhttp MIT; playfair GPL-3.0)
+  libplist    2.8.0  fe3dc34dc3484006e12b403f7ceb06f0ad40b6f4  https://github.com/libimobiledevice/libplist  LGPL-2.1
+  BoringSSL   0.20260929.0  commit 427ec40cc8edc545253289232e885708c409e5ea  https://boringssl.googlesource.com/boringssl  Apache-2.0
+  ALAC        c38887c5c5e64a4b31108733bd79ca9b2496d987  https://github.com/macosforge/alac  Apache-2.0
+  glue        jni/glue (GPL-3.0-only where adapted from jqssun/android-airplay-server v0.0.31 c8defdd7, GPL-3.0; other files GPL-3.0-or-later)
+
+patches:
+  patches/alac/z9x-alac-0001-bound-partial-frame.patch  sha256 08f8bfdfa746d05aa8cea0054bd3928566f0f3aa6018e27111bddcd48be2c680
+  patches/uxplay/z9x-0001-hls-playlist-crash.patch  sha256 b06787ed6e028fb4b89a72d561e67f61b825e97ea934f33800017d1d46f79024
+  patches/uxplay/z9x-0002-hls-playlist-store-lock.patch  sha256 1fb7f7e3ff935712362672371ce1c5e9fba04ed1b78ff5337fd705141ca751e2
+  patches/uxplay/z9x-0003-hls-conn-closed-reset.patch  sha256 413c70f6f281eb5df1c3c333cf4ade49643f8a7805a4dcf63e173d702b2c35d4
+  patches/uxplay/z9x-0004-video-sender-compat.patch  sha256 11fd0a17dd3d09b0632a133f206c4c05ca92dce68d8f7a8363b52b3e828e9e25
+  patches/uxplay/z9x-0005-hls-live-playlist-refresh.patch  sha256 c8ff80e3418169e572342b7dd21c70f64d4674a30cd3776bc117ee666b87fd1f
+  patches/uxplay/z9x-0006-pin-throttle-peer-filter.patch  sha256 8d386bf48ca2e45fba2e2adfb9c13b07123329b06f9e013ffd8de0ef2aef78e2
+  patches/uxplay/z9x-0007-pin-enforce.patch  sha256 c6c02044976b081762590d7658ee686cc8fa95c3eb2e2947ec39d0983a23586a
+  patches/uxplay/z9x-0008-nohold-airplay-mirror-peer.patch  sha256 f049cbab3d740893366d6c55cc153bb559c97299c4aa5c7653618fbbca0813d5
+  patches/uxplay/z9x-0009-httpd-accept-errors-keepalive.patch  sha256 16448a2c4aea2c34a85d731711c63ee4caab71e1814af51c6b59dcc73e037ce4
+  patches/uxplay/z9x-0101-boringssl-base64.patch  sha256 4d39002288b2abc706474f2163427dc6e3490e337f373cff0cd7807a52825960
+
+downloads (official sources, recorded at download time):
+  https://codeload.github.com/google/boringssl/tar.gz/refs/tags/0.20260929.0
+    74608108 bytes  sha256 04da9ba0664e0a7f028e961c38d604f2cc6dac852a84ca0e51dc1fa051d4c8fe  -> third_party/_downloads/boringssl-0.20260929.0.tar.gz
+  https://codeload.github.com/macosforge/alac/tar.gz/c38887c5c5e64a4b31108733bd79ca9b2496d987
+    59774 bytes  sha256 98635ece42fb1c3fceb75eaa4b5164d866e09f0195b3e7ec4085f1123c5e272f  -> third_party/_downloads/alac-c38887c.tar.gz
+
+outputs:
+  lib/arm64-v8a/libz9xairplay.so  1296656 bytes  sha256 84ec4b1966e5e5440633d1f04f4e4490e3463959a982a04b8b2562bf3192586c
+    NEEDED: liblog.so libandroid.so libmediandk.so libaaudio.so libm.so libc.so libdl.so 
+    build-id: 51d88b68fe9be4e62ca30766cee0f97d99944104
+  lib/armeabi-v7a/libz9xairplay.so  918756 bytes  sha256 67bd73f88e86ba95fb1169563aa2a2ea18116b424bcf34493c5ede0e1f294ea9
+    NEEDED: liblog.so libandroid.so libmediandk.so libaaudio.so libm.so libc.so libdl.so 
+    build-id: 90ece4ded7c7c426a038d5259af2964ca6ac2c0e
+
+exported: JNI_OnLoad only. RegisterNatives class org/z9x/airplay/NativeBridge:
+  create (Lorg/z9x/airplay/NativeBridge$Callback;[BLjava/lang/String;Ljava/lang/String;IIZZZIIII)J
+  start (JI)I
+  txt (JI)[Ljava/lang/String;
+  raopServiceName (J)Ljava/lang/String;
+  setSurface (JLandroid/view/Surface;)V
+  disconnectAll (J)V
+  setOutputMuted (JZ)V
+  updatePlaybackInfo (JFFFZ)V
+  isRunning (J)Z
+  stop (J)V
+  destroy (J)V

@@ -1,0 +1,31 @@
+# Lumen OS 1.0, W2 lane CEC, Italian: strings of org.z9x.projector's HDMI-CEC page (module cec).
+# strings_cec.xml is a new file (gen.py generates values-<locale>/strings_cec.xml); keys cec_title,
+# cec_night_range, cec_dev_value, cec_dev_port are translatable="false" in the base.
+@projector/strings_cec.xml
+cec_entry=Dispositivi HDMI (CEC)
+cec_unavailable=HDMI-CEC non è disponibile
+cec_master=Controllo HDMI-CEC
+cec_wake=Accendi con un dispositivo HDMI
+cec_night=Protezione notturna
+cec_night_off=Disattivata
+cec_night_desc=In queste ore i dispositivi HDMI non possono accendere il proiettore.
+cec_paused=In pausa dopo diverse accensioni senza immagine. Si riattiva quando usi il telecomando.
+cec_switch=Passa a un dispositivo quando si accende
+cec_send_standby=Spegni i dispositivi HDMI con il proiettore
+cec_follow_info=Quando il dispositivo che stai guardando si spegne, anche il proiettore va in standby.
+cec_soundbar=Soundbar o ricevitore AV (HDMI ARC)
+cec_avr_on=Accendi la soundbar con il proiettore
+cec_control=Controlla i dispositivi HDMI con questo telecomando
+cec_internal_exit=Avvisa il dispositivo quando esci da HDMI
+cec_devices=Dispositivi collegati
+cec_no_devices=Nessun dispositivo HDMI-CEC trovato
+cec_state_on=acceso
+cec_state_standby=standby
+cec_dev_unnamed=Dispositivo HDMI
+cec_dev_soundbar=Soundbar / ricevitore AV
+cec_name_on_hdmi=Nome su HDMI: %1$s
+cec_hdmi_options=Opzioni ingressi HDMI
+cec_unattended_title=Acceso da un dispositivo HDMI
+cec_unattended_msg=%1$s ha acceso il proiettore, ma non c’è immagine. Tra 30 secondi il proiettore tornerà in standby.
+cec_stay_on=Resta acceso
+cec_device_generic=Un dispositivo HDMI

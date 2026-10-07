@@ -1,0 +1,6 @@
+# Lumen OS 1.0 review fixes (2026-10-07): search keyboard + push-to-talk strings of Lumen Home.
+@home/strings.xml
+voice_hold=Przytrzymaj przycisk mikrofonu, gdy mówisz
+kb_title=Klawiatura
+kb_get_app=Pobierz klawiaturę: %1$s
+kb_no_play=Google Play jest niedostępny. Zainstaluj aplikację klawiatury, aby pisać w swoim języku.

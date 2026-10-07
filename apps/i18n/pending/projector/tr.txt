@@ -1,0 +1,24 @@
+# Lumen OS 1.0, lane L-PROJECTOR, Turkish: new strings of org.z9x.projector (W2 merges them into langs/tr.txt).
+# strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
+# strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
+# Product names stay untranslated: Lumen Home, Android TV.
+@projector/strings_recents.xml
+recents_title=Son uygulamalar
+recents_close=Kapat
+recents_close_all=Tümünü kapat
+recents_empty=Açık uygulama yok
+recents_now=şimdi
+
+@projector/strings_home.xml
+launcher_row=Ana ekran
+launcher_lumen=Lumen Home
+launcher_classic=Android TV (klasik)
+launcher_switch=Değiştir
+launcher_confirm_classic=Klasik Android TV ana ekranı açılacak ve Lumen Home kapatılacak. İstediğiniz zaman buradan geri dönebilirsiniz.
+launcher_confirm_lumen=Lumen Home açılacak ve klasik ana ekran kapatılacak. İstediğiniz zaman buradan geri dönebilirsiniz.
+launcher_switch_failed=Ana ekran değiştirilemedi
+search_unavailable=Arama kullanılamıyor
+
+@projector/strings_power.xml
+power_menu_sleep=Uyku
+power_sleep_summary=Güç tuşu, uyku zamanlayıcısı ve hareketsizlik ışığı kapatır ve projektörü uyku moduna alır. Güç tuşuna basın, saniyeler içinde kaldığınız yerden devam eder.

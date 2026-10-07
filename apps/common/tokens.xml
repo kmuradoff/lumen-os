@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lumen OS brand tokens (PLAN.md C7: ONE palette for Lumen Home, Lumen Setup and the projector UI).
+  SINGLE SOURCE: gsi/apps/common/tokens.xml. Do not edit the copies: apps/common/sync.sh copies this file
+  to <App>/res/values/z9x_tokens.xml (resource names keep the internal z9x_ prefix in v1).
+  Values from brand/SPEC.md section 9 (the TvSettings / Google TV look), plus the few status colours
+  Lumen Home needs (live, ok, surface3, scrim glows).
+-->
+<resources>
+    <color name="z9x_black">#FF000000</color>
+    <color name="z9x_bg">#FF0F1115</color>
+    <color name="z9x_surface">#FF1E232C</color>
+    <color name="z9x_surface2">#FF263041</color>
+    <color name="z9x_surface3">#FF323C4F</color>
+    <color name="z9x_text">#FFE8EAED</color>
+    <color name="z9x_text_dim">#FF9AA0A6</color>
+    <color name="z9x_focus_text">#FF0E0E0F</color>
+    <color name="z9x_accent">#FF8AB4F8</color>
+    <color name="z9x_accent_strong">#FF3B78E7</color>
+    <color name="z9x_live">#FFEA4335</color>
+    <color name="z9x_ok">#FF34A853</color>
+    <color name="z9x_glow_a">#991B2A4A</color>
+    <color name="z9x_glow_b">#662A1B3A</color>
+</resources>

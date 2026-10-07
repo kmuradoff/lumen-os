@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X v6.1: static RRO for TvSettings (com.android.tv.settings, the TvSettingsTwoPanel APK in
+     /system_ext/priv-app). It overrides array/config_deviceSupportedHdrFormats (TvSettings
+     res/values/config.xml: {dolby_vision 1, hdr10 2, hlg 3, hdr10plus 4}, verified with aapt2 in
+     the v4 system tar) with {2, 3, 4}: the Z9X has no Dolby Vision (HWC reports dv=false, no DV
+     decoder, SKU hashkey mode 8), so Display > HDR no longer lists Dolby Vision under
+     "Unsupported formats". Never fakes DV support.
+     Install: /system/product/overlay/Z9xTvSettingsHdrOverlay.apk (0644). TvSettings declares no
+     <overlayable> (aapt2 dump overlayable prints nothing), so idmap2 accepts a preinstalled
+     product overlay whatever its signature. Lineage's auto-generated TvSettings RRO has priority 1
+     and does not touch this resource. No code, no permissions. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.overlay.tvsettings.hdr"
+    android:versionCode="61"
+    android:versionName="6.1">
+    <overlay android:targetPackage="com.android.tv.settings"
+        android:isStatic="true"
+        android:priority="10" />
+    <application android:hasCode="false" />
+</manifest>

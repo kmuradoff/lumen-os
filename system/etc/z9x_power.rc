@@ -1,0 +1,92 @@
+# Lumen OS 1.0 power: real STR (install as /system/etc/init/z9x_power.rc). Owner: lane L-PROJECTOR.
+# Only init builtins (write, setprop): nothing here can block early boot; every write to a node that
+# does not exist fails harmlessly with one init log line.
+#
+# Background (VERIFIED on the device 2026-10-06): STR works on this GSI. A short POWER press, the sleep
+# timer, the power menu's Sleep and the idle time switch the lamp off (org.z9x.projector) and put Android
+# to sleep; the SoC suspends at once. A remote key wakes it through the PM51 wake sources below, the
+# vendor power HAL injects KEY_POWER, Android wakes, the projector app lights the lamp (no boot
+# animation, the same app resumes). Every self-reboot seen that day had ONE cause: a USB host (the Mac's
+# adb) on the cable keeps a USB device controller clock on, PM51 logs "can not power down because clk is
+# enable" and resets the chip 20 s later (boot_reason 0xF1). The app therefore never suspends while a
+# USB host is connected (org.z9x.projector power/StrGate: it stays in the lamp-only standby instead).
+
+# ---- 1) PM51 wake sources (/sys/mtk_pm/wakeup_source/<name>, 1 = may wake the SoC from STR).
+# Wanted: keypad0 (projector keys), ir0 (IR remote), bt-gpio (BT remote, verified), mute-gpio (was 1 in
+# every successful STR). Off: rtc0, wifi-gpio, uart, voice, dvi0..dvi3 (HDMI +5V / plug would power the
+# projector on by itself), lan, usb, cast. cec0 follows the CEC auto-wake setting (block 2).
+# Written at 'on boot' (before anything can suspend: sys.boot_completed comes later and autosuspend
+# needs it) and again at boot completed, in case a vendor service rewrote the mask during boot.
+on boot
+    write /sys/mtk_pm/wakeup_source/keypad0 1
+    write /sys/mtk_pm/wakeup_source/ir0 1
+    write /sys/mtk_pm/wakeup_source/bt-gpio 1
+    write /sys/mtk_pm/wakeup_source/mute-gpio 1
+    write /sys/mtk_pm/wakeup_source/rtc0 0
+    write /sys/mtk_pm/wakeup_source/wifi-gpio 0
+    write /sys/mtk_pm/wakeup_source/uart 0
+    write /sys/mtk_pm/wakeup_source/voice 0
+    write /sys/mtk_pm/wakeup_source/dvi0 0
+    write /sys/mtk_pm/wakeup_source/dvi1 0
+    write /sys/mtk_pm/wakeup_source/dvi2 0
+    write /sys/mtk_pm/wakeup_source/dvi3 0
+    write /sys/mtk_pm/wakeup_source/lan 0
+    write /sys/mtk_pm/wakeup_source/usb 0
+    write /sys/mtk_pm/wakeup_source/cast 0
+    write /sys/mtk_pm/wakeup_source/cec0 0
+
+on property:sys.boot_completed=1
+    write /sys/mtk_pm/wakeup_source/keypad0 1
+    write /sys/mtk_pm/wakeup_source/ir0 1
+    write /sys/mtk_pm/wakeup_source/bt-gpio 1
+    write /sys/mtk_pm/wakeup_source/mute-gpio 1
+    write /sys/mtk_pm/wakeup_source/rtc0 0
+    write /sys/mtk_pm/wakeup_source/wifi-gpio 0
+    write /sys/mtk_pm/wakeup_source/uart 0
+    write /sys/mtk_pm/wakeup_source/voice 0
+    write /sys/mtk_pm/wakeup_source/dvi0 0
+    write /sys/mtk_pm/wakeup_source/dvi1 0
+    write /sys/mtk_pm/wakeup_source/dvi2 0
+    write /sys/mtk_pm/wakeup_source/dvi3 0
+    write /sys/mtk_pm/wakeup_source/lan 0
+    write /sys/mtk_pm/wakeup_source/usb 0
+    write /sys/mtk_pm/wakeup_source/cast 0
+
+# ---- 2) CEC auto-wake (cec0). 1 only while the CEC lane's "Turn on with HDMI device" is enabled; that
+# lane sets persist.z9x.cec_wake (1 / 0) in a later wave. Unset (Lumen OS 1.0 default) = 0 from block 1.
+# (An action with two property triggers runs whenever either one changes while both match.)
+on property:persist.z9x.cec_wake=1 && property:sys.boot_completed=1
+    write /sys/mtk_pm/wakeup_source/cec0 1
+
+on property:persist.z9x.cec_wake=0 && property:sys.boot_completed=1
+    write /sys/mtk_pm/wakeup_source/cec0 0
+
+# ---- 3) STR allowed by default (the v6.5 never-STR wakelock is gone).
+# v6.5's z9x_base.rc held the kernel wakelock z9x_no_str from post-fs. Lumen OS 1.0 must not (L-SYSTEM
+# drops that block from overlay/v1/z9x_base.rc); this releases it anyway at 'on boot', so an image that
+# still carries the old block cannot keep the SoC out of STR. Kill switch, as before:
+#   setprop persist.z9x.allow_str 0  -> wake_lock again (and the app goes back to the v6.5 lamp-only
+#                                       standby with its power-off window)
+#   setprop persist.z9x.allow_str 1  -> wake_unlock (unset = allowed)
+# 'on boot' runs after the persist properties were loaded, so the second action re-locks in that order.
+on boot
+    write /sys/power/wake_unlock z9x_no_str
+
+on boot && property:persist.z9x.allow_str=0
+    write /sys/power/wake_lock z9x_no_str
+
+on property:persist.z9x.allow_str=0
+    write /sys/power/wake_lock z9x_no_str
+
+on property:persist.z9x.allow_str=1
+    write /sys/power/wake_unlock z9x_no_str
+
+# ---- 4) USB gadget drop before STR (device test later; app side behind persist.z9x.str_usb_drop=1,
+# default 0). The app sets sys.z9x.usb_drop=1 right before it puts Android to sleep with a USB host on
+# the cable, and 0 at SCREEN_ON. init owns sys.usb.config, so the gadget goes down / comes back through
+# the platform's own init.usb*.rc triggers (configfs: UDC unbound, adbd stopped and started again).
+on property:sys.z9x.usb_drop=1
+    setprop sys.usb.config none
+
+on property:sys.z9x.usb_drop=0
+    setprop sys.usb.config ${persist.sys.usb.config}

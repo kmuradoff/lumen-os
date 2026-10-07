@@ -1,0 +1,31 @@
+# Lumen OS 1.0, W2 lane CEC, Japanese: strings of org.z9x.projector's HDMI-CEC page (module cec).
+# strings_cec.xml is a new file (gen.py generates values-<locale>/strings_cec.xml); keys cec_title,
+# cec_night_range, cec_dev_value, cec_dev_port are translatable="false" in the base.
+@projector/strings_cec.xml
+cec_entry=HDMI 機器 (CEC)
+cec_unavailable=HDMI-CEC は使用できません
+cec_master=HDMI-CEC 制御
+cec_wake=HDMI 機器で電源を入れる
+cec_night=夜間ガード
+cec_night_off=オフ
+cec_night_desc=この時間帯は、HDMI 機器からプロジェクターの電源を入れることはできません。
+cec_paused=映像のない起動が続いたため一時停止しています。リモコンを使うと再開します。
+cec_switch=機器の電源が入ったらその機器に切り替える
+cec_send_standby=プロジェクターと一緒に HDMI 機器の電源を切る
+cec_follow_info=視聴中の機器の電源が切れると、プロジェクターもスリープします。
+cec_soundbar=サウンドバーまたは AV アンプ (HDMI ARC)
+cec_avr_on=プロジェクターと一緒にサウンドバーの電源を入れる
+cec_control=このリモコンで HDMI 機器を操作する
+cec_internal_exit=HDMI から離れるときに機器に通知する
+cec_devices=接続されている機器
+cec_no_devices=HDMI-CEC 機器が見つかりません
+cec_state_on=オン
+cec_state_standby=スタンバイ
+cec_dev_unnamed=HDMI 機器
+cec_dev_soundbar=サウンドバー / AV アンプ
+cec_name_on_hdmi=HDMI での名前: %1$s
+cec_hdmi_options=HDMI 入力のオプション
+cec_unattended_title=HDMI 機器によって電源が入りました
+cec_unattended_msg=%1$s がプロジェクターの電源を入れましたが、映像がありません。30 秒後にプロジェクターは再びスリープします。
+cec_stay_on=オンのままにする
+cec_device_generic=HDMI 機器

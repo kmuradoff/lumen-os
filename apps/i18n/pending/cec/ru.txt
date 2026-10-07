@@ -1,0 +1,31 @@
+# Lumen OS 1.0, W2 lane CEC, Russian: strings of org.z9x.projector's HDMI-CEC page (module cec).
+# strings_cec.xml is a new file (gen.py generates values-<locale>/strings_cec.xml); keys cec_title,
+# cec_night_range, cec_dev_value, cec_dev_port are translatable="false" in the base.
+@projector/strings_cec.xml
+cec_entry=HDMI-устройства (CEC)
+cec_unavailable=HDMI-CEC недоступен
+cec_master=Управление HDMI-CEC
+cec_wake=Включаться от HDMI-устройства
+cec_night=Ночная защита
+cec_night_off=Выкл.
+cec_night_desc=В эти часы HDMI-устройства не могут включить проектор.
+cec_paused=Приостановлено после нескольких включений без изображения. Возобновится, когда вы воспользуетесь пультом.
+cec_switch=Переключаться на устройство при его включении
+cec_send_standby=Выключать HDMI-устройства вместе с проектором
+cec_follow_info=Когда устройство, которое вы смотрите, выключается, проектор тоже засыпает.
+cec_soundbar=Саундбар или AV-ресивер (HDMI ARC)
+cec_avr_on=Включать саундбар вместе с проектором
+cec_control=Управлять HDMI-устройствами этим пультом
+cec_internal_exit=Сообщать устройству о выходе из HDMI
+cec_devices=Подключённые устройства
+cec_no_devices=HDMI-CEC-устройства не найдены
+cec_state_on=включено
+cec_state_standby=ожидание
+cec_dev_unnamed=HDMI-устройство
+cec_dev_soundbar=Саундбар / AV-ресивер
+cec_name_on_hdmi=Имя в HDMI: %1$s
+cec_hdmi_options=Настройки HDMI-входов
+cec_unattended_title=Включён HDMI-устройством
+cec_unattended_msg=%1$s: проектор включён, но изображения нет. Через 30 секунд проектор снова уснёт.
+cec_stay_on=Не выключать
+cec_device_generic=HDMI-устройство

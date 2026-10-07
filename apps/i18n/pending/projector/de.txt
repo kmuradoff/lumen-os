@@ -1,0 +1,24 @@
+# Lumen OS 1.0, lane L-PROJECTOR, German: new strings of org.z9x.projector (W2 merges them into langs/de.txt).
+# strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
+# strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
+# Product names stay untranslated: Lumen Home, Android TV.
+@projector/strings_recents.xml
+recents_title=Zuletzt verwendete Apps
+recents_close=Schließen
+recents_close_all=Alle schließen
+recents_empty=Keine geöffneten Apps
+recents_now=jetzt
+
+@projector/strings_home.xml
+launcher_row=Startbildschirm
+launcher_lumen=Lumen Home
+launcher_classic=Android TV (klassisch)
+launcher_switch=Wechseln
+launcher_confirm_classic=Der klassische Android-TV-Startbildschirm wird aktiviert und Lumen Home deaktiviert. Hier lässt sich jederzeit zurückwechseln.
+launcher_confirm_lumen=Lumen Home wird aktiviert und der klassische Startbildschirm deaktiviert. Hier lässt sich jederzeit zurückwechseln.
+launcher_switch_failed=Startbildschirm konnte nicht gewechselt werden
+search_unavailable=Suche ist nicht verfügbar
+
+@projector/strings_power.xml
+power_menu_sleep=Ruhemodus
+power_sleep_summary=Ein/Aus-Taste, Sleep-Timer und Inaktivität schalten das Licht aus und versetzen den Projektor in den Ruhemodus. Ein Druck auf Ein/Aus weckt ihn in Sekunden, genau dort, wo er aufgehört hat.

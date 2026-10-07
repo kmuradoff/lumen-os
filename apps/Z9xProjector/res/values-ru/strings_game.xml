@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game": русский translation of values/strings_game.xml. -->
+<resources>
+    <string name="game_auto_console">Автовключение на консолях</string>
+    <string name="game_input_is_console">Этот вход — консоль</string>
+    <string name="game_cue_title">Игровой режим включён</string>
+    <string name="game_chip_low_latency">Низкая задержка</string>
+    <string name="game_chip_hz">%1$d Гц</string>
+    <string name="game_chip_top_speed">Турбо</string>
+    <string name="game_hfr_consoles">120 Гц для консолей</string>
+    <string name="game_unavailable">Игровые настройки недоступны на этом входе</string>
+</resources>

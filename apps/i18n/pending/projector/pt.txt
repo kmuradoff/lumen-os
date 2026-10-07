@@ -1,0 +1,24 @@
+# Lumen OS 1.0, lane L-PROJECTOR, Portuguese (Brazil; values-pt and values-pt-rBR): new strings of org.z9x.projector (W2 merges them into langs/pt.txt).
+# strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
+# strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
+# Product names stay untranslated: Lumen Home, Android TV.
+@projector/strings_recents.xml
+recents_title=Apps recentes
+recents_close=Fechar
+recents_close_all=Fechar tudo
+recents_empty=Nenhum app aberto
+recents_now=agora
+
+@projector/strings_home.xml
+launcher_row=Tela inicial
+launcher_lumen=Lumen Home
+launcher_classic=Android TV (clássica)
+launcher_switch=Trocar
+launcher_confirm_classic=A tela inicial clássica do Android TV será ativada e o Lumen Home desativado. É possível voltar aqui a qualquer momento.
+launcher_confirm_lumen=O Lumen Home será ativado e a tela inicial clássica desativada. É possível voltar aqui a qualquer momento.
+launcher_switch_failed=Não foi possível trocar a tela inicial
+search_unavailable=A pesquisa não está disponível
+
+@projector/strings_power.xml
+power_menu_sleep=Suspender
+power_sleep_summary=O botão liga/desliga, o timer e a inatividade apagam a luz e colocam o projetor em suspensão. Aperte liga/desliga e ele volta em segundos, exatamente de onde parou.

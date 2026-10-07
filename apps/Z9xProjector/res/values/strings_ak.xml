@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "ak" strings (owner: the ak module agent). English base; translations go to
+     values-<lang>/strings_ak.xml. Prefix every name with "ak_".
+     Texts marked "stock" are the English strings of the stock XGIMI SystemUI for the same vendor
+     result value (FocusUIV2.onProjectorFocusEventAkCall); the others are ours. -->
+<resources>
+    <string name="ak_placeholder" translatable="false">ak</string>
+
+    <!-- Caption drawn under the test pattern (stock image text: 自动梯形校正中 / 光学变焦中). -->
+    <string name="ak_caption_keystone">Auto keystone correction in progress</string>
+    <string name="ak_caption_zoom">Optical zoom in progress</string>
+
+    <!-- Event 105 result notices (FEATURE_SPEC 2.6). -->
+    <string name="ak_done">Keystone correction complete</string>
+    <string name="ak_running">Correcting the picture…</string>
+    <!-- stock auto_keystone_angle_error -->
+    <string name="ak_out_range">Correction failed, please adjust the projection position or angle</string>
+    <!-- stock ak_adv_out_range_error -->
+    <string name="ak_adv_out_range">Obstacle avoidance will cause the image to be too small, please adjust the projection angle</string>
+    <!-- stock af_camera_error -->
+    <string name="ak_camera_error">Correction failed, please adjust the projection distance or check if the camera is blocked</string>
+    <!-- stock not_support_under_hoisting -->
+    <string name="ak_upside_down">Not supported under ceiling mounting</string>
+    <!-- stock auto_keystone_mutex_error -->
+    <string name="ak_mode_mutex">Current mode does not support automatic keystone correction</string>
+    <!-- stock auto_keystone_mutex_convex -->
+    <string name="ak_convex_mutex">Automatic keystone correction is not supported in the current mode</string>
+    <!-- stock auto_keystone_into_str -->
+    <string name="ak_into_str">Device is shutting down</string>
+    <!-- stock ak_device_init_error -->
+    <string name="ak_device_init_error">Initializing camera, please try again later</string>
+    <!-- stock auto_keystone_error -->
+    <string name="ak_motor_busy">Keystone correction abnormal, please restart the device</string>
+    <!-- stock ak_not_support_21to9 -->
+    <string name="ak_21to9">Manual trapezoid correction only supported in ultra-wide mode</string>
+    <!-- stock auto_keystone_init_error -->
+    <string name="ak_init_error">Keystone correction initialization failed, please contact customer service</string>
+    <!-- stock ak_not_support_imax -->
+    <string name="ak_imax">Real-time correction not supported under IMAX source</string>
+    <!-- stock ai_location_curtain_alignment_doing -->
+    <string name="ak_curtain_doing">Positioning Screen</string>
+    <!-- stock ai_location_curtain_alignment -->
+    <string name="ak_curtain_success">Alignment Complete</string>
+    <!-- stock auto_keystone_wall_nonsupport -->
+    <string name="ak_wall_unsupported">Current wall environment does not support automatic keystone correction</string>
+    <!-- stock ak_usr_cali_success -->
+    <string name="ak_cali_success">Calibration completed</string>
+    <!-- stock ai_location_curtain_auto_alignment -->
+    <string name="ak_curtain_not_cover">Try releasing your hand for automatic screen alignment</string>
+    <!-- stock auto_keystone_large_angle -->
+    <string name="ak_large_angle">Projection angle is large, recommend front projection for better image quality</string>
+    <!-- stock sak_fail_curtain -->
+    <string name="ak_curtain_fail">Alignment failed, screen position not found</string>
+    <!-- stock ai_location_curtain_found; %1$d = seconds left (10..1) -->
+    <string name="ak_curtain_found">Move the projector backward to make the image exceed the screen edges, achieving screen alignment %1$ds</string>
+    <!-- stock sak_interrupt_curtain -->
+    <string name="ak_curtain_interrupt">Screen alignment interrupted</string>
+    <!-- stock wall_color_3d_mode_not_enable_ak -->
+    <string name="ak_wall_color_on">Please turn off wall color matching before performing automatic screen adjustment</string>
+    <!-- stock ak_usr_cali_point_error -->
+    <string name="ak_cali_point_error">Calibration failed, please adjust the projection distance or check if the camera is blocked</string>
+</resources>

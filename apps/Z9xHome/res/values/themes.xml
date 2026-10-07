@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Starting window = bg colour + the Lumen ambient glows, painted at once on HOME (SPEC 10.1). -->
+    <style name="Theme.Lumen.Home" parent="@android:style/Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@drawable/bg_start</item>
+        <item name="android:colorBackground">@color/z9x_bg</item>
+        <item name="android:windowShowWallpaper">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:colorAccent">@color/z9x_accent</item>
+        <item name="android:textColorHighlight">#663B78E7</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="android:windowSplashScreenBackground">@color/z9x_bg</item>
+        <item name="android:defaultFocusHighlightEnabled">false</item>
+    </style>
+    <!-- Search: its own task, same look. -->
+    <style name="Theme.Lumen.Search" parent="Theme.Lumen.Home" />
+    <!-- Customize: translucent over Home, the side panel brings its own scrim. -->
+    <style name="Theme.Lumen.Panel" parent="@android:style/Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:colorAccent">@color/z9x_accent</item>
+        <item name="android:defaultFocusHighlightEnabled">false</item>
+    </style>
+</resources>

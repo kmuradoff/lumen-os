@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game": беларуская translation of values/strings_game.xml. -->
+<resources>
+    <string name="game_auto_console">Аўтаматычна для кансоляў</string>
+    <string name="game_input_is_console">Гэты ўваход — кансоль</string>
+    <string name="game_cue_title">Гульнявы рэжым уключаны</string>
+    <string name="game_chip_low_latency">Нізкая затрымка</string>
+    <string name="game_chip_hz">%1$d Гц</string>
+    <string name="game_chip_top_speed">Турба</string>
+    <string name="game_hfr_consoles">120 Гц для кансоляў</string>
+    <string name="game_unavailable">Гульнявыя налады недаступныя на гэтым уваходзе</string>
+</resources>

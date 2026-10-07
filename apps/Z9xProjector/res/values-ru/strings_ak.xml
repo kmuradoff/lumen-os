@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "ak": Russian. Texts from FEATURE_SPEC 2.6 where given, the rest translated by us. -->
+<resources>
+    <string name="ak_caption_keystone">Автокоррекция трапеции…</string>
+    <string name="ak_caption_zoom">Оптический зум…</string>
+
+    <string name="ak_done">Коррекция выполнена</string>
+    <string name="ak_running">Выполняется коррекция…</string>
+    <string name="ak_out_range">Не удалось скорректировать: измените положение или угол проектора</string>
+    <string name="ak_adv_out_range">Обход препятствий сделает изображение слишком маленьким: измените угол проекции</string>
+    <string name="ak_camera_error">Не удалось скорректировать: измените расстояние или проверьте, не закрыта ли камера</string>
+    <string name="ak_upside_down">Недоступно при потолочной установке</string>
+    <string name="ak_mode_mutex">Автокоррекция недоступна в текущем режиме</string>
+    <string name="ak_convex_mutex">Автокоррекция трапеции недоступна в текущем режиме</string>
+    <string name="ak_into_str">Устройство выключается</string>
+    <string name="ak_device_init_error">Камера запускается, повторите попытку позже</string>
+    <string name="ak_motor_busy">Сбой коррекции трапеции, перезапустите устройство</string>
+    <!-- Meaning per the stock zh source (巨幕模式下仅支持手动梯形矫正): in ultra-wide mode only manual keystone works. -->
+    <string name="ak_21to9">В сверхшироком режиме доступна только ручная коррекция трапеции</string>
+    <string name="ak_init_error">Не удалось запустить коррекцию трапеции, обратитесь в службу поддержки</string>
+    <string name="ak_imax">Коррекция в реальном времени недоступна для источника IMAX</string>
+    <string name="ak_curtain_doing">Поиск экрана…</string>
+    <string name="ak_curtain_success">Выравнивание завершено</string>
+    <string name="ak_wall_unsupported">Автокоррекция трапеции невозможна на этой стене</string>
+    <string name="ak_cali_success">Калибровка завершена</string>
+    <string name="ak_curtain_not_cover">Уберите руку для автовыравнивания</string>
+    <string name="ak_large_angle">Большой угол проекции: для лучшего качества поставьте проектор прямо перед экраном</string>
+    <string name="ak_curtain_fail">Экран не найден</string>
+    <string name="ak_curtain_found">Отодвиньте проектор назад, чтобы изображение вышло за края экрана: %1$d с</string>
+    <string name="ak_curtain_interrupt">Выравнивание по экрану прервано</string>
+    <string name="ak_wall_color_on">Выключите адаптацию к цвету стены перед автовыравниванием</string>
+    <string name="ak_cali_point_error">Калибровка не удалась: измените расстояние или проверьте, не закрыта ли камера</string>
+</resources>

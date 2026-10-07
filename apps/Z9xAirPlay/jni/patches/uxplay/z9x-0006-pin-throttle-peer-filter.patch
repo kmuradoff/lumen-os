@@ -1,0 +1,225 @@
+z9x-0006: PIN brute-force throttle, per-attempt random PIN, local-peer admission hook
+
+Ours (Z9xAirPlay), against FDH2/UxPlay master 3dbf7ce after z9x-0001..0005 (paths relative
+to UxPlay/lib). Applied by jni/build_native.sh inside a copy of UxPlay/lib with
+patch -p1 --fuzz=0.
+- raop_handlers.h: 3 wrong codes lock PIN pairing for 30 s, doubling per lockout up to
+  15 min (reset by a successful pairing); refused pair-pin-start / pair-setup-pin while
+  locked. Random mode (pin < 10000): a code is issued by pair-pin-start and is valid for
+  one wrong guess or 5 min; pair-setup-pin without a pending code is refused (UxPlay used
+  "0000" in that case).
+- raop.h: optional callbacks conn_admit (refuse a TCP peer by address) and pin_lockout.
+- raop.c: throttle state in raop_t; conn_init asks conn_admit first.
+SPDX-License-Identifier: GPL-3.0-or-later
+
+--- a/raop.h
++++ b/raop.h
+@@ -123,6 +123,11 @@
+     void  (*on_video_acquire_playback_info) (void *cls, playback_info_t *playback_video);
+     float  (*on_video_playlist_remove) (void *cls);
+     void  (*get_custom_profile) (void *cls, const char **custom_profile);
++    /* z9x: optional; false refuses a new TCP connection (addresses are 4 or 16 bytes) */
++    bool  (*conn_admit) (void *cls, const unsigned char *local, int locallen,
++                         const unsigned char *remote, int remotelen);
++    /* z9x: optional; PIN pairing is locked for `seconds` after repeated wrong codes */
++    void  (*pin_lockout) (void *cls, int seconds);
+ };
+ 
+ typedef struct raop_callbacks_s raop_callbacks_t;
+--- a/raop.c
++++ b/raop.c
+@@ -77,6 +77,13 @@
+      /* for temporary storage of pin during pair-pin start */
+     unsigned short pin;
+     bool use_pin;
++
++    /* z9x: PIN pairing state and brute-force throttle (httpd thread only) */
++    bool pin_pending;              /* random mode: a pair-pin-start PIN is valid */
++    uint64_t pin_issued_ns;
++    unsigned int pin_failures;     /* wrong codes since the last lockout / success */
++    unsigned int pin_lockouts;     /* lockouts since the last success (backoff) */
++    uint64_t pin_locked_until_ns;  /* CLOCK_MONOTONIC */
+   
+      /* public key as string */
+     char pk_str[2*ED25519_KEY_SIZE + 1];
+@@ -135,6 +142,14 @@
+     char ip_address[40] = { '\0' };
+     assert(raop);
+ 
++    /* z9x: let the host refuse peers that are not on a local network */
++    if (raop->callbacks.conn_admit &&
++        !raop->callbacks.conn_admit(raop->callbacks.cls, local, locallen, remote, remotelen)) {
++        utils_ipaddress_to_string(remotelen, remote, zone_id, ip_address, (int) sizeof(ip_address));
++        logger_log(raop->logger, LOGGER_WARNING, "refusing connection from %s (not on a local network)", ip_address);
++        return NULL;
++    }
++
+     conn = calloc(1, sizeof(raop_conn_t));
+     if (!conn) {
+         return NULL;
+--- a/raop_handlers.h
++++ b/raop_handlers.h
+@@ -24,6 +24,7 @@
+ #include <stdlib.h>
+ #include <inttypes.h>
+ #include <plist/plist.h>
++#include <time.h>
+ #define AUDIO_SAMPLE_RATE 44100   /* all supported AirPlay audio format use this sample rate */
+ #define SECOND_IN_USECS 1000000
+ #define SECOND_IN_NSECS 1000000000
+@@ -248,22 +249,97 @@
+     http_response_add_header(response, "Content-Type", "application/x-apple-binary-plist");
+ }
+ 
++/* z9x: PIN brute-force throttle. Every wrong code counts (any connection, any sender);
++   Z9X_PIN_MAX_FAILURES wrong codes lock PIN pairing for 30 s, doubling per lockout up to
++   15 min; a successful pairing resets everything. In random mode (pin < 10000) a code is
++   used for at most one wrong guess: the next pair-pin-start shows a new one. */
++#define Z9X_PIN_MAX_FAILURES 3
++#define Z9X_PIN_LOCK_BASE_SECS 30u
++#define Z9X_PIN_LOCK_MAX_SECS 900u
++#define Z9X_PIN_VALID_NS (300ull * 1000000000ull)
++
++static uint64_t
++z9x_pin_now_ns(void) {
++    struct timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return (uint64_t) ts.tv_sec * 1000000000ull + (uint64_t) ts.tv_nsec;
++}
++
++/* seconds left of a lockout (0 = not locked) */
++static int
++z9x_pin_locked_secs(raop_t *raop) {
++    uint64_t now = z9x_pin_now_ns();
++    if (raop->pin_locked_until_ns <= now) {
++        return 0;
++    }
++    return (int) ((raop->pin_locked_until_ns - now + 999999999ull) / 1000000000ull);
++}
++
+ static void
++z9x_pin_failed(raop_t *raop) {
++    raop->pin_pending = false;
++    if (++raop->pin_failures < Z9X_PIN_MAX_FAILURES) {
++        return;
++    }
++    unsigned int secs = Z9X_PIN_LOCK_BASE_SECS;
++    for (unsigned int i = 0; i < raop->pin_lockouts && secs < Z9X_PIN_LOCK_MAX_SECS; i++) {
++        secs *= 2;
++    }
++    if (secs > Z9X_PIN_LOCK_MAX_SECS) {
++        secs = Z9X_PIN_LOCK_MAX_SECS;
++    }
++    raop->pin_failures = 0;
++    raop->pin_lockouts++;
++    raop->pin_locked_until_ns = z9x_pin_now_ns() + (uint64_t) secs * 1000000000ull;
++    logger_log(raop->logger, LOGGER_WARNING, "PIN pairing locked for %u s after %d wrong codes",
++               secs, Z9X_PIN_MAX_FAILURES);
++    if (raop->callbacks.pin_lockout) {
++        raop->callbacks.pin_lockout(raop->callbacks.cls, (int) secs);
++    }
++}
++
++static void
++z9x_pin_succeeded(raop_t *raop) {
++    raop->pin_pending = false;
++    raop->pin_failures = 0;
++    raop->pin_lockouts = 0;
++}
++
++static void
+ raop_handler_pairpinstart(raop_conn_t *conn,
+                           http_request_t *request, http_response_t *response,
+                           char **response_data, int *response_datalen) {
+     raop_t *raop = conn->raop;
+     logger_log(raop->logger, LOGGER_INFO, "client sent PAIR-PIN-START request");
++    int locked = z9x_pin_locked_secs(raop);
++    if (locked) {
++        logger_log(raop->logger, LOGGER_WARNING, "PAIR-PIN-START refused: PIN pairing locked for %d s", locked);
++        if (raop->callbacks.pin_lockout) {
++            raop->callbacks.pin_lockout(raop->callbacks.cls, locked);
++        }
++        http_response_init(response, "RTSP/1.0", 470, "Client Authentication Failure");
++        return;
++    }
+     int pin_4 = 0;
+     if (raop->pin > 9999) {
+         pin_4 = raop->pin % 10000;
+     } else {
+-        pin_4 = random_pin();
+-        if (pin_4 < 0) {
+-            logger_log(raop->logger, LOGGER_ERR, "Failed to generate random pin");
+-        } else {
+-            raop->pin = (unsigned short) pin_4 % 10000;
++        /* z9x: keep the code shown until it is used for a wrong guess, a pairing succeeds or
++           Z9X_PIN_VALID_NS passes, so a repeated pair-pin-start does not change it */
++        uint64_t now = z9x_pin_now_ns();
++        if (!raop->pin_pending || now - raop->pin_issued_ns > Z9X_PIN_VALID_NS) {
++            pin_4 = random_pin();
++            if (pin_4 < 0) {
++                logger_log(raop->logger, LOGGER_ERR, "Failed to generate random pin");
++                raop->pin_pending = false;
++                http_response_init(response, "RTSP/1.0", 470, "Client Authentication Failure");
++                return;
++            }
++            raop->pin = (unsigned short) (pin_4 % 10000);
++            raop->pin_pending = true;
++            raop->pin_issued_ns = now;
+         }
++        pin_4 = raop->pin % 10000;
+     }
+     char pin[6] = { '\0' };
+     snprintf(pin, 5, "%04u", pin_4);
+@@ -324,12 +400,17 @@
+         }
+         plist_mem_free(method);
+         method = NULL;
++        /* z9x: no new SRP session while locked, and in random mode only with a code from
++           pair-pin-start (UxPlay would otherwise use "0000") */
++        if (z9x_pin_locked_secs(raop) || (raop->pin < 10000 && !raop->pin_pending)) {
++            logger_log(raop->logger, LOGGER_WARNING, "pair-setup-pin refused (%s)",
++                       z9x_pin_locked_secs(raop) ? "locked" : "no pair-pin-start code");
++            plist_free(req_root_node);
++            goto authentication_failed;
++        }
+         plist_get_string_val(req_user_node, &user);
+         logger_log(raop->logger, LOGGER_INFO, "pair-setup-pin:  device_id = %s", user);
+         snprintf(pin, 6, "%04u", raop->pin % 10000);
+-        if (raop->pin < 10000) {
+-            raop->pin = 0;
+-        }
+         int ret = srp_new_user(conn->session, raop->pairing, (const char *) user,
+                                (const char *) pin, &salt, &len_salt, &pk, &len_pk);
+         plist_mem_free(user);
+@@ -350,6 +431,11 @@
+         return;
+     } else if (PLIST_IS_DATA(req_pk_node) && PLIST_IS_DATA(req_proof_node)) {
+         /* this is the second part of pair-setup-pin request */
++        if (z9x_pin_locked_secs(raop)) {  /* z9x */
++            logger_log(raop->logger, LOGGER_WARNING, "pair-setup-pin proof refused: PIN pairing locked");
++            plist_free(req_root_node);
++            goto authentication_failed;
++        }
+         char *client_pk = NULL;
+         char *client_proof = NULL;
+         unsigned char proof[64] = { '\0' };
+@@ -371,6 +457,7 @@
+         plist_free(req_root_node);
+         if (ret < 0) {
+             logger_log(raop->logger, LOGGER_ERR, "Client Authentication Failure (client proof not validated)");
++            z9x_pin_failed(raop);
+             goto authentication_failed;
+         }
+         if (logger_debug) {
+@@ -413,9 +500,11 @@
+         ret = srp_confirm_pair_setup(conn->session, raop->pairing, epk, authtag);
+         if (ret < 0) {
+             logger_log(raop->logger, LOGGER_ERR, "pair-pin-setup (step 3): client authentication failed\n");
++            z9x_pin_failed(raop);
+             goto authentication_failed;
+         } else {
+             logger_log(raop->logger, LOGGER_DEBUG, "pair-pin-setup success\n");
++            z9x_pin_succeeded(raop);
+         }
+         pairing_session_set_setup_status(conn->session);
+         plist_t res_root_node = plist_new_dict();

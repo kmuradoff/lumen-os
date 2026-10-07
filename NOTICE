@@ -1,0 +1,29 @@
+Lumen OS
+Copyright 2026 kmuradoff
+
+Lumen OS is an independent project for XGIMI projectors (first target: XGIMI Z9X). It is not
+affiliated with, endorsed by or sponsored by XGIMI, Google, MediaTek or the LineageOS project.
+"XGIMI", "Android", "Google" and "LineageOS" are trademarks of their respective owners.
+
+Licensing of this repository:
+  - Everything is licensed under the Apache License, Version 2.0 (LICENSE), unless a file or a
+    directory says otherwise.
+  - apps/Z9xAirPlay is licensed under the GNU General Public License, version 3 only
+    (apps/Z9xAirPlay/LICENSE), because it adapts code from android-airplay-server (GPL-3.0).
+  - Git submodules keep their own licences: UxPlay (GPL-3.0), libplist (LGPL-2.1),
+    Apple ALAC (Apache-2.0), BoringSSL (Apache-2.0 / ISC / OpenSSL), android-airplay-server (GPL-3.0).
+
+What this repository does NOT contain (and never will):
+  - Google applications or services (MindTheGapps): proprietary, governed by Google's terms.
+    gapps/README.md names the exact upstream file and its sha256.
+  - MediaTek or XGIMI binaries. Public images carry 0-byte placeholders; the installer copies the
+    MediaTek Codec2 files from the user's own projector (installer/lib/blobs_allow.txt lists only
+    their sha256).
+  - Signing keys. Only public certificates (keys/public, installer/certs) are published.
+
+Third-party components inside the Lumen OS system image (built from source by the respective
+projects, unmodified unless a patch in lineage/patches says otherwise):
+  - The Android Open Source Project, Apache License 2.0 and the licences listed in the image's
+    /system/etc/NOTICE.xml.gz.
+  - LineageOS 21, Apache License 2.0 (and the licences of its components).
+  - Roboto font, Apache License 2.0 (used to render the boot animation).

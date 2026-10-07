@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     org.z9x.updater English base. Translations: apps/i18n/pending/L-OTA/<locale>.txt (@updater/strings.xml),
+     merged by gen.py in W2. "Lumen OS" is a name: never translated. -->
+<resources>
+    <string name="app_name">Lumen OS update</string>
+    <string name="settings_title">Lumen OS update</string>
+
+    <!-- status -->
+    <string name="status_up_to_date">Lumen OS is up to date</string>
+    <string name="status_version">Lumen OS %1$s</string>
+    <string name="status_checked">Last checked %1$s</string>
+    <string name="status_never_checked">Not checked yet</string>
+    <string name="status_checking">Checking for updates…</string>
+    <string name="btn_check">Check for updates</string>
+    <string name="row_auto">Automatic updates</string>
+    <string name="auto_off">Off</string>
+    <string name="auto_notify">Only tell me</string>
+    <string name="auto_download">Download automatically</string>
+    <string name="auto_hint">Updates are never installed without your OK.</string>
+
+    <!-- update available -->
+    <string name="avail_title">Lumen OS %1$s is available</string>
+    <string name="avail_size_full">Full update · %1$s</string>
+    <string name="avail_size_delta">Update · %1$s</string>
+    <string name="avail_whats_new">What’s new</string>
+    <string name="btn_download_install">Download and install</string>
+    <string name="btn_install">Install now</string>
+    <string name="btn_later">Later</string>
+
+    <!-- downloading -->
+    <string name="dl_title">Downloading Lumen OS %1$s</string>
+    <string name="dl_progress">%1$s of %2$s · %3$s/s</string>
+    <plurals name="dl_eta">
+        <item quantity="one">About %d minute left</item>
+        <item quantity="other">About %d minutes left</item>
+    </plurals>
+    <string name="dl_waiting_network">Waiting for the network…</string>
+    <string name="dl_paused">Paused</string>
+    <string name="dl_verifying">Checking the download…</string>
+    <string name="btn_pause">Pause</string>
+    <string name="btn_resume">Resume</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <!-- installing -->
+    <string name="inst_title">Installing Lumen OS %1$s</string>
+    <string name="inst_hint">You can keep watching. The projector restarts only when you say so.</string>
+    <string name="inst_preparing">Preparing…</string>
+
+    <!-- ready -->
+    <string name="ready_title">Restart to finish</string>
+    <string name="ready_body">Lumen OS %1$s is installed. Restarting takes about 2 minutes.</string>
+    <string name="btn_restart_now">Restart now</string>
+    <string name="btn_restart_later">At the next restart</string>
+    <string name="btn_cancel_update">Cancel the update</string>
+    <string name="ready_later_note">The update finishes the next time the projector restarts or is switched off completely.</string>
+
+    <!-- result after the restart -->
+    <string name="done_ok_title">Updated to Lumen OS %1$s</string>
+    <string name="done_rollback_title">The update could not start</string>
+    <string name="done_rollback_body">Lumen OS %1$s was restored. Nothing was lost.</string>
+
+    <!-- blocked by a preflight check -->
+    <string name="blk_vbmeta_title">One-time step needed for updates</string>
+    <string name="blk_vbmeta_body">Before the first update, the other system slot (%1$s) must be prepared once with a computer, as the installation guide describes (step vbmeta). Scan the code to open the guide.</string>
+    <string name="blk_vbmeta_unknown">The state of the other system slot could not be read. Restart the projector and try again.</string>
+    <string name="blk_merge">Finishing the previous update…</string>
+    <string name="blk_merge_body">This takes a few minutes in the background. You can keep watching.</string>
+    <string name="blk_pending">This version is still being checked after the last update. Try again in a few minutes.</string>
+    <string name="blk_vendor">This update is not made for this projector’s firmware (%1$s).</string>
+    <string name="blk_min_version">This update needs Lumen OS %1$s or newer. Please use the computer installer.</string>
+    <string name="blk_thermal">The projector is too warm right now. Try again later.</string>
+    <string name="blk_space">Not enough free space: %1$s needed.</string>
+    <string name="blk_engine">The update service is not available. Restart the projector and try again.</string>
+    <string name="warn_blobs">Protected-video components are missing on this projector. The update works, but protected video needs the blobs step of the computer installer.</string>
+
+    <!-- one-time consent: XGIMI firmware copied unchanged to the other slot -->
+    <string name="consent_title">Allow the firmware copy?</string>
+    <string name="consent_body">To install into the other system slot (%1$s), the update copies the projector’s XGIMI firmware (boot, bootloader, display and audio firmware, configuration) unchanged from the running slot (%2$s). Nothing is modified, decrypted or sent anywhere, and vbmeta is never written. XGIMI’s own updates do the same. Calibration and settings partitions are never touched.</string>
+    <string name="consent_allow">Allow and install</string>
+    <string name="consent_deny">Not now</string>
+
+    <!-- errors -->
+    <string name="err_network">No connection to the update server.</string>
+    <string name="err_signature">The update information is not signed by Lumen OS and was ignored.</string>
+    <string name="err_hash">The download was damaged and will be downloaded again.</string>
+    <string name="err_install">The update could not be installed (code %1$d). The current version keeps working.</string>
+    <string name="err_space_device">Not enough space on the projector for the update.</string>
+    <string name="btn_retry">Try again</string>
+
+    <!-- USB stick -->
+    <string name="row_usb">Install from a USB stick</string>
+    <string name="usb_none">No Lumen OS update was found on a USB stick.</string>
+
+    <!-- about -->
+    <string name="about_header">About</string>
+    <string name="about_version">Version</string>
+    <string name="about_build">Build</string>
+    <string name="about_author">Author</string>
+    <string name="about_project">Project page</string>
+    <string name="about_licenses">Licenses</string>
+    <string name="about_scan">Scan with a phone to open</string>
+    <string name="lic_lumen">Lumen OS: Apache License 2.0. The AirPlay receiver: GNU GPL 3.0.</string>
+    <string name="lic_aosp">Android Open Source Project and LineageOS: Apache License 2.0 and the licenses of their components.</string>
+    <string name="lic_gapps">Google apps and services: Google’s own terms. Not part of Lumen OS.</string>
+    <string name="lic_thirdparty">UxPlay (GPL 3.0), libplist (LGPL 2.1), Apple ALAC (Apache 2.0), BoringSSL, Roboto font (Apache 2.0).</string>
+    <string name="lic_full">Full license texts and source code: the project page.</string>
+    <string name="lic_disclaimer">Lumen OS is an independent project and is not affiliated with XGIMI, Google or LineageOS.</string>
+
+    <!-- notifications -->
+    <string name="ch_updates">System updates</string>
+    <string name="n_available_body">Open to download and install.</string>
+    <string name="n_ready_title">Restart to finish the update</string>
+</resources>

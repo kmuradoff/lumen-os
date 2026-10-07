@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  org.z9x.tvinput: clean-room HDMI input for the Z9X Android TV image (LineageOS 21 TV GSI).
+  Contains no XGIMI code and makes no IGmpf / vendor HwBinder calls; it talks only to
+  system_server (TvInputManager, HdmiControlManager).
+
+  Install: /system/app/Z9xTvInput/Z9xTvInput.apk (dir 0755, apk 0644, system_file). NOT priv-app.
+  Signed by gsi/apps/build_apk.sh with the image's platform key, so every permission below is
+  granted through the "signature" part of its protectionLevel (checked in Lineage 21
+  frameworks/base/core/res/AndroidManifest.xml). No privapp-permissions XML is needed.
+  No android:sharedUserId. No launcher entry at all (v6.2: no CATEGORY_LAUNCHER, no LEANBACK_LAUNCHER).
+  versionCode/versionName come from build_apk.sh (v6.1: VERSION_CODE=61 VERSION_NAME=6.1; v6.2: 62 / 6.2;
+  v6.5: VERSION_CODE=65 VERSION_NAME=6.5); do not add them here, aapt2 never overrides manifest values.
+  v6.1: the Source key (KEYCODE_TV_INPUT) belongs to org.z9x.projector (input overlay); this app
+  keeps the direct HDMI 1 / HDMI 2 keys and the viewer that the overlay opens.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.tvinput">
+
+    <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
+
+    <!-- v6.1: org.z9x.projector asks HdmiStateProvider whether an HDMI session is open. -->
+    <permission
+        android:name="org.z9x.tvinput.permission.HDMI_STATE"
+        android:protectionLevel="signature" />
+    <!-- v6.1: MENU in the HDMI viewer opens org.z9x.projector's Source overlay (its receiver). -->
+    <uses-permission android:name="org.z9x.projector.permission.SHOW_SOURCE" />
+    <!-- v6.1: messages go to org.z9x.projector's shared card (Toast only as a fallback). -->
+    <uses-permission android:name="org.z9x.projector.permission.NOTIFY" />
+    <!-- v6.2 (game module of org.z9x.projector): HDMI session / CEC events to its
+         game.HdmiEventReceiver (ProjectorEvents). Signature permission. -->
+    <uses-permission android:name="org.z9x.projector.permission.HDMI_EVENT" />
+    <!-- v6.5: org.z9x.projector's lamp-only standby state (its StandbyStateProvider call() and the
+         STANDBY_CHANGED broadcast). Signature permission. HdmiWatcher treats standby like "screen
+         is off": no automatic switch on plug / HPD / CEC Active Source / open on boot. -->
+    <uses-permission android:name="org.z9x.projector.permission.STANDBY_STATE" />
+
+    <!-- signature|privileged|vendorPrivileged (core manifest :2765).
+         getHardwareList / acquireTvInputHardware / releaseTvInputHardware, and
+         TvInputManagerService only treats our TIS as a hardware TIS when the package holds it. -->
+    <uses-permission android:name="android.permission.TV_INPUT_HARDWARE" />
+    <!-- signature|privileged|vendorPrivileged (:2048). HdmiControlManager / HdmiTvClient:
+         getPortInfo, getConnectedDevices, portSelect, selectDevice, sendKeyEvent,
+         setInputChangeListener (CEC One Touch Play). -->
+    <uses-permission android:name="android.permission.HDMI_CEC" />
+    <!-- signature|privileged (:5428). TvView calls setMain() automatically only when the app
+         holds it -> Session.onSetMain(true) -> CEC routing to the port. -->
+    <uses-permission android:name="android.permission.CHANGE_HDMI_CEC_ACTIVE_SOURCE" />
+    <!-- signature|privileged|vendorPrivileged|oem|verifier|role (:3972). Belt and braces for the
+         auto-switch / key launches; the persistent process is already allowed by
+         BackgroundActivityStartController (procState <= PERSISTENT_UI). -->
+    <uses-permission android:name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+
+    <!-- Package visibility (targetSdk 34): AppsFilter has no platform-signature exemption, so
+         without this resolveActivity()/getPackageInfo() on tvlauncher would come back empty.
+         startActivity() itself is not filtered (resolveForStart). -->
+    <queries>
+        <package android:name="com.google.android.tvlauncher" />
+        <!-- v6.1: GlobalKeyReceiver checks whether org.z9x.projector/.KeyReceiver (the owner of
+             the Source key) exists before using its own last-resort Source fallback. -->
+        <package android:name="org.z9x.projector" />
+        <intent>
+            <action android:name="com.android.tv.action.VIEW_INPUTS" />
+        </intent>
+    </queries>
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.software.live_tv" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <application
+        android:name=".Z9xTvInputApp"
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_launcher"
+        android:banner="@drawable/banner"
+        android:persistent="true"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:usesNonSdkApi="true"
+        android:directBootAware="false">
+
+        <!-- One hardware TIS for every TvInputHardwareInfo of type HDMI reported by the vendor
+             TV input HAL (deviceId == portId == 1 / 2). Input ids:
+             org.z9x.tvinput/.HdmiInputService/HW1 and .../HW2 -->
+        <service
+            android:name=".HdmiInputService"
+            android:label="@string/service_label"
+            android:permission="android.permission.BIND_TV_INPUT"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.tv.TvInputService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.media.tv.input"
+                android:resource="@xml/tvinputservice" />
+        </service>
+
+        <!-- Full-screen HDMI viewer (TvView). The Google TV launcher fires
+             new Intent(ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput(id)) + NEW_TASK.
+             TvProvider.getType(passthrough/*) = vnd.android.cursor.item/channel -> filter 1;
+             filter 2 is the fallback when the type cannot be resolved. -->
+        <activity
+            android:name=".PassthroughActivity"
+            android:label="@string/viewer_label"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
+            android:resizeableActivity="false"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.android.cursor.item/channel"
+                      android:scheme="content"
+                      android:host="android.media.tv"
+                      android:pathPrefix="/passthrough" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content"
+                      android:host="android.media.tv"
+                      android:pathPrefix="/passthrough" />
+            </intent-filter>
+        </activity>
+
+        <!-- v6.1: "is an HDMI session open?" for org.z9x.projector (call() only; signature
+             permission checked in call()). -->
+        <provider
+            android:name=".HdmiStateProvider"
+            android:authorities="org.z9x.tvinput.hdmistate"
+            android:exported="true"
+            android:permission="org.z9x.tvinput.permission.HDMI_STATE" />
+
+        <!-- Own source list: fallback for MENU inside the viewer when org.z9x.projector is missing
+             (v6.1: MENU opens the projector's Source overlay) and the last-resort SOURCE-key
+             fallback when org.z9x.projector is missing. Started only from this app
+             (HdmiInputs.openPicker). v6.2 (V62_REQUIREMENTS 4): no launcher tile any more; inputs
+             are reached through the Source key and the quick panel's Input tile. Own task affinity
+             so that opening it does not bring a stopped viewer back to the front. -->
+        <activity
+            android:name=".InputPickerActivity"
+            android:label="@string/picker_label"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity="org.z9x.tvinput.picker"
+            android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" />
+
+        <!-- v6.2 (panel module, V62_REQUIREMENTS 4): with the picker's launcher tile gone, the HDMI
+             settings are opened from org.z9x.projector's quick panel (All settings > HDMI settings).
+             Exported only to platform-signed apps that hold our signature permission HDMI_STATE. -->
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/settings_label"
+            android:exported="true"
+            android:permission="org.z9x.tvinput.permission.HDMI_STATE"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+
+        <!-- Framework global keys (res/xml/global_keys.xml in the static RRO on "android")
+             deliver KEYCODE_TV_INPUT_HDMI_1 / _2 here as ACTION_GLOBAL_BUTTON (v6.1: KEYCODE_TV_INPUT
+             goes to org.z9x.projector/.KeyReceiver instead).
+             system_server (uid 1000) may deliver to a non-exported receiver, so no intent-filter;
+             onReceive checks the action. Component name must stay org.z9x.tvinput/.GlobalKeyReceiver. -->
+        <receiver
+            android:name=".GlobalKeyReceiver"
+            android:exported="false" />
+
+        <!-- Compatibility alias: the remote-topic RRO draft (v6/remote/global_keys.xml) points the
+             same keys at org.z9x.tvinput/.KeyReceiver. Same code; harmless if unused. -->
+        <receiver
+            android:name=".KeyReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

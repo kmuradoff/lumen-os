@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game": العربية translation of values/strings_game.xml. -->
+<resources>
+    <string name="game_auto_console">تلقائي لأجهزة الألعاب</string>
+    <string name="game_input_is_console">هذا الإدخال جهاز ألعاب</string>
+    <string name="game_cue_title">وضع اللعب مفعّل</string>
+    <string name="game_chip_low_latency">زمن استجابة منخفض</string>
+    <string name="game_chip_hz">%1$d هرتز</string>
+    <string name="game_chip_top_speed">توربو</string>
+    <string name="game_hfr_consoles">120 هرتز لأجهزة الألعاب</string>
+    <string name="game_unavailable">إعدادات الألعاب غير متاحة على هذا الإدخال</string>
+</resources>

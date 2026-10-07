@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  org.z9x.projector ("Projector") of Lumen OS 1.0 for XGIMI projectors (author kmuradoff; package and
+  property names keep the internal z9x prefix in v1).
+  Install: /system/app/Z9xProjector/Z9xProjector.apk (NOT priv-app), platform-signed, no sharedUserId.
+  versionCode/versionName come from build_apk.sh (Lumen OS 1.0: VERSION_CODE=100 VERSION_NAME=1.0).
+
+  Permissions: protection levels checked in the Lineage 21 source
+  (~/lineage/frameworks/base/core/res/AndroidManifest.xml on the build laptop, 2026-10-03).
+  A platform-signed APK gets every "signature" permission also from /system/app, so no
+  privapp-permissions XML is needed and no privileged-only permission is requested.
+  The two "dangerous" (runtime) ones are pre-granted by /system/product/etc/default-permissions/z9x-projector.xml
+  (V61_IMAGE_PLAN.md) and self-granted at runtime as a fallback (GRANT_RUNTIME_PERMISSIONS).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.projector">
+
+    <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
+
+    <!-- v6.1: org.z9x.tvinput (MENU in its HDMI viewer) asks us to show the Source overlay.
+         signature: only platform-signed apps of this image may send it. -->
+    <permission
+        android:name="org.z9x.projector.permission.SHOW_SOURCE"
+        android:protectionLevel="signature" />
+    <!-- v6.1: other apps of this image (org.z9x.tvinput) show their messages on our shared card
+         (ui.NotifyRequestReceiver). Signature: only platform-signed apps may send it. -->
+    <permission
+        android:name="org.z9x.projector.permission.NOTIFY"
+        android:protectionLevel="signature" />
+    <!-- v6.1: ask org.z9x.tvinput whether an HDMI TIF session is open (its HdmiStateProvider). -->
+    <uses-permission android:name="org.z9x.tvinput.permission.HDMI_STATE" />
+    <!-- ===== v6.2 module "game" (org.z9x.projector.game) BEGIN =====
+         org.z9x.tvinput tells game.HdmiEventReceiver when an HDMI session starts/stops (signature).
+         HDMI_CEC (signature|privileged|vendorPrivileged, granted by the platform signature):
+         HdmiControlManager.getConnectedDevices / addHotplugEventListener (console recognition). -->
+    <permission
+        android:name="org.z9x.projector.permission.HDMI_EVENT"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="android.permission.HDMI_CEC" />
+    <!-- ===== v6.2 module "game" END ===== -->
+    <!-- v6.5: lamp-only standby state (power.StandbyController broadcasts
+         org.z9x.projector.action.STANDBY_CHANGED, extra "standby", to holders only; review:
+         power.StandbyStateProvider answers the current value). Signature: only platform-signed apps of
+         this image (org.z9x.tvinput 6.5) receive it. -->
+    <permission
+        android:name="org.z9x.projector.permission.STANDBY_STATE"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="org.z9x.projector.permission.STANDBY_STATE" />
+
+    <!-- ===== Lumen OS 1.0 (PLAN C1, C5, C16) BEGIN: own signature permissions =====
+         SET_LAUNCHER: Lumen Home's Customize asks home.LauncherSwitcher to switch the home screen.
+         SHOW_PANEL: Lumen Home's projector shortcut tiles (home.PanelRequestReceiver).
+         SETUP_BRIDGE: Lumen Setup / Lumen Home call setup.SetupBridgeProvider and receive SETUP_STATE.
+         OTA_STATE: the updater reports "installing" / "restart when turned off" (power.OtaStateReceiver).
+         Signature: only platform-signed apps of this image. -->
+    <permission
+        android:name="org.z9x.projector.permission.SET_LAUNCHER"
+        android:protectionLevel="signature" />
+    <permission
+        android:name="org.z9x.projector.permission.SHOW_PANEL"
+        android:protectionLevel="signature" />
+    <permission
+        android:name="org.z9x.projector.permission.SETUP_BRIDGE"
+        android:protectionLevel="signature" />
+    <permission
+        android:name="org.z9x.projector.permission.OTA_STATE"
+        android:protectionLevel="signature" />
+    <!-- Lumen Home's MIC permission (signature, defined by org.z9x.home): start its VoiceSearchAlias and
+         send MIC_UP (home.HomeSearch, mic key). -->
+    <uses-permission android:name="org.z9x.home.permission.MIC" />
+    <!-- PLAN C5 union (protection levels: Lineage 21 frameworks/base/core/res/AndroidManifest.xml; every
+         one is "signature|...", so the platform signature grants it from /system/app too):
+         MANAGE_ROLE_HOLDERS (signature|installer|module): ROLE_HOME switch (LauncherSwitcher), ASSISTANT
+           role for Recents (MemoryGuard.ensureAssistant).
+         CHANGE_COMPONENT_ENABLED_STATE (signature|privileged): launcher sets, first-boot APEX disables.
+         REAL_GET_TASKS (signature|privileged), START_TASKS_FROM_RECENTS (signature|privileged|recents),
+         REMOVE_TASKS (signature|recents|role), READ_FRAME_BUFFER (signature|recents): Recent apps.
+         FORCE_STOP_PACKAGES (signature|privileged), KILL_BACKGROUND_PROCESSES (normal): Close / Close all.
+         NETWORK_SETTINGS (signature): the VPN owner uid for the Close protected set. -->
+    <uses-permission android:name="android.permission.MANAGE_ROLE_HOLDERS" />
+    <uses-permission android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE" />
+    <uses-permission android:name="android.permission.REAL_GET_TASKS" />
+    <uses-permission android:name="android.permission.START_TASKS_FROM_RECENTS" />
+    <uses-permission android:name="android.permission.REMOVE_TASKS" />
+    <uses-permission android:name="android.permission.READ_FRAME_BUFFER" />
+    <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+    <uses-permission android:name="android.permission.NETWORK_SETTINGS" />
+    <!-- ===== Lumen OS 1.0 END ===== -->
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+
+    <!-- normal -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- v6.3.1 audio.AudioPathReporter: AudioManager.getDevicesForAttributes /
+         addOnDevicesForAttributesChangedListener (media routing) need MODIFY_AUDIO_ROUTING or
+         QUERY_AUDIO_STATE; QUERY_AUDIO_STATE = signature|role (granted by the platform signature). -->
+    <uses-permission android:name="android.permission.QUERY_AUDIO_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- signature|privileged|vendorPrivileged|oem|verifier|role: launches from the key receiver -->
+    <uses-permission android:name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+    <!-- signature|privileged: ambient key -->
+    <uses-permission android:name="android.permission.WRITE_DREAM_STATE" />
+    <uses-permission android:name="android.permission.READ_DREAM_STATE" />
+
+    <!-- Overlay windows (ui.OverlayHost): quick panel, source chooser, AK overlay, notification card.
+         SYSTEM_ALERT_WINDOW = signature|setup|appop|installer|pre23|development (granted live).
+         INTERNAL_SYSTEM_WINDOW = signature|module|recents: keeps our TYPE_APPLICATION_OVERLAY windows
+         visible when another window sets HIDE_NON_SYSTEM_OVERLAY_WINDOWS (WindowState
+         setForceHideNonSystemOverlayWindowIfNeeded), which the AK overlay must survive. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.INTERNAL_SYSTEM_WINDOW" />
+
+    <!-- module sys: Settings.Global restricted_networking_mode=0 (signature|privileged|development|
+         role|installer), Settings.System sound_effects_enabled / screen_off_timeout
+         (signature|preinstalled|appop|pre23|role), stale uid network policies (signature). -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.MANAGE_NETWORK_POLICY" />
+
+    <!-- module power: PowerManager.goToSleep / wakeUp / isInteractive helpers (signature|role).
+         NOT used for forceSuspend (V61 decision). -->
+    <uses-permission android:name="android.permission.DEVICE_POWER" />
+    <!-- ===== v6.2 module "power" BEGIN =====
+         Power menu "Power off" / "Restart": PowerManager.shutdown / reboot (PowerManagerService
+         enforces REBOOT, :6817 / :6882). REBOOT = signature|privileged: granted by the platform
+         signature also from /system/app (like WRITE_DREAM_STATE, granted live), not privileged-only. -->
+    <uses-permission android:name="android.permission.REBOOT" />
+    <!-- ===== v6.2 module "power" END ===== -->
+
+    <!-- module remote: BLE remote auto-pairing (see RemoteAutoPair).
+         BLUETOOTH_SCAN / BLUETOOTH_CONNECT = dangerous (runtime; pre-grant + self-grant fallback),
+         BLUETOOTH_PRIVILEGED = signature|privileged (bond without the consent dialog),
+         GRANT_RUNTIME_PERMISSIONS = signature|installer|verifier (self-grant of the two above only). -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
+    <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS" />
+
+    <!-- module panel (AI picture scene hints, optional): foreground app via UsageStatsManager
+         (signature|privileged|development|appop|retailDemo). -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <!-- ===== v6.4 AI sound (audio.AiSoundEngine) BEGIN =====
+         Protection levels checked in the Lineage 21 source (frameworks/base/core/res/AndroidManifest.xml,
+         2026-10-06); the platform signature grants the first two from /system/app as well.
+         MODIFY_AUDIO_ROUTING (signature|privileged|role): un-anonymised AudioPlaybackConfiguration
+           (player uid) for the playback guard and the Chromecast content type.
+         MEDIA_CONTENT_CONTROL (signature|privileged): MediaSessionManager.getActiveSessions(null) to
+           tell AirPlay audio from AirPlay video.
+         QUERY_ALL_PACKAGES (normal): ApplicationInfo.category / uid of any foreground app. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_ROUTING" />
+    <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <!-- ===== v6.4 AI sound END ===== -->
+
+    <!-- Package visibility for the remote app keys (launch + app picker). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <package android:name="com.google.android.youtube.tv" />
+        <package android:name="com.teamsmart.videomanager.tv" />
+        <package android:name="com.android.vending" />
+        <!-- v6.1 source overlay: HDMI inputs of org.z9x.tvinput, Home, TV Settings (gear long press). -->
+        <package android:name="org.z9x.tvinput" />
+        <package android:name="com.android.tv.settings" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".App"
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_projector"
+        android:banner="@drawable/banner"
+        android:persistent="true"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Z9x.Settings">
+
+        <!-- v6.2 (V62_REQUIREMENTS 4): no launcher tile any more. Opened only from inside the app
+             (quick panel > All settings > Projector settings, Hal.openProjectorSettings). -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:banner="@drawable/banner"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.Z9x.Settings" />
+
+        <activity
+            android:name=".ManualFocusActivity"
+            android:exported="false"
+            android:label="@string/act_manual_focus"
+            android:theme="@style/Theme.Z9x.Overlay"
+            android:taskAffinity="org.z9x.projector.manualfocus"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTask" />
+
+        <!-- v6.5 lamp-only standby screen (power.StandbyActivity): opaque black, takes the keys, started
+             only by StandbyController. Own task, never in recents, no animations. -->
+        <activity
+            android:name=".power.StandbyActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Z9x.Standby"
+            android:taskAffinity="org.z9x.projector.standby"
+            android:launchMode="singleInstance"
+            android:excludeFromRecents="true"
+            android:noHistory="false"
+            android:resizeableActivity="true"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection" />
+
+        <!-- Lumen OS 1.0: Recent apps on long-press HOME (speed spec 6, PLAN C21). The ASSIST target of the
+             ASSISTANT role (invocation_type 5 = long-press HOME shows Recents; any other assist forwards
+             to Lumen Home search). Translucent (the app just left stays visible for its thumbnail), own
+             task, never in recents, no history, no relaunch on config changes. -->
+        <activity
+            android:name=".recents.RecentsActivity"
+            android:exported="true"
+            android:label="@string/recents_title"
+            android:theme="@style/Theme.Z9x.Recents"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:resizeableActivity="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection">
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Lumen OS 1.0 SetupBridge (setup/bridge_api.md): call() only, named methods, the signature
+             permission is checked in call(). -->
+        <provider
+            android:name=".setup.SetupBridgeProvider"
+            android:authorities="org.z9x.projector.setupbridge"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.SETUP_BRIDGE" />
+
+        <!-- Lumen OS 1.0: home screen switch (Lumen Home Customize), projector shortcut tiles, updater state. -->
+        <receiver
+            android:name=".home.LauncherRequestReceiver"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.SET_LAUNCHER">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.SET_LAUNCHER" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".home.PanelRequestReceiver"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.SHOW_PANEL">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.SHOW_PANEL" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".power.OtaStateReceiver"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.OTA_STATE">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.OTA_STATE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- v6.5 review: "is the lamp-only standby active?" for org.z9x.tvinput (call() only, method
+             standby_state; the signature permission STANDBY_STATE is checked in call()). -->
+        <provider
+            android:name=".power.StandbyStateProvider"
+            android:authorities="org.z9x.projector.standbystate"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.STANDBY_STATE" />
+
+        <!-- GLOBAL_BUTTON from PhoneWindowManager (explicit, protected): no intent-filter. -->
+        <receiver
+            android:name=".KeyReceiver"
+            android:exported="false" />
+
+        <!-- Source overlay on request of org.z9x.tvinput (signature permission, see above). -->
+        <receiver
+            android:name=".source.SourceRequestReceiver"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.SHOW_SOURCE">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.SHOW_SOURCE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Shared notification card on request of org.z9x.tvinput (signature permission). -->
+        <receiver
+            android:name=".ui.NotifyRequestReceiver"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.NOTIFY">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.NOTIFY" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ===== v6.2 module "game" BEGIN: HDMI session / CEC events from org.z9x.tvinput ===== -->
+        <receiver
+            android:name=".game.HdmiEventReceiver"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.HDMI_EVENT">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.HDMI_EVENT" />
+            </intent-filter>
+        </receiver>
+        <!-- ===== v6.2 module "game" END ===== -->
+
+        <!-- Protected system broadcasts only; system_server may deliver to non-exported receivers. -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ===== v6.2 module "screensaver" (org.z9x.projector.dream) BEGIN =====
+             Our clock screensaver. BIND_DREAM_SERVICE is required by DreamManagerService.validateDream
+             (targetSdk >= 21); exported so system_server can bind it. Runs in the persistent process.
+             Listed in TvSettings > Screen saver as "Clock" next to Backdrop / Colors.
+             No new permission: WRITE_DREAM_STATE / WRITE_SECURE_SETTINGS / WRITE_SETTINGS are held. -->
+        <service
+            android:name=".dream.ClockDream"
+            android:exported="true"
+            android:label="@string/dream_label"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/dream_clock" />
+        </service>
+        <!-- v6.5: blank "dream" active while the user has the screensaver off (dream.IdleOwner): it
+             enters the lamp-only standby at once. No DreamService intent-filter, so TvSettings does
+             not list it; DreamManagerService binds it by component (validateDream checks only the
+             BIND_DREAM_SERVICE permission, Lineage 21 DreamManagerService.java:580-593). -->
+        <service
+            android:name=".dream.StandbyIdleDream"
+            android:exported="true"
+            android:permission="android.permission.BIND_DREAM_SERVICE" />
+        <!-- ===== v6.2 module "screensaver" END ===== -->
+    </application>
+</manifest>

@@ -1,0 +1,31 @@
+# Lumen OS 1.0, W2 lane CEC, French: strings of org.z9x.projector's HDMI-CEC page (module cec).
+# strings_cec.xml is a new file (gen.py generates values-<locale>/strings_cec.xml); keys cec_title,
+# cec_night_range, cec_dev_value, cec_dev_port are translatable="false" in the base.
+@projector/strings_cec.xml
+cec_entry=Appareils HDMI (CEC)
+cec_unavailable=HDMI-CEC n’est pas disponible
+cec_master=Contrôle HDMI-CEC
+cec_wake=Allumer avec un appareil HDMI
+cec_night=Protection nocturne
+cec_night_off=Désactivée
+cec_night_desc=Pendant ces heures, les appareils HDMI ne peuvent pas allumer le projecteur.
+cec_paused=En pause après plusieurs allumages sans image. Utiliser la télécommande la réactive.
+cec_switch=Basculer vers un appareil quand il s’allume
+cec_send_standby=Éteindre les appareils HDMI avec le projecteur
+cec_follow_info=Quand l’appareil que vous regardez s’éteint, le projecteur se met aussi en veille.
+cec_soundbar=Barre de son ou ampli AV (HDMI ARC)
+cec_avr_on=Allumer la barre de son avec le projecteur
+cec_control=Commander les appareils HDMI avec cette télécommande
+cec_internal_exit=Prévenir l’appareil quand vous quittez HDMI
+cec_devices=Appareils connectés
+cec_no_devices=Aucun appareil HDMI-CEC trouvé
+cec_state_on=allumé
+cec_state_standby=veille
+cec_dev_unnamed=Appareil HDMI
+cec_dev_soundbar=Barre de son / ampli AV
+cec_name_on_hdmi=Nom sur HDMI : %1$s
+cec_hdmi_options=Options des entrées HDMI
+cec_unattended_title=Allumé par un appareil HDMI
+cec_unattended_msg=%1$s a allumé le projecteur, mais il n’y a pas d’image. Le projecteur se remettra en veille dans 30 secondes.
+cec_stay_on=Rester allumé
+cec_device_generic=Un appareil HDMI

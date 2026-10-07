@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0: static RRO on org.protonaosp.deviceconfig (SimpleDeviceConfig,
+     /system/system_ext/priv-app/SimpleDeviceConfig). Its BootReceiver applies every
+     "namespace/key=value" item of R.array.configs_device at each boot through
+     DeviceConfig.setProperty(..., makeDefault=true). Base image: configs_device is empty in the app and
+     in Lineage's auto-generated product RRO (priority 1, which only sets configs_base), so this overlay
+     replaces nothing. Installed as /system/product/overlay/Z9xDeviceConfigOverlay.apk, priority 2000.
+     Speed spec 5. No code, no permissions. Signed with the release platform key by the sign stage. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.overlay.deviceconfig"
+    android:versionCode="100"
+    android:versionName="1.0">
+    <overlay
+        android:targetPackage="org.protonaosp.deviceconfig"
+        android:isStatic="true"
+        android:priority="2000" />
+    <application android:hasCode="false" />
+</manifest>

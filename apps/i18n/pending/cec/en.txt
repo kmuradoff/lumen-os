@@ -1,0 +1,31 @@
+# Lumen OS 1.0, W2 lane CEC, English (base, not merged): strings of org.z9x.projector's HDMI-CEC page (module cec).
+# strings_cec.xml is a new file (gen.py generates values-<locale>/strings_cec.xml); keys cec_title,
+# cec_night_range, cec_dev_value, cec_dev_port are translatable="false" in the base.
+@projector/strings_cec.xml
+cec_entry=HDMI devices (CEC)
+cec_unavailable=HDMI-CEC is not available
+cec_master=HDMI-CEC control
+cec_wake=Turn on with an HDMI device
+cec_night=Night guard
+cec_night_off=Off
+cec_night_desc=During these hours HDMI devices cannot turn the projector on.
+cec_paused=Paused after several wake-ups without a picture. Using the remote turns it back on.
+cec_switch=Switch to a device when it turns on
+cec_send_standby=Turn off HDMI devices with the projector
+cec_follow_info=When the device you are watching turns off, the projector goes to sleep too.
+cec_soundbar=Soundbar or AV receiver (HDMI ARC)
+cec_avr_on=Turn on the soundbar with the projector
+cec_control=Control HDMI devices with this remote
+cec_internal_exit=Tell the device when you leave HDMI
+cec_devices=Connected devices
+cec_no_devices=No HDMI-CEC devices found
+cec_state_on=on
+cec_state_standby=standby
+cec_dev_unnamed=HDMI device
+cec_dev_soundbar=Soundbar / AV receiver
+cec_name_on_hdmi=Name on HDMI: %1$s
+cec_hdmi_options=HDMI input options
+cec_unattended_title=Turned on by an HDMI device
+cec_unattended_msg=%1$s turned the projector on, but there is no picture. The projector goes back to sleep in 30 seconds.
+cec_stay_on=Stay on
+cec_device_generic=An HDMI device
