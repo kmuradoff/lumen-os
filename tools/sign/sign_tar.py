@@ -3,64 +3,59 @@
 """sign_tar.py: re-sign a Lumen OS system tar with the Lumen release keys (Mac only).
 
     sign_tar.py --inventory IN.tar [--report-dir DIR]
-    sign_tar.py IN.tar OUT.tar [--keys ~/.lumen-keys] [--report-dir DIR]
+    sign_tar.py IN.tar OUT.tar --apex-dir APEXDIR [--keys ~/.lumen-keys] [--report-dir DIR]
     sign_tar.py --verify OUT.tar [--keys ~/.lumen-keys] [--report-dir DIR]
 
 IN.tar is the composed system tar from the build laptop (tools/lumen_v1.sh): every member with its
-mode, uid/gid, mtime and the security.selinux PAX xattr, APKs signed with the PUBLIC AOSP test keys
-(build/make/target/product/security; copies in tools/sign/testcerts, digests in keymap.json).
+mode, uid/gid, mtime and the security.selinux PAX xattr, APKs and APEXes signed with the PUBLIC AOSP
+test keys (build/make/target/product/security; copies in tools/sign/testcerts, digests in keymap.json).
+APEXDIR is the output of tools/sign/apex_sign.py run IN.tar APEXDIR: every APEX of IN.tar re-signed
+with the Lumen APEX keys (payload + container, and the APKs inside), apex_signed.json + final/<member>.
+Policy (since 2026-10-07): NO AOSP test certificate is left anywhere in the image (docs/keys.md#apex).
 
-1. Inventory. Every *.apk member and every APK inside every APEX payload (debugfs / fsck.erofs, read
-   only) -> apksigner verify -v --print-certs + aapt2 (package, sharedUserId). Classes:
+1. APEXes. Every *.apex / *.capex member must be in APEXDIR/apex_signed.json with the sha256 of this
+   very member (orig_sha256); the re-signed file (sha256 pinned) replaces it in the output.
+2. Inventory. Every *.apk member and every APK inside every (re-signed) APEX payload (debugfs /
+   fsck.erofs, read only) -> apksigner verify -v --print-certs + aapt2 (package, sharedUserId). Classes:
      resign:<key>  signed by a mapped AOSP test certificate -> re-signed with ~/.lumen-keys/<key>
-     keep:<test>   signed by a mapped test key that is APEX-BOUND: a sharedUserId group holds an
-                   APK inside an APEX (APEXes are not re-signed in v1) and an APK of /system with the
-                   same test key, so EVERY /system APK of that key keeps it (re-signing one side gives
-                   "Signature mismatch for shared user" at boot). On Lineage 21: networkstack
-                   (NetworkStack.apk + TetheringNext.apk in com.android.tethering share
-                   android.uid.networkstack). A privileged shared user cannot be joined by an app
-                   that is not platform-signed (InstallPackageHelper), so the public test key does
-                   not open it.
      presigned     signed by someone else (Google apps, MindTheGapps): left byte-identical
      skip          left alone on purpose (fs-verity BuildManifest, SKIP below)
      UNCLASSIFIED  unmapped certificate with O=Android (an AOSP-looking test key we do not know),
                    several signers, or an APK that does not verify -> the run FAILS
-   Every sharedUserId group (system + APEX APKs) must end with one signer, else the run FAILS.
-2. Re-sign each resign:<key> APK: zipalign -P 16 -f 4 (16 KB page alignment of stored .so, as
+   Every APK inside an APEX must already carry a Lumen release certificate (apex_sign.py did it), and
+   every sharedUserId group (system + APEX APKs) must end with one signer, else the run FAILS. On
+   Lineage 21: NetworkStack.apk + CaptivePortalLogin.apk (system) and TetheringNext.apk (in
+   com.android.tethering) all end on the Lumen networkstack key (android.uid.networkstack).
+3. Re-sign each resign:<key> APK: zipalign -P 16 -f 4 (16 KB page alignment of stored .so, as
    build_apk.sh), apksigner sign --alignment-preserved with the v1/v2/v3 schemes the original had.
    Every zip entry outside META-INF keeps its CRC-32 and size (dex unchanged, so oat/*.odex|vdex next
    to it and the boot image stay valid); checked per APK, plus apksigner verify with the new cert.
-3. SELinux seinfo (mac_permissions XMLs), per mapped test certificate T -> release R:
-     only re-signed users           -> T replaced by R
-     re-signed + still-T users      -> the <signer> block is duplicated for R, and the kept T block is
-                                       SCOPED to the packages that still carry T (APEX apps keep their
-                                       seinfo, e.g. PermissionController platform, MediaProvider media)
-     only still-T users             -> the T block is SCOPED (network_stack, bluetooth, sdk_sandbox)
-     no users                       -> T replaced by R (drop trust in the public key)
-   SCOPED = <signer signature=T><package name="P"><seinfo value="X"/></package>...</signer> with no
-   default seinfo: an app sideloaded with the PUBLISHED AOSP test key gets the default seinfo (untrusted
-   app domain), never platform_app / mediaprovider / network_stack (review 2026-10-07; matters once
-   SELinux is enforcing). Only the listed package names (APEX APKs and APEX-bound /system APKs that
-   still carry T) keep their seinfo; APEX updates are never installed on Lumen OS.
-4. otacerts.zip = {ota.x509.pem, ota_next.x509.pem} (ota first: the updater trusts entry #1 for the
+4. SELinux seinfo (mac_permissions XMLs): every mapped test certificate T is replaced by its release
+   certificate R (same seinfo). No test <signer> stanza is kept: nothing in the image carries a test
+   certificate any more, so an app signed with a PUBLISHED AOSP test key only ever gets the default
+   (untrusted app) seinfo.
+5. otacerts.zip = {ota.x509.pem, ota_next.x509.pem} (ota first: the updater trusts entry #1 for the
    update manifest; update_engine trusts both for payloads).
-5. Leftover scan: text members (xml/prop/rc/json/txt/conf/cfg/sh/csv/pem) and every re-signed APK's
+6. Leftover scan: text members (xml/prop/rc/json/txt/conf/cfg/sh/csv/pem) and every re-signed APK's
    resources.arsc for the test certificates (DER hex, SHA-256, SHA-1, PEM body). Any hit outside the
    handled files FAILS unless allow-listed in tools/sign/leftover_allow.txt.
-6. Pins: resigned.tsv = path, key, old sha256, new sha256.
-APEX containers and payloads are NOT re-signed (v1 policy, docs/keys.md#apex): apexd trusts
-pre-installed APEXes on read-only /system whatever key signed them; keys matter only for APEX
-*updates*, which Lumen OS does not install. apex.tsv / apex_apks.tsv list them.
+7. Pins: resigned.tsv = path, key, old sha256, new sha256 (APKs, APEXes, rewritten files).
+--verify (also run by check_image.py, on the Mac and on the laptop with PUBLIC certificates only) checks
+all of it again on the output, plus every APEX with apexlib.verify_signed_apex (container cert = the
+module's Lumen APEX cert, apex_pubkey = its Lumen payload key, avbtool verify_image of the payload with
+that key, capex digest, payload manifest), and writes all_signers.tsv: the signer of every APK, every
+APEX container and every APK inside an APEX. Any AOSP test certificate, or any other certificate with
+O=Android that is not a known third-party key (keymap presigned_known), FAILS.
 
 Keys: read only by apksigner from KEYS_DIR (default ~/.lumen-keys, mode 700, never in the project
-tree). Nothing secret is written; the work dir holds only APKs and is deleted at the end.
+tree). Nothing secret is written; the work dir holds only APKs / APEXes and is deleted at the end.
 Output members keep mode, uid/gid and every PAX header (the SELinux label). Every rewritten member
-(re-signed APK, mac_permissions, otacerts) and the directory holding a re-signed APK get the signing
-time as mtime (--mtime, default now): the image keeps tar mtimes (mkfs.erofs --mkfs-time), so
-PackageManager's parse cache, keyed by the unchanged fingerprint, re-parses exactly the packages whose
-signature changed (PackageCacher compares the package path's mtime with its cache file). Everything
-else keeps its mtime. OUT.tar is written as OUT.tar.part and renamed only on success. Exit 0 = OK,
-1 = failure.
+(re-signed APK or APEX, mac_permissions, otacerts) and the directory holding a re-signed APK / APEX get
+the signing time as mtime (--mtime, default now): the image keeps tar mtimes (mkfs.erofs --mkfs-time),
+so PackageManager's parse cache, keyed by the unchanged fingerprint, re-parses exactly the packages
+whose signature changed (PackageCacher compares the package path's mtime with its cache file; for an
+APK inside an APEX it uses the mtime of the backing APEX file). Everything else keeps its mtime.
+OUT.tar is written as OUT.tar.part and renamed only on success. Exit 0 = OK, 1 = failure.
 """
 import argparse
 import binascii
@@ -81,8 +76,12 @@ import time
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import apexlib  # noqa: E402
+
 KEYMAP = os.path.join(HERE, "keymap.json")
 TESTCERTS = os.path.join(HERE, "testcerts")
+RELEASE_CERTS = os.path.join(HERE, "release_certs")
 LEFTOVER_ALLOW = os.path.join(HERE, "leftover_allow.txt")
 SKIP = [  # (regex on member path, reason)
     (r"^system/etc/security/fsverity/BuildManifest(Ext)?\.apk$",
@@ -128,9 +127,11 @@ def find_tools():
         die("need a JDK 17+ (set JAVA_HOME)")
     env = dict(os.environ, JAVA_HOME=jh, PATH=os.path.join(jh, "bin") + os.pathsep + os.environ.get("PATH", ""))
     openssl = shutil.which("openssl") or die("no openssl")
+    lineage_bin = os.path.join(os.environ.get("LINEAGE", os.path.expanduser("~/lineage")), "out", "host", "linux-x86", "bin")
     tools["debugfs"] = (os.environ.get("DEBUGFS") or shutil.which("debugfs")
                         or next((p for p in ("/opt/homebrew/opt/e2fsprogs/sbin/debugfs",
-                                             "/usr/local/opt/e2fsprogs/sbin/debugfs", "/sbin/debugfs")
+                                             "/usr/local/opt/e2fsprogs/sbin/debugfs", "/sbin/debugfs",
+                                             os.path.join(lineage_bin, "debugfs_static"))
                                  if os.access(p, os.X_OK)), None))
     tools["fsck.erofs"] = os.environ.get("FSCK") or shutil.which("fsck.erofs")
     return tools, env, openssl
@@ -227,6 +228,17 @@ def inspect_apk(path, tools, env):
     return info
 
 
+def apk_certs(tools, env):
+    """apksigner signer list of any APK-style file (APEX containers too): [(sha256, dn)] or None."""
+    def f(path):
+        r = run([tools["apksigner"], "verify", "-v", "--print-certs", path], env=env, check=False)
+        if r.returncode != 0:
+            return None
+        dns = dict(DN_RX.findall(r.stdout))
+        return [(d, dns.get(n, "")) for n, d in SIGNER_RX.findall(r.stdout)]
+    return f
+
+
 def dn_org(dn):
     m = re.search(r"(?:^|,\s*)O=([^,]+)", dn)
     return m.group(1).strip() if m else ""
@@ -298,27 +310,90 @@ def apex_apks(apex_files, tools, work):
         except (KeyError, zipfile.BadZipFile) as e:
             raise RuntimeError(f"{n}: cannot read the APEX payload ({e})")
         d = os.path.join(work, "apex", os.path.basename(n))
-        os.makedirs(d, exist_ok=True)
+        x = os.path.join(d, "x")
+        os.makedirs(x, exist_ok=True)
         img = os.path.join(d, "payload.img")
         open(img, "wb").write(payload)
+        # the WHOLE payload (an APK may live anywhere, not only in app/ and priv-app/)
         if payload[1024 + 56:1024 + 58] == b"\x53\xef":  # ext4
             if not tools["debugfs"]:
                 die("debugfs is needed to read ext4 APEX payloads (brew install e2fsprogs)")
-            for sub in ("app", "priv-app"):
-                os.makedirs(os.path.join(d, "x"), exist_ok=True)
-                run([tools["debugfs"], "-R", f"rdump /{sub} {os.path.join(d, 'x')}", img], check=False)
+            run([tools["debugfs"], "-R", f'rdump / "{x}"', img])
         elif payload[1024:1028] == bytes.fromhex("e2e1f5e0"):  # erofs
             if not tools["fsck.erofs"]:
                 die("fsck.erofs is needed to read erofs APEX payloads")
-            for sub in ("app", "priv-app"):
-                run([tools["fsck.erofs"], f"--extract={os.path.join(d, 'x', sub)}", f"--path=/{sub}",
-                     "--no-preserve", img], check=False)
+            run([tools["fsck.erofs"], f"--extract={x}", "--no-preserve", img])
         else:
             raise RuntimeError(f"{n}: unknown APEX payload filesystem")
         os.unlink(img)
-        for f in sorted(glob.glob(os.path.join(d, "x", "**", "*.apk"), recursive=True)):
-            out.append((n, os.path.relpath(f, os.path.join(d, "x")), f))
+        if not os.path.isfile(os.path.join(x, "apex_manifest.pb")):
+            raise RuntimeError(f"{n}: payload extraction failed (no apex_manifest.pb in {x})")
+        for f in sorted(glob.glob(os.path.join(x, "**", "*.apk"), recursive=True)):
+            if os.path.isfile(f) and not os.path.islink(f):
+                out.append((n, os.path.relpath(f, x), f))
+        for root, _, files in os.walk(x, topdown=False):
+            for fn in files:
+                q = os.path.join(root, fn)
+                if not q.endswith(".apk"):
+                    os.unlink(q)
     return out
+
+
+def load_apex_dir(apex_dir, apex, km):
+    """apex_sign.py output for exactly the APEX members of this tar: {member: final file path}."""
+    mf = os.path.join(apex_dir, "apex_signed.json")
+    if not os.path.isfile(mf):
+        die(f"no {mf} (tools/sign/apex_sign.py run IN.tar {apex_dir})")
+    m = json.load(open(mf))
+    have = {n for n, _ in apex}
+    if set(m["apex"]) != have:
+        die(f"{mf} is for another APEX set: only there {sorted(set(m['apex']) - have)}, only in the tar {sorted(have - set(m['apex']))}")
+    out = {}
+    for n, p in apex:
+        v = m["apex"][n]
+        if apexlib.sha256_file(p) != v["orig_sha256"]:
+            die(f"{n}: {mf} was made from another tar (orig sha256 differs)")
+        f = os.path.join(apex_dir, v["file"])
+        if not os.path.isfile(f) or apexlib.sha256_file(f) != v["sha256"]:
+            die(f"{f}: missing or not the file apex_sign.py pinned")
+        if v["module"] not in km["apex"]["modules"]:
+            die(f"{n}: module {v['module']} not in keymap.json apex.modules")
+        out[n] = f
+    return out
+
+
+def apex_checks(apex, tools, env, kd, km, rel_digests):
+    """Public-key checks of every APEX file: (errors, rows for apex.tsv)."""
+    errs, rows = [], []
+    pubdir = os.path.join(os.path.realpath(kd), "apex")
+    mods = set(km["apex"]["modules"])
+    work = tempfile.mkdtemp(prefix="lumen-apexchk-")
+    try:
+        for n, p in apex:
+            mod = apexlib.module_of(n)
+            if mod not in mods:
+                errs.append(f"{n}: module {mod} not in keymap.json apex.modules")
+                continue
+            try:
+                pub = apexlib.public_apex_key(pubdir, mod)
+            except apexlib.ApexError as e:
+                errs.append(str(e))
+                continue
+            relpub = os.path.join(RELEASE_CERTS, "apex")
+            for ext in ("x509.pem", "avbpubkey", "pubkey.pem"):
+                a, b = os.path.join(pubdir, f"{mod}.{ext}"), os.path.join(relpub, f"{mod}.{ext}")
+                if os.path.realpath(a) != os.path.realpath(b) and os.path.isfile(b) and open(a, "rb").read() != open(b, "rb").read():
+                    errs.append(f"{a} differs from the published {b}")
+            if pub["cert_sha256"] in rel_digests:
+                errs.append(f"{mod}: its APEX container cert is an APK release cert")
+            e, f = apexlib.verify_signed_apex(p, n, pub, apk_certs(tools, env), tools["debugfs"], work,
+                                              km["apex"]["payload_algorithm"])
+            errs += e
+            rows.append((n, f.get("kind", "?"), f.get("container_cert", "-"), f.get("container_dn", "-"),
+                         f.get("payload_key_sha256", "-"), f.get("root_digest", "-"), "OK" if not e else "FAIL"))
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    return errs, rows
 
 
 # ------------------------------------------------------------------ text replacements
@@ -331,76 +406,17 @@ def cert_patterns(der):
     }
 
 
-def scope_signer(text, old_hex, pkgs, what):
-    """Rewrite every <signer signature=old_hex> block with a bare default seinfo into per-package
-    stanzas for pkgs (same seinfo value). Returns (text, blocks rewritten)."""
-    if not pkgs:
-        raise RuntimeError(f"{what}: no package keeps this test certificate, nothing to scope to")
-    rx = re.compile(r'(<signer\s+signature="' + old_hex + r'"[^>]*>)(.*?)(</signer>)', re.I | re.S)
-
-    def one(m):
-        body = m.group(2)
-        if re.search(r"<package\b", body):
-            return m.group(0)                      # already scoped (idempotent)
-        sm = re.fullmatch(r'\s*<seinfo\s+value="([^"]+)"\s*/>\s*', body)
-        if not sm:
-            raise RuntimeError(f"{what}: unexpected <signer> body {body[:80]!r}")
-        v = sm.group(1)
-        return m.group(1) + "".join(f'<package name="{p}"><seinfo value="{v}"/></package>' for p in pkgs) + m.group(3)
-    return rx.subn(one, text)
-
-
-def replace_mac_permissions(text, test, rel, mode, users=None):
-    """mode[test digest] in {'replace', 'dup', 'leave'}; users[test digest] = sorted package names that
-    still carry the test certificate (dup / leave blocks are scoped to them). Returns (new_text,
-    {aosp: (n, mode)})."""
-    users = users or {}
+def replace_mac_permissions(text, test, rel):
+    """Every test certificate -> its release certificate. Returns (new_text, {aosp: n})."""
     counts = {}
     for digest, t in test.items():
         old = binascii.hexlify(t["der"]).decode()
         n = len(re.findall(old, text, re.I))
         if not n:
             continue
-        m = mode[digest]
-        counts[t["aosp"]] = (n, m + ("+scoped" if m in ("dup", "leave") else ""))
-        if m == "leave":
-            text, k = scope_signer(text, old, users.get(digest, []), t["aosp"])
-            if k != n:
-                raise RuntimeError(f"{t['aosp']}: {k} <signer> blocks for {n} occurrences")
-            continue
-        new = binascii.hexlify(rel[t["release"]]["der"]).decode()
-        if m == "dup":
-            rx = re.compile(r'([ \t]*)(<signer\s+signature=")' + old + r'("[^>]*>.*?</signer>)', re.I | re.S)
-            text, k = rx.subn(lambda x: x.group(0) + "\n" + x.group(1) + x.group(2) + new + x.group(3), text)
-            if k != n:
-                raise RuntimeError(f"{t['aosp']}: {k} <signer> blocks for {n} occurrences")
-            text, k = scope_signer(text, old, users.get(digest, []), t["aosp"])
-            if k != n:
-                raise RuntimeError(f"{t['aosp']}: {k} scoped <signer> blocks for {n} occurrences")
-        else:
-            text = re.sub(old, new, text, flags=re.I)
+        counts[t["aosp"]] = n
+        text = re.sub(old, binascii.hexlify(rel[t["release"]]["der"]).decode(), text, flags=re.I)
     return text, counts
-
-
-def test_users(rows, arows, test):
-    """{test digest: sorted package names still signed with it after signing (kept + APEX APKs)}."""
-    u = {}
-    for r in list(rows) + list(arows):
-        d = signer(r)
-        if d in test and (r in arows or r["class"] == "keep") and r["info"].get("package"):
-            u.setdefault(d, set()).add(r["info"]["package"])
-    return {d: sorted(v) for d, v in u.items()}
-
-
-def unscoped_test_signers(text, test):
-    """Test certificates that still have a bare (package-less) <signer> block in a mac_permissions XML."""
-    bad = []
-    for d, t in test.items():
-        old = binascii.hexlify(t["der"]).decode()
-        for m in re.finditer(r'<signer\s+signature="' + old + r'"[^>]*>(.*?)</signer>', text, re.I | re.S):
-            if not re.search(r"<package\b", m.group(1)) or re.search(r"^\s*<seinfo\b", m.group(1)):
-                bad.append(t["aosp"])
-    return bad
 
 
 def make_otacerts(certs):
@@ -461,29 +477,6 @@ def inspect_all(items, tools, env, jobs):
     return res
 
 
-def plan(rows, arows, test):
-    """Decide keep/resign per test key (APEX-bound keys) and the mac_permissions mode per cert."""
-    # sharedUserId -> test digests used inside APEXes
-    apex_su = {}
-    for r in arows:
-        if r["info"]["shared_uid"] and signer(r) in test:
-            apex_su.setdefault(r["info"]["shared_uid"], set()).add(signer(r))
-    bound = {}
-    for r in rows:
-        su = r["info"]["shared_uid"]
-        if r["class"] == "resign" and su in apex_su and signer(r) in apex_su[su]:
-            bound[signer(r)] = f"sharedUserId {su} is shared with an APK inside an APEX"
-    for r in rows:
-        if r["class"] == "resign" and signer(r) in bound:
-            r["class"], r["detail"] = "keep", f"{test[signer(r)]['aosp']} (APEX-bound: {bound[signer(r)]})"
-    mode = {}
-    for d in test:
-        resigned = any(r["class"] == "resign" and signer(r) == d for r in rows)
-        still = any(signer(r) == d for r in rows if r["class"] == "keep") or any(signer(r) == d for r in arows)
-        mode[d] = "dup" if resigned and still else "leave" if still else "replace"
-    return bound, mode
-
-
 def final_signer(r, rel):
     return rel[r["detail"]]["sha256"] if r["class"] == "resign" and rel else (
         "release:" + r["detail"] if r["class"] == "resign" else signer(r))
@@ -500,9 +493,24 @@ def shared_uid_conflicts(rows, arows, rel):
     return {su: s for su, s in groups.items() if len(s) > 1}
 
 
-def write_reports(rd, rows, arows, apex_rows, test):
+def apex_apk_errors(arows, test, rel_digests):
+    """APKs inside APEXes must carry a Lumen release certificate."""
+    errs = []
+    for r in arows:
+        i = r["info"]
+        where = f"{r['apex']}!{r['inner']}"
+        if not i["ok"] or len(i["signers"]) != 1:
+            errs.append(f"{where}: does not verify / {len(i['signers'])} signers")
+        elif signer(r) in test:
+            errs.append(f"{where}: still signed with the AOSP test key {test[signer(r)]['aosp']} (APEX not re-signed)")
+        elif signer(r) not in rel_digests:
+            errs.append(f"{where}: signer {signer(r)[:16]} ({i['signers'][0][1]}) is not a Lumen release key")
+    return errs
+
+
+def write_reports(rd, rows, arows, apex_rows, test, rel_digests):
     def name(d):
-        return test[d]["aosp"] + "(test)" if d in test else d[:16]
+        return test[d]["aosp"] + "(TEST)" if d in test else rel_digests.get(d, d[:16])
     with open(os.path.join(rd, "inventory.tsv"), "w") as o:
         o.write("# path\tclass\tdetail\tpackage\tsharedUserId\tcert_sha256\tschemes\n")
         for r in sorted(rows, key=lambda r: r["path"]):
@@ -510,13 +518,13 @@ def write_reports(rd, rows, arows, apex_rows, test):
             sch = ",".join(s for s, v in sorted(i["schemes"].items()) if v)
             o.write(f"{r['path']}\t{r['class']}\t{r['detail']}\t{i['package']}\t{i['shared_uid'] or '-'}\t{signer(r)}\t{sch}\n")
     with open(os.path.join(rd, "apex_apks.tsv"), "w") as o:
-        o.write("# apex\tapk inside\tpackage\tsharedUserId\tsigner (kept: APEXes are not re-signed in v1)\n")
+        o.write("# apex\tapk inside\tpackage\tsharedUserId\tsigner\n")
         for r in arows:
             o.write(f"{r['apex']}\t{r['inner']}\t{r['info']['package']}\t{r['info']['shared_uid'] or '-'}\t{name(signer(r))}\n")
     with open(os.path.join(rd, "apex.tsv"), "w") as o:
-        o.write("# path\tcontainer_cert_sha256\tcontainer_cert_DN (kept as in the base: docs/keys.md#apex)\n")
-        for n, d, dn in sorted(apex_rows):
-            o.write(f"{n}\t{d}\t{dn}\n")
+        o.write("# path\tkind\tcontainer_cert_sha256\tcontainer_cert_DN\tpayload_key_sha256(avbpubkey)\tpayload_root_digest\tcheck\n")
+        for row in sorted(apex_rows):
+            o.write("\t".join(str(x) for x in row) + "\n")
 
 
 def leftover_scan(texts, rows, test, handled, allow, rd):
@@ -555,11 +563,7 @@ def leftover_scan(texts, rows, test, handled, allow, rd):
 
 
 def sha256_file(p):
-    h = hashlib.sha256()
-    with open(p, "rb") as f:
-        for b in iter(lambda: f.read(1 << 20), b""):
-            h.update(b)
-    return h.hexdigest()
+    return apexlib.sha256_file(p)
 
 
 def main():
@@ -568,16 +572,19 @@ def main():
     ap.add_argument("out", nargs="?")
     ap.add_argument("--inventory", action="store_true", help="only classify the APKs of IN.tar")
     ap.add_argument("--verify", action="store_true", help="check a signed tar")
+    ap.add_argument("--apex-dir", help="apex_sign.py output for IN.tar (required to sign)")
     ap.add_argument("--keys", default=os.environ.get("KEYS_DIR", os.path.expanduser("~/.lumen-keys")))
     ap.add_argument("--report-dir")
     ap.add_argument("--jobs", type=int, default=min(6, os.cpu_count() or 2))
     ap.add_argument("--work", help="keep the work dir here (default: a temp dir, deleted)")
     ap.add_argument("--mtime", type=int, default=int(time.time()),
-                    help="mtime of every rewritten member and of the directory of every re-signed APK (default: now)")
+                    help="mtime of every rewritten member and of the directory of every re-signed APK / APEX (default: now)")
     a = ap.parse_args()
 
     if not a.inventory and not a.verify and not a.out:
         die("need OUT.tar (or --inventory / --verify)")
+    if a.out and not a.verify and not a.inventory and not a.apex_dir:
+        die("--apex-dir is required: every APEX is re-signed first (tools/sign/apex_sign.py run IN.tar DIR)")
     tools, env, openssl = find_tools()
     km, test = load_keymap()
     presigned_known = km.get("presigned_known", {})
@@ -588,7 +595,7 @@ def main():
     rel = {}
     if not a.inventory:
         check_keys_dir(a.keys)
-        for n in sorted({v["release"] for v in test.values()}):
+        for n in sorted({v["release"] for v in test.values()} | {km["apex"]["inner_apk_default"]}):
             rel[n] = release_cert(a.keys, n, openssl, need_key=not a.verify)
         for n in km["ota_certs"]:
             rel[n] = release_cert(a.keys, n, openssl, need_key=False)
@@ -600,7 +607,12 @@ def main():
         log(f"read {a.inp}")
         apks, apex, texts = read_tar(a.inp, work)
         log(f"{len(apks)} APKs, {len(apex)} APEX, {len(texts)} text members")
-        inner = apex_apks(apex, tools, work)
+        apex_final = {}
+        if a.apex_dir and not a.verify and not a.inventory:
+            apex_final = load_apex_dir(a.apex_dir, apex, km)
+            log(f"{len(apex_final)} re-signed APEXes from {a.apex_dir}")
+        cur_apex = [(n, apex_final.get(n, p)) for n, p in apex]
+        inner = apex_apks(cur_apex, tools, work)
         log(f"{len(inner)} APKs inside APEX payloads; apksigner x{a.jobs}")
         info = inspect_all([(n, p) for n, p in apks] + [((an, ip), f) for an, ip, f in inner], tools, env, a.jobs)
         rows = []
@@ -608,36 +620,63 @@ def main():
             cls, detail = classify(n, info[n], test, presigned_known)
             rows.append({"path": n, "file": p, "info": info[n], "class": cls, "detail": detail})
         arows = [{"apex": an, "inner": ip, "info": info[(an, ip)]} for an, ip, _ in inner]
-        apex_rows = []
-        for n, p in apex:
-            r = run([tools["apksigner"], "verify", "--print-certs", p], env=env, check=False)
-            m, dn = SIGNER_RX.search(r.stdout), DN_RX.search(r.stdout)
-            apex_rows.append((n, m.group(2) if m else "-", dn.group(2) if dn else "-"))
+
+        if a.inventory:
+            apex_rows = []
+            for n, p in apex:
+                s = apk_certs(tools, env)(p) or [("-", "-")]
+                apex_rows.append((n, "-", s[0][0], s[0][1], "-", "-", "inventory"))
+            write_reports(rd, rows, arows, apex_rows, test, rel_digests)
+            counts = {}
+            for r in rows:
+                k = r["class"] + (":" + r["detail"] if r["class"] == "resign" else "")
+                counts[k] = counts.get(k, 0) + 1
+            log("classes: " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
+            uncl = [r for r in rows if r["class"] == "UNCLASSIFIED"]
+            for r in uncl:
+                print(f"UNCLASSIFIED {r['path']}: {r['detail']}")
+            log(f"inventory written to {rd}")
+            return 1 if uncl else 0
 
         if a.verify:
             errs = []
             for r in rows:
                 if r["class"] == "UNCLASSIFIED":
                     errs.append(f"{r['path']}: {r['detail']}")
-            bound, _ = plan(rows, arows, test)
-            for r in rows:
                 if r["class"] == "resign":
                     errs.append(f"{r['path']}: still signed with test key {r['detail']}")
+            errs += apex_apk_errors(arows, test, rel_digests)
+            aerrs, apex_rows = apex_checks(apex, tools, env, a.keys, km, rel_digests)
+            errs += aerrs
             for su, s in shared_uid_conflicts(rows, arows, None).items():
                 errs.append(f"sharedUserId {su}: {len(s)} different signers")
-            write_reports(rd, rows, arows, apex_rows, test)
+            write_reports(rd, rows, arows, apex_rows, test, rel_digests)
+            # every signer of the image: no AOSP test certificate, no unknown O=Android certificate
+            with open(os.path.join(rd, "all_signers.tsv"), "w") as o:
+                o.write("# kind\tpath\tsigner_sha256\tsigner\tDN\n")
+                allrows = [("apk", r["path"], r["info"]["signers"]) for r in rows] + \
+                          [("apex-apk", f"{r['apex']}!{r['inner']}", r["info"]["signers"]) for r in arows] + \
+                          [("apex", row[0], [(row[2], row[3])]) for row in apex_rows]
+                apex_ok = {row[2]: "apex:" + apexlib.module_of(row[0]) for row in apex_rows if row[-1] == "OK"}
+                for kind, path, sg in allrows:
+                    for d, dn in sg or [("-", "-")]:
+                        who = ("TEST:" + test[d]["aosp"]) if d in test else rel_digests.get(d) or \
+                            (apex_ok.get(d) if kind == "apex" else None) or \
+                            ("presigned:" + presigned_known[d][:30] if d in presigned_known else "other")
+                        o.write(f"{kind}\t{path}\t{d}\t{who}\t{dn}\n")
+                        if d in test:
+                            errs.append(f"{path}: AOSP test certificate {test[d]['aosp']}")
+                        elif who == "other" and dn_org(dn) == "Android":
+                            errs.append(f"{path}: unknown O=Android certificate {d[:16]} ({dn})")
             for p in km["mac_permissions"]:
                 if p not in texts:
                     continue
                 s = texts[p].decode().lower()
                 for d, t in test.items():
-                    used = any(signer(r) == d for r in rows) or any(signer(r) == d for r in arows)
-                    if binascii.hexlify(t["der"]).decode() in s and not used:
-                        errs.append(f"{p}: test certificate {t['aosp']} trusted but no APK uses it")
+                    if binascii.hexlify(t["der"]).decode() in s:
+                        errs.append(f"{p}: still names the AOSP test certificate {t['aosp']}")
                 if p.endswith("plat_mac_permissions.xml") and binascii.hexlify(rel["platform"]["der"]).decode() not in s:
                     errs.append(f"{p}: release platform certificate missing")
-                for aosp in unscoped_test_signers(texts[p].decode(), test):
-                    errs.append(f"{p}: test certificate {aosp} has a default seinfo (must be scoped to its packages)")
             oc = texts.get(km["otacerts"])
             if oc is None:
                 errs.append("no otacerts.zip")
@@ -649,41 +688,45 @@ def main():
                     errs.append(f"otacerts.zip = {names}, expected the release [ota, ota_next]")
             byname = {}
             for r in rows:
-                k = rel_digests.get(signer(r)) or (r["class"] + ("" if r["class"] != "keep" else ":" + r["detail"].split()[0]))
+                k = rel_digests.get(signer(r)) or r["class"]
                 byname[k] = byname.get(k, 0) + 1
-            log("signers: " + ", ".join(f"{k}={v}" for k, v in sorted(byname.items())))
+            log("APK signers: " + ", ".join(f"{k}={v}" for k, v in sorted(byname.items())))
+            ab = {}
+            for r in arows:
+                k = rel_digests.get(signer(r)) or ("TEST:" + test[signer(r)]["aosp"] if signer(r) in test else "other")
+                ab[k] = ab.get(k, 0) + 1
+            log(f"APKs inside APEXes: " + ", ".join(f"{k}={v}" for k, v in sorted(ab.items())))
+            log(f"APEX: {sum(1 for x in apex_rows if x[-1] == 'OK')} of {len(apex)} verified with the Lumen APEX keys")
             if errs:
                 print("\n".join("ERROR " + e for e in errs))
                 return 1
             log(f"verify OK: {a.inp} (report {rd})")
             return 0
 
-        bound, mode = plan(rows, arows, test)
-        write_reports(rd, rows, arows, apex_rows, test)
+        # ---- sign
+        errs = apex_apk_errors(arows, test, rel_digests)
+        if errs:
+            die("APEX APKs not release-signed:\n  " + "\n  ".join(errs))
+        aerrs, apex_rows = apex_checks(cur_apex, tools, env, a.keys, km, rel_digests)
+        if aerrs:
+            die("re-signed APEXes fail the checks:\n  " + "\n  ".join(aerrs))
+        write_reports(rd, rows, arows, apex_rows, test, rel_digests)
         counts = {}
         for r in rows:
-            k = r["class"] + (":" + r["detail"] if r["class"] == "resign" else
-                              ":" + r["detail"].split()[0] if r["class"] == "keep" else "")
+            k = r["class"] + (":" + r["detail"] if r["class"] == "resign" else "")
             counts[k] = counts.get(k, 0) + 1
         log("classes: " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
-        for d, why in bound.items():
-            log(f"APEX-bound test key {test[d]['aosp']}: {why} -> its /system APKs keep the test key")
-        log("mac_permissions: " + ", ".join(f"{test[d]['aosp']}={m}" for d, m in mode.items()))
         uncl = [r for r in rows if r["class"] == "UNCLASSIFIED"]
         for r in uncl:
             print(f"UNCLASSIFIED {r['path']}: {r['detail']}")
-        conflicts = shared_uid_conflicts(rows, arows, rel or None)
+        conflicts = shared_uid_conflicts(rows, arows, rel)
         for su, s in conflicts.items():
             print(f"CONFLICT sharedUserId {su} would end with {len(s)} signers: {sorted(s)}")
-        if a.inventory:
-            log(f"inventory written to {rd}")
-            return 1 if uncl or conflicts else 0
         if uncl:
             die(f"{len(uncl)} unclassified APKs (see {rd}/inventory.tsv)")
         if conflicts:
             die("sharedUserId groups with mixed final signers")
 
-        # ---- re-sign
         todo = [r for r in rows if r["class"] == "resign"]
         os.makedirs(os.path.join(work, "out"), exist_ok=True)
         log(f"re-sign {len(todo)} APKs")
@@ -695,7 +738,9 @@ def main():
                                       r["info"]["schemes"], tools, env))
             for f in cf.as_completed(futs):
                 f.result()
-        replaced = {r["path"]: r for r in todo}
+        replaced = {r["path"]: {"file": r["file"], "out_file": r["out_file"], "key": r["detail"]} for r in todo}
+        for n, p in apex:
+            replaced[n] = {"file": p, "out_file": apex_final[n], "key": "apex:" + apexlib.module_of(n)}
 
         # ---- mac_permissions + otacerts
         newtext = {}
@@ -703,14 +748,14 @@ def main():
             if p not in texts:
                 log(f"note: {p} not in the tar")
                 continue
-            s, c = replace_mac_permissions(texts[p].decode(), test, rel, mode, test_users(rows, arows, test))
+            s, c = replace_mac_permissions(texts[p].decode(), test, rel)
             low = s.lower()
             for d, t in test.items():
-                if mode[d] == "replace" and binascii.hexlify(t["der"]).decode() in low:
+                if binascii.hexlify(t["der"]).decode() in low:
                     die(f"{p}: test cert {t['aosp']} still present after replacement")
             if s != texts[p].decode():
                 newtext[p] = s.encode()
-            log(f"{p}: " + (", ".join(f"{k} x{n} {m}" for k, (n, m) in c.items()) or "no test certificates"))
+            log(f"{p}: " + (", ".join(f"{k} x{n} -> release" for k, n in c.items()) or "no test certificates"))
         if km["otacerts"] not in texts:
             die(f"no {km['otacerts']} in the tar")
         newtext[km["otacerts"]] = make_otacerts([rel[n] for n in km["ota_certs"]])
@@ -734,12 +779,16 @@ def main():
             for m in src:
                 n = m.name.rstrip("/")
                 if m.isreg() and (n in replaced or n in newtext):
-                    data = open(replaced[n]["out_file"], "rb").read() if n in replaced else newtext[n]
                     ti = copy.copy(m)
                     ti.pax_headers = {k: v for k, v in m.pax_headers.items() if k not in pax_times}
                     ti.mtime = a.mtime
-                    ti.size = len(data)
-                    dst.addfile(ti, io.BytesIO(data))
+                    if n in replaced:
+                        ti.size = os.path.getsize(replaced[n]["out_file"])
+                        with open(replaced[n]["out_file"], "rb") as f:
+                            dst.addfile(ti, f)
+                    else:
+                        ti.size = len(newtext[n])
+                        dst.addfile(ti, io.BytesIO(newtext[n]))
                     seen.add(n)
                     continue
                 if m.isdir() and n in bump_dirs:
@@ -757,11 +806,11 @@ def main():
             o.write("# path\tkey\told_sha256\tnew_sha256\n")
             for n in sorted(replaced):
                 r = replaced[n]
-                o.write(f"{n}\t{r['detail']}\t{sha256_file(r['file'])}\t{sha256_file(r['out_file'])}\n")
+                o.write(f"{n}\t{r['key']}\t{sha256_file(r['file'])}\t{sha256_file(r['out_file'])}\n")
             for n in sorted(newtext):
                 o.write(f"{n}\t-\t{hashlib.sha256(texts[n]).hexdigest()}\t{hashlib.sha256(newtext[n]).hexdigest()}\n")
         os.replace(part, a.out)
-        log(f"OK {a.out}: {len(replaced)} APKs re-signed, {len(newtext)} files rewritten; report {rd}")
+        log(f"OK {a.out}: {len(todo)} APKs + {len(apex)} APEXes replaced, {len(newtext)} files rewritten; report {rd}")
         return 0
     finally:
         if not a.work:

@@ -3,7 +3,7 @@
 Автор: kmuradoff · дата сборки: 2026-10-07 · база: LineageOS 21 TV GSI (Android 14) + MindTheGapps ATV
 
 Образ: `gsi/build/lumen_v1.img`, 1 263 308 800 байт,
-SHA-256 `998e263c3932de87e066a77eaca30d7d12f4628375ce753e0c99924067e0a050`
+SHA-256 `2e1f78f3d12636f60f904c51c2d836d85893c0d7c8775839c36e2adf675e5663`
 (записан в `gsi/build/SHA256SUMS_lumen_v1.txt`).
 
 Это **личный (PRIVATE) образ**: кодеки MediaTek лежат прямо в нём, поэтому его нельзя никуда
@@ -278,9 +278,10 @@ adb root && adb pull /data/misc/z9x_diag ~/lumen_diag_$(date +%m%d_%H%M)
   обновлением в слот A нужно будет **вручную** прошить vbmeta для слота A и **отдельно разрешить**
   копирование прошивки XGIMI без изменений в слот A. Программа обновления сама спросит об этом
   заранее и ничего не сделает без вашего согласия.
-- **APEX-модули не переподписаны** (около 30 модулей `com.android.*`). Они остаются на ключах AOSP.
-  Из-за общего uid с модулем tethering `NetworkStack.apk` и `CaptivePortalLogin.apk` тоже сохраняют
-  тестовый ключ networkstack. Подробности в `docs/keys.md`, раздел «APEX policy».
+- **Все подписи свои.** Все 35 системных модулей APEX переподписаны ключами Lumen (у каждого модуля
+  свой ключ содержимого и свой ключ контейнера), приложения внутри них тоже. В образе нет ни одного
+  тестового сертификата AOSP; `NetworkStack.apk` и `CaptivePortalLogin.apk` подписаны ключом Lumen
+  networkstack вместе с модулем tethering. Подробности в `docs/keys.md`, раздел «APEX».
 - Сборка `userdebug` с метками `test-keys` (так и задумано, fingerprint не меняется). SELinux
   работает в режиме permissive.
 - Устройство не сертифицировано Google: для входа нужно зарегистрировать GSF ID.
@@ -315,7 +316,8 @@ adb root && adb pull /data/misc/z9x_diag ~/lumen_diag_$(date +%m%d_%H%M)
 | Файл | Для чего |
 |---|---|
 | `platform`, `shared`, `media`, `releasekey` | подпись системных APK и всех приложений `org.z9x.*` |
-| `networkstack`, `bluetooth`, `nfc`, `sdk_sandbox` | запас: в 1.0 их пакеты живут внутри APEX |
+| `networkstack`, `bluetooth`, `nfc`, `sdk_sandbox` | сетевой модуль (NetworkStack, CaptivePortalLogin, tethering), Bluetooth, NFC, SDK sandbox |
+| `apex/` (35 модулей × 2 ключа RSA-4096) | ключи содержимого и контейнеров системных модулей APEX |
 | `ota`, `ota_next` (RSA-4096) | подпись обновлений и манифестов; `ota_next` — запасной ключ для одной будущей смены |
 | `README.txt`, `FINGERPRINTS.txt` | описание и отпечатки SHA-256 |
 

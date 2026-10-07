@@ -20,7 +20,7 @@ apps/third_party/android-airplay-server/** (126 files)	FETCH		1525835		git submo
 apps/third_party/boringssl/** (8665 files)	FETCH		242598343		git submodule google/boringssl @ 0.20260929.0 (Apache-2.0)
 apps/third_party/libplist/** (318 files)	FETCH		6391584		git submodule libimobiledevice/libplist @ fe3dc34 (LGPL-2.1)
 backup/** (40 files)	EXCLUDE		429677324		personal backup of the owner's apps, sdcard folders and settings
-build/** (70 files)	EXCLUDE		29985058716		images, signed tars, getvar dumps (serial), member lists
+build/** (149 files)	EXCLUDE		37117075054		images, signed tars, getvar dumps (serial), member lists
 logs/** (90 files)	EXCLUDE		19184739		device logs of the owner's projector
 overlay/apps_v1/** (12 files)	EXCLUDE		4886079		build output APKs (release assets only)
 overlay/apps_v64/** (6 files)	EXCLUDE		3555169		build output APKs
@@ -222,63 +222,63 @@ apps/Z9xHome/res/values-zh-rCN/strings.xml	PUBLISH	apps/Z9xHome/res/values-zh-rC
 apps/Z9xHome/res/values-zh-rTW/strings.xml	PUBLISH	apps/Z9xHome/res/values-zh-rTW/strings.xml	9439		own app source
 apps/Z9xHome/res/xml/network_security_config.xml	PUBLISH	apps/Z9xHome/res/xml/network_security_config.xml	577		own app source
 apps/Z9xHome/src/org/z9x/common/GeoIp.java	PUBLISH	apps/Z9xHome/src/org/z9x/common/GeoIp.java	8209		own app source
-apps/Z9xHome/src/org/z9x/home/App.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/App.java	4191		own app source
-apps/Z9xHome/src/org/z9x/home/HomeActivity.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/HomeActivity.java	38812		own app source
-apps/Z9xHome/src/org/z9x/home/Launch.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/Launch.java	3196		own app source
-apps/Z9xHome/src/org/z9x/home/Prefs.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/Prefs.java	4678		own app source
-apps/Z9xHome/src/org/z9x/home/Safe.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/Safe.java	553		own app source
-apps/Z9xHome/src/org/z9x/home/SafeModeView.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/SafeModeView.java	4317		own app source
-apps/Z9xHome/src/org/z9x/home/customize/CustomizeActivity.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/customize/CustomizeActivity.java	15369		own app source
-apps/Z9xHome/src/org/z9x/home/data/AppSource.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/AppSource.java	5595		own app source
-apps/Z9xHome/src/org/z9x/home/data/Card.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/Card.java	3330		own app source
-apps/Z9xHome/src/org/z9x/home/data/GuardCore.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/GuardCore.java	5266		own app source
-apps/Z9xHome/src/org/z9x/home/data/HomeModel.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/HomeModel.java	1741		own app source
-apps/Z9xHome/src/org/z9x/home/data/HomeRepository.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/HomeRepository.java	10937		own app source
-apps/Z9xHome/src/org/z9x/home/data/InputSource.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/InputSource.java	11515		own app source
-apps/Z9xHome/src/org/z9x/home/data/IntentGuard.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/IntentGuard.java	4372		own app source
-apps/Z9xHome/src/org/z9x/home/data/Ranker.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/Ranker.java	9929		own app source
-apps/Z9xHome/src/org/z9x/home/data/Row.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/Row.java	1536		own app source
-apps/Z9xHome/src/org/z9x/home/data/SnapshotCodec.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/SnapshotCodec.java	6254		own app source
-apps/Z9xHome/src/org/z9x/home/data/SnapshotStore.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/SnapshotStore.java	2547		own app source
-apps/Z9xHome/src/org/z9x/home/data/TvpSource.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/data/TvpSource.java	16333		own app source
-apps/Z9xHome/src/org/z9x/home/img/AppArt.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/img/AppArt.java	4293		own app source
-apps/Z9xHome/src/org/z9x/home/img/Blur.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/img/Blur.java	2661		own app source
-apps/Z9xHome/src/org/z9x/home/img/DiskCache.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/img/DiskCache.java	3366		own app source
-apps/Z9xHome/src/org/z9x/home/img/DominantColor.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/img/DominantColor.java	1781		own app source
-apps/Z9xHome/src/org/z9x/home/img/ImageLoader.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/img/ImageLoader.java	17838		own app source
-apps/Z9xHome/src/org/z9x/home/proj/ProjectorBridge.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/proj/ProjectorBridge.java	5535		own app source
-apps/Z9xHome/src/org/z9x/home/search/AppMatcher.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/search/AppMatcher.java	3318		own app source
-apps/Z9xHome/src/org/z9x/home/search/MicUpReceiver.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/search/MicUpReceiver.java	1166		own app source
-apps/Z9xHome/src/org/z9x/home/search/SearchActivity.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/search/SearchActivity.java	35881		own app source
-apps/Z9xHome/src/org/z9x/home/search/SuggestProviders.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/search/SuggestProviders.java	6675		own app source
-apps/Z9xHome/src/org/z9x/home/search/TvKeyboard.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/search/TvKeyboard.java	14854		own app source
-apps/Z9xHome/src/org/z9x/home/search/VoiceInput.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/search/VoiceInput.java	9946		own app source
-apps/Z9xHome/src/org/z9x/home/tvp/BrowsableRequestActivity.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/tvp/BrowsableRequestActivity.java	2013		own app source
-apps/Z9xHome/src/org/z9x/home/tvp/BrowsableRequestReceiver.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/tvp/BrowsableRequestReceiver.java	1167		own app source
-apps/Z9xHome/src/org/z9x/home/tvp/PackageReceiver.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/tvp/PackageReceiver.java	1573		own app source
-apps/Z9xHome/src/org/z9x/home/tvp/ProgramsInitializer.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/tvp/ProgramsInitializer.java	1747		own app source
-apps/Z9xHome/src/org/z9x/home/ui/Backdrop.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/Backdrop.java	4877		own app source
-apps/Z9xHome/src/org/z9x/home/ui/CardView.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/CardView.java	18144		own app source
-apps/Z9xHome/src/org/z9x/home/ui/ChipRow.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/ChipRow.java	5864		own app source
-apps/Z9xHome/src/org/z9x/home/ui/ContextPanel.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/ContextPanel.java	6081		own app source
-apps/Z9xHome/src/org/z9x/home/ui/HeroView.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/HeroView.java	25017		own app source
-apps/Z9xHome/src/org/z9x/home/ui/ListPanel.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/ListPanel.java	18648		own app source
-apps/Z9xHome/src/org/z9x/home/ui/Page.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/Page.java	1344		own app source
-apps/Z9xHome/src/org/z9x/home/ui/PageApps.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/PageApps.java	15216		own app source
-apps/Z9xHome/src/org/z9x/home/ui/PageForYou.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/PageForYou.java	14050		own app source
-apps/Z9xHome/src/org/z9x/home/ui/PillButton.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/PillButton.java	6021		own app source
-apps/Z9xHome/src/org/z9x/home/ui/RowView.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/RowView.java	16462		own app source
-apps/Z9xHome/src/org/z9x/home/ui/RowsPage.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/RowsPage.java	8447		own app source
-apps/Z9xHome/src/org/z9x/home/ui/Theme.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/Theme.java	7396		own app source
-apps/Z9xHome/src/org/z9x/home/ui/TopBar.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/TopBar.java	13442		own app source
-apps/Z9xHome/src/org/z9x/home/ui/Trailer.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/ui/Trailer.java	3951		own app source
-apps/Z9xHome/src/org/z9x/home/weather/Weather.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/weather/Weather.java	11819		own app source
-apps/Z9xHome/src/org/z9x/home/weather/Wmo.java	PUBLISH	apps/Z9xHome/src/org/z9x/home/weather/Wmo.java	1016		own app source
-apps/Z9xHome/test/org/z9x/home/data/AllTests.java	PUBLISH	apps/Z9xHome/test/org/z9x/home/data/AllTests.java	389		own app source
-apps/Z9xHome/test/org/z9x/home/data/IntentGuardTest.java	PUBLISH	apps/Z9xHome/test/org/z9x/home/data/IntentGuardTest.java	4010		own app source
-apps/Z9xHome/test/org/z9x/home/data/RankerTest.java	PUBLISH	apps/Z9xHome/test/org/z9x/home/data/RankerTest.java	5348		own app source
-apps/Z9xHome/test/org/z9x/home/data/SnapshotTest.java	PUBLISH	apps/Z9xHome/test/org/z9x/home/data/SnapshotTest.java	2910		own app source
-apps/Z9xHome/test/org/z9x/home/data/T.java	PUBLISH	apps/Z9xHome/test/org/z9x/home/data/T.java	505		own app source
+apps/Z9xHome/src/org/z9x$HOME	PUBLISH	apps/Z9xHome/src/org/z9x$HOME	4191		own app source
+apps/Z9xHome/src/org/z9x$HOME	PUBLISH	apps/Z9xHome/src/org/z9x$HOME	38812		own app source
+apps/Z9xHome/src/org/z9x$HOME	PUBLISH	apps/Z9xHome/src/org/z9x$HOME	3196		own app source
+apps/Z9xHome/src/org/z9x$HOME	PUBLISH	apps/Z9xHome/src/org/z9x$HOME	4678		own app source
+apps/Z9xHome/src/org/z9x$HOME	PUBLISH	apps/Z9xHome/src/org/z9x$HOME	553		own app source
+apps/Z9xHome/src/org/z9x$HOME	PUBLISH	apps/Z9xHome/src/org/z9x$HOME	4317		own app source
+apps/Z9xHome/src/org/z9x$HOME/CustomizeActivity.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/CustomizeActivity.java	15369		own app source
+apps/Z9xHome/src/org/z9x$HOME/AppSource.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/AppSource.java	5595		own app source
+apps/Z9xHome/src/org/z9x$HOME/Card.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/Card.java	3330		own app source
+apps/Z9xHome/src/org/z9x$HOME/GuardCore.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/GuardCore.java	5266		own app source
+apps/Z9xHome/src/org/z9x$HOME/HomeModel.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/HomeModel.java	1741		own app source
+apps/Z9xHome/src/org/z9x$HOME/HomeRepository.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/HomeRepository.java	10937		own app source
+apps/Z9xHome/src/org/z9x$HOME/InputSource.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/InputSource.java	11515		own app source
+apps/Z9xHome/src/org/z9x$HOME/IntentGuard.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/IntentGuard.java	4372		own app source
+apps/Z9xHome/src/org/z9x$HOME/Ranker.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/Ranker.java	9929		own app source
+apps/Z9xHome/src/org/z9x$HOME/Row.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/Row.java	1536		own app source
+apps/Z9xHome/src/org/z9x$HOME/SnapshotCodec.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/SnapshotCodec.java	6254		own app source
+apps/Z9xHome/src/org/z9x$HOME/SnapshotStore.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/SnapshotStore.java	2547		own app source
+apps/Z9xHome/src/org/z9x$HOME/TvpSource.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/TvpSource.java	16333		own app source
+apps/Z9xHome/src/org/z9x$HOME/AppArt.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/AppArt.java	4293		own app source
+apps/Z9xHome/src/org/z9x$HOME/Blur.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/Blur.java	2661		own app source
+apps/Z9xHome/src/org/z9x$HOME/DiskCache.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/DiskCache.java	3366		own app source
+apps/Z9xHome/src/org/z9x$HOME/DominantColor.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/DominantColor.java	1781		own app source
+apps/Z9xHome/src/org/z9x$HOME/ImageLoader.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/ImageLoader.java	17838		own app source
+apps/Z9xHome/src/org/z9x$HOME/ProjectorBridge.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/ProjectorBridge.java	5535		own app source
+apps/Z9xHome/src/org/z9x$HOME/AppMatcher.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/AppMatcher.java	3318		own app source
+apps/Z9xHome/src/org/z9x$HOME/MicUpReceiver.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/MicUpReceiver.java	1166		own app source
+apps/Z9xHome/src/org/z9x$HOME/SearchActivity.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/SearchActivity.java	35881		own app source
+apps/Z9xHome/src/org/z9x$HOME/SuggestProviders.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/SuggestProviders.java	6675		own app source
+apps/Z9xHome/src/org/z9x$HOME/TvKeyboard.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/TvKeyboard.java	14854		own app source
+apps/Z9xHome/src/org/z9x$HOME/VoiceInput.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/VoiceInput.java	9946		own app source
+apps/Z9xHome/src/org/z9x$HOME/BrowsableRequestActivity.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/BrowsableRequestActivity.java	2013		own app source
+apps/Z9xHome/src/org/z9x$HOME/BrowsableRequestReceiver.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/BrowsableRequestReceiver.java	1167		own app source
+apps/Z9xHome/src/org/z9x$HOME/PackageReceiver.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/PackageReceiver.java	1573		own app source
+apps/Z9xHome/src/org/z9x$HOME/ProgramsInitializer.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/ProgramsInitializer.java	1747		own app source
+apps/Z9xHome/src/org/z9x$HOME/Backdrop.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/Backdrop.java	4877		own app source
+apps/Z9xHome/src/org/z9x$HOME/CardView.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/CardView.java	18144		own app source
+apps/Z9xHome/src/org/z9x$HOME/ChipRow.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/ChipRow.java	5864		own app source
+apps/Z9xHome/src/org/z9x$HOME/ContextPanel.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/ContextPanel.java	6081		own app source
+apps/Z9xHome/src/org/z9x$HOME/HeroView.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/HeroView.java	25017		own app source
+apps/Z9xHome/src/org/z9x$HOME/ListPanel.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/ListPanel.java	18648		own app source
+apps/Z9xHome/src/org/z9x$HOME/Page.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/Page.java	1344		own app source
+apps/Z9xHome/src/org/z9x$HOME/PageApps.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/PageApps.java	15216		own app source
+apps/Z9xHome/src/org/z9x$HOME/PageForYou.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/PageForYou.java	14050		own app source
+apps/Z9xHome/src/org/z9x$HOME/PillButton.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/PillButton.java	6021		own app source
+apps/Z9xHome/src/org/z9x$HOME/RowView.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/RowView.java	16462		own app source
+apps/Z9xHome/src/org/z9x$HOME/RowsPage.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/RowsPage.java	8447		own app source
+apps/Z9xHome/src/org/z9x$HOME/Theme.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/Theme.java	7396		own app source
+apps/Z9xHome/src/org/z9x$HOME/TopBar.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/TopBar.java	13442		own app source
+apps/Z9xHome/src/org/z9x$HOME/Trailer.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/Trailer.java	3951		own app source
+apps/Z9xHome/src/org/z9x$HOME/Weather.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/Weather.java	11819		own app source
+apps/Z9xHome/src/org/z9x$HOME/Wmo.java	PUBLISH	apps/Z9xHome/src/org/z9x$HOME/Wmo.java	1016		own app source
+apps/Z9xHome/test/org/z9x$HOME/AllTests.java	PUBLISH	apps/Z9xHome/test/org/z9x$HOME/AllTests.java	389		own app source
+apps/Z9xHome/test/org/z9x$HOME/IntentGuardTest.java	PUBLISH	apps/Z9xHome/test/org/z9x$HOME/IntentGuardTest.java	4010		own app source
+apps/Z9xHome/test/org/z9x$HOME/RankerTest.java	PUBLISH	apps/Z9xHome/test/org/z9x$HOME/RankerTest.java	5348		own app source
+apps/Z9xHome/test/org/z9x$HOME/SnapshotTest.java	PUBLISH	apps/Z9xHome/test/org/z9x$HOME/SnapshotTest.java	2910		own app source
+apps/Z9xHome/test/org/z9x$HOME/T.java	PUBLISH	apps/Z9xHome/test/org/z9x$HOME/T.java	505		own app source
 apps/Z9xHome/tools/gen_icons.py	PUBLISH	apps/Z9xHome/tools/gen_icons.py	12860		own app source
 apps/Z9xHome/tools/i18n_home_a.py	PUBLISH	apps/Z9xHome/tools/i18n_home_a.py	59964		own app source
 apps/Z9xHome/tools/i18n_home_b.py	PUBLISH	apps/Z9xHome/tools/i18n_home_b.py	52271		own app source
@@ -646,10 +646,10 @@ apps/Z9xProjector/src/org/z9x/projector/hal/Gmpf2Client.java	PUBLISH	apps/Z9xPro
 apps/Z9xProjector/src/org/z9x/projector/hal/GmpfClient.java	PUBLISH	apps/Z9xProjector/src/org/z9x/projector/hal/GmpfClient.java	66865		own app source
 apps/Z9xProjector/src/org/z9x/projector/hal/HidlCaller.java	PUBLISH	apps/Z9xProjector/src/org/z9x/projector/hal/HidlCaller.java	8430		own app source
 apps/Z9xProjector/src/org/z9x/projector/hal/KstPoint.java	PUBLISH_SCRUB	apps/Z9xProjector/src/org/z9x/projector/hal/KstPoint.java	6746	PERSONAL	own app source; personal identifier found
-apps/Z9xProjector/src/org/z9x/projector/home/HomeSearch.java	PUBLISH	apps/Z9xProjector/src/org/z9x/projector/home/HomeSearch.java	4735		own app source
-apps/Z9xProjector/src/org/z9x/projector/home/LauncherRequestReceiver.java	PUBLISH	apps/Z9xProjector/src/org/z9x/projector/home/LauncherRequestReceiver.java	1529		own app source
-apps/Z9xProjector/src/org/z9x/projector/home/LauncherSwitcher.java	PUBLISH	apps/Z9xProjector/src/org/z9x/projector/home/LauncherSwitcher.java	21255		own app source
-apps/Z9xProjector/src/org/z9x/projector/home/PanelRequestReceiver.java	PUBLISH	apps/Z9xProjector/src/org/z9x/projector/home/PanelRequestReceiver.java	3158		own app source
+apps/Z9xProjector/src/org/z9x/projector$HOME	PUBLISH	apps/Z9xProjector/src/org/z9x/projector$HOME	4735		own app source
+apps/Z9xProjector/src/org/z9x/projector$HOME	PUBLISH	apps/Z9xProjector/src/org/z9x/projector$HOME	1529		own app source
+apps/Z9xProjector/src/org/z9x/projector$HOME	PUBLISH	apps/Z9xProjector/src/org/z9x/projector$HOME	21255		own app source
+apps/Z9xProjector/src/org/z9x/projector$HOME	PUBLISH	apps/Z9xProjector/src/org/z9x/projector$HOME	3158		own app source
 apps/Z9xProjector/src/org/z9x/projector/mem/MemoryGuard.java	PUBLISH	apps/Z9xProjector/src/org/z9x/projector/mem/MemoryGuard.java	11740		own app source
 apps/Z9xProjector/src/org/z9x/projector/mem/ProtectedSet.java	PUBLISH	apps/Z9xProjector/src/org/z9x/projector/mem/ProtectedSet.java	5379		own app source
 apps/Z9xProjector/src/org/z9x/projector/panel/ManualKeystonePanel.java	PUBLISH	apps/Z9xProjector/src/org/z9x/projector/panel/ManualKeystonePanel.java	55674		own app source
@@ -975,19 +975,22 @@ apps/i18n/pending/setup/zh-rTW.txt	PUBLISH	apps/i18n/pending/setup/zh-rTW.txt	45
 apps/sdk/framework-full-headers.jar	REGENERATE		18349658		header jar of our framework build (apps/sdk/gen_sdk.sh)
 apps/sdk/platform.pk8	PUBLISH	apps/sdk/testkeys/platform.pk8	1216		PUBLIC AOSP test key, dev builds only (README says so)
 apps/sdk/platform.x509.pem	PUBLISH	apps/sdk/testkeys/platform.x509.pem	1675		PUBLIC AOSP test key, dev builds only (README says so)
-docs/LUMEN_V1_RELEASE_NOTES.md	PUBLISH_SCRUB	docs/LUMEN_V1_RELEASE_NOTES.md	29113	PERSONAL	guides and design docs; personal identifier found
-docs/keys.md	PUBLISH	docs/keys.md	7196		guides and design docs
+docs/LUMEN_V1_RELEASE_NOTES.md	PUBLISH_SCRUB	docs/LUMEN_V1_RELEASE_NOTES.md	29513	PERSONAL	guides and design docs; personal identifier found
+docs/keys.md	PUBLISH	docs/keys.md	15369		guides and design docs
 docs/ota.md	PUBLISH	docs/ota.md	6733		guides and design docs
 docs/release.md	PUBLISH	docs/release.md	5015		guides and design docs
 docs/install/en.md	PUBLISH	docs/install/en.md	13427		guides and design docs
 docs/install/ru.md	PUBLISH	docs/install/ru.md	21868		guides and design docs
 docs/repo/LICENSE	PUBLISH	LICENSE	11357		repo root files (gitignore -> .gitignore, pre-push -> .githooks/pre-push)
 docs/repo/NOTICE	PUBLISH	NOTICE	1791		repo root files (gitignore -> .gitignore, pre-push -> .githooks/pre-push)
-docs/repo/PUBLISH_MANIFEST.tsv	PUBLISH	docs/repo/PUBLISH_MANIFEST.tsv	135721		guides and design docs
+docs/repo/PUBLISH_MANIFEST.tsv	PUBLISH	docs/repo/PUBLISH_MANIFEST.tsv	135862		guides and design docs
 docs/repo/README.md	PUBLISH	docs/repo/README.md	1310		guides and design docs
+docs/repo/ROOT_README.md	PUBLISH	docs/repo/ROOT_README.md	2851		guides and design docs
+docs/repo/export_repo.py	PUBLISH_SCRUB	docs/repo/export_repo.py	4065	PERSONAL	guides and design docs; personal identifier found
+docs/repo/gitattributes	PUBLISH	docs/repo/gitattributes	57		guides and design docs
 docs/repo/gitignore	PUBLISH	gitignore	1269		repo root files (gitignore -> .gitignore, pre-push -> .githooks/pre-push)
 docs/repo/pre-push	PUBLISH	pre-push	698		repo root files (gitignore -> .gitignore, pre-push -> .githooks/pre-push)
-docs/repo/publish_audit.py	PUBLISH	docs/repo/publish_audit.py	12018		guides and design docs
+docs/repo/publish_audit.py	PUBLISH	docs/repo/publish_audit.py	12061		guides and design docs
 installer/README.md	PUBLISH	installer/README.md	1579		PC installer (macOS/Linux/Windows)
 installer/lumen-install.cmd	PUBLISH	installer/lumen-install.cmd	255		PC installer (macOS/Linux/Windows)
 installer/lumen-install.ps1	PUBLISH	installer/lumen-install.ps1	34008		PC installer (macOS/Linux/Windows)
@@ -1079,7 +1082,7 @@ tools/ext4_to_tar.py	PUBLISH	tools/ext4_to_tar.py	8762		own image tooling
 tools/flash_gsi.sh	PUBLISH_SCRUB	tools/dev/flash_gsi.sh	2477	PERSONAL	dev flash helpers (serial -> argument)
 tools/flash_gsi_system.sh	PUBLISH_SCRUB	tools/dev/flash_gsi_system.sh	2240	PERSONAL	dev flash helpers (serial -> argument)
 tools/flash_tv.sh	PUBLISH_SCRUB	tools/dev/flash_tv.sh	1913	PERSONAL	dev flash helpers (serial -> argument)
-tools/lumen_v1.sh	PUBLISH_SCRUB	tools/build_system.sh	62608	PERSONAL	image composer (scrub host names)
+tools/lumen_v1.sh	PUBLISH_SCRUB	tools/build_system.sh	64465	PERSONAL	image composer (scrub host names)
 tools/patch_tar.py	PUBLISH	tools/patch_tar.py	7123		own image tooling
 tools/patch_tar.py.v5	EXCLUDE		2869		old copy
 tools/restore_stock.sh	EXCLUDE		2653		personal (the installer has a generic backup step)
@@ -1096,12 +1099,12 @@ tools/lumen/dexpreopt_lumen.sh	PUBLISH	tools/lumen/dexpreopt_lumen.sh	4661		imag
 tools/lumen/gen_bootanim.py	PUBLISH	tools/lumen/gen_bootanim.py	14435		image tooling (boot animation, checks, dexpreopt)
 tools/lumen/gen_customizer.py	PUBLISH	tools/lumen/gen_customizer.py	5907		image tooling (boot animation, checks, dexpreopt)
 tools/lumen/gen_lineage_rro.py	PUBLISH	tools/lumen/gen_lineage_rro.py	7053		image tooling (boot animation, checks, dexpreopt)
-tools/lumen/lumen_checks.py	PUBLISH	tools/lumen/lumen_checks.py	33625		image tooling (boot animation, checks, dexpreopt)
+tools/lumen/lumen_checks.py	PUBLISH	tools/lumen/lumen_checks.py	33714		image tooling (boot animation, checks, dexpreopt)
 tools/lumen/__pycache__/apkinfo.cpython-314.pyc	EXCLUDE		16585		python cache
-tools/lumen/__pycache__/lumen_checks.cpython-314.pyc	EXCLUDE		56151		python cache
+tools/lumen/__pycache__/lumen_checks.cpython-314.pyc	EXCLUDE		56193		python cache
 tools/ota/CHANGES.md	PUBLISH	tools/ota/CHANGES.md	8021		OTA tools + image OTA plumbing
 tools/ota/build_otatools.sh	PUBLISH	tools/ota/build_otatools.sh	2076		OTA tools + image OTA plumbing
-tools/ota/check_publish.py	PUBLISH	tools/ota/check_publish.py	14398		OTA tools + image OTA plumbing
+tools/ota/check_publish.py	PUBLISH	tools/ota/check_publish.py	14375		OTA tools + image OTA plumbing
 tools/ota/check_release_assets.py	PUBLISH	tools/ota/check_release_assets.py	15577		OTA tools + image OTA plumbing
 tools/ota/make_manifest.py	PUBLISH	tools/ota/make_manifest.py	9581		OTA tools + image OTA plumbing
 tools/ota/make_ota.py	PUBLISH	tools/ota/make_ota.py	13556		OTA tools + image OTA plumbing
@@ -1116,22 +1119,137 @@ tools/ota/image/z9x_blobs.rc	PUBLISH	tools/ota/image/z9x_blobs.rc	534		OTA tools
 tools/ota/image/z9x_blobs.sh	PUBLISH	tools/ota/image/z9x_blobs.sh	3391		OTA tools + image OTA plumbing
 tools/ota/image/z9x_ota.rc	PUBLISH	tools/ota/image/z9x_ota.rc	2227		OTA tools + image OTA plumbing
 tools/ota/image/z9x_ota.sh	PUBLISH	tools/ota/image/z9x_ota.sh	7287		OTA tools + image OTA plumbing
-tools/sign/check_image.py	PUBLISH	tools/sign/check_image.py	13890		signing tools (keys never in the tree)
-tools/sign/gen_keys.sh	PUBLISH	tools/sign/gen_keys.sh	3888		signing tools (keys never in the tree)
-tools/sign/keymap.json	PUBLISH	tools/sign/keymap.json	2354		signing tools (keys never in the tree)
-tools/sign/sign_release.sh	PUBLISH	tools/sign/sign_release.sh	5409		signing tools (keys never in the tree)
-tools/sign/sign_tar.py	PUBLISH	tools/sign/sign_tar.py	37172		signing tools (keys never in the tree)
-tools/sign/release_certs/FINGERPRINTS.txt	PUBLISH	keys/public/FINGERPRINTS.txt	864		Lumen OS PUBLIC release certificates (no private key)
-tools/sign/release_certs/bluetooth.x509.pem	PUBLISH	keys/public/bluetooth.x509.pem	1245		Lumen OS PUBLIC release certificates (no private key)
-tools/sign/release_certs/media.x509.pem	PUBLISH	keys/public/media.x509.pem	1237		Lumen OS PUBLIC release certificates (no private key)
-tools/sign/release_certs/networkstack.x509.pem	PUBLISH	keys/public/networkstack.x509.pem	1253		Lumen OS PUBLIC release certificates (no private key)
-tools/sign/release_certs/nfc.x509.pem	PUBLISH	keys/public/nfc.x509.pem	1229		Lumen OS PUBLIC release certificates (no private key)
-tools/sign/release_certs/ota.x509.pem	PUBLISH	keys/public/ota.x509.pem	1923		Lumen OS PUBLIC release certificates (no private key)
-tools/sign/release_certs/ota_next.x509.pem	PUBLISH	keys/public/ota_next.x509.pem	1935		Lumen OS PUBLIC release certificates (no private key)
-tools/sign/release_certs/platform.x509.pem	PUBLISH	keys/public/platform.x509.pem	1245		Lumen OS PUBLIC release certificates (no private key)
-tools/sign/release_certs/releasekey.x509.pem	PUBLISH	keys/public/releasekey.x509.pem	1249		Lumen OS PUBLIC release certificates (no private key)
-tools/sign/release_certs/sdk_sandbox.x509.pem	PUBLISH	keys/public/sdk_sandbox.x509.pem	1253		Lumen OS PUBLIC release certificates (no private key)
-tools/sign/release_certs/shared.x509.pem	PUBLISH	keys/public/shared.x509.pem	1237		Lumen OS PUBLIC release certificates (no private key)
+tools/sign/CHANGES.md	PUBLISH	tools/sign/CHANGES.md	6132		signing tools (keys never in the tree)
+tools/sign/apex_laptop.py	PUBLISH	tools/sign/apex_laptop.py	22472		signing tools (keys never in the tree)
+tools/sign/apex_sign.py	PUBLISH	tools/sign/apex_sign.py	33056		signing tools (keys never in the tree)
+tools/sign/apexlib.py	PUBLISH	tools/sign/apexlib.py	14379		signing tools (keys never in the tree)
+tools/sign/check_image.py	PUBLISH	tools/sign/check_image.py	14327		signing tools (keys never in the tree)
+tools/sign/gen_keys.sh	PUBLISH	tools/sign/gen_keys.sh	8213		signing tools (keys never in the tree)
+tools/sign/keymap.json	PUBLISH	tools/sign/keymap.json	4406		signing tools (keys never in the tree)
+tools/sign/sign_release.sh	PUBLISH	tools/sign/sign_release.sh	6117		signing tools (keys never in the tree)
+tools/sign/sign_tar.py	PUBLISH	tools/sign/sign_tar.py	40141		signing tools (keys never in the tree)
+tools/sign/__pycache__/apex_laptop.cpython-314.pyc	EXCLUDE		40809		python cache
+tools/sign/__pycache__/apex_sign.cpython-314.pyc	EXCLUDE		62846		python cache
+tools/sign/__pycache__/apexlib.cpython-314.pyc	EXCLUDE		23771		python cache
+tools/sign/__pycache__/check_image.cpython-314.pyc	EXCLUDE		22865		python cache
+tools/sign/__pycache__/sign_tar.cpython-314.pyc	EXCLUDE		73030		python cache
+tools/sign/release_certs/FINGERPRINTS.txt	PUBLISH	keys/public/FINGERPRINTS.txt	864		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/bluetooth.x509.pem	PUBLISH	keys/public/bluetooth.x509.pem	1245		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/media.x509.pem	PUBLISH	keys/public/media.x509.pem	1237		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/networkstack.x509.pem	PUBLISH	keys/public/networkstack.x509.pem	1253		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/nfc.x509.pem	PUBLISH	keys/public/nfc.x509.pem	1229		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/ota.x509.pem	PUBLISH	keys/public/ota.x509.pem	1923		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/ota_next.x509.pem	PUBLISH	keys/public/ota_next.x509.pem	1935		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/platform.x509.pem	PUBLISH	keys/public/platform.x509.pem	1245		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/releasekey.x509.pem	PUBLISH	keys/public/releasekey.x509.pem	1249		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/sdk_sandbox.x509.pem	PUBLISH	keys/public/sdk_sandbox.x509.pem	1253		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/shared.x509.pem	PUBLISH	keys/public/shared.x509.pem	1237		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/FINGERPRINTS.txt	PUBLISH	keys/public/apex/FINGERPRINTS.txt	6806		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.adbd.avbpubkey	PUBLISH	keys/public/apex/com.android.adbd.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.adbd.pubkey.pem	PUBLISH	keys/public/apex/com.android.adbd.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.adbd.x509.pem	PUBLISH	keys/public/apex/com.android.adbd.x509.pem	1972		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.adservices.avbpubkey	PUBLISH	keys/public/apex/com.android.adservices.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.adservices.pubkey.pem	PUBLISH	keys/public/apex/com.android.adservices.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.adservices.x509.pem	PUBLISH	keys/public/apex/com.android.adservices.x509.pem	1988		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.apex.cts.shim.avbpubkey	PUBLISH	keys/public/apex/com.android.apex.cts.shim.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.apex.cts.shim.pubkey.pem	PUBLISH	keys/public/apex/com.android.apex.cts.shim.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.apex.cts.shim.x509.pem	PUBLISH	keys/public/apex/com.android.apex.cts.shim.x509.pem	1996		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.appsearch.avbpubkey	PUBLISH	keys/public/apex/com.android.appsearch.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.appsearch.pubkey.pem	PUBLISH	keys/public/apex/com.android.appsearch.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.appsearch.x509.pem	PUBLISH	keys/public/apex/com.android.appsearch.x509.pem	1984		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.art.avbpubkey	PUBLISH	keys/public/apex/com.android.art.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.art.pubkey.pem	PUBLISH	keys/public/apex/com.android.art.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.art.x509.pem	PUBLISH	keys/public/apex/com.android.art.x509.pem	1968		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.btservices.avbpubkey	PUBLISH	keys/public/apex/com.android.btservices.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.btservices.pubkey.pem	PUBLISH	keys/public/apex/com.android.btservices.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.btservices.x509.pem	PUBLISH	keys/public/apex/com.android.btservices.x509.pem	1988		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.configinfrastructure.avbpubkey	PUBLISH	keys/public/apex/com.android.configinfrastructure.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.configinfrastructure.pubkey.pem	PUBLISH	keys/public/apex/com.android.configinfrastructure.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.configinfrastructure.x509.pem	PUBLISH	keys/public/apex/com.android.configinfrastructure.x509.pem	2017		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.conscrypt.avbpubkey	PUBLISH	keys/public/apex/com.android.conscrypt.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.conscrypt.pubkey.pem	PUBLISH	keys/public/apex/com.android.conscrypt.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.conscrypt.x509.pem	PUBLISH	keys/public/apex/com.android.conscrypt.x509.pem	1984		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.devicelock.avbpubkey	PUBLISH	keys/public/apex/com.android.devicelock.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.devicelock.pubkey.pem	PUBLISH	keys/public/apex/com.android.devicelock.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.devicelock.x509.pem	PUBLISH	keys/public/apex/com.android.devicelock.x509.pem	1988		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.extservices.avbpubkey	PUBLISH	keys/public/apex/com.android.extservices.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.extservices.pubkey.pem	PUBLISH	keys/public/apex/com.android.extservices.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.extservices.x509.pem	PUBLISH	keys/public/apex/com.android.extservices.x509.pem	1992		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.healthfitness.avbpubkey	PUBLISH	keys/public/apex/com.android.healthfitness.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.healthfitness.pubkey.pem	PUBLISH	keys/public/apex/com.android.healthfitness.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.healthfitness.x509.pem	PUBLISH	keys/public/apex/com.android.healthfitness.x509.pem	1996		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.i18n.avbpubkey	PUBLISH	keys/public/apex/com.android.i18n.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.i18n.pubkey.pem	PUBLISH	keys/public/apex/com.android.i18n.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.i18n.x509.pem	PUBLISH	keys/public/apex/com.android.i18n.x509.pem	1972		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.ipsec.avbpubkey	PUBLISH	keys/public/apex/com.android.ipsec.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.ipsec.pubkey.pem	PUBLISH	keys/public/apex/com.android.ipsec.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.ipsec.x509.pem	PUBLISH	keys/public/apex/com.android.ipsec.x509.pem	1976		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.media.avbpubkey	PUBLISH	keys/public/apex/com.android.media.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.media.pubkey.pem	PUBLISH	keys/public/apex/com.android.media.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.media.swcodec.avbpubkey	PUBLISH	keys/public/apex/com.android.media.swcodec.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.media.swcodec.pubkey.pem	PUBLISH	keys/public/apex/com.android.media.swcodec.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.media.swcodec.x509.pem	PUBLISH	keys/public/apex/com.android.media.swcodec.x509.pem	1996		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.media.x509.pem	PUBLISH	keys/public/apex/com.android.media.x509.pem	1976		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.mediaprovider.avbpubkey	PUBLISH	keys/public/apex/com.android.mediaprovider.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.mediaprovider.pubkey.pem	PUBLISH	keys/public/apex/com.android.mediaprovider.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.mediaprovider.x509.pem	PUBLISH	keys/public/apex/com.android.mediaprovider.x509.pem	1996		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.neuralnetworks.avbpubkey	PUBLISH	keys/public/apex/com.android.neuralnetworks.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.neuralnetworks.pubkey.pem	PUBLISH	keys/public/apex/com.android.neuralnetworks.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.neuralnetworks.x509.pem	PUBLISH	keys/public/apex/com.android.neuralnetworks.x509.pem	2000		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.ondevicepersonalization.avbpubkey	PUBLISH	keys/public/apex/com.android.ondevicepersonalization.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.ondevicepersonalization.pubkey.pem	PUBLISH	keys/public/apex/com.android.ondevicepersonalization.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.ondevicepersonalization.x509.pem	PUBLISH	keys/public/apex/com.android.ondevicepersonalization.x509.pem	2025		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.os.statsd.avbpubkey	PUBLISH	keys/public/apex/com.android.os.statsd.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.os.statsd.pubkey.pem	PUBLISH	keys/public/apex/com.android.os.statsd.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.os.statsd.x509.pem	PUBLISH	keys/public/apex/com.android.os.statsd.x509.pem	1984		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.permission.avbpubkey	PUBLISH	keys/public/apex/com.android.permission.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.permission.pubkey.pem	PUBLISH	keys/public/apex/com.android.permission.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.permission.x509.pem	PUBLISH	keys/public/apex/com.android.permission.x509.pem	1988		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.resolv.avbpubkey	PUBLISH	keys/public/apex/com.android.resolv.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.resolv.pubkey.pem	PUBLISH	keys/public/apex/com.android.resolv.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.resolv.x509.pem	PUBLISH	keys/public/apex/com.android.resolv.x509.pem	1976		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.rkpd.avbpubkey	PUBLISH	keys/public/apex/com.android.rkpd.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.rkpd.pubkey.pem	PUBLISH	keys/public/apex/com.android.rkpd.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.rkpd.x509.pem	PUBLISH	keys/public/apex/com.android.rkpd.x509.pem	1972		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.runtime.avbpubkey	PUBLISH	keys/public/apex/com.android.runtime.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.runtime.pubkey.pem	PUBLISH	keys/public/apex/com.android.runtime.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.runtime.x509.pem	PUBLISH	keys/public/apex/com.android.runtime.x509.pem	1980		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.scheduling.avbpubkey	PUBLISH	keys/public/apex/com.android.scheduling.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.scheduling.pubkey.pem	PUBLISH	keys/public/apex/com.android.scheduling.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.scheduling.x509.pem	PUBLISH	keys/public/apex/com.android.scheduling.x509.pem	1988		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.sdkext.avbpubkey	PUBLISH	keys/public/apex/com.android.sdkext.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.sdkext.pubkey.pem	PUBLISH	keys/public/apex/com.android.sdkext.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.sdkext.x509.pem	PUBLISH	keys/public/apex/com.android.sdkext.x509.pem	1976		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.tethering.avbpubkey	PUBLISH	keys/public/apex/com.android.tethering.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.tethering.pubkey.pem	PUBLISH	keys/public/apex/com.android.tethering.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.tethering.x509.pem	PUBLISH	keys/public/apex/com.android.tethering.x509.pem	1984		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.tzdata.avbpubkey	PUBLISH	keys/public/apex/com.android.tzdata.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.tzdata.pubkey.pem	PUBLISH	keys/public/apex/com.android.tzdata.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.tzdata.x509.pem	PUBLISH	keys/public/apex/com.android.tzdata.x509.pem	1976		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.uwb.avbpubkey	PUBLISH	keys/public/apex/com.android.uwb.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.uwb.pubkey.pem	PUBLISH	keys/public/apex/com.android.uwb.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.uwb.x509.pem	PUBLISH	keys/public/apex/com.android.uwb.x509.pem	1968		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.virt.avbpubkey	PUBLISH	keys/public/apex/com.android.virt.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.virt.pubkey.pem	PUBLISH	keys/public/apex/com.android.virt.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.virt.x509.pem	PUBLISH	keys/public/apex/com.android.virt.x509.pem	1972		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v30.avbpubkey	PUBLISH	keys/public/apex/com.android.vndk.v30.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v30.pubkey.pem	PUBLISH	keys/public/apex/com.android.vndk.v30.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v30.x509.pem	PUBLISH	keys/public/apex/com.android.vndk.v30.x509.pem	1984		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v31.avbpubkey	PUBLISH	keys/public/apex/com.android.vndk.v31.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v31.pubkey.pem	PUBLISH	keys/public/apex/com.android.vndk.v31.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v31.x509.pem	PUBLISH	keys/public/apex/com.android.vndk.v31.x509.pem	1984		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v32.avbpubkey	PUBLISH	keys/public/apex/com.android.vndk.v32.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v32.pubkey.pem	PUBLISH	keys/public/apex/com.android.vndk.v32.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v32.x509.pem	PUBLISH	keys/public/apex/com.android.vndk.v32.x509.pem	1984		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v33.avbpubkey	PUBLISH	keys/public/apex/com.android.vndk.v33.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v33.pubkey.pem	PUBLISH	keys/public/apex/com.android.vndk.v33.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v33.x509.pem	PUBLISH	keys/public/apex/com.android.vndk.v33.x509.pem	1984		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v34.avbpubkey	PUBLISH	keys/public/apex/com.android.vndk.v34.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v34.pubkey.pem	PUBLISH	keys/public/apex/com.android.vndk.v34.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.vndk.v34.x509.pem	PUBLISH	keys/public/apex/com.android.vndk.v34.x509.pem	1984		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.wifi.avbpubkey	PUBLISH	keys/public/apex/com.android.wifi.avbpubkey	1032		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.wifi.pubkey.pem	PUBLISH	keys/public/apex/com.android.wifi.pubkey.pem	800		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
+tools/sign/release_certs/apex/com.android.wifi.x509.pem	PUBLISH	keys/public/apex/com.android.wifi.x509.pem	1972		Lumen OS PUBLIC release certificates and APEX public keys (no private key)
 tools/sign/testcerts/bluetooth.x509.pem	PUBLISH	tools/sign/testcerts/bluetooth.x509.pem	2220		public AOSP test certificates (keymap.json inputs)
 tools/sign/testcerts/cts_uicc_2021.x509.pem	PUBLISH	tools/sign/testcerts/cts_uicc_2021.x509.pem	1464		public AOSP test certificates (keymap.json inputs)
 tools/sign/testcerts/media.x509.pem	PUBLISH	tools/sign/testcerts/media.x509.pem	1675		public AOSP test certificates (keymap.json inputs)
@@ -1141,3 +1259,5 @@ tools/sign/testcerts/platform.x509.pem	PUBLISH	tools/sign/testcerts/platform.x50
 tools/sign/testcerts/sdk_sandbox.x509.pem	PUBLISH	tools/sign/testcerts/sdk_sandbox.x509.pem	1464		public AOSP test certificates (keymap.json inputs)
 tools/sign/testcerts/shared.x509.pem	PUBLISH	tools/sign/testcerts/shared.x509.pem	1675		public AOSP test certificates (keymap.json inputs)
 tools/sign/testcerts/testkey.x509.pem	PUBLISH	tools/sign/testcerts/testkey.x509.pem	1675		public AOSP test certificates (keymap.json inputs)
+tools/sign/third_party/README.md	PUBLISH	tools/sign/third_party/README.md	739		signing tools (keys never in the tree)
+tools/sign/third_party/avbtool.py	PUBLISH	tools/sign/third_party/avbtool.py	204692		signing tools (keys never in the tree)

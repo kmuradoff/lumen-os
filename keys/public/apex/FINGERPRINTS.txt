@@ -1,0 +1,37 @@
+# Lumen OS APEX keys (public). Per module: SHA-256 of the container certificate (DER) and of the
+# payload public key (AVB format = the apex_pubkey entry).
+com.android.adbd                         container 8aee7e620ddcc1ae3e731aa50b3285b465d29cd25a1de2b4fb1bdb4f6c216595  payload 059be8002b5634dcaa8ef5588e390c2404d2f9b0fabfd4613b223bd59d7ee71a
+com.android.adservices                   container dd9ee987740b5c694b0888c55731bcecb2658c1ba46d23b442da961697ada1ec  payload bf210027fe964512b0fea055771edd5ecfcee0394acaae3797548bed53d49e79
+com.android.apex.cts.shim                container 62c6becdf87b55aa2083cedee28019dea7d3a86477060e18665630436b93998b  payload 753568e801dd78a75d5f1a21264fbc7b12155671400948617c3843439c4be468
+com.android.appsearch                    container 77f6cc1f53c1c476e4b18b8d017900d1e5a20696c6a35acec0a43a003751f519  payload fdbbd04da3d90930feaedd296afcc920b550cedad2ad84016c80f588a05036e7
+com.android.art                          container 1467600856fb1d477fb5c62b60f97c2830f0c8bf564b0bc2b933d367c21ea888  payload 81fb12e430e441d27d706b5d5e5232b3ee6936e590cee6f581b440a4210a22ae
+com.android.btservices                   container c52c1f2146f21519d072aa81cee437ebc982de4dbfbd6a855a204cd9419508f1  payload ec31feece0f5eb95c9fe2103286ee0250381a9f65a93b06b3dbe4b647cab4844
+com.android.configinfrastructure         container b3fb3fc6eb3533994e39814bf5b9e465453dfd6055eb35b8742e868f56964125  payload 6bc05218ff6e08aeb59b7c83d6e4951f07c2c1b920650b6d0f309176a831a549
+com.android.conscrypt                    container 896c6b2ac582ea6860556ecb95ecd975de87aae1e7714288df69c81d22a757bc  payload cb89813e1455d2f02745b45efe704c4c899e923d6ac90ea6ad74b292b1de0975
+com.android.devicelock                   container 23694bba07bf331bb071da5b2a108bf773892741fb3dfa8818e042c11059200f  payload b4ca9ff7dda68a1ec02b0f172334bf8db54990b07fa37802d4a3dcbff073ba5e
+com.android.extservices                  container 6d6e21b058448c86397ad520bd0f98680e5a514bcfa3814d942aa813737f0279  payload 7d6bd612fa6359d09d6b261a9419b7ac7fca492fd5cfdf61a452a2fc053fa838
+com.android.healthfitness                container e16dc52bf6fe5db38dfe1801c0a8a5aa3001f09edd6df21a30e347547bad1b7b  payload 696532d013644f92e0fba1616a9edee66b2c9ca441edc7d2da0ccc2e62120cfb
+com.android.i18n                         container f1b70c7005766b657d2d3899b66ea269300f0289309037a853abe6b5544dbb65  payload 699e02810fe98ccfdb46f60a23b2ed827c5a34c0332a5d94c809f07ba57a89dc
+com.android.ipsec                        container bdf24d5aa50a7a735cf889364ac844d22fc33d9c5662209b03a9aa171df36fc0  payload 46dcfa7300c27eb791266f22dc97b3543fbb1bb87ebabbb43fbcdccd300c7faf
+com.android.media                        container 92d08d5b27b191ba832626c48262c826836aa652b67c136720ad7ad82e36af70  payload bc74b6cfdaf8ada6955b4effefd8a499204d612690abeea536d880c3be4552d8
+com.android.media.swcodec                container 126b3e5e4e0284d477e5a7b70cceaa67a2eda72d94c3e3e94cac275356b31ec4  payload 11466e240503763ae584fb8d5a595ebf2df7e9463228966a30c16660bedc7a4e
+com.android.mediaprovider                container b640b69e0fa2d9a101625fc38f75c7bd445cb63b19e770ac2353f84df5e4212f  payload fa62b76557e8e9375a3de29fe3590c044ccb966ad9f111ae1122e3e7dc6b3bff
+com.android.neuralnetworks               container 2746aa8e2b067125f5fd57253a1b4faa81de6c2bb1412db1535423ee0593e680  payload 5d6c03b6d3afc52f993be9381d793dd97c827f947cab6c4a937a421f6bbc32f8
+com.android.ondevicepersonalization      container d4eefd20f3baaeb6e2b817de47c2f45f57c6fcff341479f67c2ba35cd5ca5f74  payload 3aea86ca477c1b363a79121cc9f7fdac984ef855d6bf0fce22da9c729673557c
+com.android.os.statsd                    container aeab2298c4760cfec724021af5a8cd4f6c60f4f9d689303267f0d3a2654a55c0  payload ef50ea845ea1edc0f09cb39c38384f3a73a700a5cf06c6b2b9cbff2435f1cbfb
+com.android.permission                   container 4c108403d01c3f21c4ecb2439b1d3c61070851e1cd221b5b509fa911d27513a6  payload ebd5fc07cb7a8146943d5d55f289c599676f8a02576572d7bd56a9079f98d799
+com.android.resolv                       container b7414148e0481a54393642bc31f5f702e4326f3646d9baaf2d7e41cdb30033e7  payload ccd1edc03e0ba34b1768f8542145cfc4ae331eaf9449989b5915deef9952d3c5
+com.android.rkpd                         container e77997502e480219d5472a4f47c89f8ebe2d1a666e45aff07d045eced3929de4  payload 05c865a9e7fce5cb8cbb1c3711dffe82619966fa7df70f86cc5af6789599c2de
+com.android.runtime                      container 3a1ccfd77a8cf7d06f5ea3c4d726c939f811fd4c5dfb113f90c66ead9d7cdab4  payload 256496770050b2e33600dcf43a1562529427b82b9a2df7c75c44d244379b0ae2
+com.android.scheduling                   container 5fe0941b237da0a95ba7d4b3b2a72ceab7f02170a3275bb2203ebca8373f8259  payload 23877ed15966557afe91d93cf864b48efdb4a11bb8937fcea4ab8280011ec7a5
+com.android.sdkext                       container 4e916ef222e909e2df814977657b53ed3c2e2632e07d92c841a154fb5f8f5cb1  payload 752dc494cf437038e2a1ae374fe17b6e140a9488dd0998ab3ec74e9d5ba514c3
+com.android.tethering                    container efdfa2274f85b179da179420234a7cad454337e0187857f7e0985d8c1a03b69e  payload d09abba77302058a77018fe54bd7585ad8d4e1ee4a51dbdb9b7a4688e2a84d86
+com.android.tzdata                       container 183e04bb38293ef9c4e88717b927ae763f23e1ef4854fbbfe24d4043d657f723  payload a68c163970c61766ea57bd0f5d04c50e6683460fde5b7c3cb41903d6df1d608f
+com.android.uwb                          container 678a573095143771fa522c4d7cff1c7c50ac03f313d11fbefc53a09e55e386d4  payload ada75a97586aea58a239a709c061880a987b46584317106553a013802cab8853
+com.android.virt                         container cffa083e93618bf0964116e89355aed9ccbc7177c2e07d3f881b356362065bf8  payload 95907cba16c16bd52010ae57401b4b1d5ffc6fbd25b8f3401e0a31ba7b14de63
+com.android.vndk.v30                     container 67766e696794c08f5087733206569342e0939df0d0151398c8ee9e8a8a2792a1  payload 38dd717571738960acbc19345922af72931c25f947ee81c1cb8c3229142903f9
+com.android.vndk.v31                     container f37a367374598ed22c4ec4a7abc12089b3c07012500ac51b84e31f3f7f598d47  payload 7929dc1108871d7fd7e7f08669a80ea32d4ee12a9557015f17996ce6291e5dba
+com.android.vndk.v32                     container 3b8f72265f731852d7dc1f099475d14e15f298e3e6d8b961ba8649fa464f4cae  payload acf7f643b427cd58af4848c91d3c850ebb487e93312617f5d46b20ca6d336d59
+com.android.vndk.v33                     container d260c2664012beabb75d8c4c27caea128d974d7d90c60140b970862e3c161886  payload 929d273f6c72a4371f5b216406a43d18395c3de2fdf8c95a0d733c14bdf94c31
+com.android.vndk.v34                     container 8ae8e77238baecec0a843b4cbde976166c0d0ebe95719d31546e2f68327f3c95  payload 2e5016dc8fb34ac345a460e9a2d21eeee953a27f54d490ff0fc1af996535947d
+com.android.wifi                         container d4a31aec877cab4a91b523cbbbccd54b7edc798024c78e221b985dd74c13e6a9  payload b03a170e0c365f9e66b56ac61a703de0e08afb7f988a7f71c47e6df145b0fc19

@@ -9,13 +9,17 @@
 # Steps (keys never leave this Mac; only signed outputs ever go back to the laptop):
 #   1. pull   rsync REMOTE_TAR from the build laptop ($BUILDER) into $OUT (resumable), check its sha256
 #             against the laptop's sha256sum
-#   2. sign   sign_tar.py -> lumen-<ver>-system_signed.tar + report (inventory, APEX, mac_permissions,
-#             resigned.tsv pins)
-#   3. image  mkfs.erofs -b4096 -zlz4hc -E noinline_data -T1230768000 --mkfs-time --tar=f (tar mtimes kept
+#   2. apex   apex_sign.py run: every APEX re-signed with the Lumen APEX keys (payload + container per
+#             module, APKs inside on the release keys). The key-free half (payload rebuild with apexer,
+#             apex_compression_tool, deapexer checks) runs on $BUILDER against REMOTE_TAR, the same tar
+#             (sha256 per APEX checked); only APKs / unsigned payloads / signed APEXes cross the wire
+#   3. sign   sign_tar.py --apex-dir -> lumen-<ver>-system_signed.tar + report (inventory, APEX,
+#             mac_permissions, resigned.tsv pins, all_signers.tsv)
+#   4. image  mkfs.erofs -b4096 -zlz4hc -E noinline_data -T1230768000 --mkfs-time --tar=f (tar mtimes kept
 #             for the PackageManager parse cache, as tools/lumen_v1.sh) + fsck.erofs; MKFS_ON=mac (default, Homebrew erofs-utils 1.9.x) or
 #             MKFS_ON=laptop (push the SIGNED tar, mkfs there with its erofs-utils, pull the image)
-#   4. check  check_image.py --tar --img (--variant private for the owner's image)
-#   5. sums   SHA256SUMS of the image (+ signature with the OTA key: SHA256SUMS.sig, checked by the
+#   5. check  check_image.py --tar --img (--variant private for the owner's image)
+#   6. sums   SHA256SUMS of the image (+ signature with the OTA key: SHA256SUMS.sig, checked by the
 #             installer with the public ota certificate)
 #
 # VARIANT=private (default, the only variant Lumen OS 1.0 can build: MTK Codec2 libs inside) names the
@@ -27,7 +31,8 @@
 #      from ~/.config/lumen/builder.env (BUILDER=... SSH_KEY=...; personal, never in the repo),
 #      KEYS_DIR (default ~/.lumen-keys), OUT (default gsi/build/lumen/<ver>), VARIANT (private|public),
 #      MKFS_ON (mac|laptop), BASE_TAR (optional: compat-prop comparison against this tar)
-# Laptop use is light: one rsync read (nice/ionice), plus one mkfs only with MKFS_ON=laptop.
+# Laptop use is light: one rsync read (nice/ionice), the APEX steps (nice 10 / ionice idle, ~3 min),
+# plus one mkfs only with MKFS_ON=laptop.
 set -euo pipefail
 
 die() { echo "sign_release: ERROR: $*" >&2; exit 1; }
@@ -57,7 +62,7 @@ case $(cd "$KEYS_DIR" 2>/dev/null && pwd -P) in
 esac
 mkdir -p "$OUT"
 
-log "1/5 pull $BUILDER:$REMOTE_TAR"
+log "1/6 pull $BUILDER:$REMOTE_TAR"
 rsync -e "ssh -i $SSH_KEY -o BatchMode=yes" --rsync-path="nice -n 19 ionice -c3 rsync" \
   --partial --append -t "$BUILDER:$REMOTE_TAR" "$IN"
 want=$("${SSH[@]}" "nice -n 19 ionice -c3 sha256sum '$REMOTE_TAR'" | cut -d' ' -f1)
@@ -65,10 +70,14 @@ got=$(shasum -a 256 "$IN" | cut -d' ' -f1)
 [ "$want" = "$got" ] || die "pulled tar sha256 $got != laptop $want (delete $IN and retry)"
 log "   sha256 $got"
 
-log "2/5 sign_tar.py"
-python3 "$H/sign_tar.py" "$IN" "$SIGNED" --keys "$KEYS_DIR" --report-dir "$OUT/sign-report"
+log "2/6 apex_sign.py (laptop: key-free steps only)"
+python3 "$H/apex_sign.py" run "$IN" "$OUT/apex" --keys "$KEYS_DIR" --builder "$BUILDER" --ssh-key "$SSH_KEY" \
+  --remote-tar "$REMOTE_TAR"
 
-log "3/5 mkfs.erofs ($MKFS_ON)"
+log "3/6 sign_tar.py"
+python3 "$H/sign_tar.py" "$IN" "$SIGNED" --apex-dir "$OUT/apex" --keys "$KEYS_DIR" --report-dir "$OUT/sign-report"
+
+log "4/6 mkfs.erofs ($MKFS_ON)"
 rm -f "$IMG" "$IMG.part"
 if [ "$MKFS_ON" = laptop ]; then
   RT=z9x/out/$(basename "$SIGNED")
@@ -83,11 +92,11 @@ fi
 fsck.erofs "$IMG.part" >/dev/null || die "fsck.erofs failed"
 mv "$IMG.part" "$IMG"
 
-log "4/5 check_image.py ($VARIANT)"
+log "5/6 check_image.py ($VARIANT)"
 python3 "$H/check_image.py" --tar "$SIGNED" --img "$IMG" --variant "$VARIANT" --keys "$KEYS_DIR" \
   --report-dir "$OUT/check-report" ${BASE_TAR:+--base "$BASE_TAR"}
 
-log "5/5 SHA256SUMS"
+log "6/6 SHA256SUMS"
 (cd "$OUT" && shasum -a 256 "$(basename "$IMG")" > SHA256SUMS)
 openssl dgst -sha256 -keyform DER -sign "$KEYS_DIR/ota.pk8" -out "$OUT/SHA256SUMS.sig" "$OUT/SHA256SUMS"
 openssl x509 -in "$KEYS_DIR/ota.x509.pem" -pubkey -noout > "$OUT/.ota_pub.pem"

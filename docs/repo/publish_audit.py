@@ -80,7 +80,7 @@ RULES = [  # (regex on rel path, action, repo_path template, reason)
     # keys and certificates
     (r"^apps/sdk/platform\.(pk8|x509\.pem)$", "PUBLISH", "apps/sdk/testkeys/platform.\\1", "PUBLIC AOSP test key, dev builds only (README says so)"),
     (r"^apps/sdk/framework-full-headers\.jar$", "REGENERATE", "", "header jar of our framework build (apps/sdk/gen_sdk.sh)"),
-    (r"^tools/sign/release_certs/(.*\.pem|FINGERPRINTS\.txt)$", "PUBLISH", "keys/public/\\1", "Lumen OS PUBLIC release certificates (no private key)"),
+    (r"^tools/sign/release_certs/(.*\.pem|.*\.avbpubkey|(?:.*/)?FINGERPRINTS\.txt)$", "PUBLISH", "keys/public/\\1", "Lumen OS PUBLIC release certificates and APEX public keys (no private key)"),
     (r"^tools/sign/testcerts/(.*\.pem)$", "PUBLISH", "tools/sign/testcerts/\\1", "public AOSP test certificates (keymap.json inputs)"),
     (r"^tools/sign/(.*)$", "PUBLISH", "tools/sign/\\1", "signing tools (keys never in the tree)"),
     (r"^tools/ota/(.*)$", "PUBLISH", "tools/ota/\\1", "OTA tools + image OTA plumbing"),

@@ -6,9 +6,12 @@
                    [--base BASE.tar] [--keys ~/.lumen-keys] [--no-ota-plumbing] [--report-dir DIR]
 
 Checks (ota/SPEC.md T2, PLAN.md W4; every failure is listed, exit 1 if any):
-  keys      every APK: release-signed or presigned (no AOSP test certificate, no unclassified APK,
-            one signer per sharedUserId); mac_permissions without test certificates;
-            otacerts.zip = [ota, ota_next] release certificates (sign_tar.py --verify)
+  keys      sign_tar.py --verify: every APK release-signed or presigned (no unclassified APK, one
+            signer per sharedUserId); every APEX re-signed with its Lumen APEX keys (container cert,
+            apex_pubkey, avbtool verify_image of the payload with the Lumen payload key, capex digest)
+            and every APK inside it on a release key; all_signers.tsv: NO AOSP test certificate (and no
+            unknown O=Android certificate) on any APK, APEX or APK inside an APEX; mac_permissions
+            without test certificates; otacerts.zip = [ota, ota_next] release certificates
   props     ro.z9x.keys=release; ro.z9x.build_id, ro.z9x.version_code (integer), ro.z9x.version;
             ro.product.ab_ota_partitions exactly the OTA static set (vbmeta NOT in it);
             ro.build.type=userdebug and ro.build.tags=test-keys (C18, fingerprint unchanged);
@@ -21,8 +24,8 @@ Checks (ota/SPEC.md T2, PLAN.md W4; every failure is listed, exit 1 if any):
   blobs     public: no MediaTek/XGIMI file (by sha256 over EVERY member, and by path), the codec
             placeholders exist with size 0, no libcodec2store; private (the owner's own image):
             MTK codec libs allowed, reported
-  image     with --img: fsck.erofs passes, and every checked member (APKs, props, rc, xml, otacerts)
-            read back with dump.erofs --cat has the tar's sha256
+  image     with --img: fsck.erofs passes, and every checked member (APKs, APEXes, props, rc, xml,
+            otacerts) read back with dump.erofs --cat has the tar's sha256
 """
 import argparse
 import hashlib
@@ -90,7 +93,8 @@ def props_of(data):
 
 
 def read_members(path, want_paths):
-    """sha256 of every regular member, size, plus the bytes of the members in want_paths."""
+    """sha256 of every regular member, size, plus the bytes of the members in want_paths (and of every
+    APK / prop / init file)."""
     sha, size, data = {}, {}, {}
     with tarfile.open(path, "r", encoding="utf-8", errors="surrogateescape") as t:
         for m in t:
@@ -249,7 +253,7 @@ def main():
             r = subprocess.run([fsck, a.img], capture_output=True, text=True)
             if r.returncode != 0:
                 errs.append(f"image: fsck.erofs failed: {r.stdout[-300:]}{r.stderr[-300:]}")
-            check = sorted(n for n in data if n in sha)
+            check = sorted(set(n for n in data if n in sha) | set(n for n in sha if n.endswith((".apex", ".capex"))))
             bad = 0
             for n in check:
                 r = subprocess.run([dump, "--cat", "--path=/" + n, a.img], capture_output=True)

@@ -11,8 +11,9 @@ Subcommands (every one exits non-zero with 'ERROR ...' lines on a failure):
   packages TAR                 package-level checks over every APK in a tar (removed / required
                                packages, HOME priorities, partner customization, org.z9x signers)
   signed UNSIGNED SIGNED TESTCERTS RELEASECERTS
-                               the sign stage changed only signatures, certs and seinfo; no test key
-                               left on any APK; dex entries of re-signed APKs byte-identical
+                               the sign stage changed only signatures, certs and seinfo (APEXes: the
+                               files pinned by $SIGN_APEX_MANIFEST); no test key left on any APK or in
+                               any mac_permissions; dex entries of re-signed APKs byte-identical
   bootgate BASE_TAR BOOTDIR... the dexpreopt boot image (laptop out tree) is byte-identical to the
                                base tar's system/framework/arm64 boot image
   oatcheck ODEX REF_ODEX FILTER   header keys of a generated odex against a reference odex
@@ -454,31 +455,21 @@ def cmd_packages(path):
 
 
 # ---------------------------------------------------------------------------------- sign stage
-SIGN_MAY_CHANGE = re.compile(r'(\.apk$|_mac_permissions\.xml$|^system/etc/security/otacerts\.zip$)')
+SIGN_MAY_CHANGE = re.compile(r'(\.apk$|\.apex$|\.capex$|_mac_permissions\.xml$|^system/etc/security/otacerts\.zip$)')
 
 
 def cmd_signed(unsigned, signed, testcerts, releasecerts):
     test, rel = certs_in(testcerts), certs_in(releasecerts)
     extra = set(os.environ.get('SIGN_EXTRA_CHANGED', '').split())
-    # sign_tar.py policy (L-OTA): APEXes are not re-signed, so a test key that an APK INSIDE an APEX
-    # still uses stays legitimate: /system APKs sharing a sharedUserId with such an APK keep it
-    # ('keep' in inventory.tsv) and the seinfo entries of such keys stay (duplicated when the key was
-    # also re-signed). Everything else must be release-signed or presigned.
-    rep = os.environ.get('SIGN_REPORT', '')
-    keep_paths, apex_test = set(), set()
-    if rep and os.path.isdir(rep):
-        for line in open(os.path.join(rep, 'inventory.tsv')):
-            f = line.rstrip('\n').split('\t')
-            if f and not f[0].startswith('#') and len(f) > 1 and f[1] == 'keep':
-                keep_paths.add(f[0])
-        ap = os.path.join(rep, 'apex_apks.tsv')
-        if os.path.exists(ap):
-            for line in open(ap):
-                m = re.search(r'\t(\w+)\(test\)\s*$', line)
-                if m:
-                    apex_test.add(m.group(1))
-        print('sign policy: %d APEX-bound APKs keep their test key; test keys used inside APEXes: %s'
-              % (len(keep_paths), ', '.join(sorted(apex_test)) or '-'))
+    # policy since 2026-10-07 (docs/keys.md#apex): every APEX is re-signed by tools/sign/apex_sign.py
+    # (APEXDIR/apex_signed.json pins each re-signed file), so NO APK, APEX or seinfo entry keeps an
+    # AOSP test certificate.
+    am = os.environ.get('SIGN_APEX_MANIFEST', '')
+    apex_pins = json.load(open(am))['apex'] if am and os.path.isfile(am) else None
+    if apex_pins is None:
+        err('SIGN_APEX_MANIFEST (apex_sign.py apex_signed.json) not given: APEX changes cannot be checked')
+        apex_pins = {}
+    print('sign policy: no AOSP test certificate anywhere; %d re-signed APEXes pinned' % len(apex_pins))
     a, _ = load_meta(unsigned)
     b, _ = load_meta(signed)
     if set(a) != set(b):
@@ -503,7 +494,13 @@ def cmd_signed(unsigned, signed, testcerts, releasecerts):
                 continue
             content_changed.append(n)
             if not SIGN_MAY_CHANGE.search(n) and n not in extra:
-                err('the sign stage changed %s (only APK signatures, *_mac_permissions.xml and otacerts.zip may change)' % n)
+                err('the sign stage changed %s (only APK / APEX signatures, *_mac_permissions.xml and otacerts.zip may change)' % n)
+            if n.endswith(('.apex', '.capex')):
+                pin = apex_pins.get(n)
+                if not pin:
+                    err('%s changed but is not in apex_signed.json' % n)
+                elif sha256(da) != pin['orig_sha256'] or sha256(db) != pin['sha256']:
+                    err('%s: not the APEX apex_sign.py re-signed (sha256)' % n)
             if n.endswith('.apk'):
                 try:
                     da_dex = [e[:3] for e in apkinfo.dex_entries(da)]
@@ -519,8 +516,14 @@ def cmd_signed(unsigned, signed, testcerts, releasecerts):
                         err('%s: entries other than META-INF changed by re-signing' % n)
                 except Exception as e:  # noqa: BLE001
                     err('%s: cannot compare (%s)' % (n, e))
-        # no APK left with a test certificate (except sign_tar's APEX-bound 'keep'); ours release platform
-        counts, kept_keys = {}, set()
+        for n in sorted(apex_pins):
+            if n not in content_changed:
+                err('%s: APEX not re-signed (identical to the unsigned tar)' % n)
+        for n in sorted(sa):
+            if n.endswith(('.apex', '.capex')) and sa[n].isreg() and n not in apex_pins:
+                err('%s: APEX missing from apex_signed.json' % n)
+        # no APK left with a test certificate; ours on the release platform key
+        counts = {}
         for n, m in sa.items():
             if not (m.isreg() and n.endswith('.apk')):
                 continue
@@ -532,10 +535,7 @@ def cmd_signed(unsigned, signed, testcerts, releasecerts):
             kind = 'test:' + test[c] if c in test else ('release:' + rel[c] if c in rel else 'presigned')
             counts[kind] = counts.get(kind, 0) + 1
             if c in test:
-                if n in keep_paths and '/Z9x' not in n:
-                    kept_keys.add(test[c])
-                else:
-                    err('%s is still signed with the test key %s' % (n, test[c]))
+                err('%s is still signed with the test key %s' % (n, test[c]))
             if '/Z9x' in n and rel.get(c) != 'platform':
                 err('%s: our APK must be signed with the release platform key (%s)' % (n, kind))
         print('signers after signing: ' + ', '.join('%s=%d' % kv for kv in sorted(counts.items())))
@@ -556,8 +556,8 @@ def cmd_signed(unsigned, signed, testcerts, releasecerts):
                 if f.endswith('.x509.pem'):
                     hx = apkinfo.pem_to_der(open(os.path.join(testcerts, f)).read()).hex()
                     key = f[:-len('.x509.pem')]
-                    if hx in txt and key not in apex_test | kept_keys:
-                        err('%s still names the test certificate %s (no APEX user of that key)' % (n, f))
+                    if hx in txt:
+                        err('%s still names the AOSP test certificate %s' % (n, f))
             if n == 'system/etc/selinux/plat_mac_permissions.xml':
                 hx = apkinfo.pem_to_der(open(os.path.join(releasecerts, 'platform.x509.pem')).read()).hex()
                 if hx not in txt:

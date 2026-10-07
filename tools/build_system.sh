@@ -10,10 +10,12 @@
 #   prep    [laptop]  preflight of every input -> base check -> dexpreopt (speed, plan C10) ->
 #                     patch_tar -> member/content diff against the base -> package checks
 #                     -> $OUTDIR/system_tv_lumen_v1_unsigned.tar (+ .spec, .info)
-#   sign    [Mac]     tools/sign/sign_tar.py with the release keys (~/.lumen-keys, never on the
-#                     laptop) -> sign_tar.py --verify -> lumen_checks.py signed (only signatures, seinfo
-#                     and otacerts changed; dex bytes identical so the odex stay valid)
-#                     -> $OUTDIR/system_tv_lumen_v1_signed.tar
+#   sign    [Mac]     tools/sign/apex_sign.py (every APEX re-signed with the Lumen APEX keys; the key-free
+#                     payload rebuild / compression / deapexer checks run on the laptop over ssh, on its
+#                     copy of the unsigned tar) -> tools/sign/sign_tar.py --apex-dir with the release
+#                     keys (~/.lumen-keys, never on the laptop) -> sign_tar.py --verify -> lumen_checks.py
+#                     signed (only signatures, seinfo, otacerts and the pinned APEXes changed; dex bytes
+#                     identical so the odex stay valid) -> $OUTDIR/system_tv_lumen_v1_signed.tar
 #   image   [laptop]  mkfs.erofs + fsck.erofs of the signed tar -> labels of new members -> every added
 #                     or replaced member read back (dump.erofs --cat) against the tar -> package checks
 #                     -> tools/sign/check_image.py --variant private -> system_tv_lumen_v1.img (+ .sha256)
@@ -72,7 +74,8 @@
 #   - boot animation: Lumen "Beam" (tools/lumen/gen_bootanim.py, own render of Apache-2.0 Roboto, no
 #     XGIMI/Lineage asset) replaces system/product/media/bootanimation.zip (the -dark symlink stays).
 #   - MTK Codec2 store plugin: 6 stock libs (libcodec2store.so dropped, never loaded; PLAN X6).
-#   - APEX: not re-signed (apexd trusts pre-installed APEXes on the read-only /system; docs/keys.md#apex).
+#   - APEX (2026-10-07, docs/keys.md#apex): every APEX re-signed (new payload + container key per module,
+#     the APKs inside on the release keys); no AOSP test certificate is left anywhere in the image.
 #
 # Kept from v6.5 (same checks as z9x_v65.sh): keylayouts (STB_POWER WAKE, factory remotes POWER),
 # Generic.kl (base + key 142), idc, z9x_audio (click curve), z9x_setup.rc (byte-identical, C25),
@@ -103,6 +106,7 @@
 #      ALLOW_NO_POWER_RC=1 (dry run without L-PROJECTOR's z9x_power*.rc)  KEYS_DIR (~/.lumen-keys, sign)
 #      ALLOW_TEST_KEYS=1 (image of the unsigned tar for a lab test; ro.z9x.keys becomes 'test')
 #      BUILDER ($BUILDER) BUILDER_KEY (~/.ssh/<builder-ssh-key>) LUMEN_OUT (gsi/build/lumen_v1)
+#      REMOTE_UNSIGNED (sign: the laptop's copy of the unsigned tar, default z9x/out/<its name>)
 set -euo pipefail
 
 H=$(cd "$(dirname "$0")" && pwd)
@@ -231,7 +235,9 @@ preflight() {
   grep -q -- "'--mkdir'" "$PT" && grep -q 'def opt_label' "$PT" || die "$PT is not the v6.2b patch_tar.py (--mkdir + LABEL)"
   for f in "$CHK" "$LT/apkinfo.py" "$LT/dexpreopt_lumen.sh"; do need "$f"; done
   [ -d "$TESTCERTS" ] && [ -s "$RELCERTS/platform.x509.pem" ] || die "no public certificates in $TESTCERTS / $RELCERTS"
-  if ls "$RELCERTS" "$TESTCERTS" 2>/dev/null | grep -qE '\.(pk8|key|pem\.key)$'; then die "a private key file in the cert dirs"; fi
+  if find "$RELCERTS" "$TESTCERTS" -type f \( -name '*.pk8' -o -name '*.key' -o -name '*.pem.key' \) | grep -q .; then die "a private key file in the cert dirs"; fi
+  if grep -rlE -- '-----BEGIN [A-Z ]*PRIVATE KEY-----' "$RELCERTS" "$TESTCERTS" >/dev/null 2>&1; then die "a private key in the cert dirs"; fi
+  [ -s "$RELCERTS/apex/FINGERPRINTS.txt" ] || die "no public APEX keys in $RELCERTS/apex (tools/sign/gen_keys.sh)"
   case $INCREMENTAL_SUFFIX in *[!A-Za-z0-9_]*) die "INCREMENTAL_SUFFIX: only [A-Za-z0-9_]" ;; esac
   case $BUILD_DATE in [0-9][0-9][0-9][0-9][01][0-9][0-3][0-9]) ;; *) die "BUILD_DATE must be yyyymmdd" ;; esac
   case $MTIME_EPOCH in *[!0-9]*|'') die "MTIME_EPOCH must be a UNIX time" ;; esac
@@ -702,7 +708,7 @@ stage_sign() {
   case $KEYS in *"XGIMI PLAY 6"*|*/gsi/*) die "keys inside the project tree: $KEYS" ;; esac
   [ -d "$KEYS" ] && [ -s "$KEYS/platform.pk8" ] || die "no release keys in $KEYS"
   [ "$(stat -f %Lp "$KEYS")" = 700 ] || die "$KEYS must be mode 700"
-  for c in platform shared media networkstack releasekey ota ota_next; do
+  for c in platform shared media networkstack sdk_sandbox bluetooth nfc releasekey ota ota_next; do
     [ "$(openssl x509 -in "$KEYS/$c.x509.pem" -outform DER | sha256in)" = "$(openssl x509 -in "$RELCERTS/$c.x509.pem" -outform DER | sha256in)" ] \
       || die "$KEYS/$c.x509.pem differs from the published tools/sign/release_certs copy"
   done
@@ -711,14 +717,19 @@ stage_sign() {
   if grep -qx 'partial=1' "$IN.info" && [ "${ALLOW_PARTIAL:-0}" != 1 ]; then die "$IN is a partial dry-run build"; fi
   OUT=$OUTDIR/system_tv_${NAME}_signed.tar
   REP=$OUTDIR/sign_report_$NAME
+  APEXOUT=$OUTDIR/apex_$NAME
   PARTS=("$OUT" "$OUT.part" "$OUT.info" "$OUT.spec")
   rm -f "${PARTS[@]}"; mkdir -p "$REP"
-  log "[sign] 1/3 sign_tar.py (release keys from $KEYS)"
-  python3 "$TOOLS/sign/sign_tar.py" "$IN" "$OUT" --keys "$KEYS" --report-dir "$REP" || die "sign_tar.py failed"
-  log "[sign] 2/3 sign_tar.py --verify"
+  log "[sign] 1/4 apex_sign.py: every APEX re-signed (APEX keys from $KEYS/apex; laptop ${BUILDER:$BUILDER} key-free)"
+  python3 "$TOOLS/sign/apex_sign.py" run "$IN" "$APEXOUT" --keys "$KEYS" \
+    --builder "${BUILDER:$BUILDER}" --ssh-key "${BUILDER_KEY:-$HOME/.ssh/<builder-ssh-key>}" \
+    --remote-tar "${REMOTE_UNSIGNED:-z9x/out/$(basename "$IN")}" || die "apex_sign.py failed"
+  log "[sign] 2/4 sign_tar.py (release keys from $KEYS, APEXes from $APEXOUT)"
+  python3 "$TOOLS/sign/sign_tar.py" "$IN" "$OUT" --apex-dir "$APEXOUT" --keys "$KEYS" --report-dir "$REP" || die "sign_tar.py failed"
+  log "[sign] 3/4 sign_tar.py --verify"
   python3 "$TOOLS/sign/sign_tar.py" --verify "$OUT" --keys "$KEYS" --report-dir "$REP" || die "sign_tar.py --verify failed"
-  log "[sign] 3/3 unsigned -> signed diff"
-  SIGN_REPORT=$REP python3 "$CHK" signed "$IN" "$OUT" "$TESTCERTS" "$RELCERTS" || die "signed tar check failed"
+  log "[sign] 4/4 unsigned -> signed diff"
+  SIGN_APEX_MANIFEST=$APEXOUT/apex_signed.json python3 "$CHK" signed "$IN" "$OUT" "$TESTCERTS" "$RELCERTS" || die "signed tar check failed"
   cp "$IN.spec" "$OUT.spec"
   { cat "$IN.info"; echo "signed=$(date -u +%Y-%m-%dT%H:%M:%SZ) keys=release"; } > "$OUT.info"
   PARTS=()
@@ -807,7 +818,9 @@ PY
     # the laptop has no keys: sign_tar.py --verify needs only the PUBLIC release certificates (a mode-700
     # dir holding copies of tools/sign/release_certs/*.x509.pem)
     if [ -z "${KEYS_DIR:-}" ] && [ ! -d "$HOME/.lumen-keys" ]; then
-      mkdir -m 700 "$WORK/pubcerts" && cp "$RELCERTS"/*.x509.pem "$WORK/pubcerts/" && export KEYS_DIR=$WORK/pubcerts
+      mkdir -m 700 "$WORK/pubcerts" "$WORK/pubcerts/apex" && cp "$RELCERTS"/*.x509.pem "$WORK/pubcerts/" \
+        && cp "$RELCERTS"/apex/*.x509.pem "$RELCERTS"/apex/*.avbpubkey "$RELCERTS"/apex/*.pubkey.pem "$WORK/pubcerts/apex/" \
+        && export KEYS_DIR=$WORK/pubcerts
     fi
     python3 "$TOOLS/sign/check_image.py" --tar "$IN" --img "$IMG.part" --variant private --base "$BASE" \
       --report-dir "$OUTDIR/check_image_$NAME" || die "check_image.py failed"
@@ -824,7 +837,7 @@ PY
 # ======================================================================== stage: remote (Mac)
 stage_remote() {
   [ "$(uname -s)" = Darwin ] || die "remote runs on the Mac"
-  BUILDER=${BUILDER:-$BUILDER}
+  BUILDER=${BUILDER:$BUILDER}
   BKEY=${BUILDER_KEY:-$HOME/.ssh/<builder-ssh-key>}
   SSH=(ssh -i "$BKEY" -o BatchMode=yes "$BUILDER")
   RS=(rsync -e "ssh -i $BKEY -o BatchMode=yes" --rsync-path="nice -n 19 ionice -c3 rsync")
@@ -848,12 +861,17 @@ stage_remote() {
   "${RS[@]}" -a --delete "$LT/" "$BUILDER:z9x/tools/lumen/"
   "${RS[@]}" -a --delete "$OTAIMG/" "$BUILDER:z9x/tools/ota/image/"
   "${RS[@]}" -a --delete --include='*.x509.pem' --include='FINGERPRINTS.txt' --exclude='*' "$TESTCERTS/" "$BUILDER:z9x/tools/sign/testcerts/"
-  "${RS[@]}" -a --delete --include='*.x509.pem' --include='FINGERPRINTS.txt' --exclude='*' "$RELCERTS/" "$BUILDER:z9x/tools/sign/release_certs/"
-  "${RS[@]}" -a "$TOOLS/sign/check_image.py" "$TOOLS/sign/sign_tar.py" "$TOOLS/sign/keymap.json" "$BUILDER:z9x/tools/sign/"
+  "${RS[@]}" -a --delete --include='apex/' --include='*.x509.pem' --include='*.avbpubkey' --include='*.pubkey.pem' \
+    --include='FINGERPRINTS.txt' --exclude='*' "$RELCERTS/" "$BUILDER:z9x/tools/sign/release_certs/"
+  "${SSH[@]}" 'mkdir -p ~/z9x/tools/sign/third_party'
+  "${RS[@]}" -a "$TOOLS/sign/check_image.py" "$TOOLS/sign/sign_tar.py" "$TOOLS/sign/keymap.json" \
+    "$TOOLS/sign/apexlib.py" "$TOOLS/sign/apex_laptop.py" "$BUILDER:z9x/tools/sign/"
+  "${RS[@]}" -a "$TOOLS/sign/third_party/avbtool.py" "$TOOLS/sign/third_party/README.md" "$BUILDER:z9x/tools/sign/third_party/"
   "${RS[@]}" -a "$GSI/overlay/v65/z9x_setup.rc" "$BUILDER:z9x/overlay/v65/"
   "${RS[@]}" -a --delete "$V1/" "$BUILDER:z9x/overlay/v1/"
   "${RS[@]}" -a --delete "$APPS/" "$BUILDER:z9x/overlay/apps_v1/"
-  "${SSH[@]}" 'ls ~/z9x/tools/sign ~/z9x/tools/sign/*/ | grep -E "\.(pk8|key)$"' && die "a private key reached the laptop" || true
+  "${SSH[@]}" 'find ~/z9x/tools/sign -name "*.pk8" -o -name "*.key" | grep -q . || grep -rlE -- "-----BEGIN [A-Z ]*PRIVATE KEY-----" ~/z9x/tools/sign >/dev/null 2>&1' \
+    && die "a private key reached the laptop" || true
   log "[remote] 3/6 prep on the laptop"
   thermal
   "${SSH[@]}" "cd ~/z9x/out && BUILD_DATE=$BUILD_DATE MTIME_EPOCH=$MTIME_EPOCH INCREMENTAL_SUFFIX=$INCREMENTAL_SUFFIX nice -n 10 ionice -c3 bash ../tools/lumen_v1.sh prep"
