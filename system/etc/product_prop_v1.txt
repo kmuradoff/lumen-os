@@ -1,0 +1,34 @@
+# Lumen OS 1.0 product defaults (appended to system/product/etc/build.prop by lumen_v1.sh).
+# /product/etc/build.prop is read last by init (after vendor and odm), so these ro.* values replace the
+# vendor's (property_service.cpp: later partitions override earlier ones while build.props load).
+# A value already saved in /data wins for persist.*.
+# English is the product default; the user picks the language in the first-run setup (language step first).
+ro.product.locale=en-US
+persist.sys.timezone=Europe/Moscow
+bluetooth.device.default_name=XGIMI Z9X
+# Product name and version (brand spec 5; the About rows come from ro.build.display.id and
+# ro.lineage.display.version, patched in system/build.prop). Display only, nothing gates on them.
+ro.lumen.version=1.0
+# ---- lmkd (system/memory/lmkd/lmkd.cpp; vendor V6.15.58 values in brackets). Speed spec section 5.
+# [50] -> 10: with 50 "swap is low" (min(free_swap, easy_available) < 50 % of 800 MB = 410 MB) held almost
+# always under load, and every dip under the 220 MB high watermark then killed down to adj 201: the storm
+# of 10 kills in 0.9 s that took the launcher (adj 600) at a Kinopoisk start. 10 = lmkd default (82 MB).
+ro.lmk.swap_free_low_percentage=10
+# [5] -> 30 (lmkd low-RAM default): 5 % refaults already counted as thrashing.
+ro.lmk.thrashing_limit=30
+# [500] -> 700 (lmkd default): fewer "device not responding" kills.
+ro.lmk.psi_complete_stall_ms=700
+# unchanged: ro.lmk.use_psi=true, kill_heaviest_task=true, thrashing_limit_decay=10.
+# Note: persist.device_config.lmkd_native.* (GMS phenotype) overrides ro.lmk.*; left alone.
+# ---- ART: 4 cores (the vendor asks for 6 threads); background dexopt never takes all cores during a film.
+dalvik.vm.dex2oat-threads=4
+dalvik.vm.boot-dex2oat-threads=4
+dalvik.vm.background-dex2oat-threads=2
+dalvik.vm.background-dex2oat-cpu-set=2,3
+# ---- USB debugging (review 2026-10-07): off after the wipe and, when the owner turns it on in Developer
+# options, it asks for the computer's RSA key on screen (TvSystemUI TvUsbDebuggingActivity) before any
+# adb shell, over USB and over the network (vendor service.adb.tcp.port 5555). The GSI's system_ext
+# build.prop says ro.adb.secure=0 / persist.sys.usb.config=adb (lumen_v1.sh patches those lines too);
+# these lines are read last, so they win over every earlier partition. Build type userdebug stays (C18).
+ro.adb.secure=1
+persist.sys.usb.config=none

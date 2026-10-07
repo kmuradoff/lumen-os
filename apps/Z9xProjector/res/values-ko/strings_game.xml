@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game": 한국어 translation of values/strings_game.xml. -->
+<resources>
+    <string name="game_auto_console">콘솔 자동 게임 모드</string>
+    <string name="game_input_is_console">이 입력은 게임 콘솔</string>
+    <string name="game_cue_title">게임 모드 켜짐</string>
+    <string name="game_chip_low_latency">저지연</string>
+    <string name="game_chip_hz">%1$d Hz</string>
+    <string name="game_chip_top_speed">터보</string>
+    <string name="game_hfr_consoles">콘솔용 120Hz</string>
+    <string name="game_unavailable">이 입력에서는 게임 설정을 사용할 수 없습니다</string>
+</resources>

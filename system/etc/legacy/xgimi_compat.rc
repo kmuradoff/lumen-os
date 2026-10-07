@@ -1,0 +1,19 @@
+# XGIMI Z9X compatibility for a framework not signed by XGIMI. Vendor itself is not modified;
+# every fix below swaps something in at boot with a bind mount.
+#
+# 1) XGIMI ships its system apps (XGIMI platform key, sharedUserId android.uid.system)
+#    in /vendor/app and /vendor/priv-app. A framework signed with another key rejects
+#    them and PackageManager aborts the boot, so hide both folders.
+# 2) MediaTek declares the device a television (feature television/leanback). The
+#    generic SystemUI then starts its TV variant, which lacks the phone keyguard the
+#    framework still drives, and crashes in a loop. Use a copy without the two features.
+# 3) The audio policy uses XGIMI-only enums (AUDIO_DEVICE_OUT_USB_SUB, AUDIO_FORMAT_AV3A).
+#    The AOSP parser rejects the whole file and audio never starts, so players hang at
+#    0:00. Use a copy without the XGIMI subwoofer port and the AV3A profiles.
+on post-fs-data
+    mount none /system/etc/empty_dir /vendor/app bind
+    mount none /system/etc/empty_dir /vendor/priv-app bind
+    mount none /system/etc/xgimi/mtv_core_hardware.xml /vendor/etc/permissions/mtv_core_hardware.xml bind
+    mount none /system/etc/xgimi/audio_policy_configuration.xml /vendor/etc/audio_policy_configuration.xml bind
+    # No on-screen navigation bar: the remote has Back and Home.
+    setprop qemu.hw.mainkeys 1

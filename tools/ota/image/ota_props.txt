@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS OTA props (L-OTA -> L-SYSTEM). Append to the PRODUCT build.prop snippet
+# (/system/product/etc/build.prop), before '# end of file'. <DATE> = build date yyyymmdd.
+#
+# update_engine reads ro.product.ab_ota_partitions (ro.vendor.build.ab_ota_partitions is empty on
+# this vendor) to know which static partitions a system-only payload copies unchanged from the
+# running slot to the other one (ota/SPEC.md F5). vbmeta is deliberately NOT in the list: it is
+# the user's manual one-time step and is never written by an update.
+ro.product.ab_ota_partitions=boot,bootdata,dtbo,mboot,optee,owl,satf,tvconfig,tvservice,vbmeta_system,xgimiconfig
+# release-key build (sign_tar.py); ro.build.tags stays test-keys (C18, fingerprint unchanged)
+ro.z9x.keys=release
+ro.z9x.device=z9x
+# updater identity: build_id must match the update manifest's from_build_id for a delta;
+# version_code = major*10000 + minor*100 + patch (1.0 -> 10000, 1.0.1 -> 10001, 1.2.3 -> 10203)
+ro.z9x.build_id=lumen-1.0-<DATE>
+ro.z9x.version_code=10000
+# OTA gate on (z9x_ota.rc); 0 = stock update_verifier behaviour on every boot
+ro.z9x.ota.gate=1
+# update manifest (optional override; the app's default is the same URL)
+ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/latest/download/update-stable.json

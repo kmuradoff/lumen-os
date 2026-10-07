@@ -1,0 +1,23 @@
+# Z9X v6.1 UI click volume (install as /system/etc/init/z9x_audio.rc).
+#
+# The vendor engine config gives the 'system' volume group (AUDIO_STREAM_SYSTEM, usage
+# ASSISTANCE_SONIFICATION = key clicks) FULL_SCALE_VOLUME_CURVE on SPEAKER and HEADSET, so clicks
+# always play at 0 dB whatever the volume is. /system/etc/xgimi/audio_policy_engine_stream_volumes.xml
+# is a copy of the vendor file in which ONLY those two refs say "MM" (the vendor's own media curve,
+# defined in the vendor's audio_policy_engine_default_stream_volumes.xml). On TV, AudioService
+# aliases STREAM_SYSTEM to STREAM_MUSIC, so the click now follows the media volume index.
+#
+# How the file is found (Lineage 21 frameworks/av, HIDL audio HAL 7.1 on this device):
+#   AudioPolicyService createAudioPolicyManager -> loadApmEngineLibraryAndCreateEngine(suffix)
+#   -> EngineBase::loadAudioPolicyEngineConfig("") -> engineConfig::DEFAULT_PATH
+#   "/vendor/etc/audio_policy_engine_configuration.xml" -> xmlParseFile + xmlXIncludeProcess.
+#   Its <xi:include href="audio_policy_engine_stream_volumes.xml"/> is resolved by libxml2 against
+#   the including document's URL, i.e. /vendor/etc/audio_policy_engine_stream_volumes.xml, which is
+#   the path bind-mounted below.
+#
+# Same pattern as the audio policy bind mount in xgimi_compat.rc (vendor itself is not modified).
+# post-fs-data runs before 'on boot', where audioserver (class core) starts. The action only runs
+# while ro.z9x.clickcurve=1 (system/build.prop), so a rebuild without that line restores the vendor
+# curve. Init builtin only.
+on post-fs-data && property:ro.z9x.clickcurve=1
+    mount none /system/etc/xgimi/audio_policy_engine_stream_volumes.xml /vendor/etc/audio_policy_engine_stream_volumes.xml bind

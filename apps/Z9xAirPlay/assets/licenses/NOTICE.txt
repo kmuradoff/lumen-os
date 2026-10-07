@@ -1,0 +1,101 @@
+Z9xAirPlay (org.z9x.airplay) - AirPlay receiver for the XGIMI Z9X
+Version 1.0 (versionCode 1)
+
+Copyright (C) 2026 Z9X project; parts Copyright (C) jqssun / android-airplay-server
+contributors (see below).
+This program is free software: you can redistribute it and/or modify it under the terms of
+the GNU General Public License version 3 as published by the Free Software Foundation. It is
+distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License (LICENSE,
+assets/licenses/GPL-3.0.txt).
+
+The application as a whole (Java code, JNI glue, patches, libz9xairplay.so) is distributed
+under GPL-3.0, version 3 only: it contains code adapted from android-airplay-server, which is
+licensed under GPLv3 without an "any later version" grant. Files that contain such adapted
+code (and the UxPlay patches z9x-0001..0005 rebased from its patches) carry
+"SPDX-License-Identifier: GPL-3.0-only"; wholly original files carry "GPL-3.0-or-later".
+It is a separate app: it talks to other apps of the image only through Android intents.
+
+Third-party components (all compiled into lib/<abi>/libz9xairplay.so unless noted)
+-----------------------------------------------------------------------------------
+UxPlay  1.74 development line, commit 3dbf7ceee65932154e85a2f83963d53520a799fa
+        https://github.com/FDH2/UxPlay
+        GPL-3.0 (LICENSE). lib/ derives from RPiPlay / shairplay by Juho Vaha-Herttua
+        and others (LGPL-2.1-or-later origins, distributed here under GPL-3.0);
+        lib/llhttp is MIT (assets/licenses/MIT-llhttp.txt); lib/playfair is GPL-3.0
+        (its LICENSE.md is the GPL-3.0 text); lib/srp.c is from cocagne/csrp
+        (https://github.com/cocagne/csrp), MIT, Copyright (c) 2010, 2013 Tom Cocagne
+        (assets/licenses/MIT-csrp.txt).
+        Used: lib/*.c (without dns_sd/, mdnsd/, renderers/, uxplay.cpp), llhttp, playfair.
+        Modified: jni/patches/uxplay/z9x-0001..0005 (HLS fixes rebased from
+        android-airplay-server patches 0001-0005), z9x-0006 (ours: PIN attempt throttle,
+        per-attempt random PIN, local-network peer filter for the RTSP/HTTP port),
+        z9x-0007 (ours: PIN mode enforced on the server), z9x-0008 (ours: no takeover
+        through an AirPlay video connection, mirror data port only for the sender),
+        z9x-0009 (ours: httpd survives network errors, TCP keepalive), z9x-0101 (BoringSSL
+        base64).
+
+android-airplay-server  v0.0.31, commit c8defdd7
+        https://github.com/jqssun/android-airplay-server
+        GPL-3.0. Adapted: native_bridge.cpp, android_raop_callbacks.c, android_dnssd_shim.c,
+        audio_engine.cpp and helpers (-> jni/glue/), the UxPlay patches above, and the Kotlin
+        classes NativeBridge, RaopCallbackHandler, AirPlayService, NsdServiceManager,
+        BootReceiver, AirPlayVideoPlayer, DmapParser, TrackInfo, DacpController, Prefs,
+        ported to Java (-> src/org/z9x/airplay/).
+
+libplist  2.8.0, commit fe3dc34dc3484006e12b403f7ceb06f0ad40b6f4
+        https://github.com/libimobiledevice/libplist
+        LGPL-2.1 (assets/licenses/LGPL-2.1-libplist.txt). Linked statically, unmodified;
+        the complete source and build scripts are provided (see below), so it can be
+        modified and relinked.
+        src/jsmn.c: MIT, Copyright (c) 2010 Serge A. Zaitsev (assets/licenses/MIT-jsmn.txt).
+        src/time64.c: MIT, Copyright (c) 2007-2010 Michael G Schwern
+        (assets/licenses/MIT-time64.txt).
+
+BoringSSL  0.20260929.0, commit 427ec40cc8edc545253289232e885708c409e5ea
+        https://boringssl.googlesource.com/boringssl  (mirror https://github.com/google/boringssl)
+        Apache-2.0 (assets/licenses/Apache-2.0-BoringSSL.txt); third_party/fiat is
+        Apache-2.0 (assets/licenses/Apache-2.0-BoringSSL-fiat.txt). Only libcrypto, unmodified.
+        Source archive: https://codeload.github.com/google/boringssl/tar.gz/refs/tags/0.20260929.0
+        (74,608,108 bytes, sha256 04da9ba0664e0a7f028e961c38d604f2cc6dac852a84ca0e51dc1fa051d4c8fe)
+
+Apple Lossless Audio Codec (ALAC)  commit c38887c5c5e64a4b31108733bd79ca9b2496d987
+        https://github.com/macosforge/alac
+        Apache-2.0 (assets/licenses/Apache-2.0-ALAC.txt). Decoder files only.
+        Modified: jni/patches/alac/z9x-alac-0001-bound-partial-frame.patch.
+        Source archive: https://codeload.github.com/macosforge/alac/tar.gz/c38887c5c5e64a4b31108733bd79ca9b2496d987
+        (59,774 bytes, sha256 98635ece42fb1c3fceb75eaa4b5164d866e09f0195b3e7ec4085f1123c5e272f)
+
+LLVM libc++ (NDK r29, c++_static)  Apache-2.0 WITH LLVM-exception, linked statically.
+
+"AirPlay" and "Apple" are trademarks of Apple Inc. This app is not made or endorsed by Apple.
+
+Corresponding source / how to rebuild
+-------------------------------------
+The complete corresponding source is the directory gsi/apps/Z9xAirPlay (AndroidManifest.xml,
+res/, assets/, src/, jni/ with glue/, patches/ and build scripts) plus the unmodified
+third-party trees gsi/apps/third_party/{UxPlay,libplist,boringssl,alac} at the commits above,
+gsi/apps/build_apk.sh and gsi/apps/i18n (translations: gen.py + langs/). Exact versions,
+flags and checksums: jni/BUILDINFO.txt.
+
+Build inputs (offline, macOS or Linux shell):
+  - Android NDK r29 (29.0.14206865)                 native library
+  - Android SDK build-tools 36.0.0 (aapt2, d8, zipalign, apksigner) and platform android-34
+  - JDK 21 (17 also works)
+  - build_apk.sh's HEADERS_JAR (default gsi/apps/sdk/framework-full-headers.jar: the
+    compile-time header jar of the image's framework, built from the LineageOS 21 tree).
+    Z9xAirPlay uses only public SDK APIs, so HEADERS_JAR=<sdk>/platforms/android-34/android.jar
+    builds the same app.
+  - signing key: KEY_PK8 / KEY_PEM (default gsi/apps/sdk/platform.*, the image's platform key)
+
+From the directory that contains gsi/:
+  sh gsi/apps/Z9xAirPlay/jni/build_native.sh            # -> Z9xAirPlay/lib/<abi>/, BUILDINFO.txt
+  BUILD_DIR="$PWD/gsi/apps/Z9xAirPlay/build/apk" VERSION_CODE=1 VERSION_NAME=1.0 \
+    sh gsi/apps/build_apk.sh gsi/apps/Z9xAirPlay gsi/apps/out/Z9xAirPlay.apk
+(BUILD_DIR keeps build_apk.sh from wiping Z9xAirPlay/build, which also holds the native
+build cache.)
+
+Whoever receives this app in an image may ask the image distributor for this source; it is
+offered under the terms of GPL-3.0 section 6 for at least three years from distribution.
+The distributor must name a contact (address or URL) here before the image is given to
+anyone else.

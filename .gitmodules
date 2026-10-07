@@ -1,0 +1,15 @@
+[submodule "apps/third_party/UxPlay"]
+	path = apps/third_party/UxPlay
+	url = https://github.com/FDH2/UxPlay.git
+[submodule "apps/third_party/android-airplay-server"]
+	path = apps/third_party/android-airplay-server
+	url = https://github.com/jqssun/android-airplay-server.git
+[submodule "apps/third_party/libplist"]
+	path = apps/third_party/libplist
+	url = https://github.com/libimobiledevice/libplist.git
+[submodule "apps/third_party/alac"]
+	path = apps/third_party/alac
+	url = https://github.com/macosforge/alac.git
+[submodule "apps/third_party/boringssl"]
+	path = apps/third_party/boringssl
+	url = https://github.com/google/boringssl.git

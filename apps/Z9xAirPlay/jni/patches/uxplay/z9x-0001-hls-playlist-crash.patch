@@ -1,0 +1,118 @@
+z9x-0001: do not abort on malformed or refreshed HLS media playlists
+
+Rebased by hand onto FDH2/UxPlay master 3dbf7ce (paths relative to UxPlay/lib) from
+jqssun/android-airplay-server v0.0.31 (c8defdd7) app/src/main/cpp/patches/UxPlay/0001-fix-hls-playlist-crash.patch
+(GPL-3.0), adapted for Z9xAirPlay. Lines marked 'z9x' are ours.
+Applied by jni/build_native.sh inside a copy of UxPlay/lib with patch -p1 --fuzz=0.
+SPDX-License-Identifier: GPL-3.0-only
+
+diff --git a/airplay_video.c b/airplay_video.c
+index 6077880..f33c95c 100644
+--- a/airplay_video.c
++++ b/airplay_video.c
+@@ -1193,10 +1193,13 @@ int store_media_playlist(airplay_video_t *airplay_video, char * media_playlist,
+     /* dont store duplicate media paylists */
+     for (int i = 0; i < num ; i++) {
+         if (strcmp(media_data_store[i].uri, media_data_store[num].uri) == 0) {
+-            assert(strcmp(media_data_store[i].playlist, media_playlist) == 0);
+-            media_data_store[num].num = i;
+-            free (media_playlist);
+-            return 1;
++            /* z9x: a refreshed (live) playlist may differ from the stored copy; do not abort */
++            if (strcmp(media_data_store[i].playlist, media_playlist) == 0) {
++                media_data_store[num].num = i;
++                free (media_playlist);
++                return 1;
++            }
++            break;
+         }
+     }
+     media_item_t *media_item = &media_data_store[num];
+@@ -1374,9 +1377,12 @@ char *adjust_yt_condensed_playlist(const char *media_playlist, int n_chunks) {
+ 
+     if (n_chunks > 0) {
+         first_chunk = strstr(media_playlist, EXTINF);
+-        assert(first_chunk);
+-        yt = strstr(media_playlist, "#YT-EXT-CONDENSED-URL");
+-        if (yt && yt < first_chunk) {
++        /* z9x: no #EXTINF means nothing to expand (was assert) */
++        yt = first_chunk ? strstr(media_playlist, "#YT-EXT-CONDENSED-URL") : NULL;
++        if (yt && yt >= first_chunk) {
++            yt = NULL;  /* z9x: a tag after the first chunk is not expanded: plain copy */
++        }
++        if (yt) {
+             base_uri = strstr(yt, "BASE-URI=\"");
+             if (base_uri) {
+                 base_uri = strchr(base_uri,'"');
+@@ -1447,6 +1453,7 @@ char *adjust_yt_condensed_playlist(const char *media_playlist, int n_chunks) {
+         params[i] = ptr;
+         if (i != last_param) {
+             end = strchr(ptr, ',');
++            if (!end) end = params_begin + params_len;  /* z9x: cannot happen, counted above */
+             params_size[i] = (int) (end - ptr);
+             ptr = ++end;
+         } else {
+@@ -1460,9 +1467,15 @@ char *adjust_yt_condensed_playlist(const char *media_playlist, int n_chunks) {
+     size_t new_len = old_size;
+ 
+     /* only PREFIX="s/" (strlen = 2) has been seen */ 
+-    new_len += n_chunks * (base_uri_len + params_len + 2 - prefix_len);
++    /* z9x: do not subtract prefix_len: when fewer than n_chunks prefixes are found the
++       unexpanded tail is copied verbatim, so the buffer must not shrink below old_size */
++    new_len += (size_t) n_chunks * (base_uri_len + params_len + 2);
+ 
+     char *prefix = malloc(prefix_len + 1);  // must free
++    if (!prefix) {
++        printf("Memory allocation failure (prefix)\n");
++        exit(1);
++    }
+     prefix[prefix_len] = '\0';
+     memcpy(prefix, prefix_begin, prefix_len);
+ 
+@@ -1487,7 +1500,9 @@ char *adjust_yt_condensed_playlist(const char *media_playlist, int n_chunks) {
+         count++;
+         /* for each chunk */
+         const char *start = strstr(old_pos, prefix);
+-        assert(start);
++        if (!start) {
++            break;  /* z9x: malformed playlist (was assert): copy the rest unchanged */
++        }
+         len = start - old_pos;
+         /* copy first line of chunk entry */
+         memcpy(new_pos, old_pos, len);
+@@ -1505,11 +1520,9 @@ char *adjust_yt_condensed_playlist(const char *media_playlist, int n_chunks) {
+         for (int i = 0; i < nparams; i++) {
+             if (i != last_param) {
+                 end = strchr(old_pos, '/');
+-                assert(end);
+-                end++;
++                if (end) end++;  /* z9x: was assert(end) */
+             } else if (count < n_chunks) {
+-                end = strstr(old_pos, EXTINF);
+-                assert(end);
++                end = strstr(old_pos, EXTINF);  /* z9x: was assert(end) */
+             } else {
+                 end = media_playlist + strlen(media_playlist);
+             }
+@@ -1518,12 +1531,21 @@ char *adjust_yt_condensed_playlist(const char *media_playlist, int n_chunks) {
+             *new_pos = '/';
+             new_pos++;
+ 
++            if (!end) end = old_pos + strlen(old_pos);
+             len = end - old_pos;
+             memcpy (new_pos, old_pos, len);
+             new_pos += len;
+             old_pos += len;
+         }
+     }
++    /* z9x: copy whatever was not consumed (malformed input) and terminate at new_pos */
++    len = strlen(old_pos);
++    if (len > (size_t) (new_playlist + new_len - new_pos)) {
++        len = (size_t) (new_playlist + new_len - new_pos);
++    }
++    memcpy(new_pos, old_pos, len);
++    new_pos += len;
++    *new_pos = '\0';
+  
+     free (prefix);
+     if (params_size) {

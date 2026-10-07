@@ -1,0 +1,21 @@
+# Z9X v6.2 power-off fix (install as /system/etc/init/z9x_poweroff.rc;
+# script /system/etc/xgimi/z9x_poweroff.sh 0755 root:root).
+# UNVERIFIED on the device: power-off tests T1-T4 must run with the user present.
+#
+# Root cause (research/v62/poweroff): the vendor watchdog driver wdt-mt5896.ko starts the PM-domain
+# hardware watchdog at probe (30 s, kernel self-ping every 500 ms; counter/control registers at
+# 0x1c020190..0x198, the always-on PM block) and its .shutdown hook stops it only when the watchdog
+# core marks it WDOG_ACTIVE, i.e. only if userspace opened /dev/watchdog0. Nothing opens it on our
+# GSI, so after 'reboot: Power down' the watchdog keeps counting and resets the chip
+# (live: wdt_reset_chk = pm51-wdt-reset, /sys/mtk_pm wakeup_reason id = 0 after the auto power-on).
+#
+# Fix: only for a real power-off (sys.powerctl=shutdown*), open /dev/watchdog0, write the magic 'V'
+# and close it (driver supports WDIOF_MAGICCLOSE, nowayout=0) -> watchdog core -> mtktv_wdt_stop.
+# Reboot is NOT touched (the reboot path resets the chip through this same watchdog).
+# Kill switch: persist.z9x.poweroff.wdtstop=0.
+# 'exec' blocks init (shutdown_done waits behind it) and init sets no time limit, so the script
+# only stops the watchdog synchronously; its diagnostics run in a detached background job
+# (bounded by toybox 'timeout', 3 s) and the exec returns at once.
+# It never stops/starts services.
+on shutdown
+    exec u:r:su:s0 root root -- /system/bin/sh /system/etc/xgimi/z9x_poweroff.sh

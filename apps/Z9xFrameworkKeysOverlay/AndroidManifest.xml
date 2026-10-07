@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X v6.1: static RRO on framework-res ("android"): res/xml/global_keys.xml (remote keys routed
+     to our apps) and res/values/config.xml (power key: short press nothing (v6.5; was sleep), long press power menu
+     with "restart" only).
+     Install: /system/product/overlay/Z9xFrameworkKeysOverlay.apk (0644). Signed with the image's
+     platform key by gsi/apps/build_apk.sh.
+     /system/product/overlay has no config.xml, so static overlays on "android" are ordered by
+     priority (OverlayConfig.sStaticOverlayComparator). Live v6.2 device (`cmd overlay list android`):
+     com.android.tv.overlay.framework, android.auto_generated_rro_product__, then this one (2000)
+     last = highest (no ATVOverlay on this image), so its xml/global_keys wins. It REPLACES TvFrameworkOverlay's
+     file as a whole (see the comment in res/xml/global_keys.xml); the two config values replace
+     the lower-priority overlays' values.
+     v6.3: + res/layout/shutdown_dialog.xml (framework-res defines no <overlayable>, so a preinstalled
+     overlay may replace it): the shutdown / restart screen TvSystemUI's ShutdownUi inflates
+     (com.android.internal.R.layout.shutdown_dialog) shows the Z9X wordmark; the ids it looks up
+     (progress = ProgressBar, text1 / text2 = TextView) are kept, hidden.
+     v6.5: + config_shortPressOnPowerBehavior 0 (a system POWER short press while awake does
+     nothing; see res/values/config.xml).
+     Lumen OS 1.0 (versionCode 100): + config_customizedMaxCachedProcesses 16, config_defaultAssistant
+     org.z9x.projector (Recents on long-press HOME; Katniss removed) and 8 HDMI-CEC default bools
+     (see res/values/config.xml). Signed with the release platform key by the sign stage.
+     No code, no permissions, no sharedUserId. min/target SDK 34 come from build_apk.sh. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.overlay.framework"
+    android:versionCode="100"
+    android:versionName="1.0">
+    <overlay
+        android:targetPackage="android"
+        android:isStatic="true"
+        android:priority="2000" />
+    <application android:hasCode="false" />
+</manifest>

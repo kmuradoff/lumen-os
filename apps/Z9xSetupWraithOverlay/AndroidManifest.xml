@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X v6: static RRO for SetupWraith (Android TV setup). Shows the "Choose a name for your device"
+     step (DeviceNameGoal, gated by bool/show_set_device_name, default false in SetupWraith), whose
+     choice SetupWraith writes to Settings.Global.device_name and BluetoothAdapter.setName
+     (replaces the stock Chinese Bluetooth name kept in /data/misc/bluedroid).
+     Install: /system/product/overlay/Z9xSetupWraithOverlay.apk (0644). SetupWraith declares no
+     <overlayable>, so idmap2 accepts a preinstalled (product partition) overlay; the signature does
+     not have to match SetupWraith. Lineage's own SetupWraith overlays (priority 0) do not touch this
+     resource. No code, no permissions. min/target SDK 34 come from gsi/apps/build_apk.sh. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.overlay.setupwraith"
+    android:versionCode="6"
+    android:versionName="6.0">
+    <overlay android:targetPackage="com.google.android.tungsten.setupwraith"
+        android:isStatic="true"
+        android:priority="10" />
+    <application android:hasCode="false" />
+</manifest>

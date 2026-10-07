@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X v6.3: /system/product/etc/default-permissions/z9x-airplay.xml
+     Runtime permissions of org.z9x.airplay (/system/app/Z9xAirPlay, platform-signed, not
+     priv-app). POST_NOTIFICATIONS shows the receiver's status notification, which opens the
+     AirPlay settings (the app has no home-screen tile on purpose). Read by
+     DefaultPermissionGrantPolicy when the permission defaults are (re)applied: first boot of a
+     user or a changed build fingerprint. Without it the settings screen asks once.
+     Installed by tools/z9x_v63.sh together with /system/app/Z9xAirPlay. -->
+<exceptions>
+    <exception package="org.z9x.airplay">
+        <permission name="android.permission.POST_NOTIFICATIONS" fixed="false" />
+    </exception>
+</exceptions>

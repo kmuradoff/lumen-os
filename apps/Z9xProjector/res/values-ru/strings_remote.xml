@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "remote": Russian. -->
+<resources>
+    <string name="remote_connected">Пульт подключён</string>
+    <string name="remote_pairing">Подключаю пульт…</string>
+    <string name="remote_pair_searching">Ищу пульт…</string>
+    <string name="remote_pair_hint">Зажмите на пульте «Назад» и «Домой»</string>
+    <string name="remote_pair_window">Поиск в течение 2 минут</string>
+    <string name="remote_pair_not_found">Пульт не найден</string>
+    <string name="remote_pair_failed">Не удалось подключить пульт</string>
+    <string name="remote_bt_off">Bluetooth выключен</string>
+    <string name="remote_pair_action">Подключить пульт</string>
+</resources>

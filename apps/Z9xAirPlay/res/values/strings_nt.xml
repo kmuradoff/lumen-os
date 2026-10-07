@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Not translated: product and brand names. -->
+<resources>
+    <string name="app_name" translatable="false">AirPlay</string>
+    <string name="default_device_name" translatable="false">XGIMI Z9X</string>
+</resources>

@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS OTA gate (image path /system/etc/init/z9x_ota.rc; script /system/etc/z9x/z9x_ota.sh 0755).
+# ota/SPEC.md 3.5 + PLAN.md C16. On a normal boot this costs one 'exec' of < 20 ms at post-fs-data
+# (two file reads + setprop, no bootctl) and two short background oneshots; nothing else runs.
+#
+#   post-fs-data   z9x_ota.sh count  (exec, root): attempt counter of an unverified OTA slot;
+#                  more than 3 attempts -> set the other slot active + reboot,z9x-ota-rollback
+#   pending        z9x_ota_watch: no boot_completed within 8 min -> roll back
+#   boot_completed z9x_ota_health: +90 s, system_server / zygote / surfaceflinger / gmpf_main up ->
+#                  bootctl mark-boot-successful (update_engine then merges), else roll back
+#   boot           z9x_ota_info: sys.z9x.slot + AVB flags of both vbmeta slots (read-only, 128 bytes)
+#   request        sys.z9x.ota.request=mark (updater "Keep this version"): the health gate at once
+# Reboot reasons used: reboot,z9x-ota (updater) and reboot,z9x-ota-rollback (this gate); both are
+# attended reboots for org.z9x.projector's boot classification (no boot-dark power-off).
+# Domain u:r:su:s0 exists only on userdebug (this image), like z9x_bootinfo / z9x_diag.
+
+on post-fs-data
+    exec u:r:su:s0 root root -- /system/bin/sh /system/etc/z9x/z9x_ota.sh count
+
+on boot
+    start z9x_ota_info
+
+on property:sys.z9x.ota=pending
+    start z9x_ota_watch
+
+on property:sys.boot_completed=1 && property:sys.z9x.ota=pending
+    start z9x_ota_health
+
+on property:sys.z9x.ota.request=mark
+    start z9x_ota_mark
+
+service z9x_ota_info /system/bin/sh /system/etc/z9x/z9x_ota.sh info
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service z9x_ota_watch /system/bin/sh /system/etc/z9x/z9x_ota.sh watch
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service z9x_ota_health /system/bin/sh /system/etc/z9x/z9x_ota.sh health
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service z9x_ota_mark /system/bin/sh /system/etc/z9x/z9x_ota.sh mark
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled

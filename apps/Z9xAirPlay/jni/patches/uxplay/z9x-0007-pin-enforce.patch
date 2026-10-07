@@ -1,0 +1,158 @@
+z9x-0007: PIN mode is enforced on the server (pair-verify before any media request)
+
+Ours (Z9xAirPlay), against FDH2/UxPlay master 3dbf7ce after z9x-0001..0006 (paths relative
+to UxPlay/lib). Applied by jni/build_native.sh inside a copy of UxPlay/lib with
+patch -p1 --fuzz=0.
+UxPlay never checked that a connection had paired before it handled fp-setup, SETUP,
+RECORD or /play: only Apple senders that honour the TXT "pw" flag were held back.
+- pairing.c/h: pairing_session_pin_paired() (pair-setup-pin step 3 succeeded).
+- raop_handlers.h: in PIN mode pair-verify checks check_register() for every client that
+  did not pair-setup-pin on this connection (a plain /pair-setup skipped it before); the
+  connection counts as verified once step 2 proves the accepted key.
+- raop.c: with use_pin, only /info, OPTIONS, the pairing requests, /server-info and the
+  local HLS proxy are served before that; anything else gets RTSP 470 / HTTP 403. An
+  AirPlay (HTTP) connection is admitted when a verified RAOP connection from the same
+  address exists.
+SPDX-License-Identifier: GPL-3.0-or-later
+
+--- a/pairing.c
++++ b/pairing.c
+@@ -647,6 +647,10 @@
+     } else {
+         *client_pk64 = NULL;
+     }
++}
++
++bool pairing_session_pin_paired(pairing_session_t *session) {  /* z9x */
++    return session && session->pair_setup;
+ }
+ 
+ void ed25519_pk_to_base64(const unsigned char *pk, char  **pk64) {
+--- a/pairing.h
++++ b/pairing.h
+@@ -61,6 +61,8 @@
+ int srp_confirm_pair_setup(pairing_session_t *session, pairing_t *pairing, unsigned char *epk,
+                            unsigned char *auth_tag);
+ void get_pairing_session_client_data(pairing_session_t *session, char **username, char **client_pk);
++/* z9x: true once pair-setup-pin (SRP, step 3) authenticated the client on this session */
++bool pairing_session_pin_paired(pairing_session_t *session);
+ void ed25519_pk_to_base64(const unsigned char *pk, char **pk64);
+ int pairing_session_make_nonce(pairing_session_t *session, uint64_t *local_time, const char *client_data, unsigned char *nonce, int len);
+ bool pairing_digest_verify(const char *method, const char * authorization, const char *password);
+--- a/raop.c
++++ b/raop.c
+@@ -129,11 +129,53 @@
+     char *client_session_id;
+     bool authenticated;
+     bool have_active_remote;
++    /* z9x: PIN mode access control (httpd thread only) */
++    bool z9x_verify_admitted;  /* pair-verify step 1 accepted this client (trusted or PIN-paired) */
++    bool z9x_verified;         /* ... and step 2 proved its key: media requests are allowed */
+ };
+ typedef struct raop_conn_s raop_conn_t;
+ 
+ #include "raop_handlers.h"
+ #include "http_handlers.h"
++
++/* z9x: same peer address (ports ignored) */
++static bool
++z9x_same_peer(const raop_conn_t *a, const raop_conn_t *b) {
++    return a->remotelen == b->remotelen && !memcmp(a->remote, b->remote, (size_t) a->remotelen);
++}
++
++/* z9x: requests a sender may make before pair-verify in PIN mode (discovery and pairing) */
++static bool
++z9x_public_handler(raop_handler_t handler) {
++    return handler == &raop_handler_info || handler == &raop_handler_options ||
++           handler == &raop_handler_pairpinstart || handler == &raop_handler_pairsetup_pin ||
++           handler == &raop_handler_pairsetup || handler == &raop_handler_pairverify ||
++           handler == &http_handler_server_info || handler == &http_handler_hls;
++}
++
++/* z9x: in PIN mode (use_pin) fp-setup, SETUP, RECORD, SET_PARAMETER, /feedback, ... are
++   handled only on a connection that completed pair-verify as a trusted or PIN-paired client.
++   An AirPlay (HTTP: /reverse, /play, /scrub, /rate, ...) connection is admitted when a
++   verified RAOP connection from the same address exists; it then stays admitted. */
++static bool
++z9x_request_admitted(raop_t *raop, raop_conn_t *conn, raop_handler_t handler) {
++    if (!raop->use_pin || conn->z9x_verified || z9x_public_handler(handler)) {
++        return true;
++    }
++    if (conn->connection_type == CONNECTION_TYPE_AIRPLAY || conn->connection_type == CONNECTION_TYPE_PTTH) {
++        for (int i = 1; ; i++) {
++            raop_conn_t *raop_conn = (raop_conn_t *) httpd_get_connection_by_type(raop->httpd, CONNECTION_TYPE_RAOP, i);
++            if (!raop_conn) {
++                break;
++            }
++            if (raop_conn->z9x_verified && z9x_same_peer(raop_conn, conn)) {
++                conn->z9x_verified = true;
++                return true;
++            }
++        }
++    }
++    return false;
++}
+ 
+ static void *
+ conn_init(void *opaque, unsigned char *local, int locallen, unsigned char *remote, int remotelen, unsigned int zone_id) {
+@@ -196,6 +238,8 @@
+     conn->authenticated = false;
+ 
+     conn->have_active_remote = false;
++    conn->z9x_verify_admitted = false;
++    conn->z9x_verified = false;
+     
+     if (raop->callbacks.conn_init) {
+         raop->callbacks.conn_init(raop->callbacks.cls);
+@@ -493,7 +537,15 @@
+         handler = &http_handler_hls;
+     }
+ 
+-    if (handler != NULL) {
++    if (handler != NULL && !z9x_request_admitted(raop, conn, handler)) {
++        /* z9x */
++        logger_log(raop->logger, LOGGER_WARNING, "refusing %s %s: the sender has not paired (PIN mode)", method, url);
++        if (!strcmp(protocol, "RTSP/1.0")) {
++            http_response_init(*response, protocol, 470, "Client Authentication Failure");
++        } else {
++            http_response_init(*response, protocol, 403, "Forbidden");
++        }
++    } else if (handler != NULL) {
+         handler(conn, request, *response, &response_data, &response_datalen);
+     } else {
+         logger_log(raop->logger, LOGGER_INFO,
+--- a/raop_handlers.h
++++ b/raop_handlers.h
+@@ -560,8 +560,11 @@
+         /* z9x (from jqssun 0004): senders that pair-setup without a PIN still need the
+            verify step to complete; only the client register check depends on use_pin */
+         pairing_session_set_setup_status(conn->session);
+-        register_check = raop->use_pin;
+     }
++    /* z9x: in PIN mode every client must be trusted (registered after an earlier PIN
++       pairing) unless it just did pair-setup-pin on this connection. A plain (PIN-less)
++       /pair-setup no longer skips the check. */
++    register_check = raop->use_pin && !pairing_session_pin_paired(conn->session);
+     unsigned char public_key[X25519_KEY_SIZE];
+     unsigned char signature[PAIRING_SIG_SIZE];
+     const unsigned char *data = NULL;
+@@ -599,9 +602,11 @@
+             }
+ 
+             if (!registered_client) {
++                conn->z9x_verify_admitted = false;
+                 return;
+             }
+         }
++        conn->z9x_verify_admitted = true;  /* z9x */
+         *response_data = calloc(1, sizeof(public_key) + sizeof(signature));
+         if (*response_data) {
+             http_response_add_header(response, "Content-Type", "application/octet-stream");
+@@ -623,6 +628,7 @@
+             return;
+         }
+         logger_log(raop->logger, LOGGER_DEBUG, "pair-verify: signature is verified");	    
++        conn->z9x_verified = conn->z9x_verify_admitted;  /* z9x */
+         http_response_add_header(response, "Content-Type", "application/octet-stream");
+         break;
+     }

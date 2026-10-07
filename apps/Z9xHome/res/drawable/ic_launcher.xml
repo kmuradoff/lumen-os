@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen Home app icon: the brand tile with the beam line (own drawing). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
+    <path android:pathData="M14,2 H34 A12,12 0 0,1 46,14 V34 A12,12 0 0,1 34,46 H14 A12,12 0 0,1 2,34 V14 A12,12 0 0,1 14,2 Z">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient android:type="linear" android:startX="2" android:startY="46" android:endX="46" android:endY="2"
+                android:startColor="#FF3B78E7" android:endColor="#FF8AB4F8" />
+        </aapt:attr>
+    </path>
+    <path android:fillColor="#FFFFFFFF" android:pathData="M18,12 h3 v18 h9 v3 h-12 Z" />
+    <path android:strokeColor="#E6FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M13,38 H35" />
+</vector>

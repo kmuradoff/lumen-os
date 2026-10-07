@@ -1,0 +1,49 @@
+# Z9X v6.1 / Lumen OS 1.0 always-on settings (install as /system/etc/init/z9x_base.rc).
+# Replaces v6's z9x_features.rc: there is no kill switch any more (V61_REQUIREMENTS item 13).
+# Nothing here reads or writes persist.z9x.featblock / strike / lastfeat / lastboot; values that a
+# v6 boot left in /data/property are ignored by everything in v6.1.
+#
+# Only init builtins (setprop, write), no exec, no wait: nothing here can delay early-boot.
+#
+# audioserver (class core) starts at 'on boot', after early-boot, so it reads the ro.* value set
+# here; ro.* is write-once and is not set anywhere else in this image. Bluetooth reads the privacy
+# flag much later, when system_server enables the adapter.
+#  - bluetooth.core.gap.le.privacy.enabled=false: public address, so the XGIMI BLE remote
+#    reconnects after a reboot without re-pairing.
+#  - ro.audio.flinger_standbytime_ms=30000: keeps the audio output out of standby for 30 s so the
+#    first UI click is not lost. Never 3600000: AudioFlinger holds its wakelock until standby,
+#    which blocks kernel suspend and therefore the vendor's lamp-off.
+#  - sys.z9x.feat=1: kept only for compatibility. The v6.1 Projector app no longer reads it
+#    (HalController.featureEnabled() is always true); the boot logger prints it.
+on early-boot
+    setprop bluetooth.core.gap.le.privacy.enabled false
+    setprop ro.audio.flinger_standbytime_ms 30000
+    setprop sys.z9x.feat 1
+
+# ---- v6.5: the v6.4 AFBC workaround is removed (vendor.mtk.disable.layer.afbc /
+# vendor.mtk.enable.framebuffer.afbc are back to the vendor defaults). The block noise after a quick
+# wake came back with linear scan-out too, so GOP AFBC was not the cause (research/v65 decision).
+# v6.5 avoids the display power cycle on a short sleep instead (lamp-only standby in org.z9x.projector).
+
+# ---- Lumen OS 1.0: STR (suspend to RAM) is allowed again (verified on the device 2026-10-06: a short
+# POWER press = lamp off, then Android goToSleep and a real STR; wake by keypad / IR / BT remote,
+# no boot animation, the same app resumes). The v6.5 'never STR' wakelock that was written here at
+# post-fs is gone: persist.z9x.allow_str is unset on a fresh /data, and unset means "allowed".
+# Every self-reboot seen on 2026-10-06 had one cause: a USB host (the Mac's adb) on the USB device
+# port keeps a UDC clock on, PM51 logs 'can not power down because clk is enable' and resets the chip
+# 20 s later (boot_reason 0xF1). org.z9x.projector therefore stays in the lamp-only standby (no STR)
+# while a USB host is connected; the PM51 wake sources are set at boot by z9x_power*.rc.
+# The kill switch persist.z9x.allow_str (0 = kernel wakelock z9x_no_str held, never STR; 1 / unset =
+# STR allowed) lives in z9x_power.rc (lane L-PROJECTOR, single owner of the power init), next to the
+# PM51 wake sources.
+
+# ---- v6.4-fix BUG 2: /vendor/bin/smart_ak_server cannot link (libseg.so needs cv::split and 12 other
+# OpenCV 3.4.18 symbols that nothing exports). This is an XGIMI vendor bug; stock v6.15.58 loops too.
+# The service is not oneshot, so init respawns it every 5 s. After more than 4 crashes it sets
+# sys.init.updatable_crashing=1, which runs flags_health_check (a blocking exec that resets
+# device_config flags). gmpf ctl.starts the server once at boot (prepareAlgService); its only client,
+# Perception_SmartAK, is disabled on G0082 (SmartAK.ini SmartAKEnable = 0). Stopping the service after
+# its first failed start keeps crash_count at 1. A server that links never reaches 'restarting',
+# so this rule then does nothing.
+on property:init.svc.smart_ak_server=restarting
+    stop smart_ak_server

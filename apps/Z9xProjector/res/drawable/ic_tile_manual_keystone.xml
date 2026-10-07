@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Quick panel tile icon "manual keystone" (v6.3, module panel): four corner brackets of the
+     picture and a four-way move arrow. Own line drawing: 24-unit viewport, 2-unit round strokes,
+     white; QuickPanel tiles tint it at runtime. No XGIMI assets. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M3,8 V4 H7 M17,4 H21 V8 M21,16 V20 H17 M7,20 H3 V16"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M12,8 V16 M8,12 H16 M10.5,9.5 L12,8 L13.5,9.5 M10.5,14.5 L12,16 L13.5,14.5 M9.5,10.5 L8,12 L9.5,13.5 M14.5,10.5 L16,12 L14.5,13.5"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 16:9 banner (Settings > Apps): brand gradient with the mark. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient android:angle="45" android:startColor="#FF0F1115" android:endColor="#FF1B2A4A" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/ic_launcher" android:gravity="center" android:width="56dp" android:height="56dp" />
+</layer-list>

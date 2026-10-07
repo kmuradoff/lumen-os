@@ -1,0 +1,10 @@
+    # 3) The vendor audio HAL (audio.primary.mt5877.so) needs android::MEDIA_MIMETYPE_AUDIO_AV3A,
+    #    exported only by MediaTek's build of the VNDK libstagefright_foundation. Without it the
+    #    primary module does not load and there is no sound at all.
+    mount none /system/etc/xgimi/libstagefright_foundation.so /apex/com.android.vndk.v34/lib/libstagefright_foundation.so bind
+    mount none /system/etc/xgimi/libstagefright_foundation64.so /apex/com.android.vndk.v34/lib64/libstagefright_foundation.so bind
+
+# 4) STREAM_SYSTEM (UI click sounds) comes up muted after boot. One adjust step on it unmutes
+#    every stream aliased to music without changing the music volume.
+on property:sys.boot_completed=1
+    exec_background u:r:su:s0 root root -- /system/bin/sh /system/etc/xgimi/unmute_system_sounds.sh

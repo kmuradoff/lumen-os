@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0: /system/product/etc/default-permissions/z9x-home.xml
+     RECORD_AUDIO for the SpeechRecognizer client of Lumen Home search (mic key, home spec 4).
+     Applied by DefaultPermissionGrantPolicy on the first boot of a user or after a fingerprint change.
+     The app also self-grants it as a fallback (GRANT_RUNTIME_PERMISSIONS, signature). -->
+<exceptions>
+    <exception package="org.z9x.home">
+        <permission name="android.permission.RECORD_AUDIO" fixed="false" />
+    </exception>
+</exceptions>

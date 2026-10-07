@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<resources>
+    <style name="Theme.Lumen.Updater" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/lu_bg</item>
+        <item name="android:colorAccent">@color/lu_accent</item>
+        <item name="android:statusBarColor">@color/lu_bg</item>
+        <item name="android:navigationBarColor">@color/lu_bg</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Activity</item>
+    </style>
+</resources>

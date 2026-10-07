@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game": Türkçe translation of values/strings_game.xml. -->
+<resources>
+    <string name="game_auto_console">Konsol için otomatik mod</string>
+    <string name="game_input_is_console">Bu giriş bir oyun konsolu</string>
+    <string name="game_cue_title">Oyun modu açık</string>
+    <string name="game_chip_low_latency">Düşük gecikme</string>
+    <string name="game_chip_hz">%1$d Hz</string>
+    <string name="game_chip_top_speed">Turbo</string>
+    <string name="game_hfr_consoles">Konsollar için 120 Hz</string>
+    <string name="game_unavailable">Bu girişte oyun ayarları kullanılamıyor</string>
+</resources>

@@ -1,0 +1,38 @@
+# Z9X NUI fifo server (install as /system/etc/init/z9x_nui.rc; script /system/etc/xgimi/z9x_nui.sh 0755). v6.2b.
+#
+# Replaces the reader side of stock "service nativeui /system/bin/nativeui / class main / oneshot"
+# (not shipped on the GSI), so the vendor's blocking open of /data/vendor/tmp/nuififo in gmpf_main
+# (eye protection, IGmpf 148, AK/AL native-UI steps) can never hang (research/v62x RESULT_eye.json).
+#
+# Two background services in class main (started by init's class_start, i.e. after /data is
+# mounted; nothing here runs before early-boot and there is no 'exec'). Neither is oneshot: init
+# restarts them if they exit. z9x_nui serves the fifos and sets sys.z9x.nui=ready; z9x_nuihold is a
+# second, never-reading holder so a reader exists while z9x_nui restarts (gmpf_main does not ignore
+# SIGPIPE). oom_score_adjust -1000: the low-memory killer never picks them.
+#
+# sys.z9x.nui (not persistent, empty on every boot): "ready" from the script; init sets "down" while
+# z9x_nui is restarting or stopped. The Projector app sends IGmpf 148/152/114/115 only on "ready".
+#
+# Domain u:r:su:s0 exists only on userdebug/eng and is permissive there (like z9x_diag.rc). On a
+# user build the services fail to start, sys.z9x.nui stays empty and the app sends none of those
+# calls (eye protection then shows its mask but cannot give the vendor's light back).
+
+service z9x_nui /system/bin/sh /system/etc/xgimi/z9x_nui.sh
+    class main
+    user root
+    group root system log
+    seclabel u:r:su:s0
+    oom_score_adjust -1000
+
+service z9x_nuihold /system/bin/sh /system/etc/xgimi/z9x_nui.sh hold
+    class main
+    user root
+    group root system log
+    seclabel u:r:su:s0
+    oom_score_adjust -1000
+
+on property:init.svc.z9x_nui=restarting
+    setprop sys.z9x.nui down
+
+on property:init.svc.z9x_nui=stopped
+    setprop sys.z9x.nui down

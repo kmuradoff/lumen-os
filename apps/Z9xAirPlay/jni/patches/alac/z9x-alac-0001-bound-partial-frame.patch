@@ -1,0 +1,31 @@
+z9x-alac-0001: bound the ALAC partial-frame sample count to mConfig.frameLength
+
+Against macosforge/alac c38887c codec/ (Apache-2.0). Without it a crafted partial-frame
+header (numSamples > frameLength) overflows the mix/predictor buffers. Applied by
+jni/build_native.sh inside a copy of alac/codec with patch -p1 --fuzz=0.
+SPDX-License-Identifier: Apache-2.0
+
+diff --git a/ALACDecoder.cpp b/ALACDecoder.cpp
+index ce3340d..559a675 100644
+--- a/ALACDecoder.cpp
++++ b/ALACDecoder.cpp
+@@ -251,6 +251,9 @@ int32_t ALACDecoder::Decode( BitBuffer * bits, uint8_t * sampleBuffer, uint32_t
+ 				{
+ 					numSamples  = BitBufferRead( bits, 16 ) << 16;
+ 					numSamples |= BitBufferRead( bits, 16 );
++					// z9x: a partial frame can never be longer than the configured frame
++					// (the mix/predictor buffers and the caller's output are sized for it)
++					RequireAction( numSamples <= mConfig.frameLength, status = kALAC_ParamError; goto Exit; );
+ 				}
+ 
+ 				if ( escapeFlag == 0 )
+@@ -402,6 +405,9 @@ int32_t ALACDecoder::Decode( BitBuffer * bits, uint8_t * sampleBuffer, uint32_t
+ 				{
+ 					numSamples  = BitBufferRead( bits, 16 ) << 16;
+ 					numSamples |= BitBufferRead( bits, 16 );
++					// z9x: a partial frame can never be longer than the configured frame
++					// (the mix/predictor buffers and the caller's output are sized for it)
++					RequireAction( numSamples <= mConfig.frameLength, status = kALAC_ParamError; goto Exit; );
+ 				}
+ 
+ 				if ( escapeFlag == 0 )

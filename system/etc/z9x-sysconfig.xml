@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- /system/etc/sysconfig/z9x.xml (Lumen OS 1.0)
+     Lineage 21 sets config_stopSystemPackagesByDefault=true: a system package seen for the first
+     time is put in the "stopped" state if it has an exported LAUNCHER activity, and a stopped
+     package gets no BOOT_COMPLETED / implicit broadcasts / jobs until the user opens it.
+     Every org.z9x package must run without being opened first (plan C6): the projector, tvinput and
+     airplay services, Lumen Home's jobs and receivers, the first-run setup, and the updater's
+     check job. Lumen OS 1.0 is flashed with a userdata wipe, so every base package is "first seen"
+     too: the Google packages below have an exported LAUNCHER activity (aapt2 on the signed tar) and
+     must not start stopped either: the Android TV Remote Service (phone remote / Google TV app control)
+     starts only from BOOT_COMPLETED, Play's boot and auto-update work, GMS / GSF (precaution: system
+     binds usually un-stop them). Chromecast (mediashell) has no LAUNCHER activity. -->
+<config>
+    <initial-package-state package="org.z9x.projector" stopped="false" />
+    <initial-package-state package="org.z9x.tvinput" stopped="false" />
+    <initial-package-state package="org.z9x.airplay" stopped="false" />
+    <initial-package-state package="org.z9x.home" stopped="false" />
+    <initial-package-state package="org.z9x.setup" stopped="false" />
+    <initial-package-state package="org.z9x.updater" stopped="false" />
+    <initial-package-state package="com.google.android.tv.remote.service" stopped="false" />
+    <initial-package-state package="com.android.vending" stopped="false" />
+    <initial-package-state package="com.google.android.gms" stopped="false" />
+    <initial-package-state package="com.google.android.gsf" stopped="false" />
+
+    <!-- Google's setup stays installed (Google sign-in needs SetupWraith's AddAccount activities, plan
+         C22) but its own wizard never runs; org.z9x.setup is the first-run setup (setup spec 3).
+         <component-override> changes the DEFAULT enabled state of these components of the system
+         package, also when Play updates it (SystemConfig.readComponentOverrides,
+         ScanPackageUtils.configurePackageComponents). SetupWraith stays the platform's setup-wizard
+         package (lookup uses MATCH_DISABLED_COMPONENTS), so it keeps NETWORK_SETUP_WIZARD.
+         1) MainActivity: SetupWraith's HOME + SETUP_WIZARD wizard (priority 4).
+         2) BootCompletedReceiver: started a 32-bit SetupWraith process (~130 MB) at every boot. -->
+    <component-override package="com.google.android.tungsten.setupwraith">
+        <component class="com.google.android.tungsten.setupwraith.MainActivity" enabled="false" />
+        <component class="com.google.android.tvsetup.app.BootCompletedReceiver" enabled="false" />
+    </component-override>
+
+    <!-- LineageOS anonymous statistics: LineageSetupWizard (removed, our first-run replaces it) held the
+         only consent screen ("Help improve LineageOS"), while the base's LineageSettingsProvider RRO
+         turns def_stats_collection on. Without these overrides LineageParts' BOOT_COMPLETED receiver
+         would upload a hashed ANDROID_ID, device, version and country to stats.lineageos.org at the
+         first boot and then daily, without asking. Lumen OS never reports. -->
+    <component-override package="org.lineageos.lineageparts">
+        <component class="org.lineageos.lineageparts.lineagestats.ReportingServiceManager" enabled="false" />
+        <component class="org.lineageos.lineageparts.lineagestats.ReportingService" enabled="false" />
+        <component class="org.lineageos.lineageparts.lineagestats.StatsUploadJobService" enabled="false" />
+    </component-override>
+</config>

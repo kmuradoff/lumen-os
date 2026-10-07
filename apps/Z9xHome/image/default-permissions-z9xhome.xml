@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS: /system/product/etc/default-permissions/default-permissions-z9xhome.xml (0644).
+     RECORD_AUDIO is needed by the SpeechRecognizer CLIENT (org.z9x.home search). Applied on first boot /
+     when ro.build.version.incremental changes. The app also self-grants it as a fallback
+     (GRANT_RUNTIME_PERMISSIONS, signature). -->
+<exceptions>
+    <exception package="org.z9x.home">
+        <permission name="android.permission.RECORD_AUDIO" fixed="false" />
+    </exception>
+</exceptions>

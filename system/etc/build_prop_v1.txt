@@ -1,0 +1,13 @@
+# Lumen OS 1.0 (appended to system/build.prop by lumen_v1.sh)
+# The PackageManager parse cache stays ON (Lumen OS 1.0): every added / re-signed member and its package
+# directory carry the build time as mtime (patch_tar.py --mtime, sign_tar.py) and the image keeps tar
+# mtimes (mkfs.erofs --mkfs-time), so an updated APK is newer than its cache entry and is re-parsed.
+# One-time en-US / Europe/Moscow on the first boot over stock data (see z9x_setup.rc).
+persist.z9x.firstrun=1
+# UI click volume follows the media volume (system group curve MM, see z9x_audio.rc).
+ro.z9x.clickcurve=1
+# Machine-readable OS version for our apps (internal ro.z9x.* names stay in v1; the product is Lumen OS).
+ro.z9x.version=1.0
+# The OTA identity props (ro.z9x.device, build_id, version_code, keys, ota.gate, manifest URL) and
+# ro.product.ab_ota_partitions come from tools/ota/image/ota_props.txt (L-OTA), appended to the product
+# build.prop by lumen_v1.sh.

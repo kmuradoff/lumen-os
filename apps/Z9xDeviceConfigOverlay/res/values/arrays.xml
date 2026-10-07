@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0 (speed spec 5): DeviceConfig defaults that are not available as a property.
+     Values written as device_config DEFAULTS: a value pushed by a server (GMS) would still win, which
+     is why max_cached_processes is ALSO set through the framework resource
+     config_customizedMaxCachedProcesses in Z9xFrameworkKeysOverlay. -->
+<resources>
+    <string-array name="configs_device" translatable="false">
+        <!-- 32 -> 16 cached processes (empty-process limit 8); same value as the framework RRO -->
+        <item>activity_manager/max_cached_processes=16</item>
+        <!-- pinned: the cached-app freezer stays on (frozen cached apps cost no CPU, their idle pages
+             go to zram) -->
+        <item>activity_manager_native_boot/use_freezer=true</item>
+    </string-array>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Display.HdrCapabilities: 2=HDR10, 3=HLG, 4=HDR10+. 1=Dolby Vision intentionally omitted:
+         HWC reports dv=false, no video/dolby-vision decoder, chip hashkey mode 8 (no DV). -->
+    <integer-array name="config_deviceSupportedHdrFormats">
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+    </integer-array>
+</resources>

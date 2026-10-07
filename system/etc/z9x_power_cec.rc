@@ -1,0 +1,31 @@
+# Lumen OS 1.0 HDMI-CEC wake from STR (install as /system/etc/init/z9x_power_cec.rc). Owner: the CEC part of
+# lane L-PROJECTOR (org.z9x.projector cec.CecPolicy). Only init builtins: one sysfs write per trigger.
+#
+# The PM51 wake source cec0 lets an HDMI-CEC device (a console's One Touch Play) wake the SoC from STR.
+# z9x_power.rc writes cec0 = 0 at boot and then the boot default persist.z9x.cec_wake (1 = HDMI-CEC on AND
+# "Turn on with an HDMI device" on). Before EVERY sleep org.z9x.projector decides again and sets
+# sys.z9x.cec_arm (cleared first, so the trigger always fires): 1 only with HDMI-CEC on, the wake setting
+# on, setup complete, no storm pause and outside the night guard hours (default 01:00-07:00). At a real
+# power-off (ACTION_SHUTDOWN) it sets 0: no CEC cold boot. The app holds a wakelock across the SCREEN_OFF
+# broadcast, so this write lands before the suspend.
+on property:sys.z9x.cec_arm=1 && property:sys.boot_completed=1
+    write /sys/mtk_pm/wakeup_source/cec0 1
+
+on property:sys.z9x.cec_arm=0 && property:sys.boot_completed=1
+    write /sys/mtk_pm/wakeup_source/cec0 0
+
+# Wake reason for CecPolicy (was this wake HDMI-CEC?). The app can read neither /sys/mtk_pm nor
+# /sys/kernel/wakeup_reasons, and z9x_bootinfo copies the PM51 wake name only once at boot. At every
+# SCREEN_OFF and SCREEN_ON org.z9x.projector sets sys.z9x.wake_query to a new token; this oneshot copies
+# the current values (read-only, each bounded by 'timeout 1') into
+#   sys.z9x.wake_now = "<token> <wakeup_reason/name> <kernel last_resume_reason>"
+# and exits. Background service: init only forks it.
+on property:sys.z9x.wake_query=* && property:sys.boot_completed=1
+    start z9x_power_wake
+
+service z9x_power_wake /system/bin/sh /system/etc/xgimi/z9x_power_wake.sh
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled

@@ -1,0 +1,70 @@
+# Lumen OS .gitignore (copied to the repo root as .gitignore). Defence in depth: the pre-push hook
+# runs tools/ota/check_publish.py on content, not only on names.
+
+# ---- keys: NEVER. Private keys live only in ~/.lumen-keys on the owner's Mac.
+*.pk8
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.key
+*.pem
+!keys/public/*.x509.pem
+!tools/sign/testcerts/*.x509.pem
+!installer/certs/ota.x509.pem
+!apps/sdk/testkeys/platform.x509.pem
+# the PUBLIC AOSP platform test key (dev builds); check_publish.py lets it through only because its
+# public key is the published AOSP one, never by path
+!apps/sdk/testkeys/platform.pk8
+.lumen-keys/
+
+# ---- proprietary vendor files: NEVER
+**/c2store/
+**/vendor_dump/
+*blobs*.img
+*blobs*.tar
+libc2plugin_store.so
+libcodec2store.so
+vendor.mediatek.hardware.c2.info@1.0.so
+libcodec2_soft_common.so
+libstagefright_foundation*.so
+audio_policy_configuration.xml
+research/
+backup/
+logs/
+
+# ---- binaries / images / build output (release assets only, never git)
+*.img
+*.img.xz
+*.tar
+*.tgz
+*.zip
+*.apk
+*.apex
+*.capex
+*.so
+*.odex
+*.vdex
+*.oat
+*.art
+*.jar
+*.bin
+*.sig
+out/
+build/
+**/build/
+apps/out/
+overlay/apps_v*/
+__pycache__/
+*.pyc
+
+# ---- personal / local
+apps_installed.txt
+.lumen-installer/
+Lumen-backup/
+
+# ---- OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

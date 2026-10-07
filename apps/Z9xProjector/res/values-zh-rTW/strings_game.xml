@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game": 繁體中文 translation of values/strings_game.xml. -->
+<resources>
+    <string name="game_auto_console">遊戲主機自動遊戲模式</string>
+    <string name="game_input_is_console">此輸入為遊戲主機</string>
+    <string name="game_cue_title">遊戲模式已開啟</string>
+    <string name="game_chip_low_latency">低延遲</string>
+    <string name="game_chip_hz">%1$d Hz</string>
+    <string name="game_chip_top_speed">極速</string>
+    <string name="game_hfr_consoles">遊戲機 120Hz</string>
+    <string name="game_unavailable">此輸入來源無法使用遊戲設定</string>
+</resources>

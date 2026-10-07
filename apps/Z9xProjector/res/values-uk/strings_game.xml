@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game": українська translation of values/strings_game.xml. -->
+<resources>
+    <string name="game_auto_console">Автоматично для консолей</string>
+    <string name="game_input_is_console">Цей вхід — консоль</string>
+    <string name="game_cue_title">Ігровий режим увімкнено</string>
+    <string name="game_chip_low_latency">Низька затримка</string>
+    <string name="game_chip_hz">%1$d Гц</string>
+    <string name="game_chip_top_speed">Турбо</string>
+    <string name="game_hfr_consoles">120 Гц для консолей</string>
+    <string name="game_unavailable">Ігрові налаштування недоступні на цьому вході</string>
+</resources>

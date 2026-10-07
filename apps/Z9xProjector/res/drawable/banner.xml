@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 320x180 dp TV banner, text-free: projector body, lens and light beam. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path android:fillColor="#FF101722" android:pathData="M0,0h320v180h-320z" />
+    <path android:fillColor="#FF16263B" android:pathData="M0,120 L320,60 L320,180 L0,180 Z" />
+    <!-- beam -->
+    <path android:fillColor="#556FB1FF" android:pathData="M176,92 L300,40 L300,144 Z" />
+    <path android:fillColor="#336FB1FF" android:pathData="M176,92 L312,28 L312,156 Z" />
+    <!-- screen edge -->
+    <path android:fillColor="#FFF2F5FA" android:pathData="M300,40 L304,40 L304,144 L300,144 Z" />
+    <!-- projector body -->
+    <path android:fillColor="#FFE6EAF0"
+        android:pathData="M64,66 h112 a12,12 0 0 1 12,12 v28 a12,12 0 0 1 -12,12 h-112 a12,12 0 0 1 -12,-12 v-28 a12,12 0 0 1 12,-12 z" />
+    <path android:fillColor="#FFC7CED8"
+        android:pathData="M52,100 h136 v6 a12,12 0 0 1 -12,12 h-112 a12,12 0 0 1 -12,-12 z" />
+    <!-- feet -->
+    <path android:fillColor="#FF8A95A5" android:pathData="M70,118 h16 v6 h-16 z M154,118 h16 v6 h-16 z" />
+    <!-- vents -->
+    <path android:fillColor="#FFAEB7C4" android:pathData="M72,78 h40 v3 h-40 z M72,86 h40 v3 h-40 z M72,94 h40 v3 h-40 z" />
+    <!-- lens -->
+    <path android:fillColor="#FF243447"
+        android:pathData="M150,92 m-20,0 a20,20 0 1 0 40,0 a20,20 0 1 0 -40,0" />
+    <path android:fillColor="#FF6FB1FF"
+        android:pathData="M150,92 m-12,0 a12,12 0 1 0 24,0 a12,12 0 1 0 -24,0" />
+    <path android:fillColor="#FFDDEEFF"
+        android:pathData="M146,88 m-4,0 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0" />
+</vector>

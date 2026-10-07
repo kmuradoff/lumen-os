@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "game": italiano translation of values/strings_game.xml. -->
+<resources>
+    <string name="game_auto_console">Automatico per le console</string>
+    <string name="game_input_is_console">Questo ingresso è una console</string>
+    <string name="game_cue_title">Modalità gioco attiva</string>
+    <string name="game_chip_low_latency">Bassa latenza</string>
+    <string name="game_chip_hz">%1$d Hz</string>
+    <string name="game_chip_top_speed">Turbo</string>
+    <string name="game_hfr_consoles">120 Hz per console</string>
+    <string name="game_unavailable">Impostazioni di gioco non disponibili su questo ingresso</string>
+</resources>

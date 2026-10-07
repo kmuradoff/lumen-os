@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  org.z9x.airplay ("AirPlay") for the XGIMI Z9X GSI (v6.3). GPL-3.0 (see NOTICE / LICENSE).
+  Install: /system/app/Z9xAirPlay/Z9xAirPlay.apk (NOT priv-app), platform-signed, no sharedUserId.
+  Also works when adb-installed to /data for testing: libz9xairplay.so is self-contained
+  (BoringSSL linked statically) and is loaded straight from the APK (stored, 16 KB aligned,
+  extractNativeLibs=false).
+  versionCode/versionName come from build_apk.sh (VERSION_CODE=2 VERSION_NAME=1.1; v1.0 = code 1).
+
+  No launcher / leanback-launcher entry (no home-screen tile). Settings are reached through
+  Settings > Apps > AirPlay > Open (TvSettings uses getLaunchIntentForPackage, which picks the
+  MAIN + INFO activity; launchers do not list INFO), the service notification
+  (POST_NOTIFICATIONS: pre-granted in the image by overlay/v63/z9x-airplay-default-permissions.xml
+  -> /system/product/etc/default-permissions/z9x-airplay.xml, otherwise asked once by the
+  settings screen) and the intent action org.z9x.airplay.SETTINGS. TvSettings on this image
+  does not use APPLICATION_PREFERENCES (no gear); the filter is kept for other settings UIs.
+
+  Deliberately NOT android:persistent (decided for the v6.3 image integration): the receiver is
+  kept alive by BootReceiver (BOOT_COMPLETED -> connectedDevice foreground service, START_STICKY)
+  plus WatchdogJob (15 min). Why not persistent (AOSP 14 ActivityManager, from the AOSP source,
+  not re-checked against LineageOS 21): AppErrors never marks a persistent process "bad", the
+  process is restarted at once after every crash and its started services are restarted with
+  zero delay ("persistent" restart reason), so a native crash in the never-device-tested engine
+  (it runs in this process) would become an endless tight crash loop with a tombstone each time;
+  a persistent system app also cannot be updated with adb install ("Persistent apps are not
+  updateable"), so every fix would need a reflash. A non-persistent foreground service gets
+  bounded restarts with back-off instead, and can be updated over /system with adb install -r.
+  If AMS marks the process "bad" (two crashes within 60 s) background starts (job, broadcast)
+  are refused: open AirPlay settings once (a foreground start), or reboot.
+  Never affects boot: no Application class, no provider, nothing direct-boot aware, so the
+  process is first started by BOOT_COMPLETED (sent after the boot has finished) or, once the
+  user is unlocked, by the persisted WatchdogJob; a crash then can only affect AirPlay.
+
+  Test from /data: adb install leaves the package in the stopped state (no launcher entry),
+  so BOOT_COMPLETED is not delivered until it is started once:
+    adb shell am start -a org.z9x.airplay.SETTINGS
+  Network: TCP 7000 (7001-7010 if busy) plus UxPlay's dynamic data ports; mDNS through the
+  system NsdManager only, so Google Cast (mediashell, 8008/8009 and its own 5353) is untouched.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.airplay">
+
+    <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+
+    <!-- normal -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Android 14 FGS type connectedDevice; its prerequisite here is CHANGE_WIFI_MULTICAST_STATE -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- runtime (dangerous); without it the FGS still runs, only its notification is hidden -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- signature|privileged|...: granted by the platform key, also from /data. Lets the service
+         bring the receiver screen up when a sender connects. -->
+    <uses-permission android:name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_airplay"
+        android:allowBackup="false"
+        android:extractNativeLibs="false"
+        android:usesCleartextTraffic="true"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Z9xAirPlay.Settings">
+
+        <service
+            android:name=".AirPlayService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <!-- restarts the receiver if its service is gone (not after an AMS "bad process"; see WatchdogJob) -->
+        <service
+            android:name=".WatchdogJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <activity
+            android:name=".MirrorActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity="org.z9x.airplay.receiver"
+            android:excludeFromRecents="true"
+            android:resizeableActivity="false"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density"
+            android:theme="@style/Theme.Z9xAirPlay.Mirror" />
+
+        <!-- Settings: no LAUNCHER/LEANBACK_LAUNCHER on purpose (no home tile). MAIN + INFO is the
+             package's "front door" for PackageManager.getLaunchIntentForPackage, i.e. the Open
+             button of TvSettings' App info. -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="@string/settings_title"
+            android:excludeFromRecents="false"
+            android:configChanges="keyboard|keyboardHidden|navigation"
+            android:theme="@style/Theme.Z9xAirPlay.Settings">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.INFO" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="org.z9x.airplay.SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
