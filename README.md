@@ -38,6 +38,25 @@ git clone --recurse-submodules https://github.com/kmuradoff/lumen-os.git
 - MediaTek or XGIMI binaries. The installer copies the MediaTek codec files from your own projector.
 - Signing keys. Only public certificates are published.
 
+## Support the project
+
+**Поддержать проект.** Lumen OS is free and open. If it made your projector better, you can support the work with a card or crypto.
+Lumen OS бесплатна и открыта. Если она сделала ваш проектор лучше, проект можно поддержать картой или криптой.
+
+**Card / Картой** (Russian bank cards, SBP / карты российских банков, СБП): [pay.cloudtips.ru/p/723aaba1](https://pay.cloudtips.ru/p/723aaba1)
+
+**Crypto / Криптой:**
+
+| Network / Сеть | Address / Адрес | QR |
+|---|---|---|
+| **USDT — TRON (TRC20) only** | `TRjBAWuPa7WjdsATNkgwy955imhobH6sQV` | <img src="docs/repo/support/usdt-trc20.png" width="140" alt="USDT TRC20 QR"> |
+| **TON, and USDT on TON** | `UQA2yAApJyyZ_vOYwrM6E0K2hwmn_35Y7m68UbCN6Y_A1L6x` | <img src="docs/repo/support/ton.png" width="140" alt="TON QR"> |
+
+Check the network before you send: USDT sent to the TRON address over another network (ERC20, BEP20) is lost.
+Проверьте сеть перед отправкой: USDT, отправленные на адрес TRON через другую сеть (ERC20, BEP20), пропадут.
+
+Thank you! Спасибо!
+
 ## License
 
 Apache License 2.0, except `apps/Z9xAirPlay` (GPL-3.0-only) and the third-party submodules under `apps/third_party` (their own licenses). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
