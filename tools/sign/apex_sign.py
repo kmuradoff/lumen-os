@@ -56,7 +56,8 @@ sys.path.insert(0, HERE)
 import apexlib  # noqa: E402
 import sign_tar  # noqa: E402
 
-PUB_APEX = os.path.join(HERE, "release_certs", "apex")
+# LUMEN_RELEASE_CERTS: a self-build's own public certificates (docs/selfbuild, gen_keys.sh CERTS_OUT)
+PUB_APEX = os.path.join(os.environ.get("LUMEN_RELEASE_CERTS") or os.path.join(HERE, "release_certs"), "apex")
 
 
 def log(msg):
@@ -158,11 +159,45 @@ class Remote:
         self.sh(f"cd ~ && nice -n 10 ionice -c3 python3 {self.tools}/apex_laptop.py {args}")
 
 
+class Local(Remote):
+    """--local DIR (self-builds, docs/selfbuild): the laptop steps run on this machine, in DIR (no spaces).
+    The keys are on this machine anyway, so the laptop's 'no key here' guard does not apply."""
+    def __init__(self, a):
+        base = os.path.abspath(a.local)
+        if any(c in base for c in " '\"$;&|`"):
+            die(f"--local {base!r}: use a path without spaces or shell characters")
+        self.host = "this machine"
+        self.dir, self.tools, self.tar = os.path.join(base, "apex_work"), os.path.join(base, "tools"), os.path.abspath(a.inp)
+        self.env = dict(os.environ, LUMEN_APEX_LOCAL="1")
+
+    def sh(self, cmd, check=True):
+        r = subprocess.run(["bash", "-c", cmd], text=True, env=self.env)
+        if check and r.returncode != 0:
+            die(f"local step failed ({r.returncode}): {cmd}")
+        return r.returncode
+
+    def out(self, cmd):
+        return subprocess.run(["bash", "-c", cmd], capture_output=True, text=True, env=self.env).stdout
+
+    def push(self, src, dst, extra=()):
+        subprocess.run(["rsync", "-rt", *extra, src, dst], check=True)
+
+    pull = push
+
+    def thermal(self):
+        return
+
+    def laptop(self, args):
+        self.sh(f"nice -n 10 python3 {self.tools}/apex_laptop.py {args}")
+
+
 def push_tools(r):
     r.sh(f"mkdir -p {r.tools}/third_party {r.dir}")
     r.push(os.path.join(HERE, "apexlib.py"), f"{r.tools}/")
     r.push(os.path.join(HERE, "apex_laptop.py"), f"{r.tools}/")
     r.push(os.path.join(HERE, "third_party", "avbtool.py"), f"{r.tools}/third_party/")
+    if isinstance(r, Local):
+        return
     found = r.out(f"ls -d ~/.lumen-keys 2>/dev/null; find {r.tools} {r.dir} -name '*.pk8' 2>/dev/null; "
                   f"grep -rlE -- '-----BEGIN [A-Z ]*PRIVATE KEY-----' {r.tools} {r.dir} 2>/dev/null")
     if found.strip():
@@ -324,7 +359,7 @@ def cmd_run(a):
             o.write(f"{n}\t{ip}\t{i['package']}\t{i['shared_uid'] or '-'}\t{i['signers'][0][0][:16]}\t{key}\t{why}\n")
     json.dump(plan, open(os.path.join(out, "plan.json"), "w"), indent=1)
 
-    r = Remote(a)
+    r = Local(a) if a.local else Remote(a)
     log(f"3/9 laptop: repack {sum(v['repack'] for v in plan['apex'].values())} payloads ({r.host})")
     push_tools(r)
     r.sh(f"rm -rf {r.dir} && mkdir -p {r.dir}")
@@ -593,6 +628,7 @@ def main():
     p.add_argument("--remote-dir", default="z9x/out/apex_work")
     p.add_argument("--remote-tools", default="z9x/tools/sign")
     p.add_argument("--keep-remote", action="store_true")
+    p.add_argument("--local", metavar="DIR", help="self-builds: run the laptop steps on this machine, in DIR")
     p.add_argument("--jobs", type=int, default=min(6, os.cpu_count() or 2))
     p = sub.add_parser("verify")
     p.add_argument("out")
@@ -600,6 +636,8 @@ def main():
     a = ap.parse_args()
     try:
         if a.cmd == "run":
+            if a.local:
+                return cmd_run(a)
             if not a.builder:
                 die("--builder user@host (or BUILDER) is needed: payload rebuild and compression run on the laptop")
             for x in (a.remote_dir, a.remote_tools, a.remote_tar):

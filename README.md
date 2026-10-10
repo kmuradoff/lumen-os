@@ -93,7 +93,9 @@ The video player made for Lumen OS lives in its own repository:
 ## Build
 
 Lumen OS is put together from a LineageOS 21 TV GSI, our apps (`apps/`), system files (`system/`) and
-the image tools (`tools/`). Notes for maintainers are in [docs/dev](docs/dev/README.md).
+the image tools (`tools/`). You can build all of it yourself, from the pinned LineageOS source to the
+signed image, with your own keys: [docs/selfbuild](docs/selfbuild/en.md). Notes for maintainers are in
+[docs/dev](docs/dev/README.md).
 
 ```
 git clone --recurse-submodules https://github.com/kmuradoff/lumen-os.git

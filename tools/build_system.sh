@@ -180,6 +180,8 @@
 #      sign / remote only, from the environment or ~/.config/lumen/builder.env (personal, never in the repo)
 #      LUMEN_OUT (gsi/build/lumen_v1)
 #      REMOTE_UNSIGNED (sign: the laptop's copy of the unsigned tar, default z9x/out/<its name>)
+#      LUMEN_SELF=1 + KEYS_DIR + LUMEN_RELEASE_CERTS: a self-build (target 'self', docs/selfbuild), your own keys
+#        and certificates, everything on one Linux machine (tools/selfbuild/build.sh sets these)
 set -euo pipefail
 
 H=$(cd "$(dirname "$0")" && pwd)
@@ -195,7 +197,7 @@ LT=$TOOLS/lumen
 CHK=$LT/lumen_checks.py
 PT=$TOOLS/patch_tar.py
 TESTCERTS=$TOOLS/sign/testcerts
-RELCERTS=$TOOLS/sign/release_certs
+RELCERTS=${LUMEN_RELEASE_CERTS:-$TOOLS/sign/release_certs}   # a self-build: its own public certificates (docs/selfbuild)
 INCREMENTAL_SUFFIX=${INCREMENTAL_SUFFIX-lumen10}
 BUILD_DATE=${BUILD_DATE:-$(date -u +%Y%m%d)}
 # a second build of one date (1.0.1 final over the 20261009 test build): another ro.z9x.build_id
@@ -699,7 +701,18 @@ preflight() {
     for i in "${!C2LIBS[@]}"; do [ "$(sha256 "$V1/c2store/${C2LIBS[$i]}")" = "${C2SHA[$i]}" ] || die "c2store/${C2LIBS[$i]}: not the stock sha256"; done
   fi
   n=$(find "$V1/c2vndk" -type f | wc -l); [ "$n" -eq 2 ] || die "$V1/c2vndk has $n files, expected 2"
-  for i in "${!VNDKLIBS[@]}"; do [ "$(sha256 "$V1/c2vndk/${VNDKLIBS[$i]}")" = "${VNDKSHA[$i]}" ] || die "c2vndk/${VNDKLIBS[$i]}: not the pinned rebuild"; done
+  if [ "${LUMEN_SELF:-0}" = 1 ]; then
+    # a self-build's own libcodec2_vndk (LineageOS tree + lineage/patches): ELF, the right class, not pinned
+    for i in "${!VNDKLIBS[@]}"; do
+      case $(od -An -tx1 -N5 "$V1/c2vndk/${VNDKLIBS[$i]}" | tr -d ' \n') in
+        7f454c4601) [[ ${VNDKLIBS[$i]} == system/lib/* ]] || die "c2vndk/${VNDKLIBS[$i]}: not a 64-bit ELF" ;;
+        7f454c4602) [[ ${VNDKLIBS[$i]} == system/lib64/* ]] || die "c2vndk/${VNDKLIBS[$i]}: not a 32-bit ELF" ;;
+        *) die "c2vndk/${VNDKLIBS[$i]}: not an ELF file" ;;
+      esac
+    done
+  else
+    for i in "${!VNDKLIBS[@]}"; do [ "$(sha256 "$V1/c2vndk/${VNDKLIBS[$i]}")" = "${VNDKSHA[$i]}" ] || die "c2vndk/${VNDKLIBS[$i]}: not the pinned rebuild"; done
+  fi
   # ---- XML inputs
   python3 - "$V1" "$OTAIMG/$OTA_PERM" "$V1/z9x-sysconfig-nogms.xml" <<'PY' || die "XML check failed"
 import os, sys, xml.etree.ElementTree as ET
@@ -1147,7 +1160,9 @@ stage_prep() {
       system/fonts/Roboto-Regular.ttf system/etc/security/otacerts.zip system/framework/org.lineageos.platform-res.apk \
       system/system_ext/priv-app/SimpleDeviceConfig/SimpleDeviceConfig.apk system/product/priv-app/SetupWraithPrebuilt \
       system/product/priv-app/LineageCustomizer/LineageCustomizer.apk "$UIRES_RC") \
-  VNDK="$(for i in "${!VNDKLIBS[@]}"; do echo "${VNDKLIBS[$i]}=${VNDKBASESHA[$i]}"; done)" \
+  VNDK="$(for i in "${!VNDKLIBS[@]}"; do
+            if [ "${LUMEN_SELF:-0}" = 1 ]; then echo "${VNDKLIBS[$i]}=$(tarcat "$BASE" "${VNDKLIBS[$i]}" | sha256in)"
+            else echo "${VNDKLIBS[$i]}=${VNDKBASESHA[$i]}"; fi; done)" \
   LIBLABEL=$LIBLABEL GENERIC_KL=$V1/keylayout/Generic.kl LINEAGE_DISPLAY_PROP_FILE=system/build.prop \
     python3 "$CHK" base "$BASE" "${REMOVE[@]}" || die "base check failed"
   # the LineageOS file z9x_uires replaces: still exactly its two 'on fs' setprops (a rebase that changes it
@@ -1342,15 +1357,16 @@ ro.adb.secure=1'
 
 # ======================================================================== stage: sign (Mac only)
 stage_sign() {
-  [ "$(uname -s)" = Darwin ] || die "sign runs on the Mac only: the release keys never leave it"
+  [ "$(uname -s)" = Darwin ] || [ "${LUMEN_SELF:-0}" = 1 ] || die "sign runs on the Mac only: the release keys never leave it"
   OUTDIR=$(cd "${OUTDIR:-.}" && pwd)
   KEYS=${KEYS_DIR:-$HOME/.lumen-keys}
   case $KEYS in *"XGIMI PLAY 6"*|*/gsi/*) die "keys inside the project tree: $KEYS" ;; esac
   [ -d "$KEYS" ] && [ -s "$KEYS/platform.pk8" ] || die "no release keys in $KEYS"
-  [ "$(stat -f %Lp "$KEYS")" = 700 ] || die "$KEYS must be mode 700"
+  # GNU stat first: on Linux 'stat -f' is the file system status and succeeds with other output
+  [ "$(stat -c %a "$KEYS" 2>/dev/null || stat -f %Lp "$KEYS")" = 700 ] || die "$KEYS must be mode 700"
   for c in platform shared media networkstack sdk_sandbox bluetooth nfc releasekey ota ota_next; do
     [ "$(openssl x509 -in "$KEYS/$c.x509.pem" -outform DER | sha256in)" = "$(openssl x509 -in "$RELCERTS/$c.x509.pem" -outform DER | sha256in)" ] \
-      || die "$KEYS/$c.x509.pem differs from the published tools/sign/release_certs copy"
+      || die "$KEYS/$c.x509.pem differs from $RELCERTS/$c.x509.pem"
   done
   IN=${UNSIGNED:-$OUTDIR/system_tv_${NAME}_unsigned.tar}
   [ -f "$IN" ] && [ -f "$IN.info" ] && [ -f "$IN.spec" ] || die "no $IN (+ .info/.spec) from the prep stage"
@@ -1360,11 +1376,17 @@ stage_sign() {
   APEXOUT=$OUTDIR/apex_$NAME
   PARTS=("$OUT" "$OUT.part" "$OUT.info" "$OUT.spec")
   rm -f "${PARTS[@]}"; mkdir -p "$REP"
-  builder_env
-  log "[sign] 1/4 apex_sign.py: every APEX re-signed (APEX keys from $KEYS/apex; laptop $BUILDER key-free)"
-  python3 "$TOOLS/sign/apex_sign.py" run "$IN" "$APEXOUT" --keys "$KEYS" \
-    --builder "$BUILDER" --ssh-key "$BUILDER_KEY" \
-    --remote-tar "${REMOTE_UNSIGNED:-z9x/out/$(basename "$IN")}" || die "apex_sign.py failed"
+  if [ "${LUMEN_SELF:-0}" = 1 ]; then
+    log "[sign] 1/4 apex_sign.py --local: every APEX re-signed (APEX keys from $KEYS/apex)"
+    python3 "$TOOLS/sign/apex_sign.py" run "$IN" "$APEXOUT" --keys "$KEYS" --local "$OUTDIR/apex_local" \
+      --remote-tar unused || die "apex_sign.py failed"
+  else
+    builder_env
+    log "[sign] 1/4 apex_sign.py: every APEX re-signed (APEX keys from $KEYS/apex; laptop $BUILDER key-free)"
+    python3 "$TOOLS/sign/apex_sign.py" run "$IN" "$APEXOUT" --keys "$KEYS" \
+      --builder "$BUILDER" --ssh-key "$BUILDER_KEY" \
+      --remote-tar "${REMOTE_UNSIGNED:-z9x/out/$(basename "$IN")}" || die "apex_sign.py failed"
+  fi
   log "[sign] 2/4 sign_tar.py (release keys from $KEYS, APEXes from $APEXOUT)"
   python3 "$TOOLS/sign/sign_tar.py" "$IN" "$OUT" --apex-dir "$APEXOUT" --keys "$KEYS" --report-dir "$REP" || die "sign_tar.py failed"
   log "[sign] 3/4 sign_tar.py --verify"
@@ -1567,6 +1589,37 @@ stage_remote() {
   log "remote done: $DST sha256 $got (flash = the user's own step)"
 }
 
+# ======================================================================== stage: self (docs/selfbuild)
+# A self-build: lint, prep, sign, image and the release files on ONE Linux machine, with YOUR keys
+# (KEYS_DIR, tools/sign/gen_keys.sh) and their public certificates (LUMEN_RELEASE_CERTS = gen_keys.sh
+# CERTS_OUT), the no-Google edition only. Every check of a release build runs, except the pins of Lumen OS's
+# own build outputs, which a self-build replaces by its own (LUMEN_SELF=1): the libcodec2_vndk rebuild
+# (overlay/v1/c2vndk = your LineageOS build), the base's libcodec2_vndk, and the two pinned APKs (TvInput,
+# AirPlay: built from source). Your projector's codec and audio files are checked against blobs_allow.txt
+# like ours (tools/selfbuild/make_base.sh). tools/selfbuild/build.sh runs this with the right environment.
+stage_self() {
+  [ "${LUMEN_SELF:-0}" = 1 ] || die "self: set LUMEN_SELF=1 (docs/selfbuild; tools/selfbuild/build.sh does)"
+  [ "$VARIANT" = public ] && [ "$GMS" = 0 ] || die "self: VARIANT=public GMS=0 only"
+  [ -n "${KEYS_DIR:-}" ] && [ -n "${LUMEN_RELEASE_CERTS:-}" ] || die "self: KEYS_DIR and LUMEN_RELEASE_CERTS must be set"
+  [ "$RELCERTS" -ef "$LUMEN_RELEASE_CERTS" ] || die "internal: RELCERTS"
+  [ ! "$RELCERTS" -ef "$TOOLS/sign/release_certs" ] || die "self: LUMEN_RELEASE_CERTS must be YOUR certificates, not tools/sign/release_certs"
+  GSI=$(cd "$TOOLS/.." && pwd)
+  LOUT=${LUMEN_OUT:-$GSI/build/self}
+  mkdir -p "$LOUT"
+  [ -n "${BASE:-}" ] && [ -f "$BASE" ] || die "self: BASE = the tar of tools/selfbuild/make_base.sh"
+  log "[self] 1/4 prep"
+  ( OUTDIR=$LOUT; stage_prep ) || die "prep failed"
+  log "[self] 2/4 sign (your keys: $KEYS_DIR)"
+  ( OUTDIR=$LOUT; stage_sign ) || die "sign failed"
+  log "[self] 3/4 image"
+  ( OUTDIR=$LOUT; stage_image ) || die "image failed"
+  log "[self] 4/4 release files"
+  local img=$LOUT/system_tv_$NAME.img
+  [ -f "$img" ] || die "no $img"
+  release_files "$img" "$(sha256 "$img")"
+  log "self done: ${RELDIR:-$LOUT/release} (flash = your own step)"
+}
+
 # VARIANT=public GMS=0 (the only edition ever published), Mac: the files a release carries (docs/release.md)
 # in $RELDIR (default $LOUT/release): lumen-os-$VER-nogms-system.img (an APFS clone of the pulled image),
 # checked FIRST by the release gate's own file-by-file scan (tools/ota/check_release_assets.py: MediaTek /
@@ -1580,9 +1633,14 @@ release_files() {
   local cert=$GSI/installer/certs/ota.x509.pem f
   [ "$GMS" = 0 ] || die "internal: release files only for the no-Google edition"
   [ -s "$keys/ota.pk8" ] || die "no $keys/ota.pk8 (SHA256SUMS.sig)"
-  cmp -s "$cert" "$RELCERTS/ota.x509.pem" || die "installer/certs/ota.x509.pem differs from tools/sign/release_certs/ota.x509.pem"
+  if [ "${LUMEN_SELF:-0}" = 1 ]; then
+    cert=$RELCERTS/ota.x509.pem   # a self-build is checked with its own OTA certificate (installer: see below)
+  else
+    cmp -s "$cert" "$RELCERTS/ota.x509.pem" || die "installer/certs/ota.x509.pem differs from tools/sign/release_certs/ota.x509.pem"
+  fi
+  if ! command -v dump.erofs >/dev/null 2>&1 && [ -n "$DUMP" ]; then PATH=$(dirname "$DUMP"):$PATH; export PATH; fi
   command -v dump.erofs >/dev/null 2>&1 \
-    || die "no dump.erofs on this Mac (brew install erofs-utils): the release gate cannot scan the image"
+    || die "no dump.erofs (macOS: brew install erofs-utils; Linux: the LineageOS out/host tree): the release gate cannot scan the image"
   mkdir -p "$rel"
   for f in "$rel"/*.img; do
     [ -e "$f" ] || continue
@@ -1603,6 +1661,12 @@ release_files() {
   python3 "$TOOLS/ota/check_release_assets.py" "$rel/SHA256SUMS" "$rel/SHA256SUMS.sig" \
     || die "tools/ota/check_release_assets.py refused SHA256SUMS / SHA256SUMS.sig"
   PARTS=()
+  if [ "${LUMEN_SELF:-0}" = 1 ]; then
+    # the installer checks SHA256SUMS.sig with installer/certs/ota.x509.pem: a copy that trusts YOUR key
+    rm -rf "$rel/installer"; cp -R "$GSI/installer" "$rel/installer"
+    cp "$cert" "$rel/installer/certs/ota.x509.pem"
+    log "self-build installer: $rel/installer (certs/ota.x509.pem = your OTA certificate)"
+  fi
   ls -la "$rel"
   log "release files: $rel ($name, SHA256SUMS, SHA256SUMS.sig; installer: --image $rel/$name)"
 }
@@ -1627,6 +1691,7 @@ case $TARGET in
   sign) stage_sign ;;
   image) stage_image ;;
   remote) stage_remote ;;
+  self) stage_self ;;
   members) stage_members ;;
-  *) die "target: lint | prep | sign | image | remote" ;;
+  *) die "target: lint | prep | sign | image | remote | self" ;;
 esac

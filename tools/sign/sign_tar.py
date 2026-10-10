@@ -81,7 +81,8 @@ import apexlib  # noqa: E402
 
 KEYMAP = os.path.join(HERE, "keymap.json")
 TESTCERTS = os.path.join(HERE, "testcerts")
-RELEASE_CERTS = os.path.join(HERE, "release_certs")
+# LUMEN_RELEASE_CERTS: a self-build's own public certificates (docs/selfbuild, gen_keys.sh CERTS_OUT)
+RELEASE_CERTS = os.environ.get("LUMEN_RELEASE_CERTS") or os.path.join(HERE, "release_certs")
 LEFTOVER_ALLOW = os.path.join(HERE, "leftover_allow.txt")
 SKIP = [  # (regex on member path, reason)
     (r"^system/etc/security/fsverity/BuildManifest(Ext)?\.apk$",
