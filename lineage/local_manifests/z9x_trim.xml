@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <remove-project name="platform/prebuilts/android-emulator" />
+  <remove-project name="platform/prebuilts/qemu-kernel" />
+  <remove-project name="LineageOS/android_external_chromium-webview_prebuilt_x86" />
+  <remove-project name="LineageOS/android_external_chromium-webview_prebuilt_x86_64" />
+  <remove-project name="kernel/prebuilts/5.10/x86-64" />
+  <remove-project name="kernel/prebuilts/5.15/x86-64" />
+  <remove-project name="kernel/prebuilts/5.4/x86-64" />
+  <remove-project name="kernel/prebuilts/6.1/x86-64" />
+  <remove-project name="kernel/prebuilts/6.6/x86-64" />
+  <remove-project name="kernel/prebuilts/mainline/x86-64" />
+  <remove-project name="platform/test/mlts/benchmark" />
+  <remove-project name="platform/test/mlts/models" />
+  <remove-project name="platform/test/vts-testcase/hal-trace" />
+  <remove-project name="platform/test/vts-testcase/kernel" />
+  <remove-project name="platform/test/vts-testcase/nbu" />
+  <remove-project name="platform/test/vts-testcase/performance" />
+  <remove-project name="platform/test/vts-testcase/security" />
+  <remove-project name="platform/test/vts-testcase/vndk" />
+</manifest>
