@@ -85,6 +85,11 @@ the Lumen OS version (Settings > Device Preferences > About), what you did right
 the full installer output. Russian-speaking users also talk about Lumen OS in the
 [XGIMI Z9X thread on 4PDA](https://4pda.to/forum/index.php?showtopic=1121837).
 
+## Kino player
+
+The video player made for Lumen OS lives in its own repository:
+[kmuradoff/kino-player](https://github.com/kmuradoff/kino-player).
+
 ## Build
 
 Lumen OS is put together from a LineageOS 21 TV GSI, our apps (`apps/`), system files (`system/`) and
