@@ -28,6 +28,7 @@
     <string name="key_slot4">Przycisk bilibili</string>
     <string name="slot_default_fmt">%1$s (domyślna)</string>
     <string name="slot_default_item">Domyślna: %1$s</string>
+    <string name="slot_home_apps">Lumen Home: Aplikacje</string>
     <string name="cancel">Anuluj</string>
     <string name="ok">OK</string>
     <string name="app_not_found">Nie znaleziono aplikacji dla tego przycisku</string>

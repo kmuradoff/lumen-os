@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Traditional Chinese (Taiwan) translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">傳送問題報告</string>
+    <string name="report_intro">協助 Lumen OS 開發者了解發生了什麼問題。在您按下「傳送報告」之前，不會傳送任何內容。</string>
+    <string name="report_included">包含的內容</string>
+    <string name="report_inc_system">系統版本、運作時間和系統槽位</string>
+    <string name="report_inc_logs">最近 30 分鐘的系統和 Lumen 應用程式記錄</string>
+    <string name="report_inc_crashes">含應用程式名稱的當機、凍結和重新啟動記錄</string>
+    <string name="report_inc_kernel">上次重新啟動的核心記錄和更新記錄</string>
+    <string name="report_inc_state">螢幕、記憶體和網路類型</string>
+    <string name="report_excluded">已移除或不包含的內容</string>
+    <string name="report_exc_accounts">帳戶、電子郵件地址和電話號碼</string>
+    <string name="report_exc_network">Wi-Fi 網路名稱、IP 和 MAC 位址</string>
+    <string name="report_exc_serial">序號：改用這台投影機的隨機 ID</string>
+    <string name="report_exc_apps">您自行安裝的應用程式記錄</string>
+    <string name="report_exc_files">相片、檔案和密碼</string>
+    <string name="report_footer">報告保留 30 天，只有 Lumen OS 開發者可以開啟。</string>
+    <string name="report_last">上次報告：%1$s，%2$s</string>
+    <string name="report_send">傳送報告</string>
+    <string name="report_collecting">正在收集資訊…（%1$d/%2$d）</string>
+    <string name="report_log_hint">如果 Android 詢問是否允許存取裝置記錄，請選擇「允許」。</string>
+    <string name="report_sending">正在傳送… %1$s/%2$s</string>
+    <string name="report_done_title">報告已傳送</string>
+    <string name="report_done_text">請將這組代碼連同問題的簡短說明一起傳送給 Lumen OS 開發者。</string>
+    <string name="report_failed_title">報告未傳送</string>
+    <string name="report_err_no_network">沒有網際網路連線。請檢查網路後再試一次。</string>
+    <string name="report_err_network">無法連線到報告伺服器，請稍後再試。</string>
+    <string name="report_err_rate">目前報告過多，請稍後再試。</string>
+    <string name="report_err_rejected">報告伺服器未接受這份報告。</string>
+    <string name="report_err_server">報告伺服器發生問題，請稍後再試。</string>
+    <string name="report_err_collect">無法準備報告。</string>
+    <string name="report_retry">重試</string>
+    <string name="report_close">關閉</string>
+</resources>

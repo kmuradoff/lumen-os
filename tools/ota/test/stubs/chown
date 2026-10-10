@@ -1,0 +1,4 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of chown (the host test does not run as root): logs to $Z9X_T/chown.log.
+echo "$*" >> "$Z9X_T/chown.log"

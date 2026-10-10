@@ -141,7 +141,10 @@ public class DoneStep extends Step {
         if (!blobs.isEmpty() && !"ok".equals(blobs)) {
             list.addView(note(Icon.WARN, s(R.string.done_blobs_missing)), rowLp());
         }
-        if (!online) list.addView(note(Icon.WARN, s(R.string.done_offline_hint)), rowLp());
+        if (!online) {
+            list.addView(note(Icon.WARN, s(Sys.installed(host, Sys.PKG_GMS) ? R.string.done_offline_hint
+                    : R.string.done_offline_hint_nogms)), rowLp());
+        }
 
         v.addView(sv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         mStart = new Pill(ctx(), s(R.string.done_start), true);

@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">Dilinizi seçin</string>
     <string name="lang_more">Diğer diller…</string>
     <string name="lang_more_hint">Ayarlar ve Google uygulamaları bu dili kullanır. Çevirisi olmayan Lumen uygulamaları İngilizce kalır.</string>
+    <string name="lang_more_hint_nogms">Ayarlar bu dili kullanır. Çevirisi olmayan Lumen uygulamaları İngilizce kalır.</string>
     <string name="net_title">İnternete bağlanın</string>
     <string name="net_subtitle">Bir Wi-Fi ağı seçin. Bunu daha sonra da yapabilirsiniz.</string>
     <string name="net_connected">%1$s ağına bağlı</string>
@@ -99,6 +100,7 @@
     <string name="done_home">Ana ekran</string>
     <string name="done_start">Başla</string>
     <string name="done_offline_hint">İnternet yok: Google’da oturum açmayı ve saat dilimini daha sonra Ayarlar’dan yapın.</string>
+    <string name="done_offline_hint_nogms">İnternet yok: saat dilimini daha sonra Ayarlar’dan seçin.</string>
     <string name="done_blobs_missing">Korumalı video bileşenleri eksik, bu nedenle bazı yayın uygulamaları yalnızca düşük kalitede oynatabilir.</string>
     <string name="action_continue">Devam</string>
     <string name="action_skip">Atla</string>

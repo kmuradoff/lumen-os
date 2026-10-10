@@ -11,5 +11,8 @@
         <permission name="android.permission.PACKAGE_USAGE_STATS" />
         <permission name="android.permission.HDMI_CEC" />
         <permission name="android.permission.GRANT_RUNTIME_PERMISSIONS" />
+        <permission name="android.permission.WRITE_SECURE_SETTINGS" />
+        <!-- 1.0.1: Apps > Install from USB (a trusted installer; every install still asks the user) -->
+        <permission name="android.permission.INSTALL_PACKAGES" />
     </privapp-permissions>
 </permissions>

@@ -1,0 +1,41 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox umount for the stub mount's mounts: 'umount PATH' undoes the last stub mount at PATH
+# and drops the last mountinfo line of PATH. A bind: PATH reads its own bytes again. A tmpfs: its files are
+# gone (a bind made from one of them keeps its bytes, as the kernel keeps the superblock for it) and the
+# directory's own entries are back. Nothing of the stub's at PATH: fails (EINVAL), nothing changes.
+# $Z9X_T/umount.fail: fails, nothing changes (empty: every umount; else only for the paths it lists, one a
+# line, without $Z9X_ROOT). Calls go to $Z9X_T/mount.log.
+echo "umount $*" >> "$Z9X_T/mount.log"
+[ $# -eq 1 ] || { echo "umount stub: unexpected arguments: $*" >&2; echo "umount: unexpected arguments: $*" >> "$Z9X_T/stub.err"; exit 1; }
+p=${1#"$Z9X_ROOT"}
+if [ -f "$Z9X_T/umount.fail" ]; then
+  if [ ! -s "$Z9X_T/umount.fail" ] || grep -qxF -- "$p" "$Z9X_T/umount.fail"; then
+    echo "umount: $1: Device or resource busy" >&2; exit 1
+  fi
+fi
+M=$Z9X_T/mnt
+n=
+for f in "$M"/*.path; do
+  [ -f "$f" ] && [ "$(cat "$f")" = "$1" ] || continue
+  m=${f##*/}; m=${m%.path}
+  if [ -z "$n" ] || [ "$m" -gt "$n" ]; then n=$m; fi
+done
+[ -n "$n" ] || { echo "umount: $1: Invalid argument" >&2; exit 1; }
+case "$(cat "$M/$n.kind")" in
+bind)
+  chmod u+w "$1" && cat "$M/$n.orig" > "$1" && chmod a-w "$1"
+  rm -f "$M/$n.orig"
+  ;;
+tmpfs)
+  chmod -R u+w "$1"
+  find "$1" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  find "$M/$n.hidden" -mindepth 1 -maxdepth 1 -exec mv {} "$1/" \;
+  rmdir "$M/$n.hidden"
+  ;;
+esac
+rm -f "$M/$n.path" "$M/$n.kind"
+mi=$Z9X_ROOT/proc/self/mountinfo
+awk -v p="$p" '{ l[NR] = $0; if ($5 == p) k = NR } END { for (i = 1; i <= NR; i++) if (i != k) print l[i] }' \
+  "$mi" > "$mi.tmp" && mv "$mi.tmp" "$mi"
+exit 0

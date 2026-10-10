@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0 remote step (steps.RemoteStep, now the first step, shown in the device locale). English
+     base; translations in values-<lang>/strings_pair.xml (hand-written, checked by i18n/gen.py). The rest
+     of the step's text is remote_* in strings.xml. -->
+<resources>
+    <!-- Status: a remote is paired but not connected (asleep); any key wakes and reconnects it. -->
+    <string name="remote_wake">Press any button on the remote</string>
+    <!-- Left column under the instruction. "Skip" is action_skip; pairing later: RemoteAutoPair scans
+         after every power-on, so holding Back and Home works then too. -->
+    <string name="remote_later_hint">No remote at hand? Skip with the projector’s buttons or a keyboard. Pair it later the same way.</string>
+    <!-- Under the status once the remote is connected: the step continues only on OK from the remote
+         (Lumen OS 1.0.1); the OK key of the drawing is lit at the same time. -->
+    <string name="remote_press_ok">Press OK on the remote</string>
+</resources>

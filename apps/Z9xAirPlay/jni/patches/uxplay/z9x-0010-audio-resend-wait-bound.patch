@@ -1,0 +1,79 @@
+z9x-0010: bounded wait for audio resends in the RTP reorder buffer
+
+Ours (Z9xAirPlay), against FDH2/UxPlay master 3dbf7ce after z9x-0001..0009 (paths relative
+to UxPlay/lib). Applied by jni/build_native.sh inside a copy of UxPlay/lib with
+patch -p1 --fuzz=0.
+- raop_buffer.c: when the sender gave a control port (resends on), a missing audio packet
+  held back every packet after it until its resend came or the 256-entry buffer was full:
+  2 s of ALAC, 2.8 s of AAC-ELD (mirroring), 5.9 s of AAC. When a resend was lost, all of
+  that audio reached the player after its play time and was skipped, a multi-second
+  dropout. Each entry now records its arrival time (CLOCK_MONOTONIC), and the gap is given
+  up (the missing packets are skipped, the player fills them with silence) once the first
+  packet received after it has waited 100 ms.
+SPDX-License-Identifier: GPL-3.0-or-later
+
+--- a/raop_buffer.c
++++ b/raop_buffer.c
+@@ -22,6 +22,7 @@
+ #include <stdio.h>
+ #include <stdbool.h>
+ #include <stdint.h>
++#include <time.h>
+ 
+ #include "raop_buffer.h"
+ #include "raop_rtp.h"
+@@ -35,6 +36,20 @@
+ 
+ #define RAOP_BUFFER_LENGTH 256
+ 
++/* z9x: how long a missing packet may hold back the packets received after it while its
++   resend is awaited. Without a bound a lost resend held everything until the buffer was
++   full (256 packets: 2 s of ALAC, 2.8 s of AAC-ELD, 5.9 s of AAC), all of it then too late
++   to play. A resend normally arrives within a few Wi-Fi round trips. */
++#define RAOP_BUFFER_RESEND_WAIT_NS (100ULL * 1000000ULL)
++
++static uint64_t
++raop_buffer_mono_ns(void)
++{
++    struct timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return (uint64_t) ts.tv_sec * 1000000000ULL + (uint64_t) ts.tv_nsec;
++}
++
+ typedef struct {
+     /* Data available */
+     int filled;
+@@ -207,6 +222,7 @@
+     entry->seqnum = seqnum;
+     entry->rtp_timestamp = byteutils_get_int_be(data, 4);
+     entry->filled = 1;
++    entry->packet_arrival_time = raop_buffer_mono_ns();
+ 
+     entry->payload_data = malloc(payload_size);
+     raop_buffer_decrypt(raop_buffer, data, entry->payload_data, payload_size, &entry->payload_size);
+@@ -243,8 +259,23 @@
+     } else if (!entry->filled) {
+         /* Check how much we have space left in the buffer */
+         if (entry_count < RAOP_BUFFER_LENGTH) {
+-            /* Return nothing and hope resend gets on time */
+-            return NULL;
++            /* z9x: the first packet received after the gap; give up on the gap once that
++               packet has waited RAOP_BUFFER_RESEND_WAIT_NS (the last entry is always filled) */
++            unsigned short next_seqnum = raop_buffer->first_seqnum;
++            raop_buffer_entry_t *next = entry;
++            while (!next->filled && seqnum_cmp(next_seqnum, raop_buffer->last_seqnum) < 0) {
++                next_seqnum++;
++                next = &raop_buffer->entries[next_seqnum % RAOP_BUFFER_LENGTH];
++            }
++            if (!next->filled ||
++                raop_buffer_mono_ns() - next->packet_arrival_time < RAOP_BUFFER_RESEND_WAIT_NS) {
++                /* Return nothing and hope resend gets on time */
++                return NULL;
++            }
++            logger_log(raop_buffer->logger, LOGGER_DEBUG, "raop_buffer: no resend of %u packet(s) from seqnum %u, skipped",
++                       (unsigned int) (unsigned short) (next_seqnum - raop_buffer->first_seqnum), raop_buffer->first_seqnum);
++            raop_buffer->first_seqnum = next_seqnum;
++            entry = next;
+         }
+         /* Risk of buffer overrun, return empty buffer */
+     }

@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">言語を選択してください</string>
     <string name="lang_more">その他の言語…</string>
     <string name="lang_more_hint">設定と Google アプリでこの言語が使われます。翻訳のない Lumen アプリは英語のままです。</string>
+    <string name="lang_more_hint_nogms">設定でこの言語が使われます。翻訳のない Lumen アプリは英語のままです。</string>
     <string name="net_title">インターネットに接続</string>
     <string name="net_subtitle">Wi-Fi ネットワークを選択してください。後で設定することもできます。</string>
     <string name="net_connected">%1$s に接続済み</string>
@@ -99,6 +100,7 @@
     <string name="done_home">ホーム画面</string>
     <string name="done_start">開始</string>
     <string name="done_offline_hint">インターネットなし: Google へのログインとタイムゾーンの設定は、後で設定から行えます。</string>
+    <string name="done_offline_hint_nogms">インターネットなし: タイムゾーンは後で設定から指定できます。</string>
     <string name="done_blobs_missing">保護された動画のコンポーネントがないため、一部のストリーミング アプリは低画質でしか再生できない場合があります。</string>
     <string name="action_continue">続行</string>
     <string name="action_skip">スキップ</string>

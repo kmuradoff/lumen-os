@@ -501,7 +501,7 @@ public final class EyeGuard {
             setFocusable(true);
             setFocusableInTouchMode(true);
             setDefaultFocusHighlightEnabled(false);
-            float s = c.getResources().getDisplayMetrics().widthPixels / 1920f;
+            float s = org.z9x.projector.ui.Theme.scale(c);   // width / 1920 at any interface resolution
 
             LinearLayout col = new LinearLayout(c);
             col.setOrientation(LinearLayout.VERTICAL);

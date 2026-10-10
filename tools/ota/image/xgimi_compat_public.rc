@@ -1,0 +1,18 @@
+# XGIMI Z9X compatibility for a framework not signed by XGIMI. Vendor itself is not modified;
+# every fix below swaps something in at boot with a bind mount.
+#
+# Lumen OS PUBLIC images (tools/lumen_v1.sh VARIANT=public, tools/ota/image/HANDOFF.md section 2): this
+# file replaces the base's /system/etc/init/xgimi_compat.rc. A public image carries no MediaTek / XGIMI
+# file, so fixes 2 and 3 of the private image are done by z9x_blobs.sh (z9x_blobs.rc, same trigger,
+# later in init's parse order, before 'on boot') with the user's own copies from z9x_blobs_<slot>,
+# lines with bind= in /system/etc/z9x/blobs_allow.txt, and only when the copy matches its sha256:
+#   2) the audio policy without XGIMI's enums over /vendor/etc/audio_policy_configuration.xml,
+#   3) MediaTek's VNDK libstagefright_foundation (lib, lib64) over /apex/com.android.vndk.v34, which
+#      the vendor audio HAL (audio.primary.mt5877.so) needs for its primary module.
+#
+# 1) XGIMI ships its system apps (XGIMI platform key, sharedUserId android.uid.system)
+#    in /vendor/app and /vendor/priv-app. A framework signed with another key rejects
+#    them and PackageManager aborts the boot, so hide both folders.
+on post-fs-data
+    mount none /system/etc/empty_dir /vendor/app bind
+    mount none /system/etc/empty_dir /vendor/priv-app bind

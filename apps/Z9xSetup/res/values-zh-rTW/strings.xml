@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">請選擇語言</string>
     <string name="lang_more">更多語言…</string>
     <string name="lang_more_hint">設定和 Google 應用程式會使用這個語言。尚未翻譯的 Lumen 應用程式仍會顯示英文。</string>
+    <string name="lang_more_hint_nogms">設定會使用這個語言。尚未翻譯的 Lumen 應用程式仍會顯示英文。</string>
     <string name="net_title">連上網際網路</string>
     <string name="net_subtitle">請選擇 Wi-Fi 網路，也可以稍後再設定。</string>
     <string name="net_connected">已連線至 %1$s</string>
@@ -99,6 +100,7 @@
     <string name="done_home">主畫面</string>
     <string name="done_start">開始使用</string>
     <string name="done_offline_hint">沒有網際網路：可稍後在設定中登入 Google 並設定時區。</string>
+    <string name="done_offline_hint_nogms">沒有網際網路：可稍後在設定中設定時區。</string>
     <string name="done_blobs_missing">缺少受保護影片元件，部分串流應用程式可能只能以低畫質播放。</string>
     <string name="action_continue">繼續</string>
     <string name="action_skip">略過</string>

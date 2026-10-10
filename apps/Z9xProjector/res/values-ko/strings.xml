@@ -28,6 +28,7 @@
     <string name="key_slot4">bilibili 버튼</string>
     <string name="slot_default_fmt">%1$s(기본값)</string>
     <string name="slot_default_item">기본값: %1$s</string>
+    <string name="slot_home_apps">Lumen Home: 앱</string>
     <string name="cancel">취소</string>
     <string name="ok">확인</string>
     <string name="app_not_found">이 버튼에 연결된 앱이 없습니다</string>

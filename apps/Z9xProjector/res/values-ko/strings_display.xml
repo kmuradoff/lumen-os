@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Korean translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">디스플레이</string>
+    <string name="uires_row">인터페이스 해상도</string>
+    <string name="uires_default_fmt">%1$s(기본값)</string>
+    <string name="uires_summary">4K는 글자가 가장 선명하고, 1080p는 XGIMI와 같아 그래픽 부담이 가장 적습니다. 변경하면 프로젝터가 다시 시작됩니다.</string>
+    <string name="uires_summary_fallback">현재 %1$s: %2$s이(가) 이 프로젝터에서 제대로 시작되지 않아 자동으로 되돌렸습니다. 다시 시도하려면 %2$s을(를) 선택하세요.</string>
+    <string name="uires_choose_text">4K는 4K 패널의 모든 픽셀을 사용합니다. 1080p는 XGIMI와 같이 4분의 1의 픽셀만 그리고 프로젝터가 화면을 확대합니다.</string>
+    <string name="uires_opt_1080">XGIMI와 동일: 그래픽 부담이 가장 적음, 글자가 약간 부드러움</string>
+    <string name="uires_opt_1440">테스트 전용: 패널 배율 조정이 검증되지 않음</string>
+    <string name="uires_opt_2160">가장 선명한 글자: 4K 패널의 모든 픽셀 사용</string>
+    <string name="uires_current">현재</string>
+    <string name="uires_confirm_title">%1$s(으)로 전환할까요?</string>
+    <string name="uires_confirm_up">글자와 메뉴가 더 선명해집니다. 그래픽이 그려야 할 것이 많아져 일부 앱이 조금 느리게 느껴질 수 있습니다.</string>
+    <string name="uires_confirm_down">그래픽이 그려야 할 것이 줄어 메뉴와 앱이 더 빠르게 느껴질 수 있고, 글자는 약간 부드러워집니다.</string>
+    <string name="uires_confirm_restart">적용하려면 프로젝터가 다시 시작됩니다(약 1분). 화면이 제대로 돌아오지 않으면 자동으로 %1$s(으)로 돌아갑니다.</string>
+    <string name="uires_restart">지금 다시 시작</string>
+    <string name="uires_keep_title">이 해상도를 유지할까요?</string>
+    <string name="uires_keep_text">인터페이스가 이제 %1$s(으)로 실행 중입니다. 글자와 화면이 제대로 보이면 유지를 선택하세요.</string>
+    <string name="uires_keep_countdown">%2$d초 후 %1$s(으)로 돌아갑니다</string>
+    <string name="uires_keep">유지</string>
+    <string name="uires_revert">%1$s(으)로 되돌리기</string>
+    <string name="uires_failed">해상도를 변경하지 못했습니다</string>
+</resources>

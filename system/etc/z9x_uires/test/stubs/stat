@@ -1,0 +1,12 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox stat, only 'stat -c %C FILE' (the SELinux context): the last "FILE CONTEXT" line of
+# $Z9X_T/labels, else u:object_r:device:s0 for a file under $Z9X_ROOT/dev (tmpfs /dev). $Z9X_T/stat.fail:
+# prints nothing, exit 1 (an older toybox without %C).
+[ "${1-}" = -c ] && [ "${2-}" = %C ] && [ $# -eq 3 ] || { echo "stat stub: unexpected arguments: $*" >&2; exit 1; }
+[ -f "$Z9X_T/stat.fail" ] && exit 1
+[ -e "$3" ] || { echo "stat: $3: No such file or directory" >&2; exit 1; }
+l=$(awk -v f="$3" 'substr($0, 1, length(f) + 1) == f " " { l = substr($0, length(f) + 2) } END { print l }' "$Z9X_T/labels" 2>/dev/null)
+case "$3" in "$Z9X_ROOT"/dev/*) l=${l:-u:object_r:device:s0} ;; esac
+[ -n "$l" ] || exit 1
+echo "$l"

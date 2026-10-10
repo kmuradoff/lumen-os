@@ -28,6 +28,7 @@
     <string name="key_slot4">Tasto bilibili</string>
     <string name="slot_default_fmt">%1$s (predefinita)</string>
     <string name="slot_default_item">Predefinita: %1$s</string>
+    <string name="slot_home_apps">Lumen Home: App</string>
     <string name="cancel">Annulla</string>
     <string name="ok">OK</string>
     <string name="app_not_found">Nessuna app trovata per questo tasto</string>

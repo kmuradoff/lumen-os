@@ -8,6 +8,7 @@
     <string name="about_os" translatable="false">Lumen OS · kmuradoff</string>
 
     <!-- top bar -->
+    <string name="tab_home">Home</string>
     <string name="tab_for_you">For you</string>
     <string name="tab_apps">Apps</string>
     <string name="tab_inputs">Inputs</string>
@@ -37,6 +38,11 @@
     <string name="hero_open">Open</string>
     <string name="hero_open_app">Open %1$s</string>
     <string name="hero_how_to_cast">How to cast</string>
+    <!-- direction D hero: primary button of a started program, the details button, the overline kinds -->
+    <string name="hero_resume">Continue</string>
+    <string name="hero_more">More info</string>
+    <string name="hero_kind_next">Next episode</string>
+    <string name="hero_kind_watchlist">Watchlist</string>
     <string name="feature_cast_title">Cast from your phone</string>
     <string name="feature_cast_desc">Chromecast built-in and AirPlay: send videos, music and your screen from a phone, tablet or laptop.</string>
     <string name="feature_picture_title">Perfect picture</string>
@@ -49,6 +55,15 @@
     <string name="apps_all">All apps</string>
     <string name="apps_az">A–Z</string>
     <string name="apps_get_more">Get more apps</string>
+    <string name="apps_install_usb">Install from USB</string>
+    <string name="usb_title">Install from USB</string>
+    <string name="usb_none">Insert a USB stick with .apk files (in its root or in an apks folder).</string>
+    <string name="usb_empty">No .apk files on the USB stick. Put them in its root or in an apks folder.</string>
+    <string name="usb_new">New</string>
+    <string name="usb_update">Update</string>
+    <string name="usb_installing">Installing: %1$d%%</string>
+    <string name="usb_done">%1$s is installed</string>
+    <string name="usb_failed">%1$s was not installed: %2$s</string>
 
     <!-- inputs, cast, projector tiles -->
     <string name="inputs_connected">Connected devices</string>
@@ -108,6 +123,17 @@
     <string name="weather_show">Show weather</string>
     <string name="weather_privacy">The location comes from your IP address. Only the location is sent, never anything that identifies you. A VPN can change it; choose the city by hand then.</string>
     <string name="weather_attribution">Weather data: Open-Meteo.com (CC BY 4.0)</string>
+    <!-- calm Home weather line: %1$s = temperature (12°), %2$s = condition below; the city follows after " · " -->
+    <string name="weather_line">%1$s, %2$s</string>
+    <string name="wx_clear">clear</string>
+    <string name="wx_partly">partly cloudy</string>
+    <string name="wx_cloudy">cloudy</string>
+    <string name="wx_fog">fog</string>
+    <string name="wx_drizzle">drizzle</string>
+    <string name="wx_rain">rain</string>
+    <string name="wx_snow">snow</string>
+    <string name="wx_showers">showers</string>
+    <string name="wx_thunder">thunderstorm</string>
 
     <!-- search and voice -->
     <string name="search_hint">Search apps, movies, shows…</string>
@@ -129,6 +155,8 @@
     <!-- %1$s = the UI language, e.g. "русский" -->
     <string name="kb_get_app">Get a keyboard for %1$s</string>
     <string name="kb_no_play">Google Play is not available. Install a keyboard app to type in your language.</string>
+    <string name="kb_no_store">Install a keyboard app from a USB stick: Apps &gt; Install from USB.</string>
+    <string name="voice_none">Voice search needs a speech recognition app. Type your search instead.</string>
 
     <!-- customize -->
     <string name="cz_subtitle">Choose what the home screen shows</string>
@@ -141,6 +169,12 @@
     <string name="cz_favorites_sub">Apps in the first row and at the top of Apps</string>
     <string name="cz_hidden_apps">Hidden apps</string>
     <string name="cz_hidden_sub">Hidden apps stay installed but are not shown</string>
+    <string name="cz_wallpaper">Wallpaper</string>
+    <string name="cz_wallpaper_sub">A living landscape behind Home and in the screensaver: its sky follows the real sun and weather.</string>
+    <string name="cz_continue">Continue watching on Home</string>
+    <string name="cz_continue_sub">Hidden, Home shows only the clock, the date and the weather over the living wallpaper, and your apps. App channels are not shown either.</string>
+    <string name="cz_continue_show">Show</string>
+    <string name="cz_continue_hide">Hide</string>
     <string name="cz_spotlight">Spotlight</string>
     <string name="cz_hero_auto">Change slides automatically</string>
     <string name="cz_trailers">Play trailers</string>

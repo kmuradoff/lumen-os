@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Polish translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">Naciśnij dowolny przycisk na pilocie</string>
+    <string name="remote_later_hint">Nie masz pilota pod ręką? Pomiń ten krok przyciskami projektora lub klawiaturą. Pilota sparujesz później w ten sam sposób.</string>
+    <string name="remote_press_ok">Naciśnij OK na pilocie</string>
+</resources>

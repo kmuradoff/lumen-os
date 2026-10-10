@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">Выберыце мову</string>
     <string name="lang_more">Іншыя мовы…</string>
     <string name="lang_more_hint">Гэтую мову будуць выкарыстоўваць налады і праграмы Google. Праграмы Lumen без перакладу застануцца на англійскай.</string>
+    <string name="lang_more_hint_nogms">Гэтую мову будуць выкарыстоўваць налады. Праграмы Lumen без перакладу застануцца на англійскай.</string>
     <string name="net_title">Падключэнне да інтэрнэту</string>
     <string name="net_subtitle">Выберыце сетку Wi-Fi. Гэта можна зрабіць і пазней.</string>
     <string name="net_connected">Падключана: %1$s</string>
@@ -99,6 +100,7 @@
     <string name="done_home">Галоўны экран</string>
     <string name="done_start">Пачаць</string>
     <string name="done_offline_hint">Няма інтэрнэту: увайсці ў Google і выбраць часавы пояс можна пазней у наладах.</string>
+    <string name="done_offline_hint_nogms">Няма інтэрнэту: выбраць часавы пояс можна пазней у наладах.</string>
     <string name="done_blobs_missing">Няма кампанентаў абароненага відэа, таму некаторыя відэасэрвісы могуць працаваць толькі ў нізкай якасці.</string>
     <string name="action_continue">Працягнуць</string>
     <string name="action_skip">Прапусціць</string>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portuguese (Brazil; values-pt and values-pt-rBR are identical) translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">Tela</string>
+    <string name="uires_row">Resolução da interface</string>
+    <string name="uires_default_fmt">%1$s (padrão)</string>
+    <string name="uires_summary">4K dá o texto mais nítido; 1080p, como na XGIMI, é a mais leve para os gráficos. O projetor reinicia para mudar.</string>
+    <string name="uires_summary_fallback">Agora %1$s: %2$s não iniciou corretamente neste projetor, então ele voltou sozinho. Escolha %2$s para tentar de novo.</string>
+    <string name="uires_choose_text">4K usa cada pixel do painel 4K. 1080p, como na XGIMI, desenha um quarto deles, e o projetor amplia a imagem.</string>
+    <string name="uires_opt_1080">Como na XGIMI: a mais leve para os gráficos; texto um pouco mais suave</string>
+    <string name="uires_opt_1440">Só para testes: o ajuste ao painel não foi verificado</string>
+    <string name="uires_opt_2160">Texto mais nítido: cada pixel do painel 4K</string>
+    <string name="uires_current">Atual</string>
+    <string name="uires_confirm_title">Mudar para %1$s?</string>
+    <string name="uires_confirm_up">O texto e os menus ficam mais nítidos. Os gráficos têm mais para desenhar, então alguns apps podem parecer um pouco mais lentos.</string>
+    <string name="uires_confirm_down">Os gráficos têm menos para desenhar, então menus e apps podem parecer mais rápidos; o texto fica um pouco mais suave.</string>
+    <string name="uires_confirm_restart">O projetor reinicia para aplicar (cerca de um minuto). Se a imagem não voltar corretamente, ele volta sozinho para %1$s.</string>
+    <string name="uires_restart">Reiniciar agora</string>
+    <string name="uires_keep_title">Manter esta resolução?</string>
+    <string name="uires_keep_text">A interface agora funciona em %1$s. Se o texto e a imagem parecerem corretos, escolha Manter.</string>
+    <string name="uires_keep_countdown">Voltando para %1$s em %2$d s</string>
+    <string name="uires_keep">Manter</string>
+    <string name="uires_revert">Voltar para %1$s</string>
+    <string name="uires_failed">Não foi possível mudar a resolução</string>
+</resources>

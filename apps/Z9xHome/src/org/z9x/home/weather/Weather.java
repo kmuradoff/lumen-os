@@ -49,6 +49,8 @@ public final class Weather {
         public String feels;
         public String city;
         public int icon;
+        public int code;          // WMO weather code (condition text, living sky)
+        public boolean day;
         public boolean stale;
         public long time;
         public final ArrayList<Day> days = new ArrayList<>();
@@ -78,7 +80,9 @@ public final class Weather {
             n.time = t;
             n.stale = age > DIM_AGE;
             boolean day = cur.optInt("is_day", 1) == 1;
-            n.icon = Wmo.icon(cur.optInt("weather_code", 0), day);
+            n.code = cur.optInt("weather_code", 0);
+            n.day = day;
+            n.icon = Wmo.icon(n.code, day);
             n.temp = deg(cur.optDouble("temperature_2m"));
             n.feels = deg(cur.optDouble("apparent_temperature"));
             n.city = cityName(c);

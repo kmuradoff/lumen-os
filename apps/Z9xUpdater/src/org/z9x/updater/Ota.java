@@ -22,6 +22,9 @@ public final class Ota {
     /** Guide section of the one-time vbmeta step (language picked at runtime). */
     public static final String GUIDE_VBMETA_EN = PROJECT_URL + "/blob/main/docs/install/en.md#vbmeta";
     public static final String GUIDE_VBMETA_RU = PROJECT_URL + "/blob/main/docs/install/ru.md#vbmeta";
+    /** Guide section "Rescue" (lumen-install.sh rescue, keeps the data): shown with a gate problem. */
+    public static final String GUIDE_RESCUE_EN = PROJECT_URL + "/blob/main/docs/install/en.md#rescue";
+    public static final String GUIDE_RESCUE_RU = PROJECT_URL + "/blob/main/docs/install/ru.md#rescue";
     public static final String USER_AGENT = "Lumen-OS-Updater/" + VERSION;
     public static final String OTACERTS = "/system/etc/security/otacerts.zip";
 
@@ -82,6 +85,23 @@ public final class Ota {
     public static String manifestUrl() {
         String u = prop("ro.z9x.ota.manifest_url");
         return u.startsWith("https://") ? u : DEFAULT_MANIFEST_URL;
+    }
+
+    /**
+     * The file name of this image's own manifest (update-stable.json, update-public.json,
+     * update-public-nogms.json: docs/ota.md "Variants"): the USB file to look for, and the channel a
+     * manifest must carry (an edition never installs another edition's update).
+     */
+    public static String channelFile() {
+        return channelFile(manifestUrl());
+    }
+
+    static String channelFile(String url) {
+        String f = url == null ? "" : url;
+        int q = f.indexOf('?');
+        if (q >= 0) f = f.substring(0, q);
+        f = f.substring(f.lastIndexOf('/') + 1);
+        return f.startsWith("update-") && f.endsWith(".json") ? f : "update-stable.json";
     }
 
     /** "_a"/"_b" of the running slot. */

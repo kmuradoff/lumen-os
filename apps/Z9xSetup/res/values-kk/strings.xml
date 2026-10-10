@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">Тілді таңдаңыз</string>
     <string name="lang_more">Басқа тілдер…</string>
     <string name="lang_more_hint">Бұл тілді параметрлер мен Google қолданбалары пайдаланады. Аудармасы жоқ Lumen қолданбалары ағылшын тілінде қалады.</string>
+    <string name="lang_more_hint_nogms">Бұл тілді параметрлер пайдаланады. Аудармасы жоқ Lumen қолданбалары ағылшын тілінде қалады.</string>
     <string name="net_title">Интернетке қосылу</string>
     <string name="net_subtitle">Wi-Fi желісін таңдаңыз. Мұны кейін де жасауға болады.</string>
     <string name="net_connected">Қосылды: %1$s</string>
@@ -99,6 +100,7 @@
     <string name="done_home">Басты экран</string>
     <string name="done_start">Бастау</string>
     <string name="done_offline_hint">Интернет жоқ: Google-ға кіруді және уақыт белдеуін кейін параметрлерде орнатуға болады.</string>
+    <string name="done_offline_hint_nogms">Интернет жоқ: уақыт белдеуін кейін параметрлерде орнатуға болады.</string>
     <string name="done_blobs_missing">Қорғалған бейне компоненттері жоқ, сондықтан кейбір бейне қызметтері тек төмен сапада жұмыс істеуі мүмкін.</string>
     <string name="action_continue">Жалғастыру</string>
     <string name="action_skip">Өткізіп жіберу</string>

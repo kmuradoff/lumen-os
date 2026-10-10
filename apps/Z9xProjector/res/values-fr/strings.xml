@@ -28,6 +28,7 @@
     <string name="key_slot4">Touche bilibili</string>
     <string name="slot_default_fmt">%1$s (par défaut)</string>
     <string name="slot_default_item">Par défaut : %1$s</string>
+    <string name="slot_home_apps">Lumen Home : Applis</string>
     <string name="cancel">Annuler</string>
     <string name="ok">OK</string>
     <string name="app_not_found">Aucune application trouvée pour cette touche</string>

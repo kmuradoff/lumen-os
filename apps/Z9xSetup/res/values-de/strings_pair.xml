@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">Drücke eine beliebige Taste auf der Fernbedienung</string>
+    <string name="remote_later_hint">Keine Fernbedienung zur Hand? Überspringe den Schritt mit den Tasten am Projektor oder einer Tastatur. Koppeln kannst du sie später genauso.</string>
+    <string name="remote_press_ok">Drücke OK auf der Fernbedienung</string>
+</resources>

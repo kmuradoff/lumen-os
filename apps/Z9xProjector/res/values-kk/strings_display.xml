@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kazakh translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">Экран</string>
+    <string name="uires_row">Интерфейс ажыратымдылығы</string>
+    <string name="uires_default_fmt">%1$s (әдепкі)</string>
+    <string name="uires_summary">4K — ең анық мәтін; 1080p, XGIMI-дегідей, графикаға ең жеңіл. Өзгерту үшін проектор қайта қосылады.</string>
+    <string name="uires_summary_fallback">Қазір %1$s: %2$s бұл проекторда дұрыс іске қосылмады, сондықтан ол өздігінен қайтты. Қайта байқап көру үшін %2$s таңдаңыз.</string>
+    <string name="uires_choose_text">4K 4K панельдің әр пикселін пайдаланады. 1080p, XGIMI-дегідей, пикселдердің төрттен бірін ғана салады, ал проектор суретті үлкейтеді.</string>
+    <string name="uires_opt_1080">XGIMI-дегідей: графикаға ең жеңіл; мәтін сәл жұмсағырақ</string>
+    <string name="uires_opt_1440">Тек сынақ үшін: панельге масштабтау тексерілмеген</string>
+    <string name="uires_opt_2160">Ең анық мәтін: 4K панельдің әр пикселі</string>
+    <string name="uires_current">Қазір</string>
+    <string name="uires_confirm_title">%1$s режиміне ауысу керек пе?</string>
+    <string name="uires_confirm_up">Мәтін мен мәзір анығырақ болады. Графикаға көбірек сызуға тура келеді, сондықтан кейбір қолданбалар сәл баяу жұмыс істеуі мүмкін.</string>
+    <string name="uires_confirm_down">Графикаға азырақ сызу керек болады, сондықтан мәзір мен қолданбалар жылдамырақ жұмыс істеуі мүмкін, ал мәтін сәл жұмсағырақ болады.</string>
+    <string name="uires_confirm_restart">Қолдану үшін проектор қайта қосылады (шамамен бір минут). Сурет дұрыс оралмаса, ол өздігінен %1$s режиміне қайтады.</string>
+    <string name="uires_restart">Қайта қосу</string>
+    <string name="uires_keep_title">Осы ажыратымдылықты қалдыру керек пе?</string>
+    <string name="uires_keep_text">Интерфейс енді %1$s режимінде жұмыс істейді. Мәтін мен сурет дұрыс көрінсе, «Қалдыру» түймесін таңдаңыз.</string>
+    <string name="uires_keep_countdown">%2$d с кейін %1$s режиміне қайтады</string>
+    <string name="uires_keep">Қалдыру</string>
+    <string name="uires_revert">%1$s режиміне қайту</string>
+    <string name="uires_failed">Ажыратымдылықты өзгерту мүмкін болмады</string>
+</resources>

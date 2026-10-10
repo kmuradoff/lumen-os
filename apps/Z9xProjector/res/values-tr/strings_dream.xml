@@ -18,4 +18,6 @@
     <string name="dream_light_unchanged">Değişmez</string>
     <string name="dream_sleep_after">Bekleme moduna geçiş süresi</string>
     <string name="dream_use_clock">Saatli ekran koruyucuyu kullan</string>
+    <string name="dream_show">Göster</string>
+    <string name="dream_sky">Canlı gökyüzü</string>
 </resources>

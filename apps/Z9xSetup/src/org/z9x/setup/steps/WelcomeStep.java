@@ -12,6 +12,7 @@ import org.z9x.setup.L;
 import org.z9x.setup.Langs;
 import org.z9x.setup.R;
 import org.z9x.setup.SetupActivity;
+import org.z9x.setup.Sys;
 import org.z9x.setup.ui.Icon;
 import org.z9x.setup.ui.Row;
 import org.z9x.setup.ui.Sheet;
@@ -165,7 +166,9 @@ public class WelcomeStep extends Step {
             Collections.sort(order, (a, b) -> col.compare(names.get(a), names.get(b)));
             host.main.post(() -> {
                 if (host.current() != this) return;
-                Sheet sh = new Sheet(ctx(), s(R.string.lang_more), s(R.string.lang_more_hint));
+                // Lumen OS without Google: no Google apps to name in the hint
+                Sheet sh = new Sheet(ctx(), s(R.string.lang_more), s(Sys.installed(host, Sys.PKG_GMS)
+                        ? R.string.lang_more_hint : R.string.lang_more_hint_nogms));
                 LinearLayout list = sh.addList();
                 View first = null;
                 Locale cur = host.getResources().getConfiguration().getLocales().get(0);

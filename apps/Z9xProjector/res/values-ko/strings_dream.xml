@@ -18,4 +18,6 @@
     <string name="dream_light_unchanged">변경 안함</string>
     <string name="dream_sleep_after">대기 모드 전환 시간</string>
     <string name="dream_use_clock">시계 화면 보호기 사용</string>
+    <string name="dream_show">표시</string>
+    <string name="dream_sky">살아 있는 하늘</string>
 </resources>

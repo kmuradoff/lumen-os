@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Japanese translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">問題レポートを送信</string>
+    <string name="report_intro">Lumen OS の開発者が問題の原因を調べるのに役立ちます。「レポートを送信」を押すまで何も送信されません。</string>
+    <string name="report_included">含まれるもの</string>
+    <string name="report_inc_system">システムのバージョン、稼働時間、システムスロット</string>
+    <string name="report_inc_logs">直近 30 分間のシステムと Lumen アプリのログ</string>
+    <string name="report_inc_crashes">アプリ名を含むクラッシュ、フリーズ、再起動の記録</string>
+    <string name="report_inc_kernel">前回の再起動時のカーネルログとアップデートのログ</string>
+    <string name="report_inc_state">画面、メモリ、ネットワークの種類</string>
+    <string name="report_excluded">削除されるもの・含まれないもの</string>
+    <string name="report_exc_accounts">アカウント、メールアドレス、電話番号</string>
+    <string name="report_exc_network">Wi-Fi ネットワーク名、IP アドレス、MAC アドレス</string>
+    <string name="report_exc_serial">シリアル番号（代わりにこのプロジェクターのランダムな ID を使用）</string>
+    <string name="report_exc_apps">ご自身でインストールしたアプリのログ</string>
+    <string name="report_exc_files">写真、ファイル、パスワード</string>
+    <string name="report_footer">レポートは 30 日間保存されます。開けるのは Lumen OS の開発者だけです。</string>
+    <string name="report_last">前回のレポート: %1$s（%2$s）</string>
+    <string name="report_send">レポートを送信</string>
+    <string name="report_collecting">情報を収集しています…（%1$d/%2$d）</string>
+    <string name="report_log_hint">デバイスのログへのアクセスを許可するか Android に聞かれたら、「許可」を選んでください。</string>
+    <string name="report_sending">送信しています… %1$s/%2$s</string>
+    <string name="report_done_title">レポートを送信しました</string>
+    <string name="report_done_text">このコードを問題の簡単な説明と一緒に Lumen OS の開発者に送ってください。</string>
+    <string name="report_failed_title">レポートを送信できませんでした</string>
+    <string name="report_err_no_network">インターネットに接続されていません。ネットワークを確認して、もう一度お試しください。</string>
+    <string name="report_err_network">レポートサーバーに接続できません。しばらくしてからもう一度お試しください。</string>
+    <string name="report_err_rate">現在レポートが多すぎます。しばらくしてからもう一度お試しください。</string>
+    <string name="report_err_rejected">レポートサーバーがレポートを受け付けませんでした。</string>
+    <string name="report_err_server">レポートサーバーで問題が発生しました。しばらくしてからもう一度お試しください。</string>
+    <string name="report_err_collect">レポートを準備できませんでした。</string>
+    <string name="report_retry">再試行</string>
+    <string name="report_close">閉じる</string>
+</resources>

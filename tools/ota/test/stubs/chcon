@@ -1,0 +1,4 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox chcon: 'chcon LABEL FILE' appends "LABEL FILE" to $Z9X_T/chcon.log.
+echo "$*" >> "$Z9X_T/chcon.log"

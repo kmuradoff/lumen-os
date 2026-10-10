@@ -1,7 +1,12 @@
 #!/bin/bash
 # Наблюдение с Мака за сборкой на ноутбуке. Выходит через 30 минут с отчётом
 # или сразу, если сборка остановилась, упала, застряла, перегрелась или пропала связь.
-L="ssh -i $HOME/.ssh/<builder-ssh-key> -o BatchMode=yes -o ConnectTimeout=15 $BUILDER"
+# Ноутбук: BUILDER=user@host и BUILDER_KEY (ssh-ключ) из окружения или ~/.config/lumen/builder.env (личный файл, не в git).
+b=${BUILDER:-}; k=${BUILDER_KEY:-}
+[ -f "$HOME/.config/lumen/builder.env" ] && . "$HOME/.config/lumen/builder.env"
+BUILDER=${b:-${BUILDER:-}}; BUILDER_KEY=${k:-${BUILDER_KEY:-${SSH_KEY:-$HOME/.ssh/id_ed25519}}}
+[ -n "$BUILDER" ] || { echo "задайте BUILDER=user@host ноутбука (окружение или ~/.config/lumen/builder.env)" >&2; exit 2; }
+L="ssh -i $BUILDER_KEY -o BatchMode=yes -o ConnectTimeout=15 $BUILDER"
 start=$(date +%s); d0=""; att0=""; lastd=""; lastchg=$start; noconn=0; tsum=0; tn=0
 while :; do
   r=$($L 'bash ~/lineage-docker/z9x_status.sh' 2>/dev/null)

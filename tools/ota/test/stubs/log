@@ -1,0 +1,6 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of Android's log: 'log -t TAG message' appends "TAG: message" to $Z9X_T/logcat.
+tag=?
+[ "${1-}" = -t ] && { tag=$2; shift 2; }
+echo "$tag: $*" >> "$Z9X_T/logcat"

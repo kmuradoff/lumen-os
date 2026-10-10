@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Russian translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">Отправить отчёт о проблеме</string>
+    <string name="report_intro">Поможет разработчику Lumen OS понять, что пошло не так. Ничего не отправляется, пока вы не нажмёте «Отправить отчёт».</string>
+    <string name="report_included">Что входит</string>
+    <string name="report_inc_system">Версия системы, время работы и слот системы</string>
+    <string name="report_inc_logs">Журналы системы и приложений Lumen за последние 30 минут</string>
+    <string name="report_inc_crashes">Записи о сбоях, зависаниях и перезапусках с названиями приложений</string>
+    <string name="report_inc_kernel">Журнал ядра последнего перезапуска и журнал обновления</string>
+    <string name="report_inc_state">Экран, память и тип сети</string>
+    <string name="report_excluded">Что удаляется или не входит</string>
+    <string name="report_exc_accounts">Аккаунты, адреса эл. почты и номера телефонов</string>
+    <string name="report_exc_network">Названия сетей Wi-Fi, IP- и MAC-адреса</string>
+    <string name="report_exc_serial">Серийный номер: вместо него случайный ID этого проектора</string>
+    <string name="report_exc_apps">Журналы приложений, которые вы установили сами</string>
+    <string name="report_exc_files">Фото, файлы и пароли</string>
+    <string name="report_footer">Отчёт хранится 30 дней. Открыть его может только разработчик Lumen OS.</string>
+    <string name="report_last">Последний отчёт: %1$s, %2$s</string>
+    <string name="report_send">Отправить отчёт</string>
+    <string name="report_collecting">Сбор сведений… (%1$d из %2$d)</string>
+    <string name="report_log_hint">Если Android спросит, разрешить ли доступ к журналам устройства, выберите «Разрешить».</string>
+    <string name="report_sending">Отправка… %1$s из %2$s</string>
+    <string name="report_done_title">Отчёт отправлен</string>
+    <string name="report_done_text">Сообщите этот код разработчику Lumen OS вместе с кратким описанием проблемы.</string>
+    <string name="report_failed_title">Отчёт не отправлен</string>
+    <string name="report_err_no_network">Нет подключения к интернету. Проверьте сеть и повторите попытку.</string>
+    <string name="report_err_network">Сервер отчётов недоступен. Повторите попытку позже.</string>
+    <string name="report_err_rate">Сейчас слишком много отчётов. Повторите попытку позже.</string>
+    <string name="report_err_rejected">Сервер отчётов не принял отчёт.</string>
+    <string name="report_err_server">На сервере отчётов произошла ошибка. Повторите попытку позже.</string>
+    <string name="report_err_collect">Не удалось подготовить отчёт.</string>
+    <string name="report_retry">Повторить</string>
+    <string name="report_close">Закрыть</string>
+</resources>

@@ -3,7 +3,8 @@
   org.z9x.projector ("Projector") of Lumen OS 1.0 for XGIMI projectors (author kmuradoff; package and
   property names keep the internal z9x prefix in v1).
   Install: /system/app/Z9xProjector/Z9xProjector.apk (NOT priv-app), platform-signed, no sharedUserId.
-  versionCode/versionName come from build_apk.sh (Lumen OS 1.0: VERSION_CODE=100 VERSION_NAME=1.0).
+  versionCode/versionName come from build_apk.sh (Lumen OS 1.0: VERSION_CODE=100 VERSION_NAME=1.0;
+  Lumen OS 1.0.0: VERSION_CODE=101 VERSION_NAME=1.0.0; Lumen OS 1.0.1: VERSION_CODE=102 VERSION_NAME=1.0.1).
 
   Permissions: protection levels checked in the Lineage 21 source
   (~/lineage/frameworks/base/core/res/AndroidManifest.xml on the build laptop, 2026-10-03).
@@ -88,6 +89,19 @@
     <uses-permission android:name="android.permission.NETWORK_SETTINGS" />
     <!-- ===== Lumen OS 1.0 END ===== -->
 
+    <!-- Lumen OS 1.0.1 problem reports (org.z9x.projector.report; inert while ro.z9x.report.url is unset
+         or empty). Protection levels checked in the Lineage 21 source (build laptop, 2026-10-08).
+         INTERNET (normal): the one HTTPS POST of a report the user confirmed.
+         READ_LOGS (signature|privileged|development): logcat of other processes + DropBox (with the held
+           PACKAGE_USAGE_STATS).
+         DUMP (signature|privileged|development): ApplicationExitInfo of other apps (exit_reasons.txt).
+         ACCESS_WIFI_STATE (normal): saved Wi-Fi names, read only to remove them from the report (with the
+           held NETWORK_SETTINGS). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_LOGS" />
+    <uses-permission android:name="android.permission.DUMP" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
@@ -142,6 +156,9 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
     <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS" />
+    <!-- Lumen OS 1.0: InputDevice.getBluetoothAddress (InputManagerService enforces BLUETOOTH, a normal
+         install-time permission): "remote connected" = its HID input device is up (RemoteAutoPair.hidUp). -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
 
     <!-- module panel (AI picture scene hints, optional): foreground app via UsageStatsManager
          (signature|privileged|development|appop|retailDemo). -->
@@ -172,6 +189,8 @@
         <package android:name="com.google.android.youtube.tv" />
         <package android:name="com.teamsmart.videomanager.tv" />
         <package android:name="com.android.vending" />
+        <!-- 1.0.1: without Play, unassigned app keys open Lumen Home's Apps page (ACTION_ALL_APPS) -->
+        <package android:name="org.z9x.home" />
         <!-- v6.1 source overlay: HDMI inputs of org.z9x.tvinput, Home, TV Settings (gear long press). -->
         <package android:name="org.z9x.tvinput" />
         <package android:name="com.android.tv.settings" />
@@ -184,8 +203,8 @@
     <application
         android:name=".App"
         android:label="@string/app_name"
-        android:icon="@drawable/ic_projector"
-        android:banner="@drawable/banner"
+        android:icon="@drawable/brand_icon_projector"
+        android:banner="@drawable/brand_banner_projector"
         android:persistent="true"
         android:allowBackup="false"
         android:supportsRtl="true"
@@ -197,9 +216,19 @@
             android:name=".SettingsActivity"
             android:exported="false"
             android:label="@string/app_name"
-            android:banner="@drawable/banner"
+            android:banner="@drawable/brand_banner_projector"
             android:launchMode="singleTask"
             android:theme="@style/Theme.Z9x.Settings" />
+
+        <!-- Lumen OS 1.0.1: "Send a problem report" (report.ReportActivity), opened only from Projector
+             settings > Diagnostics while ro.z9x.report.url is set (an https URL). -->
+        <activity
+            android:name=".report.ReportActivity"
+            android:exported="false"
+            android:label="@string/report_title"
+            android:theme="@style/Theme.Z9x.Settings"
+            android:launchMode="singleTop"
+            android:configChanges="keyboard|keyboardHidden|navigation" />
 
         <activity
             android:name=".ManualFocusActivity"

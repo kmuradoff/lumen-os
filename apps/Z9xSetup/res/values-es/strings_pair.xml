@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Spanish translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">Pulsa cualquier botón del mando</string>
+    <string name="remote_later_hint">¿No tienes el mando a mano? Omite este paso con los botones del proyector o un teclado. Podrás vincularlo más tarde de la misma forma.</string>
+    <string name="remote_press_ok">Pulsa OK en el mando</string>
+</resources>

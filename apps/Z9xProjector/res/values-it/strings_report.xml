@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Italian translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">Invia una segnalazione di problema</string>
+    <string name="report_intro">Aiuta lo sviluppatore di Lumen OS a capire cosa non ha funzionato. Non viene inviato nulla finché non premi «Invia segnalazione».</string>
+    <string name="report_included">Incluso</string>
+    <string name="report_inc_system">Versione del sistema, tempo di attività e slot di sistema</string>
+    <string name="report_inc_logs">Log del sistema e delle app Lumen degli ultimi 30 minuti</string>
+    <string name="report_inc_crashes">Registri di arresti anomali, blocchi e riavvii con i nomi delle app</string>
+    <string name="report_inc_kernel">Log del kernel dell’ultimo riavvio e log dell’aggiornamento</string>
+    <string name="report_inc_state">Schermo, memoria e tipo di rete</string>
+    <string name="report_excluded">Rimosso o non incluso</string>
+    <string name="report_exc_accounts">Account, indirizzi email e numeri di telefono</string>
+    <string name="report_exc_network">Nomi delle reti Wi-Fi, indirizzi IP e MAC</string>
+    <string name="report_exc_serial">Numero di serie: al suo posto un ID casuale di questo proiettore</string>
+    <string name="report_exc_apps">Log delle app che hai installato tu</string>
+    <string name="report_exc_files">Foto, file e password</string>
+    <string name="report_footer">La segnalazione viene conservata per 30 giorni. Solo lo sviluppatore di Lumen OS può aprirla.</string>
+    <string name="report_last">Ultima segnalazione: %1$s, %2$s</string>
+    <string name="report_send">Invia segnalazione</string>
+    <string name="report_collecting">Raccolta delle informazioni… (%1$d di %2$d)</string>
+    <string name="report_log_hint">Se Android chiede se consentire l’accesso ai log del dispositivo, scegli «Consenti».</string>
+    <string name="report_sending">Invio… %1$s di %2$s</string>
+    <string name="report_done_title">Segnalazione inviata</string>
+    <string name="report_done_text">Invia questo codice allo sviluppatore di Lumen OS insieme a una breve descrizione del problema.</string>
+    <string name="report_failed_title">La segnalazione non è stata inviata</string>
+    <string name="report_err_no_network">Nessuna connessione a Internet. Controlla la rete e riprova.</string>
+    <string name="report_err_network">Il server delle segnalazioni non è raggiungibile. Riprova più tardi.</string>
+    <string name="report_err_rate">Troppe segnalazioni in questo momento. Riprova più tardi.</string>
+    <string name="report_err_rejected">Il server delle segnalazioni non ha accettato la segnalazione.</string>
+    <string name="report_err_server">Il server delle segnalazioni ha un problema. Riprova più tardi.</string>
+    <string name="report_err_collect">Impossibile preparare la segnalazione.</string>
+    <string name="report_retry">Riprova</string>
+    <string name="report_close">Chiudi</string>
+</resources>

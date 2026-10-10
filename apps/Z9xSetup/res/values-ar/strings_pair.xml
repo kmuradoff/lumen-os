@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arabic translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">اضغط على أي زر في جهاز التحكم</string>
+    <string name="remote_later_hint">ليس لديك جهاز التحكم الآن؟ تخطَّ هذه الخطوة بأزرار جهاز العرض أو بلوحة مفاتيح. يمكنك إقرانه لاحقًا بالطريقة نفسها.</string>
+    <string name="remote_press_ok">اضغط على OK في جهاز التحكم</string>
+</resources>

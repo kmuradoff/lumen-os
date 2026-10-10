@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Traditional Chinese (Taiwan) translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">顯示</string>
+    <string name="uires_row">介面解析度</string>
+    <string name="uires_default_fmt">%1$s（預設）</string>
+    <string name="uires_summary">4K 文字最清晰；1080p 與 XGIMI 原廠相同，圖形負擔最輕。變更後投影機會重新啟動。</string>
+    <string name="uires_summary_fallback">目前為 %1$s：%2$s 在這台投影機上未能正常啟動，已自動恢復。如需重試，請選擇 %2$s。</string>
+    <string name="uires_choose_text">4K 用滿 4K 面板的每一個像素。1080p 與 XGIMI 原廠相同，只繪製四分之一的像素，再由投影機放大畫面。</string>
+    <string name="uires_opt_1080">與 XGIMI 原廠相同：圖形負擔最輕；文字略柔和</string>
+    <string name="uires_opt_1440">僅供測試：縮放到面板的效果未經驗證</string>
+    <string name="uires_opt_2160">文字最清晰：用滿 4K 面板的每個像素</string>
+    <string name="uires_current">目前</string>
+    <string name="uires_confirm_title">切換到 %1$s？</string>
+    <string name="uires_confirm_up">文字和選單會更清晰。圖形需要繪製更多內容，部分應用程式可能會稍慢。</string>
+    <string name="uires_confirm_down">圖形需要繪製的內容更少，選單和應用程式可能會更流暢；文字會略顯柔和。</string>
+    <string name="uires_confirm_restart">投影機將重新啟動以套用（約一分鐘）。如果畫面未能正常恢復，它會自動回到 %1$s。</string>
+    <string name="uires_restart">立即重新啟動</string>
+    <string name="uires_keep_title">保留此解析度？</string>
+    <string name="uires_keep_text">介面現在以 %1$s 執行。如果文字和畫面顯示正常，請選擇「保留」。</string>
+    <string name="uires_keep_countdown">%2$d 秒後恢復為 %1$s</string>
+    <string name="uires_keep">保留</string>
+    <string name="uires_revert">恢復為 %1$s</string>
+    <string name="uires_failed">無法變更解析度</string>
+</resources>

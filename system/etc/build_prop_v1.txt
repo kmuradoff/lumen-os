@@ -7,7 +7,7 @@ persist.z9x.firstrun=1
 # UI click volume follows the media volume (system group curve MM, see z9x_audio.rc).
 ro.z9x.clickcurve=1
 # Machine-readable OS version for our apps (internal ro.z9x.* names stay in v1; the product is Lumen OS).
-ro.z9x.version=1.0
+ro.z9x.version=1.0.1
 # The OTA identity props (ro.z9x.device, build_id, version_code, keys, ota.gate, manifest URL) and
 # ro.product.ab_ota_partitions come from tools/ota/image/ota_props.txt (L-OTA), appended to the product
 # build.prop by lumen_v1.sh.

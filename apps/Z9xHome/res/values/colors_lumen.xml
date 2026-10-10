@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lumen Home, direction D ("Кинозал + Свет", approved 2026-10-08): warm ground, paper-white text and one
+  warm light accent. Home-only palette: the shared brand tokens (z9x_tokens.xml, a copy of
+  apps/common/tokens.xml) stay as they are for the other apps until the brand step moves them.
+  Contrast on lumen_ground: text 17.4:1, text2 11.2:1, text3 6.7:1, accent 10.8:1 (text3 stays >= 4.5:1
+  up to surface3); on_focus on focus 17.7:1; white on live 4.8:1.
+-->
+<resources>
+    <color name="lumen_ground">#FF0A0908</color>
+    <color name="lumen_surface">#FF1B1815</color>
+    <color name="lumen_surface2">#FF26221E</color>
+    <color name="lumen_surface3">#FF332E28</color>
+    <color name="lumen_text">#FFF4EFE6</color>
+    <color name="lumen_text2">#FFC9C1B4</color>
+    <color name="lumen_text3">#FF9D9587</color>
+    <color name="lumen_focus">#FFF6F1E8</color>
+    <color name="lumen_on_focus">#FF0A0908</color>
+    <color name="lumen_accent">#FFF2B26B</color>
+    <color name="lumen_accent_strong">#FFC98642</color>
+    <color name="lumen_live">#FFD33A2C</color>
+    <!-- mark facets (D_Mark 2A) -->
+    <color name="lumen_facet_a">#FFF4EFE6</color>
+    <color name="lumen_facet_b">#FFCFC7BA</color>
+    <!-- starting window: ground with a low warm horizon -->
+    <color name="lumen_glow_a">#40B8743A</color>
+    <color name="lumen_glow_b">#33384A5E</color>
+</resources>

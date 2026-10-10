@@ -1,46 +1,70 @@
 package org.z9x.setup.ui;
 
+import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.LinearGradient;
-import android.graphics.Paint;
-import android.graphics.RectF;
-import android.graphics.Shader;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+
+import org.z9x.setup.R;
 
 /**
- * The XGIMI remote, drawn in code: the Back and Home keys pulse (1.2 s) to show which two keys to
- * hold. When connected, a check replaces the pulse. Animates only while shown.
+ * The XGIMI remote (Lumen OS 1.0 remote step; the projector's remote-lost prompt draws the same):
+ * stacked vector layers with one viewport, res/drawable/remote_xgimi*.xml: the neutral remote, a warm
+ * glow and the lit Back / Home keys (#F2B26B), and (1.0.1) the lit OK key with its halo. While
+ * searching only the glow layer's view alpha pulses (a RenderNode property: the vectors are rasterised
+ * once, nothing is redrawn per frame); when connected the lit keys and the glow fade out, and while
+ * the step waits for OK ({@link #setAwaitOk}) the OK layer pulses the same way. The pulse runs only
+ * while attached and visible.
  */
-public class RemoteArt extends View {
-    private final Paint mBody = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint mKey = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint mGlow = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint mStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final RectF mR = new RectF();
-    private ValueAnimator mAnim;
-    private float mPulse;
+public class RemoteArt extends FrameLayout {
+    /** The warm accent of the lit keys (text that refers to them uses it too). */
+    public static final int LIT = 0xFFF2B26B;
+    private static final long PULSE_MS = 1_100;
+
+    private final ImageView mGlow;
+    private final ImageView mKeys;
+    private final ImageView mOk;
+    private ObjectAnimator mPulse;
+    private View mPulsing;
     private boolean mConnected;
+    private boolean mAwaitOk;
 
     public RemoteArt(Context c) {
         super(c);
-        mKey.setColor(0x33FFFFFF);
-        mStroke.setStyle(Paint.Style.STROKE);
-        mStroke.setColor(0x26FFFFFF);
-        mStroke.setStrokeWidth(Ui.pxf(2));
-        mGlow.setColor(Ui.ACCENT);
+        setClipChildren(false);
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        layer(c, R.drawable.remote_xgimi);
+        mGlow = layer(c, R.drawable.remote_xgimi_glow);
+        mKeys = layer(c, R.drawable.remote_xgimi_keys);
+        mOk = layer(c, R.drawable.remote_xgimi_ok);
+        mOk.setAlpha(0f);
+    }
+
+    private ImageView layer(Context c, int res) {
+        ImageView v = new ImageView(c);
+        v.setImageResource(res);
+        v.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        addView(v, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        return v;
     }
 
     public void setConnected(boolean c) {
+        if (mConnected == c) return;
         mConnected = c;
+        mKeys.animate().alpha(c ? 0f : 1f).setDuration(320).start();
+        if (c) mGlow.animate().alpha(0f).setDuration(320).start();
         update();
-        invalidate();
     }
 
-    @Override
-    protected void onSizeChanged(int w, int h, int ow, int oh) {
-        mBody.setShader(new LinearGradient(0, 0, 0, h, 0xFF2A3140, 0xFF1A1F28, Shader.TileMode.CLAMP));
+    /** Light the OK key and pulse it (the step waits for OK on the remote); false fades it out. */
+    public void setAwaitOk(boolean a) {
+        if (mAwaitOk == a) return;
+        mAwaitOk = a;
+        if (!a) mOk.animate().alpha(0f).setDuration(320).start();
+        update();
     }
 
     @Override
@@ -51,94 +75,40 @@ public class RemoteArt extends View {
 
     @Override
     protected void onDetachedFromWindow() {
-        if (mAnim != null) mAnim.cancel();
-        mAnim = null;
+        stopPulse();
         super.onDetachedFromWindow();
     }
 
     @Override
-    protected void onVisibilityChanged(View v, int vis) {
-        super.onVisibilityChanged(v, vis);
+    public void onVisibilityAggregated(boolean visible) {
+        super.onVisibilityAggregated(visible);
         update();
     }
 
     private void update() {
-        boolean want = !mConnected && isAttachedToWindow() && isShown();
-        if (want && mAnim == null) {
-            mAnim = ValueAnimator.ofFloat(0f, 1f, 0f);
-            mAnim.setDuration(1200);
-            mAnim.setRepeatCount(ValueAnimator.INFINITE);
-            mAnim.addUpdateListener(a -> { mPulse = (float) a.getAnimatedValue(); invalidate(); });
-            mAnim.start();
-        } else if (!want && mAnim != null) {
-            mAnim.cancel();
-            mAnim = null;
-            mPulse = 0;
+        View target = !mConnected ? mGlow : mAwaitOk ? mOk : null;
+        boolean want = target != null && isAttachedToWindow() && isShown();
+        if (want && mPulsing != target) stopPulse();
+        if (want && mPulse == null) {
+            target.animate().cancel();
+            mPulse = ObjectAnimator.ofFloat(target, View.ALPHA, target == mOk ? 0.45f : 0.15f, 1f);
+            mPulse.setDuration(PULSE_MS);
+            mPulse.setRepeatMode(ValueAnimator.REVERSE);
+            mPulse.setRepeatCount(ValueAnimator.INFINITE);
+            mPulse.setInterpolator(new AccelerateDecelerateInterpolator());
+            mPulsing = target;
+            mPulse.start();
+        } else if (!want) {
+            stopPulse();
         }
     }
 
-    @Override
-    protected void onDraw(Canvas c) {
-        float h = getHeight();
-        float w = h * 0.30f;
-        float x0 = (getWidth() - w) / 2f;
-        mR.set(x0, 0, x0 + w, h);
-        float rad = w * 0.42f;
-        c.drawRoundRect(mR, rad, rad, mBody);
-        c.drawRoundRect(mR, rad, rad, mStroke);
-        float cx = x0 + w / 2f;
-        // power + status light
-        mKey.setColor(0x33FFFFFF);
-        c.drawCircle(cx, h * 0.07f, w * 0.06f, mKey);
-        if (mConnected) {
-            mGlow.setAlpha(255);
-            c.drawCircle(cx + w * 0.26f, h * 0.07f, w * 0.03f, mGlow);
-        } else {
-            mGlow.setAlpha((int) (80 + 175 * mPulse));
-            c.drawCircle(cx + w * 0.26f, h * 0.07f, w * 0.03f, mGlow);
-        }
-        // d-pad ring and centre
-        float dy = h * 0.27f, dr = w * 0.36f;
-        mKey.setColor(0x26FFFFFF);
-        c.drawCircle(cx, dy, dr, mKey);
-        mKey.setColor(0x40FFFFFF);
-        c.drawCircle(cx, dy, dr * 0.42f, mKey);
-        // Back (left) and Home (right) under the d-pad: the two keys to hold
-        float ky = h * 0.46f, kr = w * 0.12f;
-        float bx = cx - w * 0.22f, hx = cx + w * 0.22f;
-        if (!mConnected) {
-            mGlow.setAlpha((int) (60 + 195 * mPulse));
-            float gr = kr * (1.15f + 0.35f * mPulse);
-            c.drawCircle(bx, ky, gr, mGlow);
-            c.drawCircle(hx, ky, gr, mGlow);
-        }
-        mKey.setColor(mConnected ? 0x40FFFFFF : 0xFFE8EAED);
-        c.drawCircle(bx, ky, kr, mKey);
-        c.drawCircle(hx, ky, kr, mKey);
-        // glyphs on the two keys
-        Paint g = mStroke;
-        int old = g.getColor();
-        float sw = g.getStrokeWidth();
-        g.setColor(mConnected ? 0x99FFFFFF : 0xFF0E0E0F);
-        g.setStrokeWidth(Math.max(2f, kr * 0.16f));
-        c.drawLine(bx + kr * 0.35f, ky, bx - kr * 0.35f, ky, g);
-        c.drawLine(bx - kr * 0.35f, ky, bx - kr * 0.05f, ky - kr * 0.3f, g);
-        c.drawLine(bx - kr * 0.35f, ky, bx - kr * 0.05f, ky + kr * 0.3f, g);
-        c.drawLine(hx - kr * 0.38f, ky - kr * 0.02f, hx, ky - kr * 0.38f, g);
-        c.drawLine(hx, ky - kr * 0.38f, hx + kr * 0.38f, ky - kr * 0.02f, g);
-        c.drawLine(hx - kr * 0.26f, ky - kr * 0.1f, hx - kr * 0.26f, ky + kr * 0.32f, g);
-        c.drawLine(hx + kr * 0.26f, ky - kr * 0.1f, hx + kr * 0.26f, ky + kr * 0.32f, g);
-        c.drawLine(hx - kr * 0.26f, ky + kr * 0.32f, hx + kr * 0.26f, ky + kr * 0.32f, g);
-        g.setColor(old);
-        g.setStrokeWidth(sw);
-        // remaining keys
-        mKey.setColor(0x26FFFFFF);
-        for (int i = 0; i < 2; i++) {
-            float yy = h * (0.57f + i * 0.08f);
-            c.drawCircle(cx - w * 0.22f, yy, kr * 0.85f, mKey);
-            c.drawCircle(cx + w * 0.22f, yy, kr * 0.85f, mKey);
-        }
-        mR.set(cx - w * 0.1f, h * 0.76f, cx + w * 0.1f, h * 0.9f);
-        c.drawRoundRect(mR, w * 0.1f, w * 0.1f, mKey);
+    private void stopPulse() {
+        if (mPulse == null) return;
+        mPulse.cancel();
+        mPulse = null;
+        if (mPulsing == mGlow && !mConnected) mGlow.setAlpha(0.6f);
+        if (mPulsing == mOk && mAwaitOk) mOk.setAlpha(1f);   // lit, just not pulsing (detached / hidden)
+        mPulsing = null;
     }
 }

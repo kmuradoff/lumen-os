@@ -28,6 +28,7 @@
     <string name="key_slot4">嗶哩嗶哩鍵</string>
     <string name="slot_default_fmt">%1$s（預設）</string>
     <string name="slot_default_item">預設：%1$s</string>
+    <string name="slot_home_apps">Lumen Home：應用程式</string>
     <string name="cancel">取消</string>
     <string name="ok">確定</string>
     <string name="app_not_found">找不到此按鍵對應的應用程式</string>

@@ -19,9 +19,7 @@ public final class Ranker {
     private Ranker() {}
 
     public static final int HERO_MAX = 6;
-    public static final int HERO_MIN = 3;
-    public static final int HERO_WN_MAX = 2;
-    public static final long HERO_WN_AGE_MS = 7L * 86_400_000L;
+    public static final int HERO_WN_MAX = 3;
     public static final int CHANNEL_ROWS_MAX = 10;
     public static final int AUTO_FAVORITES = 8;
     public static final int WN_CONTINUE = 0; // TvContract.WatchNextPrograms.WATCH_NEXT_TYPE_CONTINUE
@@ -41,7 +39,6 @@ public final class Ranker {
         public List<Card> inputs = new ArrayList<>();
         public List<Card> casts = new ArrayList<>();
         public List<Card> tiles = new ArrayList<>();
-        public List<Card> features = new ArrayList<>();
         public Map<String, String> labels = new HashMap<>(); // package -> app label
         public long now;
         public Locale locale = Locale.getDefault();
@@ -72,16 +69,16 @@ public final class Ranker {
         Collections.sort(m.hiddenApps, (x, y) -> col.compare(x.title, y.title));
         m.favorites.addAll(favorites(in, m.apps));
 
-        // ---- rows (natural order)
+        // ---- rows (natural order, direction D: "Continue watching" right under the hero, then the apps)
         LinkedHashMap<String, Row> natural = new LinkedHashMap<>();
-        Row apps = new Row(Row.APPS, Row.ID_APPS, in.tYourApps);
-        apps.cards.addAll(m.favorites);
-        natural.put(apps.id, apps);
-
         Row wn = new Row(Row.WATCH_NEXT, Row.ID_WATCH_NEXT, in.tContinue);
         wn.cards.addAll(in.tvp.watchNext);
         wn.aspect = Card.A_16_9;
         natural.put(wn.id, wn);
+
+        Row apps = new Row(Row.APPS, Row.ID_APPS, in.tYourApps);
+        apps.cards.addAll(m.favorites);
+        natural.put(apps.id, apps);
 
         ArrayList<Row> channelRows = new ArrayList<>();
         for (TvpSource.Channel ch : in.tvp.channels) {
@@ -147,6 +144,13 @@ public final class Ranker {
         return m;
     }
 
+    /** TvProvider content out of a model (hero, Watch Next, channel rows): "Continue watching on Home" hidden. */
+    public static void dropTvp(HomeModel m) {
+        m.hero.clear();
+        m.rows.removeIf(r -> r.type == Row.WATCH_NEXT || r.type == Row.CHANNEL);
+        m.allRows.removeIf(r -> r.type == Row.WATCH_NEXT || r.type == Row.CHANNEL);
+    }
+
     static boolean isHidden(Input in, Card a) {
         if (in.hiddenApps.contains(a.id) || in.hiddenApps.contains(a.pkg)) return true;
         if (in.defaultHidden.contains(a.pkg)) return !(in.unhiddenApps.contains(a.id) || in.unhiddenApps.contains(a.pkg));
@@ -185,6 +189,11 @@ public final class Ranker {
         return out;
     }
 
+    /**
+     * Hero of direction D: what can be continued (Watch Next, newest first, art optional: the living sky
+     * stands in), then app preview programs round robin over the channel rows (art required). Empty =
+     * the calm Home (big clock, no hero card); there are no filler slides.
+     */
     static List<Card> hero(Input in, List<Row> rows) {
         ArrayList<Card> out = new ArrayList<>();
         HashSet<String> keys = new HashSet<>();
@@ -192,8 +201,6 @@ public final class Ranker {
             if (r.type != Row.WATCH_NEXT) continue;
             for (Card k : r.cards) {
                 if (out.size() >= HERO_WN_MAX) break;
-                if (k.wnType != WN_CONTINUE || k.image == null) continue;
-                if (k.engaged > 0 && in.now - k.engaged > HERO_WN_AGE_MS) continue;
                 if (keys.add(key(k))) out.add(k);
             }
         }
@@ -215,10 +222,6 @@ public final class Ranker {
                     }
                 }
             }
-        }
-        for (Card f : in.features) {
-            if (out.size() >= HERO_MIN) break;
-            out.add(f);
         }
         return out;
     }

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Belarusian translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">Экран</string>
+    <string name="uires_row">Раздзяляльнасць інтэрфейсу</string>
+    <string name="uires_default_fmt">%1$s (па змаўчанні)</string>
+    <string name="uires_summary">4K — самы выразны тэкст; 1080p, як у XGIMI, — найменшая нагрузка на графіку. Для змены праектар перазапусціцца.</string>
+    <string name="uires_summary_fallback">Зараз %1$s: %2$s не запусціўся як трэба на гэтым праектары, таму ён сам вярнуўся назад. Каб паспрабаваць зноў, выберыце %2$s.</string>
+    <string name="uires_choose_text">4K выкарыстоўвае кожны піксель 4K-панэлі. 1080p, як у XGIMI, малюе ўчацвёра менш пікселяў, а праектар павялічвае выяву.</string>
+    <string name="uires_opt_1080">Як у XGIMI: найлягчэй для графікі; тэкст крыху мякчэйшы</string>
+    <string name="uires_opt_1440">Толькі для праверкі: маштабаванне пад панэль не праверана</string>
+    <string name="uires_opt_2160">Самы выразны тэкст: кожны піксель 4K-панэлі</string>
+    <string name="uires_current">Зараз</string>
+    <string name="uires_confirm_title">Пераключыць на %1$s?</string>
+    <string name="uires_confirm_up">Тэкст і меню стануць выразнейшымі. Графіцы давядзецца маляваць больш, таму некаторыя праграмы могуць працаваць крыху павольней.</string>
+    <string name="uires_confirm_down">Графіцы давядзецца маляваць менш, таму меню і праграмы могуць працаваць хутчэй, а тэкст стане крыху мякчэйшым.</string>
+    <string name="uires_confirm_restart">Каб ужыць, праектар перазапусціцца (каля хвіліны). Калі выява не вернецца як трэба, ён сам вернецца да %1$s.</string>
+    <string name="uires_restart">Перазапусціць</string>
+    <string name="uires_keep_title">Пакінуць гэту раздзяляльнасць?</string>
+    <string name="uires_keep_text">Інтэрфейс цяпер працуе ў %1$s. Калі тэкст і выява выглядаюць правільна, выберыце «Пакінуць».</string>
+    <string name="uires_keep_countdown">Вяртанне да %1$s праз %2$d с</string>
+    <string name="uires_keep">Пакінуць</string>
+    <string name="uires_revert">Вярнуць %1$s</string>
+    <string name="uires_failed">Не ўдалося змяніць раздзяляльнасць</string>
+</resources>

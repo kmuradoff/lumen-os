@@ -1536,8 +1536,11 @@ public final class StandbyController {
         }
     }
 
-    /** PowerKey.PowerActions (power menu "Restart", its worker thread, right before PowerManager.reboot). */
-    static void noteOrderlyReboot(String why) {
+    /**
+     * PowerKey.PowerActions (power menu "Restart", its worker thread, right before PowerManager.reboot);
+     * Lumen OS 1.0.1 also display.UiResolution (the interface resolution restart, reason z9x-uires).
+     */
+    public static void noteOrderlyReboot(String why) {
         if (sApp == null) return;
         markOrderly(why);
     }

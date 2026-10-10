@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- French translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">Reconnectez votre télécommande</string>
+    <string name="remote_lost_text">Maintenez Retour et Accueil ensemble pendant 3 secondes, jusqu’à ce que le voyant clignote.</string>
+    <string name="remote_lost_found">%1$s trouvée</string>
+    <string name="remote_lost_battery">Rien ne se passe ? Vérifiez les piles de la télécommande.</string>
+    <string name="remote_lost_dismiss">Pas maintenant</string>
+    <string name="remote_lost_wake">Appuyez sur n’importe quelle touche de la télécommande</string>
+</resources>

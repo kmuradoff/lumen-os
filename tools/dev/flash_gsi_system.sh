@@ -4,7 +4,8 @@
 # vbmeta этот скрипт не трогает — это шаг пользователя, делается до запуска.
 set -u
 cd "$(dirname "$0")/.."
-S=<SERIAL>
+[ $# -ge 1 ] || { echo "укажите серийный номер проектора (см. adb devices): zsh tools/flash_gsi_system.sh SERIAL" >&2; exit 2; }
+S=$1
 log() { print -P "%D{%H:%M:%S} $*"; }
 mkdir -p logs
 

@@ -1,0 +1,5 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of pidof: a process "runs" when its name is a line of $Z9X_T/procs.
+grep -qx "$1" "$Z9X_T/procs" 2>/dev/null && { echo 4242; exit 0; }
+exit 1

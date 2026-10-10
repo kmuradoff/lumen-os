@@ -59,8 +59,13 @@ struct Z9xServer {
     bool hevc4k = false;
     bool videoUrl = false;
     int64_t latencyNs = 250000000LL;
+    int64_t audioOffsetNs = 0;  /* debug.z9x.airplay.av_offset_ms: audio only, A/V calibration */
     std::atomic<int> port{0};  /* bound RTSP/HTTP port (UxPlay's HLS proxy is http://localhost:<port>/) */
 
+    /* playout delay added to latencyNs for audio AND video (so A/V sync holds) when audio
+       packets arrive too close to their play time; raised by the audio engine, 0 again when
+       the session ends */
+    std::atomic<int64_t> extraDelayNs{0};
     std::unique_ptr<VideoDecoder> video;
     std::unique_ptr<AudioEngine> audio;
     std::atomic<int> connections{0};

@@ -28,6 +28,7 @@
     <string name="key_slot4">bilibili-Taste</string>
     <string name="slot_default_fmt">%1$s (Standard)</string>
     <string name="slot_default_item">Standard: %1$s</string>
+    <string name="slot_home_apps">Lumen Home: Apps</string>
     <string name="cancel">Abbrechen</string>
     <string name="ok">OK</string>
     <string name="app_not_found">Keine App für diese Taste gefunden</string>

@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">Wybierz język</string>
     <string name="lang_more">Więcej języków…</string>
     <string name="lang_more_hint">Ustawienia i aplikacje Google używają tego języka. Aplikacje Lumen bez tłumaczenia pozostaną po angielsku.</string>
+    <string name="lang_more_hint_nogms">Ustawienia używają tego języka. Aplikacje Lumen bez tłumaczenia pozostaną po angielsku.</string>
     <string name="net_title">Połącz z internetem</string>
     <string name="net_subtitle">Wybierz sieć Wi-Fi. Możesz to zrobić także później.</string>
     <string name="net_connected">Połączono z %1$s</string>
@@ -99,6 +100,7 @@
     <string name="done_home">Ekran główny</string>
     <string name="done_start">Zaczynamy</string>
     <string name="done_offline_hint">Brak internetu: zaloguj się w Google i ustaw strefę czasową później w ustawieniach.</string>
+    <string name="done_offline_hint_nogms">Brak internetu: ustaw strefę czasową później w ustawieniach.</string>
     <string name="done_blobs_missing">Brakuje komponentów chronionego wideo, więc niektóre aplikacje streamingowe mogą odtwarzać tylko w niskiej jakości.</string>
     <string name="action_continue">Dalej</string>
     <string name="action_skip">Pomiń</string>

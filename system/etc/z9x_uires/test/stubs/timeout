@@ -1,0 +1,5 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox timeout: 'timeout SECS cmd...' runs cmd.
+shift
+exec "$@"

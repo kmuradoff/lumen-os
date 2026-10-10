@@ -19,12 +19,18 @@ import org.z9x.home.data.Card;
  * audio focus, http(s) only, released on any slide change, page change, pause or completion.
  */
 final class Trailer implements TextureView.SurfaceTextureListener {
+    interface OnPlaying {
+        /** The trailer started (true) or stopped after having started (false). */
+        void onPlaying(boolean playing);
+    }
+
     private static final long DELAY_MS = 3000;
     private final TextureView mView;
     private MediaPlayer mPlayer;
     private Surface mSurface;
-    private boolean mEnabled;
+    private boolean mEnabled, mPlaying;
     private Card mArmed;
+    private OnPlaying mOnPlaying;
     private final Runnable mStart = this::start;
 
     Trailer(Context c) {
@@ -36,6 +42,10 @@ final class Trailer implements TextureView.SurfaceTextureListener {
 
     View view() {
         return mView;
+    }
+
+    void setOnPlaying(OnPlaying l) {
+        mOnPlaying = l;
     }
 
     void setEnabled(boolean on) {
@@ -75,6 +85,8 @@ final class Trailer implements TextureView.SurfaceTextureListener {
                 p.setVolume(0f, 0f);
                 p.start();
                 mView.animate().alpha(1f).setDuration(600).start();
+                mPlaying = true;
+                if (mOnPlaying != null) mOnPlaying.onPlaying(true);
                 Log.i(App.TAG, "hero trailer start pkg=" + k.pkg);
             });
             mp.setOnCompletionListener(p -> stop());
@@ -108,6 +120,10 @@ final class Trailer implements TextureView.SurfaceTextureListener {
         mView.animate().cancel();
         mView.setAlpha(0f);
         mView.setVisibility(View.GONE);
+        if (mPlaying) {
+            mPlaying = false;
+            if (mOnPlaying != null) mOnPlaying.onPlaying(false);
+        }
     }
 
     @Override

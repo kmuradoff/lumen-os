@@ -59,6 +59,19 @@
     <string name="done_ok_title">Updated to Lumen OS %1$s</string>
     <string name="done_rollback_title">The update could not start</string>
     <string name="done_rollback_body">Lumen OS %1$s was restored. Nothing was lost.</string>
+    <!-- the update runs, but the boot gate's check after it found a problem (z9x_ota.sh: sys.z9x.ota=unhealthy,
+         no way back any more); %1$s of done_unhealthy_body = one of the why_* phrases below -->
+    <string name="done_unhealthy_title">Lumen OS %1$s is running</string>
+    <string name="done_unhealthy_body">A check after the update found a problem: %1$s. If something does not work, use the installer’s rescue. Your data stays.</string>
+    <string name="done_rescue_scan">Scan the code to open the rescue guide.</string>
+    <string name="done_details">Technical details: %1$s</string>
+    <!-- the problem in plain words (sys.z9x.ota.why), lower case: they continue the sentence above -->
+    <string name="why_restarted">the system restarted unexpectedly</string>
+    <string name="why_service">a system service did not start</string>
+    <string name="why_lamp">the lamp and fan service did not start</string>
+    <string name="why_confirm">the system could not confirm that the new version works</string>
+    <string name="why_no_rollback">going back to the previous version was not possible</string>
+    <string name="why_unknown">no details were recorded</string>
 
     <!-- blocked by a preflight check -->
     <string name="blk_vbmeta_title">One-time step needed for updates</string>
@@ -68,6 +81,7 @@
     <string name="blk_merge_body">This takes a few minutes in the background. You can keep watching.</string>
     <string name="blk_pending">This version is still being checked after the last update. Try again in a few minutes.</string>
     <string name="blk_vendor">This update is not made for this projector’s firmware (%1$s).</string>
+    <string name="blk_channel">This update is for another Lumen OS edition (%1$s).</string>
     <string name="blk_min_version">This update needs Lumen OS %1$s or newer. Please use the computer installer.</string>
     <string name="blk_thermal">The projector is too warm right now. Try again later.</string>
     <string name="blk_space">Not enough free space: %1$s needed.</string>

@@ -89,7 +89,7 @@ public final class UpdaterActivity extends Activity {
         Store.State s = st.state();
         if (s == Store.State.INSTALLING) {
             UpdateService.start(this, UpdateService.ACTION_WATCH, false);
-        } else if ((s == Store.State.IDLE || s == Store.State.ERROR) && st.lastResult().isEmpty()
+        } else if ((s == Store.State.IDLE || s == Store.State.ERROR) && result(st).isEmpty()
                 && System.currentTimeMillis() - st.lastCheck() > 30 * 60 * 1000L) {
             check();
         }
@@ -358,9 +358,20 @@ public final class UpdaterActivity extends Activity {
         }
     }
 
-    private View renderIdle(Store st) {
+    /** The result after the last restart, "" when there is none or it was recorded on another build. */
+    private static String result(Store st) {
         String res = st.lastResult();
-        if (res.startsWith("ok:")) {
+        return Outcome.resultStale(res, st.lastResultBuild(), Ota.buildId()) ? "" : res;   // BootReceiver drops it too
+    }
+
+    private View renderIdle(Store st) {
+        String res = result(st);
+        if (res.startsWith("unhealthy:")) {
+            renderProblem(res.substring(10), st.lastWhy());
+        } else if ("unhealthy".equals(Ota.prop("sys.z9x.ota"))) {
+            // the gate's verdict came before CheckJob's look (or the result was dismissed): say it anyway
+            renderProblem(Ota.currentVersion(), Ota.prop("sys.z9x.ota.why"));
+        } else if (res.startsWith("ok:")) {
             title(getString(R.string.done_ok_title, res.substring(3)));
         } else if (res.startsWith("rollback:")) {
             title(getString(R.string.done_rollback_title));
@@ -374,6 +385,35 @@ public final class UpdaterActivity extends Activity {
                 java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT)) : getString(R.string.status_never_checked), Ui.DIM);
         LinearLayout row = buttons();
         return addButton(row, R.string.btn_check, true, v -> check());
+    }
+
+    /**
+     * The update runs, but the boot gate's check after it failed (z9x_ota.sh: unhealthy, no rollback
+     * possible any more): what was found in plain words, the rescue hint with a QR code to the guide, and
+     * the gate's own words for support.
+     */
+    private void renderProblem(String version, String why) {
+        title(getString(R.string.done_unhealthy_title, version));
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.addView(Ui.text(this, getString(R.string.done_unhealthy_body, BootReceiver.problemText(this, why)),
+                18, Ui.TEXT, 400), Ui.match());
+        col.addView(Ui.text(this, getString(R.string.done_rescue_scan), 18, Ui.DIM, 400),
+                Ui.margins(Ui.match(), 0, Ui.dp(this, 10), 0, 0));
+        Outcome.Why kind = Outcome.why(why);
+        if (kind != Outcome.Why.NONE && kind != Outcome.Why.OTHER) {   // OTHER: already in the sentence
+            col.addView(Ui.text(this, getString(R.string.done_details, why.trim()), 18, Ui.DIM, 400),
+                    Ui.margins(Ui.match(), 0, Ui.dp(this, 10), 0, 0));
+        }
+        box.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        String url = "ru".equals(Locale.getDefault().getLanguage()) ? Ota.GUIDE_RESCUE_RU : Ota.GUIDE_RESCUE_EN;
+        int s = Ui.dp(this, 150);
+        LinearLayout.LayoutParams qp = new LinearLayout.LayoutParams(s, s);
+        qp.setMarginStart(Ui.dp(this, 24));     // the gap stays between text and code in RTL (Arabic)
+        box.addView(new Ui.QrView(this, url), qp);
+        left.addView(box, Ui.margins(Ui.match(), 0, 0, 0, Ui.dp(this, 10)));
     }
 
     private View renderError(Store st) {
@@ -443,8 +483,18 @@ public final class UpdaterActivity extends Activity {
     private View renderLicenses() {
         brand();
         title(getString(R.string.about_licenses));
-        int[] ids = {R.string.lic_lumen, R.string.lic_aosp, R.string.lic_gapps, R.string.lic_thirdparty,
-                R.string.lic_full, R.string.lic_disclaimer};
+        // Google's terms only where Google apps are installed (Lumen OS without Google has none)
+        boolean gms = false;
+        try {
+            getPackageManager().getPackageInfo("com.google.android.gms",
+                    android.content.pm.PackageManager.MATCH_DISABLED_COMPONENTS);
+            gms = true;
+        } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {
+        }
+        int[] ids = gms ? new int[] {R.string.lic_lumen, R.string.lic_aosp, R.string.lic_gapps, R.string.lic_thirdparty,
+                R.string.lic_full, R.string.lic_disclaimer}
+                : new int[] {R.string.lic_lumen, R.string.lic_aosp, R.string.lic_thirdparty, R.string.lic_full,
+                R.string.lic_disclaimer};
         for (int id : ids) body(getString(id), id == R.string.lic_disclaimer ? Ui.DIM : Ui.TEXT);
         if (left.getParent() instanceof ScrollView) ((ScrollView) left.getParent()).scrollTo(0, 0);
         return null;   // BACK returns; focus stays on the Licenses row

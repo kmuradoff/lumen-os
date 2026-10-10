@@ -124,6 +124,7 @@ public final class AppSource {
     /** Art key of an app banner/tile: changes with the app version and its label. */
     public static String imageKey(Entry a) {
         // the generated tile renders the label, so a new label or language means new art
-        return "app:" + a.cn.flattenToString() + "|" + a.updated + "|" + Integer.toHexString(a.label.hashCode());
+        // "|d" = direction D tiles (new size, new fallback look): one regeneration after the update
+        return "app:" + a.cn.flattenToString() + "|" + a.updated + "|" + Integer.toHexString(a.label.hashCode()) + "|d";
     }
 }

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ukrainian translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">Надіслати звіт про проблему</string>
+    <string name="report_intro">Допоможе розробнику Lumen OS зрозуміти, що пішло не так. Нічого не надсилається, доки ви не натиснете «Надіслати звіт».</string>
+    <string name="report_included">Що входить</string>
+    <string name="report_inc_system">Версія системи, час роботи та слот системи</string>
+    <string name="report_inc_logs">Журнали системи та програм Lumen за останні 30 хвилин</string>
+    <string name="report_inc_crashes">Записи про збої, зависання та перезапуски з назвами програм</string>
+    <string name="report_inc_kernel">Журнал ядра останнього перезапуску та журнал оновлення</string>
+    <string name="report_inc_state">Екран, пам’ять і тип мережі</string>
+    <string name="report_excluded">Що видаляється або не входить</string>
+    <string name="report_exc_accounts">Облікові записи, адреси ел. пошти та номери телефонів</string>
+    <string name="report_exc_network">Назви мереж Wi-Fi, IP- та MAC-адреси</string>
+    <string name="report_exc_serial">Серійний номер: замість нього випадковий ID цього проєктора</string>
+    <string name="report_exc_apps">Журнали програм, які ви встановили самі</string>
+    <string name="report_exc_files">Фото, файли та паролі</string>
+    <string name="report_footer">Звіт зберігається 30 днів. Відкрити його може лише розробник Lumen OS.</string>
+    <string name="report_last">Останній звіт: %1$s, %2$s</string>
+    <string name="report_send">Надіслати звіт</string>
+    <string name="report_collecting">Збір відомостей… (%1$d з %2$d)</string>
+    <string name="report_log_hint">Якщо Android запитає, чи дозволити доступ до журналів пристрою, виберіть «Дозволити».</string>
+    <string name="report_sending">Надсилання… %1$s з %2$s</string>
+    <string name="report_done_title">Звіт надіслано</string>
+    <string name="report_done_text">Повідомте цей код розробнику Lumen OS разом із коротким описом проблеми.</string>
+    <string name="report_failed_title">Звіт не надіслано</string>
+    <string name="report_err_no_network">Немає підключення до інтернету. Перевірте мережу та спробуйте ще раз.</string>
+    <string name="report_err_network">Сервер звітів недоступний. Спробуйте пізніше.</string>
+    <string name="report_err_rate">Зараз забагато звітів. Спробуйте пізніше.</string>
+    <string name="report_err_rejected">Сервер звітів не прийняв звіт.</string>
+    <string name="report_err_server">На сервері звітів сталася помилка. Спробуйте пізніше.</string>
+    <string name="report_err_collect">Не вдалося підготувати звіт.</string>
+    <string name="report_retry">Повторити</string>
+    <string name="report_close">Закрити</string>
+</resources>

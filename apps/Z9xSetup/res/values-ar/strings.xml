@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">اختر لغتك</string>
     <string name="lang_more">لغات أخرى…</string>
     <string name="lang_more_hint">تستخدم الإعدادات وتطبيقات Google هذه اللغة. تبقى تطبيقات Lumen غير المترجمة بالإنجليزية.</string>
+    <string name="lang_more_hint_nogms">تستخدم الإعدادات هذه اللغة. تبقى تطبيقات Lumen غير المترجمة بالإنجليزية.</string>
     <string name="net_title">الاتصال بالإنترنت</string>
     <string name="net_subtitle">اختر شبكة Wi-Fi. يمكنك أيضًا فعل ذلك لاحقًا.</string>
     <string name="net_connected">متصل بـ %1$s</string>
@@ -99,6 +100,7 @@
     <string name="done_home">الشاشة الرئيسية</string>
     <string name="done_start">ابدأ</string>
     <string name="done_offline_hint">لا يوجد إنترنت: سجّل الدخول إلى Google واضبط المنطقة الزمنية لاحقًا من الإعدادات.</string>
+    <string name="done_offline_hint_nogms">لا يوجد إنترنت: اضبط المنطقة الزمنية لاحقًا من الإعدادات.</string>
     <string name="done_blobs_missing">مكوّنات الفيديو المحمي غير موجودة، لذا قد لا تعرض بعض تطبيقات البث إلا بجودة منخفضة.</string>
     <string name="action_continue">متابعة</string>
     <string name="action_skip">تخطٍّ</string>

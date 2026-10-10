@@ -26,5 +26,10 @@
          instantly), followed by the separate "Standby, then power off after" window
          (power_standby_summary); so this is "Standby after", not "Turn off after". No "Never". -->
     <string name="dream_sleep_after">Standby after</string>
+    <!-- Unused since Lumen OS 1.0.1 (replaced by dream_show); kept for the locale files. -->
     <string name="dream_use_clock">Use the clock screensaver</string>
+    <!-- Lumen OS 1.0.1: quick panel row "Show  < Living sky | Clock >" (the clock option is dream_label). -->
+    <string name="dream_show">Show</string>
+    <!-- Lumen Home's screensaver, only when its own name cannot be read (the row uses Home's label). -->
+    <string name="dream_sky">Living sky</string>
 </resources>

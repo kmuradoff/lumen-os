@@ -10,7 +10,7 @@ The result, OUTDIR/final/<member> + OUTDIR/apex_signed.json, is consumed by
 `sign_tar.py IN.tar OUT.tar --apex-dir OUTDIR`, which puts the APEXes into the tar, re-signs the /system
 APKs and checks everything again. Policy: docs/keys.md#apex; keys: keymap.json "apex" + gen_keys.sh.
 
-The work is split so that no private key ever leaves this Mac (the laptop is borrowed):
+The work is split so that no private key ever leaves this Mac:
 
   Mac     1. inventory: every *.apex / *.capex of IN.tar (module must be listed in keymap.json), the
              APKs inside every payload (whole payload, debugfs), and their certificates

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The OK key lit in the warm accent (#F2B26B) with a soft halo: the step waits for OK on the remote
+     (Lumen OS 1.0.1). Same viewport as remote_xgimi.xml, drawn on top of it; RemoteArt pulses this
+     layer's view alpha (no re-raster) while it waits. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="140dp"
+    android:height="480dp"
+    android:viewportWidth="140"
+    android:viewportHeight="480">
+    <path android:pathData="M30,132 a40,40 0 1,0 80,0 a40,40 0 1,0 -80,0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="70" android:centerY="132"
+                android:gradientRadius="40"
+                android:startColor="#99F2B26B"
+                android:centerColor="#40F2B26B"
+                android:endColor="#00F2B26B" />
+        </aapt:attr>
+    </path>
+    <path android:fillColor="#FF1E1B18"
+        android:pathData="M46,132 a24,24 0 1,0 48,0 a24,24 0 1,0 -48,0 Z" />
+    <path android:fillColor="#FFF2B26B"
+        android:pathData="M50,132 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0 Z" />
+</vector>

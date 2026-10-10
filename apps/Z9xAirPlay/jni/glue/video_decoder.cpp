@@ -6,7 +6,8 @@
  *   UxPlay mirror thread --pushFrame--> FIFO --worker--> AMediaCodec --output thread-->
  *   releaseOutputBufferAtTime(T) on the attached ANativeWindow.
  *
- * - T = mono(ntp_time_local) + latency. Compressed frames wait in the FIFO until
+ * - T = mono(ntp_time_local) + latency + extra (the audio engine's added headroom, see
+ *   audio_engine.cpp; 0 unless audio packets arrive too late). Compressed frames wait in the FIFO until
  *   T - (decode latency + margin), so only a few decoded frames are ever in flight (the MTK
  *   decoder has no low-latency mode and a small output pool).
  * - c2.mtk.{avc,hevc}.decoder report adaptive-playback=0: the codec is recreated whenever a
@@ -85,8 +86,8 @@ void imageSinkCallback(void *, AImageReader *reader) {
 
 }  // namespace
 
-VideoDecoder::VideoDecoder(EventFn fn, void *ctx, int64_t latencyNs)
-    : mEventFn(fn), mEventCtx(ctx), mLatencyNs(latencyNs) {
+VideoDecoder::VideoDecoder(EventFn fn, void *ctx, int64_t latencyNs, const std::atomic<int64_t> *extraNs)
+    : mEventFn(fn), mEventCtx(ctx), mLatencyNs(latencyNs), mExtraNs(extraNs) {
     mWorker = std::thread(&VideoDecoder::workerLoop, this);
 }
 
@@ -141,8 +142,10 @@ void VideoDecoder::setReportedSize(int width, int height) {
 void VideoDecoder::pushFrame(const uint8_t *data, size_t len, bool h265, uint64_t ntpLocalNs) {
     if (!data || len < 5) return;
     const int64_t now = z9x_mono_ns();
-    int64_t target = ntpLocalNs ? z9x_mono_from_uxplay(ntpLocalNs) + mLatencyNs : now + mLatencyNs;
-    if (target - now > kBogusFutureNs) target = now + mLatencyNs;  /* sender clock not usable */
+    /* + the audio engine's extra delay, so the picture stays in sync when audio needs more */
+    const int64_t delay = mLatencyNs + (mExtraNs ? mExtraNs->load(std::memory_order_relaxed) : 0);
+    int64_t target = ntpLocalNs ? z9x_mono_from_uxplay(ntpLocalNs) + delay : now + delay;
+    if (target - now > kBogusFutureNs) target = now + delay;  /* sender clock not usable */
 
     Frame f;
     f.data.assign(data, data + len);

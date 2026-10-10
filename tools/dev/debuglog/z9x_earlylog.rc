@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS DIAG images only (never in a release image): boot log on a USB stick from 'on init', see
+# /system/etc/xgimi/z9x_earlylog.sh. Background oneshot: init only forks it, nothing waits for it.
+# Domain u:r:su:s0 exists only on userdebug (like z9x_diag).
+on init
+    start z9x_earlylog
+
+service z9x_earlylog /system/bin/sh /system/etc/xgimi/z9x_earlylog.sh
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled

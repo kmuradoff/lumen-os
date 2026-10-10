@@ -52,4 +52,5 @@
     <string name="toast_failed">Не удалось выполнить</string>
     <string name="toast_curtain_offer">Изображение сдвинулось: Проектор → Трапеция → «Вписать в экран сейчас»</string>
     <string name="toast_setup_running">Сначала завершите настройку</string>
+    <string name="slot_home_apps">Lumen Home: приложения</string>
 </resources>

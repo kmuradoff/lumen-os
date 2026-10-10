@@ -34,6 +34,7 @@ public final class Prefs {
     public static final String K_INIT_DONE = "init_programs_done";
     public static final String K_KNOWN_PKGS = "known_pkgs";        // pkg\tfirstSeen lines
     public static final String K_VOICE_FAIL_UNTIL = "voice_fail_until";
+    public static final String K_CONTINUE_HOME = "continue_home";  // 1.0.1: hero + "Continue watching" on Home
 
     private final SharedPreferences mSp;
 
@@ -134,5 +135,13 @@ public final class Prefs {
 
     public String units() {
         return str(K_UNITS, "auto");
+    }
+
+    /**
+     * "Continue watching on Home" (Customize, next to the wallpaper): shown by default. Hidden, Home is
+     * always the calm one (big clock, date, weather over the sky, then the apps) and never reads TvProvider.
+     */
+    public boolean continueOnHome() {
+        return bool(K_CONTINUE_HOME, true);
     }
 }

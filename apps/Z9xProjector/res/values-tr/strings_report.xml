@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Turkish translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">Sorun raporu gönder</string>
+    <string name="report_intro">Lumen OS geliştiricisinin neyin yanlış gittiğini anlamasına yardımcı olur. “Raporu gönder”e basana kadar hiçbir şey gönderilmez.</string>
+    <string name="report_included">Dahil olanlar</string>
+    <string name="report_inc_system">Sistem sürümü, çalışma süresi ve sistem yuvası</string>
+    <string name="report_inc_logs">Son 30 dakikanın sistem ve Lumen uygulama günlükleri</string>
+    <string name="report_inc_crashes">Uygulama adlarıyla çökme, donma ve yeniden başlatma kayıtları</string>
+    <string name="report_inc_kernel">Son yeniden başlatmanın çekirdek günlüğü ve güncelleme günlüğü</string>
+    <string name="report_inc_state">Ekran, bellek ve ağ türü</string>
+    <string name="report_excluded">Kaldırılanlar veya dahil olmayanlar</string>
+    <string name="report_exc_accounts">Hesaplar, e-posta adresleri ve telefon numaraları</string>
+    <string name="report_exc_network">Wi-Fi ağ adları, IP ve MAC adresleri</string>
+    <string name="report_exc_serial">Seri numarası: yerine bu projektörün rastgele bir kimliği kullanılır</string>
+    <string name="report_exc_apps">Kendi yüklediğiniz uygulamaların günlükleri</string>
+    <string name="report_exc_files">Fotoğraflar, dosyalar ve şifreler</string>
+    <string name="report_footer">Rapor 30 gün saklanır. Yalnızca Lumen OS geliştiricisi açabilir.</string>
+    <string name="report_last">Son rapor: %1$s, %2$s</string>
+    <string name="report_send">Raporu gönder</string>
+    <string name="report_collecting">Bilgiler toplanıyor… (%1$d / %2$d)</string>
+    <string name="report_log_hint">Android cihaz günlüklerine erişime izin verilip verilmeyeceğini sorarsa “İzin ver”i seçin.</string>
+    <string name="report_sending">Gönderiliyor… %1$s / %2$s</string>
+    <string name="report_done_title">Rapor gönderildi</string>
+    <string name="report_done_text">Bu kodu sorunun kısa bir açıklamasıyla birlikte Lumen OS geliştiricisine gönderin.</string>
+    <string name="report_failed_title">Rapor gönderilmedi</string>
+    <string name="report_err_no_network">İnternet bağlantısı yok. Ağı kontrol edip tekrar deneyin.</string>
+    <string name="report_err_network">Rapor sunucusuna ulaşılamıyor. Daha sonra tekrar deneyin.</string>
+    <string name="report_err_rate">Şu anda çok fazla rapor var. Daha sonra tekrar deneyin.</string>
+    <string name="report_err_rejected">Rapor sunucusu raporu kabul etmedi.</string>
+    <string name="report_err_server">Rapor sunucusunda bir sorun oluştu. Daha sonra tekrar deneyin.</string>
+    <string name="report_err_collect">Rapor hazırlanamadı.</string>
+    <string name="report_retry">Tekrar dene</string>
+    <string name="report_close">Kapat</string>
+</resources>

@@ -18,4 +18,6 @@
     <string name="dream_light_unchanged">Inchangée</string>
     <string name="dream_sleep_after">Veille après</string>
     <string name="dream_use_clock">Utiliser l\'économiseur Horloge</string>
+    <string name="dream_show">Afficher</string>
+    <string name="dream_sky">Ciel vivant</string>
 </resources>

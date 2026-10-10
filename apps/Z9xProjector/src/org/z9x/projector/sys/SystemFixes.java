@@ -62,8 +62,8 @@ public final class SystemFixes {
             try { watchRestrictedNetworking(app); } catch (Throwable t) { Log.w(TAG, "restricted observer: " + t); }
             try { reenableSoundEffectsOnce(app); } catch (Throwable t) { Log.w(TAG, "sound effects: " + t); }
         });
-        // ===== v6.2 module "screensaver": one-shot defaults (clock as the screensaver only while none
-        // was ever chosen; untouched 24 h sleep_timeout -> 4 h). Runs on its own thread "z9x-lamp". =====
+        // ===== v6.2 module "screensaver": one-shot defaults (1.0.1: Lumen Home's sky while none or only an
+        // earlier default was chosen; untouched 24 h sleep_timeout -> 4 h). Runs on thread "z9x-lamp". =====
         try { org.z9x.projector.dream.DreamSettings.applyDefaultsOnce(app); } catch (Throwable t) { Log.w(TAG, "dream defaults: " + t); }
     }
 

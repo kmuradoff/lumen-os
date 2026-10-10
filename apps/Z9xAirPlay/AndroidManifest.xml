@@ -5,7 +5,8 @@
   Also works when adb-installed to /data for testing: libz9xairplay.so is self-contained
   (BoringSSL linked statically) and is loaded straight from the APK (stored, 16 KB aligned,
   extractNativeLibs=false).
-  versionCode/versionName come from build_apk.sh (VERSION_CODE=2 VERSION_NAME=1.1; v1.0 = code 1).
+  versionCode/versionName come from build_apk.sh (VERSION_CODE=2 VERSION_NAME=1.1; v1.0 = code 1;
+  Lumen OS 1.0: 100 / 1.0; Lumen OS 1.0.0: 101 / 1.0.0; Lumen OS 1.0.1: 102 / 1.0.1).
 
   No launcher / leanback-launcher entry (no home-screen tile). Settings are reached through
   Settings > Apps > AirPlay > Open (TvSettings uses getLaunchIntentForPackage, which picks the
@@ -64,7 +65,7 @@
 
     <application
         android:label="@string/app_name"
-        android:icon="@drawable/ic_airplay"
+        android:icon="@drawable/brand_icon_airplay"
         android:allowBackup="false"
         android:extractNativeLibs="false"
         android:usesCleartextTraffic="true"

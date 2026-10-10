@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- French translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">Envoyer un rapport de problème</string>
+    <string name="report_intro">Aide le développeur de Lumen OS à comprendre ce qui n’a pas fonctionné. Rien n’est envoyé tant que vous n’appuyez pas sur « Envoyer le rapport ».</string>
+    <string name="report_included">Inclus</string>
+    <string name="report_inc_system">Version du système, durée de fonctionnement et slot système</string>
+    <string name="report_inc_logs">Journaux du système et des applications Lumen des 30 dernières minutes</string>
+    <string name="report_inc_crashes">Plantages, blocages et redémarrages, avec le nom des applications</string>
+    <string name="report_inc_kernel">Journal du noyau du dernier redémarrage et journal de mise à jour</string>
+    <string name="report_inc_state">Écran, mémoire et type de réseau</string>
+    <string name="report_excluded">Supprimé ou non inclus</string>
+    <string name="report_exc_accounts">Comptes, adresses e-mail et numéros de téléphone</string>
+    <string name="report_exc_network">Noms des réseaux Wi-Fi, adresses IP et MAC</string>
+    <string name="report_exc_serial">Numéro de série : remplacé par un identifiant aléatoire de ce projecteur</string>
+    <string name="report_exc_apps">Journaux des applications que vous avez installées vous-même</string>
+    <string name="report_exc_files">Photos, fichiers et mots de passe</string>
+    <string name="report_footer">Le rapport est conservé 30 jours. Seul le développeur de Lumen OS peut l’ouvrir.</string>
+    <string name="report_last">Dernier rapport : %1$s, %2$s</string>
+    <string name="report_send">Envoyer le rapport</string>
+    <string name="report_collecting">Collecte des informations… (%1$d sur %2$d)</string>
+    <string name="report_log_hint">Si Android demande d’autoriser l’accès aux journaux de l’appareil, choisissez « Autoriser ».</string>
+    <string name="report_sending">Envoi… %1$s sur %2$s</string>
+    <string name="report_done_title">Rapport envoyé</string>
+    <string name="report_done_text">Envoyez ce code au développeur de Lumen OS avec une courte description du problème.</string>
+    <string name="report_failed_title">Le rapport n’a pas été envoyé</string>
+    <string name="report_err_no_network">Pas de connexion Internet. Vérifiez le réseau et réessayez.</string>
+    <string name="report_err_network">Le serveur de rapports est injoignable. Réessayez plus tard.</string>
+    <string name="report_err_rate">Trop de rapports en ce moment. Réessayez plus tard.</string>
+    <string name="report_err_rejected">Le serveur de rapports a refusé le rapport.</string>
+    <string name="report_err_server">Le serveur de rapports a rencontré un problème. Réessayez plus tard.</string>
+    <string name="report_err_collect">Impossible de préparer le rapport.</string>
+    <string name="report_retry">Réessayer</string>
+    <string name="report_close">Fermer</string>
+</resources>

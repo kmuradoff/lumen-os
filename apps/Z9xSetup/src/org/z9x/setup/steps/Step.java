@@ -2,6 +2,7 @@ package org.z9x.setup.steps;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -38,6 +39,9 @@ public abstract class Step {
     /** Already done (for example the remote is connected): skipped silently, the dot shows done. */
     public boolean autoSkip() { return false; }
 
+    /** BACK from a later step may land here (false: nothing left to do here, BACK goes further back). */
+    public boolean revisitable() { return true; }
+
     public int layout() { return SPLIT; }
 
     public abstract CharSequence title();
@@ -68,6 +72,9 @@ public abstract class Step {
 
     /** SETUP_STATE event from Z9xProjector (lossy; steps also poll). */
     public void onBridgeEvent(Bundle extras) {}
+
+    /** Every key before the views (and before the BACK handling) while no sheet is shown. True = consumed. */
+    public boolean onKey(KeyEvent e) { return false; }
 
     // ------------------------------------------------------------------ helpers
 

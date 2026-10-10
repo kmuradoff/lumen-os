@@ -1,0 +1,4 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox blockdev: logs "blockdev ARGS" to $Z9X_T/blockdev.log.
+echo "blockdev $*" >> "$Z9X_T/blockdev.log"

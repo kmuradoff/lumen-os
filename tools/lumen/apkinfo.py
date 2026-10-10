@@ -9,9 +9,11 @@ the Linux build laptop alike). Used by lumen_v1.sh and its helpers.
   apkinfo.py cert APK         SHA-256 of the first signer's DER certificate (APK Signature Scheme
                               v3.1 / v3 / v2 block, else the v1 PKCS#7 via openssl)
   apkinfo.py dex APK          'name crc32 size method offset' of every classes*.dex entry
+  apkinfo.py res APK TYPE NAME  every value of TYPE/NAME in resources.arsc (JSON; e.g. integer
+                              config_maxUiWidth)
 
 As a module: manifest_bytes(apk_bytes), signer_sha256(apk_bytes), dex_entries(apk_bytes),
-der_sha256_of_pem(path).
+der_sha256_of_pem(path), resource_values(apk_bytes, type_name, entry_name).
 """
 import base64
 import hashlib
@@ -228,7 +230,91 @@ def dex_entries(apk):
     return sorted(out)
 
 
+# ---------------------------------------------------------------------------- resource table
+# frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h (Android 14)
+RES_TABLE, RES_TABLE_PACKAGE, RES_TABLE_TYPE = 0x0002, 0x0200, 0x0201
+TYPE_FLAG_SPARSE, TYPE_FLAG_OFFSET16 = 0x01, 0x02          # ResTable_type::flags
+ENTRY_FLAG_COMPLEX, ENTRY_FLAG_COMPACT = 0x0001, 0x0008    # ResTable_entry flags
+NO_ENTRY, NO_ENTRY16 = 0xffffffff, 0xffff
+TYPE_INT_DEC, TYPE_INT_HEX = 0x10, 0x11                    # Res_value::dataType
+
+
+def _chunk(buf, off, end):
+    ctype, chs, csize = struct.unpack_from('<HHI', buf, off)
+    if csize < 8 or chs < 8 or chs > csize or off + csize > end:
+        raise ValueError('bad chunk at %d' % off)
+    return ctype, chs, csize
+
+
+def _type_values(t, off, chs, keys, entry_name):
+    """(config bytes after its size field, {...}) for every entry_name entry of one ResTable_type."""
+    _tid, flags, _res0, count, estart = struct.unpack_from('<BBHII', t, off + 8)
+    csz = struct.unpack_from('<I', t, off + 20)[0]
+    config = bytes(t[off + 24:off + 20 + csz])
+    idx = off + chs
+    if flags & TYPE_FLAG_SPARSE:        # (entry index, offset / 4) pairs
+        ents = [(i, o * 4) for i, o in (struct.unpack_from('<HH', t, idx + 4 * k) for k in range(count))]
+    elif flags & TYPE_FLAG_OFFSET16:    # 16-bit offsets / 4, 0xffff = no entry
+        ents = [(i, o * 4) for i, o in enumerate(struct.unpack_from('<%dH' % count, t, idx)) if o != NO_ENTRY16]
+    else:
+        ents = [(i, o) for i, o in enumerate(struct.unpack_from('<%dI' % count, t, idx)) if o != NO_ENTRY]
+    out = []
+    for i, eo in ents:
+        e = off + estart + eo
+        size, eflags, key = struct.unpack_from('<HHI', t, e)
+        if eflags & ENTRY_FLAG_COMPACT:  # key index in 'size', the value in 'key', its type in flags >> 8
+            name, cplx, dtype, data = keys[size], False, eflags >> 8, key
+        else:
+            name, cplx = keys[key], bool(eflags & ENTRY_FLAG_COMPLEX)
+            dtype = data = None
+            if not cplx:
+                _vsize, _r0, dtype, data = struct.unpack_from('<HBBI', t, e + size)
+        if name == entry_name:
+            out.append({'entry': i, 'config': config.hex(), 'default': not any(config),
+                        'complex': cplx, 'dataType': dtype,
+                        'data': struct.unpack('<i', struct.pack('<I', data))[0] if data is not None else None})
+    return out
+
+
+def resource_values(apk, type_name, entry_name):
+    """Every value of TYPE/NAME in the APK's resources.arsc, tool-free: a list of {'package', 'id',
+    'entry', 'config' (hex of the ResTable_config after its size field), 'default' (all-zero config),
+    'complex', 'dataType', 'data' (signed 32-bit)}; dataType / data are None for a bag (complex) entry.
+    Reads the full, sparse, 16-bit-offset and compact encodings of aapt2."""
+    with zipfile.ZipFile(io.BytesIO(apk)) as z:
+        t = z.read('resources.arsc')
+    typ, hsize, total = struct.unpack_from('<HHI', t, 0)
+    if typ != RES_TABLE or total > len(t):
+        raise ValueError('resources.arsc is not a resource table')
+    out, off = [], hsize
+    while off < total:
+        ctype, chs, csize = _chunk(t, off, total)
+        if ctype == RES_TABLE_PACKAGE:
+            pid = struct.unpack_from('<I', t, off + 8)[0]
+            pname = t[off + 12:off + 268].decode('utf-16-le', 'replace').split('\x00', 1)[0]
+            tstr, _last_type, kstr = struct.unpack_from('<III', t, off + 268)
+            tid_off = struct.unpack_from('<I', t, off + 284)[0] if chs >= 288 else 0
+            types, _ = _string_pool(t, off + tstr)
+            keys, _ = _string_pool(t, off + kstr)
+            p, pend = off + chs, off + csize
+            while p < pend:
+                ct, cchs, cs = _chunk(t, p, pend)
+                if ct == RES_TABLE_TYPE:
+                    tid = t[p + 8]
+                    if types[tid - 1 - tid_off] == type_name:
+                        for v in _type_values(t, p, cchs, keys, entry_name):
+                            v.update(package=pname, id='0x%02x%02x%04x' % (pid, tid, v['entry']))
+                            out.append(v)
+                p += cs
+        off += csize
+    return out
+
+
 def main():
+    if len(sys.argv) == 5 and sys.argv[1] == 'res':
+        apk = open(sys.argv[2], 'rb').read()
+        print(json.dumps(resource_values(apk, sys.argv[3], sys.argv[4]), indent=1, sort_keys=True))
+        return
     if len(sys.argv) != 3 or sys.argv[1] not in ('manifest', 'cert', 'dex'):
         sys.exit(__doc__)
     apk = open(sys.argv[2], 'rb').read()

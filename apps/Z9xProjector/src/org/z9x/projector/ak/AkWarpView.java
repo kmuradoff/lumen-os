@@ -29,6 +29,11 @@ import android.view.animation.LinearInterpolator;
  * the optical-zoom caption (115), or our own short "done" animation (118, stock played the Lottie
  * file ak.json there; we draw a check mark in the corrected quad instead).
  *
+ * Every size is relative to the view (= the full UI frame at 1080p, 2K or 4K, Lumen OS 1.0.1): the
+ * pattern and its caption are in AkPatternSpec design units (1920 x 1080) scaled to the view, the
+ * pattern itself is an ALPHA_8 mask drawn in black over white (AkPatternRenderer). onDraw allocates
+ * nothing.
+ *
  * Main thread only.
  */
 final class AkWarpView extends View {
@@ -45,19 +50,25 @@ final class AkWarpView extends View {
     private boolean full = true;
     private final float[] src = new float[8], dst = new float[8];
     private final Matrix matrix = new Matrix();
+    /** The ALPHA_8 pattern mask is drawn in this paint's colour (black) over {@link #white}. */
     private final Paint bitmapPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+    private final Paint white = new Paint();
     private final Paint outline = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final AkPatternRenderer.CaptionPaints captionPaints = new AkPatternRenderer.CaptionPaints();
     private ValueAnimator warp, done, pulse;
     private float doneProgress, doneAlpha = 1f;
     private final Paint donePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path donePath = new Path(), doneSeg = new Path();
+    private final PathMeasure doneMeasure = new PathMeasure();
     private final RectF tmp = new RectF();
 
     AkWarpView(Context c) {
         super(c);
         outline.setStyle(Paint.Style.STROKE);
         outline.setColor(Color.BLACK);
+        bitmapPaint.setColor(Color.BLACK);
+        white.setStyle(Paint.Style.FILL);
+        white.setColor(Color.WHITE);
         donePaint.setStyle(Paint.Style.STROKE);
         donePaint.setStrokeCap(Paint.Cap.ROUND);
         donePaint.setStrokeJoin(Paint.Join.ROUND);
@@ -203,7 +214,8 @@ final class AkWarpView extends View {
             drawDone(canvas, w, h);
         } else if (pattern != null) {
             tmp.set(0, 0, w, h);
-            canvas.drawBitmap(pattern, null, tmp, bitmapPaint);
+            canvas.drawRect(tmp, white);
+            canvas.drawBitmap(pattern, null, tmp, bitmapPaint);   // ALPHA_8: drawn in black
             canvas.save();
             canvas.scale(w / (float) AkPatternSpec.W, h / (float) AkPatternSpec.H);
             boolean zoom = mode == MODE_ZOOM;
@@ -236,9 +248,9 @@ final class AkWarpView extends View {
             donePath.moveTo(cx - 48, cy + 2);
             donePath.lineTo(cx - 12, cy + 38);
             donePath.lineTo(cx + 52, cy - 34);
-            PathMeasure pm = new PathMeasure(donePath, false);
+            doneMeasure.setPath(donePath, false);
             doneSeg.reset();
-            pm.getSegment(0, pm.getLength() * check, doneSeg, true);
+            doneMeasure.getSegment(0, doneMeasure.getLength() * check, doneSeg, true);
             c.drawPath(doneSeg, donePaint);
         }
         c.restore();

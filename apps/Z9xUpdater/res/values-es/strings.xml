@@ -47,6 +47,16 @@
     <string name="done_ok_title">Actualizado a Lumen OS %1$s</string>
     <string name="done_rollback_title">No se pudo iniciar la actualización</string>
     <string name="done_rollback_body">Se restauró Lumen OS %1$s. No se perdió nada.</string>
+    <string name="done_unhealthy_title">Lumen OS %1$s está en funcionamiento</string>
+    <string name="done_unhealthy_body">Una comprobación tras la actualización encontró un problema: %1$s. Si algo no funciona, usa el modo de rescate (rescue) del instalador. Tus datos se conservan.</string>
+    <string name="done_rescue_scan">Escanea el código para abrir la guía del modo de rescate.</string>
+    <string name="done_details">Detalles técnicos: %1$s</string>
+    <string name="why_restarted">el sistema se reinició de forma inesperada</string>
+    <string name="why_service">un servicio del sistema no se inició</string>
+    <string name="why_lamp">el servicio de la lámpara y los ventiladores no se inició</string>
+    <string name="why_confirm">el sistema no pudo confirmar que la nueva versión funciona</string>
+    <string name="why_no_rollback">no fue posible volver a la versión anterior</string>
+    <string name="why_unknown">no se registraron detalles</string>
     <string name="blk_vbmeta_title">Se necesita un paso único para las actualizaciones</string>
     <string name="blk_vbmeta_body">Antes de la primera actualización, la otra ranura del sistema (%1$s) debe prepararse una vez con un ordenador, como explica la guía de instalación (paso vbmeta). Escanea el código para abrir la guía.</string>
     <string name="blk_vbmeta_unknown">No se pudo leer el estado de la otra ranura del sistema. Reinicia el proyector y vuelve a intentarlo.</string>
@@ -54,6 +64,7 @@
     <string name="blk_merge_body">Tarda unos minutos en segundo plano. Puedes seguir viendo.</string>
     <string name="blk_pending">Esta versión aún se está comprobando tras la última actualización. Inténtalo de nuevo en unos minutos.</string>
     <string name="blk_vendor">Esta actualización no es para el firmware de este proyector (%1$s).</string>
+    <string name="blk_channel">Esta actualización es para otra edición de Lumen OS (%1$s).</string>
     <string name="blk_min_version">Esta actualización necesita Lumen OS %1$s o posterior. Usa el instalador para ordenador.</string>
     <string name="blk_thermal">El proyector está demasiado caliente ahora. Inténtalo más tarde.</string>
     <string name="blk_space">No hay suficiente espacio libre: se necesitan %1$s.</string>

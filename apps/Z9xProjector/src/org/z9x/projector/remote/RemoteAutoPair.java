@@ -16,15 +16,18 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.hardware.input.InputManager;
 import android.os.ParcelUuid;
 import android.os.PowerManager;
 import android.os.Process;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.InputDevice;
 
 import org.z9x.projector.R;
 import org.z9x.projector.SafeHandler;
+import org.z9x.projector.Ui;
 import org.z9x.projector.ui.Notify;
 
 import java.util.HashMap;
@@ -52,8 +55,8 @@ import java.util.Set;
  * callback drops every advertisement whose name does not contain "XGIMI" before it is posted.
  *
  * <b>Pairing windows</b> (Bluetooth on, screen on, no bond in progress):
- *  - MANUAL: {@link #startPairing(Context)} ("Pair remote" in the quick panel General page and in
- *    the Projector settings), 120 s, regardless of the state below; shows the "Hold Back and
+ *  - MANUAL: {@link #startPairing(Context)} ("Pair remote" in the Projector settings; Lumen OS 1.0:
+ *    no longer in the quick panel), 120 s, regardless of the state below; shows the "Hold Back and
  *    Home" card. Broad match: a name containing "XGIMI" plus "RC"/"REMOTE", the HID service
  *    0x1812 or the LE Limited flag; a bonded but not connected XGIMI device advertising the
  *    Limited flag is unbonded and paired again; a new / second remote can be paired;
@@ -101,6 +104,23 @@ import java.util.Set;
  * Threading: everything runs on "z9x-remote" (receivers are registered with that handler, scan
  * callbacks are pre-filtered on the binder thread and hop onto it). Nothing here touches the
  * gmpf HAL.
+ *
+ * <b>Lumen OS 1.0 (remote pairing UX)</b>:
+ *  - "Connected" for the first-run setup and the prompt ({@link #state}) means a bonded XGIMI remote
+ *    that is ACL connected AND whose HID input device is up (hidUp: the input device with its
+ *    Bluetooth address, or an external one with an XGIMI remote vendor id), i.e. its keys reach
+ *    Android. The scan policy above keeps the plain ACL test.
+ *  - During the setup a remote in pairing mode is bonded in the RECOVER window too (the user is on
+ *    the remote step); after the setup RECOVER stays "known addresses only".
+ *  - Remote lost ({@link RemotePrompt}): after the setup, with the screen on, not in standby, and
+ *    only if this projector had an XGIMI remote before, a full-screen prompt asks to hold Back + Home
+ *    when no XGIMI remote is bonded any more ({@value #UNBOND_GRACE_MS} ms after the bond went, or at
+ *    a wake), or when none connected within {@value #LOST_AFTER_MS} ms of boot / SCREEN_ON (not after
+ *    an HDMI-CEC wake, and 1.0.1: not after a boot that followed an unattended restart, see
+ *    {@link #unattendedBootReason}). At most once per wake; a dismissal by the user snoozes it (30 min, 4 h, 24 h),
+ *    and after {@value #LOST_MAX_DISMISSALS} dismissals it stays quiet until a remote connects again.
+ *    While it is shown the scan runs as a NEW window at LOW_LATENCY (strict match, new remotes
+ *    allowed) and the prompt closes itself once the remote is connected.
  */
 public final class RemoteAutoPair {
     private static final String TAG = "Z9xRemote";
@@ -139,6 +159,22 @@ public final class RemoteAutoPair {
     private static final String PREFS = "z9x_remote";
     private static final String KEY_BONDED = "bonded_addrs";
 
+    /** HID vendor ids of the XGIMI BLE remotes (gsi/overlay keylayouts: 000d_38xx, 1d5a_c081, 26e3_af02). */
+    private static final int[] REMOTE_VENDOR_IDS = {0x000d, 0x1d5a, 0x26e3};
+
+    // ---- remote lost prompt (Lumen OS 1.0)
+    private static final long LOST_AFTER_MS = 60_000;      // no remote connected this long after a wake
+    private static final long UNBOND_GRACE_MS = 5_000;     // a removed bond: let a re-pair finish first
+    private static final long LOST_RETRY_MS = 30_000;      // a blocker (dream, other panel) went away?
+    private static final long[] LOST_SNOOZE_MS = {30 * 60_000L, 4 * 60 * 60_000L, 24 * 60 * 60_000L};
+    private static final int LOST_MAX_DISMISSALS = 3;
+    /** boolean: an XGIMI remote was connected on this projector at least once (prompt precondition). */
+    private static final String KEY_HAD_REMOTE = "had_remote";
+    /** long, wall clock: no prompt before this (the user dismissed the last one). */
+    private static final String KEY_LOST_SNOOZE = "lost_snooze_until";
+    /** int: prompts dismissed by the user since a remote was last connected. */
+    private static final String KEY_LOST_DISMISSALS = "lost_dismissals";
+
     private static Context sApp;
     private static SafeHandler sH;
 
@@ -147,8 +183,8 @@ public final class RemoteAutoPair {
     private static int sScanMode = -1;
     private static long sScanStartedAt;
     private static long sLastStart;
-    private static String sBondingAddr;
-    private static String sRepairAddr;
+    private static volatile String sBondingAddr;
+    private static volatile String sRepairAddr;
     private static long sManualUntil;
     private static long sBootFrom, sBootUntil;
     /** Current pairing window (MODE_*); MODE_MANUAL also widens the binder-thread pre-filter. */
@@ -165,10 +201,21 @@ public final class RemoteAutoPair {
     private static final Set<String> sSeen = new HashSet<>();
     private static final Map<String, int[]> sFails = new HashMap<>();      // addr -> {count}
     private static final Map<String, Long> sCooldownUntil = new HashMap<>();
+    /** Advertised name of the remote being bonded (State.found); read by binder threads. */
+    private static volatile String sBondingName;
+    /** The remote-lost prompt is on screen: scan as a NEW window at LOW_LATENCY. */
+    private static volatile boolean sPromptOpen;
+    /** Remote-lost bookkeeping of the current wake (boot / SCREEN_ON), z9x-remote thread. */
+    private static long sWakeAt;
+    private static boolean sConnSinceWake, sLostDoneThisWake;
+    /** lostCheck re-checks (5 s apart) of a remote whose link is up but no input device of it is seen. */
+    private static int sLinkOnlyChecks;
+    private static final int LINK_ONLY_CHECKS = 6;
 
     private static final Runnable EVALUATE = RemoteAutoPair::evaluate;
     private static final Runnable BOND_TIMEOUT = RemoteAutoPair::bondTimeout;
     private static final Runnable REPAIR_CHECK = RemoteAutoPair::repairCheck;
+    private static final Runnable LOST_CHECK = RemoteAutoPair::lostCheck;
 
     private static final ScanCallback CB = new ScanCallback() {
         @Override public void onScanResult(int type, ScanResult r) {
@@ -224,15 +271,30 @@ public final class RemoteAutoPair {
             registerReceivers();
             resetNewBudget("process start");
             // The app is persistent: a process start soon after boot is the boot. A later restart
-            // (crash) does not open the boot window again.
-            if (SystemClock.elapsedRealtime() < BOOT_MAX_UPTIME_MS) openBootWindow("boot");
+            // (crash) does not open the boot window again, and does not start the remote-lost 60 s
+            // rule either: a restart mid-film with the remote asleep is not a wake.
+            boolean boot = SystemClock.elapsedRealtime() < BOOT_MAX_UPTIME_MS;
+            if (boot) openBootWindow("boot");
+            if (boot && interactive()) {
+                onWake("boot");
+                // Lumen OS 1.0.1: after a restart nobody started at the remote (update, its rollback /
+                // stuck gate, the interface resolution, rescue / fastboot) the remote is only asleep:
+                // no remote-lost prompt this boot (a removed bond or the next SCREEN_ON re-arm it)
+                String why = unattendedBootReason();
+                if (why != null) {
+                    sLostDoneThisWake = true;
+                    sH.removeCallbacks(LOST_CHECK);
+                    Log.i(TAG, "boot after an unattended restart (" + why + "): the remote is asleep,"
+                            + " no remote-lost prompt this boot");
+                }
+            }
         });
         sH.postDelayed(EVALUATE, FIRST_CHECK_MS);
     }
 
     /**
-     * User-requested pairing (quick panel / settings item): 120 s fast scan, shows the
-     * "Hold Back and Home" card. Any thread.
+     * User-requested pairing (Projector settings item; v1.0: no longer in the quick panel, pairing is
+     * automatic): 120 s fast scan, shows the "Hold Back and Home" card. Any thread.
      */
     public static void startPairing(Context ctx) {
         if (sApp == null) install(ctx);
@@ -301,6 +363,7 @@ public final class RemoteAutoPair {
         }
         int mode;
         long next = TICK_MS;
+        boolean prompt = sPromptOpen;
         if (manual) {
             mode = MODE_MANUAL;
             next = Math.min(next, sManualUntil - now);
@@ -311,10 +374,15 @@ public final class RemoteAutoPair {
                 // it connected: the boot / screen-on recover window is not needed any more (a later
                 // disconnect = the remote going to sleep, not a lost bond)
                 sBootFrom = sBootUntil = 0;
+                checkConnectedSoon(0);                // usable (HID up)? then the remote-lost prompt calms down
                 setIdle("idle: an XGIMI remote is connected");
                 return;
             }
-            if (!st[0]) {
+            if (prompt) {
+                // the remote-lost prompt asks the user to hold Back + Home right now: a NEW window
+                // (strict match, a new or reset remote may be bonded), no budget, LOW_LATENCY below
+                mode = MODE_NEW;
+            } else if (!st[0]) {
                 if (setupDone && now - sNewSince >= NEW_MAX_MS) {
                     setIdle("idle: no XGIMI remote found in " + NEW_MAX_MS / 60_000 + " min of scanning; next scan"
                             + " after screen on / Bluetooth on / 'Pair remote'");
@@ -340,11 +408,12 @@ public final class RemoteAutoPair {
         sMode = mode;
         sLastIdle = null;
 
-        // MANUAL and setup: LOW_LATENCY. Automatic windows after setup: NEW drops to BALANCED after
-        // NEW_FAST_MS; both are capped at LOW_POWER while a Bluetooth audio device is connected.
+        // MANUAL, setup and the remote-lost prompt: LOW_LATENCY. Automatic windows after setup: NEW
+        // drops to BALANCED after NEW_FAST_MS; both are capped at LOW_POWER while a Bluetooth audio
+        // device is connected.
         int want = ScanSettings.SCAN_MODE_LOW_LATENCY;
         boolean fastNew = false;
-        if (mode != MODE_MANUAL && setupComplete()) {
+        if (mode != MODE_MANUAL && !prompt && setupComplete()) {
             if (mode == MODE_NEW) {
                 fastNew = now - sNewSince < NEW_FAST_MS;
                 if (!fastNew) want = ScanSettings.SCAN_MODE_BALANCED;
@@ -493,8 +562,9 @@ public final class RemoteAutoPair {
             sH.postDelayed(REPAIR_CHECK, sRepairCandConfirm);
             return;
         }
-        if (sMode == MODE_RECOVER && !manualNow && !knownRemote(addr)) {
-            // 6.3.1 policy: the recover window (a remote is bonded) never bonds anything new
+        if (sMode == MODE_RECOVER && !manualNow && setupComplete() && !knownRemote(addr)) {
+            // 6.3.1 policy: the recover window (a remote is bonded) never bonds anything new. Lumen OS
+            // 1.0: except during the first-run setup, whose first step asks for exactly this.
             if (sRecoverSkipped.add(addr)) {
                 Log.i(TAG, "recover window: " + addr + " (" + name + ") is in pairing mode but is not a bonded"
                         + " remote: not paired automatically ('Pair remote' pairs it)");
@@ -575,7 +645,10 @@ public final class RemoteAutoPair {
             sH.postDelayed(EVALUATE, 2_000);
             return;
         }
-        notify(R.string.remote_pairing, 0);
+        sBondingName = name;
+        // the remote-lost prompt shows the same state itself ("Found <name>")
+        if (!sPromptOpen) notify(R.string.remote_pairing, 0);
+        stateChanged();
         sH.removeCallbacks(BOND_TIMEOUT);
         sH.postDelayed(BOND_TIMEOUT, BOND_TIMEOUT_MS);
     }
@@ -699,6 +772,11 @@ public final class RemoteAutoPair {
                     sH.removeCallbacks(EVALUATE);
                     sH.postDelayed(EVALUATE, 1_000);
                     stateChanged();
+                    if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(a)) {
+                        // the HID input device comes up a moment after the ACL link: report it again
+                        sH.postDelayed(RemoteAutoPair::stateChanged, 2_500);
+                        checkConnectedSoon(2_500);
+                    }
                 }
             } catch (Throwable t) {
                 Log.w(TAG, "bt receiver: " + t);
@@ -711,12 +789,14 @@ public final class RemoteAutoPair {
             try {
                 if (Intent.ACTION_SCREEN_OFF.equals(i.getAction())) {
                     setIdle("screen off: waiting for SCREEN_ON");
+                    sH.removeCallbacks(LOST_CHECK);       // OverlayHost closes a shown prompt itself
                 } else {
                     // waking from standby is the user's "power on": same recover window as at boot
                     openBootWindow("screen on");
                     resetNewBudget("screen on");
                     sH.removeCallbacks(EVALUATE);
                     sH.postDelayed(EVALUATE, 2_000);
+                    onWake("screen on");
                 }
             } catch (Throwable t) {
                 Log.w(TAG, "screen receiver: " + t);
@@ -730,7 +810,14 @@ public final class RemoteAutoPair {
         if (!ours && !repair) {
             if (isXgimiRemote(d)) {
                 Log.i(TAG, "bond state " + addr + " -> " + s + " (not started by us)");
-                if (s == BluetoothDevice.BOND_NONE) resetNewBudget("a remote's bond was removed");
+                if (s == BluetoothDevice.BOND_NONE) {
+                    resetNewBudget("a remote's bond was removed");
+                    // remote lost: ask for Back + Home if no other XGIMI remote stays bonded (a new
+                    // reason, so even after a prompt of this wake; the snooze still applies)
+                    sLostDoneThisWake = false;
+                    sH.removeCallbacks(LOST_CHECK);
+                    sH.postDelayed(LOST_CHECK, UNBOND_GRACE_MS);
+                }
                 sH.removeCallbacks(EVALUATE);
                 sH.postDelayed(EVALUATE, 2_000);
             }
@@ -758,7 +845,7 @@ public final class RemoteAutoPair {
             String name = null;
             try { name = d.getName(); } catch (Throwable ignored) { }
             Log.i(TAG, "remote bonded: " + addr + " " + name);
-            Notify.show(sApp, sApp.getString(R.string.remote_connected), name);
+            if (!sPromptOpen) Notify.show(sApp, sApp.getString(R.string.remote_connected), name);
             sH.postDelayed(EVALUATE, 2_000);
         } else if (s == BluetoothDevice.BOND_NONE) {
             sH.removeCallbacks(BOND_TIMEOUT);
@@ -776,10 +863,18 @@ public final class RemoteAutoPair {
     /** Snapshot for the SetupBridge {@code remote_state}: read-only, any thread (binder calls only). */
     public static final class State {
         public int bonded;
+        /**
+         * Lumen OS 1.0: a bonded XGIMI remote that is ACL connected AND has its HID input device up
+         * (hidUp), i.e. its keys reach Android. A bond alone, or a link still coming up, is not.
+         */
         public boolean connected;
         public String name = "";
         public boolean scanning;
         public String mode = "idle";
+        /** A bond (or a re-pair) of a remote in pairing mode is in progress. */
+        public boolean pairing;
+        /** Name of the remote being paired (advertised name), "" when unknown or not pairing. */
+        public String found = "";
     }
 
     /** Current XGIMI remote state (bonded count, connected, name, scanning, window mode). Any thread. */
@@ -789,6 +884,12 @@ public final class RemoteAutoPair {
         st.scanning = sScanning;
         int m = sMode;
         st.mode = m >= 0 && m < MODE_NAMES.length ? MODE_NAMES[m] : "idle";
+        String bonding = sBondingAddr, repair = sRepairAddr;
+        st.pairing = bonding != null || repair != null;
+        if (bonding != null) {
+            String n = sBondingName;
+            st.found = n == null ? "" : n;
+        }
         try {
             BluetoothAdapter a = adapter();
             Set<BluetoothDevice> set = a == null || !a.isEnabled() ? null : a.getBondedDevices();
@@ -796,24 +897,60 @@ public final class RemoteAutoPair {
                 for (BluetoothDevice d : set) {
                     if (!isXgimiRemote(d)) continue;
                     st.bonded++;
-                    if (connected(d)) {
+                    String n = null;
+                    try { n = d.getName(); } catch (Throwable ignored) { }
+                    if (connected(d) && hidUp(d.getAddress(), n)) {
                         st.connected = true;
-                        try {
-                            String n = d.getName();
-                            if (n != null) st.name = n;
-                        } catch (Throwable ignored) { }
-                    } else if (st.name.isEmpty()) {
-                        try {
-                            String n = d.getName();
-                            if (n != null) st.name = n;
-                        } catch (Throwable ignored) { }
+                        if (n != null) st.name = n;
+                    } else if (st.name.isEmpty() && n != null && !st.connected) {
+                        st.name = n;
                     }
+                    if (st.pairing && st.found.isEmpty() && n != null && d.getAddress().equals(repair)) st.found = n;
                 }
             }
         } catch (Throwable t) {
             Log.w(TAG, "state: " + t);
         }
         return st;
+    }
+
+    /**
+     * The remote's keys reach Android: an input device with its Bluetooth address exists
+     * (InputDevice.getBluetoothAddress, hidden, needs android.permission.BLUETOOTH). Otherwise an
+     * external one with an XGIMI remote vendor id or with the remote's Bluetooth name counts, also when
+     * it reports another address (an LE remote's input device may carry another form of its address
+     * than BluetoothDevice.getAddress; such a device can only exist while an XGIMI remote's HID is up,
+     * so a mismatch must not make a working remote look lost). Any thread.
+     */
+    static boolean hidUp(String addr, String btName) {
+        if (addr == null || sApp == null) return false;
+        try {
+            InputManager im = sApp.getSystemService(InputManager.class);
+            if (im == null) return false;
+            boolean byIdentity = false;
+            for (int id : im.getInputDeviceIds()) {
+                InputDevice dev = im.getInputDevice(id);
+                if (dev == null || !dev.isExternal()) continue;
+                String a = null;
+                try { a = dev.getBluetoothAddress(); } catch (Throwable ignored) { }
+                if (a != null && a.equalsIgnoreCase(addr)) return true;
+                String dn = dev.getName();
+                if (isRemoteVendor(dev.getVendorId())
+                        || (btName != null && !btName.isEmpty() && dn != null && dn.startsWith(btName))) {
+                    byIdentity = true;
+                }
+            }
+            return byIdentity;
+        } catch (Throwable t) {
+            Log.w(TAG, "input devices: " + t);
+            return false;
+        }
+    }
+
+    /** HID vendor id of an XGIMI BLE remote (not the IR receiver or the keypad). */
+    public static boolean isRemoteVendor(int vendorId) {
+        for (int v : REMOTE_VENDOR_IDS) if (v == vendorId) return true;
+        return false;
     }
 
     /** Bond / connection of a remote changed: tell the first-run setup (lossy event, it also polls). */
@@ -823,6 +960,214 @@ public final class RemoteAutoPair {
         } catch (Throwable t) {
             Log.w(TAG, "setup event: " + t);
         }
+        if (sPromptOpen) postPromptState();
+    }
+
+    // =================================================================== Lumen OS 1.0: remote lost prompt
+
+    /** Re-checks of CONN_CHECK left while the link is up but the HID input device is not (yet). */
+    private static int sConnChecksLeft;
+
+    /** After a remote's link came up: is it usable (HID up)? Re-checked a few times, z9x-remote. */
+    private static final Runnable CONN_CHECK = () -> {
+        BluetoothAdapter a = adapter();
+        if (a == null || !a.isEnabled()) return;
+        if (usableRemote(a)) {
+            noteRemoteConnected("hid up");
+        } else if (sConnChecksLeft-- > 0 && xgimiState(a)[1]) {
+            sH.postDelayed(RemoteAutoPair.CONN_CHECK, 4_000);
+        }
+    };
+
+    private static void checkConnectedSoon(long delayMs) {
+        sConnChecksLeft = 3;
+        sH.removeCallbacks(CONN_CHECK);
+        sH.postDelayed(CONN_CHECK, delayMs);
+    }
+
+    /**
+     * The reboot reason of this boot when it names a restart nobody started at the remote (sys.BootReason:
+     * z9x-ota*, z9x-uires*, fastboot / bootloader, rescue), else null. Reads sys.boot.reason,
+     * sys.boot.reason.last, persist.sys.boot.reason and ro.boot.bootreason.
+     */
+    private static String unattendedBootReason() {
+        try {
+            return org.z9x.projector.sys.BootReason.unattended(
+                    android.os.SystemProperties.get("sys.boot.reason", ""),
+                    android.os.SystemProperties.get("sys.boot.reason.last", ""),
+                    android.os.SystemProperties.get("persist.sys.boot.reason", ""),
+                    android.os.SystemProperties.get("ro.boot.bootreason", ""));
+        } catch (Throwable t) {
+            Log.w(TAG, "boot reason: " + t);
+            return null;
+        }
+    }
+
+    /** Boot / SCREEN_ON (z9x-remote): a new wake; a bonded remote has LOST_AFTER_MS to connect. */
+    private static void onWake(String why) {
+        sWakeAt = SystemClock.elapsedRealtime();
+        sConnSinceWake = false;
+        sLostDoneThisWake = false;
+        sLinkOnlyChecks = 0;
+        sH.removeCallbacks(LOST_CHECK);
+        sH.postDelayed(LOST_CHECK, LOST_AFTER_MS);
+    }
+
+    /**
+     * z9x-remote: an XGIMI remote is usable (HID up): the projector "had a remote", the snooze and the
+     * dismissal count are cleared, no prompt this wake.
+     */
+    private static void noteRemoteConnected(String why) {
+        sConnSinceWake = true;
+        sH.removeCallbacks(LOST_CHECK);
+        try {
+            SharedPreferences p = prefs();
+            if (!p.getBoolean(KEY_HAD_REMOTE, false) || p.contains(KEY_LOST_DISMISSALS) || p.contains(KEY_LOST_SNOOZE)) {
+                p.edit().putBoolean(KEY_HAD_REMOTE, true).remove(KEY_LOST_DISMISSALS).remove(KEY_LOST_SNOOZE).apply();
+                Log.i(TAG, "remote usable (" + why + "): remote-lost prompt armed, snooze cleared");
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "prefs: " + t);
+        }
+        if (sPromptOpen) postPromptState();
+    }
+
+    /** z9x-remote: is the remote-lost prompt due now? See the class comment for the rules. */
+    private static void lostCheck() {
+        sH.removeCallbacks(LOST_CHECK);
+        if (sPromptOpen || sLostDoneThisWake || !setupComplete() || !interactive()) return;
+        BluetoothAdapter a = adapter();
+        if (a == null || !a.isEnabled()) return;
+        SharedPreferences p = prefs();
+        boolean had = p.getBoolean(KEY_HAD_REMOTE, false)
+                || !p.getStringSet(KEY_BONDED, new HashSet<>()).isEmpty();
+        if (!had) return;                                   // never had an XGIMI remote: nothing was lost
+        if (sBondingAddr != null || sRepairAddr != null) {
+            sH.postDelayed(LOST_CHECK, LOST_RETRY_MS);
+            return;
+        }
+        if (usableRemote(a)) {
+            noteRemoteConnected("lost check");
+            return;
+        }
+        boolean[] st = xgimiState(a);                       // {bonded, ACL connected}
+        if (st[1]) {                                        // link up, input device not (yet)
+            if (++sLinkOnlyChecks <= LINK_ONLY_CHECKS) {
+                sH.postDelayed(LOST_CHECK, 5_000);
+                return;
+            }
+            // the link has stayed up ~30 s without a recognised input device: the remote came back
+            // this wake (only its input device is not recognised); no prompt when it sleeps later,
+            // and no endless 5 s polling
+            Log.i(TAG, "XGIMI remote linked " + LINK_ONLY_CHECKS * 5 + " s without a recognised input device:"
+                    + " counted as back this wake");
+            sConnSinceWake = true;
+            return;
+        }
+        sLinkOnlyChecks = 0;
+        long now = SystemClock.elapsedRealtime();
+        final String reason;
+        if (!st[0]) {
+            reason = "no XGIMI remote bonded any more";
+        } else if (sConnSinceWake) {
+            return;                                         // used this wake, asleep now: normal
+        } else if (now - sWakeAt < LOST_AFTER_MS) {
+            sH.postDelayed(LOST_CHECK, sWakeAt + LOST_AFTER_MS - now);
+            return;
+        } else {
+            reason = "no XGIMI remote connected " + (now - sWakeAt) / 1000 + " s after the wake";
+        }
+        int dismissed = p.getInt(KEY_LOST_DISMISSALS, 0);
+        long snooze = p.getLong(KEY_LOST_SNOOZE, 0);
+        if (dismissed >= LOST_MAX_DISMISSALS || System.currentTimeMillis() < snooze) {
+            Log.i(TAG, "remote lost (" + reason + "): prompt quiet (" + dismissed + " dismissals"
+                    + (snooze > 0 ? ", snoozed" : "") + ")");
+            sLostDoneThisWake = true;
+            return;
+        }
+        final boolean bonded = st[0];
+        Ui.main().post(() -> {
+            int r = RemotePrompt.maybeShow(sApp, reason, bonded);
+            sH.post(() -> onPromptDecision(r, reason));
+        });
+    }
+
+    /** z9x-remote: RemotePrompt.maybeShow's answer. */
+    private static void onPromptDecision(int r, String reason) {
+        if (r == RemotePrompt.SHOWN) {
+            Log.i(TAG, "remote lost (" + reason + "): prompt shown, pairing window open");
+            sLostDoneThisWake = true;
+            sH.removeCallbacks(EVALUATE);
+            sH.post(EVALUATE);
+            postPromptState();
+        } else if (r == RemotePrompt.LATER) {
+            sH.postDelayed(LOST_CHECK, LOST_RETRY_MS);
+        } else {
+            sLostDoneThisWake = true;
+        }
+    }
+
+    /** Main thread (RemotePrompt): the prompt is on screen; the scan becomes a fast NEW window. */
+    static void onPromptShown() {
+        sPromptOpen = true;
+    }
+
+    /**
+     * Any thread (RemotePrompt.onDismissed): how = connected | user | off. A user's dismissal snoozes the
+     * next prompt (30 min, 4 h, 24 h) and after LOST_MAX_DISMISSALS keeps it quiet until a remote connects.
+     */
+    static void onPromptClosed(String how) {
+        SafeHandler h = sH;
+        if (h == null) return;
+        h.post(() -> {
+            sPromptOpen = false;
+            if (RemotePrompt.CLOSED_CONNECTED.equals(how)) {
+                noteRemoteConnected("prompt");
+            } else if (RemotePrompt.CLOSED_USER.equals(how)) {
+                try {
+                    SharedPreferences p = prefs();
+                    int n = p.getInt(KEY_LOST_DISMISSALS, 0) + 1;
+                    long ms = LOST_SNOOZE_MS[Math.min(n, LOST_SNOOZE_MS.length) - 1];
+                    p.edit().putInt(KEY_LOST_DISMISSALS, n).putLong(KEY_LOST_SNOOZE, System.currentTimeMillis() + ms).apply();
+                    Log.i(TAG, "remote-lost prompt dismissed (" + n + "): quiet for " + ms / 60_000 + " min"
+                            + (n >= LOST_MAX_DISMISSALS ? ", then until a remote connects" : ""));
+                } catch (Throwable t) {
+                    Log.w(TAG, "prefs: " + t);
+                }
+            } else {
+                Log.i(TAG, "remote-lost prompt closed (" + how + ")");
+            }
+            sH.removeCallbacks(EVALUATE);
+            sH.post(EVALUATE);
+        });
+    }
+
+    /** Main thread (RemotePrompt poll): computes the state on z9x-remote, shows it on the main thread. */
+    static void requestPromptState() {
+        SafeHandler h = sH;
+        if (h != null) h.post(RemoteAutoPair::postPromptState);
+    }
+
+    private static void postPromptState() {
+        final State st = state(sApp);
+        Ui.main().post(() -> RemotePrompt.apply(st));
+    }
+
+    /** A bonded XGIMI remote with its link and its HID input device up. */
+    private static boolean usableRemote(BluetoothAdapter a) {
+        try {
+            Set<BluetoothDevice> set = a.getBondedDevices();
+            if (set == null) return false;
+            for (BluetoothDevice d : set) {
+                if (!isXgimiRemote(d) || !connected(d)) continue;
+                String n = null;
+                try { n = d.getName(); } catch (Throwable ignored) { }
+                if (hidUp(d.getAddress(), n)) return true;
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "bonded devices: " + t);
+        }
+        return false;
     }
 
     // =================================================================== helpers

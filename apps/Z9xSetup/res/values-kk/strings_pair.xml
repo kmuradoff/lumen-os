@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kazakh translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">Пульттегі кез келген түймені басыңыз</string>
+    <string name="remote_later_hint">Пульт қолыңызда жоқ па? Бұл қадамды проектор түймелерімен немесе пернетақтамен өткізіп жіберіңіз. Пультті кейін дәл осылай қосуға болады.</string>
+    <string name="remote_press_ok">Пульттегі OK түймесін басыңыз</string>
+</resources>

@@ -10,7 +10,10 @@ ota.x509.pem, or the first entry of an otacerts.zip given with --cert), the sche
 updater needs, and with --zips the sha256 / payload offset of every package found in DIR.
 Fails on any PRIVATE package (make_ota.py --private): by URL name, and with --zips by the
 lumen-variant=private marker in the zip's META-INF/com/android/metadata. With --zips every package
-of the manifest must be present in DIR (no silent skip).
+of the manifest must be present in DIR (no silent skip). --delta-only accepts a manifest without a full
+package (a release of clean deltas, make_ota.py --clean-delta). The file name must be
+update-<channel>.json (the file the images of that edition read), and with --zips every package's
+lumen-edition (make_ota.py) must be the channel's edition (nogms for a channel ending in -nogms).
 """
 import argparse
 import hashlib
@@ -36,6 +39,7 @@ def main():
     ap.add_argument("--sig")
     ap.add_argument("--cert", default=DEFAULT_CERT)
     ap.add_argument("--zips")
+    ap.add_argument("--delta-only", action="store_true", help="no full package expected (clean deltas only)")
     a = ap.parse_args()
     sig = a.sig or a.manifest + ".sig"
     tmp = tempfile.mkdtemp()
@@ -57,8 +61,13 @@ def main():
             errs.append(f"missing {k}")
     if m.get("schema") != 1 or m.get("device") != "z9x":
         errs.append("schema must be 1 and device z9x")
-    if not any(p.get("type") == "full" for p in m.get("packages", [])):
-        errs.append("no full package")
+    if os.path.basename(a.manifest) != f"update-{m.get('channel')}.json":
+        errs.append(f"file name {os.path.basename(a.manifest)} != update-{m.get('channel')}.json (channel field)")
+    edition = "nogms" if str(m.get("channel", "")).endswith("-nogms") else "gms"
+    if not m.get("packages"):
+        errs.append("no package")
+    elif not any(p.get("type") == "full" for p in m.get("packages", [])) and not a.delta_only:
+        errs.append("no full package (--delta-only for a release of clean deltas)")
     for p in m.get("packages", []):
         for k in PKG:
             if k not in p:
@@ -79,6 +88,8 @@ def main():
                         md = ["lumen-variant=unknown"]
                 if "lumen-variant=private" in md or "lumen-variant=unknown" in md:
                     errs.append(f"{z}: private / unmarked package (META-INF metadata)")
+                if f"lumen-edition={edition}" not in md:
+                    errs.append(f"{z}: not lumen-edition={edition} (channel {m.get('channel')})")
                 h = hashlib.sha256(open(z, "rb").read()).hexdigest()
                 if h != p["sha256"]:
                     errs.append(f"{z}: sha256 mismatch")

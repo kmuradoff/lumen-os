@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">Choose your language</string>
     <string name="lang_more">More languages…</string>
     <string name="lang_more_hint">Settings and Google apps use this language. Lumen apps without it stay in English.</string>
+    <string name="lang_more_hint_nogms">Settings use this language. Lumen apps without it stay in English.</string>
     <string name="net_title">Connect to the internet</string>
     <string name="net_subtitle">Choose a Wi-Fi network. You can also do this later.</string>
     <string name="net_connected">Connected to %1$s</string>
@@ -99,6 +100,7 @@
     <string name="done_home">Home screen</string>
     <string name="done_start">Start</string>
     <string name="done_offline_hint">No internet: sign in to Google and set the time zone later in Settings.</string>
+    <string name="done_offline_hint_nogms">No internet: set the time zone later in Settings.</string>
     <string name="done_blobs_missing">Protected video components are missing, so some streaming apps may play in low quality only.</string>
     <string name="action_continue">Continue</string>
     <string name="action_skip">Skip</string>

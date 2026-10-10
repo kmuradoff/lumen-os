@@ -29,11 +29,15 @@ public final class SettingsActivity extends Activity {
     private static final String TAG = "Z9xSettings";
     static final String EXTRA_SECTION = "org.z9x.projector.extra.SECTION";
     static final String SECTION_KEYSTONE = "keystone";
+    /** Lumen OS 1.0.1: the Display section (interface resolution). */
+    static final String SECTION_DISPLAY = "display";
 
     private HalController hal;
     private boolean feat;
     private LinearLayout list;
     private View keystoneAnchor;
+    private View uiResRow;
+    private TextView uiResValue, uiResSummary;
     private final Map<HalController.Toggle, TextView> toggleValues = new EnumMap<>(HalController.Toggle.class);
     private final Map<HalController.Toggle, View> toggleRows = new EnumMap<>(HalController.Toggle.class);
     private final Map<HalController.Toggle, Boolean> toggleState = new EnumMap<>(HalController.Toggle.class);
@@ -77,7 +81,15 @@ public final class SettingsActivity extends Activity {
         hal.addListener(onHalState);
         refreshToggles();
         refreshSlots();
+        refreshUiRes();
         refreshDiagnostics();
+    }
+
+    /** The resolution chooser is an overlay window: the row shows the value again when it closes. */
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus && resumed) refreshUiRes();
     }
 
     @Override
@@ -127,6 +139,12 @@ public final class SettingsActivity extends Activity {
         toggle(HalController.Toggle.CURTAIN_FIT, R.string.tg_curtain);
         toggle(HalController.Toggle.OBSTACLE, R.string.tg_obstacle);
 
+        // Lumen OS 1.0.1: interface resolution 4K / 1080p (display.UiResolution), only while the image allows it
+        if (org.z9x.projector.display.UiResolution.enabled()) {
+            header(R.string.uires_section);
+            uiResRow = uiResRow();
+        }
+
         header(R.string.sec_keys);
         slot3Value = valueRow(R.string.key_slot3, v -> pickApp(3));
         slot4Value = valueRow(R.string.key_slot4, v -> pickApp(4));
@@ -140,6 +158,10 @@ public final class SettingsActivity extends Activity {
         }
 
         header(R.string.sec_diag);
+        // Lumen OS 1.0.1: problem reports, only while the image has a report server (ro.z9x.report.url)
+        if (org.z9x.projector.report.ReportActivity.isAvailable()) {
+            action(R.string.report_title, false, v -> org.z9x.projector.report.ReportActivity.open(this));
+        }
         action(R.string.act_refresh, false, v -> refreshDiagnostics());
         diagBox = new LinearLayout(this);
         diagBox.setOrientation(LinearLayout.VERTICAL);
@@ -199,6 +221,50 @@ public final class SettingsActivity extends Activity {
         return value;
     }
 
+    /**
+     * "Interface resolution  4K" with its summary below (what the choice means, or a fallback told
+     * calmly); OK opens the full-screen chooser (display.UiResPanel). Text 18 sp.
+     */
+    private View uiResRow() {
+        LinearLayout r = row();
+        r.setOrientation(LinearLayout.VERTICAL);
+        r.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        head.addView(text(getString(R.string.uires_row), 18, R.color.text, false),
+                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        uiResValue = text("…", 18, R.color.text_dim, false);
+        head.addView(uiResValue);
+        r.addView(head, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        uiResSummary = text("", 18, R.color.text_dim, false);
+        uiResSummary.setPadding(0, dp(4), 0, 0);
+        r.addView(uiResSummary, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        r.setOnClickListener(v -> {
+            try {
+                if (!KeyReceiver.isSetupComplete(this)) {
+                    Ui.toast(this, R.string.toast_setup_running);
+                    return;
+                }
+                org.z9x.projector.display.UiResolution.openChooser(this);
+            } catch (Throwable e) {
+                Log.w(TAG, "click: " + e);
+            }
+        });
+        return r;
+    }
+
+    private void refreshUiRes() {
+        if (uiResValue == null) return;
+        try {
+            org.z9x.projector.display.UiRes.Status st = org.z9x.projector.display.UiResolution.status(this);
+            uiResValue.setText(org.z9x.projector.display.UiRes.label(st.wanted));
+            uiResSummary.setText(org.z9x.projector.display.UiResolution.summary(this, st));   // a fallback calmly, no alarm colour
+        } catch (Throwable t) {
+            Log.w(TAG, "ui resolution row: " + t);
+        }
+    }
+
     private void toggle(HalController.Toggle t, int res) {
         LinearLayout r = row();
         r.addView(text(getString(res), 18, R.color.text, false), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -220,6 +286,7 @@ public final class SettingsActivity extends Activity {
         String s = i == null ? null : i.getStringExtra(EXTRA_SECTION);
         View target = null;
         if (SECTION_KEYSTONE.equals(s)) target = keystoneAnchor;
+        if (SECTION_DISPLAY.equals(s)) target = uiResRow;
         if (target == null || !target.isFocusable()) {
             for (int k = 0; k < list.getChildCount(); k++) {
                 View c = list.getChildAt(k);
@@ -329,7 +396,8 @@ public final class SettingsActivity extends Activity {
         hal.readDiagnostics(text -> {
             if (isFinishing() || isDestroyed()) return;
             diagBox.removeAllViews();
-            String extra = getString(R.string.diag_app_version, versionName());
+            String extra = getString(R.string.diag_app_version, versionName()) + "\n"
+                    + org.z9x.projector.display.UiResolution.diagLine(this);
             for (String line : (text + "\n" + extra).split("\n")) {
                 TextView t = text(line, 14, R.color.text_dim, false);
                 t.setTypeface(Typeface.MONOSPACE);

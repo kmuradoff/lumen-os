@@ -78,6 +78,8 @@ public final class App extends Application {
         try { org.z9x.projector.panel.ManualKeystonePanel.install(this); } catch (Throwable t) { Log.e(TAG, "ManualKeystonePanel.install", t); }
         // ===== Lumen OS 1.0: SetupBridge events, Recents boot-clean at user unlock =====
         try { org.z9x.projector.setup.SetupEvents.install(this); } catch (Throwable t) { Log.e(TAG, "SetupEvents.install", t); }
+        // ===== Lumen OS 1.0.1: interface resolution (quick panel row, "Keep this resolution?" after a change) =====
+        try { org.z9x.projector.display.UiResolution.install(this); } catch (Throwable t) { Log.e(TAG, "UiResolution.install", t); }
         try { registerUnlockReceiver(); } catch (Throwable t) { Log.e(TAG, "unlock receiver", t); }
         try {
             registerScreenReceiver(hal);

@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">请选择语言</string>
     <string name="lang_more">更多语言…</string>
     <string name="lang_more_hint">设置和 Google 应用将使用此语言。尚未翻译的 Lumen 应用仍显示英文。</string>
+    <string name="lang_more_hint_nogms">设置将使用此语言。尚未翻译的 Lumen 应用仍显示英文。</string>
     <string name="net_title">连接到互联网</string>
     <string name="net_subtitle">请选择 Wi-Fi 网络，也可以稍后再设置。</string>
     <string name="net_connected">已连接到 %1$s</string>
@@ -99,6 +100,7 @@
     <string name="done_home">主屏幕</string>
     <string name="done_start">开始使用</string>
     <string name="done_offline_hint">无互联网：可稍后在设置中登录 Google 并设置时区。</string>
+    <string name="done_offline_hint_nogms">无互联网：可稍后在设置中设置时区。</string>
     <string name="done_blobs_missing">缺少受保护视频组件，部分流媒体应用可能只能以低画质播放。</string>
     <string name="action_continue">继续</string>
     <string name="action_skip">跳过</string>

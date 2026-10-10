@@ -20,7 +20,9 @@ final class AppSlots {
     private static final String TAG = "Z9xSlots";
     private static final String PREFS = "app_slots";
     static final String PLAY_STORE = "com.android.vending";
-    /** Slot 3 default: first installed of these, else the Play Store. */
+    /** Default without Play (Lumen OS without Google): the key opens Lumen Home's Apps page (ACTION_ALL_APPS). */
+    static final String HOME_APPS = "org.z9x.home";
+    /** Slot 3 default: first installed of these, else the Play Store, else Lumen Home's Apps page. */
     private static final String[] SLOT3_DEFAULTS = {
             "com.google.android.youtube.tv", "com.teamsmart.videomanager.tv"};
 
@@ -52,7 +54,7 @@ final class AppSlots {
         if (slot == 3) {
             for (String p : SLOT3_DEFAULTS) if (launchIntent(c, p) != null) return p;
         }
-        return PLAY_STORE;
+        return launchIntent(c, PLAY_STORE) != null ? PLAY_STORE : HOME_APPS;
     }
 
     static String effectivePackage(Context c, int slot) {
@@ -60,9 +62,17 @@ final class AppSlots {
         return p != null ? p : defaultPackage(c, slot);
     }
 
-    /** Leanback launch intent first, then the normal one. */
+    /** Leanback launch intent first, then the normal one (HOME_APPS: Lumen Home's AllAppsAlias). */
     static Intent launchIntent(Context c, String pkg) {
         if (pkg == null) return null;
+        if (HOME_APPS.equals(pkg)) {
+            Intent a = new Intent(Intent.ACTION_ALL_APPS).setPackage(HOME_APPS);
+            try {
+                return c.getPackageManager().resolveActivity(a, 0) != null ? a : null;
+            } catch (Throwable t) {
+                return null;
+            }
+        }
         try {
             PackageManager pm = c.getPackageManager();
             Intent i = pm.getLeanbackLaunchIntentForPackage(pkg);
@@ -74,6 +84,7 @@ final class AppSlots {
     }
 
     static String labelOf(Context c, String pkg) {
+        if (HOME_APPS.equals(pkg)) return c.getString(R.string.slot_home_apps);
         try {
             PackageManager pm = c.getPackageManager();
             return pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString();

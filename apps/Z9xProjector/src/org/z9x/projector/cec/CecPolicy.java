@@ -491,6 +491,14 @@ public final class CecPolicy {
         }
     }
 
+    /**
+     * Main thread: this wake was accepted from an HDMI device over CEC and no remote key came since
+     * (Lumen OS 1.0: RemoteAutoPair does not ask for the remote then; the user may only watch HDMI).
+     */
+    public static boolean cecWakeActive() {
+        return sCecWakeAt >= 0 && sLastUserKeyAt <= sCecWakeAt;
+    }
+
     /** Any global remote key (PowerUi -> StandbyController.noteUserActivity). */
     public static void onUserKey() {
         sLastUserKeyAt = SystemClock.uptimeMillis();

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Turkish translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">Kumandada herhangi bir tuşa basın</string>
+    <string name="remote_later_hint">Kumanda yanınızda değil mi? Bu adımı projektör tuşlarıyla veya bir klavyeyle atlayın. Kumandayı daha sonra aynı şekilde eşleyebilirsiniz.</string>
+    <string name="remote_press_ok">Kumandada OK tuşuna basın</string>
+</resources>

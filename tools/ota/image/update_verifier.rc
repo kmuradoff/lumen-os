@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Lumen OS: replaces /system/etc/init/update_verifier.rc of the base image (same service name, so
 # init.rc's 'exec_start update_verifier' at zygote-start runs this). On every normal boot it runs the
-# stock /system/bin/update_verifier unchanged (z9x_ota.sh 'verifier' execs it). Only on an
-# unverified OTA slot (libsnapshot boot indicator names the other slot) is the mark deferred to the
-# health gate in z9x_ota.rc, so a broken update can still roll back before the snapshot merge.
+# stock /system/bin/update_verifier unchanged (z9x_ota.sh 'verifier' execs it). Only while z9x_ota.sh
+# 'count' has published sys.z9x.ota=pending (an unverified OTA slot) or rollback is it skipped, so the
+# slot stays unmarked before boot_completed and a broken update can still roll back. (With userdata
+# checkpointing, as on the Z9X, update_verifier never marks anyway: vold does at boot_completed.)
 # Kill switch: ro.z9x.ota.gate=0 (stock behaviour on every boot).
 service update_verifier /system/bin/sh /system/etc/z9x/z9x_ota.sh verifier
     user root

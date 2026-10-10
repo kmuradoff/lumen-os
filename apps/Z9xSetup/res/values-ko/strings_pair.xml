@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Korean translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">리모컨의 아무 버튼이나 누르세요</string>
+    <string name="remote_later_hint">리모컨이 없나요? 프로젝터 버튼이나 키보드로 이 단계를 건너뛰세요. 나중에 같은 방법으로 페어링할 수 있습니다.</string>
+    <string name="remote_press_ok">리모컨의 OK 버튼을 누르세요</string>
+</resources>

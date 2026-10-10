@@ -1,0 +1,17 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox umount for the mounts of stubs/mount: logs "umount DIR" to $Z9X_T/umount.log; DIR must
+# be in $Z9X_T/mounts (else exit 1, "not mounted"). An ext4 mount with 'rw' is copied back into its partition
+# directory first; an ext4 mount point is emptied (as the real directory under the mount).
+echo "umount $*" >> "$Z9X_T/umount.log"
+d=$1
+line=$(awk -v d="$d" '$1 == d' "$Z9X_T/mounts" 2>/dev/null | tail -n 1)
+[ -n "$line" ] || { echo "umount: $d: not mounted" >&2; exit 1; }
+set -- $line
+if [ "$2" = ext4 ]; then
+  case ",$4," in
+    *,rw,*) find "$3" -mindepth 1 -maxdepth 1 -exec rm -rf {} + && cp -R "$d/." "$3/" || exit 1 ;;
+  esac
+  find "$d" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+fi
+awk -v d="$d" '$1 != d' "$Z9X_T/mounts" > "$Z9X_T/mounts.tmp" && mv "$Z9X_T/mounts.tmp" "$Z9X_T/mounts"

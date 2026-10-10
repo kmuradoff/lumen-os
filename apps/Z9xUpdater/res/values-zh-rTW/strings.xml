@@ -45,6 +45,16 @@
     <string name="done_ok_title">已更新至 Lumen OS %1$s</string>
     <string name="done_rollback_title">更新無法啟動</string>
     <string name="done_rollback_body">已還原 Lumen OS %1$s，沒有遺失任何內容。</string>
+    <string name="done_unhealthy_title">Lumen OS %1$s 正在執行</string>
+    <string name="done_unhealthy_body">更新後的檢查發現了一個問題：%1$s。如果有功能無法正常使用，請使用電腦安裝程式的救援模式（rescue）。您的資料會保留。</string>
+    <string name="done_rescue_scan">掃描條碼即可開啟救援模式指南。</string>
+    <string name="done_details">技術詳細資料：%1$s</string>
+    <string name="why_restarted">系統意外重新啟動</string>
+    <string name="why_service">有一項系統服務未能啟動</string>
+    <string name="why_lamp">光源和風扇服務未能啟動</string>
+    <string name="why_confirm">系統無法確認新版本運作正常</string>
+    <string name="why_no_rollback">無法回到上一個版本</string>
+    <string name="why_unknown">沒有記錄詳細資料</string>
     <string name="blk_vbmeta_title">更新前需要完成一次性步驟</string>
     <string name="blk_vbmeta_body">首次更新前，需要依照安裝指南（vbmeta 步驟）用電腦為另一個系統槽位（%1$s）進行一次準備。掃描條碼即可開啟指南。</string>
     <string name="blk_vbmeta_unknown">無法讀取另一個系統槽位的狀態。請重新啟動投影機後再試一次。</string>
@@ -52,6 +62,7 @@
     <string name="blk_merge_body">這會在背景進行幾分鐘。你可以繼續觀看。</string>
     <string name="blk_pending">上次更新後仍在檢查此版本。請幾分鐘後再試一次。</string>
     <string name="blk_vendor">此更新不適用於這台投影機的韌體（%1$s）。</string>
+    <string name="blk_channel">此更新適用於另一個 Lumen OS 版本（%1$s）。</string>
     <string name="blk_min_version">此更新需要 Lumen OS %1$s 或更新版本。請使用電腦安裝程式。</string>
     <string name="blk_thermal">投影機目前溫度過高，請稍後再試。</string>
     <string name="blk_space">可用空間不足：需要 %1$s。</string>

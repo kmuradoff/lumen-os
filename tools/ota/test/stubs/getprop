@@ -1,0 +1,6 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of Android's getprop: values from $Z9X_T/props ("key=value" lines, exact key match).
+[ $# -ge 1 ] || exit 0
+awk -v k="$1" 'index($0, k "=") == 1 { print substr($0, length(k) + 2); exit }' "$Z9X_T/props" 2>/dev/null
+exit 0

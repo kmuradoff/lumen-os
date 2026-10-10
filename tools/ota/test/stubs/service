@@ -1,0 +1,49 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of Android's 'service call' for the AIDL boot HAL android.hardware.boot.IBootControl/default.
+# Replies have the exact shape measured on a Z9X (logs/friend_<serial>/for_101/bootcontrol_getters.txt).
+# State in $Z9X_T/hal: current, active (slot numbers), marked0/1, bootable0/1 (0/1), merge (MergeStatus).
+# Faults: hal/down        no such service (every call)
+#         hal/exc_<code>  reply with an exception status (ServiceSpecificException)
+#         hal/multi_<code> a multi-line reply
+#         hal/garble_<code> one line, but not a Parcel of the expected shape
+#         hal/ignore_9    setActiveBootSlot answers OK but changes nothing
+#         hal/odd_9       setActiveBootSlot switches the slot but answers in a shape not measured
+# Every call is logged to $Z9X_T/hal.log as "<code> [<arg>]".
+H=$Z9X_T/hal
+if [ "${1-}" != call ] || [ "${2-}" != android.hardware.boot.IBootControl/default ]; then
+  echo "service: unexpected arguments: $*" >&2; exit 1
+fi
+code=$3; arg=
+[ "${4-}" = i32 ] && arg=$5
+echo "$code${arg:+ $arg}" >> "$Z9X_T/hal.log"
+if [ -e "$H/down" ]; then
+  echo "service: Service android.hardware.boot.IBootControl/default does not exist"; exit 10
+fi
+if [ -e "$H/exc_$code" ]; then
+  printf "Result: Parcel(\tfffffff8 fffffffe 00000000   '............')\n"; exit 0
+fi
+if [ -e "$H/multi_$code" ]; then
+  printf "Result: Parcel(\n\t0x00000000: 00000000 00000001 00000000 00000000 '................'\n)\n"; exit 0
+fi
+if [ -e "$H/garble_$code" ]; then
+  printf "Result: Parcel(Error: 0xffffffe0 \"Broken pipe\")\n"; exit 0
+fi
+val() { printf "Result: Parcel(\t00000000 %08x   '........')\n" "$1"; }
+void() { printf "Result: Parcel(\t00000000    '....')\n"; }
+get() { cat "$H/$1" 2>/dev/null || echo 0; }
+case "$code" in
+  1) val "$(get active)" ;;
+  2) val "$(get current)" ;;
+  3) val 2 ;;
+  4) val "$(get merge)" ;;
+  6) val "$(get "bootable$arg")" ;;
+  7) val "$(get "marked$arg")" ;;
+  8) echo 1 > "$H/marked$(get current)"; void ;;
+  9) case "$arg" in
+       0|1) [ -e "$H/ignore_9" ] || echo "$arg" > "$H/active"
+            if [ -e "$H/odd_9" ]; then printf "Result: Parcel(\t00000000 00000000 00000000   '............')\n"; else void; fi ;;
+       *) printf "Result: Parcel(\tfffffffd ffffffff   '........')\n" ;; esac ;;
+  *) printf "Result: Parcel(\tfffffffb ffffffff   '........')\n" ;;
+esac
+exit 0

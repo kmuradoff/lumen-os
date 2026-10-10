@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kazakh translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">Ақау туралы есеп жіберу</string>
+    <string name="report_intro">Lumen OS әзірлеушісіне не дұрыс болмағанын түсінуге көмектеседі. «Есепті жіберу» түймесін баспайынша, ештеңе жіберілмейді.</string>
+    <string name="report_included">Құрамында</string>
+    <string name="report_inc_system">Жүйе нұсқасы, жұмыс уақыты және жүйе слоты</string>
+    <string name="report_inc_logs">Соңғы 30 минуттағы жүйе мен Lumen қолданбаларының журналдары</string>
+    <string name="report_inc_crashes">Қолданба атаулары бар ақау, қатып қалу және қайта іске қосу жазбалары</string>
+    <string name="report_inc_kernel">Соңғы қайта іске қосудың ядро журналы және жаңарту журналы</string>
+    <string name="report_inc_state">Экран, жад және желі түрі</string>
+    <string name="report_excluded">Жойылады немесе кірмейді</string>
+    <string name="report_exc_accounts">Аккаунттар, электрондық пошта мекенжайлары және телефон нөмірлері</string>
+    <string name="report_exc_network">Wi-Fi желі атаулары, IP және MAC мекенжайлары</string>
+    <string name="report_exc_serial">Сериялық нөмір: оның орнына осы проектордың кездейсоқ ID-і</string>
+    <string name="report_exc_apps">Өзіңіз орнатқан қолданбалардың журналдары</string>
+    <string name="report_exc_files">Фотолар, файлдар және құпия сөздер</string>
+    <string name="report_footer">Есеп 30 күн сақталады. Оны тек Lumen OS әзірлеушісі аша алады.</string>
+    <string name="report_last">Соңғы есеп: %1$s, %2$s</string>
+    <string name="report_send">Есепті жіберу</string>
+    <string name="report_collecting">Мәліметтер жиналуда… (%1$d / %2$d)</string>
+    <string name="report_log_hint">Android құрылғы журналдарына кіруге рұқсат беру туралы сұраса, «Рұқсат ету» опциясын таңдаңыз.</string>
+    <string name="report_sending">Жіберілуде… %1$s / %2$s</string>
+    <string name="report_done_title">Есеп жіберілді</string>
+    <string name="report_done_text">Осы кодты мәселенің қысқаша сипаттамасымен бірге Lumen OS әзірлеушісіне жіберіңіз.</string>
+    <string name="report_failed_title">Есеп жіберілмеді</string>
+    <string name="report_err_no_network">Интернет байланысы жоқ. Желіні тексеріп, қайталап көріңіз.</string>
+    <string name="report_err_network">Есеп серверіне қосылу мүмкін емес. Кейінірек қайталап көріңіз.</string>
+    <string name="report_err_rate">Қазір есептер тым көп. Кейінірек қайталап көріңіз.</string>
+    <string name="report_err_rejected">Есеп сервері есепті қабылдамады.</string>
+    <string name="report_err_server">Есеп серверінде қате шықты. Кейінірек қайталап көріңіз.</string>
+    <string name="report_err_collect">Есепті дайындау мүмкін болмады.</string>
+    <string name="report_retry">Қайталау</string>
+    <string name="report_close">Жабу</string>
+</resources>

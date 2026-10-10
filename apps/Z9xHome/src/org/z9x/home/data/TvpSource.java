@@ -54,6 +54,13 @@ public final class TvpSource {
         public final ArrayList<Card> watchNext = new ArrayList<>();
     }
 
+    /** "Continue watching on Home" hidden (1.0.1): no TvProvider query at all, Home stays calm. */
+    public static Result off() {
+        Result r = new Result();
+        r.mode = "off";
+        return r;
+    }
+
     public static boolean fullAccess(Context c) {
         return c.checkSelfPermission(PERM_ALL) == PackageManager.PERMISSION_GRANTED;
     }
@@ -207,6 +214,11 @@ public final class TvpSource {
         if (poster != null && !poster.isEmpty()) {
             k.image = poster;
             k.aspect = aspect(cu, 9);
+            // the hero decides by real pixels which of the two to show (Stage, HeroArt)
+            if (thumb != null && !thumb.isEmpty() && !thumb.equals(poster)) {
+                k.image2 = thumb;
+                k.aspect2 = aspect(cu, 11);
+            }
         } else if (thumb != null && !thumb.isEmpty()) {
             k.image = thumb;
             k.aspect = aspect(cu, 11);
@@ -218,9 +230,12 @@ public final class TvpSource {
         k.live = cu.getInt(16) == 1;
         String release = cu.getString(17);
         k.contentId = nn(cu.getString(18));
-        if (dur > 0 && pos > 0 && pos < dur) k.progress = (int) Math.max(1, Math.min(1000, pos * 1000 / dur));
+        if (dur > 0 && pos > 0 && pos < dur) {
+            k.progress = (int) Math.max(1, Math.min(1000, pos * 1000 / dur));
+            if (!k.live) k.left = res.getString(R.string.meta_left, duration(res, dur - pos));
+        }
         if (k.title.isEmpty() && !episode.isEmpty()) k.title = episode;
-        k.meta = meta(res, season, ep, episode.equals(k.title) ? "" : episode, dur, pos, k.live, release);
+        k.meta = meta(res, season, ep, episode.equals(k.title) ? "" : episode, dur, k.live, release);
         k.color = placeholder(k.title + k.pkg);
         return k;
     }
@@ -242,8 +257,9 @@ public final class TvpSource {
         }
     }
 
-    static String meta(Resources res, String season, String ep, String episodeTitle, long dur, long pos,
-                       boolean live, String release) {
+    /** "S1 · E2 · episode · 1 h 30 min" (the time left of a started program is {@link Card#left}). */
+    static String meta(Resources res, String season, String ep, String episodeTitle, long dur, boolean live,
+                       String release) {
         ArrayList<String> parts = new ArrayList<>(4);
         if (live) parts.add(res.getString(R.string.meta_live_now));
         if (season != null && !season.isEmpty() && ep != null && !ep.isEmpty()) {
@@ -252,11 +268,10 @@ public final class TvpSource {
             parts.add(res.getString(R.string.meta_episode, ep));
         }
         if (!episodeTitle.isEmpty() && parts.size() < 2) parts.add(episodeTitle);
-        if (!live && dur > 0) {
-            if (pos > 0 && pos < dur) parts.add(res.getString(R.string.meta_left, duration(res, dur - pos)));
-            else parts.add(duration(res, dur));
+        if (!live && release != null && release.length() >= 4 && parts.size() < 2 && release.substring(0, 4).matches("\\d{4}")) {
+            parts.add(0, release.substring(0, 4));
         }
-        if (parts.isEmpty() && release != null && release.length() >= 4) parts.add(release.substring(0, 4));
+        if (!live && dur > 0) parts.add(duration(res, dur));
         return String.join(" · ", parts);
     }
 

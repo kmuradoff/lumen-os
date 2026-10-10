@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Russian translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">Экран</string>
+    <string name="uires_row">Разрешение интерфейса</string>
+    <string name="uires_default_fmt">%1$s (по умолчанию)</string>
+    <string name="uires_summary">4K — самый чёткий текст; 1080p, как у XGIMI, — самая лёгкая нагрузка на графику. Для смены проектор перезагрузится.</string>
+    <string name="uires_summary_fallback">Сейчас %1$s: в %2$s изображение не запустилось как надо, и проектор сам вернулся обратно. Чтобы попробовать снова, выберите %2$s.</string>
+    <string name="uires_choose_text">4K использует каждый пиксель 4K-панели. 1080p, как у XGIMI, рисует вчетверо меньше пикселей, а проектор увеличивает картинку.</string>
+    <string name="uires_opt_1080">Как у XGIMI: легче всего для графики; текст чуть мягче</string>
+    <string name="uires_opt_1440">Только для проверки: масштабирование под панель не проверено</string>
+    <string name="uires_opt_2160">Самый чёткий текст: каждый пиксель 4K-панели</string>
+    <string name="uires_current">Сейчас</string>
+    <string name="uires_confirm_title">Переключить на %1$s?</string>
+    <string name="uires_confirm_up">Текст и меню станут чётче. Графике придётся рисовать больше, поэтому некоторые приложения могут работать чуть медленнее.</string>
+    <string name="uires_confirm_down">Графике придётся рисовать меньше, поэтому меню и приложения могут работать быстрее, а текст станет чуть мягче.</string>
+    <string name="uires_confirm_restart">Чтобы применить, проектор перезагрузится (около минуты). Если изображение не вернётся как надо, он сам вернётся к %1$s.</string>
+    <string name="uires_restart">Перезагрузить</string>
+    <string name="uires_keep_title">Оставить это разрешение?</string>
+    <string name="uires_keep_text">Интерфейс теперь работает в %1$s. Если текст и картинка выглядят правильно, выберите «Оставить».</string>
+    <string name="uires_keep_countdown">Возврат к %1$s через %2$d с</string>
+    <string name="uires_keep">Оставить</string>
+    <string name="uires_revert">Вернуть %1$s</string>
+    <string name="uires_failed">Не удалось сменить разрешение</string>
+</resources>

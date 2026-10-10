@@ -29,7 +29,7 @@ import java.util.List;
 final class SafeModeView extends ScrollView {
     SafeModeView(Context c, Runnable retry) {
         super(c);
-        setBackgroundColor(0xFF0F1115);
+        setBackgroundColor(0xFF0A0908);
         setFillViewport(true);
         LinearLayout col = new LinearLayout(c);
         col.setOrientation(LinearLayout.VERTICAL);
@@ -39,12 +39,12 @@ final class SafeModeView extends ScrollView {
         TextView t = new TextView(c);
         t.setText(R.string.safe_mode_title);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26);
-        t.setTextColor(0xFFE8EAED);
+        t.setTextColor(0xFFF4EFE6);
         col.addView(t);
         TextView s = new TextView(c);
         s.setText(R.string.safe_mode_desc);
         s.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-        s.setTextColor(0xFF9AA0A6);
+        s.setTextColor(0xFFC9C1B4);
         s.setPadding(0, dp(c, 8), 0, dp(c, 16));
         col.addView(s);
         Button first = button(c, col, c.getString(R.string.safe_mode_retry), v -> retry.run());
@@ -74,10 +74,10 @@ final class SafeModeView extends ScrollView {
         b.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
         b.setPadding(dp(c, 20), 0, dp(c, 20), 0);
         b.setTextColor(new android.content.res.ColorStateList(new int[][]{{android.R.attr.state_focused}, {}},
-                new int[]{0xFF0E0E0F, 0xFFE8EAED}));
+                new int[]{0xFF0A0908, 0xFFF4EFE6}));
         StateListDrawable sl = new StateListDrawable();
-        sl.addState(new int[]{android.R.attr.state_focused}, round(0xFFE8EAED, c));
-        sl.addState(new int[]{}, round(0xFF1E232C, c));
+        sl.addState(new int[]{android.R.attr.state_focused}, round(0xFFF6F1E8, c));
+        sl.addState(new int[]{}, round(0xFF1B1815, c));
         b.setBackground(sl);
         b.setOnClickListener(l);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(c, 420), dp(c, 44));
