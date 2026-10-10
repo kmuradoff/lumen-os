@@ -2,6 +2,16 @@
 
 Сверху новые версии. [English below](#english).
 
+## 1.0.2, октябрь 2026
+
+Исправления к 1.0.1. На 1.0.1 обновление приходит по Wi-Fi: «Настройки → Настройки устройства → Об устройстве →
+Обновление Lumen OS».
+
+- Настройки Android: переключатели в «Установке неизвестных приложений», у служб специальных
+  возможностей и в паре параметров для разработчиков теперь сдвигаются, когда вы что-то разрешаете
+  или запрещаете. Раньше менялась только подпись, а сам переключатель оставался выключенным. Это была
+  ошибка Android 14 для телевизоров, сами настройки работали.
+
 ## 1.0.1, октябрь 2026
 
 Первый релиз версии без Google, который может поставить любой владелец Z9X: образ системы и установщик
@@ -34,6 +44,14 @@
 ---
 
 <a name="english"></a>
+
+## 1.0.2, October 2026
+
+Fixes for 1.0.1. On 1.0.1 the update comes over Wi-Fi: Settings > Device Preferences > About > Lumen OS update.
+
+- Android settings: the switches in Install unknown apps, on accessibility services and in a couple of
+  developer options now move when you allow or deny something. Before, only the label changed and the
+  switch stayed off. This was a bug of Android 14 for TV; the settings themselves worked.
 
 ## 1.0.1, October 2026
 

@@ -8,8 +8,8 @@
      Speed spec 5. No code, no permissions. Signed with the release platform key by the sign stage. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.z9x.overlay.deviceconfig"
-    android:versionCode="102"
-    android:versionName="1.0.1">
+    android:versionCode="103"
+    android:versionName="1.0.2">
     <overlay
         android:targetPackage="org.protonaosp.deviceconfig"
         android:isStatic="true"

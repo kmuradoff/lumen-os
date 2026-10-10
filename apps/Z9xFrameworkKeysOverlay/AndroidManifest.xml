@@ -23,11 +23,12 @@
      Lumen OS 1.0.1 (versionCode 102): version only; build suffix e (versionCode still 102, versionName
      1.0.1): + config_maxUiWidth 3840 over TvFrameworkOverlay's 1920, which capped the 4K UI at
      1920x1080 in WindowManager (see res/values/config.xml).
+     Lumen OS 1.0.2 (versionCode 103): version only.
      No code, no permissions, no sharedUserId. min/target SDK 34 come from build_apk.sh. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.z9x.overlay.framework"
-    android:versionCode="102"
-    android:versionName="1.0.1">
+    android:versionCode="103"
+    android:versionName="1.0.2">
     <overlay
         android:targetPackage="android"
         android:isStatic="true"

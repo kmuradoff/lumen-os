@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   org.z9x.setup ("Setup"): the Lumen OS first-run wizard (setup/SPEC.md, PLAN.md C1-C3, C6, C12-C14,
-  C17, C22, C23, C25). Built by gsi/apps/build_apk.sh (Lumen OS 1.0.1: versionCode 102 / versionName 1.0.1 in this manifest).
+  C17, C22, C23, C25). Built by gsi/apps/build_apk.sh (Lumen OS 1.0.2: versionCode 103 / versionName 1.0.2 in this manifest).
 
   Install: /system/priv-app/Z9xSetup/Z9xSetup.apk (priv-app ONLY so that the HOME priority 10 is not
   capped: ComponentResolver.adjustPriority caps non-privileged apps to 0). Platform-signed (release
@@ -18,8 +18,8 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.z9x.setup"
-    android:versionCode="102"
-    android:versionName="1.0.1">
+    android:versionCode="103"
+    android:versionName="1.0.2">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
 

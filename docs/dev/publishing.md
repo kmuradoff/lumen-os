@@ -16,7 +16,7 @@ tree. In the public repository this file is `docs/dev/publishing.md`.
 | `pre-push` | `.githooks/pre-push` | runs `tools/ota/check_publish.py` before every push; turn it on once with `git config core.hooksPath .githooks` |
 | `FUNDING.yml` | `.github/FUNDING.yml` | the Sponsor button |
 | `support/` | `docs/repo/support/` | donation QR codes used by the README |
-| `publish_audit.py`, `PUBLISH_MANIFEST.tsv`, `export_repo.py`, `RELEASE_1.0.1.md` | not published | the audit that classifies every file of the working tree, the audit's output, the export script, the GitHub release text |
+| `publish_audit.py`, `PUBLISH_MANIFEST.tsv`, `export_repo.py`, `RELEASE_1.0.x.md` | not published | the audit that classifies every file of the working tree, the audit's output, the export script, the GitHub release text |
 
 Never in git: private keys, MediaTek and XGIMI binaries, Google apps, images, APKs and tars, the
 `backup/`, `logs/` and `research/` trees, device serials, IP addresses, e-mail addresses and absolute

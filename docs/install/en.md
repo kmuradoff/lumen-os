@@ -2,7 +2,7 @@
 
 [Русская версия](ru.md)
 
-This guide covers Lumen OS 1.0.1 without Google on the XGIMI Z9X (model code G0082) with XGIMI
+This guide covers Lumen OS 1.0.2 without Google on the XGIMI Z9X (model code G0082) with XGIMI
 firmware V6.15.58 or V6.15.19. Lumen OS is Android TV 14, built on LineageOS 21. It replaces only the
 system partition. The XGIMI firmware and calibration are not touched, and focus, keystone and the lamp
 work as on stock.
@@ -70,8 +70,8 @@ fastboot, install the [Google USB Driver](https://developer.android.com/studio/r
 
 1. Open the [Releases page](https://github.com/kmuradoff/lumen-os/releases) on GitHub. Download only
    from there. We do not check or support copies on forums or file hosts.
-2. From release 1.0.1, download four files: `lumen-os-1.0.1-nogms-system.img`, `SHA256SUMS`,
-   `SHA256SUMS.sig` and `lumen-os-1.0.1-installer.zip`.
+2. From the latest release (now 1.0.2), download four files: `lumen-os-1.0.2-nogms-system.img`,
+   `SHA256SUMS`, `SHA256SUMS.sig` and `lumen-os-1.0.2-installer.zip`.
 3. Unpack the installer zip. Put the image and both `SHA256SUMS` files next to `lumen-install.sh`.
    Remove any older `lumen-os-*-system.img` from that folder.
 4. Open a terminal and go to that folder:
@@ -243,7 +243,7 @@ If there is no setup screen after 10 minutes, see [Something went wrong](#proble
 
 ## 8. Optional: verify the install
 
-On the projector, open Settings > Device Preferences > About. It should show Lumen OS 1.0.1.
+On the projector, open Settings > Device Preferences > About. It should show Lumen OS 1.0.2.
 
 To check over USB:
 
