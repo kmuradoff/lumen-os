@@ -7,7 +7,7 @@
      Use: repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --git-lfs
           cp lumen-lineage-21.xml .repo/manifests/ && repo init -m lumen-lineage-21.xml
           repo sync -c -j8
-     then apply lineage/patches (docs/build). -->
+     then apply lineage/patches (docs/selfbuild). -->
 <manifest>
   <remote name="aosp" fetch="https://android.googlesource.com" review="android-review.googlesource.com" revision="refs/tags/android-14.0.0_r67" />
   <remote name="aosp-akita" fetch="https://android.googlesource.com" review="android-review.googlesource.com" revision="refs/tags/android-14.0.0_r68" />

@@ -143,7 +143,9 @@ def cmd_apks(apps, testcerts, releasecerts, plan_out):
             err('%s: package %s, expected %s' % (name, m['package'], pkg))
         if name in pins and pins[name] != h:
             err('%s: sha256 %s is not the pin in PINS.sha256 (%s)' % (name, h, pins[name]))
-        if kind == 'pinned' and name not in pins and PINNED.get(name) and PINNED[name] != h:
+        # a self-build (LUMEN_SELF=1, docs/selfbuild) builds TvInput and AirPlay from source: no pin applies
+        if kind == 'pinned' and name not in pins and PINNED.get(name) and PINNED[name] != h \
+                and os.environ.get('LUMEN_SELF') != '1':
             err('%s: sha256 %s is not the pinned v6.5 build %s' % (name, h, PINNED[name]))
         if kind in ('app', 'rro') and m['versionName'] != VERSION_NAME:
             err('%s: versionName %r, expected %r (build_apk.sh VERSION_NAME=%s / manifest)'

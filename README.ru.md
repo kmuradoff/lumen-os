@@ -95,7 +95,9 @@ Lumen OS («Настройки → Настройки устройства → �
 ## Сборка
 
 Lumen OS собирается из TV GSI LineageOS 21, приложений Lumen OS (`apps/`), системных файлов (`system/`) и
-инструментов для образа (`tools/`). Заметки для разработчиков лежат в [docs/dev](docs/dev/README.md).
+инструментов для образа (`tools/`). Всё это можно собрать самому, от исходников LineageOS в тех же
+версиях до подписанного образа, своими ключами: [docs/selfbuild](docs/selfbuild/ru.md). Заметки для разработчиков
+лежат в [docs/dev](docs/dev/README.md).
 
 ```
 git clone --recurse-submodules https://github.com/kmuradoff/lumen-os.git

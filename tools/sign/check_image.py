@@ -132,7 +132,8 @@ GOOGLE_PKG = re.compile(r"^(com\.google\.|com\.mtg\.|com\.android\.vending$)")
 GOOGLE_XML_PKG = ('package="com.google.android.gms"', 'package="com.google.android.gsf"', 'package="com.android.vending"')
 # the config XMLs whose bytes are kept (edition check (e))
 CONFIG_XML = re.compile(r"^system/(etc|product/etc|system_ext/etc)/(sysconfig|permissions|default-permissions)/[^/]+\.xml$")
-RELEASE_CERTS = os.path.join(HERE, "release_certs")
+# LUMEN_RELEASE_CERTS: a self-build's own public certificates (docs/selfbuild, gen_keys.sh CERTS_OUT)
+RELEASE_CERTS = os.environ.get("LUMEN_RELEASE_CERTS") or os.path.join(HERE, "release_certs")
 SYSTEM_LIB = "u:object_r:system_lib_file:s0"
 SYSTEM_FILE = "u:object_r:system_file:s0"
 # the files a public image does not carry may not be used by any init file / script of ours either

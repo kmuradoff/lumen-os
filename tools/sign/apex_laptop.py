@@ -469,8 +469,9 @@ def main():
     p.add_argument("--final", required=True)
     p.add_argument("--out", required=True)
     a = ap.parse_args()
-    if os.path.isdir(os.path.expanduser("~/.lumen-keys")) or any(
-            f.endswith(".pk8") for f in os.listdir(HERE)):
+    # (apex_sign.py --local, a self-build on one machine, sets LUMEN_APEX_LOCAL=1: the keys live there anyway)
+    if os.environ.get("LUMEN_APEX_LOCAL") != "1" and (os.path.isdir(os.path.expanduser("~/.lumen-keys")) or any(
+            f.endswith(".pk8") for f in os.listdir(HERE))):
         die("a Lumen key directory / *.pk8 on this machine: the laptop must never hold keys")
     # apexer / mke2fs / e2fsdroid write their temporary fs_config, file_contexts and manifests to
     # $TMPDIR: keep them inside our own work folder (deleted below) instead of the laptop's /tmp.

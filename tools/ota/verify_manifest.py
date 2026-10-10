@@ -27,7 +27,8 @@ import tempfile
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_CERT = os.path.join(os.path.dirname(HERE), "sign", "release_certs", "ota.x509.pem")
+DEFAULT_CERT = os.path.join(os.environ.get("LUMEN_RELEASE_CERTS") or os.path.join(os.path.dirname(HERE), "sign", "release_certs"),
+                            "ota.x509.pem")
 REQUIRED = ["schema", "device", "channel", "version", "version_code", "build_id", "build_utc",
             "requires", "changelog", "packages"]
 PKG = ["type", "url", "size", "sha256", "payload_offset", "payload_size", "metadata_url", "payload_properties"]
