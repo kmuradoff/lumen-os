@@ -9,6 +9,14 @@
 #   assets/               optional
 #   src/**/*.java         optional; without Java sources the APK is resource-only (RRO etc.),
 #                         and the manifest must then say <application android:hasCode="false"/>
+#   stub/                 optional, RRO only: AndroidManifest.xml + res/ + ids.txt (aapt2 stable ids)
+#                         describing a few resources of the overlay's target. It is linked as a
+#                         shared library (--shared-lib) and passed with -I, so the overlay can say
+#                         @*target.pkg:type/name and aapt2 writes dynamic references (library id
+#                         0x02 -> target package). At runtime AssetManager2 maps that library id to
+#                         the target, so the overlay can reuse target resources without overriding
+#                         them. ids.txt must list the target's real ids (0x00 package byte); the
+#                         stub itself never ships.
 #   lib/<abi>/*.so        optional prebuilt JNI libraries (abi = arm64-v8a, armeabi-v7a, x86, x86_64).
 #                         They are stored uncompressed and 16 KB page-aligned (zipalign -P 16) so
 #                         they load straight from the APK; the manifest must then say
@@ -122,10 +130,21 @@ if [ -d "$APP/res" ] && [ -n "$(find "$APP/res" -type f | head -n 1)" ]; then
   FLAT=$B/res.zip
 fi
 
+STUB=
+if [ -f "$APP/stub/AndroidManifest.xml" ]; then
+  [ $HAS_CODE = 0 ] || die "stub/ is only for resource-only overlays"
+  log "aapt2 stub library from stub/ (target ids from stub/ids.txt)"
+  "$BUILD_TOOLS/aapt2" compile --dir "$APP/stub/res" -o "$B/stub-res.zip"
+  "$BUILD_TOOLS/aapt2" link --shared-lib -o "$B/stub.apk" -I "$AJ" \
+    --manifest "$APP/stub/AndroidManifest.xml" --stable-ids "$APP/stub/ids.txt" "$B/stub-res.zip"
+  STUB=$B/stub.apk
+fi
+
 log "aapt2 link (min $MIN_SDK, target $TARGET_SDK)"
 set -- link -o "$B/base.apk" -I "$AJ" --manifest "$APP/AndroidManifest.xml" \
   --min-sdk-version "$MIN_SDK" --target-sdk-version "$TARGET_SDK" \
   --version-code "${VERSION_CODE:-1}" --version-name "${VERSION_NAME:-1.0}"
+[ -n "$STUB" ] && set -- "$@" -I "$STUB"
 [ -d "$APP/assets" ] && set -- "$@" -A "$APP/assets"
 [ $HAS_CODE = 1 ] && set -- "$@" --java "$B/gen"
 [ -n "$FLAT" ] && set -- "$@" "$FLAT"

@@ -1,0 +1,4 @@
+com.android.tv.settings:style/LeanbackPreference = 0x0012015c
+com.android.tv.settings:id/switchWidget = 0x000a038f
+com.android.tv.settings:string/v7_preference_on = 0x001107d2
+com.android.tv.settings:string/v7_preference_off = 0x001107d1

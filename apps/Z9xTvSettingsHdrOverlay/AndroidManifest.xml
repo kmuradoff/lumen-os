@@ -8,11 +8,14 @@
      Install: /system/product/overlay/Z9xTvSettingsHdrOverlay.apk (0644). TvSettings declares no
      <overlayable> (aapt2 dump overlayable prints nothing), so idmap2 accepts a preinstalled
      product overlay whatever its signature. Lineage's auto-generated TvSettings RRO has priority 1
-     and does not touch this resource. No code, no permissions. -->
+     and does not touch this resource. No code, no permissions.
+     v6.2: also fixes SwitchPreferenceCompat rows whose switch never moved (res/values/switch.xml).
+     Those resources reference TvSettings' own style, id and strings through the link-time stub in
+     stub/ (ids.txt = TvSettings' real ids; check with tools/lumen/check_tvsettings_stub.sh). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.z9x.overlay.tvsettings.hdr"
-    android:versionCode="61"
-    android:versionName="6.1">
+    android:versionCode="62"
+    android:versionName="6.2">
     <overlay android:targetPackage="com.android.tv.settings"
         android:isStatic="true"
         android:priority="10" />
