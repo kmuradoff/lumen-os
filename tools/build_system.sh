@@ -44,7 +44,8 @@
 #                          assistant org.z9x.projector, 8 CEC defaults), Z9xLineagePlatformOverlay
 #                          (new: HOME double-tap 0 = no 300 ms delay, long-press HOME = assist ->
 #                          Recents, "Lumen OS" strings), Z9xDeviceConfigOverlay (new: device_config
-#                          max_cached_processes 16, freezer on), Z9xTvSettingsHdrOverlay (unchanged)
+#                          max_cached_processes 16, freezer on), Z9xTvSettingsHdrOverlay (v6.2:
+#                          + SwitchPreferenceCompat switch fix)
 #       Z9xSetupWraithOverlay is dropped (setup spec 3). Our code APKs are AOT-compiled at build time
 #       (oat/arm64/<Name>.odex|vdex next to the APK, compiler filter speed, checked against the base's
 #       boot image), then re-signed with the release keys by the sign stage like every test-key APK.

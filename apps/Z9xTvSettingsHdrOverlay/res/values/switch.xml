@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fix for on/off switches that never move (Apps > Special app access > Install unknown apps,
+     the accessibility service switch, a few developer options). Those rows are
+     SwitchPreferenceCompat (SettingsLib RestrictedSwitchPreference became one in Android 14), and
+     androidx syncs the switch view found by id/switchWidget. Leanback's style for them reuses
+     layout/leanback_preference_widget_switch, whose Switch has @android:id/switch_widget, so the
+     lookup returns null: the summary says Allowed while the switch stays off.
+     Same style as TvSettings' own (parent LeanbackPreference, On/Off summaries), only the widget
+     layout differs. Plain SwitchPreference rows keep the original layout. -->
+<resources>
+    <style name="LeanbackPreference.SwitchPreferenceCompat"
+        parent="@*com.android.tv.settings:style/LeanbackPreference">
+        <item name="android:widgetLayout">@layout/z9x_preference_widget_switch_compat</item>
+        <item name="android:summaryOn">@*com.android.tv.settings:string/v7_preference_on</item>
+        <item name="android:summaryOff">@*com.android.tv.settings:string/v7_preference_off</item>
+    </style>
+</resources>
