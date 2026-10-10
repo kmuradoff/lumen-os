@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0.1: interface resolution (display.UiResolution / UiResPanel): Projector settings >
+     Display, the quick panel's Picture page, and the "Keep this resolution?" screen after a change.
+     4K (3840 x 2160, 1 UI px = 1 panel px) is the default, 1080p is the XGIMI stock UI (a quarter of the
+     pixels, enlarged 2x by the projector); 2K is offered only with persist.z9x.ui_res.dev=1.
+     English base; translations in values-<lang>/strings_display.xml (hand-written, checked by
+     i18n/gen.py). "1080p", "2K", "4K" and the pixel sizes are not translated (code). -->
+<resources>
+    <!-- Projector settings section header -->
+    <string name="uires_section">Display</string>
+    <!-- Row title (settings, quick panel) and title of the chooser -->
+    <string name="uires_row">Interface resolution</string>
+    <!-- %1$s = "4K" -->
+    <string name="uires_default_fmt">%1$s (default)</string>
+    <string name="uires_summary">4K gives the sharpest text; 1080p, as on XGIMI, is the lightest for the graphics. The projector restarts to change it.</string>
+    <!-- A calm note after the automatic fallback. %1$s = the resolution running now ("1080p"), %2$s = the chosen one ("4K") -->
+    <string name="uires_summary_fallback">Now %1$s: %2$s did not start properly on this projector, so it went back by itself. Choose %2$s to try again.</string>
+    <string name="uires_choose_text">4K draws every pixel of the 4K panel. 1080p, as on XGIMI, draws a quarter of them, and the projector enlarges the picture.</string>
+    <string name="uires_opt_1080">As on XGIMI: lightest for the graphics; text a little softer</string>
+    <!-- 2K: shown only for testing (debug property, or while 2K is set / runs) -->
+    <string name="uires_opt_1440">Test only: the scaling to the panel is not verified</string>
+    <string name="uires_opt_2160">Sharpest text: every pixel of the 4K panel</string>
+    <!-- Tag of the resolution running now -->
+    <string name="uires_current">Now</string>
+    <!-- %1$s = "4K" -->
+    <string name="uires_confirm_title">Switch to %1$s?</string>
+    <string name="uires_confirm_up">Text and menus become sharper. The graphics have more to draw, so some apps may feel a little slower.</string>
+    <string name="uires_confirm_down">The graphics have less to draw, so menus and apps may feel faster; text becomes a little softer.</string>
+    <!-- %1$s = the resolution running now -->
+    <string name="uires_confirm_restart">The projector restarts to apply it (about a minute). If the picture does not come back properly, it returns to %1$s by itself.</string>
+    <string name="uires_restart">Restart now</string>
+    <string name="uires_keep_title">Keep this resolution?</string>
+    <!-- %1$s = "4K (3840 × 2160)" -->
+    <string name="uires_keep_text">The interface now runs at %1$s. If text and pictures look right, choose Keep.</string>
+    <!-- %1$s = the previous resolution, %2$d = seconds left -->
+    <string name="uires_keep_countdown">Going back to %1$s in %2$d s</string>
+    <string name="uires_keep">Keep</string>
+    <!-- %1$s = the previous resolution -->
+    <string name="uires_revert">Back to %1$s</string>
+    <string name="uires_failed">The resolution could not be changed</string>
+</resources>

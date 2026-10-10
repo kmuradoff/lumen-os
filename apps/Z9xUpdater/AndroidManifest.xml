@@ -3,7 +3,8 @@
   org.z9x.updater ("Lumen OS update") for Lumen OS 1.0 on the XGIMI Z9X.
   Install: /system/app/Z9xUpdater/Z9xUpdater.apk (NOT priv-app), platform-signed, not persistent:
   0 MB resident while idle (JobScheduler wakes it at most twice a day).
-  Build: VERSION_CODE=100 VERSION_NAME=1.0 sh ../build_apk.sh Z9xUpdater
+  Build: VERSION_CODE=102 VERSION_NAME=1.0.1 sh ../build_apk.sh Z9xUpdater (Lumen OS 1.0.1; 1.0.0 was
+  101 / 1.0.0, 1.0 was 100 / 1.0)
   Spec: research v7 ota/SPEC.md section 9, PLAN.md C16/C17; image side tools/ota/image/HANDOFF.md.
 
   Entry points: TvSettings About > "Lumen OS update" (this activity's label, through
@@ -46,9 +47,14 @@
     <!-- signature|appop|preinstalled: read update files from a USB stick (StorageVolume paths) -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
+    <!-- 1.0.1: About > Licences names Google's terms only where Google Play services are installed -->
+    <queries>
+        <package android:name="com.google.android.gms" />
+    </queries>
+
     <application
         android:label="@string/app_name"
-        android:icon="@drawable/ic_update"
+        android:icon="@drawable/brand_icon_updater"
         android:allowBackup="false"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"

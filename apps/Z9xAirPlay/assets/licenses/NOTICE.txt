@@ -32,7 +32,8 @@ UxPlay  1.74 development line, commit 3dbf7ceee65932154e85a2f83963d53520a799fa
         per-attempt random PIN, local-network peer filter for the RTSP/HTTP port),
         z9x-0007 (ours: PIN mode enforced on the server), z9x-0008 (ours: no takeover
         through an AirPlay video connection, mirror data port only for the sender),
-        z9x-0009 (ours: httpd survives network errors, TCP keepalive), z9x-0101 (BoringSSL
+        z9x-0009 (ours: httpd survives network errors, TCP keepalive), z9x-0010 (ours:
+        bounded wait for audio resends in the RTP reorder buffer), z9x-0101 (BoringSSL
         base64).
 
 android-airplay-server  v0.0.31, commit c8defdd7

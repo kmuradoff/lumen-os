@@ -12,8 +12,8 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.z9x.home"
-    android:versionCode="100"
-    android:versionName="1.0">
+    android:versionCode="102"
+    android:versionName="1.0.1">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
 
@@ -43,6 +43,18 @@
     <!-- voice search client: pre-granted by default-permissions, self-grant fallback (signature) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS" />
+    <!-- 1.0.1: the living sky as the screensaver default on projectors upgraded from 1.0 (sky/DreamDefault,
+         once); signature|privileged, held as a platform-signed priv-app -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <!-- 1.0.1, Apps > Install from USB (usb/UsbInstallActivity): every one granted by the platform signature.
+         INSTALL_PACKAGES (signature|privileged; privapp-permissions-z9xhome.xml lists it too) makes Lumen Home
+         a trusted installer (no "unknown sources" detour), REQUEST_INSTALL_PACKAGES (signature|appop) the
+         session API's own need, MANAGE_EXTERNAL_STORAGE (signature|appop|preinstalled) reads the .apk files
+         on the stick, as Z9xUpdater does for its USB updates. Every install still shows the system
+         installer's confirm screen (USER_ACTION_REQUIRED). -->
+    <uses-permission android:name="android.permission.INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <!-- our other apps (signature permissions they define) -->
     <uses-permission android:name="org.z9x.projector.permission.SHOW_PANEL" />
     <uses-permission android:name="org.z9x.projector.permission.SHOW_SOURCE" />
@@ -69,8 +81,8 @@
     <application
         android:name=".App"
         android:label="@string/app_name"
-        android:icon="@drawable/ic_launcher"
-        android:banner="@drawable/banner"
+        android:icon="@drawable/brand_icon_home"
+        android:banner="@drawable/brand_banner_home"
         android:allowBackup="false"
         android:supportsRtl="true"
         android:largeHeap="false"
@@ -116,6 +128,23 @@
             android:theme="@style/Theme.Lumen.Panel"
             android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density"
             android:windowSoftInputMode="adjustNothing|stateHidden" />
+
+        <!-- 1.0.1: Apps > Install from USB (the Apps page tile, search's keyboard hint). Kept enabled in
+             classic-launcher mode (org.z9x.keep_in_classic: Z9xProjector's LauncherSwitcher skips it), like
+             search, which may open it; costs nothing until opened -->
+        <activity
+            android:name=".usb.UsbInstallActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Lumen.Panel"
+            android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density"
+            android:windowSoftInputMode="adjustNothing|stateHidden">
+            <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
+        </activity>
+        <!-- its PackageInstaller session status (our own explicit PendingIntent only) -->
+        <receiver android:name=".usb.UsbInstallReceiver" android:exported="false">
+            <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
+        </receiver>
 
         <!-- ALWAYS enabled (also in classic mode): search. Listening only via VoiceSearchAlias (MIC perm). -->
         <activity
@@ -177,6 +206,25 @@
             android:permission="android.permission.MODIFY_PARENTAL_CONTROLS">
             <intent-filter><action android:name="android.media.tv.action.CHANNEL_BROWSABLE_REQUESTED" /></intent-filter>
         </receiver>
+        <!-- Lumen screensaver: the living landscape (org.z9x.home.sky, scene shared with the Home wallpaper).
+             Stays enabled in classic-launcher mode (org.z9x.keep_in_classic: Z9xProjector's LauncherSwitcher
+             skips it). The image makes it the framework default dream (Z9xFrameworkKeysOverlay
+             config_dreamsDefaultComponent -> Settings.Secure screensaver_default_component on a fresh
+             userdata; 1.0.1: sky/DreamDefault does it once on projectors upgraded from 1.0); the active
+             choice (screensaver_components) stays with the user / Z9xProjector (DreamDefault replaces it
+             only when it names no installed dream). -->
+        <service
+            android:name=".sky.SkyDreamService"
+            android:exported="true"
+            android:label="@string/sky_dream_label"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
+        </service>
+
         <!-- [launcher] best effort only; the authoritative diff runs at every HomeActivity start -->
         <receiver android:name=".tvp.PackageReceiver" android:exported="false">
             <intent-filter>

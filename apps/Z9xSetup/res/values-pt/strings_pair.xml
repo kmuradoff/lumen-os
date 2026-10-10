@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portuguese (Brazil; values-pt and values-pt-rBR are identical) translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">Pressione qualquer botão do controle</string>
+    <string name="remote_later_hint">Está sem o controle? Pule esta etapa com os botões do projetor ou um teclado. Você pode pareá-lo depois da mesma forma.</string>
+    <string name="remote_press_ok">Pressione OK no controle</string>
+</resources>

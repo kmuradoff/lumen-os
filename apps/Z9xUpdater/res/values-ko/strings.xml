@@ -45,6 +45,16 @@
     <string name="done_ok_title">Lumen OS %1$s(으)로 업데이트됨</string>
     <string name="done_rollback_title">업데이트를 시작하지 못했습니다</string>
     <string name="done_rollback_body">Lumen OS %1$s이(가) 복원되었습니다. 손실된 것은 없습니다.</string>
+    <string name="done_unhealthy_title">Lumen OS %1$s 실행 중</string>
+    <string name="done_unhealthy_body">업데이트 후 확인에서 문제가 발견되었습니다: %1$s. 제대로 작동하지 않는 기능이 있으면 컴퓨터용 설치 프로그램의 복구 모드(rescue)를 사용하세요. 데이터는 그대로 유지됩니다.</string>
+    <string name="done_rescue_scan">코드를 스캔하면 복구 모드 가이드가 열립니다.</string>
+    <string name="done_details">기술 세부정보: %1$s</string>
+    <string name="why_restarted">시스템이 예기치 않게 다시 시작됨</string>
+    <string name="why_service">시스템 서비스가 시작되지 않음</string>
+    <string name="why_lamp">광원 및 팬 서비스가 시작되지 않음</string>
+    <string name="why_confirm">시스템이 새 버전의 정상 작동을 확인하지 못함</string>
+    <string name="why_no_rollback">이전 버전으로 되돌릴 수 없었음</string>
+    <string name="why_unknown">기록된 세부정보 없음</string>
     <string name="blk_vbmeta_title">업데이트를 위해 한 번만 필요한 단계가 있습니다</string>
     <string name="blk_vbmeta_body">첫 업데이트 전에 설치 가이드(vbmeta 단계)에 설명된 대로 컴퓨터를 사용해 다른 시스템 슬롯(%1$s)을 한 번 준비해야 합니다. 코드를 스캔하면 가이드가 열립니다.</string>
     <string name="blk_vbmeta_unknown">다른 시스템 슬롯의 상태를 읽을 수 없습니다. 프로젝터를 다시 시작한 후 다시 시도하세요.</string>
@@ -52,6 +62,7 @@
     <string name="blk_merge_body">백그라운드에서 몇 분 정도 걸립니다. 계속 시청할 수 있습니다.</string>
     <string name="blk_pending">마지막 업데이트 후 이 버전을 아직 확인하고 있습니다. 몇 분 후에 다시 시도하세요.</string>
     <string name="blk_vendor">이 업데이트는 이 프로젝터의 펌웨어(%1$s)용이 아닙니다.</string>
+    <string name="blk_channel">이 업데이트는 다른 Lumen OS 에디션용입니다(%1$s).</string>
     <string name="blk_min_version">이 업데이트에는 Lumen OS %1$s 이상이 필요합니다. 컴퓨터용 설치 프로그램을 사용하세요.</string>
     <string name="blk_thermal">지금은 프로젝터 온도가 너무 높습니다. 나중에 다시 시도하세요.</string>
     <string name="blk_space">여유 공간이 부족합니다. %1$s 필요합니다.</string>

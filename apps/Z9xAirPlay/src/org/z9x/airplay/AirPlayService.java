@@ -545,7 +545,7 @@ public final class AirPlayService extends Service {
             post(() -> s.onTrack(t));
         }
         @Override public void onCoverArt(byte[] image) {
-            Bitmap bmp = decodeCover(image);
+            Bitmap bmp = decodeCover(image, s.coverMaxPx());
             post(() -> s.onCover(bmp));
         }
         @Override public void onProgress(long start, long current, long end) {
@@ -567,14 +567,23 @@ public final class AirPlayService extends Service {
         }
     }
 
-    private static Bitmap decodeCover(byte[] data) {
+    /**
+     * Largest cover side kept by decodeCover: 1024 px, or the on-screen cover (MirrorActivity.COVER_DP)
+     * when that is larger (Lumen OS 1.0.1: 1200 px at 4K; 600 px at 1080p and 801 px at 2K keep 1024).
+     */
+    int coverMaxPx() {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.max(1024, Math.round(MirrorActivity.COVER_DP * density));
+    }
+
+    private static Bitmap decodeCover(byte[] data, int maxPx) {
         if (data == null || data.length == 0) return null;
         try {
             BitmapFactory.Options o = new BitmapFactory.Options();
             o.inJustDecodeBounds = true;
             BitmapFactory.decodeByteArray(data, 0, data.length, o);
             int sample = 1;
-            while (o.outWidth / sample > 1024 || o.outHeight / sample > 1024) sample *= 2;
+            while (o.outWidth / sample > maxPx || o.outHeight / sample > maxPx) sample *= 2;
             o = new BitmapFactory.Options();
             o.inSampleSize = sample;
             return BitmapFactory.decodeByteArray(data, 0, data.length, o);

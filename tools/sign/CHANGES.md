@@ -1,5 +1,16 @@
 # tools/sign: changes
 
+## 2026-10-09: the no-Google edition gate (check_image.py --gms 0)
+
+`--gms 0|1` (default 1). `check_variant(variant, gms, p)`: the exact manifest URL of the edition, the
+build id suffix formula (`suffix_errors`: public ends in 'p', GMS=0 if and only if the core ends in 'n'),
+`ro.z9x.gms=0` only on no-Google images, no-Google only as a public image. `check_nogms`: every APK and
+APK inside an APEX on a Lumen release key (all_signers.tsv), no member at or under a
+`tools/lumen/nogms_remove.txt` path, no com.google.* / com.mtg.* / com.android.vending package, no
+gmsversion (build.prop, init files), no kept sysconfig / permissions / default-permissions XML naming GMS,
+GSF or Play; writes `edition.txt`. `--gms 1` only checks that GMS and Play are there.
+`load_nogms_list` / `under_any` / `GOOGLE_PKG` are shared with tools/ota/check_release_assets.py.
+
 ## 2026-10-07: every APEX re-signed, no AOSP test certificate left in the image
 
 Lumen OS 1.0 (image `998e263c...`) left every APEX on its AOSP keys, which forced NetworkStack.apk and
@@ -73,3 +84,27 @@ stanzas in `plat_mac_permissions.xml`. All of that is gone. Policy and the full 
   re-compressed capex containers).
 - Dry-run outputs kept on the Mac: `build/lumen_v1/apex_lumen_v1/` (re-signed APEXes + reports),
   `build/lumen_v1/dryrun_apex/` (signed tar, sign / verify / check reports and logs).
+
+## 2026-10-08: Lumen OS 1.0.1
+- `check_image.py`: OTA_FILES also lists the boot rescue (`z9x_rescue.rc` -> system/etc/init/z9x_rescue.rc,
+  `z9x_rescue.sh` -> system/etc/z9x/z9x_rescue.sh): both must be in the image and byte-identical to
+  tools/ota/image.
+
+## 2026-10-09: Lumen OS 1.0.1 final (UI resolution, build id suffix)
+- `check_image.py` gate `uires`: `system/etc/z9x/z9x_uires.sh` and the replaced
+  `system/product/etc/init/init.lineage.atv.scaling.rc` must be byte-identical to `overlay/v1/z9x_uires`;
+  the effective `ro.surface_flinger.max_graphics_width/height` must be 3840/2160 and `ro.z9x.uires.allow`
+  0 or 1; `ro.config.size_override`, `ro.config.density_override`, `vendor.display-size` and
+  `vendor.mstar.resize.framebuffer` are set exactly once by that rc and by no build.prop or other init file
+  (system, system_ext and product init dirs are now read for this).
+- `ro.z9x.build_id` must be `lumen-<ro.z9x.version>-<yyyymmdd>` with an optional suffix (`tools/lumen_v1.sh`
+  BUILD_ID_SUFFIX, 1-4 of [a-z0-9], a letter first).
+
+## 2026-10-09: Lumen OS 1.0.1 final, 4K default (build id lumen-1.0.1-20261009c)
+- `check_image.py` gate `uires`, for the OSD override (a RAM copy of the panel ini bound read-only over the
+  vendor file by `z9x_uires.sh fs`): the exec `z9x_uires.sh fs` must be in `on fs` of
+  `system/product/etc/init/init.lineage.atv.scaling.rc` (the product dir is parsed after /vendor/etc/init, so it
+  runs after the vendor's tvconfig mount and before the MI daemon) and no other init file may run
+  `z9x_uires.sh` or carry a second file of that name; no init file and no script of ours in `system/etc/z9x` /
+  `system/etc/xgimi` other than `z9x_uires.sh` may touch `/vendor/tvconfig` (comments aside); no `.ini` member,
+  no tvconfig path and nothing under `vendor/` or `system/vendor/` in the image (no XGIMI file ships).

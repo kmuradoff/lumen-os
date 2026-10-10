@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ukrainian translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">Натисніть будь-яку кнопку на пульті</string>
+    <string name="remote_later_hint">Немає пульта під рукою? Пропустіть крок кнопками проєктора або з клавіатури. Підключити пульт можна пізніше так само.</string>
+    <string name="remote_press_ok">Натисніть OK на пульті</string>
+</resources>

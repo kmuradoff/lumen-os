@@ -17,10 +17,12 @@ import org.z9x.home.img.ImageLoader;
 import java.util.ArrayList;
 
 /**
- * One horizontal row (SPEC 7.5/7.6): title, a track of cards scrolled by translationX only, and the
- * caption (title + meta) under the focused card. Left-aligned focus: the focused card stays at the
- * left content edge while the row can scroll; the row's end aligns its last card to the right edge.
- * Focus is managed by the page (no Android focus search); nothing requests layout while navigating.
+ * One horizontal row (SPEC 7.5/7.6, direction D): a small tracked upper-case heading, a track of cards
+ * scrolled by translationX only, and the caption under the focused card (apps: the name only;
+ * "Continue watching" cards carry their text inside, so no caption). Left-aligned focus: the focused
+ * card stays at the left content edge while the row can scroll; the row's end aligns its last card to
+ * the right edge. Focus is managed by the page (no Android focus search); nothing requests layout
+ * while navigating.
  */
 public class RowView extends ViewGroup {
     public interface Host {
@@ -44,6 +46,7 @@ public class RowView extends ViewGroup {
     private long mLastRepeat;
     private final Runnable mLoadVisible = this::loadVisible;
     private boolean mShowTitle = true;
+    private boolean mInBand = true;
 
     public RowView(Context c, Host host) {
         super(c);
@@ -53,18 +56,18 @@ public class RowView extends ViewGroup {
         mMargin = Theme.px(Theme.MARGIN);
         mGap = Theme.px(Theme.GAP);
         mTitle = new TextView(c);
-        Theme.text(mTitle, 30, Theme.MEDIUM, (Theme.TEXT1 & 0x00FFFFFF) | 0xE0000000);
+        Theme.heading(mTitle, 22, Theme.TEXT2);
         mTitle.setSingleLine(true);
         mTitle.setEllipsize(TextUtils.TruncateAt.END);
         addView(mTitle);
         mTrack = new Track(c);
         addView(mTrack);
         mCapTitle = new TextView(c);
-        Theme.text(mCapTitle, 26, Theme.MEDIUM, Theme.TEXT1);
+        Theme.text(mCapTitle, 24, Theme.MEDIUM, Theme.TEXT1);
         mCapTitle.setSingleLine(true);
         mCapTitle.setEllipsize(TextUtils.TruncateAt.END);
         mCapMeta = new TextView(c);
-        Theme.text(mCapMeta, 22, Theme.REGULAR, Theme.TEXT2);
+        Theme.text(mCapMeta, 20, Theme.REGULAR, Theme.TEXT2);
         mCapMeta.setSingleLine(true);
         mCapMeta.setEllipsize(TextUtils.TruncateAt.END);
         mCapTitle.setAlpha(0);
@@ -84,7 +87,43 @@ public class RowView extends ViewGroup {
 
     /** Height of this row in real px: title, gap, cards, caption space. */
     public int rowHeight() {
-        return (mShowTitle ? Theme.px(Theme.ROW_TITLE_H + Theme.ROW_TITLE_GAP) : 0) + mCh + Theme.px(Theme.ROW_CAPTION_H);
+        return (mShowTitle ? Theme.px(Theme.ROW_TITLE_H + Theme.ROW_TITLE_GAP) : 0) + mCh + captionSpace();
+    }
+
+    /** Space under the cards: caption lines, or less for rows whose cards carry their own text. */
+    private int captionSpace() {
+        if (mRow != null && mRow.type == Row.WATCH_NEXT) return Theme.px(64);
+        if (sizeKind(mRow) == Card.APP) return Theme.px(84);
+        return Theme.px(Theme.ROW_CAPTION_H);
+    }
+
+    /**
+     * Bottom of what this row shows below its top when one of its cards is focused (real px): the card's
+     * focus scale and ring, and the caption under it for apps and programs. Home keeps it inside the TV
+     * safe area (1.0.1 follow-up). Valid after measure.
+     */
+    public int focusExtent() {
+        int grow = Math.round(mCh * (Theme.FOCUS_SCALE - 1f) / 2f);
+        int bottom = cardTop() + mCh + grow + (int) Math.ceil(Theme.ring() * Theme.FOCUS_SCALE);
+        int kind = sizeKind(mRow);
+        if (mRow != null && mRow.type != Row.WATCH_NEXT && (kind == Card.APP || kind == Card.PROGRAM)) {
+            int capY = cardTop() + mCh + grow + Math.round(Theme.ring()) + Theme.px(12); // as onLayout
+            bottom = capY + mCapTitle.getMeasuredHeight() + (kind == Card.PROGRAM ? Theme.px(4) + mCapMeta.getMeasuredHeight() : 0);
+        }
+        return bottom;
+    }
+
+    /**
+     * Rows that the screen edge would cut (outside the TV safe band; keystone crops the edges) are faded
+     * out until scrolling brings them in. A layer only for the fade: one texture instead of every card.
+     */
+    public void setInBand(boolean in, boolean animate) {
+        if (in == mInBand) return; // already there, or fading there
+        mInBand = in;
+        float a = in ? 1f : 0f;
+        animate().cancel();
+        if (animate && Theme.animations()) animate().alpha(a).setDuration(Theme.PAGE_SCROLL_MS).withLayer().start();
+        else setAlpha(a);
     }
 
     public int cardTop() {
@@ -103,6 +142,7 @@ public class RowView extends ViewGroup {
         int kind = r.cards.isEmpty() ? Card.APP : r.cards.get(0).kind;
         mCw = Theme.px(Theme.cardW(kind, r.aspect));
         mCh = Theme.px(Theme.cardH(kind, r.aspect));
+        mGap = Theme.px(Theme.cardGap(kind));
         CharSequence t = r.title;
         if (!r.sub.isEmpty()) {
             SpannableStringBuilder sb = new SpannableStringBuilder(r.title);
@@ -136,7 +176,7 @@ public class RowView extends ViewGroup {
     }
 
     private static int sizeKind(Row r) {
-        return r.cards.isEmpty() ? 0 : r.cards.get(0).kind;
+        return r == null || r.cards.isEmpty() ? 0 : r.cards.get(0).kind;
     }
 
     private void buildCards() {
@@ -321,12 +361,14 @@ public class RowView extends ViewGroup {
 
     private void showCaption(boolean animate) {
         Card k = focusedCard();
-        if (k == null || !(k.kind == Card.PROGRAM || k.kind == Card.APP)) {
+        if (k == null || !(k.kind == Card.PROGRAM || k.kind == Card.APP) || k.table == Card.T_WATCH_NEXT) {
             hideCaption();
             return;
         }
         mCapTitle.setText(k.title);
-        mCapMeta.setText(k.kind == Card.PROGRAM ? (k.meta.isEmpty() ? k.appLabel : k.meta) : "");
+        String meta = k.meta.isEmpty() ? k.appLabel : k.meta;
+        if (!k.left.isEmpty()) meta = meta.isEmpty() ? k.left : meta + " · " + k.left;
+        mCapMeta.setText(k.kind == Card.PROGRAM ? meta : "");
         float off = mMargin + mFocus * (mCw + mGap) - scrollPx();
         float tx = Theme.rtl(this) ? -off : off;
         mCapTitle.setTranslationX(tx);
@@ -407,7 +449,7 @@ public class RowView extends ViewGroup {
         mTitle.layout(tx, 0, tx + mTitle.getMeasuredWidth(), mTitle.getMeasuredHeight());
         int top = cardTop();
         mTrack.layout(0, top, w, top + mCh);
-        int capY = top + mCh + Math.round(mCh * (Theme.FOCUS_SCALE - 1f) / 2f) + Theme.px(14);
+        int capY = top + mCh + Math.round(mCh * (Theme.FOCUS_SCALE - 1f) / 2f) + Math.round(Theme.ring()) + Theme.px(12);
         mCapTitle.layout(0, capY, mCapTitle.getMeasuredWidth(), capY + mCapTitle.getMeasuredHeight());
         int my = capY + mCapTitle.getMeasuredHeight() + Theme.px(4);
         mCapMeta.layout(0, my, mCapMeta.getMeasuredWidth(), my + mCapMeta.getMeasuredHeight());

@@ -9,7 +9,8 @@ import java.util.regex.Pattern;
 
 /**
  * Geometry of the auto-keystone test pattern ("ak4_30w" layout, Z9X obstacle_ak_image_type=1),
- * in 1920 x 1080 design pixels. Pure Java (no android.* imports) so the exact same code is rendered
+ * in 1920 x 1080 design pixels (the stock UI size; Lumen OS 1.0.1 scales them to the real UI frame at
+ * 1080p, 2K or 4K, so the pattern covers the same part of the picture at every resolution). Pure Java (no android.* imports) so the exact same code is rendered
  * by the app (AkPatternRenderer, android.graphics.Canvas) and by the Mac test harness (Java2D) that
  * compares it with the stock image.
  *
@@ -218,6 +219,35 @@ final class AkPatternSpec {
             }
         }
     }
+
+    /**
+     * Lumen OS 1.0.1 (4K UI default): the factors {sx, sy} that turn the vendor's 109 corners {@code q}
+     * (8 values, x/y pairs, as AkOverlay.parseCorners returns them; null = none) into pixels of a
+     * {@code viewW} x {@code viewH} view. Measured at the 1080p UI (friend's Z9X, 2026-10-08): 109
+     * "86-180,1800-52,11-1016,1899-1034" was exactly half of the 116 actual_result panel corners
+     * (172,360 3600,104 22,2032 3798,2068), i.e. the stock {@link #W} x {@link #H} units: scaled by
+     * view / 1920. Whether the vendor keeps those units once the OSD region is 3840 x 2160 (the 4K UI) or
+     * then reports OSD = UI pixels is NOT measured. A quad in the stock units lies inside the 1920 x 1080
+     * frame (it is where the pattern is drawn); one reaching more than {@value #STOCK_UNITS_SLACK}x beyond
+     * it cannot be (the pattern would be off the picture), while UI-pixel corners of a keystone
+     * correction always reach past 55 % of a 4K frame. So such a quad is taken as view pixels (1, 1).
+     * At the 1080p UI both readings are the same factor.
+     */
+    static float[] cornerScale(float[] q, int viewW, int viewH) {
+        float sx = viewW / (float) W, sy = viewH / (float) H;
+        if (q == null || q.length != 8 || (viewW <= W * STOCK_UNITS_SLACK && viewH <= H * STOCK_UNITS_SLACK)) {
+            return new float[] {sx, sy};
+        }
+        float maxX = 0, maxY = 0;
+        for (int i = 0; i < 8; i += 2) {
+            maxX = Math.max(maxX, q[i]);
+            maxY = Math.max(maxY, q[i + 1]);
+        }
+        return maxX > W * STOCK_UNITS_SLACK || maxY > H * STOCK_UNITS_SLACK ? new float[] {1f, 1f} : new float[] {sx, sy};
+    }
+
+    /** {@link #cornerScale}: how far past the stock 1920 x 1080 frame a 109 corner may still be in its units. */
+    static final float STOCK_UNITS_SLACK = 1.1f;
 
     /** Inner checker corners we draw, pixel-centre convention, for the self-check. */
     int keyPointCount() {

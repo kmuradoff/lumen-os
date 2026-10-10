@@ -28,6 +28,7 @@
     <string name="key_slot4">Кнопка bilibili</string>
     <string name="slot_default_fmt">%1$s (па змаўчанні)</string>
     <string name="slot_default_item">Па змаўчанні: %1$s</string>
+    <string name="slot_home_apps">Lumen Home: праграмы</string>
     <string name="cancel">Скасаваць</string>
     <string name="ok">OK</string>
     <string name="app_not_found">Праграма для гэтай кнопкі не знойдзена</string>

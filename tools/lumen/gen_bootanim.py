@@ -3,6 +3,10 @@
 """
 Lumen OS boot animation generator ("Beam").  Author: kmuradoff.
 
+LEGACY since Lumen OS 1.0.0: the image ships the "Aperture" animation of tools/brand/gen_bootanim.py
+(the 2A mark). This generator is kept for the 1.0 history only and refuses to write
+overlay/v1/bootanimation.zip.
+
 Renders the boot animation of Lumen OS from text and geometry only (no XGIMI, MediaTek or
 Lineage asset): the thin wide-tracked "Lumen" wordmark (Roboto variable font at wght 200, the
 same drawing as org.z9x.projector's WakeCurtain mark: letterSpacing 0.42 em, alpha 0xE0, a 1.5 px
@@ -237,6 +241,9 @@ def main():
     ap.add_argument("--preview", default=None, help="write preview PNGs (full 1920x1080) here")
     ap.add_argument("--mp4", action="store_true", help="also write preview.mp4 (needs ffmpeg)")
     args = ap.parse_args()
+    v1 = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "overlay", "v1", "bootanimation.zip")
+    if os.path.exists(args.out) and os.path.samefile(args.out, v1):
+        sys.exit("legacy generator: overlay/v1/bootanimation.zip comes from tools/brand/gen_bootanim.py since 1.0.0")
 
     fonts = Fonts(args.font)
     lay = Layout(fonts)

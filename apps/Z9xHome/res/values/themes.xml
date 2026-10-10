@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Starting window = bg colour + the Lumen ambient glows, painted at once on HOME (SPEC 10.1). -->
+    <!-- Starting window = the Lumen ground + a warm horizon (direction D), painted at once on HOME (SPEC 10.1). -->
     <style name="Theme.Lumen.Home" parent="@android:style/Theme.Material.NoActionBar.Fullscreen">
         <item name="android:windowBackground">@drawable/bg_start</item>
-        <item name="android:colorBackground">@color/z9x_bg</item>
+        <item name="android:colorBackground">@color/lumen_ground</item>
         <item name="android:windowShowWallpaper">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowContentOverlay">@null</item>
-        <item name="android:colorAccent">@color/z9x_accent</item>
-        <item name="android:textColorHighlight">#663B78E7</item>
+        <item name="android:colorAccent">@color/lumen_accent</item>
+        <item name="android:textColorHighlight">#66F2B26B</item>
         <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
-        <item name="android:windowSplashScreenBackground">@color/z9x_bg</item>
+        <item name="android:windowSplashScreenBackground">@color/lumen_ground</item>
         <item name="android:defaultFocusHighlightEnabled">false</item>
     </style>
     <!-- Search: its own task, same look. -->
@@ -22,7 +22,7 @@
         <item name="android:windowAnimationStyle">@null</item>
         <item name="android:colorBackgroundCacheHint">@null</item>
         <item name="android:backgroundDimEnabled">false</item>
-        <item name="android:colorAccent">@color/z9x_accent</item>
+        <item name="android:colorAccent">@color/lumen_accent</item>
         <item name="android:defaultFocusHighlightEnabled">false</item>
     </style>
 </resources>

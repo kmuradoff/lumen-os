@@ -28,6 +28,7 @@
     <string name="key_slot4">زر bilibili</string>
     <string name="slot_default_fmt">%1$s (افتراضي)</string>
     <string name="slot_default_item">الافتراضي: %1$s</string>
+    <string name="slot_home_apps">Lumen Home: التطبيقات</string>
     <string name="cancel">إلغاء</string>
     <string name="ok">حسنًا</string>
     <string name="app_not_found">لم يتم العثور على تطبيق لهذا الزر</string>

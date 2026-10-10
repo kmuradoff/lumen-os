@@ -1,0 +1,20 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of /system/bin/bootctl (not in the Lumen image; run.sh copies it into the fake root only for
+# the fallback cases). Same state as stubs/service ($Z9X_T/hal). Like the real tool, a "no" answer is
+# a silent exit 70 (EX_SOFTWARE); $Z9X_T/hal/bootctl_fail makes every call print an error and exit 70.
+H=$Z9X_T/hal
+echo "bootctl $*" >> "$Z9X_T/hal.log"
+[ -e "$H/bootctl_fail" ] && { echo "Error: boot control HAL unavailable" >&2; exit 70; }
+get() { cat "$H/$1" 2>/dev/null || echo 0; }
+case "$1" in
+  is-slot-marked-successful) [ "$(get "marked$2")" = 1 ] && exit 0; exit 70 ;;
+  is-slot-bootable) [ "$(get "bootable$2")" = 1 ] && exit 0; exit 70 ;;
+  mark-boot-successful) echo 1 > "$H/marked$(get current)" ;;
+  set-active-boot-slot) echo "$2" > "$H/active" ;;
+  get-active-boot-slot) get active ;;
+  get-snapshot-merge-status)
+    case "$(get merge)" in 0) echo none ;; 1) echo unknown ;; 2) echo snapshotted ;; 3) echo merging ;; *) echo cancelled ;; esac ;;
+  *) echo "bootctl: unknown command $1" >&2; exit 64 ;;
+esac
+exit 0

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Japanese translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">表示</string>
+    <string name="uires_row">インターフェースの解像度</string>
+    <string name="uires_default_fmt">%1$s（標準）</string>
+    <string name="uires_summary">4K は文字が最も鮮明です。1080p は XGIMI と同じで、グラフィックの負荷が最も軽くなります。変更するとプロジェクターが再起動します。</string>
+    <string name="uires_summary_fallback">現在は %1$s です。%2$s はこのプロジェクターで正しく起動しなかったため、自動的に戻りました。もう一度試すには %2$s を選んでください。</string>
+    <string name="uires_choose_text">4K は 4K パネルのすべての画素を使います。1080p は XGIMI と同じく 4 分の 1 の画素を描き、プロジェクターが画面を拡大します。</string>
+    <string name="uires_opt_1080">XGIMI と同じ：グラフィックの負荷が最も軽い、文字はやや柔らかめ</string>
+    <string name="uires_opt_1440">テスト用のみ：パネルへの拡大は未検証</string>
+    <string name="uires_opt_2160">最も鮮明な文字：4K パネルのすべての画素を使用</string>
+    <string name="uires_current">現在</string>
+    <string name="uires_confirm_title">%1$s に切り替えますか？</string>
+    <string name="uires_confirm_up">文字やメニューがより鮮明になります。グラフィックの描画量が増えるため、一部のアプリがやや遅く感じられることがあります。</string>
+    <string name="uires_confirm_down">グラフィックの描画量が減るため、メニューやアプリが速く感じられることがあります。文字はやや柔らかくなります。</string>
+    <string name="uires_confirm_restart">適用するためにプロジェクターが再起動します（約 1 分）。映像が正しく戻らない場合は、自動的に %1$s に戻ります。</string>
+    <string name="uires_restart">今すぐ再起動</string>
+    <string name="uires_keep_title">この解像度のままにしますか？</string>
+    <string name="uires_keep_text">インターフェースは現在 %1$s で動作しています。文字や映像が正しく表示されていれば「維持」を選んでください。</string>
+    <string name="uires_keep_countdown">%2$d 秒後に %1$s に戻ります</string>
+    <string name="uires_keep">維持</string>
+    <string name="uires_revert">%1$s に戻す</string>
+    <string name="uires_failed">解像度を変更できませんでした</string>
+</resources>

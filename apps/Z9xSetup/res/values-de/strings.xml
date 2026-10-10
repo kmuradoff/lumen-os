@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">Sprache auswählen</string>
     <string name="lang_more">Weitere Sprachen…</string>
     <string name="lang_more_hint">Einstellungen und Google-Apps verwenden diese Sprache. Lumen-Apps ohne Übersetzung bleiben auf Englisch.</string>
+    <string name="lang_more_hint_nogms">Die Einstellungen verwenden diese Sprache. Lumen-Apps ohne Übersetzung bleiben auf Englisch.</string>
     <string name="net_title">Mit dem Internet verbinden</string>
     <string name="net_subtitle">Wähle ein WLAN aus. Das geht auch später.</string>
     <string name="net_connected">Verbunden mit %1$s</string>
@@ -99,6 +100,7 @@
     <string name="done_home">Startbildschirm</string>
     <string name="done_start">Los geht’s</string>
     <string name="done_offline_hint">Kein Internet: Google-Anmeldung und Zeitzone später in den Einstellungen.</string>
+    <string name="done_offline_hint_nogms">Kein Internet: Zeitzone später in den Einstellungen festlegen.</string>
     <string name="done_blobs_missing">Komponenten für geschützte Videos fehlen, daher spielen manche Streaming-Apps nur in niedriger Qualität.</string>
     <string name="action_continue">Weiter</string>
     <string name="action_skip">Überspringen</string>

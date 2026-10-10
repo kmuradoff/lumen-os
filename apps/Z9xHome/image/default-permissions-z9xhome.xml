@@ -2,9 +2,15 @@
 <!-- Lumen OS: /system/product/etc/default-permissions/default-permissions-z9xhome.xml (0644).
      RECORD_AUDIO is needed by the SpeechRecognizer CLIENT (org.z9x.home search). Applied on first boot /
      when ro.build.version.incremental changes. The app also self-grants it as a fallback
-     (GRANT_RUNTIME_PERMISSIONS, signature). -->
+     (GRANT_RUNTIME_PERMISSIONS, signature).
+     READ_TV_LISTINGS (Lumen Home 1.0.0): the only DANGEROUS permission of TvProvider on this Android 14
+     image (TvProvider.apk: READ_TV_LISTINGS dangerous; READ_EPG_DATA / WRITE_EPG_DATA normal;
+     ACCESS_ALL_EPG_DATA / ACCESS_WATCHED_PROGRAMS signature|privileged). Home reads Watch Next and the
+     preview channels with the privileged ACCESS_ALL_EPG_DATA (privapp-permissions-z9xhome.xml); this
+     grant keeps the "limited" fallback (searchable programs) working if that is ever not granted. -->
 <exceptions>
     <exception package="org.z9x.home">
         <permission name="android.permission.RECORD_AUDIO" fixed="false" />
+        <permission name="android.permission.READ_TV_LISTINGS" fixed="false" />
     </exception>
 </exceptions>

@@ -43,6 +43,7 @@ toast_not_ready=Праектар яшчэ не гатовы
 toast_failed=Не ўдалося выканаць
 toast_curtain_offer=Відарыс зрушыўся: Праектар → Трапецыя → «Упісаць у экран зараз»
 toast_setup_running=Спачатку завяршыце наладжванне
+slot_home_apps=Lumen Home: праграмы
 
 @projector/strings_ak.xml
 ak_caption_keystone=Ідзе аўтакарэкцыя трапецыі
@@ -544,6 +545,38 @@ voice_hold=Утрымлівайце кнопку мікрафона, пакул�
 kb_title=Клавіятура
 kb_get_app=Усталяваць клавіятуру: %1$s
 kb_no_play=Google Play недаступны. Усталюйце праграму-клавіятуру, каб друкаваць на сваёй мове.
+tab_home=Галоўная
+hero_resume=Працягнуць
+hero_more=Падрабязней
+hero_kind_next=Наступная серыя
+hero_kind_watchlist=Буду глядзець
+weather_line=%1$s, %2$s
+wx_clear=ясна
+wx_partly=пераменная воблачнасць
+wx_cloudy=воблачна
+wx_fog=туман
+wx_drizzle=імжа
+wx_rain=дождж
+wx_snow=снег
+wx_showers=лівень
+wx_thunder=навальніца
+cz_wallpaper=Шпалеры
+cz_wallpaper_sub=Жывы пейзаж на галоўным экране і ў застаўцы: яго неба ідзе за сапраўдным сонцам і надвор’ем.
+cz_continue=Працягнуць прагляд на галоўнай
+cz_continue_sub=Калі схаваць, на галоўнай застануцца толькі гадзіннік, дата і надвор’е над жывымі шпалерамі і вашы праграмы. Каналы праграм таксама не паказваюцца.
+cz_continue_show=Паказваць
+cz_continue_hide=Схаваць
+apps_install_usb=Усталяваць з USB
+usb_title=Усталяванне з USB
+usb_none=Устаўце USB-назапашвальнік з файламі .apk (у корані або ў папцы apks).
+usb_empty=На USB-назапашвальніку няма файлаў .apk. Пакладзіце іх у корань або ў папку apks.
+usb_new=Новае
+usb_update=Абнаўленне
+usb_installing=Усталяванне: %1$d%%
+usb_done=%1$s усталявана
+usb_failed=%1$s не ўсталявана: %2$s
+kb_no_store=Усталюйце праграму-клавіятуру з USB-назапашвальніка: Праграмы > Усталяваць з USB.
+voice_none=Для галасавога пошуку патрэбна праграма распазнавання маўлення. Увядзіце запыт уручную.
 @updater/strings.xml
 app_name=Абнаўленне Lumen OS
 settings_title=Абнаўленне Lumen OS
@@ -631,6 +664,17 @@ n_available_body=Адкрыйце, каб спампаваць і ўсталяв
 n_ready_title=Перазапусціце, каб завяршыць абнаўленне
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s працуе
+done_unhealthy_body=Праверка пасля абнаўлення выявіла праблему: %1$s. Калі нешта не працуе, скарыстайцеся рэжымам аднаўлення (rescue) ва ўсталёўшчыку для камп’ютара. Даныя захоўваюцца.
+done_rescue_scan=Адскануйце код, каб адкрыць інструкцыю па аднаўленні.
+done_details=Тэхнічныя падрабязнасці: %1$s
+why_restarted=сістэма нечакана перазапусцілася
+why_service=не запусцілася сістэмная служба
+why_lamp=не запусцілася служба лямпы і вентылятараў
+why_confirm=сістэме не ўдалося пацвердзіць, што новая версія працуе
+why_no_rollback=вярнуцца да папярэдняй версіі было немагчыма
+why_unknown=падрабязнасці не запісаны
+blk_channel=Гэтае абнаўленне для іншай рэдакцыі Lumen OS (%1$s).
 @projector/strings_recents.xml
 recents_title=Нядаўнія праграмы
 recents_close=Закрыць
@@ -769,6 +813,8 @@ name_other=Іншае…
 name_hint=Назва (да 32 сімвалаў)
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=Гэтую мову будуць выкарыстоўваць налады. Праграмы Lumen без перакладу застануцца на англійскай.
+done_offline_hint_nogms=Няма інтэрнэту: выбраць часавы пояс можна пазней у наладах.
 @projector/strings_cec.xml
 cec_entry=HDMI-прылады (CEC)
 cec_unavailable=HDMI-CEC недаступны

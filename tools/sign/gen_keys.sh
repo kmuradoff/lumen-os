@@ -6,10 +6,9 @@
 #
 # Writes, for every name below:  <name>.pk8 (unencrypted PKCS#8 DER private key, mode 600),
 # <name>.x509.pem (public certificate), and FINGERPRINTS.txt (SHA-256 of each certificate).
-# The private keys have NO password (owner decision 2026-10-06); protection is the directory
-# itself: ~/.lumen-keys, mode 700, on the Mac only. Never copy this directory into the project
-# tree, the build laptop, a git repository or a cloud folder. Make two offline backups
-# (see docs/keys.md).
+# Protection is the directory itself: ~/.lumen-keys, mode 700, on the Mac only. Never copy this
+# directory into the project tree, the build laptop, a git repository or a cloud folder. Make two
+# offline backups (see docs/keys.md).
 #
 # Refuses to overwrite an existing key: losing or replacing 'platform' means every install
 # must be reflashed with a data wipe; losing 'ota' means no more OTA updates.
@@ -142,7 +141,7 @@ fi
 echo "APEX keys: $(echo "$APEX_MODULES" | wc -l | tr -d ' ') modules in $AK; public parts in $PUB"
 
 cat > "$KD/README.txt" <<'EOF'
-Lumen OS release keys (owner: kmuradoff). NO PASSWORDS: whoever has this folder can sign
+Lumen OS release keys (owner: kmuradoff). Whoever has this folder can sign
 system updates for every Lumen OS projector. Keep it only on this Mac (mode 700) plus two
 offline backups (e.g. an encrypted USB stick and a password-manager attachment).
 Never copy it into the project tree, the build laptop, git, iCloud/Dropbox, or a chat.

@@ -1,10 +1,12 @@
 package org.z9x.projector.dream;
 
+import android.Manifest;
 import android.app.DreamManager;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -38,6 +40,9 @@ public final class DreamSettings {
     /** Our dream. */
     public static final ComponentName CLOCK =
             new ComponentName("org.z9x.projector", "org.z9x.projector.dream.ClockDream");
+    /** Lumen Home's living sky: the screensaver default since Lumen OS 1.0.1 (DreamDefaults). */
+    public static final ComponentName SKY =
+            ComponentName.unflattenFromString(DreamDefaults.SKY);
 
     // Settings.Secure keys (@hide constants; literal names as in Settings.java, Lineage 21).
     private static final String SCREENSAVER_ENABLED = "screensaver_enabled";
@@ -70,6 +75,10 @@ public final class DreamSettings {
 
     private static final String K_LAMP = "dream_lamp";
     private static final String K_DEFAULTS = "dream_defaults_v1";
+    /** Lumen OS 1.0.1: the living sky as the screensaver default, once (also on upgraded projectors). */
+    private static final String K_DEFAULTS_V2 = "dream_defaults_v2";
+    /** IdleOwner's saved choice (its private K_SAVED, same prefs file): what "screensaver on" brings back. */
+    private static final String K_IDLE_SAVED = "dream_saved_components";
 
     private static volatile int sLampLevel = LAMP_DEFAULT;
 
@@ -226,7 +235,7 @@ public final class DreamSettings {
     public static boolean isClockActive(Context c) {
         try {
             String s = Settings.Secure.getString(c.getContentResolver(), SCREENSAVER_COMPONENTS);
-            if (TextUtils.isEmpty(s)) return false;     // falls back to the default (Backdrop)
+            if (TextUtils.isEmpty(s)) return false;     // falls back to the framework default (the sky)
             String first = s.split(",")[0].trim();
             ComponentName cn = ComponentName.unflattenFromString(first);
             return CLOCK.equals(cn);
@@ -235,22 +244,58 @@ public final class DreamSettings {
         }
     }
 
-    /** Makes the clock the active screensaver (Backdrop / Colors stay selectable in TvSettings). */
+    /** Makes the clock the active screensaver (the sky and others stay selectable in TvSettings). */
     public static void makeClockActive(Context ctx, Runnable done) {
+        makeActive(ctx, CLOCK, done);
+    }
+
+    /**
+     * Lumen OS 1.0.1 (the quick panel's "Show" row): the living sky or the clock becomes the active
+     * screensaver, both ways; any other dream stays selectable in TvSettings. {@code done} (may be null)
+     * runs on the main thread after the write.
+     */
+    public static void makeActive(Context ctx, ComponentName dream, Runnable done) {
         final Context app = ctx.getApplicationContext();
         DreamLamp.worker().post(() -> {
-            setActive(app);
+            setActive(app, dream);
             if (done != null) Ui.main().post(done);
         });
     }
 
+    /** Which of the sky / the clock is the active screensaver (screensaver_components). Cheap read. */
+    static DreamDefaults.Shown shown(Context c) {
+        try {
+            return DreamDefaults.shown(Settings.Secure.getString(c.getContentResolver(), SCREENSAVER_COMPONENTS));
+        } catch (Throwable t) {
+            return DreamDefaults.Shown.OTHER;
+        }
+    }
+
+    /** Lumen Home's living sky is installed as a dream (it can be chosen). */
+    static boolean skyInstalled(Context c) {
+        return isInstalledDream(c, SKY);
+    }
+
+    /**
+     * The sky's name as TvSettings lists it (its own label, in the current language), else our
+     * {@code dream_sky}. Main thread; one PackageManager lookup.
+     */
+    static CharSequence skyLabel(Context c) {
+        try {
+            CharSequence l = c.getPackageManager().getServiceInfo(SKY, 0).loadLabel(c.getPackageManager());
+            if (!TextUtils.isEmpty(l)) return l;
+        } catch (Exception ignored) {     // not installed / disabled
+        }
+        return c.getString(R.string.dream_sky);
+    }
+
     /** z9x-lamp. */
-    private static boolean setActive(Context app) {
+    private static boolean setActive(Context app, ComponentName dream) {
         try {
             DreamManager dm = app.getSystemService(DreamManager.class);
             if (dm != null) {
-                dm.setActiveDream(CLOCK);                       // WRITE_DREAM_STATE
-                Log.i(TAG, "active dream -> " + CLOCK.flattenToShortString());
+                dm.setActiveDream(dream);                       // WRITE_DREAM_STATE
+                Log.i(TAG, "active dream -> " + dream.flattenToShortString());
                 return true;
             }
         } catch (Throwable t) {
@@ -258,8 +303,8 @@ public final class DreamSettings {
         }
         try {
             boolean ok = Settings.Secure.putString(app.getContentResolver(), SCREENSAVER_COMPONENTS,
-                    CLOCK.flattenToString());                   // WRITE_SECURE_SETTINGS
-            Log.i(TAG, "screensaver_components -> clock: " + ok);
+                    dream.flattenToString());                   // WRITE_SECURE_SETTINGS
+            Log.i(TAG, "screensaver_components -> " + dream.flattenToShortString() + ": " + ok);
             return ok;
         } catch (Throwable t) {
             Log.w(TAG, "screensaver_components: " + t);
@@ -290,30 +335,31 @@ public final class DreamSettings {
     // =================================================================== one-shot defaults
 
     /**
-     * SystemFixes.onBoot (BOOT_COMPLETED). Once per data partition (pref marker), idempotent:
-     *  1. screensaver_components empty (never chosen; live value null -> Backdrop by default)
-     *     -> our clock becomes the active screensaver. A user choice is never overridden, and the
-     *     marker keeps a later TvSettings choice (e.g. Backdrop) from being replaced.
-     *  2. sleep_timeout still the ATV default 24 h -> 4 h (LIMIT_FORGOTTEN_DREAM). v6.5: IdleOwner has
-     *     already taken sleep_timeout over (with the same 24 h -> 4 h rule) and set it to -1, so this
-     *     step only logs "kept".
+     * SystemFixes.onBoot (BOOT_COMPLETED). Once per data partition (pref markers), idempotent:
+     *  1. (v2, Lumen OS 1.0.1, marker dream_defaults_v2; replaces v1's "clock while none was chosen")
+     *     the living sky of Lumen Home becomes the active screensaver while screensaver_components is
+     *     unset or names only defaults of earlier images (the v1 clock, Android's Colors / Backdrop /
+     *     DeskClock; DreamDefaults). A user's own choice is never overridden, and the marker keeps any
+     *     later choice (the panel's "Use clock", TvSettings) from being replaced. Screensaver on / off
+     *     stays as it was: on (the default) stays on with the sky; off (IdleOwner: the blank standby
+     *     dream is active) stays off, and the choice "screensaver on" brings back becomes the sky
+     *     instead. Without the sky as an installed dream: an unset value gets the clock (the v1 rule).
+     *  2. (v1 only, fresh data) sleep_timeout still the ATV default 24 h -> 4 h (LIMIT_FORGOTTEN_DREAM).
+     *     v6.5: IdleOwner has already taken sleep_timeout over (with the same 24 h -> 4 h rule) and set
+     *     it to -1, so this step only logs "kept".
      * screensaver_enabled, activate_on_sleep and screen_off_timeout are not touched here (v6.5: IdleOwner).
+     * Every decision is logged (tag Z9xDream, "defaults: ...").
      */
     public static void applyDefaultsOnce(Context ctx) {
         final Context app = ctx.getApplicationContext();
         DreamLamp.worker().post(() -> {
             try {
                 SharedPreferences p = DreamLamp.prefs(app);
-                if (p.getBoolean(K_DEFAULTS, false)) return;
+                boolean v1 = p.getBoolean(K_DEFAULTS, false), v2 = p.getBoolean(K_DEFAULTS_V2, false);
+                if (v1 && v2) return;
                 ContentResolver cr = app.getContentResolver();
-                String comps = Settings.Secure.getString(cr, SCREENSAVER_COMPONENTS);
-                boolean ok = true;
-                if (TextUtils.isEmpty(comps)) {
-                    ok = setActive(app);
-                } else {
-                    Log.i(TAG, "defaults: screensaver already chosen (" + comps + "), kept");
-                }
-                if (LIMIT_FORGOTTEN_DREAM) {
+                boolean ok = v2 || applySkyDefault(app, p);
+                if (!v1 && LIMIT_FORGOTTEN_DREAM) {
                     long st = Settings.Secure.getLong(cr, SLEEP_TIMEOUT, Long.MIN_VALUE);
                     if (st == ATV_DEFAULT_SLEEP_MS) {
                         boolean w = Settings.Secure.putLong(cr, SLEEP_TIMEOUT, LIMIT_SLEEP_MS);
@@ -322,10 +368,59 @@ public final class DreamSettings {
                         Log.i(TAG, "defaults: sleep_timeout " + st + " kept");
                     }
                 }
-                if (ok) p.edit().putBoolean(K_DEFAULTS, true).commit();
+                if (ok) p.edit().putBoolean(K_DEFAULTS, true).putBoolean(K_DEFAULTS_V2, true).commit();
             } catch (Throwable t) {
                 Log.w(TAG, "defaults: " + t + " (retried on the next boot)");
             }
         });
+    }
+
+    /** z9x-lamp. Step 1 of {@link #applyDefaultsOnce}; false = a write failed, tried again next boot. */
+    private static boolean applySkyDefault(Context app, SharedPreferences p) {
+        ContentResolver cr = app.getContentResolver();
+        String comps = Settings.Secure.getString(cr, SCREENSAVER_COMPONENTS);
+        boolean sky = isInstalledDream(app, SKY);
+        // IdleOwner.install (App.onCreate) ran its enforce on this thread before BOOT_COMPLETED
+        boolean off = IdleOwner.isUserOff() || p.getBoolean(IdleOwner.K_USER_OFF, false) || DreamDefaults.isIdle(comps);
+        if (off) {
+            String saved = p.getString(K_IDLE_SAVED, "");
+            if (DreamDefaults.savedToSky(saved, sky)) {
+                boolean ok = p.edit().putString(K_IDLE_SAVED, SKY.flattenToString()).commit();
+                Log.i(TAG, "defaults: screensaver off, kept off; it returns as the sky (saved " + saved + "): " + ok);
+                return ok;
+            }
+            Log.i(TAG, "defaults: screensaver off, kept off; saved choice " + saved + " kept (sky installed: " + sky + ")");
+            return true;
+        }
+        switch (DreamDefaults.active(comps, sky)) {
+            case SKY: {
+                boolean ok = setActive(app, SKY);
+                Log.i(TAG, "defaults: screensaver on, stays on; " + comps + " (unset or an earlier default) -> sky: " + ok);
+                return ok;
+            }
+            case CLOCK: {
+                boolean ok = setActive(app, CLOCK);
+                Log.i(TAG, "defaults: screensaver unset and the sky is not installed -> clock: " + ok);
+                return ok;
+            }
+            case ALREADY:
+                Log.i(TAG, "defaults: the sky is already the screensaver (" + comps + ")");
+                return true;
+            default:
+                Log.i(TAG, "defaults: screensaver " + comps + " kept (the user's choice"
+                        + (sky ? "" : ", or the sky is not installed") + ")");
+                return true;
+        }
+    }
+
+    /** An enabled service the system may bind as a dream (DreamManagerService validates the same). */
+    private static boolean isInstalledDream(Context app, ComponentName cn) {
+        if (cn == null) return false;
+        try {
+            ServiceInfo si = app.getPackageManager().getServiceInfo(cn, 0);
+            return si != null && Manifest.permission.BIND_DREAM_SERVICE.equals(si.permission);
+        } catch (Exception e) {     // NameNotFoundException: not installed, or disabled
+            return false;
+        }
     }
 }

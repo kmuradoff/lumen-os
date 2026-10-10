@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Live sky and screensaver (org.z9x.home.sky), English base. The values-<locale>/strings_sky.xml
+     files are hand-maintained in gen.py's format and pass its checks (validate_dir_file). -->
+<resources>
+    <string name="sky_dream_label">Live landscape</string>
+    <string name="sky_scene_auto">New every day</string>
+    <string name="sky_scene_mountains">Mountain lake</string>
+    <string name="sky_scene_sea">Sea</string>
+    <string name="sky_scene_hills">Hills</string>
+    <string name="sky_scene_city">City</string>
+    <string name="sky_scene_dunes">Dunes</string>
+    <string name="sky_scene_forest">Misty forest</string>
+</resources>

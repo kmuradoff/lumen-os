@@ -21,7 +21,9 @@ import java.util.List;
 /**
  * Right-side panel with a title and a focusable list (context menu, weather popover, Customize pages).
  * Manual focus, white focus pill, toggles, checks, reorder mode (OK picks an item up, UP/DOWN moves
- * it, OK/BACK drops it), optional text editor row at the top (city search, rename).
+ * it, OK/BACK drops it), optional text editor row at the top (city search, rename). TV safe area (1.0.1
+ * follow-up): on the screen-edge side the content keeps 64 px (the focus pill 56 px) off the edge, and
+ * a focused item never scrolls closer than 64 px to the bottom.
  */
 public class ListPanel extends ViewGroup {
     public static final int ACTION = 0, TOGGLE = 1, CHECK = 2, INFO = 3, REORDER = 4, HEADER = 5;
@@ -29,6 +31,7 @@ public class ListPanel extends ViewGroup {
     public static final class Item {
         public int kind = ACTION;
         public int icon;
+        public Drawable drawable;         // a ready icon in its own colours (an APK's icon), instead of icon
         public CharSequence text = "";
         public CharSequence value = "";
         public boolean on;
@@ -86,20 +89,23 @@ public class ListPanel extends ViewGroup {
     private int mFocus = -1;          // -1 = editor (if any)
     private int mPicked = -1;
     private MoveListener mMove;
-    private final int mPad;
+    private final int mPad, mPadEdge;
 
     public ListPanel(Context c) {
         super(c);
         mPad = Theme.px(40);
+        mPadEdge = Theme.px(Theme.SAFE + 10); // the panel sits at the screen's end edge
         setBackgroundColor((Theme.SURFACE & 0x00FFFFFF) | 0xFA000000);
         mTitle = new TextView(c);
-        Theme.text(mTitle, 36, Theme.MEDIUM, Theme.TEXT1);
+        Theme.text(mTitle, 40, Theme.DISPLAY, Theme.TEXT1);
         mTitle.setMaxLines(2);
         mTitle.setEllipsize(TextUtils.TruncateAt.END);
         addView(mTitle);
         mSub = new TextView(c);
         Theme.text(mSub, 24, Theme.REGULAR, Theme.TEXT2);
-        mSub.setMaxLines(3);
+        // up to 6 lines: a setting's explanation (cz_continue_sub: 4 lines in most languages in the safe
+        // area's 536 px, 6 at font scale 1.3) must not lose its last sentence
+        mSub.setMaxLines(6);
         mSub.setEllipsize(TextUtils.TruncateAt.END);
         addView(mSub);
         mList = new ViewGroup(c) {
@@ -226,7 +232,7 @@ public class ListPanel extends ViewGroup {
         View v = mViews.get(i);
         int top = mList.getTop() + v.getTop() + (int) mList.getTranslationY();
         int bottom = top + v.getHeight();
-        int minY = mList.getTop(), maxY = getHeight() - mPad;
+        int minY = mList.getTop(), maxY = getHeight() - mPadEdge;
         float ty = mList.getTranslationY();
         if (bottom > maxY) ty -= bottom - maxY;
         else if (top < minY) ty += minY - top;
@@ -319,7 +325,7 @@ public class ListPanel extends ViewGroup {
     @Override
     protected void onMeasure(int wms, int hms) {
         int w = MeasureSpec.getSize(wms), h = MeasureSpec.getSize(hms);
-        int cw = w - 2 * mPad;
+        int cw = w - mPad - mPadEdge;
         int un = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
         mTitle.measure(MeasureSpec.makeMeasureSpec(cw, MeasureSpec.EXACTLY), un);
         mSub.measure(MeasureSpec.makeMeasureSpec(cw, MeasureSpec.EXACTLY), un);
@@ -331,7 +337,7 @@ public class ListPanel extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        int x = mPad;
+        int x = Theme.rtl(this) ? mPadEdge : mPad;
         int y = Theme.px(72);
         mTitle.layout(x, y, x + mTitle.getMeasuredWidth(), y + mTitle.getMeasuredHeight());
         y += mTitle.getMeasuredHeight() + Theme.px(8);
@@ -375,8 +381,13 @@ public class ListPanel extends ViewGroup {
 
         void bind(Item it) {
             mIt = it;
-            mIcon = it.icon != 0 ? Theme.icon(getContext(), it.icon, it.rawIcon ? 0 : Theme.TEXT1) : null;
-            mIconF = it.icon != 0 ? Theme.icon(getContext(), it.icon, it.rawIcon ? 0 : Theme.ON_FOCUS) : null;
+            if (it.drawable != null) {
+                mIcon = it.drawable;
+                mIconF = it.drawable;
+            } else {
+                mIcon = it.icon != 0 ? Theme.icon(getContext(), it.icon, it.rawIcon ? 0 : Theme.TEXT1) : null;
+                mIconF = it.icon != 0 ? Theme.icon(getContext(), it.icon, it.rawIcon ? 0 : Theme.ON_FOCUS) : null;
+            }
             mText.setTypeface(it.kind == HEADER ? Theme.MEDIUM : (it.kind == INFO ? Theme.REGULAR : Theme.MEDIUM));
             mL1 = null;
             setContentDescription(it.text + (it.value.length() > 0 ? ", " + it.value : ""));
@@ -396,7 +407,7 @@ public class ListPanel extends ViewGroup {
         }
 
         private int textWidth(int w) {
-            int left = Theme.px(mIt.icon != 0 ? 84 : 28);
+            int left = Theme.px(mIt.icon != 0 || mIt.drawable != null ? 84 : 28);
             int right = Theme.px(mIt.kind == TOGGLE ? 110 : (mIt.kind == CHECK || mIt.kind == REORDER ? 70 : 28));
             return Math.max(10, w - left - right);
         }

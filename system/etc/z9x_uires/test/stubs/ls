@@ -1,0 +1,13 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox ls: 'ls -Zd FILE' prints "CONTEXT FILE" from $Z9X_T/labels like the stat stub
+# ($Z9X_T/ls.fail: nothing, exit 1); anything else is the host's ls.
+if [ "${1-}" = -Zd ] && [ $# -eq 2 ]; then
+  [ -f "$Z9X_T/ls.fail" ] && exit 1
+  [ -e "$2" ] || { echo "ls: $2: No such file or directory" >&2; exit 1; }
+  l=$(awk -v f="$2" 'substr($0, 1, length(f) + 1) == f " " { l = substr($0, length(f) + 2) } END { print l }' "$Z9X_T/labels" 2>/dev/null)
+  case "$2" in "$Z9X_ROOT"/dev/*) l=${l:-u:object_r:device:s0} ;; esac
+  echo "${l:-?} $2"
+  exit 0
+fi
+exec /bin/ls "$@"

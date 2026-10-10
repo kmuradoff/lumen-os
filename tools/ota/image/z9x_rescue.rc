@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS boot rescue (image path /system/etc/init/z9x_rescue.rc; script /system/etc/z9x/z9x_rescue.sh
+# 0755). Owner decision 2026-10-08: 3 starts in a row without sys.boot_completed -> the next start
+# reboots into fastbootd (reboot,fastboot) for 'lumen-install rescue'. An unverified OTA slot is left to
+# z9x_ota.sh's rollback first. See z9x_rescue.sh and docs/ota.md ("Boot rescue").
+#
+#   init           z9x_rescue.sh count (exec, root): counter in /metadata/z9x_rescue (first-stage
+#                  mount, so it is there at 'on init', before every other Lumen exec); a few ms
+#   boot_completed z9x_rescue_ok: counter back to 0
+# Kill switch: ro.z9x.rescue=0, or the file /metadata/z9x_rescue/off.
+# Domain u:r:su:s0 exists only on userdebug (this image), like z9x_ota.
+
+on init
+    exec u:r:su:s0 root root -- /system/bin/sh /system/etc/z9x/z9x_rescue.sh count
+
+on property:sys.boot_completed=1
+    start z9x_rescue_ok
+
+service z9x_rescue_ok /system/bin/sh /system/etc/z9x/z9x_rescue.sh ok
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled

@@ -22,10 +22,11 @@
 #   6. sums   SHA256SUMS of the image (+ signature with the OTA key: SHA256SUMS.sig, checked by the
 #             installer with the public ota certificate)
 #
-# VARIANT=private (default, the only variant Lumen OS 1.0 can build: MTK Codec2 libs inside) names the
-# image lumen-os-<ver>-PRIVATE-system.img: never a release asset (tools/ota/check_release_assets.py
-# refuses it before any gh release). VARIANT=public expects a blob-free image (check_image.py
-# --variant public fails otherwise) and names it lumen-os-<ver>-system.img.
+# VARIANT=private (default: MTK Codec2 libs inside) names the image lumen-os-<ver>-PRIVATE-system.img:
+# never a release asset (tools/ota/check_release_assets.py refuses it before any gh release).
+# VARIANT=public expects a blob-free image (check_image.py --variant public fails otherwise) and names it
+# lumen-os-<ver>-system.img. Lumen OS 1.0.1+ builds both variants with tools/lumen_v1.sh (VARIANT=public
+# there writes the release files itself, docs/release.md); this script is the 1.0 test-build flow.
 #
 # Env: BUILDER (user@host of the build laptop) and SSH_KEY (its ssh key), from the environment or
 #      from ~/.config/lumen/builder.env (BUILDER=... SSH_KEY=...; personal, never in the repo),

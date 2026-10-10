@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Korean translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">문제 보고서 보내기</string>
+    <string name="report_intro">Lumen OS 개발자가 무엇이 잘못되었는지 파악하는 데 도움이 됩니다. ‘보고서 보내기’를 누르기 전에는 아무것도 전송되지 않습니다.</string>
+    <string name="report_included">포함되는 항목</string>
+    <string name="report_inc_system">시스템 버전, 가동 시간, 시스템 슬롯</string>
+    <string name="report_inc_logs">최근 30분간의 시스템 및 Lumen 앱 로그</string>
+    <string name="report_inc_crashes">앱 이름이 포함된 비정상 종료, 멈춤, 재시작 기록</string>
+    <string name="report_inc_kernel">마지막 재시작의 커널 로그와 업데이트 로그</string>
+    <string name="report_inc_state">화면, 메모리, 네트워크 유형</string>
+    <string name="report_excluded">삭제되거나 포함되지 않는 항목</string>
+    <string name="report_exc_accounts">계정, 이메일 주소, 전화번호</string>
+    <string name="report_exc_network">Wi-Fi 네트워크 이름, IP 및 MAC 주소</string>
+    <string name="report_exc_serial">일련번호: 대신 이 프로젝터의 임의 ID 사용</string>
+    <string name="report_exc_apps">직접 설치한 앱의 로그</string>
+    <string name="report_exc_files">사진, 파일, 비밀번호</string>
+    <string name="report_footer">보고서는 30일 동안 보관됩니다. Lumen OS 개발자만 열어 볼 수 있습니다.</string>
+    <string name="report_last">마지막 보고서: %1$s, %2$s</string>
+    <string name="report_send">보고서 보내기</string>
+    <string name="report_collecting">정보 수집 중… (%1$d/%2$d)</string>
+    <string name="report_log_hint">Android에서 기기 로그 액세스를 허용할지 물으면 ‘허용’을 선택하세요.</string>
+    <string name="report_sending">보내는 중… %1$s/%2$s</string>
+    <string name="report_done_title">보고서를 보냈습니다</string>
+    <string name="report_done_text">이 코드를 문제에 대한 간단한 설명과 함께 Lumen OS 개발자에게 보내 주세요.</string>
+    <string name="report_failed_title">보고서를 보내지 못했습니다</string>
+    <string name="report_err_no_network">인터넷에 연결되어 있지 않습니다. 네트워크를 확인하고 다시 시도하세요.</string>
+    <string name="report_err_network">보고서 서버에 연결할 수 없습니다. 잠시 후 다시 시도하세요.</string>
+    <string name="report_err_rate">지금은 보고서가 너무 많습니다. 잠시 후 다시 시도하세요.</string>
+    <string name="report_err_rejected">보고서 서버가 보고서를 받지 않았습니다.</string>
+    <string name="report_err_server">보고서 서버에 문제가 있습니다. 잠시 후 다시 시도하세요.</string>
+    <string name="report_err_collect">보고서를 준비하지 못했습니다.</string>
+    <string name="report_retry">다시 시도</string>
+    <string name="report_close">닫기</string>
+</resources>

@@ -6,6 +6,11 @@ Subcommands (every one exits non-zero with 'ERROR ...' lines on a failure):
   apks APPS_DIR TESTCERTS RELEASECERTS PLAN_OUT
         validate the APK set of all lanes in overlay/apps_v1 (package, version, overlay target,
         signer, contract filters, dexpreopt eligibility) and write the install plan (TSV)
+  maxui APK MIN_WIDTH          the framework RRO (Z9xFrameworkKeysOverlay.apk) sets
+                               integer/config_maxUiWidth, once, default config, a plain integer
+                               >= MIN_WIDTH (UI resolution 4K: lumen_v1.sh preflight while
+                               ro.z9x.uires.allow=1); read tool-free and, when an aapt2 is found,
+                               cross-checked with 'aapt2 dump resources'
   base BASE_TAR REMOVE...      the base tar has every path this build relies on, nothing it adds
   verify BASE_TAR OUT_TAR SPEC member diff and content checks of the output against the base
   packages TAR                 package-level checks over every APK in a tar (removed / required
@@ -25,6 +30,7 @@ import json
 import os
 import re
 import struct
+import subprocess
 import sys
 import tarfile
 import zipfile
@@ -95,7 +101,7 @@ NEEDS_ACTION = {
     'org.z9x.updater': ['android.settings.SYSTEM_UPDATE_SETTINGS'],  # About > System update row
 }
 HOME_PRIO = {'org.z9x.setup': 10, 'org.z9x.home': 3}                 # plan C3
-VERSION_NAME = '1.0'
+VERSION_NAME = '1.0.1'  # Lumen OS 1.0.1 (1.0.0 had '1.0.0', the 1.0 builds '1.0')
 
 
 def cmd_apks(apps, testcerts, releasecerts, plan_out):
@@ -140,8 +146,8 @@ def cmd_apks(apps, testcerts, releasecerts, plan_out):
         if kind == 'pinned' and name not in pins and PINNED.get(name) and PINNED[name] != h:
             err('%s: sha256 %s is not the pinned v6.5 build %s' % (name, h, PINNED[name]))
         if kind in ('app', 'rro') and m['versionName'] != VERSION_NAME:
-            err('%s: versionName %r, expected %r (build_apk.sh VERSION_NAME=1.0 / manifest)'
-                % (name, m['versionName'], VERSION_NAME))
+            err('%s: versionName %r, expected %r (build_apk.sh VERSION_NAME=%s / manifest)'
+                % (name, m['versionName'], VERSION_NAME, VERSION_NAME))
         if cert in test_platform:
             signer = 'test-platform'
         elif cert in rel_platform:
@@ -220,6 +226,101 @@ def check_airplay(p, m):
             libs.append(i.filename)
     if sorted(libs) != ['lib/arm64-v8a/libz9xairplay.so', 'lib/armeabi-v7a/libz9xairplay.so']:
         err('Z9xAirPlay: native libs %r' % libs)
+
+
+# ------------------------------------------------------------------- UI resolution: max UI width
+# TvFrameworkOverlay (com.android.tv.overlay.framework) sets config_maxUiWidth 1920, and WindowManager
+# (DisplayContent.updateBaseDisplayMetrics / setForcedSize) clamps the base and any forced width to it:
+# the 4K start of lumen-1.0.1-20261009d ran WM at 1920x1080 over a 3840x2160 display and fell back
+# (overlay/v1/z9x_uires/README.md, "Why"). Our framework RRO (priority 2000, above TvFrameworkOverlay and
+# the Lineage product RRO) must lift it to at least the 4K mode's width.
+def find_aapt2():
+    """An aapt2 for the cross-check, or None: $AAPT2, $BUILD_TOOLS, the Mac SDK (build_apk.sh's 36.0.0
+    first, else the newest), tools/bt (the laptop's links into the Lineage out tree), the Lineage out tree,
+    PATH."""
+    home = os.path.expanduser('~')
+    sdk = os.environ.get('ANDROID_SDK') or os.path.join(home, 'Library/Android/sdk')
+    c = [os.environ.get('AAPT2', ''), os.path.join(os.environ.get('BUILD_TOOLS', '/nonexistent'), 'aapt2'),
+         os.path.join(sdk, 'build-tools/36.0.0/aapt2')]
+    bt = os.path.join(sdk, 'build-tools')
+    if os.path.isdir(bt):
+        def vkey(v):
+            return [int(x) if x.isdigit() else 0 for x in re.split(r'[.-]', v)]
+        c += [os.path.join(bt, v, 'aapt2') for v in sorted(os.listdir(bt), key=vkey, reverse=True)]
+    c += [os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'bt', 'aapt2'),
+          os.path.join(os.environ.get('LINEAGE') or os.path.join(home, 'lineage'), 'out/host/linux-x86/bin/aapt2')]
+    c += [os.path.join(d, 'aapt2') for d in os.environ.get('PATH', '').split(os.pathsep) if d]
+    for p in c:
+        if p and os.path.isfile(p) and os.access(p, os.X_OK):
+            return os.path.realpath(p)
+    return None
+
+
+def aapt2_values(aapt2, apk, rtype, name):
+    """[(config, value text)] of rtype/name in 'aapt2 dump resources' ('' = default config)."""
+    r = subprocess.run([aapt2, 'dump', 'resources', apk], capture_output=True, text=True)
+    if r.returncode != 0:
+        raise RuntimeError('aapt2 dump resources: %s' % (r.stderr.strip() or r.returncode))
+    out, cur = [], False
+    for line in r.stdout.splitlines():
+        m = re.match(r'\s*resource 0x[0-9a-f]{8} (\S+)', line)
+        if m:
+            cur = m.group(1) == '%s/%s' % (rtype, name)
+        elif re.match(r'\s*(type|Package) ', line):
+            cur = False
+        elif cur:
+            v = re.match(r'\s*\((.*?)\) (.*)$', line)
+            if v:
+                out.append((v.group(1), v.group(2).strip()))
+    return out
+
+
+def cmd_maxui(apk, minw):
+    minw = int(minw)
+    name = os.path.basename(apk)
+    try:
+        b = open(apk, 'rb').read()
+        m = apkinfo.manifest_bytes(b)
+        vals = apkinfo.resource_values(b, 'integer', 'config_maxUiWidth')
+    except Exception as e:  # noqa: BLE001
+        err('%s: cannot read (%s)' % (apk, e)); done('')
+    if m['package'] != 'org.z9x.overlay.framework' or (m['overlay'] or {}).get('target') != 'android':
+        err('%s: not the framework RRO org.z9x.overlay.framework on android (%s, %r)'
+            % (name, m['package'], m['overlay']))
+    if not vals:
+        err('%s: no integer/config_maxUiWidth: TvFrameworkOverlay\'s 1920 would cap the 4K UI at 1920x1080 '
+            '(apps/Z9xFrameworkKeysOverlay/res/values/config.xml)' % name)
+    elif len(vals) != 1 or not vals[0]['default']:
+        err('%s: config_maxUiWidth must be set once, in the default configuration (res/values), not %r'
+            % (name, [(v['config'], v['data']) for v in vals]))
+    elif vals[0]['complex'] or vals[0]['dataType'] not in (apkinfo.TYPE_INT_DEC, apkinfo.TYPE_INT_HEX):
+        err('%s: config_maxUiWidth is not a plain integer (dataType %r)' % (name, vals[0]['dataType']))
+    elif vals[0]['data'] < minw:
+        err('%s: config_maxUiWidth %d < %d: WindowManager would cap the 4K UI' % (name, vals[0]['data'], minw))
+    got = vals[0]['data'] if len(vals) == 1 else None
+    aapt2 = find_aapt2()
+    how = 'tool-free'
+    if aapt2:
+        try:
+            av = aapt2_values(aapt2, apk, 'integer', 'config_maxUiWidth')
+        except Exception as e:  # noqa: BLE001
+            err('%s: %s' % (name, e)); av = None
+        if av is not None:
+            def num(s):
+                try:
+                    return int(s, 0)
+                except ValueError:
+                    return s
+            # both readers must see the same values (default config or not, value) in the same order
+            mine = [(v['default'], v['data']) for v in vals]
+            theirs = [(cfg == '', num(val)) for cfg, val in av]
+            if mine != theirs:
+                err('%s: aapt2 dump resources shows config_maxUiWidth %r, the tool-free read %r'
+                    % (name, av, [(v['config'], v['data']) for v in vals]))
+            how = 'tool-free + %s' % aapt2
+    else:
+        print('note: no aapt2 found ($AAPT2, $BUILD_TOOLS, Android SDK, tools/bt, Lineage out, PATH): tool-free read only')
+    done('max UI width ok: %s config_maxUiWidth=%s >= %d (%s)' % (name, got, minw, how))
 
 
 # ----------------------------------------------------------------------------------- base check
@@ -398,12 +499,20 @@ REQUIRED = ['android', 'lineageos.platform', 'org.z9x.projector', 'org.z9x.tvinp
             'org.z9x.home', 'org.z9x.setup', 'org.z9x.updater', 'org.z9x.overlay.framework',
             'org.z9x.overlay.lineageplatform', 'org.z9x.overlay.deviceconfig',
             'org.z9x.overlay.tvsettings.hdr',
-            'com.google.android.apps.mediashell',          # Chromecast built-in (user decision: kept)
-            'com.google.android.tungsten.setupwraith',     # Google sign-in needs it (plan C22)
-            'com.google.android.gms', 'com.google.android.gsf', 'com.android.vending',
-            'com.google.android.tvlauncher', 'com.google.android.tvrecommendations',
-            'org.lineageos.tvcustomizer', 'org.protonaosp.deviceconfig',
+            'org.protonaosp.deviceconfig',
             'com.android.tv.settings', 'com.android.providers.tv']
+# the Google edition (GMS=1, tools/lumen_v1.sh) only
+GOOGLE_REQUIRED = ['com.google.android.apps.mediashell',          # Chromecast built-in (user decision: kept)
+                   'com.google.android.tungsten.setupwraith',     # Google sign-in needs it (plan C22)
+                   'com.google.android.gms', 'com.google.android.gsf', 'com.android.vending',
+                   'com.google.android.tvlauncher', 'com.google.android.tvrecommendations',
+                   'org.lineageos.tvcustomizer']
+# Lumen OS without Google (GMS=0, docs/NOGMS_PLAN.md section 5): none of these, and no com.google.* /
+# com.mtg.* package at all
+NOGMS_FORBIDDEN = GOOGLE_REQUIRED + ['com.google.android.ext.shared', 'com.google.android.tts',
+                                     'com.google.android.marvin.talkback', 'com.google.android.backdrop',
+                                     'com.google.android.tv.remote.service', 'com.mtg.atvoverlay',
+                                     'com.google.android.tungsten.setupwraith.lineageoverlay']
 
 
 def iter_apks(path):
@@ -414,6 +523,14 @@ def iter_apks(path):
 
 
 def cmd_packages(path):
+    gms = os.environ.get('GMS', '1')
+    if gms not in ('0', '1'):
+        err('GMS=%r: expected 0 or 1' % gms)
+        gms = '1'
+    required = REQUIRED + (GOOGLE_REQUIRED if gms == '1' else [])
+    forbidden = dict(FORBIDDEN)
+    if gms == '0':
+        forbidden.update({p: 'Google package in the no-Google edition (GMS=0)' for p in NOGMS_FORBIDDEN})
     pkgs, homes = {}, []
     for name, b in iter_apks(path):
         try:
@@ -426,10 +543,14 @@ def cmd_packages(path):
             homes.append((pr, p, name))
         if p and p.startswith('org.z9x.') and 'com.tv.settings.action.PARTNER_CUSTOMIZATION' in mf['actions']:
             err('%s declares PARTNER_CUSTOMIZATION' % p)
-    for p, why in FORBIDDEN.items():
+    for p, why in forbidden.items():
         if p in pkgs:
             err('forbidden package %s present (%s): %s' % (p, why, pkgs[p]))
-    for p in REQUIRED:
+    if gms == '0':
+        for p, where in sorted(pkgs.items()):
+            if p and p not in forbidden and re.match(r'^(com\.google\.|com\.mtg\.)', p):
+                err('Google package %s in the no-Google edition (GMS=0): %s' % (p, where))
+    for p in required:
         if p not in pkgs:
             if os.environ.get('ALLOW_MISSING_APKS') == '1' and p in ('org.z9x.projector', 'org.z9x.home', 'org.z9x.setup', 'org.z9x.updater'):
                 print('WARN required package %s missing (partial dry run)' % p); continue
@@ -451,7 +572,7 @@ def cmd_packages(path):
             err('org.z9x.setup must have the single highest HOME priority (plan C3): %r' % homes[:3])
         if not top or top[0][1] != 'org.z9x.home' or (len(top) > 1 and top[1][0] >= top[0][0]):
             err('org.z9x.home must be the single next HOME priority (plan C3): %r' % top[:3])
-    done('package check ok: %d packages in %d APKs' % (len(pkgs), sum(len(v) for v in pkgs.values())))
+    done('package check ok (gms=%s): %d packages in %d APKs' % (gms, len(pkgs), sum(len(v) for v in pkgs.values())))
 
 
 # ---------------------------------------------------------------------------------- sign stage
@@ -593,6 +714,9 @@ def cmd_oatcheck(odex, ref, filt):
         err('%s: classpath %r, expected PCL[]' % (odex, a.get('classpath')))
     if a.get('compilation-reason') != 'prebuilt':
         err('%s: compilation-reason %r' % (odex, a.get('compilation-reason')))
+    if 'dex2oat-cmdline' in a:
+        # the build machine's paths (home directory = the builder's login) would ship in the image
+        err('%s: stores the dex2oat command line (dexpreopt_lumen.sh needs --avoid-storing-invocation)' % odex)
     done('odex ok: %s (%s, cc=%s)' % (os.path.basename(odex), a.get('compiler-filter'), a.get('concurrent-copying')))
 
 
@@ -629,6 +753,7 @@ def main():
         sys.exit(__doc__)
     c = a[0]
     if c == 'apks' and len(a) == 5: cmd_apks(*a[1:])
+    elif c == 'maxui' and len(a) == 3 and a[2].isdigit(): cmd_maxui(*a[1:])
     elif c == 'base' and len(a) >= 2: cmd_base(a[1], a[2:])
     elif c == 'verify' and len(a) == 4: cmd_verify(*a[1:])
     elif c == 'packages' and len(a) == 2: cmd_packages(a[1])

@@ -1,0 +1,21 @@
+# Lumen OS without Google (1.0.1, docs/NOGMS_PLAN.md section 8): NEW strings for the merge into
+# langs/es.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+apps_install_usb=Instalar desde USB
+usb_title=Instalar desde USB
+usb_none=Conecta una memoria USB con archivos .apk (en la raíz o en una carpeta apks).
+usb_empty=No hay archivos .apk en la memoria USB. Ponlos en la raíz o en una carpeta apks.
+usb_new=Nueva
+usb_update=Actualización
+usb_installing=Instalando: %1$d%%
+usb_done=%1$s está instalada
+usb_failed=%1$s no se ha instalado: %2$s
+kb_no_store=Instala una app de teclado desde una memoria USB: Apps > Instalar desde USB.
+voice_none=La búsqueda por voz necesita una app de reconocimiento de voz. Escribe tu búsqueda.
+@updater/strings.xml
+blk_channel=Esta actualización es para otra edición de Lumen OS (%1$s).
+@setup/strings.xml
+lang_more_hint_nogms=Los ajustes usan este idioma. Las apps de Lumen sin traducción seguirán en inglés.
+done_offline_hint_nogms=Sin internet: elige la zona horaria más tarde en Ajustes.
+@projector/strings.xml
+slot_home_apps=Lumen Home: Apps

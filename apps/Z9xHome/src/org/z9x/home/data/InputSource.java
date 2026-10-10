@@ -237,6 +237,11 @@ public final class InputSource {
         return n == null || n.isEmpty() ? "XGIMI Z9X" : n;
     }
 
+    /**
+     * Cast cards (Chromecast built-in, AirPlay). Not called since 1.0.1: their only place, the Inputs tab,
+     * is gone and the owner wants no duplicate of it; kept with HomeActivity's cast how-to panel for an
+     * entry point elsewhere, if one is ever wanted.
+     */
     public static List<Card> casts(Context c) {
         ArrayList<Card> out = new ArrayList<>();
         String name = deviceName(c);

@@ -216,8 +216,15 @@ void video_reset(void *cls, reset_type_t type) {
 
 void audio_process(void *cls, raop_ntp_t *, audio_decode_struct *data) {
     Z9xServer *srv = S(cls);
+    /* the RTP thread receives, decrypts, reorders and (ALAC) decodes: audio priority, so
+       the mirroring video and the UI cannot hold the packets back (once per thread) */
+    static thread_local bool prioritySet = false;
+    if (!prioritySet) {
+        prioritySet = true;
+        z9x_set_thread_priority(Z9X_PRIORITY_AUDIO, "RTP audio");
+    }
     if (!srv->audio || !data->data || data->data_len <= 0) return;
-    srv->audio->decode(data->data, data->data_len, (int) data->ct, data->ntp_time_local);
+    srv->audio->decode(data->data, data->data_len, (int) data->ct, data->ntp_time_local, data->seqnum);
 }
 
 void audio_flush(void *cls) {

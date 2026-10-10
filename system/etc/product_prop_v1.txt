@@ -8,7 +8,7 @@ persist.sys.timezone=Europe/Moscow
 bluetooth.device.default_name=XGIMI Z9X
 # Product name and version (brand spec 5; the About rows come from ro.build.display.id and
 # ro.lineage.display.version, patched in system/build.prop). Display only, nothing gates on them.
-ro.lumen.version=1.0
+ro.lumen.version=1.0.1
 # ---- lmkd (system/memory/lmkd/lmkd.cpp; vendor V6.15.58 values in brackets). Speed spec section 5.
 # [50] -> 10: with 50 "swap is low" (min(free_swap, easy_available) < 50 % of 800 MB = 410 MB) held almost
 # always under load, and every dip under the 220 MB high watermark then killed down to adj 201: the storm
@@ -32,3 +32,7 @@ dalvik.vm.background-dex2oat-cpu-set=2,3
 # these lines are read last, so they win over every earlier partition. Build type userdebug stays (C18).
 ro.adb.secure=1
 persist.sys.usb.config=none
+# ---- Problem reports (Lumen OS 1.0.1, org.z9x.projector report.*): OFF. Only an https URL of the owner's
+# report Worker (gsi/cloud/report-worker) turns on the "Send a problem report" row in Projector settings;
+# empty = hidden, nothing collected or sent. A ro.* value cannot change at runtime: a later image sets it.
+ro.z9x.report.url=

@@ -1,0 +1,4 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of sleep: returns at once, records the request in $Z9X_T/sleep.log.
+echo "$*" >> "$Z9X_T/sleep.log"

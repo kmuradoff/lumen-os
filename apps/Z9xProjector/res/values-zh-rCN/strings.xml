@@ -28,6 +28,7 @@
     <string name="key_slot4">哔哩哔哩键</string>
     <string name="slot_default_fmt">%1$s（默认）</string>
     <string name="slot_default_item">默认：%1$s</string>
+    <string name="slot_home_apps">Lumen Home：应用</string>
     <string name="cancel">取消</string>
     <string name="ok">确定</string>
     <string name="app_not_found">未找到此按键对应的应用</string>

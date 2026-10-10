@@ -24,7 +24,9 @@ public:
     /* Receives Z9X_EV_* events (VIDEO_SIZE, FIRST_FRAME); called from decoder threads. */
     using EventFn = void (*)(void *ctx, int what, int a, int b);
 
-    VideoDecoder(EventFn fn, void *ctx, int64_t latencyNs);
+    /* extraNs (may be null): added to latencyNs per frame; owned by the caller and must
+       outlive the decoder */
+    VideoDecoder(EventFn fn, void *ctx, int64_t latencyNs, const std::atomic<int64_t> *extraNs);
     ~VideoDecoder();
 
     /* Attach (win != null) or detach (null) the display. Takes over one reference of win.
@@ -80,6 +82,7 @@ private:
     EventFn mEventFn;
     void *mEventCtx;
     const int64_t mLatencyNs;
+    const std::atomic<int64_t> *mExtraNs;
 
     /* shared state (mMu) */
     std::mutex mMu;

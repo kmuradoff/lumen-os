@@ -7,6 +7,7 @@ import android.app.job.JobScheduler;
 import android.app.job.JobService;
 import android.content.ComponentName;
 import android.content.Context;
+import android.os.PersistableBundle;
 import android.os.Process;
 import android.util.Log;
 
@@ -15,9 +16,16 @@ import org.json.JSONException;
 /**
  * Daily check (any network), plus one 10 minutes after boot. Never installs: in "Download
  * automatically" mode it only downloads and then asks (decision 2026-10-06 / ota Q6).
+ * JOB_GATE (no network, any update mode): the boot gate's verdict a few minutes after an update's
+ * first boot (BootReceiver.gateVerdict), asked again while the gate has not decided.
  */
 public final class CheckJob extends JobService {
     private static final int JOB_DAILY = 7701, JOB_BOOT = 7702;
+    /** Gate looks alternate between two ids: a running job never reschedules (and so stops) itself. */
+    private static final int JOB_GATE = 7703, JOB_GATE_NEXT = 7704;
+    /** First look 3 min after BOOT_COMPLETED (the gate checks 90 s after boot), then every 2 min, 5 looks. */
+    private static final long GATE_FIRST_MS = 3 * 60 * 1000L, GATE_NEXT_MS = 2 * 60 * 1000L;
+    private static final int GATE_TRIES = 5;
 
     public static void schedule(Context c) {
         JobScheduler js = c.getSystemService(JobScheduler.class);
@@ -35,8 +43,30 @@ public final class CheckJob extends JobService {
                 .setOverrideDeadline(30 * 60 * 1000L).build());
     }
 
+    /** attempt 1..GATE_TRIES; attempt 1 (BootReceiver, never a running gate job) starts the series over. */
+    static void scheduleGate(Context c, int attempt) {
+        JobScheduler js = c.getSystemService(JobScheduler.class);
+        if (js == null) return;
+        if (attempt <= 1) js.cancel(JOB_GATE_NEXT);
+        long wait = attempt <= 1 ? GATE_FIRST_MS : GATE_NEXT_MS;
+        PersistableBundle x = new PersistableBundle();
+        x.putInt("attempt", attempt);
+        js.schedule(new JobInfo.Builder(attempt % 2 == 1 ? JOB_GATE : JOB_GATE_NEXT, new ComponentName(c, CheckJob.class))
+                .setMinimumLatency(wait).setOverrideDeadline(wait + GATE_NEXT_MS)
+                .setExtras(x).build());
+    }
+
     @Override
     public boolean onStartJob(JobParameters params) {
+        if (params.getJobId() == JOB_GATE || params.getJobId() == JOB_GATE_NEXT) {
+            int attempt = params.getExtras().getInt("attempt", 1);
+            try {
+                if (BootReceiver.gateVerdict(this, attempt >= GATE_TRIES)) scheduleGate(this, attempt + 1);
+            } catch (Throwable t) {
+                Log.w(Ota.TAG, "gate job", t);
+            }
+            return false;
+        }
         Store st = Store.get(this);
         if (st.autoMode() == Store.AUTO_OFF) return false;
         new Thread(() -> {

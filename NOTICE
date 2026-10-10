@@ -10,20 +10,27 @@ Licensing of this repository:
     directory says otherwise.
   - apps/Z9xAirPlay is licensed under the GNU General Public License, version 3 only
     (apps/Z9xAirPlay/LICENSE), because it adapts code from android-airplay-server (GPL-3.0).
-  - Git submodules keep their own licences: UxPlay (GPL-3.0), libplist (LGPL-2.1),
+  - Git submodules keep their own licenses: UxPlay (GPL-3.0), libplist (LGPL-2.1),
     Apple ALAC (Apache-2.0), BoringSSL (Apache-2.0 / ISC / OpenSSL), android-airplay-server (GPL-3.0).
 
-What this repository does NOT contain (and never will):
-  - Google applications or services (MindTheGapps): proprietary, governed by Google's terms.
-    gapps/README.md names the exact upstream file and its sha256.
-  - MediaTek or XGIMI binaries. Public images carry 0-byte placeholders; the installer copies the
-    MediaTek Codec2 files from the user's own projector (installer/lib/blobs_allow.txt lists only
-    their sha256).
+What this repository does not contain:
+  - Google applications or services (MindTheGapps). They are proprietary and covered by Google's
+    terms. The published system image ("Lumen OS without Google", tools/build_system.sh GMS=0) does
+    not contain them either. Users can add them on their own projector from their own MindTheGapps
+    download (installer command 'gapps'). The install guide names the exact upstream file and its
+    official URL. installer/lib/gapps_allow.txt (a copy of tools/ota/image/gapps_allow.txt) holds only
+    the sha256, sizes and paths of that zip and its files.
+  - MediaTek or XGIMI binaries. Public images carry 0-byte placeholders. The installer copies the
+    nine MediaTek and XGIMI codec and audio files from the user's own projector
+    (installer/lib/blobs_allow.txt lists only their sha256).
   - Signing keys. Only public certificates (keys/public, installer/certs) are published.
 
 Third-party components inside the Lumen OS system image (built from source by the respective
 projects, unmodified unless a patch in lineage/patches says otherwise):
-  - The Android Open Source Project, Apache License 2.0 and the licences listed in the image's
+  - The Android Open Source Project, Apache License 2.0 and the licenses listed in the image's
     /system/etc/NOTICE.xml.gz.
-  - LineageOS 21, Apache License 2.0 (and the licences of its components).
-  - Roboto font, Apache License 2.0 (used to render the boot animation).
+  - LineageOS 21, Apache License 2.0 (and the licenses of its components).
+  - Prata (Copyright 2011 The Prata Project Authors) and Onest (Copyright 2021 The Onest Project
+    Authors) fonts, SIL Open Font License 1.1, inside Lumen Home (apps/Z9xHome/assets/fonts, with
+    their OFL texts). The boot animation (tools/brand/gen_bootanim.py) is drawn from geometry and
+    uses no font.

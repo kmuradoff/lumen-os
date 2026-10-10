@@ -14,8 +14,9 @@ import java.util.Map;
  * MODULE "panel" (owner: quick-settings agent). XGIMI-style quick settings drawn over the running
  * video: right-side PagedPanel (org.z9x.projector.ui), opened by a short gear press.
  *
- * v6.2 layout (V62_REQUIREMENTS 3): the top level is a grid of icon tiles (Focus, Keystone,
- * Manual keystone (v6.3), Brightness, Picture, Sound, Input, Projection, Game mode, Eye protection, All settings); each
+ * v6.2 layout (V62_REQUIREMENTS 3): the top level is a grid of icon tiles (Focus, Keystone (Lumen OS
+ * 1.0: auto and manual correction; no separate Manual keystone tile), Brightness, Picture, Sound, Input,
+ * Projection, Game mode, Eye protection, All settings); each
  * tile opens its section page (the v6.1 rows, regrouped), Input opens the Source overlay. The panel
  * remembers the last tile. Open/close: 200/160 ms scale + fade; tiles stagger in; focus cross-fades
  * and scales the tile in 160 ms.
@@ -49,8 +50,9 @@ public final class QuickPanel {
     /** Keystone / image correction page (auto keystone, fit, manual keystone, keystone settings). */
     public static final String SECTION_KEYSTONE = "keystone";
     /**
-     * v6.3: not a page. The "Manual keystone" tile opens {@link ManualKeystonePanel} directly (4 corners,
-     * live vendor warp); show(SECTION_MANUAL_KEYSTONE) does the same.
+     * v6.3: not a page. show(SECTION_MANUAL_KEYSTONE) opens {@link ManualKeystonePanel} directly (4 corners,
+     * live vendor warp; SetupBridge kst_manual). Lumen OS 1.0: no tile of its own any more, the Keystone
+     * page's "Manual keystone" row is its entry in the panel.
      */
     public static final String SECTION_MANUAL_KEYSTONE = "manual_keystone";
     /** v6.1 name used by the IR KEYSTONE/LENS key: the Keystone page. */
@@ -67,7 +69,7 @@ public final class QuickPanel {
     public static final String SECTION_GAME = "hdmi";
     public static final String SECTION_HDMI = SECTION_GAME;
     public static final String SECTION_EYE = "eye";
-    /** "All settings" page: system settings, projector settings, pair remote, quick wake. */
+    /** "All settings" page: system settings, projector settings, HDMI-CEC, recent apps, home screen. */
     public static final String SECTION_GENERAL = "general";
 
     /** SharedPreferences file of the panel module (org.z9x.projector process). */

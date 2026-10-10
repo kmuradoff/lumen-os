@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS UI resolution. Image path /system/product/etc/init/init.lineage.atv.scaling.rc: it REPLACES the
+# LineageOS ATV file of that path (which set ro.config.size_override 1920,1080 and
+# ro.config.density_override 320 'on fs'), so these two are set exactly once, here. Script
+# /system/etc/z9x/z9x_uires.sh 0755 (modes, state files, fallback: see its header).
+# This file must stay in /product/etc/init: init parses /vendor/etc/init before /product/etc/init, so this
+# 'on fs' runs after the vendor's 'on fs' (/vendor/etc/init/hw/init.common.rc: mount_all
+# /vendor/etc/fstab.${ro.hardware} --early, which mounts /vendor/tvconfig) and, as an exec, before
+# 'on post-fs' (vendor init.fusion.rc: start midaemon, the MI daemon that reads the panel ini) and
+# 'on late-fs' (start vendor.hwcomposer-3, surfaceflinger). From /system/etc/init it would run before the
+# vendor's mount_all: the script then finds no Customer_1.ini and the start is 1080p.
+#
+#   fs              z9x_uires.sh fs (exec, root): this start's mode (persist.z9x.ui_res mirrored in
+#                   /metadata, default 2160; 1080 after a recorded fallback or with the kill switch). For 4K
+#                   it bind-mounts a RAM copy of the panel ini with osdWidth/osdHeight 3840/2160 (read-only;
+#                   /vendor is never written). Then init sets the four props from what it published, or
+#                   the 1080p values when it published nothing.
+#   persist         z9x_uires_pick: the projector app's choice -> /metadata (applies from the next start)
+#   pending         z9x_uires_watch (a 4K/2K start only): no boot_completed within 6 min -> records the
+#                   fallback and restarts once into 1080p (a hang that restarts nothing by itself)
+#   boot_completed  z9x_uires_check: a 4K/2K start is verified in 'dumpsys SurfaceFlinger' (mode, SF target,
+#                   WM, HWC Display Region, GOP); a mismatch records the fallback and restarts once into
+#                   1080p (reboot,z9x-uires)
+# Kill switch: ro.z9x.uires.allow=0, or the file /metadata/z9x_uires/off: always 1080p.
+# Domain u:r:su:s0 exists only on userdebug (this image), like z9x_rescue / z9x_ota.
+
+on fs
+    exec u:r:su:s0 root root -- /system/bin/sh /system/etc/z9x/z9x_uires.sh fs
+    setprop vendor.display-size ${sys.z9x.ui_res.display_size:-1920x1080}
+    setprop vendor.mstar.resize.framebuffer ${sys.z9x.ui_res.resize_fb:-1}
+    setprop ro.config.size_override ${sys.z9x.ui_res.size_override:-1920,1080}
+    setprop ro.config.density_override ${sys.z9x.ui_res.density_override:-320}
+
+on property:persist.z9x.ui_res=*
+    start z9x_uires_pick
+
+on property:sys.z9x.ui_res.check=pending
+    start z9x_uires_watch
+
+on property:sys.boot_completed=1
+    start z9x_uires_check
+
+service z9x_uires_pick /system/bin/sh /system/etc/z9x/z9x_uires.sh pick
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service z9x_uires_watch /system/bin/sh /system/etc/z9x/z9x_uires.sh watch
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service z9x_uires_check /system/bin/sh /system/etc/z9x/z9x_uires.sh check
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled

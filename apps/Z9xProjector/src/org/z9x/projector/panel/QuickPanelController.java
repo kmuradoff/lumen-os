@@ -17,7 +17,6 @@ import org.z9x.projector.Ui;
 import org.z9x.projector.hal.Gmpf2Client;
 import org.z9x.projector.hal.GmpfClient;
 import org.z9x.projector.hal.KstPoint;
-import org.z9x.projector.remote.RemoteAutoPair;
 import org.z9x.projector.ak.AkOverlay;
 import org.z9x.projector.audio.AiSoundEngine;
 import org.z9x.projector.audio.AudioPathReporter;
@@ -52,11 +51,12 @@ import java.util.Map;
  * read-back.
  *
  * v6.2 layout (V62_REQUIREMENTS 3): top level = info line (input + HDR type, or "not ready") and a
- * {@link TileGrid} of 10 icon tiles in the requirement's order (v6.3: plus "Manual keystone" after
- * Keystone, which opens ManualKeystonePanel directly); each opens its section page with
- * the v6.1 rows (stock dapeng grouping, FEATURE_SPEC 2-5 + RESULT_quicksettings decisions):
+ * {@link TileGrid} of 10 icon tiles in the requirement's order (Lumen OS 1.0: ONE Keystone tile again;
+ * the v6.3 "Manual keystone" tile is gone, the Keystone page offers auto and manual correction); each
+ * opens its section page with the v6.1 rows (stock dapeng grouping, FEATURE_SPEC 2-5 +
+ * RESULT_quicksettings decisions):
  *   Focus:       Autofocus now, Manual focus, AF after moving, AF at power-on, smart AF
- *   Keystone:    Auto keystone now, Fit to screen now, Manual keystone, Reset keystone,
+ *   Keystone:    Auto keystone now, Fit to screen now, Manual keystone (4 corners), Reset keystone,
  *                real-time keystone, keystone at power-on, fit to screen, obstacle avoidance
  *   Brightness:  lamp 1..10 (+ Boost), Boost hint
  *   Picture:     Picture mode, brightness/contrast/saturation/sharpness, colour temperature,
@@ -72,7 +72,9 @@ import java.util.Map;
  *                (TifHdmiState), and re-checked on the HAL thread before every
  *                648/207/56/57/312/665 write
  *   Eye protection: the toggle and what it does
- *   All settings: System settings (TvSettings), Projector settings, Pair remote, Quick wake
+ *   All settings: System settings (TvSettings), Projector settings, HDMI-CEC, Recent apps, Home
+ *                screen (Lumen OS 1.0: no "Pair remote": RemoteAutoPair pairs by itself, the setup
+ *                and the remote-lost prompt ask for Back + Home)
  * Other modules append rows through {@link QuickPanel#addExtension}. The last focused tile is kept
  * (prefs {@link #KEY_LAST_TILE}) and focused at the next open; BACK on a page returns to its tile.
  *
@@ -181,6 +183,8 @@ final class QuickPanelController {
         buildSettingsPage();
         root = buildRoot();
         String last = prefs.getString(KEY_LAST_TILE, null);
+        // the v6.3 "Manual keystone" tile is part of the Keystone tile now
+        if (QuickPanel.SECTION_MANUAL_KEYSTONE.equals(last)) last = QuickPanel.SECTION_KEYSTONE;
         if (last != null) grid.remember(last);
         for (Map.Entry<String, Page> e : pages.entrySet()) {
             for (QuickPanel.Extension x : QuickPanel.extensions(e.getKey())) addRows(e.getKey(), e.getValue(), x);
@@ -203,7 +207,7 @@ final class QuickPanelController {
             return;
         }
         if (QuickPanel.SECTION_MANUAL_KEYSTONE.equals(key)) {
-            grid.remember(key);
+            grid.remember(QuickPanel.SECTION_KEYSTONE);      // its entry in the panel is the Keystone page
             ManualKeystonePanel.open(app, null);             // not from the panel: BACK just closes
             return;
         }
@@ -291,10 +295,6 @@ final class QuickPanelController {
         if (QuickPanel.SECTION_INPUT.equals(section)) {
             // replaces the quick panel; BACK there returns to this grid (Input tile remembered)
             if (setupDone("input")) SourceOverlay.showFromQuickPanel(app);
-            return;
-        }
-        if (QuickPanel.SECTION_MANUAL_KEYSTONE.equals(section)) {
-            openManualKeystone(null);                        // BACK there returns to this grid
             return;
         }
         Page p = pages.get(section);
@@ -449,9 +449,9 @@ final class QuickPanelController {
         // V62_REQUIREMENTS 3 order: focus, keystone, brightness, picture, sound, input, projection
         // mode, game mode, eye protection, all settings (wide, last row).
         addTile(QuickPanel.SECTION_FOCUS, R.drawable.ic_tile_focus, R.string.panel_tile_focus, false);
+        // Lumen OS 1.0: ONE Keystone tile (auto and manual correction inside); the v6.3 separate
+        // "Manual keystone" tile duplicated it (owner's decision 2026-10-08).
         addTile(QuickPanel.SECTION_KEYSTONE, R.drawable.ic_tile_keystone, R.string.panel_tile_keystone, false);
-        // v6.3: manual keystone is its own tile (users did not find it on the Keystone page).
-        addTile(QuickPanel.SECTION_MANUAL_KEYSTONE, R.drawable.ic_tile_manual_keystone, R.string.kst_tile, false);
         addTile(QuickPanel.SECTION_LAMP, R.drawable.ic_tile_brightness, R.string.panel_lamp, false);
         addTile(QuickPanel.SECTION_PICTURE, R.drawable.ic_tile_picture, R.string.panel_sec_picture, false);
         addTile(QuickPanel.SECTION_SOUND, R.drawable.ic_tile_sound, R.string.panel_sec_sound, false);
@@ -852,11 +852,9 @@ final class QuickPanelController {
         p.add(new NavRow(app, s(R.string.cec_entry), () -> {
             if (setupDone("hdmi-cec")) push(cecPage());
         }));
-        // "Pair remote": a new, second or reset remote. Opens RemoteAutoPair's 120 s pairing window
-        // (continuous LOW_LATENCY LE scan) with the "Hold Back and Home" card. The automatic windows
-        // only cover: no XGIMI remote bonded, the setup, and 2 min after boot / screen on.
-        p.add(new NavRow(app, s(R.string.remote_pair_action), safe("pair remote",
-                () -> RemoteAutoPair.startPairing(app)))).setChevron(false);
+        // Lumen OS 1.0: no "Pair remote" row here any more (owner's decision 2026-10-08): pairing is
+        // automatic (RemoteAutoPair), the setup's first step and the remote-lost prompt ask for
+        // Back + Home. A second remote can still be paired from Projector settings.
         // Lumen OS 1.0: Recent apps (also on long-press HOME) and the home screen choice (PLAN C1)
         p.add(new NavRow(app, s(R.string.recents_title), () -> {
             if (setupDone("recent apps")) closeThen(() -> org.z9x.projector.recents.RecentsActivity.open(app));

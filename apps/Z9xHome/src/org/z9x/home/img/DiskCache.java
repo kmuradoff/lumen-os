@@ -12,16 +12,19 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 
 /**
- * cacheDir/img: downscaled "master" copies of every piece of art (JPEG q88, PNG for icons with alpha).
- * LRU by modification time, trimmed to 64 MB once per process start. The system may clear it any time;
- * that only costs a re-download.
+ * cacheDir/img: downscaled "master" copies of every piece of art (JPEG q88; PNG for icons with alpha and,
+ * since 1.0.1, for the app banners and tiles, whose logos and names JPEG would soften).
+ * LRU by modification time, trimmed to its budget once per process start (64 MB at 1080p, 114 MB at 2K
+ * and 4K, whose masters are up to 2560x1440: UiScale.diskBytes). The system may clear it any time; that
+ * only costs a re-download.
  */
 final class DiskCache {
-    static final long MAX_BYTES = 64L * 1024 * 1024;
     private static final long TOUCH_AFTER_MS = 24L * 3600_000L;
     private final File mDir;
+    private final long mMax;
 
-    DiskCache(File cacheDir) {
+    DiskCache(File cacheDir, long maxBytes) {
+        mMax = maxBytes;
         mDir = new File(cacheDir, "img");
         //noinspection ResultOfMethodCallIgnored
         mDir.mkdirs();
@@ -74,11 +77,11 @@ final class DiskCache {
             }
             total += f.length();
         }
-        if (total <= MAX_BYTES) return;
+        if (total <= mMax) return;
         Arrays.sort(fs, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
         int n = 0;
         for (File f : fs) {
-            if (total <= MAX_BYTES * 3 / 4) break;
+            if (total <= mMax * 3 / 4) break;
             long len = f.length();
             if (f.delete()) {
                 total -= len;

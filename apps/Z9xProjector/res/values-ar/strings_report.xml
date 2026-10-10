@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arabic translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">إرسال تقرير عن مشكلة</string>
+    <string name="report_intro">يساعد مطوّر Lumen OS على معرفة سبب المشكلة. لا يُرسَل أي شيء قبل أن تضغط «إرسال التقرير».</string>
+    <string name="report_included">ما يتضمنه التقرير</string>
+    <string name="report_inc_system">إصدار النظام ومدة التشغيل وفتحة النظام</string>
+    <string name="report_inc_logs">سجلات النظام وتطبيقات Lumen لآخر 30 دقيقة</string>
+    <string name="report_inc_crashes">سجلات الأعطال والتجمّد وإعادة التشغيل مع أسماء التطبيقات</string>
+    <string name="report_inc_kernel">سجل النواة لآخر إعادة تشغيل وسجل التحديث</string>
+    <string name="report_inc_state">الشاشة والذاكرة ونوع الشبكة</string>
+    <string name="report_excluded">ما يُحذف أو لا يُضمَّن</string>
+    <string name="report_exc_accounts">الحسابات وعناوين البريد الإلكتروني وأرقام الهواتف</string>
+    <string name="report_exc_network">أسماء شبكات Wi-Fi وعناوين IP وMAC</string>
+    <string name="report_exc_serial">الرقم التسلسلي: يُستخدم بدلًا منه معرّف عشوائي لجهاز العرض هذا</string>
+    <string name="report_exc_apps">سجلات التطبيقات التي ثبّتّها بنفسك</string>
+    <string name="report_exc_files">الصور والملفات وكلمات المرور</string>
+    <string name="report_footer">يُحتفَظ بالتقرير لمدة 30 يومًا، ولا يمكن فتحه إلا لمطوّر Lumen OS.</string>
+    <string name="report_last">آخر تقرير: %1$s، %2$s</string>
+    <string name="report_send">إرسال التقرير</string>
+    <string name="report_collecting">جارٍ جمع المعلومات… (%1$d من %2$d)</string>
+    <string name="report_log_hint">إذا سألك Android عن السماح بالوصول إلى سجلات الجهاز، فاختر «السماح».</string>
+    <string name="report_sending">جارٍ الإرسال… %1$s من %2$s</string>
+    <string name="report_done_title">تم إرسال التقرير</string>
+    <string name="report_done_text">أرسل هذا الرمز إلى مطوّر Lumen OS مع وصف قصير للمشكلة.</string>
+    <string name="report_failed_title">لم يُرسَل التقرير</string>
+    <string name="report_err_no_network">لا يوجد اتصال بالإنترنت. تحقّق من الشبكة وحاول مرة أخرى.</string>
+    <string name="report_err_network">يتعذّر الوصول إلى خادم التقارير. حاول مرة أخرى لاحقًا.</string>
+    <string name="report_err_rate">عدد التقارير كبير جدًا الآن. حاول مرة أخرى لاحقًا.</string>
+    <string name="report_err_rejected">لم يقبل خادم التقارير التقرير.</string>
+    <string name="report_err_server">حدثت مشكلة في خادم التقارير. حاول مرة أخرى لاحقًا.</string>
+    <string name="report_err_collect">تعذّر تجهيز التقرير.</string>
+    <string name="report_retry">إعادة المحاولة</string>
+    <string name="report_close">إغلاق</string>
+</resources>

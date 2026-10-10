@@ -50,6 +50,16 @@
     <string name="done_ok_title">تم التحديث إلى Lumen OS %1$s</string>
     <string name="done_rollback_title">تعذّر بدء التحديث</string>
     <string name="done_rollback_body">تمت استعادة Lumen OS %1$s. لم يُفقد أي شيء.</string>
+    <string name="done_unhealthy_title">يعمل Lumen OS %1$s</string>
+    <string name="done_unhealthy_body">عثر فحص بعد التحديث على مشكلة: %1$s. إذا لم يعمل شيء ما، فاستخدم وضع الإنقاذ (rescue) في برنامج التثبيت على الكمبيوتر. تبقى بياناتك محفوظة.</string>
+    <string name="done_rescue_scan">امسح الرمز لفتح دليل وضع الإنقاذ.</string>
+    <string name="done_details">التفاصيل التقنية: %1$s</string>
+    <string name="why_restarted">أُعيد تشغيل النظام بشكل غير متوقع</string>
+    <string name="why_service">لم تبدأ إحدى خدمات النظام</string>
+    <string name="why_lamp">لم تبدأ خدمة المصباح والمراوح</string>
+    <string name="why_confirm">لم يتمكن النظام من التأكد من أن الإصدار الجديد يعمل</string>
+    <string name="why_no_rollback">لم تكن العودة إلى الإصدار السابق ممكنة</string>
+    <string name="why_unknown">لم تُسجَّل أي تفاصيل</string>
     <string name="blk_vbmeta_title">يلزم إجراء خطوة لمرة واحدة قبل التحديثات</string>
     <string name="blk_vbmeta_body">قبل التحديث الأول، يجب تجهيز خانة النظام الأخرى (%1$s) مرة واحدة باستخدام كمبيوتر كما يشرح دليل التثبيت (خطوة vbmeta). امسح الرمز لفتح الدليل.</string>
     <string name="blk_vbmeta_unknown">تعذّرت قراءة حالة خانة النظام الأخرى. أعِد تشغيل جهاز العرض ثم حاول مرة أخرى.</string>
@@ -57,6 +67,7 @@
     <string name="blk_merge_body">يستغرق ذلك بضع دقائق في الخلفية. يمكنك متابعة المشاهدة.</string>
     <string name="blk_pending">لا يزال هذا الإصدار قيد التحقق بعد التحديث الأخير. حاول مرة أخرى بعد بضع دقائق.</string>
     <string name="blk_vendor">هذا التحديث غير مخصص للبرنامج الثابت لجهاز العرض هذا (%1$s).</string>
+    <string name="blk_channel">هذا التحديث مخصص لإصدار آخر من Lumen OS ‏(%1$s).</string>
     <string name="blk_min_version">يتطلب هذا التحديث Lumen OS %1$s أو أحدث. يُرجى استخدام برنامج التثبيت على الكمبيوتر.</string>
     <string name="blk_thermal">جهاز العرض ساخن جدًا الآن. حاول لاحقًا.</string>
     <string name="blk_space">لا توجد مساحة كافية: يلزم %1$s.</string>

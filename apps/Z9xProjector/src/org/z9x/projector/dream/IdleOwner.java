@@ -36,14 +36,11 @@ import org.z9x.projector.power.StandbyController;
  *    pref dream_user_off; Android's screensaver_enabled stays 1 and the active dream becomes the
  *    blank {@link StandbyIdleDream}, which enters standby at once. The chosen screensaver is saved and
  *    comes back when the screensaver is turned on again (or the user picks one in TvSettings).
- *  - first v6.5 start (one-shot marker idle_migrated_v65, only if IdleOwner never ran before): when
- *    screensaver_activate_on_sleep was not 1 (live: mDreamsActivateOnSleepSetting=false), the idle
- *    time used to put Android to sleep, i.e. the lamp went off at screen_off_timeout (15 min) and no
- *    screensaver ever ran. That is kept: dream_user_off = true, so StandbyIdleDream enters standby at
- *    the idle time; sleep_timeout is then NOT taken over as "Turn off after" (it never applied).
- *    Only with activate_on_sleep already 1 (a screensaver that really ran on idle) is a positive
- *    sleep_timeout adopted (the ATV default 24 h as 4 h). Later sleep_timeout writes (TvSettings) are
- *    the user's choice and are always adopted;
+ *  - first start (one-shot marker idle_migrated_v65): the screensaver stays on, i.e. the default dream
+ *    (Home's live sky) runs at the idle time. (The v6.5 migration that turned it off when
+ *    activate_on_sleep was not 1 is gone: on a fresh install it read the ATV default as a choice.)
+ *    A positive sleep_timeout is adopted as "Turn off after" (the ATV default 24 h as 4 h). Later
+ *    sleep_timeout writes (TvSettings) are the user's choice and are always adopted;
  *  - Secure attentive_timeout (TvSettings "Energy saver" / "Turn off display"; config default if the
  *    setting is unset) is observed too: PowerManagerService enforces it even while wakelocks are held,
  *    also our SCREEN_BRIGHT standby lock, i.e. a foreign sleep with a display power cycle (block noise
@@ -232,22 +229,13 @@ public final class IdleOwner {
             SharedPreferences p = prefs();
             boolean keepUserOff = userAction;
             boolean adoptSleepTimeout = true;
-            // 0. first v6.5 start: keep the v6.4 idle behaviour (Android sleep = lamp off at the idle
-            //    time) when no screensaver ran on idle before; K_ADOPTED set = IdleOwner ran already
+            // 0. first start: the screensaver stays ON (the Lumen default dream, Home's live sky). The v6.5
+            //    migration turned it off here when Android's activate_on_sleep was not 1, to keep the v6.4
+            //    behaviour on the owner's early builds; on every fresh install (all public ones) that read
+            //    the ATV default 0 as a user choice, so the sky never ran (Lumen OS 1.0.1 device test).
             if (!p.getBoolean(K_MIGRATED, false)) {
                 int aos = Settings.Secure.getInt(cr, ACTIVATE_ON_SLEEP, activateOnSleepDefault());
-                boolean ranBefore = p.getBoolean(K_ADOPTED, false);
-                if (!ranBefore && aos != 1) {
-                    sUserOff = true;
-                    keepUserOff = true;
-                    adoptSleepTimeout = false;
-                    p.edit().putBoolean(K_USER_OFF, true).commit();
-                    Log.i(TAG, "v6.5 migration: " + ACTIVATE_ON_SLEEP + "=" + aos + " (the idle time slept): "
-                            + "screensaver off, the idle time goes straight to standby; sleep_timeout not adopted");
-                } else {
-                    Log.i(TAG, "v6.5 migration: " + ACTIVATE_ON_SLEEP + "=" + aos + (ranBefore ? ", ran before" : "")
-                            + ": screensaver settings kept");
-                }
+                Log.i(TAG, "first start: " + ACTIVATE_ON_SLEEP + "=" + aos + ": screensaver on (default dream)");
                 p.edit().putBoolean(K_MIGRATED, true).commit();
             }
             // 1. sleep_timeout: take a positive value over as our "turn off after", then never again

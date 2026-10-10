@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Belarusian translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">Адправіць справаздачу пра праблему</string>
+    <string name="report_intro">Дапаможа распрацоўшчыку Lumen OS зразумець, што пайшло не так. Нічога не адпраўляецца, пакуль вы не націснеце «Адправіць справаздачу».</string>
+    <string name="report_included">Што ўваходзіць</string>
+    <string name="report_inc_system">Версія сістэмы, час працы і слот сістэмы</string>
+    <string name="report_inc_logs">Журналы сістэмы і праграм Lumen за апошнія 30 хвілін</string>
+    <string name="report_inc_crashes">Запісы пра збоі, завісанні і перазапускі з назвамі праграм</string>
+    <string name="report_inc_kernel">Журнал ядра апошняга перазапуску і журнал абнаўлення</string>
+    <string name="report_inc_state">Экран, памяць і тып сеткі</string>
+    <string name="report_excluded">Што выдаляецца або не ўваходзіць</string>
+    <string name="report_exc_accounts">Уліковыя запісы, адрасы эл. пошты і нумары тэлефонаў</string>
+    <string name="report_exc_network">Назвы сетак Wi-Fi, IP- і MAC-адрасы</string>
+    <string name="report_exc_serial">Серыйны нумар: замест яго выпадковы ID гэтага праектара</string>
+    <string name="report_exc_apps">Журналы праграм, якія вы ўсталявалі самі</string>
+    <string name="report_exc_files">Фота, файлы і паролі</string>
+    <string name="report_footer">Справаздача захоўваецца 30 дзён. Адкрыць яе можа толькі распрацоўшчык Lumen OS.</string>
+    <string name="report_last">Апошняя справаздача: %1$s, %2$s</string>
+    <string name="report_send">Адправіць справаздачу</string>
+    <string name="report_collecting">Збор звестак… (%1$d з %2$d)</string>
+    <string name="report_log_hint">Калі Android спытае, ці дазволіць доступ да журналаў прылады, выберыце «Дазволіць».</string>
+    <string name="report_sending">Адпраўка… %1$s з %2$s</string>
+    <string name="report_done_title">Справаздача адпраўлена</string>
+    <string name="report_done_text">Паведаміце гэты код распрацоўшчыку Lumen OS разам з кароткім апісаннем праблемы.</string>
+    <string name="report_failed_title">Справаздача не адпраўлена</string>
+    <string name="report_err_no_network">Няма падключэння да інтэрнэту. Праверце сетку і паспрабуйце яшчэ раз.</string>
+    <string name="report_err_network">Сервер справаздач недаступны. Паспрабуйце пазней.</string>
+    <string name="report_err_rate">Цяпер занадта шмат справаздач. Паспрабуйце пазней.</string>
+    <string name="report_err_rejected">Сервер справаздач не прыняў справаздачу.</string>
+    <string name="report_err_server">На серверы справаздач адбылася памылка. Паспрабуйце пазней.</string>
+    <string name="report_err_collect">Не ўдалося падрыхтаваць справаздачу.</string>
+    <string name="report_retry">Паўтарыць</string>
+    <string name="report_close">Закрыць</string>
+</resources>

@@ -14,7 +14,7 @@ public final class SnapshotCodec {
     private SnapshotCodec() {}
 
     public static final int MAGIC = 0x5A395848; // "Z9XH"
-    public static final int VERSION = 1;
+    public static final int VERSION = 3; // 2: Card.left (Lumen Home D); 3: Card.image2 / aspect2 (1.0.1)
     private static final int MAX_STR = 8000;
     private static final int MAX_LIST = 2000;
 
@@ -107,11 +107,14 @@ public final class SnapshotCodec {
         o.writeUTF(s(k.id));
         o.writeUTF(s(k.title));
         o.writeUTF(s(k.meta));
+        o.writeUTF(s(k.left));
         o.writeUTF(s(k.desc));
         o.writeUTF(s(k.pkg));
         o.writeUTF(s(k.appLabel));
         n(o, k.image);
         o.writeInt(k.aspect);
+        n(o, k.image2);
+        o.writeInt(k.aspect2);
         o.writeInt(k.color);
         n(o, k.intent);
         o.writeInt(k.progress);
@@ -134,11 +137,14 @@ public final class SnapshotCodec {
         k.id = in.readUTF();
         k.title = in.readUTF();
         k.meta = in.readUTF();
+        k.left = in.readUTF();
         k.desc = in.readUTF();
         k.pkg = in.readUTF();
         k.appLabel = in.readUTF();
         k.image = readN(in);
         k.aspect = in.readInt();
+        k.image2 = readN(in);
+        k.aspect2 = in.readInt();
         k.color = in.readInt();
         k.intent = readN(in);
         k.progress = in.readInt();

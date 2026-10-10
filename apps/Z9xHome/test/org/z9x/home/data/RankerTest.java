@@ -57,16 +57,14 @@ public final class RankerTest {
         wn.wnType = 0;
         wn.engaged = in.now - 3600_000L;
         in.tvp.watchNext.add(wn);
-        Card f1 = new Card(Card.FEATURE, "feature:cast", "Cast");
-        in.features.add(f1);
 
         HomeModel m = Ranker.build(in);
         T.eq(m.apps.size(), 4, "hidden-by-default app removed");
         T.eq(m.hiddenApps.size(), 1, "hidden list");
         // auto favourites: used apps by recency (kp, spot), then defaults (yt, vending)
         T.eq(ids(m.favorites), "ru.kp,com.spot,com.yt,com.vending", "auto favourites");
-        // rows: apps, wn, kp channel (used more recently) before yt channel, no hidden/system/uninstalled rows
-        T.eq(rowIds(m), "apps,wn,ch:3,ch:1,customize", "row order");
+        // rows (D): wn, apps, kp channel (used more recently) before yt channel, no hidden/system/uninstalled rows
+        T.eq(rowIds(m), "wn,apps,ch:3,ch:1,customize", "row order");
         T.ok(m.allRows.stream().anyMatch(r -> r.id.equals("ch:2") && r.hidden), "non-default channel listed as hidden");
         // hero: WN continue first, then round robin over channel rows, skipping art-less items
         T.eq(m.hero.get(0).id, "wn:1", "hero starts with continue watching");
@@ -84,12 +82,32 @@ public final class RankerTest {
         m = Ranker.build(in);
         T.eq(ids(m.favorites), "com.spot,com.yt", "manual favourites keep order, drop missing");
         T.eq(rowIds(m), "ch:1,apps,ch:3,ch:2,customize", "manual order first, hidden row out, user-shown row in");
-        // fewer than 3 slides -> feature slides fill up
+        // Watch Next without art still leads the hero (the living sky stands in for the art)
+        in.hiddenRows.clear();
+        wn.image = null;
+        m = Ranker.build(in);
+        T.eq(m.hero.get(0).id, "wn:1", "art-less continue item in the hero");
+        // nothing to continue and no channels -> empty hero (the calm Home), never filler slides
         in.tvp.watchNext.clear();
         in.tvp.channels.clear();
         m = Ranker.build(in);
-        T.eq(m.hero.size(), 1, "only features when there is no content");
-        T.eq(m.hero.get(0).kind, Card.FEATURE, "feature slide");
+        T.eq(m.hero.size(), 0, "no hero without content");
+        // "Continue watching on Home" hidden (1.0.1): no TvProvider at all -> calm Home with the apps first
+        in.rowOrder = new java.util.ArrayList<>();
+        in.tvp = TvpSource.off();
+        m = Ranker.build(in);
+        T.eq(m.tvpMode, "off", "tvp off");
+        T.eq(m.hero.size(), 0, "hidden: no hero");
+        T.ok(m.rows.get(0).id.equals("apps"), "hidden: the apps row first");
+        T.ok(m.rows.stream().noneMatch(r -> r.type == Row.WATCH_NEXT || r.type == Row.CHANNEL), "hidden: no continue row, no channels");
+        // a snapshot saved while it was shown: its first frame drops the hero and the TvProvider rows too
+        in.tvp = new TvpSource.Result();
+        in.tvp.watchNext.add(wn);
+        m = Ranker.build(in);
+        T.ok(!m.hero.isEmpty() && m.rows.get(0).type == Row.WATCH_NEXT, "shown: hero and continue row");
+        Ranker.dropTvp(m);
+        T.ok(m.hero.isEmpty() && m.rows.stream().noneMatch(r -> r.type == Row.WATCH_NEXT || r.type == Row.CHANNEL)
+                && m.allRows.stream().noneMatch(r -> r.type == Row.WATCH_NEXT), "dropTvp: calm model");
     }
 
     static String ids(java.util.List<Card> l) {

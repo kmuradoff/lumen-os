@@ -18,4 +18,6 @@
     <string name="dream_light_unchanged">بدون تغيير</string>
     <string name="dream_sleep_after">وضع الاستعداد بعد</string>
     <string name="dream_use_clock">استخدام شاشة توقف الساعة</string>
+    <string name="dream_show">العرض</string>
+    <string name="dream_sky">السماء الحية</string>
 </resources>

@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">Выберите язык</string>
     <string name="lang_more">Другие языки…</string>
     <string name="lang_more_hint">Этот язык будет в настройках и приложениях Google. Приложения Lumen без перевода останутся на английском.</string>
+    <string name="lang_more_hint_nogms">Этот язык будет в настройках. Приложения Lumen без перевода останутся на английском.</string>
     <string name="net_title">Подключение к интернету</string>
     <string name="net_subtitle">Выберите сеть Wi-Fi. Это можно сделать и позже.</string>
     <string name="net_connected">Подключено: %1$s</string>
@@ -99,6 +100,7 @@
     <string name="done_home">Главный экран</string>
     <string name="done_start">Начать</string>
     <string name="done_offline_hint">Нет интернета: войти в Google и выбрать часовой пояс можно позже в настройках.</string>
+    <string name="done_offline_hint_nogms">Нет интернета: часовой пояс можно выбрать позже в настройках.</string>
     <string name="done_blobs_missing">Нет компонентов защищённого видео, поэтому некоторые видеосервисы могут работать только в низком качестве.</string>
     <string name="action_continue">Продолжить</string>
     <string name="action_skip">Пропустить</string>

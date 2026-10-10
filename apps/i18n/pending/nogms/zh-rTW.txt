@@ -1,0 +1,21 @@
+# Lumen OS without Google (1.0.1, docs/NOGMS_PLAN.md section 8): NEW strings for the merge into
+# langs/zh-rTW.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+apps_install_usb=從 USB 安裝
+usb_title=從 USB 安裝
+usb_none=請插入含有 .apk 檔案的 USB 隨身碟（放在根目錄或 apks 資料夾中）。
+usb_empty=USB 隨身碟中沒有 .apk 檔案。請將檔案放在根目錄或 apks 資料夾中。
+usb_new=新應用程式
+usb_update=更新
+usb_installing=正在安裝：%1$d%%
+usb_done=已安裝 %1$s
+usb_failed=無法安裝 %1$s：%2$s
+kb_no_store=請從 USB 隨身碟安裝鍵盤應用程式：應用程式 > 從 USB 安裝。
+voice_none=語音搜尋需要語音辨識應用程式。請改為輸入文字。
+@updater/strings.xml
+blk_channel=此更新適用於另一個 Lumen OS 版本（%1$s）。
+@setup/strings.xml
+lang_more_hint_nogms=設定會使用這個語言。尚未翻譯的 Lumen 應用程式仍會顯示英文。
+done_offline_hint_nogms=沒有網際網路：可稍後在設定中設定時區。
+@projector/strings.xml
+slot_home_apps=Lumen Home：應用程式

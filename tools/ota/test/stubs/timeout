@@ -1,0 +1,9 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox timeout: 'timeout SECS cmd...' runs cmd. With $Z9X_T/hal/hang present a boot HAL
+# ('service') or bootctl call "times out" (exit 124, no output), like a hung HAL on the device.
+shift
+case "$1" in
+  service|*/bootctl) [ -e "$Z9X_T/hal/hang" ] && exit 124 ;;
+esac
+exec "$@"

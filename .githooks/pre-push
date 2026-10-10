@@ -4,7 +4,8 @@
 # git passes "<local ref> <local sha> <remote ref> <remote sha>" lines on stdin: every blob the push
 # would add to the remote (ALL pushed commits, also files committed and deleted again) is checked by
 # tools/ota/check_publish.py --push-stdin: binaries/images/keys (only the published AOSP test keys pass,
-# by public key), MediaTek/XGIMI blobs, files > 5 MB, personal data. Then the work tree once more.
+# by public key), MediaTek/XGIMI blobs, files > 5 MB, personal data; and every pushed commit's author /
+# committer identity and message. Then the work tree once more.
 root=$(git rev-parse --show-toplevel) || exit 1
 python3 "$root/tools/ota/check_publish.py" --push-stdin || exit 1
 exec python3 "$root/tools/ota/check_publish.py" "$root"

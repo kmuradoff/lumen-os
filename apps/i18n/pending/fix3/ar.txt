@@ -1,6 +1,0 @@
-# Lumen OS 1.0 review fixes (2026-10-07): search keyboard + push-to-talk strings of Lumen Home.
-@home/strings.xml
-voice_hold=اضغط مع الاستمرار على زر الميكروفون أثناء التحدث
-kb_title=لوحة المفاتيح
-kb_get_app=الحصول على لوحة مفاتيح: %1$s
-kb_no_play=‏Google Play غير متاح. ثبّت تطبيق لوحة مفاتيح للكتابة بلغتك.

@@ -14,6 +14,7 @@
 package org.z9x.airplay;
 
 import android.app.Activity;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -42,10 +43,13 @@ public final class MirrorActivity extends Activity implements AirPlayService.Lis
     private static final long IDLE_FINISH_MS = 4000;
     private static final long ENDED_FINISH_MS = 1500;
     private static final long TICK_MS = 1000;
+    /** Size of the cover on the "now playing" screen (AirPlayService decodes covers for it). */
+    static final int COVER_DP = 300;
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private AirPlayService svc;
     private int mode = -1;
+    private int densityDpi;
     private boolean sawSession;   // a session state was shown: idle now means "ended"
 
     private AspectSurfaceView video;
@@ -68,6 +72,7 @@ public final class MirrorActivity extends Activity implements AirPlayService.Lis
         super.onCreate(b);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(buildViews());
+        densityDpi = getResources().getConfiguration().densityDpi;
         getWindow().setDecorFitsSystemWindows(false);
         WindowInsetsController ic = getWindow().getInsetsController();
         if (ic != null) {
@@ -108,6 +113,21 @@ public final class MirrorActivity extends Activity implements AirPlayService.Lis
             if (svc != null) svc.videoFailed = false;   // the failure message was shown (or skipped)
             finish();
         }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration c) {
+        super.onConfigurationChanged(c);
+        // Lumen OS 1.0.1: the UI resolution (1080p / 2K / 4K) changed under a running session.
+        // configChanges keeps this activity and its Surface (the picture only re-measures to the new
+        // window); the overlays are sized in px once built, so build them again at the new density.
+        if (c.densityDpi == densityDpi || video == null) return;
+        densityDpi = c.densityDpi;
+        FrameLayout root = (FrameLayout) video.getParent();
+        root.removeView(centerBox);
+        root.removeView(audioBox);
+        buildOverlays(root);
+        if (svc != null && mode >= 0) render(svc);
     }
 
     // ------------------------------------------------------------------ surface
@@ -362,6 +382,12 @@ public final class MirrorActivity extends Activity implements AirPlayService.Lis
         root.addView(curtain, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
 
+        buildOverlays(root);
+        return root;
+    }
+
+    /** The code / status box and the "now playing" screen over the picture (sizes in dp / sp). */
+    private void buildOverlays(FrameLayout root) {
         final int white = Color.WHITE, dim = 0xB3FFFFFF;
 
         centerBox = new LinearLayout(this);
@@ -393,7 +419,7 @@ public final class MirrorActivity extends Activity implements AirPlayService.Lis
         cover = new ImageView(this);
         cover.setBackgroundColor(0xFF1E1E1E);
         cover.setClipToOutline(true);
-        audioBox.addView(cover, new LinearLayout.LayoutParams(dp(300), dp(300)));
+        audioBox.addView(cover, new LinearLayout.LayoutParams(dp(COVER_DP), dp(COVER_DP)));
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPadding(dp(48), 0, 0, 0);
@@ -425,6 +451,5 @@ public final class MirrorActivity extends Activity implements AirPlayService.Lis
         audioBox.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         root.addView(audioBox, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
-        return root;
     }
 }

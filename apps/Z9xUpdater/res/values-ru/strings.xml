@@ -48,6 +48,16 @@
     <string name="done_ok_title">Обновлено до Lumen OS %1$s</string>
     <string name="done_rollback_title">Обновление не запустилось</string>
     <string name="done_rollback_body">Восстановлена Lumen OS %1$s. Ничего не потеряно.</string>
+    <string name="done_unhealthy_title">Lumen OS %1$s работает</string>
+    <string name="done_unhealthy_body">Проверка после обновления нашла проблему: %1$s. Если что-то не работает, воспользуйтесь ремонтом (rescue) в установщике для компьютера. Данные сохраняются.</string>
+    <string name="done_rescue_scan">Отсканируйте код, чтобы открыть инструкцию по ремонту.</string>
+    <string name="done_details">Технические подробности: %1$s</string>
+    <string name="why_restarted">система неожиданно перезапустилась</string>
+    <string name="why_service">не запустилась системная служба</string>
+    <string name="why_lamp">не запустилась служба лампы и вентиляторов</string>
+    <string name="why_confirm">системе не удалось подтвердить, что новая версия работает</string>
+    <string name="why_no_rollback">вернуться к предыдущей версии было невозможно</string>
+    <string name="why_unknown">подробности не записаны</string>
     <string name="blk_vbmeta_title">Нужен разовый шаг для обновлений</string>
     <string name="blk_vbmeta_body">Перед первым обновлением второй системный слот (%1$s) нужно один раз подготовить с компьютера, как описано в инструкции по установке (шаг vbmeta). Отсканируйте код, чтобы открыть инструкцию.</string>
     <string name="blk_vbmeta_unknown">Не удалось прочитать состояние второго системного слота. Перезапустите проектор и попробуйте снова.</string>
@@ -55,6 +65,7 @@
     <string name="blk_merge_body">Это займёт несколько минут в фоне. Можно продолжать смотреть.</string>
     <string name="blk_pending">Эта версия ещё проверяется после последнего обновления. Попробуйте через несколько минут.</string>
     <string name="blk_vendor">Это обновление не подходит для прошивки проектора (%1$s).</string>
+    <string name="blk_channel">Это обновление для другой редакции Lumen OS (%1$s).</string>
     <string name="blk_min_version">Для этого обновления нужна Lumen OS %1$s или новее. Используйте установщик для компьютера.</string>
     <string name="blk_thermal">Проектор сейчас слишком горячий. Попробуйте позже.</string>
     <string name="blk_space">Недостаточно места: нужно %1$s.</string>

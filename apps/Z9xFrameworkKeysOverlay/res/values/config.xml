@@ -46,8 +46,10 @@
          CUR_MAX_CACHED_PROCESSES = this value, the empty-process limit becomes 8). On v6.4, 20 boot
          leftovers lived until the cap of 32 was hit; a TV needs about 10 warm apps at most. The same
          value is pinned in DeviceConfig by Z9xDeviceConfigOverlay (a server value would win over a
-         device_config default, not over this resource). -->
-    <integer name="config_customizedMaxCachedProcesses">16</integer>
+         device_config default, not over this resource).
+         Lumen OS 1.0.1: 16 -> 10. With Kinopoisk, TorrServe, Lampa, a player and WebView kept warm, the frozen
+         cached apps filled zram (635 of 819 MB swapped, 227 MB free on the owner's projector) and the UI lagged. -->
+    <integer name="config_customizedMaxCachedProcesses">10</integer>
 
     <!-- Speed spec 3.3 / 6.1: the Google Assistant (Katniss) is removed from the image, so the
          ASSISTANT role (roles.xml: defaultHolders = config_defaultAssistant,
@@ -79,4 +81,39 @@
          language every time CEC starts). -->
     <bool name="config_cecSetMenuLanguageEnabled_default">false</bool>
     <bool name="config_cecSetMenuLanguageDisabled_default">true</bool>
+
+    <!-- ================= Lumen OS 1.0.0 ====
+
+         Default screensaver: the living sky of Lumen Home (org.z9x.home.sky.SkyDreamService, kept
+         enabled in classic-launcher mode). TvFrameworkOverlay sets com.android.dreams.basic Colors,
+         and BasicDreams is removed from the image, so the old default pointed at a missing package.
+         SettingsProvider (DatabaseHelper.loadSecureSettings) copies this value into Settings.Secure
+         screensaver_default_component on a fresh userdata only; DreamManagerService falls back to it
+         when screensaver_components is empty or names a missing dream. The active choice
+         (screensaver_components) is not set here: Z9xProjector's one-shot dream defaults and the user
+         (TvSettings > Screen saver, quick panel) own it. -->
+    <string name="config_dreamsDefaultComponent" translatable="false">org.z9x.home/org.z9x.home.sky.SkyDreamService</string>
+
+    <!-- ================= Lumen OS 1.0.1 final, build suffix e (UI resolution 4K, overlay/v1/z9x_uires) ====
+
+         Max UI width 3840: the 4K start of lumen-1.0.1-20261009d (owner's projector, slot _a) did everything
+         right at 'on fs' (OSD region bound read-only, vendor.display-size 3840x2160, ro.config.size_override
+         3840,2160, density_override 640; SF mode / client target, HWC Display Region and GOP Layer / Dst all
+         3840x2160 at 17 s), but `wm size` said "Physical size: 3840x2160 / Override size: 1920x1080" and
+         `dumpsys window displays` "init=3840x2160 640dpi base=1920x1080 640dpi", so z9x_uires.sh check failed
+         ("check: WM 1920x1080, GOP 1920x1080->3840x2160") and restarted once into 1080p, as designed.
+         Cause: `cmd overlay lookup android android:integer/config_maxUiWidth` = 1920, from TvFrameworkOverlay
+         (com.android.tv.overlay.framework, device/google/atv/overlay/TvFrameworkOverlay/res/values/config.xml:173;
+         framework default 0 = no cap, core/res/res/values/config.xml:4581, symbols.xml:3866). WindowManagerService
+         (:1181) hands it to DisplayContent, whose updateBaseDisplayMetrics (DisplayContent.java:3099) clamps
+         the base width to it and scales the height, and setForcedSize (:3172) clamps a forced size too, so
+         neither ro.config.size_override nor `wm size 3840x2160` can get past 1920.
+         3840 = the panel and the largest mode (z9x_uires MODES): 4K runs 1:1; 2K debug (2560) is no longer
+         capped either; 1080p (1920 wide) is below the cap, so nothing changes there. This RRO is ordered after
+         TvFrameworkOverlay and the Lineage product RRO (priority 2000, see AndroidManifest.xml), so its value
+         wins. Device check: `cmd overlay lookup android android:integer/config_maxUiWidth` prints 3840, and in
+         4K `wm size` shows no "Override size". Build guard: tools/lumen_v1.sh preflight (lumen_checks.py
+         maxui) refuses an APK set whose Z9xFrameworkKeysOverlay.apk lacks a value >= 3840 while
+         ro.z9x.uires.allow=1. -->
+    <integer name="config_maxUiWidth">3840</integer>
 </resources>

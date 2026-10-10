@@ -43,6 +43,7 @@ toast_not_ready=Проектор әлі дайын емес
 toast_failed=Орындау мүмкін болмады
 toast_curtain_offer=Кескін жылжып кетті: Проектор → Трапеция → «Қазір экранға сыйғызу»
 toast_setup_running=Алдымен реттеуді аяқтаңыз
+slot_home_apps=Lumen Home: қолданбалар
 
 @projector/strings_ak.xml
 ak_caption_keystone=Трапеция автоматты түзетілуде
@@ -540,6 +541,38 @@ voice_hold=Сөйлеген кезде микрофон түймесін бас�
 kb_title=Пернетақта
 kb_get_app=Пернетақта орнату: %1$s
 kb_no_play=Google Play қолжетімсіз. Өз тіліңізде теру үшін пернетақта қолданбасын орнатыңыз.
+tab_home=Басты бет
+hero_resume=Жалғастыру
+hero_more=Толығырақ
+hero_kind_next=Келесі бөлім
+hero_kind_watchlist=Көретіндер тізімі
+weather_line=%1$s, %2$s
+wx_clear=ашық
+wx_partly=ауыспалы бұлтты
+wx_cloudy=бұлтты
+wx_fog=тұман
+wx_drizzle=сіркіреме жаңбыр
+wx_rain=жаңбыр
+wx_snow=қар
+wx_showers=нөсер
+wx_thunder=найзағай
+cz_wallpaper=Тұсқағаз
+cz_wallpaper_sub=Басты экранда және скринсейверде тірі пейзаж: оның аспаны нақты күн мен ауа райына сай өзгереді.
+cz_continue=Басты бетте көруді жалғастыру
+cz_continue_sub=Жасырсаңыз, басты бетте тек тірі тұсқағаз үстіндегі сағат, күн мен ауа райы және қолданбаларыңыз қалады. Қолданба арналары да көрсетілмейді.
+cz_continue_show=Көрсету
+cz_continue_hide=Жасыру
+apps_install_usb=USB-ден орнату
+usb_title=USB-ден орнату
+usb_none=.apk файлдары бар USB жинақтағышын салыңыз (түбірінде немесе apks қалтасында).
+usb_empty=USB жинақтағышында .apk файлдары жоқ. Оларды түбірге немесе apks қалтасына салыңыз.
+usb_new=Жаңа
+usb_update=Жаңарту
+usb_installing=Орнатылуда: %1$d%%
+usb_done=%1$s орнатылды
+usb_failed=%1$s орнатылмады: %2$s
+kb_no_store=Пернетақта қолданбасын USB жинақтағышынан орнатыңыз: Қолданбалар > USB-ден орнату.
+voice_none=Дауыспен іздеу үшін сөйлеуді тану қолданбасы керек. Сұрауды теріп жазыңыз.
 @updater/strings.xml
 app_name=Lumen OS жаңартуы
 settings_title=Lumen OS жаңартуы
@@ -625,6 +658,17 @@ n_available_body=Жүктеп, орнату үшін ашыңыз.
 n_ready_title=Жаңартуды аяқтау үшін қайта іске қосыңыз
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s жұмыс істеп тұр
+done_unhealthy_body=Жаңартудан кейінгі тексеру мәселе тапты: %1$s. Бірдеңе жұмыс істемесе, компьютерге арналған орнатқыштың қалпына келтіру режимін (rescue) пайдаланыңыз. Деректер сақталады.
+done_rescue_scan=Қалпына келтіру нұсқаулығын ашу үшін кодты сканерлеңіз.
+done_details=Техникалық мәліметтер: %1$s
+why_restarted=жүйе күтпеген жерден қайта іске қосылды
+why_service=жүйелік қызмет іске қосылмады
+why_lamp=шам мен желдеткіш қызметі іске қосылмады
+why_confirm=жүйе жаңа нұсқаның жұмыс істейтінін растай алмады
+why_no_rollback=алдыңғы нұсқаға қайту мүмкін болмады
+why_unknown=мәліметтер жазылмаған
+blk_channel=Бұл жаңарту Lumen OS-тің басқа нұсқасына арналған (%1$s).
 @projector/strings_recents.xml
 recents_title=Соңғы қолданбалар
 recents_close=Жабу
@@ -763,6 +807,8 @@ name_other=Басқа…
 name_hint=Атауы (32 таңбаға дейін)
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=Бұл тілді параметрлер пайдаланады. Аудармасы жоқ Lumen қолданбалары ағылшын тілінде қалады.
+done_offline_hint_nogms=Интернет жоқ: уақыт белдеуін кейін параметрлерде орнатуға болады.
 @projector/strings_cec.xml
 cec_entry=HDMI құрылғылары (CEC)
 cec_unavailable=HDMI-CEC қолжетімсіз

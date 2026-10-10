@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0.1 problem reports (report.ReportActivity, Projector settings > Diagnostics, shown only
+     while ro.z9x.report.url is set). English base; the 16 translations are hand-written
+     values-<lang>/strings_report.xml files (apps/i18n/gen.py validates them as hand-written).
+     report_inc_logs says 30 minutes = ReportConfig.LOG_MINUTES; report_footer says 30 days = the
+     R2 lifecycle rule of cloud/report-worker. report_intro names the report_send button. -->
+<resources>
+    <string name="report_title">Send a problem report</string>
+    <string name="report_intro">Helps the Lumen OS developer find out what went wrong. Nothing is sent until you press Send report.</string>
+    <string name="report_included">Included</string>
+    <string name="report_inc_system">System version, uptime and system slot</string>
+    <string name="report_inc_logs">System and Lumen app logs of the last 30 minutes</string>
+    <string name="report_inc_crashes">Crash, freeze and restart records with app names</string>
+    <string name="report_inc_kernel">Kernel log of the last restart and the update log</string>
+    <string name="report_inc_state">Screen, memory and network type</string>
+    <string name="report_excluded">Removed or not included</string>
+    <string name="report_exc_accounts">Accounts, e-mail addresses and phone numbers</string>
+    <string name="report_exc_network">Wi-Fi names, IP and MAC addresses</string>
+    <string name="report_exc_serial">Serial number: a random ID of this projector is used instead</string>
+    <string name="report_exc_apps">Logs of apps you installed yourself</string>
+    <string name="report_exc_files">Photos, files and passwords</string>
+    <string name="report_footer">The report is kept for 30 days. Only the Lumen OS developer can open it.</string>
+    <string name="report_last">Last report: %1$s, %2$s</string>
+    <string name="report_send">Send report</string>
+    <string name="report_collecting">Collecting information… (%1$d of %2$d)</string>
+    <string name="report_log_hint">If Android asks whether to allow access to device logs, choose Allow.</string>
+    <string name="report_sending">Sending… %1$s of %2$s</string>
+    <string name="report_done_title">Report sent</string>
+    <string name="report_done_text">Send this code to the Lumen OS developer together with a short description of the problem.</string>
+    <string name="report_failed_title">The report was not sent</string>
+    <string name="report_err_no_network">No internet connection. Check the network and try again.</string>
+    <string name="report_err_network">The report server cannot be reached. Try again later.</string>
+    <string name="report_err_rate">Too many reports right now. Try again later.</string>
+    <string name="report_err_rejected">The report server did not accept the report.</string>
+    <string name="report_err_server">The report server has a problem. Try again later.</string>
+    <string name="report_err_collect">The report could not be prepared.</string>
+    <string name="report_retry">Try again</string>
+    <string name="report_close">Close</string>
+</resources>

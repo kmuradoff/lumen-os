@@ -22,6 +22,8 @@ import org.z9x.home.data.HomeRepository;
 import org.z9x.home.data.Row;
 import org.z9x.home.data.TvpSource;
 import org.z9x.home.proj.ProjectorBridge;
+import org.z9x.home.sky.SkySettings;
+import org.z9x.home.sky.SkyView;
 import org.z9x.home.ui.ContextPanel;
 import org.z9x.home.ui.ListPanel;
 import org.z9x.home.ui.Theme;
@@ -33,10 +35,12 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Customize Home (SPEC 7.10): rows, row order, favourites, hidden apps, weather (city, units),
- * Spotlight (auto-advance, trailers), home screen (Lumen Home / classic Android TV via the projector's
- * LauncherSwitcher, PLAN C1) and About. A translucent activity over Home with the side panel; every
- * change is a preference write that Home observes.
+ * Customize Home (SPEC 7.10): rows, row order, favourites, hidden apps, weather (city, units), wallpaper
+ * (the living sky's landscape: a new one every day, or one of the scenes; shared with the screensaver),
+ * "Continue watching on Home" (show / hide; hidden, Home is only the clock, date and weather over the
+ * wallpaper plus the apps, 1.0.1), Spotlight (auto-advance, trailers), home screen (Lumen Home / classic
+ * Android TV via the projector's LauncherSwitcher, PLAN C1) and About. A translucent activity over Home
+ * with the side panel; every change is a preference write that Home observes.
  */
 public class CustomizeActivity extends Activity {
     public static final String EXTRA_PAGE = "page";
@@ -44,6 +48,7 @@ public class CustomizeActivity extends Activity {
     private App mApp;
     private Prefs mPrefs;
     private int mCitySeq;
+    private ListPanel.Item mWallItem, mContinueItem;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -80,6 +85,12 @@ public class CustomizeActivity extends Activity {
         l.add(ListPanel.Item.action(R.drawable.ic_star, getString(R.string.cz_favorites), this::openFavorites));
         l.add(ListPanel.Item.action(R.drawable.ic_eye_off, getString(R.string.cz_hidden_apps), this::openHidden));
         l.add(ListPanel.Item.action(R.drawable.ic_cloud, getString(R.string.weather), this::openWeather));
+        mWallItem = ListPanel.Item.action(R.drawable.ic_picture, getString(R.string.cz_wallpaper), this::openWallpaper)
+                .value(SkyView.sceneTitle(this, SkySettings.scene(this)));
+        l.add(mWallItem);
+        mContinueItem = ListPanel.Item.action(R.drawable.ic_history, getString(R.string.cz_continue), this::openContinue)
+                .value(continueLabel());
+        l.add(mContinueItem);
         l.add(ListPanel.Item.action(R.drawable.ic_spotlight, getString(R.string.cz_spotlight), this::openSpotlight));
         l.add(ListPanel.Item.action(R.drawable.ic_home, getString(R.string.cz_home_screen), this::openHomeScreen)
                 .value(getString(R.string.lumen_home)));
@@ -128,8 +139,24 @@ public class CustomizeActivity extends Activity {
         if (lp != null) lp.setMoveListener(items -> {
             ArrayList<String> ids = new ArrayList<>();
             for (ListPanel.Item it : items) if (it.tag instanceof String) ids.add((String) it.tag);
-            mPrefs.putList(Prefs.K_ROW_ORDER, ids);
+            mPrefs.putList(Prefs.K_ROW_ORDER, keepUnlisted(ids));
         });
+    }
+
+    /**
+     * Rows that are not in the list (hidden with "Continue watching on Home", or empty right now) keep
+     * their place in the saved order; "Continue watching" that was never ordered keeps its natural place,
+     * first. Else a reorder while it is hidden would put it below the projector row once it is shown.
+     */
+    private List<String> keepUnlisted(List<String> ids) {
+        ArrayList<String> out = new ArrayList<>(ids);
+        List<String> old = mPrefs.list(Prefs.K_ROW_ORDER);
+        for (int i = 0; i < old.size(); i++) {
+            String id = old.get(i);
+            if (!out.contains(id)) out.add(Math.min(i, out.size()), id);
+        }
+        if (!out.contains(Row.ID_WATCH_NEXT)) out.add(0, Row.ID_WATCH_NEXT);
+        return out;
     }
 
     private ListPanel findListPanel() {
@@ -291,6 +318,63 @@ public class CustomizeActivity extends Activity {
                 if (seq == mCitySeq) mPanel.replace(cityItems(res));
             });
         });
+    }
+
+    // ------------------------------------------------------------------ wallpaper
+
+    /** "Обои": a new landscape every day (auto) or one scene; Home and the screensaver read SkySettings. */
+    private void openWallpaper() {
+        String cur = SkySettings.scene(this);
+        ArrayList<String> ids = new ArrayList<>();
+        ids.add(SkyView.AUTO);
+        for (String id : SkyView.sceneIds()) ids.add(id);
+        ArrayList<ListPanel.Item> l = new ArrayList<>();
+        for (String id : ids) {
+            ListPanel.Item it = ListPanel.Item.action(0, SkyView.sceneTitle(this, id), null).kind(ListPanel.CHECK).on(id.equals(cur));
+            it.tag = id;
+            l.add(it);
+        }
+        for (ListPanel.Item it : l) {
+            it.action = () -> {
+                SkySettings.setScene(this, (String) it.tag);
+                if (mWallItem != null) mWallItem.value(it.text);
+                for (ListPanel.Item o : l) {
+                    o.on = o == it;
+                    refreshItem(o);
+                }
+            };
+        }
+        mPanel.push(getString(R.string.cz_wallpaper), getString(R.string.cz_wallpaper_sub), l);
+    }
+
+    // ------------------------------------------------------------------ continue watching on Home
+
+    private String continueLabel() {
+        return getString(mPrefs.continueOnHome() ? R.string.cz_continue_show : R.string.cz_continue_hide);
+    }
+
+    /**
+     * "Continue watching on Home": show (the hero and the row, as 1.0) or hide (always the calm Home:
+     * clock, date and weather over the wallpaper, then the apps; Home stops reading TvProvider).
+     */
+    private void openContinue() {
+        boolean on = mPrefs.continueOnHome();
+        ArrayList<ListPanel.Item> l = new ArrayList<>();
+        l.add(ListPanel.Item.action(0, getString(R.string.cz_continue_show), null).kind(ListPanel.CHECK).on(on));
+        l.add(ListPanel.Item.action(0, getString(R.string.cz_continue_hide), null).kind(ListPanel.CHECK).on(!on));
+        for (int i = 0; i < l.size(); i++) {
+            final ListPanel.Item it = l.get(i);
+            final boolean show = i == 0;
+            it.action = () -> {
+                mPrefs.putBool(Prefs.K_CONTINUE_HOME, show);
+                if (mContinueItem != null) mContinueItem.value(it.text);
+                for (ListPanel.Item o : l) {
+                    o.on = o == it;
+                    refreshItem(o);
+                }
+            };
+        }
+        mPanel.push(getString(R.string.cz_continue), getString(R.string.cz_continue_sub), l);
     }
 
     // ------------------------------------------------------------------ spotlight, home screen, about

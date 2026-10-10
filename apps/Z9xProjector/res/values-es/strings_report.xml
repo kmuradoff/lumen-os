@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Spanish translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">Enviar un informe de problema</string>
+    <string name="report_intro">Ayuda al desarrollador de Lumen OS a saber qué ha fallado. No se envía nada hasta que pulses «Enviar informe».</string>
+    <string name="report_included">Incluido</string>
+    <string name="report_inc_system">Versión del sistema, tiempo de actividad y ranura del sistema</string>
+    <string name="report_inc_logs">Registros del sistema y de las apps de Lumen de los últimos 30 minutos</string>
+    <string name="report_inc_crashes">Registros de fallos, bloqueos y reinicios con nombres de apps</string>
+    <string name="report_inc_kernel">Registro del kernel del último reinicio y registro de actualización</string>
+    <string name="report_inc_state">Pantalla, memoria y tipo de red</string>
+    <string name="report_excluded">Eliminado o no incluido</string>
+    <string name="report_exc_accounts">Cuentas, direcciones de correo y números de teléfono</string>
+    <string name="report_exc_network">Nombres de redes Wi-Fi, direcciones IP y MAC</string>
+    <string name="report_exc_serial">Número de serie: en su lugar, un ID aleatorio de este proyector</string>
+    <string name="report_exc_apps">Registros de las apps que instalaste tú</string>
+    <string name="report_exc_files">Fotos, archivos y contraseñas</string>
+    <string name="report_footer">El informe se guarda 30 días. Solo el desarrollador de Lumen OS puede abrirlo.</string>
+    <string name="report_last">Último informe: %1$s, %2$s</string>
+    <string name="report_send">Enviar informe</string>
+    <string name="report_collecting">Recopilando información… (%1$d de %2$d)</string>
+    <string name="report_log_hint">Si Android pregunta si permitir el acceso a los registros del dispositivo, elige «Permitir».</string>
+    <string name="report_sending">Enviando… %1$s de %2$s</string>
+    <string name="report_done_title">Informe enviado</string>
+    <string name="report_done_text">Envía este código al desarrollador de Lumen OS junto con una breve descripción del problema.</string>
+    <string name="report_failed_title">No se envió el informe</string>
+    <string name="report_err_no_network">No hay conexión a internet. Comprueba la red e inténtalo de nuevo.</string>
+    <string name="report_err_network">No se puede contactar con el servidor de informes. Inténtalo más tarde.</string>
+    <string name="report_err_rate">Hay demasiados informes ahora mismo. Inténtalo más tarde.</string>
+    <string name="report_err_rejected">El servidor de informes no aceptó el informe.</string>
+    <string name="report_err_server">El servidor de informes tuvo un problema. Inténtalo más tarde.</string>
+    <string name="report_err_collect">No se pudo preparar el informe.</string>
+    <string name="report_retry">Reintentar</string>
+    <string name="report_close">Cerrar</string>
+</resources>

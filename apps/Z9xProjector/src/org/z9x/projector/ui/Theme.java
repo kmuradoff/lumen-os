@@ -10,7 +10,11 @@ import android.view.animation.PathInterpolator;
 /**
  * XGIMI look for every overlay of the app. All sizes are XGIMI "design px" of a 1920-wide screen
  * (stock SystemUI / newsettings layouts), scaled by displayWidth / 1920 with {@link #px}. They are
- * NOT Android dp: on the Z9X (1920x1080, density 320) 1 design px = 1 real px, while 1 dp = 2 px.
+ * NOT Android dp: on the stock 1080p UI (1920x1080, density 320) 1 design px = 1 real px, while 1 dp = 2 px.
+ * Lumen OS 1.0.1 interface resolution: at 4K (3840x2160, 640 dpi, the default) and 2K (2560x1440,
+ * 427 dpi, testing only) both scale together (1 design px = 2 / 1.33 real px, 1 dp = 2 design px still),
+ * so every overlay keeps its size and layout on the screen; only sharper. Nothing here may assume
+ * 1 design px = 1 px (it is 2 px at the 4K default).
  *
  * Sources (research/v61/inventory/FEATURE_SPEC.md):
  *  - 1.2 capsule notifier: 468x156, #FA292929, radius 36, stroke 3 #1AFFFFFF, icon 72, title bold

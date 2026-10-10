@@ -43,6 +43,7 @@ toast_not_ready=投影機尚未就緒
 toast_failed=無法執行此操作
 toast_curtain_offer=畫面已移動：投影機 → 梯形校正 → 「立即對齊布幕」
 toast_setup_running=請先完成設定
+slot_home_apps=Lumen Home：應用程式
 
 @projector/strings_ak.xml
 ak_caption_keystone=正在自動梯形校正
@@ -538,6 +539,38 @@ voice_hold=說話時請按住麥克風按鈕
 kb_title=鍵盤
 kb_get_app=取得鍵盤：%1$s
 kb_no_play=Google Play 無法使用。請安裝鍵盤應用程式，以便用您的語言輸入。
+tab_home=首頁
+hero_resume=繼續播放
+hero_more=詳細資訊
+hero_kind_next=下一集
+hero_kind_watchlist=待看清單
+weather_line=%1$s，%2$s
+wx_clear=晴
+wx_partly=多雲
+wx_cloudy=陰
+wx_fog=霧
+wx_drizzle=毛毛雨
+wx_rain=雨
+wx_snow=雪
+wx_showers=陣雨
+wx_thunder=雷雨
+cz_wallpaper=桌布
+cz_wallpaper_sub=主畫面和螢幕保護程式中的動態風景：天空隨真實的太陽和天氣變化。
+cz_continue=首頁上的繼續觀看
+cz_continue_sub=隱藏後，首頁只會在動態桌布上顯示時間、日期和天氣，以及你的應用程式。應用程式頻道也不會顯示。
+cz_continue_show=顯示
+cz_continue_hide=隱藏
+apps_install_usb=從 USB 安裝
+usb_title=從 USB 安裝
+usb_none=請插入含有 .apk 檔案的 USB 隨身碟（放在根目錄或 apks 資料夾中）。
+usb_empty=USB 隨身碟中沒有 .apk 檔案。請將檔案放在根目錄或 apks 資料夾中。
+usb_new=新應用程式
+usb_update=更新
+usb_installing=正在安裝：%1$d%%
+usb_done=已安裝 %1$s
+usb_failed=無法安裝 %1$s：%2$s
+kb_no_store=請從 USB 隨身碟安裝鍵盤應用程式：應用程式 > 從 USB 安裝。
+voice_none=語音搜尋需要語音辨識應用程式。請改為輸入文字。
 @updater/strings.xml
 app_name=Lumen OS 更新
 settings_title=Lumen OS 更新
@@ -622,6 +655,17 @@ n_available_body=開啟即可下載並安裝。
 n_ready_title=重新啟動以完成更新
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s 正在執行
+done_unhealthy_body=更新後的檢查發現了一個問題：%1$s。如果有功能無法正常使用，請使用電腦安裝程式的救援模式（rescue）。您的資料會保留。
+done_rescue_scan=掃描條碼即可開啟救援模式指南。
+done_details=技術詳細資料：%1$s
+why_restarted=系統意外重新啟動
+why_service=有一項系統服務未能啟動
+why_lamp=光源和風扇服務未能啟動
+why_confirm=系統無法確認新版本運作正常
+why_no_rollback=無法回到上一個版本
+why_unknown=沒有記錄詳細資料
+blk_channel=此更新適用於另一個 Lumen OS 版本（%1$s）。
 @projector/strings_recents.xml
 recents_title=最近使用的應用程式
 recents_close=關閉
@@ -760,6 +804,8 @@ name_other=其他…
 name_hint=名稱（最多 32 個字元）
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=設定會使用這個語言。尚未翻譯的 Lumen 應用程式仍會顯示英文。
+done_offline_hint_nogms=沒有網際網路：可稍後在設定中設定時區。
 @projector/strings_cec.xml
 cec_entry=HDMI 裝置 (CEC)
 cec_unavailable=無法使用 HDMI-CEC

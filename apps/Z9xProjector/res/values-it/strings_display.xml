@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Italian translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">Schermo</string>
+    <string name="uires_row">Risoluzione dell’interfaccia</string>
+    <string name="uires_default_fmt">%1$s (predefinita)</string>
+    <string name="uires_summary">4K offre il testo più nitido; 1080p, come su XGIMI, è la più leggera per la grafica. Per cambiarla il proiettore si riavvia.</string>
+    <string name="uires_summary_fallback">Ora %1$s: %2$s non è partita correttamente su questo proiettore, quindi è tornato indietro da solo. Scegli %2$s per riprovare.</string>
+    <string name="uires_choose_text">4K usa ogni pixel del pannello 4K. 1080p, come su XGIMI, ne disegna un quarto e il proiettore ingrandisce l’immagine.</string>
+    <string name="uires_opt_1080">Come su XGIMI: la più leggera per la grafica; testo un po’ più morbido</string>
+    <string name="uires_opt_1440">Solo per test: scalatura sul pannello non verificata</string>
+    <string name="uires_opt_2160">Testo più nitido: ogni pixel del pannello 4K</string>
+    <string name="uires_current">Attuale</string>
+    <string name="uires_confirm_title">Passare a %1$s?</string>
+    <string name="uires_confirm_up">Testo e menu diventano più nitidi. La grafica ha più da disegnare, quindi alcune app possono sembrare un po’ più lente.</string>
+    <string name="uires_confirm_down">La grafica ha meno da disegnare, quindi menu e app possono sembrare più veloci; il testo diventa un po’ più morbido.</string>
+    <string name="uires_confirm_restart">Il proiettore si riavvia per applicarla (circa un minuto). Se l’immagine non torna correttamente, torna da solo a %1$s.</string>
+    <string name="uires_restart">Riavvia ora</string>
+    <string name="uires_keep_title">Mantenere questa risoluzione?</string>
+    <string name="uires_keep_text">L’interfaccia ora funziona in %1$s. Se testo e immagine sono corretti, scegli Mantieni.</string>
+    <string name="uires_keep_countdown">Ritorno a %1$s tra %2$d s</string>
+    <string name="uires_keep">Mantieni</string>
+    <string name="uires_revert">Torna a %1$s</string>
+    <string name="uires_failed">Impossibile cambiare la risoluzione</string>
+</resources>

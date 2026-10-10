@@ -214,9 +214,11 @@ public class SetupActivity extends Activity implements NetMon.Listener {
             throw new RuntimeException("debug.z9x.setup.crash=1 (test T13)");
         }
 
+        // Lumen OS 1.0: the remote comes first (owner, 2026-10-08): the XGIMI remote is Bluetooth only,
+        // so nothing else can be done with it before it is paired. Always shown, never skipped silently.
+        mSteps.add(new RemoteStep(this));
         mSteps.add(new WelcomeStep(this));
         mSteps.add(new NetworkStep(this));
-        mSteps.add(new RemoteStep(this));
         mSteps.add(new GoogleStep(this));
         mSteps.add(new PictureStep(this));
         mSteps.add(new LauncherStep(this));
@@ -344,7 +346,8 @@ public class SetupActivity extends Activity implements NetMon.Listener {
         });
     }
 
-    private void setRemoteConnected(boolean c) {
+    /** Bridge / remote step: the XGIMI remote is connected (its keys work) or not. Main thread. */
+    public void setRemoteConnected(boolean c) {
         if (c && !remoteConnected) L.i("remote connected (bridge)");
         remoteConnected = c;
         if (c) state.setRemoteSeen(true);
@@ -532,11 +535,11 @@ public class SetupActivity extends Activity implements NetMon.Listener {
         show(i, true);
     }
 
-    /** Previous visible step (none on the first one). */
+    /** Previous visible step (none on the first one); steps with nothing left to do are passed over. */
     public void back() {
         while (!mHistory.isEmpty()) {
             int p = mHistory.pop();
-            if (mSteps.get(p).available()) {
+            if (mSteps.get(p).available() && mSteps.get(p).revisitable()) {
                 logExit(current(), "back");
                 show(p, false);
                 return;
@@ -581,7 +584,7 @@ public class SetupActivity extends Activity implements NetMon.Listener {
         updateDots();
         s.onEnter();
         focusStep(s, content);
-        if (old == null && index == 0 && WelcomeStep.ID.equals(s.id())) playIntro();
+        if (old == null && index == 0) playIntro();
     }
 
     private void applyMode(int mode) {
@@ -738,6 +741,8 @@ public class SetupActivity extends Activity implements NetMon.Listener {
     public boolean dispatchKeyEvent(KeyEvent e) {
         if (mAurora != null) mAurora.poke();
         if (mFinishing) return true;
+        Step cur = mSheet == null ? current() : null;
+        if (cur != null && cur.onKey(e)) return true;
         int code = e.getKeyCode();
         if (code == KeyEvent.KEYCODE_BACK) {
             // hidden skip (SPEC F2): BACK held 8 s. A timer from the first DOWN works for IR repeats,
@@ -799,6 +804,20 @@ public class SetupActivity extends Activity implements NetMon.Listener {
     @Override
     public void onConfigurationChanged(Configuration c) {
         super.onConfigurationChanged(c);
+        if (Ui.displayChanged(this)) {
+            // Lumen OS 1.0.1: the UI resolution (1080p / 2K / 4K) changed while setup is shown. configChanges
+            // keeps this activity, but the skeleton and every step are sized in px of the old scale: build
+            // everything again at the stored step, the same path as after a power cut (F9).
+            android.util.DisplayMetrics m = getResources().getDisplayMetrics();
+            L.i("display changed -> " + m.widthPixels + "x" + m.heightPixels + " " + m.densityDpi + " dpi");
+            Ui.init(this);
+            if (mUiBuilt && !mFinishing) {
+                mLocaleThen = null;                      // the new instance starts at the stored step
+                main.removeCallbacksAndMessages(null);   // nothing of this instance runs after it
+                recreate();
+                return;
+            }
+        }
         LocaleList ll = c.getLocales();
         if (ll.equals(mLocales)) return;
         mLocales = ll;

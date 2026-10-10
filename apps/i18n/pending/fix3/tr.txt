@@ -1,6 +1,0 @@
-# Lumen OS 1.0 review fixes (2026-10-07): search keyboard + push-to-talk strings of Lumen Home.
-@home/strings.xml
-voice_hold=Konuşurken mikrofon düğmesini basılı tutun
-kb_title=Klavye
-kb_get_app=Klavye edinin: %1$s
-kb_no_play=Google Play kullanılamıyor. Kendi dilinizde yazmak için bir klavye uygulaması yükleyin.

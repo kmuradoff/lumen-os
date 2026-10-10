@@ -46,6 +46,16 @@
     <string name="done_ok_title">Lumen OS %1$s нұсқасына жаңартылды</string>
     <string name="done_rollback_title">Жаңарту іске қосылмады</string>
     <string name="done_rollback_body">Lumen OS %1$s қалпына келтірілді. Ештеңе жоғалған жоқ.</string>
+    <string name="done_unhealthy_title">Lumen OS %1$s жұмыс істеп тұр</string>
+    <string name="done_unhealthy_body">Жаңартудан кейінгі тексеру мәселе тапты: %1$s. Бірдеңе жұмыс істемесе, компьютерге арналған орнатқыштың қалпына келтіру режимін (rescue) пайдаланыңыз. Деректер сақталады.</string>
+    <string name="done_rescue_scan">Қалпына келтіру нұсқаулығын ашу үшін кодты сканерлеңіз.</string>
+    <string name="done_details">Техникалық мәліметтер: %1$s</string>
+    <string name="why_restarted">жүйе күтпеген жерден қайта іске қосылды</string>
+    <string name="why_service">жүйелік қызмет іске қосылмады</string>
+    <string name="why_lamp">шам мен желдеткіш қызметі іске қосылмады</string>
+    <string name="why_confirm">жүйе жаңа нұсқаның жұмыс істейтінін растай алмады</string>
+    <string name="why_no_rollback">алдыңғы нұсқаға қайту мүмкін болмады</string>
+    <string name="why_unknown">мәліметтер жазылмаған</string>
     <string name="blk_vbmeta_title">Жаңартулар үшін бір реттік қадам қажет</string>
     <string name="blk_vbmeta_body">Алғашқы жаңартудың алдында екінші жүйелік слотты (%1$s) орнату нұсқаулығында сипатталғандай компьютерден бір рет дайындау керек (vbmeta қадамы). Нұсқаулықты ашу үшін кодты сканерлеңіз.</string>
     <string name="blk_vbmeta_unknown">Екінші жүйелік слоттың күйін оқу мүмкін болмады. Проекторды қайта іске қосып, әрекетті қайталаңыз.</string>
@@ -53,6 +63,7 @@
     <string name="blk_merge_body">Бұл фондық режимде бірнеше минутқа созылады. Көруді жалғастыра беруге болады.</string>
     <string name="blk_pending">Бұл нұсқа соңғы жаңартудан кейін әлі тексерілуде. Бірнеше минуттан кейін қайталаңыз.</string>
     <string name="blk_vendor">Бұл жаңарту проектордың микробағдарламасына арналмаған (%1$s).</string>
+    <string name="blk_channel">Бұл жаңарту Lumen OS-тің басқа нұсқасына арналған (%1$s).</string>
     <string name="blk_min_version">Бұл жаңарту үшін Lumen OS %1$s не жаңарағы қажет. Компьютерге арналған орнатқышты пайдаланыңыз.</string>
     <string name="blk_thermal">Проектор қазір тым қызып тұр. Кейінірек қайталаңыз.</string>
     <string name="blk_space">Бос орын жеткіліксіз: %1$s қажет.</string>

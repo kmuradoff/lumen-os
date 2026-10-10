@@ -20,10 +20,15 @@ public final class SnapshotTest {
         p.pkg = "ru.kp";
         p.intent = "intent://x#Intent;scheme=kp;end";
         p.progress = 420;
+        p.left = "осталось 6 мин";
         p.live = true;
         p.video = null;
         p.programId = 7;
         p.table = Card.T_PREVIEW;
+        p.image = "https://kp/poster.jpg";
+        p.aspect = Card.A_2_3;
+        p.image2 = "https://kp/thumb.jpg";
+        p.aspect2 = Card.A_16_9;
         Row r = new Row(Row.CHANNEL, "ch:3", "Новинки");
         r.sub = "Кинопоиск";
         r.cards.add(p);
@@ -40,6 +45,10 @@ public final class SnapshotTest {
         T.ok(back.fromSnapshot, "marked fromSnapshot");
         T.eq(back.rows.get(0).cards.get(0).title, "Северный ветер", "unicode title");
         T.eq(back.rows.get(0).cards.get(0).progress, 420, "progress");
+        T.eq(back.rows.get(0).cards.get(0).left, "осталось 6 мин", "time left (v2)");
+        T.eq(back.hero.get(0).image2, "https://kp/thumb.jpg", "second art (v3)");
+        T.eq(back.hero.get(0).aspect2, Card.A_16_9, "second art aspect (v3)");
+        T.eq(back.hero.get(0).aspect, Card.A_2_3, "art aspect");
         T.ok(back.rows.get(0).cards.get(0).live, "live flag");
         T.eq(back.apps.get(0).color, 0xFF223344, "colour");
         T.ok(back.apps.get(0).isNew, "new flag");

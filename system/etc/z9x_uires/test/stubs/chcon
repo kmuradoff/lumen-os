@@ -1,0 +1,12 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox chcon: 'chcon CONTEXT FILE' records "FILE CONTEXT" in $Z9X_T/labels (read by the stat
+# and ls stubs). $Z9X_T/chcon.fail: fails. A file whose directory is not writable is on a read-only
+# filesystem in the fake root (the vendor tree, a stub tmpfs after its remount): fails. Calls go to
+# $Z9X_T/chcon.log.
+echo "chcon $*" >> "$Z9X_T/chcon.log"
+[ $# -eq 2 ] && [ -e "$2" ] || { echo "chcon stub: unexpected arguments: $*" >&2; exit 1; }
+[ -f "$Z9X_T/chcon.fail" ] && { echo "chcon: $2: Operation not supported" >&2; exit 1; }
+[ -w "$(dirname "$2")" ] || { echo "chcon: $2: Read-only file system" >&2; exit 1; }
+case "$1" in u:object_r:*:s0) ;; *) echo "chcon: invalid context $1" >&2; exit 1 ;; esac
+echo "$2 $1" >> "$Z9X_T/labels"

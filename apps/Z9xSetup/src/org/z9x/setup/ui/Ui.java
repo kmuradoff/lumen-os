@@ -19,9 +19,10 @@ import org.z9x.setup.R;
 
 /**
  * Lumen look for the wizard. Sizes are design px of a 1920-wide screen (setup/SPEC.md 4.0), scaled by
- * displayWidth / 1920 (on the Z9X 1 design px = 1 real px; 1 dp = 2 px). Colours are the brand tokens
- * (res/values/tokens.xml, PLAN C7): focus = light fill (z9x_text) with dark text, like TvSettings and
- * the quick panel.
+ * displayWidth / 1920: 1 design px = 1 real px at 1080p, 1.33 at 2K (2560x1440), 2 at 4K (3840x2160);
+ * at the matching densities (320 / 427 / 640 dpi) 1 dp = 2 design px at every UI resolution. Colours
+ * are the brand tokens (res/values/tokens.xml, PLAN C7): focus = light fill (z9x_text) with dark text,
+ * like TvSettings and the quick panel.
  */
 public final class Ui {
     private Ui() {}
@@ -40,6 +41,7 @@ public final class Ui {
     public static final int HAIRLINE = 0x1FFFFFFF;
 
     private static float sScale = 1f;
+    private static int sDensityDpi;
     private static Typeface sMedium, sRegular, sLight, sThin;
 
     public static void init(Context c) {
@@ -56,12 +58,26 @@ public final class Ui {
         ERROR = c.getColor(R.color.setup_error);
         OK = c.getColor(R.color.setup_ok);
         DisplayMetrics m = c.getResources().getDisplayMetrics();
-        int w = Math.max(m.widthPixels, m.heightPixels);
-        sScale = w <= 0 ? 1f : w / DESIGN_WIDTH;
+        sScale = scaleOf(m);
+        sDensityDpi = m.densityDpi;
         sRegular = Typeface.create("sans-serif", Typeface.NORMAL);
         sMedium = Typeface.create("sans-serif-medium", Typeface.NORMAL);
         sLight = Typeface.create(Typeface.DEFAULT, 300, false);
         sThin = Typeface.create(Typeface.DEFAULT, 200, false);
+    }
+
+    private static float scaleOf(DisplayMetrics m) {
+        int w = Math.max(m.widthPixels, m.heightPixels);
+        return w <= 0 ? 1f : w / DESIGN_WIDTH;
+    }
+
+    /**
+     * The display's size or density is no longer the one {@link #init} saw (the UI resolution 1080p /
+     * 2K / 4K changed while the process runs): every px size made since then is of the old scale.
+     */
+    public static boolean displayChanged(Context c) {
+        DisplayMetrics m = c.getResources().getDisplayMetrics();
+        return m.densityDpi != sDensityDpi || Math.abs(scaleOf(m) - sScale) > 1e-4f;
     }
 
     public static int px(float design) { return Math.round(design * sScale); }

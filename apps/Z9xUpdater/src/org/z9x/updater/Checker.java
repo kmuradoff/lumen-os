@@ -75,7 +75,8 @@ public final class Checker {
             return new Result(Outcome.BUSY, null, "", "");
         }
         for (File dir : usbDirs(c)) {
-            for (String ch : new String[] {"update-stable.json", "update-beta.json"}) {
+            // only this image's own manifest file (an update of another edition is never offered)
+            for (String ch : new String[] {Ota.channelFile()}) {
                 File j = new File(dir, ch), sg = new File(dir, ch + ".sig");
                 if (!j.isFile() || !sg.isFile() || j.length() > MAX_MANIFEST) continue;
                 try {

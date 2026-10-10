@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Polish translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">Ekran</string>
+    <string name="uires_row">Rozdzielczość interfejsu</string>
+    <string name="uires_default_fmt">%1$s (domyślna)</string>
+    <string name="uires_summary">4K daje najostrzejszy tekst; 1080p, jak w XGIMI, najmniej obciąża grafikę. Aby ją zmienić, projektor uruchomi się ponownie.</string>
+    <string name="uires_summary_fallback">Teraz %1$s: %2$s nie uruchomiła się poprawnie na tym projektorze, więc sam wrócił do poprzedniej. Wybierz %2$s, aby spróbować ponownie.</string>
+    <string name="uires_choose_text">4K wykorzystuje każdy piksel panelu 4K. 1080p, jak w XGIMI, rysuje cztery razy mniej pikseli, a projektor powiększa obraz.</string>
+    <string name="uires_opt_1080">Jak w XGIMI: najmniej obciąża grafikę; tekst nieco bardziej miękki</string>
+    <string name="uires_opt_1440">Tylko do testów: skalowanie do panelu niesprawdzone</string>
+    <string name="uires_opt_2160">Najostrzejszy tekst: każdy piksel panelu 4K</string>
+    <string name="uires_current">Obecna</string>
+    <string name="uires_confirm_title">Przełączyć na %1$s?</string>
+    <string name="uires_confirm_up">Tekst i menu staną się ostrzejsze. Grafika ma więcej do rysowania, więc niektóre aplikacje mogą działać nieco wolniej.</string>
+    <string name="uires_confirm_down">Grafika ma mniej do rysowania, więc menu i aplikacje mogą działać szybciej, a tekst będzie nieco bardziej miękki.</string>
+    <string name="uires_confirm_restart">Aby to zastosować, projektor uruchomi się ponownie (około minuty). Jeśli obraz nie wróci poprawnie, sam wróci do %1$s.</string>
+    <string name="uires_restart">Uruchom ponownie</string>
+    <string name="uires_keep_title">Zachować tę rozdzielczość?</string>
+    <string name="uires_keep_text">Interfejs działa teraz w %1$s. Jeśli tekst i obraz wyglądają dobrze, wybierz Zachowaj.</string>
+    <string name="uires_keep_countdown">Powrót do %1$s za %2$d s</string>
+    <string name="uires_keep">Zachowaj</string>
+    <string name="uires_revert">Wróć do %1$s</string>
+    <string name="uires_failed">Nie udało się zmienić rozdzielczości</string>
+</resources>

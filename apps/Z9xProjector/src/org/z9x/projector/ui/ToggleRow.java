@@ -2,6 +2,7 @@ package org.z9x.projector.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 
@@ -59,7 +60,8 @@ public class ToggleRow extends Row {
         r.set(right - tw, cy - th / 2, right, cy + th / 2);
         int col = on ? Theme.ACCENT : (focused ? Theme.SWITCH_OFF_FOCUSED : Theme.SWITCH_OFF);
         track.setColor(col);
-        track.setAlpha(pending ? 0x60 : 0xFF);
+        // scale the colour's own alpha: SWITCH_OFF is translucent, a plain setAlpha(0xFF) made it a solid white pill
+        track.setAlpha(Color.alpha(col) * (pending ? 0x60 : 0xFF) / 0xFF);
         c.drawRoundRect(r, th / 2, th / 2, track);
         float kr = th / 2 - Theme.pxf(getContext(), 4);
         float kx = on ? right - th / 2 : right - tw + th / 2;

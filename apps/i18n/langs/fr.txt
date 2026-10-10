@@ -43,6 +43,7 @@ toast_not_ready=Le projecteur n'est pas encore prêt
 toast_failed=Impossible d'effectuer l'action
 toast_curtain_offer=L'image a bougé : Projecteur → Trapèze → « Ajuster à l'écran maintenant »
 toast_setup_running=Terminez d'abord la configuration
+slot_home_apps=Lumen Home : Applis
 
 @projector/strings_ak.xml
 ak_caption_keystone=Correction automatique du trapèze en cours
@@ -542,6 +543,38 @@ voice_hold=Maintenez le bouton du micro enfoncé pendant que vous parlez
 kb_title=Clavier
 kb_get_app=Obtenir un clavier : %1$s
 kb_no_play=Google Play n’est pas disponible. Installez une application de clavier pour écrire dans votre langue.
+tab_home=Accueil
+hero_resume=Reprendre
+hero_more=Plus d’infos
+hero_kind_next=Épisode suivant
+hero_kind_watchlist=À regarder
+weather_line=%1$s, %2$s
+wx_clear=dégagé
+wx_partly=partiellement nuageux
+wx_cloudy=nuageux
+wx_fog=brouillard
+wx_drizzle=bruine
+wx_rain=pluie
+wx_snow=neige
+wx_showers=averses
+wx_thunder=orage
+cz_wallpaper=Fond d’écran
+cz_wallpaper_sub=Un paysage vivant sur l’accueil et dans l’économiseur d’écran : son ciel suit le vrai soleil et la météo.
+cz_continue=Reprendre la lecture sur l’accueil
+cz_continue_sub=Masqué, l’accueil n’affiche que l’heure, la date et la météo sur le fond d’écran vivant, ainsi que vos applis. Les chaînes des applis ne sont pas affichées non plus.
+cz_continue_show=Afficher
+cz_continue_hide=Masquer
+apps_install_usb=Installer depuis une clé USB
+usb_title=Installer depuis une clé USB
+usb_none=Branchez une clé USB contenant des fichiers .apk (à la racine ou dans un dossier apks).
+usb_empty=Aucun fichier .apk sur la clé USB. Placez-les à la racine ou dans un dossier apks.
+usb_new=Nouveau
+usb_update=Mise à jour
+usb_installing=Installation : %1$d%%
+usb_done=%1$s est installé
+usb_failed=%1$s n’a pas été installé : %2$s
+kb_no_store=Installez une appli de clavier depuis une clé USB : Applis > Installer depuis une clé USB.
+voice_none=La recherche vocale nécessite une appli de reconnaissance vocale. Tapez plutôt votre recherche.
 @updater/strings.xml
 app_name=Mise à jour Lumen OS
 settings_title=Mise à jour Lumen OS
@@ -628,6 +661,17 @@ n_available_body=Ouvrez pour télécharger et installer.
 n_ready_title=Redémarrez pour terminer la mise à jour
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s fonctionne
+done_unhealthy_body=Une vérification après la mise à jour a trouvé un problème : %1$s. Si quelque chose ne fonctionne pas, utilisez le mode de secours (rescue) de l’installateur. Vos données sont conservées.
+done_rescue_scan=Scannez le code pour ouvrir le guide du mode de secours.
+done_details=Détails techniques : %1$s
+why_restarted=le système a redémarré de façon inattendue
+why_service=un service système n’a pas démarré
+why_lamp=le service de la lampe et des ventilateurs n’a pas démarré
+why_confirm=le système n’a pas pu confirmer que la nouvelle version fonctionne
+why_no_rollback=le retour à la version précédente n’était pas possible
+why_unknown=aucun détail n’a été enregistré
+blk_channel=Cette mise à jour est destinée à une autre édition de Lumen OS (%1$s).
 @projector/strings_recents.xml
 recents_title=Applications récentes
 recents_close=Fermer
@@ -766,6 +810,8 @@ name_other=Autre…
 name_hint=Nom (32 caractères max.)
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=Les paramètres utilisent cette langue. Les applis Lumen non traduites restent en anglais.
+done_offline_hint_nogms=Pas d’Internet : réglez le fuseau horaire plus tard dans les paramètres.
 @projector/strings_cec.xml
 cec_entry=Appareils HDMI (CEC)
 cec_unavailable=HDMI-CEC n’est pas disponible

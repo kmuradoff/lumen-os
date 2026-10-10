@@ -21,7 +21,7 @@ Usage: gen.py [--write] [--check-only]
 import os, re, sys, glob
 import xml.etree.ElementTree as ET
 
-APPS = "<repo>/apps"
+APPS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))     # gsi/apps (this file: apps/i18n/gen.py)
 RES = {"projector": APPS + "/Z9xProjector/res", "tvinput": APPS + "/Z9xTvInput/res",
        "airplay": APPS + "/Z9xAirPlay/res",
        # Lumen OS 1.0 (W2): new apps; every values-<locale>/strings.xml of these is generated

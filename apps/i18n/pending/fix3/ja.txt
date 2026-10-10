@@ -1,6 +1,0 @@
-# Lumen OS 1.0 review fixes (2026-10-07): search keyboard + push-to-talk strings of Lumen Home.
-@home/strings.xml
-voice_hold=話している間はマイクボタンを押し続けてください
-kb_title=キーボード
-kb_get_app=キーボードを入手: %1$s
-kb_no_play=Google Play を利用できません。お使いの言語で入力するには、キーボード アプリをインストールしてください。

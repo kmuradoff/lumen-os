@@ -9,7 +9,9 @@
 *.keystore
 *.key
 *.pem
-!keys/public/*.x509.pem
+# public certificates and APEX public keys, also in keys/public/apex/ (check_publish.py still blocks any
+# PRIVATE KEY block in them)
+!keys/public/**/*.pem
 !tools/sign/testcerts/*.x509.pem
 !installer/certs/ota.x509.pem
 !apps/sdk/testkeys/platform.x509.pem
@@ -29,9 +31,9 @@ vendor.mediatek.hardware.c2.info@1.0.so
 libcodec2_soft_common.so
 libstagefright_foundation*.so
 audio_policy_configuration.xml
-research/
-backup/
-logs/
+/research/
+/backup/
+/logs/
 
 # ---- binaries / images / build output (release assets only, never git)
 *.img
@@ -57,9 +59,12 @@ apps/out/
 overlay/apps_v*/
 __pycache__/
 *.pyc
+.gradle/
+node_modules/
 
 # ---- personal / local
 apps_installed.txt
+local.properties
 .lumen-installer/
 Lumen-backup/
 

@@ -1,0 +1,21 @@
+# Lumen OS without Google (1.0.1, docs/NOGMS_PLAN.md section 8): NEW strings for the merge into
+# langs/be.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+apps_install_usb=Усталяваць з USB
+usb_title=Усталяванне з USB
+usb_none=Устаўце USB-назапашвальнік з файламі .apk (у корані або ў папцы apks).
+usb_empty=На USB-назапашвальніку няма файлаў .apk. Пакладзіце іх у корань або ў папку apks.
+usb_new=Новае
+usb_update=Абнаўленне
+usb_installing=Усталяванне: %1$d%%
+usb_done=%1$s усталявана
+usb_failed=%1$s не ўсталявана: %2$s
+kb_no_store=Усталюйце праграму-клавіятуру з USB-назапашвальніка: Праграмы > Усталяваць з USB.
+voice_none=Для галасавога пошуку патрэбна праграма распазнавання маўлення. Увядзіце запыт уручную.
+@updater/strings.xml
+blk_channel=Гэтае абнаўленне для іншай рэдакцыі Lumen OS (%1$s).
+@setup/strings.xml
+lang_more_hint_nogms=Гэтую мову будуць выкарыстоўваць налады. Праграмы Lumen без перакладу застануцца на англійскай.
+done_offline_hint_nogms=Няма інтэрнэту: выбраць часавы пояс можна пазней у наладах.
+@projector/strings.xml
+slot_home_apps=Lumen Home: праграмы

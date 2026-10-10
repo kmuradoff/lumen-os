@@ -28,6 +28,7 @@
     <string name="key_slot4">bilibili ボタン</string>
     <string name="slot_default_fmt">%1$s（デフォルト）</string>
     <string name="slot_default_item">デフォルト：%1$s</string>
+    <string name="slot_home_apps">Lumen Home: アプリ</string>
     <string name="cancel">キャンセル</string>
     <string name="ok">OK</string>
     <string name="app_not_found">このボタンに対応するアプリが見つかりません</string>

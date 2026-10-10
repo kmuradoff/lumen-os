@@ -16,9 +16,9 @@ import org.z9x.projector.SafeHandler;
  * black, with the lamp dimmed while it runs (DreamLamp) and restored on wake / sleep.
  * research/v62/dream/DREAM_SPEC.md section 3.
  *
- * Selected in TvSettings > Device preferences > Screen saver as "Clock" next to Google's Backdrop
- * (Ambient) and Colors; DreamSettings.applyDefaultsOnce makes it the active one only while no dream
- * was ever chosen (screensaver_components empty), so the user's later choice always wins.
+ * Selected in TvSettings > Device preferences > Screen saver as "Clock" next to Lumen Home's living
+ * sky (the default since Lumen OS 1.0.1, DreamSettings.applyDefaultsOnce; the clock only while the
+ * sky is not installed) or with the quick panel's "Use clock"; the user's later choice always wins.
  *
  * Light on CPU / GPU / power: no wakelock of our own (the dream keeps the screen on itself), no
  * per-second work, no TIME_TICK receiver, no network, no bitmaps; one minute-aligned handler tick.
@@ -26,10 +26,11 @@ import org.z9x.projector.SafeHandler;
  * Lifecycle (every callback wrapped: this runs in the persistent process):
  *  - onAttachedToWindow: non-interactive, fullscreen, black window, ClockView at alpha 0;
  *  - onDreamingStarted: text + first tick; after 300 ms (the 250 ms open animation is over and the
- *    screen is black) dim the lamp, then fade the clock in over 1.4 s;
+ *    screen is black) dim the lamp, then fade the clock in over 1.4 s (1.0.1: the dim of this
+ *    screensaver run, DreamLamp.dimForDream, which also serves every other dream);
  *  - onWakeUp (a key woke it): restore the lamp FIRST, fade the clock out (200 ms), finish();
  *  - onDreamingStopped / onDetachedFromWindow (also the sleep path, which skips onWakeUp):
- *    cleanup + restore (idempotent).
+ *    cleanup + restore (idempotent; DreamLamp.onDreamEnded).
  */
 public final class ClockDream extends DreamService {
     private static final String TAG = "Z9xDream";
@@ -64,12 +65,7 @@ public final class ClockDream extends DreamService {
 
     private final Runnable mStartLamp = () -> {
         if (mStopped) return;
-        int lvl = DreamSettings.lampLevel();
-        if (lvl == DreamSettings.LAMP_UNCHANGED) {
-            fadeIn();
-        } else {
-            DreamLamp.dim(this, lvl, this::fadeIn);
-        }
+        DreamLamp.dimForDream(this, this::fadeIn);      // "Screensaver light" (unchanged: at once)
     };
 
     private final Runnable mFinishOnce = () -> {
@@ -102,6 +98,7 @@ public final class ClockDream extends DreamService {
             mFinished = false;
             sRunning = true;
             DreamLamp.install(this);       // no-op when App already installed it
+            DreamLamp.onDreamStarted("clock");
             registerTimeReceiver();
             if (mView != null) {
                 mView.refreshFormats();
@@ -161,7 +158,7 @@ public final class ClockDream extends DreamService {
     @Override
     public void onWakeUp() {
         try {
-            DreamLamp.restore(this);
+            DreamLamp.onDreamEnded(this, "clock woken");
             cleanup();
             if (mView != null) {
                 mView.fadeOut(WAKE_FADE_MS, mFinishOnce);
@@ -179,7 +176,7 @@ public final class ClockDream extends DreamService {
     public void onDreamingStopped() {
         try {
             cleanup();
-            DreamLamp.restore(this);
+            DreamLamp.onDreamEnded(this, "clock stopped");
             Log.i(TAG, "stopped");
         } catch (Throwable t) {
             Log.w(TAG, "stop: " + t);
@@ -191,7 +188,7 @@ public final class ClockDream extends DreamService {
     public void onDetachedFromWindow() {
         try {
             cleanup();
-            DreamLamp.restore(this);
+            DreamLamp.onDreamEnded(this, "clock detached");
         } catch (Throwable t) {
             Log.w(TAG, "detach: " + t);
         }

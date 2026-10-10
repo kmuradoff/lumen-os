@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Italian translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">Ricollega il telecomando</string>
+    <string name="remote_lost_text">Tieni premuti insieme Indietro e Home per 3 secondi finché la spia non lampeggia.</string>
+    <string name="remote_lost_found">Trovato %1$s</string>
+    <string name="remote_lost_battery">Non succede nulla? Controlla le batterie del telecomando.</string>
+    <string name="remote_lost_dismiss">Non ora</string>
+    <string name="remote_lost_wake">Premi un tasto qualsiasi del telecomando</string>
+</resources>

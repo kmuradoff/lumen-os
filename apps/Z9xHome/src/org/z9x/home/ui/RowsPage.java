@@ -15,8 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A page made of a headline and rows (Inputs tab; the search results reuse it). Vertical scrolling
- * translates the content so the focused row stays fully visible.
+ * A page made of a Prata headline and rows (the Projector tab). Vertical scrolling translates
+ * the content so the focused row stays fully visible.
  */
 public class RowsPage extends ViewGroup implements Page {
     public interface RowsSource {
@@ -75,7 +75,7 @@ public class RowsPage extends ViewGroup implements Page {
         addView(mContent);
         if (headline != null) {
             mHeadline = new TextView(c);
-            Theme.text(mHeadline, 44, Theme.MEDIUM, Theme.TEXT1);
+            Theme.text(mHeadline, 64, Theme.DISPLAY, Theme.TEXT1);
             mHeadline.setText(headline);
             mHeadline.setSingleLine(true);
             mHeadline.setEllipsize(TextUtils.TruncateAt.END);
@@ -107,6 +107,7 @@ public class RowsPage extends ViewGroup implements Page {
                 rv = new RowView(getContext(), mHost);
                 mContent.addView(rv);
             }
+            rv.setShowTitle(!r.title.isEmpty()); // a page with one row (Projector) needs no heading
             rv.setRow(r, true);
             next.add(rv);
         }

@@ -1,0 +1,21 @@
+# Lumen OS without Google (1.0.1, docs/NOGMS_PLAN.md section 8): NEW strings for the merge into
+# langs/kk.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+apps_install_usb=USB-ден орнату
+usb_title=USB-ден орнату
+usb_none=.apk файлдары бар USB жинақтағышын салыңыз (түбірінде немесе apks қалтасында).
+usb_empty=USB жинақтағышында .apk файлдары жоқ. Оларды түбірге немесе apks қалтасына салыңыз.
+usb_new=Жаңа
+usb_update=Жаңарту
+usb_installing=Орнатылуда: %1$d%%
+usb_done=%1$s орнатылды
+usb_failed=%1$s орнатылмады: %2$s
+kb_no_store=Пернетақта қолданбасын USB жинақтағышынан орнатыңыз: Қолданбалар > USB-ден орнату.
+voice_none=Дауыспен іздеу үшін сөйлеуді тану қолданбасы керек. Сұрауды теріп жазыңыз.
+@updater/strings.xml
+blk_channel=Бұл жаңарту Lumen OS-тің басқа нұсқасына арналған (%1$s).
+@setup/strings.xml
+lang_more_hint_nogms=Бұл тілді параметрлер пайдаланады. Аудармасы жоқ Lumen қолданбалары ағылшын тілінде қалады.
+done_offline_hint_nogms=Интернет жоқ: уақыт белдеуін кейін параметрлерде орнатуға болады.
+@projector/strings.xml
+slot_home_apps=Lumen Home: қолданбалар

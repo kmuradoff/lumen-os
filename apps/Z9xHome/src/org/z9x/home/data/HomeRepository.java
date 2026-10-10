@@ -68,6 +68,8 @@ public final class HomeRepository {
     public FutureTask<HomeModel> loadSnapshotAsync() {
         FutureTask<HomeModel> f = new FutureTask<>(() -> {
             HomeModel m = mStore.load();
+            // "Continue watching on Home" hidden since this snapshot was saved: not even its first frame
+            if (m != null && !mApp.prefs().continueOnHome()) Ranker.dropTvp(m);
             if (m != null && mLast == null) mLast = m;
             return m;
         });
@@ -155,12 +157,13 @@ public final class HomeRepository {
         in.rowOrder = p.list(Prefs.K_ROW_ORDER);
         in.hiddenRows = p.set(Prefs.K_HIDDEN_ROWS);
         in.shownRows = p.set(Prefs.K_SHOWN_ROWS);
-        in.tvp = TvpSource.load(c, in.labels);
+        // "Continue watching on Home" hidden: no TvProvider query at all (no hero, no Watch Next, no channels)
+        in.tvp = p.continueOnHome() ? TvpSource.load(c, in.labels) : TvpSource.off();
         in.inputs = InputSource.inputs(c, p.map(Prefs.K_INPUT_LABELS));
-        in.casts = InputSource.casts(c);
+        // no cast cards since 1.0.1: their only place was the Inputs tab (gone); the how-to panel in
+        // HomeActivity stays without an entry point (in.casts stays empty, nothing probes the packages)
         in.tiles = InputSource.tiles(c);
-        in.features = features(c);
-        in.tYourApps = c.getString(R.string.row_your_apps);
+        in.tYourApps = c.getString(R.string.tab_apps); // D_Calm: the shelf is simply "Apps"
         in.tContinue = c.getString(R.string.row_continue);
         in.tInputs = c.getString(R.string.row_inputs);
         in.tProjector = c.getString(R.string.row_projector);
@@ -248,29 +251,6 @@ public final class HomeRepository {
         } else if (!fresh.isEmpty()) {
             ProgramsInitializer.send(c, fresh);
         }
-        return out;
-    }
-
-    private static List<Card> features(Context c) {
-        ArrayList<Card> out = new ArrayList<>();
-        Card a = new Card(Card.FEATURE, "feature:cast", c.getString(R.string.feature_cast_title));
-        a.desc = c.getString(R.string.feature_cast_desc);
-        a.intent = "feature:cast";
-        a.icon = org.z9x.home.R.drawable.ic_cast;
-        a.color = 0xFF1B2A4A;
-        out.add(a);
-        Card b = new Card(Card.FEATURE, "feature:picture", c.getString(R.string.feature_picture_title));
-        b.desc = c.getString(R.string.feature_picture_desc);
-        b.intent = "feature:picture";
-        b.icon = org.z9x.home.R.drawable.ic_autofocus;
-        b.color = 0xFF2A1B3A;
-        out.add(b);
-        Card d = new Card(Card.FEATURE, "feature:customize", c.getString(R.string.feature_customize_title));
-        d.desc = c.getString(R.string.feature_customize_desc);
-        d.intent = "feature:customize";
-        d.icon = org.z9x.home.R.drawable.ic_edit;
-        d.color = 0xFF1F3B3A;
-        out.add(d);
         return out;
     }
 

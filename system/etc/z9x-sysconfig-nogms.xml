@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- /system/etc/sysconfig/z9x.xml of Lumen OS without Google (tools/lumen_v1.sh GMS=0; z9x-sysconfig.xml is
+     the Google edition's file of the same path). It is that file without its Google entries, which name
+     packages this image does not carry (tools/lumen/nogms_remove.txt); the preflight of lumen_v1.sh checks
+     that the two cannot drift apart.
+     Lineage 21 sets config_stopSystemPackagesByDefault=true: a system package seen for the first time is
+     put in the "stopped" state if it has an exported LAUNCHER activity, and a stopped package gets no
+     BOOT_COMPLETED / implicit broadcasts / jobs until the user opens it. Every org.z9x package must run
+     without being opened first (plan C6): the projector, tvinput and airplay services, Lumen Home's jobs
+     and receivers, the first-run setup, and the updater's check job. -->
+<config>
+    <initial-package-state package="org.z9x.projector" stopped="false" />
+    <initial-package-state package="org.z9x.tvinput" stopped="false" />
+    <initial-package-state package="org.z9x.airplay" stopped="false" />
+    <initial-package-state package="org.z9x.home" stopped="false" />
+    <initial-package-state package="org.z9x.setup" stopped="false" />
+    <initial-package-state package="org.z9x.updater" stopped="false" />
+
+    <!-- LineageOS anonymous statistics: LineageSetupWizard (removed, our first-run replaces it) held the
+         only consent screen ("Help improve LineageOS"), while the base's LineageSettingsProvider RRO
+         turns def_stats_collection on. Without these overrides LineageParts' BOOT_COMPLETED receiver
+         would upload a hashed ANDROID_ID, device, version and country to stats.lineageos.org at the
+         first boot and then daily, without asking. Lumen OS never reports. -->
+    <component-override package="org.lineageos.lineageparts">
+        <component class="org.lineageos.lineageparts.lineagestats.ReportingServiceManager" enabled="false" />
+        <component class="org.lineageos.lineageparts.lineagestats.ReportingService" enabled="false" />
+        <component class="org.lineageos.lineageparts.lineagestats.StatsUploadJobService" enabled="false" />
+    </component-override>
+</config>

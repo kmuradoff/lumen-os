@@ -6,16 +6,19 @@ import android.app.WindowConfiguration;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorSpace;
 import android.graphics.Paint;
+import android.graphics.Picture;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.hardware.HardwareBuffer;
 import android.os.UserHandle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.LruCache;
 import android.window.TaskSnapshot;
@@ -37,7 +40,8 @@ import java.util.Map;
  * <b>Thumbnails</b>: the system never takes task snapshots on TV (AbsAppSnapshotController
  * .shouldDisableSnapshots on TV), but takeTaskSnapshot(task, false) (READ_FRAME_BUFFER) snapshots a
  * visible task directly. RecentsActivity is translucent, so the app just left is still visible when it
- * opens: we capture it once, off the main thread, at {@value #THUMB_W}x{@value #THUMB_H} RGB_565. DRM or
+ * opens: we capture it once, off the main thread, at {@value #THUMB_W}x{@value #THUMB_H} RGB_565 (above 1080p
+ * scaled on the GPU: the snapshot is the full UI frame, 3840x2160 = 33 MB at the Lumen OS 1.0.1 4K default). DRM or
  * tunnelled video (secure / sideband layers) captures black: 64 samples near black -> no thumbnail.
  * Other cards reuse the bitmap captured the last time Recents opened over them (static LruCache, at most
  * {@value #CACHE_BYTES} bytes, the only thing that stays in the persistent process: PLAN C21), else the
@@ -49,6 +53,15 @@ final class RecentsModel {
     private static final int QUERY_MAX = 40;
     static final int THUMB_W = 480, THUMB_H = 270;
     static final int CACHE_BYTES = 2 * 1024 * 1024;
+    /** Snapshots larger than this (2K / 4K UI) are scaled on the GPU; 1080p keeps the full copy of 1.0.0. */
+    private static final int GPU_SCALE_ABOVE_W = 1920, GPU_SCALE_ABOVE_H = 1080;
+    /**
+     * Banners are decoded for at most this density (Lumen OS 1.0.1, 4K UI at 640 dpi): a 320 dp banner is
+     * then 960 px wide, still more than the 4K card (384 design px = 768 px, 830 focused), at about half
+     * the memory of the 640 dpi decode (an xhdpi banner becomes 1280 x 720 ARGB = 3.7 MB there, up to
+     * {@value #MAX_CARDS} of them while Recents is open). At 1080p (320 dpi) nothing changes.
+     */
+    private static final int BANNER_MAX_DPI = DisplayMetrics.DENSITY_XXHIGH;
 
     /** One card: an app with its tasks (newest first). */
     static final class Card {
@@ -146,15 +159,19 @@ final class RecentsModel {
     /** Worker thread: banner (activity, then app), else icon. Drawables stay with the views only. */
     static void loadArt(Context ctx, Card c) {
         PackageManager pm = ctx.getPackageManager();
-        Drawable d = null;
-        try { d = pm.getActivityBanner(c.component); } catch (Throwable ignored) { }
+        boolean cap = ctx.getResources().getDisplayMetrics().densityDpi > BANNER_MAX_DPI;
+        Drawable d = activityBanner(pm, c.component, cap);
         if (d == null) {
-            try { d = pm.getApplicationBanner(c.pkg); } catch (Throwable ignored) { }
+            try {
+                ApplicationInfo ai = pm.getApplicationInfo(c.pkg, 0);
+                d = cap ? capped(pm, ai, ai.banner) : null;
+                if (d == null) d = pm.getApplicationBanner(ai);
+            } catch (Throwable ignored) { }
         }
         if (d == null) {
             try {
                 Intent li = pm.getLeanbackLaunchIntentForPackage(c.pkg);
-                if (li != null && li.getComponent() != null) d = pm.getActivityBanner(li.getComponent());
+                if (li != null && li.getComponent() != null) d = activityBanner(pm, li.getComponent(), cap);
             } catch (Throwable ignored) { }
         }
         c.banner = d;
@@ -182,8 +199,13 @@ final class RecentsModel {
             ColorSpace cs = snap.getColorSpace();
             hw = Bitmap.wrapHardwareBuffer(hb, cs != null ? cs : ColorSpace.get(ColorSpace.Named.SRGB));
             if (hw == null) return null;
-            // a hardware bitmap is read back once by createScaledBitmap; the result is drawn into RGB_565
-            scaled = Bitmap.createScaledBitmap(hw, THUMB_W, THUMB_H, true);
+            // above 1080p scaled on the GPU, only the thumbnail is read back; createScaledBitmap (1080p as
+            // before, and the fallback) first copies the whole hardware bitmap into a software one (33 MB at
+            // the 4K UI, 8.3 MB at 1080p)
+            boolean big = (long) hw.getWidth() * hw.getHeight() > (long) GPU_SCALE_ABOVE_W * GPU_SCALE_ABOVE_H;
+            scaled = big ? scaleOnGpu(hw, taskId) : null;
+            final boolean gpu = scaled != null;
+            if (!gpu) scaled = Bitmap.createScaledBitmap(hw, THUMB_W, THUMB_H, true);
             Bitmap out = Bitmap.createBitmap(THUMB_W, THUMB_H, Bitmap.Config.RGB_565);
             Bitmap src = scaled.getConfig() == Bitmap.Config.HARDWARE ? scaled.copy(Bitmap.Config.ARGB_8888, false) : scaled;
             new Canvas(out).drawBitmap(src, null, new Rect(0, 0, THUMB_W, THUMB_H), new Paint(Paint.FILTER_BITMAP_FLAG));
@@ -195,7 +217,8 @@ final class RecentsModel {
                 return null;
             }
             THUMBS.put(taskId, out);
-            Log.i(TAG, "snapshot task " + taskId + " " + (android.os.SystemClock.uptimeMillis() - t0) + " ms");
+            Log.i(TAG, "snapshot task " + taskId + " " + hw.getWidth() + "x" + hw.getHeight() + " -> " + THUMB_W + "x"
+                    + THUMB_H + (gpu ? " on the GPU" : " by a full copy") + " in " + (android.os.SystemClock.uptimeMillis() - t0) + " ms");
             return out;
         } catch (Throwable t) {
             Log.w(TAG, "snapshot task " + taskId + ": " + t);
@@ -205,6 +228,55 @@ final class RecentsModel {
             if (hw != null) hw.recycle();
             try { if (snap != null && snap.getHardwareBuffer() != null) snap.getHardwareBuffer().close(); } catch (Throwable ignored) { }
         }
+    }
+
+    /** The banner of {@code cn} (its own, else its application's), at most {@link #BANNER_MAX_DPI} when {@code cap}; null if none. */
+    private static Drawable activityBanner(PackageManager pm, ComponentName cn, boolean cap) {
+        if (cn == null) return null;
+        Drawable d = null;
+        if (cap) {
+            try {
+                ActivityInfo ai = pm.getActivityInfo(cn, 0);
+                d = capped(pm, ai.applicationInfo, ai.getBannerResource());
+            } catch (Throwable ignored) { }
+        }
+        if (d == null) {
+            try { d = pm.getActivityBanner(cn); } catch (Throwable ignored) { }
+        }
+        return d;
+    }
+
+    /** Resource {@code res} of the app decoded for {@link #BANNER_MAX_DPI} (bitmaps scaled to it), or null. */
+    private static Drawable capped(PackageManager pm, ApplicationInfo app, int res) {
+        if (app == null || res == 0) return null;
+        try {
+            return pm.getResourcesForApplication(app).getDrawableForDensity(res, BANNER_MAX_DPI, null);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /**
+     * Worker thread: the HARDWARE snapshot bitmap scaled to THUMB_W x THUMB_H without a full-size read-back.
+     * A Picture that holds a hardware bitmap is rendered by Bitmap.createBitmap(Picture, ...) through a
+     * RenderNode on the RenderThread into a THUMB_W x THUMB_H hardware bitmap, and only that is copied to
+     * ARGB_8888 (0.5 MB). Null on any failure (the caller falls back to createScaledBitmap).
+     */
+    private static Bitmap scaleOnGpu(Bitmap hw, int taskId) {
+        try {
+            Picture pic = new Picture();
+            Canvas c = pic.beginRecording(THUMB_W, THUMB_H);
+            c.drawBitmap(hw, null, new Rect(0, 0, THUMB_W, THUMB_H), new Paint(Paint.FILTER_BITMAP_FLAG));
+            pic.endRecording();
+            Bitmap b = Bitmap.createBitmap(pic, THUMB_W, THUMB_H, Bitmap.Config.ARGB_8888);
+            if (b != null && b.getWidth() == THUMB_W && b.getHeight() == THUMB_H) return b;
+            Log.w(TAG, "snapshot task " + taskId + ": GPU scale gave " + (b == null ? "null" : b.getWidth() + "x" + b.getHeight())
+                    + ", full-size copy instead");
+            if (b != null) b.recycle();
+        } catch (Throwable t) {
+            Log.w(TAG, "snapshot task " + taskId + ": GPU scale failed (" + t + "), full-size copy instead");
+        }
+        return null;
     }
 
     /** 8 x 8 samples; every one darker than luma 16 = black. */

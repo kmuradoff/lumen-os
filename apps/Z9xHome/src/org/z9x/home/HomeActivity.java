@@ -8,8 +8,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.LauncherApps;
+import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.graphics.drawable.GradientDrawable;
+import android.media.AudioManager;
+import android.media.AudioPlaybackConfiguration;
 import android.media.tv.TvContract;
 import android.media.tv.TvInputManager;
 import android.net.ConnectivityManager;
@@ -23,6 +26,8 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.text.InputType;
+import android.text.format.DateFormat;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -41,7 +46,10 @@ import org.z9x.home.data.TvpSource;
 import org.z9x.home.img.ImageLoader;
 import org.z9x.home.proj.ProjectorBridge;
 import org.z9x.home.search.SearchActivity;
-import org.z9x.home.ui.Backdrop;
+import org.z9x.home.sky.DreamDefault;
+import org.z9x.home.sky.SkyEnv;
+import org.z9x.home.sky.SkySettings;
+import org.z9x.home.sky.SkyView;
 import org.z9x.home.ui.CardView;
 import org.z9x.home.ui.ContextPanel;
 import org.z9x.home.ui.ListPanel;
@@ -50,54 +58,76 @@ import org.z9x.home.ui.PageApps;
 import org.z9x.home.ui.PageForYou;
 import org.z9x.home.ui.RowView;
 import org.z9x.home.ui.RowsPage;
+import org.z9x.home.ui.Scrims;
+import org.z9x.home.ui.Stage;
 import org.z9x.home.ui.Theme;
 import org.z9x.home.ui.TopBar;
 import org.z9x.home.weather.Weather;
+import org.z9x.home.weather.Wmo;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Lumen Home (HOME, priority 3, PLAN C3). Views are built in code; the first frame is drawn from the
- * snapshot (SPEC D7), then refreshed from the sources. D-pad focus is handled by hand: the top bar,
- * the current page, or the side panel gets every key. HOME is never consumed here (long-press HOME is
+ * Lumen Home (HOME, priority 3, PLAN C3), direction D. Views are built in code; the first frame is drawn
+ * from the snapshot (SPEC D7), then refreshed from the sources. Layers, back to front: the living sky
+ * ({@link SkyView}), the hero's art ({@link Stage}), a veil that dims the sky behind rows and the other
+ * tabs, the three pages (Home, Apps, Projector; 1.0.1 dropped the Inputs tab), the header, the side
+ * panel. The header has no plate: the sky and the stage both draw the header scrim ({@link Scrims}).
+ * Every size follows the UI mode (1080p / 2K / 4K, {@link org.z9x.home.ui.UiScale}). The sky is paused
+ * whenever it cannot be seen or should not cost CPU: Home not resumed, another tab under the veil, the
+ * projector in standby, media playing, or the stage art covering it. The header clock shows in every
+ * state but the calm Home's top (its big clock). D-pad focus is handled by hand: the header, the
+ * current page, or the side panel gets every key. HOME is never consumed here (long-press HOME is
  * Recents in org.z9x.projector).
  */
-public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host, HomeRepository.Listener {
-    private static final int TAB_FOR_YOU = 0, TAB_APPS = 1, TAB_INPUTS = 2;
+public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host, HomeRepository.Listener, Stage.Listener {
+    private static final int TAB_HOME = 0, TAB_APPS = 1, TAB_PROJECTOR = 2;
     private static final long HERO_ADVANCE_MS = 9000;
     private static final long LONG_PRESS_MS = 500;
+    private static final float VEIL_ROWS = 0.72f, VEIL_TABS = 0.68f;
     private static boolean sCreatedOnce;
 
     private App mApp;
     private Handler mMain;
     private boolean mSafeMode;
     private Root mRoot;
-    private Backdrop mBackdrop;
+    private SkyView mSky;
+    private Stage mStage;
+    private View mVeil;
     private TopBar mBar;
     private PageForYou mForYou;
     private PageApps mApps;
-    private RowsPage mInputs;
+    private RowsPage mProjector;
     private Page[] mPages;
     private ContextPanel mPanel;
-    private int mTab = TAB_FOR_YOU;
+    private int mTab = TAB_HOME;
     private boolean mZoneTop;
     private HomeModel mModel;
-    private boolean mStarted, mResumed, mStandby;
+    private boolean mStarted, mResumed, mStandby, mMediaPlaying, mBrowse;
+    private final double[] mLoc = new double[2];
     private long mLastKey;
     private boolean mOkDown, mOkLong;
     private long mCreateAt;
     private boolean mFullyDrawn;
+    private int mBuiltW;
+    private float mBuiltDensity;
 
     private ContentObserver mTvpObserver;
+    private boolean mTvpRegistered;
     private LauncherApps.Callback mAppsCb;
     private TvInputManager.TvInputCallback mInputCb;
     private BroadcastReceiver mStandbyRx;
     private ConnectivityManager.NetworkCallback mNetCb;
     private SharedPreferences.OnSharedPreferenceChangeListener mPrefsCb;
+    private BroadcastReceiver mTimeRx;
+    private AudioManager.AudioPlaybackCallback mPlaybackCb;
 
     private final Runnable mLongPress = () -> {
         if (mOkDown && !mOkLong) {
@@ -149,6 +179,25 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         handleIntent(getIntent(), true);
         // a stable minute clears the crash counter
         mMain.postDelayed(() -> mApp.clearCrashes(), 60_000);
+        // projectors upgraded from 1.0: the living sky as the screensaver default, once
+        final Context app = getApplicationContext();
+        mApp.io().post(() -> DreamDefault.applyOnce(app));
+    }
+
+    /**
+     * The activity handles screenSize / density changes itself (no recreation on a mode switch), but every
+     * size here is in px of the display width ({@link Theme#px}) and the art is decoded at those sizes: a
+     * new display size or density (a 4K UI mode, for one) gets a fresh build at its own resolution.
+     */
+    @Override
+    public void onConfigurationChanged(Configuration c) {
+        super.onConfigurationChanged(c);
+        if (mSafeMode) return;
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        if (Math.max(dm.widthPixels, dm.heightPixels) != mBuiltW || dm.density != mBuiltDensity) {
+            Log.i(App.TAG, "display " + dm.widthPixels + "x" + dm.heightPixels + " d=" + dm.density + ": rebuild");
+            recreate();
+        }
     }
 
     @Override
@@ -166,12 +215,12 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             enterPage();
             return;
         }
-        // HOME (also while already on Home): back to the top, focus "Your apps" #1
+        // HOME (also while already on Home): back to the top; D_Home "Continue", D_Calm the first app
         if (mPanel.isOpen()) mPanel.close();
-        if (mTab != TAB_FOR_YOU) switchTab(TAB_FOR_YOU, false);
+        if (mTab != TAB_HOME) switchTab(TAB_HOME, false);
         mBar.focusOut();
         mZoneTop = false;
-        mForYou.focusFirstApp();
+        mForYou.focusHome();
     }
 
     @Override
@@ -180,7 +229,10 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         if (mSafeMode) return;
         mStarted = true;
         mBar.refreshClockVisibility();
+        refreshDate();
+        mSky.setScene(SkySettings.scene(this));
         for (Page p : mPages) p.reload();
+        if (stageWanted()) mStage.reload();
         mApp.repo().refresh("start", 0);
         register();
         mApp.io().post(() -> {
@@ -189,6 +241,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             mMain.post(() -> {
                 mStandby = sb;
                 mBar.setUpdateReady(upd);
+                updateSky();
             });
         });
         refreshWeather(false, false);
@@ -201,7 +254,11 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         if (mSafeMode) return;
         mResumed = true;
         mLastKey = SystemClock.uptimeMillis();
-        mForYou.hero().setTrailersEnabled(mApp.prefs().trailers());
+        mStage.setTrailersEnabled(mApp.prefs().trailers());
+        // the wallpaper choice may have changed in Customize (translucent over Home: no onStart)
+        mSky.setScene(SkySettings.scene(this));
+        mMediaPlaying = mediaPlaying();
+        updateSky();
         scheduleHero();
     }
 
@@ -211,7 +268,8 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         if (mSafeMode) return;
         mResumed = false;
         mMain.removeCallbacks(mHeroTick);
-        mForYou.hero().pauseTrailer();
+        mStage.pauseTrailer();
+        updateSky();
     }
 
     @Override
@@ -222,7 +280,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         unregister();
         mApp.repo().saveNow();
         for (Page p : mPages) p.trim();
-        mBackdrop.release();
+        mStage.release();
         mApp.images().trimToBanners();
     }
 
@@ -231,8 +289,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         super.onTrimMemory(level);
         if (mSafeMode) return;
         if (level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW || level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL) {
-            mBackdrop.setFrozen(true);
-            mForYou.hero().pauseTrailer();
+            mStage.pauseTrailer();
         }
     }
 
@@ -247,37 +304,54 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     // ------------------------------------------------------------------ building
 
     private void build() {
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        mBuiltW = Math.max(dm.widthPixels, dm.heightPixels);
+        mBuiltDensity = dm.density;
+        Log.i(App.TAG, "ui " + dm.widthPixels + "x" + dm.heightPixels + " dpi=" + dm.densityDpi + " scale=" + Theme.scale());
         mRoot = new Root(this);
-        mBackdrop = new Backdrop(this, mApp.images());
-        mRoot.addView(mBackdrop);
+        mSky = new SkyView(this);
+        // the header's scrim in every state the sky shows (the stage draws the same one over its art)
+        mSky.setHeaderScrim(Scrims.HEAD_A, Scrims.HEAD_POS, Scrims.HEAD_END);
+        mRoot.addView(mSky);
+        mStage = new Stage(this, mApp.images());
+        mStage.setListener(this);
+        mRoot.addView(mStage);
+        mVeil = new View(this) {
+            @Override
+            public boolean hasOverlappingRendering() {
+                return false; // one colour fill: its alpha needs no full-screen offscreen layer per sky frame
+            }
+        };
+        mVeil.setBackgroundColor(Theme.BG);
+        mVeil.setAlpha(0f);
+        mRoot.addView(mVeil);
         mForYou = new PageForYou(this, this);
         mApps = new PageApps(this, this);
-        mInputs = new RowsPage(this, this, getString(R.string.tab_inputs), 150, m -> {
+        // 1.0.1: no Inputs tab (the owner found it a copy of the quick panel and the input key); the
+        // inputs stay in Home's own Inputs row
+        // "Projector": the projector's own shortcuts; each opens the existing panel section / action
+        mProjector = new RowsPage(this, this, getString(R.string.row_projector), 160, m -> {
             ArrayList<Row> rows = new ArrayList<>();
-            Row a = new Row(Row.INPUTS, Row.ID_INPUTS, getString(R.string.inputs_connected));
-            a.cards.addAll(m.inputs);
-            rows.add(a);
-            Row c = new Row(Row.CAST, Row.ID_CAST, getString(R.string.inputs_cast));
-            c.cards.addAll(m.casts);
-            rows.add(c);
-            Row p = new Row(Row.PROJECTOR, Row.ID_PROJECTOR, getString(R.string.row_projector));
+            Row p = new Row(Row.PROJECTOR, Row.ID_PROJECTOR, "");
             p.cards.addAll(m.tiles);
             rows.add(p);
             return rows;
         });
-        mPages = new Page[]{mForYou, mApps, mInputs};
+        mPages = new Page[]{mForYou, mApps, mProjector};
         for (Page p : mPages) mRoot.addView(p.view());
-        mApps.setVisibility(View.GONE);
-        mInputs.setVisibility(View.GONE);
-        mApps.setShown(false);
-        mInputs.setShown(false);
+        for (int i = 1; i < mPages.length; i++) {
+            mPages[i].view().setVisibility(View.GONE);
+            mPages[i].setShown(false);
+        }
         mBar = new TopBar(this, this);
         mRoot.addView(mBar);
+        applyHeaderClock(); // PageForYou starts calm until the first model: the big clock
         mPanel = new ContextPanel(this);
         mPanel.setOnClosed(() -> mLastKey = SystemClock.uptimeMillis());
         mRoot.addView(mPanel);
         setContentView(mRoot);
-        mBackdrop.show(null, null);
+        applySkyScrim();
+        showWeather();
     }
 
     @Override
@@ -289,7 +363,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     private void bind(HomeModel m) {
         mModel = m;
         for (Page p : mPages) p.bind(m);
-        mForYou.hero().setTrailersEnabled(mApp.prefs().trailers());
+        mStage.setTrailersEnabled(mApp.prefs().trailers());
         if (!m.fromSnapshot) scheduleHero();
     }
 
@@ -314,17 +388,13 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
 
     private void register() {
         Handler h = mMain;
-        mTvpObserver = new ContentObserver(h) {
+        if (mTvpObserver == null) mTvpObserver = new ContentObserver(h) {
             @Override
             public void onChange(boolean selfChange) {
                 mApp.repo().refresh("tvp", 1500);
             }
         };
-        try {
-            getContentResolver().registerContentObserver(Uri.parse("content://" + TvContract.AUTHORITY), true, mTvpObserver);
-        } catch (Throwable t) {
-            Log.w(App.TAG, "tvp observer: " + t);
-        }
+        applyTvpObserver();
         LauncherApps la = getSystemService(LauncherApps.class);
         mAppsCb = new LauncherApps.Callback() {
             @Override
@@ -387,7 +457,8 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             public void onReceive(Context c, Intent i) {
                 mStandby = i.getBooleanExtra("standby", false);
                 Log.i(App.TAG, "standby=" + mStandby);
-                if (mStandby) mForYou.hero().pauseTrailer();
+                if (mStandby) mStage.pauseTrailer();
+                updateSky();
                 scheduleHero();
             }
         };
@@ -413,7 +484,11 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         }
         mPrefsCb = (sp, key) -> {
             if (key == null) return;
-            if (key.equals(Prefs.K_TRAILERS)) mForYou.hero().setTrailersEnabled(mApp.prefs().trailers());
+            if (key.equals(Prefs.K_TRAILERS)) mStage.setTrailersEnabled(mApp.prefs().trailers());
+            if (key.equals(Prefs.K_CONTINUE_HOME)) {
+                Log.i(App.TAG, "continue on home=" + mApp.prefs().continueOnHome());
+                applyTvpObserver(); // then the refresh below rebuilds Home (hero or calm)
+            }
             if (key.equals(Prefs.K_WEATHER_ON) || key.equals(Prefs.K_CITY) || key.equals(Prefs.K_UNITS)) {
                 refreshWeather(false, true);
                 return;
@@ -426,19 +501,70 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             mApp.repo().refresh("prefs", 100);
         };
         mApp.prefs().raw().registerOnSharedPreferenceChangeListener(mPrefsCb);
+        // minute tick for the date lines (the clocks are TextClocks) and the calm scrim's sun
+        mTimeRx = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent i) {
+                if (!Intent.ACTION_TIME_TICK.equals(i.getAction())) mBar.refreshClockVisibility();
+                refreshDate();
+                applySkyScrim();
+            }
+        };
+        IntentFilter tf = new IntentFilter(Intent.ACTION_TIME_TICK);
+        tf.addAction(Intent.ACTION_TIME_CHANGED);
+        tf.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+        tf.addAction(Intent.ACTION_DATE_CHANGED);
+        tf.addAction(Intent.ACTION_LOCALE_CHANGED);
+        registerReceiver(mTimeRx, tf, null, h, Context.RECEIVER_NOT_EXPORTED);
+        // media playing over Home (music app, cast): the sky stops
+        mPlaybackCb = new AudioManager.AudioPlaybackCallback() {
+            @Override
+            public void onPlaybackConfigChanged(List<AudioPlaybackConfiguration> configs) {
+                boolean p = mediaPlaying();
+                if (p != mMediaPlaying) {
+                    mMediaPlaying = p;
+                    Log.i(App.TAG, "media playing=" + p);
+                    updateSky();
+                }
+            }
+        };
+        try {
+            getSystemService(AudioManager.class).registerAudioPlaybackCallback(mPlaybackCb, h);
+        } catch (Throwable t) {
+            mPlaybackCb = null;
+        }
+    }
+
+    /**
+     * TvProvider changes refresh Home only while Home is started and shows what is in there ("Continue
+     * watching on Home" hidden: Home never reads TvProvider, so its changes are of no interest).
+     */
+    private void applyTvpObserver() {
+        boolean want = mStarted && mTvpObserver != null && mApp.prefs().continueOnHome();
+        if (want == mTvpRegistered) return;
+        try {
+            if (want) getContentResolver().registerContentObserver(Uri.parse("content://" + TvContract.AUTHORITY), true, mTvpObserver);
+            else getContentResolver().unregisterContentObserver(mTvpObserver);
+            mTvpRegistered = want;
+        } catch (Throwable t) {
+            Log.w(App.TAG, "tvp observer: " + t);
+        }
     }
 
     private void unregister() {
+        applyTvpObserver(); // mStarted is false: unregisters
         Safe.run("unregister", () -> {
-            if (mTvpObserver != null) getContentResolver().unregisterContentObserver(mTvpObserver);
             if (mAppsCb != null) getSystemService(LauncherApps.class).unregisterCallback(mAppsCb);
             TvInputManager tim = getSystemService(TvInputManager.class);
             if (tim != null && mInputCb != null) tim.unregisterCallback(mInputCb);
             if (mStandbyRx != null) unregisterReceiver(mStandbyRx);
             if (mNetCb != null) getSystemService(ConnectivityManager.class).unregisterNetworkCallback(mNetCb);
             if (mPrefsCb != null) mApp.prefs().raw().unregisterOnSharedPreferenceChangeListener(mPrefsCb);
+            if (mTimeRx != null) unregisterReceiver(mTimeRx);
+            if (mPlaybackCb != null) getSystemService(AudioManager.class).unregisterAudioPlaybackCallback(mPlaybackCb);
         });
-        mTvpObserver = null;
+        mTimeRx = null;
+        mPlaybackCb = null;
         mAppsCb = null;
         mInputCb = null;
         mStandbyRx = null;
@@ -450,8 +576,36 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
 
     private void showWeather() {
         Weather.Now n = Weather.current(this);
-        if (n == null) mBar.setWeather(0, null, null, false);
-        else mBar.setWeather(n.icon, n.temp, n.city, n.stale);
+        if (n == null) {
+            mBar.setWeather(0, null, null, false);
+            mForYou.calm().setWeather(0, null, false);
+        } else {
+            mBar.setWeather(n.icon, n.temp, n.city, n.stale);
+            // D_Calm: "12°, cloudy · Moscow"
+            String line = getString(R.string.weather_line, n.temp, getString(Wmo.label(n.code)));
+            if (n.city != null && !n.city.isEmpty()) line += " · " + n.city;
+            mForYou.calm().setWeather(n.icon, line, n.stale);
+        }
+        mForYou.onWeatherChanged();
+        mSky.setWeather(n == null ? SkyView.WEATHER_CLEAR : SkyEnv.weatherFromWmo(n.code));
+        if (SkyEnv.location(this, mLoc)) mSky.setLocation(mLoc[0], mLoc[1]);
+        applySkyScrim();
+    }
+
+    /** Localized dates: header "ср, 8 октября", calm "Среда, 8 октября". */
+    private void refreshDate() {
+        Locale loc = Locale.getDefault();
+        Date now = new Date();
+        try {
+            String shortDate = new SimpleDateFormat(DateFormat.getBestDateTimePattern(loc, "EEEdMMMM"), loc).format(now);
+            String longDate = new SimpleDateFormat(DateFormat.getBestDateTimePattern(loc, "EEEEdMMMM"), loc).format(now);
+            if (!longDate.isEmpty()) longDate = longDate.substring(0, 1).toUpperCase(loc) + longDate.substring(1);
+            mBar.setDate(shortDate);
+            mForYou.calm().setDate(longDate);
+        } catch (Throwable t) {
+            Log.w(App.TAG, "date: " + t);
+        }
+        mForYou.calm().setTimeKnown(TopBar.timeKnown());
     }
 
     private void refreshWeather(boolean networkChanged, boolean force) {
@@ -465,6 +619,92 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         });
     }
 
+    // ------------------------------------------------------------------ the living sky
+
+    private static boolean mediaPlayingStatic(AudioManager am) {
+        try {
+            return am != null && am.isMusicActive();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private boolean mediaPlaying() {
+        return mediaPlayingStatic(getSystemService(AudioManager.class));
+    }
+
+    /**
+     * Runs only while it can be seen and costs nothing anyone needs (SPEC 10: the SoC is slow). Under
+     * opaque hero art it is not even drawn (one full-screen blit less per frame); under the veil of the
+     * Apps and Projector tabs it stands still on its last frame (a tab opened from outside, e.g. by the
+     * four-diamond key after Home was hidden for 20 s and the sky freed its bitmaps, gets one frame
+     * first instead of the bare ground colour).
+     */
+    private void updateSky() {
+        boolean covered = mStage.covering() && stageWanted();
+        mSky.setVisibility(covered ? View.INVISIBLE : View.VISIBLE);
+        mSky.setPaused(!mResumed || mStandby || mMediaPlaying || covered);
+        mSky.setStill(mTab != TAB_HOME);
+    }
+
+    /** The header clock: everywhere except the calm Home's top, where the big clock is. */
+    private void applyHeaderClock() {
+        mBar.setCalm(mTab == TAB_HOME && !mForYou.heroMode() && !mBrowse);
+    }
+
+    /**
+     * D_Home: the full side + bottom scrims. D_Calm: the bottom scrim, plus a side scrim that grows with
+     * the sun, so the big clock stays readable on a bright day sky (night: as the mockup, nearly none).
+     */
+    private void applySkyScrim() {
+        if (mForYou.heroMode()) {
+            mSky.setScrim(1f, 1f);
+            return;
+        }
+        float el = mSky.sunElevationDeg();
+        float side = 0.35f + 0.45f * Math.max(0f, Math.min(1f, (el + 6f) / 12f));
+        mSky.setScrim(side, 0.92f);
+    }
+
+    @Override
+    public void onStageCovering(boolean covering) {
+        updateSky();
+    }
+
+    /** The hero's art belongs on screen: Home tab, D_Home, not scrolled into the rows. */
+    private boolean stageWanted() {
+        return mTab == TAB_HOME && mForYou.heroMode() && !mBrowse;
+    }
+
+    private void applyStage(boolean animate) {
+        boolean want = stageWanted();
+        float a = want ? 1f : 0f;
+        mStage.animate().cancel();
+        if (want && mStage.getVisibility() != View.VISIBLE) {
+            mStage.setVisibility(View.VISIBLE);
+            Card k = mForYou.hero().current();
+            if (k != null) mStage.show(k, false); // no-op when it already shows this art
+        }
+        if (animate && Theme.animations()) {
+            mStage.animate().alpha(a).setDuration(Theme.PAGE_SCROLL_MS).withEndAction(() -> {
+                if (!stageWanted()) {
+                    mStage.setVisibility(View.INVISIBLE);
+                    mStage.pauseTrailer();
+                }
+                updateSky();
+            }).start();
+        } else {
+            mStage.setAlpha(a);
+            mStage.setVisibility(want ? View.VISIBLE : View.INVISIBLE);
+            if (!want) mStage.pauseTrailer();
+        }
+        float veil = mTab != TAB_HOME ? VEIL_TABS : (mBrowse ? VEIL_ROWS : 0f);
+        mVeil.animate().cancel();
+        if (animate && Theme.animations()) mVeil.animate().alpha(veil).setDuration(Theme.PAGE_SCROLL_MS).start();
+        else mVeil.setAlpha(veil);
+        updateSky();
+    }
+
     // ------------------------------------------------------------------ hero auto-advance
 
     private void scheduleHero() {
@@ -475,8 +715,9 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     private void heroTick() {
         if (!mResumed) return;
         long idle = SystemClock.uptimeMillis() - mLastKey;
-        boolean ok = mTab == TAB_FOR_YOU && mForYou.inTopMode() && !mPanel.isOpen() && !mStandby
-                && mApp.prefs().heroAuto() && mForYou.hero().count() > 1;
+        // only while the hero itself (or the header) has focus: in "Continue watching" the hero follows focus
+        boolean ok = mTab == TAB_HOME && mForYou.heroMode() && mForYou.inTopMode() && (mForYou.heroFocused() || mZoneTop)
+                && !mPanel.isOpen() && !mStandby && mApp.prefs().heroAuto() && mForYou.hero().count() > 1;
         if (ok && idle >= HERO_ADVANCE_MS) {
             Log.i(App.TAG, "hero advance");
             mForYou.hero().next(true);
@@ -517,13 +758,11 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         }
         nu.setShown(true);
         nu.scrollToTop(false);
-        mBar.animate().alpha(1).setDuration(Theme.BAR_FADE_MS).start();
-        if (t == TAB_FOR_YOU) {
-            Card k = mForYou.hero().current();
-            mBackdrop.show(k != null ? k.image : null, k != null ? k.pkg : null);
-        } else {
-            mBackdrop.show(null, null);
-        }
+        if (t != TAB_HOME) mBrowse = false;
+        mBar.setBrowse(false);
+        // the big calm clock lives on the Home page: every other tab keeps the header clock
+        applyHeaderClock();
+        applyStage(animate);
         scheduleHero();
     }
 
@@ -646,11 +885,11 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
 
     private void onBack() {
         if (!mZoneTop && page().onBack()) return;
-        if (mTab != TAB_FOR_YOU) {
-            switchTab(TAB_FOR_YOU, true);
+        if (mTab != TAB_HOME) {
+            switchTab(TAB_HOME, true);
             mBar.focusOut();
             mZoneTop = false;
-            mForYou.focusFirstApp();
+            mForYou.focusHome();
             return;
         }
         if (mZoneTop) {
@@ -669,61 +908,60 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
 
     @Override
     public void onRowFocus(RowView row, Card k) {
-        if (mTab != TAB_FOR_YOU) return;
-        if (mForYou.inTopMode()) {
-            Card h = mForYou.hero().current();
-            mBackdrop.show(h != null ? h.image : null, h != null ? h.pkg : null);
-        } else if (k != null && k.kind == Card.PROGRAM && k.image != null) {
-            mBackdrop.show(k.image, k.pkg);
-        }
+        if (mTab == TAB_HOME) mForYou.rowFocused(row, k);
     }
 
     @Override
     public void onFocusArt(String uri, String pkg) {
-        if (mTab == TAB_FOR_YOU || uri == null) mBackdrop.show(uri, pkg);
+        // direction D: no per-card ambient backdrop; the stage shows the hero, the sky the rest
     }
 
     @Override
     public void onBrowseMode(boolean browse) {
-        mBar.animate().cancel();
-        mBar.animate().alpha(browse ? 0f : 1f).setDuration(Theme.BAR_FADE_MS).start();
-        if (!browse) {
-            Card h = mForYou.hero().current();
-            mBackdrop.show(h != null ? h.image : null, h != null ? h.pkg : null);
-        }
+        mBrowse = browse;
+        // the tabs and buttons go, the time stays (on the calm Home it takes over from the big clock)
+        mBar.setBrowse(browse);
+        applyHeaderClock();
+        applyStage(true);
         scheduleHero();
     }
 
     @Override
+    public void onHomeMode(boolean hero) {
+        Log.i(App.TAG, "home mode=" + (hero ? "hero" : "calm"));
+        applyHeaderClock();
+        applySkyScrim();
+        if (!hero) mStage.show(null, true);
+        else if (mForYou.hero().current() != null) mStage.show(mForYou.hero().current(), true);
+        applyStage(true);
+    }
+
+    @Override
+    public void onWeatherAction() {
+        openWeather();
+    }
+
+    @Override
+    public void onHeroBottom(int px) {
+        mStage.setArtBottom(px);
+    }
+
+    @Override
     public void onHeroShown(Card k) {
-        if (mTab == TAB_FOR_YOU && mForYou.inTopMode()) mBackdrop.show(k.image, k.pkg);
+        if (mTab == TAB_HOME && mForYou.heroMode()) mStage.show(k, true);
     }
 
     @Override
     public void onHeroAction(Card k, boolean primary) {
         mLastKey = SystemClock.uptimeMillis();
-        if (k.kind == Card.FEATURE) {
-            switch (k.intent) {
-                case "feature:cast":
-                    openCastHowTo(null);
-                    break;
-                case "feature:picture":
-                    ProjectorBridge.showPanel(this, primary ? "action:autofocus" : "section:keystone");
-                    break;
-                default:
-                    onCustomize();
-            }
-            return;
-        }
         if (primary) Launch.open(this, k);
-        else Launch.openApp(this, k.pkg);
+        else openDetails(k);
     }
 
     @Override
     public void onCardClick(Card k, CardView v) {
         if (Launch.open(this, k)) return;
         if (k.kind == Card.CAST) openCastHowTo(k);
-        else if (k.kind == Card.FEATURE) onHeroAction(k, true);
         else if ("customize".equals(k.intent)) onCustomize();
     }
 
@@ -814,28 +1052,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
                     mPanel.close();
                     Launch.open(this, k);
                 }));
-                items.add(ListPanel.Item.action(R.drawable.ic_open, getString(R.string.hero_open_app, k.appLabel), () -> {
-                    mPanel.close();
-                    Launch.openApp(this, k.pkg);
-                }));
-                if (k.table == Card.T_WATCH_NEXT || k.table == Card.T_PREVIEW) {
-                    boolean wn = k.table == Card.T_WATCH_NEXT;
-                    items.add(ListPanel.Item.action(R.drawable.ic_trash,
-                            getString(wn ? R.string.menu_remove_continue : R.string.menu_hide_item), () -> {
-                                mPanel.close();
-                                mApp.io().post(() -> TvpSource.hideProgram(this, k));
-                                mApp.repo().refresh("hide", 600);
-                            }));
-                }
-                if (k.channelId >= 0) {
-                    items.add(ListPanel.Item.action(R.drawable.ic_eye_off, getString(R.string.menu_hide_channel), () -> {
-                        mPanel.close();
-                        String id = Row.channelId(k.channelId);
-                        mApp.prefs().toggleInSet(Prefs.K_SHOWN_ROWS, id, false);
-                        mApp.prefs().toggleInSet(Prefs.K_HIDDEN_ROWS, id, true);
-                        mApp.io().post(() -> TvpSource.setChannelBrowsable(this, k.channelId, false));
-                    }));
-                }
+                programItems(k, items);
                 mPanel.open(k.title, k.appLabel, items);
                 break;
             }
@@ -850,6 +1067,51 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             }
             default:
         }
+    }
+
+    /** "Open <app>", remove / hide, hide the channel: shared by the context menu and "More info". */
+    private void programItems(Card k, List<ListPanel.Item> items) {
+        items.add(ListPanel.Item.action(R.drawable.ic_open, getString(R.string.hero_open_app, k.appLabel), () -> {
+            mPanel.close();
+            Launch.openApp(this, k.pkg);
+        }));
+        if (k.table == Card.T_WATCH_NEXT || k.table == Card.T_PREVIEW) {
+            boolean wn = k.table == Card.T_WATCH_NEXT;
+            items.add(ListPanel.Item.action(R.drawable.ic_trash,
+                    getString(wn ? R.string.menu_remove_continue : R.string.menu_hide_item), () -> {
+                        mPanel.close();
+                        mApp.io().post(() -> TvpSource.hideProgram(this, k));
+                        mApp.repo().refresh("hide", 600);
+                    }));
+        }
+        if (k.channelId >= 0) {
+            items.add(ListPanel.Item.action(R.drawable.ic_eye_off, getString(R.string.menu_hide_channel), () -> {
+                mPanel.close();
+                String id = Row.channelId(k.channelId);
+                mApp.prefs().toggleInSet(Prefs.K_SHOWN_ROWS, id, false);
+                mApp.prefs().toggleInSet(Prefs.K_HIDDEN_ROWS, id, true);
+                mApp.io().post(() -> TvpSource.setChannelBrowsable(this, k.channelId, false));
+            }));
+        }
+    }
+
+    /** Hero "More info": the full description and every action on the program. */
+    private void openDetails(Card k) {
+        ArrayList<ListPanel.Item> items = new ArrayList<>();
+        if (!k.desc.isEmpty()) items.add(ListPanel.Item.info(0, k.desc));
+        boolean cont = k.table == Card.T_WATCH_NEXT && (k.progress >= 0 || k.wnType == 0);
+        boolean playable = k.intent != null && !k.intent.isEmpty();
+        items.add(ListPanel.Item.action(playable ? R.drawable.ic_play : R.drawable.ic_open,
+                getString(cont ? R.string.hero_resume : (playable ? R.string.hero_watch : R.string.hero_open)), () -> {
+                    mPanel.close();
+                    Launch.open(this, k);
+                }));
+        programItems(k, items);
+        ArrayList<String> parts = new ArrayList<>(3);
+        if (!k.appLabel.isEmpty()) parts.add(k.appLabel);
+        if (!k.meta.isEmpty()) parts.add(k.meta);
+        if (!k.left.isEmpty()) parts.add(k.left);
+        mPanel.open(k.title, parts.isEmpty() ? null : String.join(" · ", parts), items);
     }
 
     private EditText editor(CharSequence hint, CharSequence text) {
@@ -957,7 +1219,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
 
     // ------------------------------------------------------------------ root layout
 
-    /** Backdrop, pages and panel fill the screen; the top bar sits at y 40. */
+    /** Sky, stage, veil, pages and panel fill the screen; the header sits at y 60 (Theme.TOP). */
     private final class Root extends ViewGroup {
         Root(Context c) {
             super(c);

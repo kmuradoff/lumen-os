@@ -1,23 +1,37 @@
 package org.z9x.projector.dream;
 
+import android.app.DreamManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.provider.Settings;
 import android.util.Log;
 
 import org.z9x.projector.Hal;
 import org.z9x.projector.SafeHandler;
 import org.z9x.projector.Ui;
 import org.z9x.projector.hal.GmpfClient;
+import org.z9x.projector.power.StandbyController;
 
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * MODULE "screensaver" (v6.2). Crash-safe "dim the lamp while the screensaver runs, then give the
  * user's level back". research/v62/dream/DREAM_SPEC.md section 2 (there called LampGuard; it lives
  * in the dream package here because the power module owns org.z9x.projector.power).
+ *
+ * <b>Any screensaver</b> (Lumen OS 1.0.1; before, only our clock dimmed): this persistent process
+ * follows ACTION_DREAMING_STARTED / _STOPPED, so Lumen Home's living sky (another process) and every
+ * other dream get the "Screensaver light" too. One dim per screensaver run, {@value #DREAM_DIM_DELAY_MS}
+ * ms after the start (the dream's window is up); ClockDream asks for the same run's dim itself to time
+ * its fade-in ({@link #dimForDream}), and whichever comes first does it. Not for the blank standby
+ * dream (screensaver off: it turns the lamp off at once) nor during standby. The run ends at the first
+ * of the clock's own wake / stop and ACTION_DREAMING_STOPPED ({@link #onDreamEnded}): the restore below
+ * runs exactly then, once. A user change always wins: a level raised meanwhile is kept, the setting
+ * applies from the next screensaver, and nothing is dimmed when the user's level is already that low.
  *
  * <b>HAL calls</b> (typed whitelist only): IGmpf 177 getDlpLumensLevel, 176 setDlpLumensLevel
  * (range-checked 1..10 by GmpfClient), 196 getScreenOnOff (read-only, so 176 is never sent while
@@ -45,9 +59,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * PowerPolicy may also call {@link #restoreOnHalThread} at the start of its lamp-off task
  * (optional, power module decision).
  *
- * <b>AK/AF safety.</b> While our dream runs, any AK/AF focus event (105..118, 120, 333..335, 1003,
- * 1004) ends the dream (Ui.wakeFromDream), which restores the lamp before the AK pattern needs
- * light.
+ * <b>AK/AF safety.</b> While our dream runs (1.0.1: or any screensaver with the lamp dimmed by us), any
+ * AK/AF focus event (105..118, 120, 333..335, 1003, 1004) ends the dream (Ui.wakeFromDream), which
+ * restores the lamp before the AK pattern needs light.
  *
  * Threads: main (API, receivers, focus events), "z9x-hal" (all HAL work, sSaved / sDimLevel),
  * "z9x-lamp" (prefs: marker, light-level setting, Settings writes of DreamSettings).
@@ -66,6 +80,8 @@ public final class DreamLamp {
     private static final long RETRY_MS = 300;            // one 176 retry after a RemoteException
     private static final long LAMP_ON_POLL_MS = 1_000;   // deferred restore after SCREEN_ON
     private static final int LAMP_ON_POLL_TRIES = 12;    // PowerPolicy STR path polls up to 7 s
+    /** Dim this long after ACTION_DREAMING_STARTED (as ClockDream's own DIM_DELAY_MS). */
+    private static final long DREAM_DIM_DELAY_MS = 300;
 
     private static Context sApp;
     private static SafeHandler sLamp;
@@ -89,6 +105,17 @@ public final class DreamLamp {
     private static volatile int sMarkerSaved;
     private static volatile int sMarkerDim;
     private static volatile boolean sMarkerLoaded;
+
+    // ---- one screensaver run (any dream; main thread writes, volatile for the z9x-hal readers)
+    /** A screensaver runs: ACTION_DREAMING_STARTED or ClockDream's start, until {@link #onDreamEnded}. */
+    private static volatile boolean sInDream;
+    /** Counts the runs: a late dim callback of an ended run is ignored. */
+    private static int sDreamRun;
+    /** This run's dim was asked for / is done (or skipped). */
+    private static boolean sDreamDimAsked, sDreamDimDone;
+    /** Waiting for this run's dim (ClockDream's fade-in). */
+    private static final ArrayList<Runnable> sDimWaiters = new ArrayList<>();
+    private static final Runnable DREAM_DIM = DreamLamp::dimForAnyDream;
 
     private DreamLamp() {}
 
@@ -125,6 +152,30 @@ public final class DreamLamp {
             Log.w(TAG, "register screen receiver: " + t);
         }
         try {
+            // Lumen OS 1.0.1: the screensaver light for every dream (main-thread delivery, in order)
+            BroadcastReceiver d = new BroadcastReceiver() {
+                @Override public void onReceive(Context c, Intent i) {
+                    try {
+                        String a = i == null ? null : i.getAction();
+                        if (Intent.ACTION_DREAMING_STARTED.equals(a)) {
+                            onDreamStarted("system");
+                            Ui.main().removeCallbacks(DREAM_DIM);
+                            Ui.main().postDelayed(DREAM_DIM, DREAM_DIM_DELAY_MS);
+                        } else if (Intent.ACTION_DREAMING_STOPPED.equals(a)) {
+                            onDreamEnded(c, "screensaver stopped");
+                        }
+                    } catch (Throwable t) {
+                        Log.w(TAG, "dreaming receiver: " + t);
+                    }
+                }
+            };
+            IntentFilter f = new IntentFilter(Intent.ACTION_DREAMING_STARTED);
+            f.addAction(Intent.ACTION_DREAMING_STOPPED);
+            sApp.registerReceiver(d, f, Context.RECEIVER_EXPORTED);
+        } catch (Throwable t) {
+            Log.w(TAG, "register dreaming receiver: " + t);
+        }
+        try {
             // the "Screensaver" section on the quick panel's All settings page
             org.z9x.projector.panel.QuickPanel.addExtension(org.z9x.projector.panel.QuickPanel.SECTION_GENERAL,
                     new DreamPanelRows());
@@ -146,6 +197,102 @@ public final class DreamLamp {
     /** Any thread: we hold the lamp dimmed right now. */
     public static boolean isDimmed() {
         return sDimmed;
+    }
+
+    /** Any thread: a screensaver runs (ours or any other; see the class comment). */
+    private static boolean inDream() {
+        return sInDream || ClockDream.isRunning();
+    }
+
+    // =================================================================== screensaver runs (main)
+
+    /** Main thread: a screensaver started (the system broadcast, or ClockDream itself). Once per run. */
+    static void onDreamStarted(String who) {
+        if (sInDream) return;                                 // the other path started this run
+        sInDream = true;
+        sDreamRun++;
+        sDreamDimAsked = false;
+        sDreamDimDone = false;
+        sDimWaiters.clear();
+        Log.i(TAG, "screensaver started (" + who + ")");
+    }
+
+    /**
+     * Main thread: the dim of this screensaver run at the "Screensaver light" level (once per run).
+     * {@code onDone} (may be null) runs on the main thread when it is done or skipped, at once when the
+     * run ended or its dim is already done.
+     */
+    static void dimForDream(Context ctx, Runnable onDone) {
+        if (sApp == null) install(ctx);
+        if (!sInDream || sDreamDimDone) {
+            runSafe(onDone);
+            return;
+        }
+        if (onDone != null) sDimWaiters.add(onDone);
+        if (sDreamDimAsked) return;
+        sDreamDimAsked = true;
+        final int run = sDreamRun;
+        int lvl = DreamSettings.lampLevel();
+        if (lvl == DreamSettings.LAMP_UNCHANGED) {
+            Log.i(TAG, "screensaver light: unchanged");
+            dreamDimDone(run);
+            return;
+        }
+        dim(ctx, lvl, () -> dreamDimDone(run));
+    }
+
+    /** Main, {@value #DREAM_DIM_DELAY_MS} ms after ACTION_DREAMING_STARTED: any dream but the blank standby one. */
+    private static void dimForAnyDream() {
+        if (!sInDream || sDreamDimAsked || sApp == null) return;
+        try {
+            DreamManager dm = sApp.getSystemService(DreamManager.class);
+            if (dm != null && !dm.isDreaming()) return;       // already over (its STOPPED follows)
+        } catch (Throwable t) {
+            Log.w(TAG, "isDreaming: " + t);
+        }
+        String comps = null;
+        try {
+            comps = Settings.Secure.getString(sApp.getContentResolver(), "screensaver_components");
+        } catch (Throwable ignored) {
+        }
+        if (DreamDefaults.isIdle(comps)) {
+            Log.i(TAG, "blank standby dream (screensaver off): no dim");
+            return;
+        }
+        if (StandbyController.isActive()) return;            // the lamp is off
+        dimForDream(sApp, null);
+    }
+
+    private static void dreamDimDone(int run) {
+        if (run != sDreamRun || !sInDream) return;
+        sDreamDimDone = true;
+        ArrayList<Runnable> w = new ArrayList<>(sDimWaiters);
+        sDimWaiters.clear();
+        for (Runnable r : w) runSafe(r);
+    }
+
+    /**
+     * Main thread: the screensaver ended (ClockDream woken / stopped / detached, or
+     * ACTION_DREAMING_STOPPED for any dream): the user's level back, at once. Idempotent.
+     */
+    static void onDreamEnded(Context ctx, String why) {
+        endRun(why);
+        restore(ctx);
+    }
+
+    /** Main thread: forget the current screensaver run (no restore here). */
+    private static void endRun(String why) {
+        Ui.main().removeCallbacks(DREAM_DIM);
+        if (sInDream) Log.i(TAG, "screensaver ended (" + why + ")");
+        sInDream = false;
+        sDreamDimAsked = false;
+        sDreamDimDone = false;
+        sDimWaiters.clear();
+    }
+
+    private static void runSafe(Runnable r) {
+        if (r == null) return;
+        try { r.run(); } catch (Throwable t) { Log.w(TAG, "onDone: " + t); }
     }
 
     // =================================================================== dim (main)
@@ -330,7 +477,7 @@ public final class DreamLamp {
      * the lamp off runs now instead of waiting for the SCREEN_ON poll.
      */
     public static void onLampOn() {
-        if (!sRestoreDeferred || ClockDream.isRunning()) return;
+        if (!sRestoreDeferred || inDream()) return;
         sGen.incrementAndGet();
         Hal.runDelayed((g, g2) -> restoreCore(g, "lamp on"), 0, DreamLamp::onRestoreSkipped);
     }
@@ -348,6 +495,7 @@ public final class DreamLamp {
 
     /** Main, SCREEN_OFF (before App's receiver): restore while the lamp is still on. */
     private static void onScreenOff() {
+        endRun("screen off");                                 // no screensaver outlives the screen
         if (!sDimmed && !dimInFlight()) return;
         sGen.incrementAndGet();
         Hal.run((g, g2) -> restoreCore(g, "screen off"));
@@ -381,7 +529,7 @@ public final class DreamLamp {
             // gmpf_main restarted while we hold a dim. During the dream: keep our state. After it
             // (a restore task was skipped while the HAL was down): restore now; restoreCore defers
             // again if the lamp is off.
-            if (!ClockDream.isRunning() && !dimInFlight()) {
+            if (!inDream() && !dimInFlight()) {
                 sGen.incrementAndGet();
                 Hal.run((g, g2) -> restoreCore(g, "reconnect"));
             }
@@ -423,7 +571,7 @@ public final class DreamLamp {
 
     /** Main thread (Hal focus listener). AK/AF during our dream: end the dream gently. */
     private static void onFocusEvent(int type, String value) {
-        if (!ClockDream.isRunning()) return;
+        if (!ClockDream.isRunning() && !(sInDream && (sDimmed || dimInFlight()))) return;
         boolean ak = (type >= 105 && type <= 118) || type == 120
                 || (type >= 333 && type <= 335) || type == 1003 || type == 1004;
         if (!ak) return;

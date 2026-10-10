@@ -28,6 +28,7 @@
     <string name="key_slot4">bilibili түймесі</string>
     <string name="slot_default_fmt">%1$s (әдепкі)</string>
     <string name="slot_default_item">Әдепкі: %1$s</string>
+    <string name="slot_home_apps">Lumen Home: қолданбалар</string>
     <string name="cancel">Бас тарту</string>
     <string name="ok">Жарайды</string>
     <string name="app_not_found">Бұл түймеге қолданба табылмады</string>

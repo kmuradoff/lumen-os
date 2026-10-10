@@ -1,0 +1,12 @@
+# ---- UI resolution (overlay/v1/z9x_uires, Lumen OS 1.0.1). Append to the PRODUCT build.prop snippet.
+# SurfaceFlinger's client target is min(display mode, this cap). The vendor build.prop caps it at 1920x1080;
+# the product build.prop is read last, so this replaces it: the cap is the 3840x2160 panel and the target
+# follows the mode of z9x_uires.sh (1080p is unaffected). The mode itself (the panel ini's OSD region by a RAM
+# bind mount, vendor.display-size, ro.config.size_override / density_override) is set at 'on fs' by
+# init.lineage.atv.scaling.rc.
+ro.surface_flinger.max_graphics_width=3840
+ro.surface_flinger.max_graphics_height=2160
+# 4K UI allowed (persist.z9x.ui_res 1080|2160, default 4K; 2K debug only); 0 = always 1080p, no bind mount, no check.
+# Lumen OS 1.0.1 ships 0 (owner, 2026-10-09: real 4K worked on 20261009e but the UI lags too much on the Z9X).
+# Org.z9x.projector hides its resolution setting and quick-panel row while this is not 1.
+ro.z9x.uires.allow=0

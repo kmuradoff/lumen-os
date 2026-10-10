@@ -10,6 +10,7 @@
     <string name="welcome_subtitle">언어를 선택하세요</string>
     <string name="lang_more">다른 언어…</string>
     <string name="lang_more_hint">설정과 Google 앱에서 이 언어를 사용합니다. 번역되지 않은 Lumen 앱은 영어로 표시됩니다.</string>
+    <string name="lang_more_hint_nogms">설정에서 이 언어를 사용합니다. 번역되지 않은 Lumen 앱은 영어로 표시됩니다.</string>
     <string name="net_title">인터넷에 연결</string>
     <string name="net_subtitle">Wi-Fi 네트워크를 선택하세요. 나중에 설정할 수도 있습니다.</string>
     <string name="net_connected">%1$s에 연결됨</string>
@@ -99,6 +100,7 @@
     <string name="done_home">홈 화면</string>
     <string name="done_start">시작</string>
     <string name="done_offline_hint">인터넷 없음: Google 로그인과 시간대는 나중에 설정에서 지정하세요.</string>
+    <string name="done_offline_hint_nogms">인터넷 없음: 시간대는 나중에 설정에서 지정하세요.</string>
     <string name="done_blobs_missing">보호된 동영상 구성요소가 없어 일부 스트리밍 앱은 낮은 화질로만 재생될 수 있습니다.</string>
     <string name="action_continue">계속</string>
     <string name="action_skip">건너뛰기</string>

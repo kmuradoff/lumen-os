@@ -40,6 +40,15 @@
          turns def_stats_collection on. Without these overrides LineageParts' BOOT_COMPLETED receiver
          would upload a hashed ANDROID_ID, device, version and country to stats.lineageos.org at the
          first boot and then daily, without asking. Lumen OS never reports. -->
+    <!-- Settings > About > System update (android.settings.SYSTEM_UPDATE_SETTINGS): GMS's Pano update
+         screen and org.z9x.updater both answer it at priority 0 (the updater is not privileged, so its
+         priority 10 is ignored) and the user got a chooser. Lumen OS updates come only from
+         org.z9x.updater (Google has no update for this system); verified on the device 2026-10-08 with
+         pm disable: the intent then resolves straight to org.z9x.updater/.UpdaterActivity. -->
+    <component-override package="com.google.android.gms">
+        <component class="com.google.android.gms.update.SystemUpdatePanoActivity" enabled="false" />
+    </component-override>
+
     <component-override package="org.lineageos.lineageparts">
         <component class="org.lineageos.lineageparts.lineagestats.ReportingServiceManager" enabled="false" />
         <component class="org.lineageos.lineageparts.lineagestats.ReportingService" enabled="false" />

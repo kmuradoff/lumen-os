@@ -43,6 +43,7 @@ toast_not_ready=Projektör henüz hazır değil
 toast_failed=İşlem yapılamadı
 toast_curtain_offer=Görüntü kaydı: Projektör → Yamuk düzeltme → “Şimdi ekrana sığdır”
 toast_setup_running=Önce kurulumu tamamlayın
+slot_home_apps=Lumen Home: Uygulamalar
 
 @projector/strings_ak.xml
 ak_caption_keystone=Otomatik yamuk düzeltme yapılıyor
@@ -540,6 +541,38 @@ voice_hold=Konuşurken mikrofon düğmesini basılı tutun
 kb_title=Klavye
 kb_get_app=Klavye edinin: %1$s
 kb_no_play=Google Play kullanılamıyor. Kendi dilinizde yazmak için bir klavye uygulaması yükleyin.
+tab_home=Ana sayfa
+hero_resume=Devam et
+hero_more=Daha fazla bilgi
+hero_kind_next=Sonraki bölüm
+hero_kind_watchlist=İzleme listesi
+weather_line=%1$s, %2$s
+wx_clear=açık
+wx_partly=parçalı bulutlu
+wx_cloudy=bulutlu
+wx_fog=sis
+wx_drizzle=çisenti
+wx_rain=yağmur
+wx_snow=kar
+wx_showers=sağanak
+wx_thunder=gök gürültülü fırtına
+cz_wallpaper=Duvar kağıdı
+cz_wallpaper_sub=Ana ekranda ve ekran koruyucuda canlı bir manzara: gökyüzü gerçek güneşi ve havayı izler.
+cz_continue=Ana sayfada izlemeye devam et
+cz_continue_sub=Gizlenirse ana sayfada yalnızca canlı duvar kağıdının üzerinde saat, tarih ve hava durumu ile uygulamalarınız kalır. Uygulama kanalları da gösterilmez.
+cz_continue_show=Göster
+cz_continue_hide=Gizle
+apps_install_usb=USB’den yükle
+usb_title=USB’den yükle
+usb_none=.apk dosyaları olan bir USB bellek takın (kök klasörde veya apks klasöründe).
+usb_empty=USB bellekte .apk dosyası yok. Dosyaları kök klasöre veya apks klasörüne koyun.
+usb_new=Yeni
+usb_update=Güncelleme
+usb_installing=Yükleniyor: %%%1$d
+usb_done=%1$s yüklendi
+usb_failed=%1$s yüklenmedi: %2$s
+kb_no_store=Bir klavye uygulamasını USB bellekten yükleyin: Uygulamalar > USB’den yükle.
+voice_none=Sesli arama için bir konuşma tanıma uygulaması gerekir. Aramanızı yazın.
 @updater/strings.xml
 app_name=Lumen OS güncellemesi
 settings_title=Lumen OS güncellemesi
@@ -625,6 +658,17 @@ n_available_body=İndirip yüklemek için açın.
 n_ready_title=Güncellemeyi bitirmek için yeniden başlatın
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s çalışıyor
+done_unhealthy_body=Güncellemeden sonraki bir kontrol bir sorun buldu: %1$s. Bir şey çalışmazsa bilgisayar yükleyicisinin kurtarma modunu (rescue) kullanın. Verileriniz korunur.
+done_rescue_scan=Kurtarma kılavuzunu açmak için kodu tarayın.
+done_details=Teknik ayrıntılar: %1$s
+why_restarted=sistem beklenmedik şekilde yeniden başladı
+why_service=bir sistem hizmeti başlamadı
+why_lamp=lamba ve fan hizmeti başlamadı
+why_confirm=sistem yeni sürümün çalıştığını doğrulayamadı
+why_no_rollback=önceki sürüme dönmek mümkün olmadı
+why_unknown=ayrıntı kaydedilmedi
+blk_channel=Bu güncelleme başka bir Lumen OS sürümü için (%1$s).
 @projector/strings_recents.xml
 recents_title=Son uygulamalar
 recents_close=Kapat
@@ -763,6 +807,8 @@ name_other=Diğer…
 name_hint=Ad (en fazla 32 karakter)
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=Ayarlar bu dili kullanır. Çevirisi olmayan Lumen uygulamaları İngilizce kalır.
+done_offline_hint_nogms=İnternet yok: saat dilimini daha sonra Ayarlar’dan seçin.
 @projector/strings_cec.xml
 cec_entry=HDMI cihazları (CEC)
 cec_unavailable=HDMI-CEC kullanılamıyor

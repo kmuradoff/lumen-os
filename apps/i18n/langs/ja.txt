@@ -43,6 +43,7 @@ toast_not_ready=プロジェクターの準備がまだできていません
 toast_failed=実行できませんでした
 toast_curtain_offer=映像がずれました：プロジェクター → 台形補正 → 「今すぐスクリーンに合わせる」
 toast_setup_running=先にセットアップを完了してください
+slot_home_apps=Lumen Home: アプリ
 
 @projector/strings_ak.xml
 ak_caption_keystone=自動台形補正中
@@ -538,6 +539,38 @@ voice_hold=話している間はマイクボタンを押し続けてください
 kb_title=キーボード
 kb_get_app=キーボードを入手: %1$s
 kb_no_play=Google Play を利用できません。お使いの言語で入力するには、キーボード アプリをインストールしてください。
+tab_home=ホーム
+hero_resume=続きを見る
+hero_more=詳細
+hero_kind_next=次のエピソード
+hero_kind_watchlist=ウォッチリスト
+weather_line=%1$s、%2$s
+wx_clear=晴れ
+wx_partly=晴れ時々曇り
+wx_cloudy=曇り
+wx_fog=霧
+wx_drizzle=霧雨
+wx_rain=雨
+wx_snow=雪
+wx_showers=にわか雨
+wx_thunder=雷雨
+cz_wallpaper=壁紙
+cz_wallpaper_sub=ホーム画面とスクリーンセーバーに生きた風景を表示します。空は実際の太陽と天気に合わせて変わります。
+cz_continue=ホームの「視聴を続ける」
+cz_continue_sub=非表示にすると、ホームには動く壁紙の上の時刻、日付、天気とアプリだけが表示されます。アプリのチャンネルも表示されません。
+cz_continue_show=表示する
+cz_continue_hide=表示しない
+apps_install_usb=USB からインストール
+usb_title=USB からインストール
+usb_none=.apk ファイルが入った USB メモリを挿してください（ルートまたは apks フォルダ）。
+usb_empty=USB メモリに .apk ファイルがありません。ルートまたは apks フォルダに入れてください。
+usb_new=新規
+usb_update=アップデート
+usb_installing=インストール中: %1$d%%
+usb_done=%1$s をインストールしました
+usb_failed=%1$s をインストールできませんでした: %2$s
+kb_no_store=キーボード アプリを USB メモリからインストールしてください: アプリ > USB からインストール。
+voice_none=音声検索には音声認識アプリが必要です。検索語を入力してください。
 @updater/strings.xml
 app_name=Lumen OS アップデート
 settings_title=Lumen OS アップデート
@@ -622,6 +655,17 @@ n_available_body=開いてダウンロードとインストールを行います
 n_ready_title=再起動してアップデートを完了
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s は動作しています
+done_unhealthy_body=アップデート後のチェックで問題が見つかりました：%1$s。うまく動かない場合は、パソコン用インストーラーのレスキュー（rescue）をご利用ください。データはそのまま残ります。
+done_rescue_scan=コードをスキャンするとレスキューのガイドが開きます。
+done_details=技術的な詳細：%1$s
+why_restarted=システムが予期せず再起動しました
+why_service=システムサービスが起動しませんでした
+why_lamp=光源とファンのサービスが起動しませんでした
+why_confirm=新しいバージョンが正常に動作していることをシステムが確認できませんでした
+why_no_rollback=以前のバージョンに戻すことはできませんでした
+why_unknown=詳細は記録されていません
+blk_channel=このアップデートは別の Lumen OS エディション（%1$s）向けです。
 @projector/strings_recents.xml
 recents_title=最近使用したアプリ
 recents_close=閉じる
@@ -760,6 +804,8 @@ name_other=その他…
 name_hint=名前（32 文字まで）
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=設定でこの言語が使われます。翻訳のない Lumen アプリは英語のままです。
+done_offline_hint_nogms=インターネットなし: タイムゾーンは後で設定から指定できます。
 @projector/strings_cec.xml
 cec_entry=HDMI 機器 (CEC)
 cec_unavailable=HDMI-CEC は使用できません

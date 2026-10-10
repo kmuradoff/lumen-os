@@ -1,0 +1,12 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of dumpsys: the n-th 'dumpsys SurfaceFlinger' of a start prints $Z9X_T/sf.<n> when it exists,
+# else $Z9X_T/sf; neither = no output and exit 1 (SurfaceFlinger not answering). Calls go to
+# $Z9X_T/dumpsys.log (run.sh empties it at every start).
+[ "${1-}" = SurfaceFlinger ] || { echo "dumpsys stub: unexpected arguments: $*" >&2; exit 1; }
+n=1
+[ -f "$Z9X_T/dumpsys.log" ] && n=$(( $(wc -l < "$Z9X_T/dumpsys.log") + 1 ))
+echo "$*" >> "$Z9X_T/dumpsys.log"
+if [ -f "$Z9X_T/sf.$n" ]; then cat "$Z9X_T/sf.$n"
+elif [ -f "$Z9X_T/sf" ]; then cat "$Z9X_T/sf"
+else exit 1; fi

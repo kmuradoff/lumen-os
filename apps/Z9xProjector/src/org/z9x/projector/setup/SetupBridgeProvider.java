@@ -172,7 +172,10 @@ public final class SetupBridgeProvider extends ContentProvider {
 
     // ------------------------------------------------------------------ state bundles (also SetupEvents)
 
-    /** remote_state fields: bonded, connected, name, scanning, mode. Any thread. */
+    /**
+     * remote_state fields: bonded, connected, name, scanning, mode; Lumen OS 1.0 adds pairing and found.
+     * connected = a bonded XGIMI remote whose link AND HID input device are up (its keys work). Any thread.
+     */
     static Bundle remoteBundle(Context app) {
         Bundle b = new Bundle();
         RemoteAutoPair.State st = RemoteAutoPair.state(app);
@@ -181,6 +184,8 @@ public final class SetupBridgeProvider extends ContentProvider {
         b.putString("name", st.name);
         b.putBoolean("scanning", st.scanning);
         b.putString("mode", st.mode);
+        b.putBoolean("pairing", st.pairing);
+        b.putString("found", st.found);
         return b;
     }
 

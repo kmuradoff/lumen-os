@@ -11,10 +11,15 @@ ro.product.ab_ota_partitions=boot,bootdata,dtbo,mboot,optee,owl,satf,tvconfig,tv
 ro.z9x.keys=release
 ro.z9x.device=z9x
 # updater identity: build_id must match the update manifest's from_build_id for a delta;
-# version_code = major*10000 + minor*100 + patch (1.0 -> 10000, 1.0.1 -> 10001, 1.2.3 -> 10203)
-ro.z9x.build_id=lumen-1.0-<DATE>
-ro.z9x.version_code=10000
+# version_code = major*10000 + minor*100 + patch + 1 (1.0.0 -> 10001, 1.0.1 -> 10002, 1.2.3 -> 10204).
+# The +1 (since 1.0.0): the 1.0 test builds (build_id lumen-1.0-<date>) carry version_code 10000, and the
+# updater offers only a higher version_code. tools/lumen_v1.sh checks both lines against its VER.
+ro.z9x.build_id=lumen-1.0.1-<DATE>
+ro.z9x.version_code=10002
 # OTA gate on (z9x_ota.rc); 0 = stock update_verifier behaviour on every boot
 ro.z9x.ota.gate=1
+# boot rescue on (z9x_rescue.rc, 1.0.1): 3 starts in a row without boot_completed -> fastbootd;
+# 0 = only count and log
+ro.z9x.rescue=1
 # update manifest (optional override; the app's default is the same URL)
 ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/latest/download/update-stable.json

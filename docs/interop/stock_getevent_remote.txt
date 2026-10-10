@@ -1,0 +1,64 @@
+add device 1: /dev/input/event7
+  name:     "XGIMI RC Keyboard"
+add device 2: /dev/input/event2
+  name:     "icspring camera: icspring camer"
+add device 3: /dev/input/event6
+  name:     "Virtual AccSensor"
+add device 4: /dev/input/event5
+  name:     "Vendor_3697_Product_0003"
+add device 5: /dev/input/event4
+  name:     "ucontrol_key"
+add device 6: /dev/input/event3
+  name:     "VOC_OWL_INPUT_DEV"
+add device 7: /dev/input/event1
+  name:     "MTK TV KEYPAD"
+add device 8: /dev/input/event0
+  name:     "MTK Smart TV IR Receiver"
+[     533.862926] /dev/input/event7: EV_MSC       MSC_SCAN             00070029            
+[     533.862926] /dev/input/event7: EV_KEY       KEY_ESC              DOWN                
+[     533.862926] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     533.929642] /dev/input/event7: EV_MSC       MSC_SCAN             00070029            
+[     533.929642] /dev/input/event7: EV_KEY       KEY_ESC              UP                  
+[     533.929642] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     537.596893] /dev/input/event7: EV_MSC       MSC_SCAN             00070029            
+[     537.596893] /dev/input/event7: EV_KEY       KEY_ESC              DOWN                
+[     537.596893] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     537.709446] /dev/input/event7: EV_MSC       MSC_SCAN             00070029            
+[     537.709446] /dev/input/event7: EV_KEY       KEY_ESC              UP                  
+[     537.709446] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     541.219658] /dev/input/event7: EV_MSC       MSC_SCAN             00070044            
+[     541.219658] /dev/input/event7: EV_KEY       KEY_F11              DOWN                
+[     541.219658] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     541.241898] /dev/input/event7: EV_MSC       MSC_SCAN             00070044            
+[     541.241898] /dev/input/event7: EV_KEY       KEY_F11              UP                  
+[     541.241898] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     544.819390] /dev/input/event7: EV_MSC       MSC_SCAN             0007003d            
+[     544.819390] /dev/input/event7: EV_KEY       KEY_F4               DOWN                
+[     544.819390] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     544.842030] /dev/input/event7: EV_MSC       MSC_SCAN             0007003d            
+[     544.842030] /dev/input/event7: EV_KEY       KEY_F4               UP                  
+[     544.842030] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     546.427974] /dev/input/event7: EV_MSC       MSC_SCAN             0007004f            
+[     546.427974] /dev/input/event7: EV_KEY       KEY_RIGHT            DOWN                
+[     546.427974] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     547.868174] /dev/input/event7: EV_MSC       MSC_SCAN             0007004f            
+[     547.868174] /dev/input/event7: EV_KEY       KEY_RIGHT            UP                  
+[     547.868174] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     548.565575] /dev/input/event7: EV_MSC       MSC_SCAN             00070050            
+[     548.565575] /dev/input/event7: EV_KEY       KEY_LEFT             DOWN                
+[     548.565575] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     550.804472] /dev/input/event7: EV_MSC       MSC_SCAN             00070050            
+[     550.804472] /dev/input/event7: EV_KEY       KEY_LEFT             UP                  
+[     550.804472] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     552.515148] /dev/input/event7: EV_MSC       MSC_SCAN             00070029            
+[     552.515148] /dev/input/event7: EV_KEY       KEY_ESC              DOWN                
+[     552.515148] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     552.626688] /dev/input/event7: EV_MSC       MSC_SCAN             00070029            
+[     552.626688] /dev/input/event7: EV_KEY       KEY_ESC              UP                  
+[     552.626688] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     554.955660] /dev/input/event7: EV_MSC       MSC_SCAN             00070044            
+[     554.955660] /dev/input/event7: EV_KEY       KEY_F11              DOWN                
+[     554.955660] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            
+[     554.978051] /dev/input/event7: EV_MSC       MSC_SCAN             00070044            
+[     554.978051] /dev/input/event7: EV_KEY       KEY_F11              UP                  
+[     554.978051] /dev/input/event7: EV_SYN       SYN_REPORT           00000000            

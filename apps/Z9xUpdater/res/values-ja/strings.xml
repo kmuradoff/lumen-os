@@ -45,6 +45,16 @@
     <string name="done_ok_title">Lumen OS %1$s にアップデートしました</string>
     <string name="done_rollback_title">アップデートを開始できませんでした</string>
     <string name="done_rollback_body">Lumen OS %1$s を復元しました。失われたものはありません。</string>
+    <string name="done_unhealthy_title">Lumen OS %1$s は動作しています</string>
+    <string name="done_unhealthy_body">アップデート後のチェックで問題が見つかりました：%1$s。うまく動かない場合は、パソコン用インストーラーのレスキュー（rescue）をご利用ください。データはそのまま残ります。</string>
+    <string name="done_rescue_scan">コードをスキャンするとレスキューのガイドが開きます。</string>
+    <string name="done_details">技術的な詳細：%1$s</string>
+    <string name="why_restarted">システムが予期せず再起動しました</string>
+    <string name="why_service">システムサービスが起動しませんでした</string>
+    <string name="why_lamp">光源とファンのサービスが起動しませんでした</string>
+    <string name="why_confirm">新しいバージョンが正常に動作していることをシステムが確認できませんでした</string>
+    <string name="why_no_rollback">以前のバージョンに戻すことはできませんでした</string>
+    <string name="why_unknown">詳細は記録されていません</string>
     <string name="blk_vbmeta_title">アップデートには 1 回だけの手順が必要です</string>
     <string name="blk_vbmeta_body">初回のアップデートの前に、インストールガイドの説明（vbmeta の手順）に従い、もう一方のシステムスロット（%1$s）をパソコンで 1 回準備する必要があります。コードをスキャンするとガイドが開きます。</string>
     <string name="blk_vbmeta_unknown">もう一方のシステムスロットの状態を読み取れませんでした。プロジェクターを再起動してもう一度お試しください。</string>
@@ -52,6 +62,7 @@
     <string name="blk_merge_body">バックグラウンドで数分かかります。視聴を続けられます。</string>
     <string name="blk_pending">前回のアップデート後、このバージョンはまだ確認中です。数分後にもう一度お試しください。</string>
     <string name="blk_vendor">このアップデートはこのプロジェクターのファームウェア（%1$s）向けではありません。</string>
+    <string name="blk_channel">このアップデートは別の Lumen OS エディション（%1$s）向けです。</string>
     <string name="blk_min_version">このアップデートには Lumen OS %1$s 以降が必要です。パソコン用インストーラーをご利用ください。</string>
     <string name="blk_thermal">プロジェクターが高温になっています。後でもう一度お試しください。</string>
     <string name="blk_space">空き容量が不足しています: %1$s 必要です。</string>

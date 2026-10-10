@@ -2,9 +2,15 @@
 <!-- Lumen OS 1.0: /system/product/etc/default-permissions/z9x-home.xml
      RECORD_AUDIO for the SpeechRecognizer client of Lumen Home search (mic key, home spec 4).
      Applied by DefaultPermissionGrantPolicy on the first boot of a user or after a fingerprint change.
-     The app also self-grants it as a fallback (GRANT_RUNTIME_PERMISSIONS, signature). -->
+     The app also self-grants it as a fallback (GRANT_RUNTIME_PERMISSIONS, signature).
+     Lumen OS 1.0.0: + READ_TV_LISTINGS, the only DANGEROUS permission of TvProvider on this image
+     (READ_EPG_DATA / WRITE_EPG_DATA normal; ACCESS_ALL_EPG_DATA signature|privileged, granted through
+     privapp-permissions-z9xhome.xml). Lumen Home reads Watch Next and the preview channels with
+     ACCESS_ALL_EPG_DATA; this grant keeps its "limited" fallback (searchable programs) working.
+     Source copy: apps/Z9xHome/image/default-permissions-z9xhome.xml. -->
 <exceptions>
     <exception package="org.z9x.home">
         <permission name="android.permission.RECORD_AUDIO" fixed="false" />
+        <permission name="android.permission.READ_TV_LISTINGS" fixed="false" />
     </exception>
 </exceptions>

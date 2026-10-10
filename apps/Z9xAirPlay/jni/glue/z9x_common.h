@@ -7,8 +7,11 @@
 #define Z9X_COMMON_H
 
 #include <android/log.h>
+#include <errno.h>
 #include <stdint.h>
+#include <sys/resource.h>
 #include <time.h>
+#include <unistd.h>
 
 #define Z9X_TAG "Z9xAirPlay"
 #define Z9X_LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, Z9X_TAG, __VA_ARGS__)
@@ -56,6 +59,19 @@ static inline int64_t z9x_mono_from_uxplay(uint64_t realtime_ns) {
     int64_t rt = z9x_clock_ns(CLOCK_REALTIME);
     int64_t mono = z9x_clock_ns(CLOCK_MONOTONIC);
     return (int64_t) realtime_ns - rt + mono;
+}
+
+/* Nice value of ANDROID_PRIORITY_AUDIO (system/thread_defs.h), the priority AudioTrack gives
+   its own callback thread inside the app process (init sets RLIMIT_NICE 40 for everyone). */
+#define Z9X_PRIORITY_AUDIO (-16)
+
+/* Calling thread only (Linux nice values are per thread). Failure is logged, not fatal. */
+static inline void z9x_set_thread_priority(int nice, const char *what) {
+    if (setpriority(PRIO_PROCESS, (id_t) gettid(), nice) != 0) {
+        Z9X_LOGW("%s thread: setpriority(%d) failed (errno %d)", what, nice, errno);
+    } else {
+        Z9X_LOGI("%s thread: priority %d", what, nice);
+    }
 }
 
 #endif /* Z9X_COMMON_H */

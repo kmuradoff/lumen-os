@@ -44,6 +44,7 @@ toast_not_ready=投影仪尚未就绪
 toast_failed=操作失败
 toast_curtain_offer=画面已移动：投影仪 → 梯形校正 → “立即对齐幕布”
 toast_setup_running=请先完成设置
+slot_home_apps=Lumen Home：应用
 
 @projector/strings_ak.xml
 ak_caption_keystone=正在自动梯形校正
@@ -539,6 +540,38 @@ voice_hold=说话时请按住麦克风按钮
 kb_title=键盘
 kb_get_app=获取键盘：%1$s
 kb_no_play=Google Play 不可用。请安装键盘应用，以便用您的语言输入。
+tab_home=主页
+hero_resume=继续播放
+hero_more=详细信息
+hero_kind_next=下一集
+hero_kind_watchlist=待看清单
+weather_line=%1$s，%2$s
+wx_clear=晴
+wx_partly=多云
+wx_cloudy=阴
+wx_fog=雾
+wx_drizzle=毛毛雨
+wx_rain=雨
+wx_snow=雪
+wx_showers=阵雨
+wx_thunder=雷暴
+cz_wallpaper=壁纸
+cz_wallpaper_sub=主屏幕和屏幕保护程序中的动态风景：天空随真实的太阳和天气变化。
+cz_continue=主页上的继续观看
+cz_continue_sub=隐藏后，主页只在动态壁纸上显示时间、日期和天气，以及你的应用。应用频道也不再显示。
+cz_continue_show=显示
+cz_continue_hide=隐藏
+apps_install_usb=从 U 盘安装
+usb_title=从 U 盘安装
+usb_none=请插入存有 .apk 文件的 U 盘（放在根目录或 apks 文件夹中）。
+usb_empty=U 盘中没有 .apk 文件。请把文件放在根目录或 apks 文件夹中。
+usb_new=新应用
+usb_update=更新
+usb_installing=正在安装：%1$d%%
+usb_done=已安装 %1$s
+usb_failed=未能安装 %1$s：%2$s
+kb_no_store=请从 U 盘安装键盘应用：应用 > 从 U 盘安装。
+voice_none=语音搜索需要语音识别应用。请改为输入文字。
 @updater/strings.xml
 app_name=Lumen OS 更新
 settings_title=Lumen OS 更新
@@ -623,6 +656,17 @@ n_available_body=打开即可下载并安装。
 n_ready_title=重启以完成更新
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s 正在运行
+done_unhealthy_body=更新后的检查发现了一个问题：%1$s。如果有功能无法正常使用，请使用电脑安装程序的救援模式（rescue）。您的数据会保留。
+done_rescue_scan=扫描二维码即可打开救援模式指南。
+done_details=技术详情：%1$s
+why_restarted=系统意外重启
+why_service=有一项系统服务未能启动
+why_lamp=光源和风扇服务未能启动
+why_confirm=系统无法确认新版本运行正常
+why_no_rollback=无法回到上一个版本
+why_unknown=没有记录详细信息
+blk_channel=此更新适用于另一个 Lumen OS 版本（%1$s）。
 @projector/strings_recents.xml
 recents_title=最近使用的应用
 recents_close=关闭
@@ -761,6 +805,8 @@ name_other=其他…
 name_hint=名称（最多 32 个字符）
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=设置将使用此语言。尚未翻译的 Lumen 应用仍显示英文。
+done_offline_hint_nogms=无互联网：可稍后在设置中设置时区。
 @projector/strings_cec.xml
 cec_entry=HDMI 设备 (CEC)
 cec_unavailable=HDMI-CEC 不可用

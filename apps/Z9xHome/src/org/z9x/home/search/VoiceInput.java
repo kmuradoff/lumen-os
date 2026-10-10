@@ -23,8 +23,9 @@ import java.util.Locale;
 /**
  * Voice input through the system recognizer (Settings.Secure voice_recognition_service, today Speech
  * Services by Google, which keeps its microphone access without the Assistant; PLAN V5). Never the
- * Assistant. Only permanent failures (no recognizer, RECORD_AUDIO not grantable, the language not
- * supported even online) are remembered for 24 h so the next mic press goes straight to the keyboard;
+ * Assistant. Only permanent failures (RECORD_AUDIO not grantable, the language not supported even online)
+ * are remembered for 24 h so the next mic press goes straight to the keyboard (no recognizer at all is
+ * not: {@link #available} is asked at every search start, 1.0.1);
  * a recognizer permission problem or a failed start for {@value #SHORT_FAIL_MEMORY_MS} ms; transient
  * errors (the recognition process died, e.g. an lmkd kill during a 4K film; a client error; busy) fall
  * back to the keyboard for this press only.
@@ -60,6 +61,28 @@ final class VoiceInput implements RecognitionListener {
         mL = l;
     }
 
+    /**
+     * Is there a speech recognizer at all (Lumen OS without Google has none until the user installs one)?
+     * A cheap query, asked at every search start, so a recognizer installed later works at once.
+     */
+    static boolean available(Context c) {
+        try {
+            String s = Settings.Secure.getString(c.getContentResolver(), "voice_recognition_service");
+            ComponentName cn = s != null && !s.isEmpty() ? ComponentName.unflattenFromString(s) : null;
+            if (cn != null && !cn.getPackageName().equals("com.google.android.katniss")) {
+                try {
+                    c.getPackageManager().getServiceInfo(cn, 0);
+                    return true;
+                } catch (PackageManager.NameNotFoundException ignored) {
+                    // a configured recognizer that is gone: fall through to any other one
+                }
+            }
+            return SpeechRecognizer.isRecognitionAvailable(c);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     static boolean recentlyFailed() {
         return System.currentTimeMillis() < App.get().prefs().lng(Prefs.K_VOICE_FAIL_UNTIL, 0);
     }
@@ -81,7 +104,9 @@ final class VoiceInput implements RecognitionListener {
         try {
             if (mRec == null) {
                 if (cn == null && !SpeechRecognizer.isRecognitionAvailable(mCtx)) {
-                    fail("no recognizer", FAIL_MEMORY_MS);
+                    // not remembered (1.0.1): asking costs nothing, and a recognizer installed later must
+                    // work at the next press
+                    fail("no recognizer", NO_MEMORY);
                     return false;
                 }
                 mRec = cn != null ? SpeechRecognizer.createSpeechRecognizer(mCtx, cn) : SpeechRecognizer.createSpeechRecognizer(mCtx);

@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS without Google (tools/lumen_v1.sh GMS=0, docs/NOGMS_PLAN.md section 2): the base tar members
+# a no-Google image drops (MindTheGapps ATV and the two LineageOS helpers that exist only for it), on top
+# of the static REMOVE list. One tar path per line (a directory removes everything under it), '#' starts a
+# comment. The single source for tools/lumen_v1.sh, tools/sign/check_image.py and
+# tools/ota/check_release_assets.py. Exactly 26 paths, each present in the base.
+# MindTheGapps: Google Play services, Play Store, setup, launcher, recommendations, Chromecast, phone remote,
+# Ambient mode
+system/product/priv-app/PrebuiltGmsCorePano
+system/product/priv-app/Tubesky
+system/product/priv-app/SetupWraithPrebuilt
+system/product/priv-app/TVLauncher
+system/product/priv-app/TVRecommendations
+system/product/priv-app/AndroidMediaShell
+system/product/priv-app/AtvRemoteService
+system/product/priv-app/Backdrop
+# LineageOS partner customization of the classic launcher (TVLauncher) only
+system/product/priv-app/LineageCustomizer
+system/system_ext/priv-app/GoogleServicesFramework
+system/app/GoogleExtShared
+system/product/app/GoogleTTS
+system/product/app/talkback
+# MindTheGapps overlay (its framework settings name the removed packages) and Lineage's SetupWraith overlay
+system/product/overlay/ATVOverlay.apk
+system/product/overlay/LineageGoogleSetupWraithOverlay
+# ro.com.google.gmsversion
+system/product/etc/init/gapps.rc
+# permissions, allow-lists and sysconfig of the removed packages
+system/product/etc/default-permissions/default-atv-permissions.xml
+system/product/etc/permissions/privapp-permissions-atv-product.xml
+system/product/etc/permissions/privapp-permissions-google-product.xml
+system/product/etc/permissions/split-permissions-google.xml
+system/product/etc/sysconfig/google.xml
+system/product/etc/sysconfig/google_atv.xml
+system/product/etc/sysconfig/google-hiddenapi-package-whitelist.xml
+system/product/etc/sysconfig/google-staged-installer-whitelist.xml
+system/etc/permissions/privapp-permissions-google-system.xml
+system/system_ext/etc/permissions/privapp-permissions-google-system_ext.xml

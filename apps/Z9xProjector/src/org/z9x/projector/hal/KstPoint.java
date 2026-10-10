@@ -18,7 +18,7 @@
  * Coordinate space (v6.4, VERIFIED from the live log of 2026-10-06 09:44:01): 186 returns the corners
  * in DLP PANEL coordinates 3840x2160, e.g. vendor GM_DISP_KST_CTRL [GetCorrectKeystone:763] type=10
  * p_kstPoint (200,300)(3594,14)(86,2108)(3798,1968); v6.3 rejected it ("x 3594 not in 0..1920").
- * Panel size evidence (read-only, device <SERIAL>):
+ * Panel size evidence (read-only, the owner's Z9X):
  *  - /mnt/vendor/xgimiconfig/G0082/panel/UD_VB1_8LANE_DLP_PROJECTOR_60.ini (the G0082 panel named by
  *    mtk_Customer.ini, research/v61/RESULT_display.json) and the live dmesg panel
  *    /vendor/tvconfig/config/panel/UD_VB1_16LANE_CSOT_URSA.ini: m_wPanelWidth = 3840,
@@ -27,7 +27,8 @@
  *    (research/focus/libxgimi.strings 0x20bde45): the full frame is 0..3839 x 0..2159.
  * Range check (our rule): mode-0 corners must lie in 0..3840 x 0..2160 (read-back tolerant of the
  * edge value); moves are clamped to 0..MAX_X x 0..MAX_Y and the full frame is the vendor default
- * above. The UI maps panel -> screen (1920x1080) itself (ManualKeystonePanel). Everything else
+ * above. The UI maps panel -> screen itself (ManualKeystonePanel: 1:1 at the 3840x2160 UI, the Lumen OS
+ * 1.0.1 default; 2:1 at 1080p). Everything else
  * (e.g. [0][2], [2][0], set only in 8-point mode) stays 0 on send and is only logged on read.
  */
 package org.z9x.projector.hal;
@@ -37,7 +38,7 @@ import android.os.HwBlob;
 public final class KstPoint {
     public static final int WIRE_SIZE = 326;
     public static final int MODE_FOUR_POINT = 0;
-    /** DLP panel size (see the header): 186/150/185 coordinates are in this space, not the 1920x1080 UI. */
+    /** DLP panel size (see the header): 186/150/185 coordinates are in this space (= the 4K UI, not a 1080p UI). */
     public static final int PANEL_W = 3840;
     public static final int PANEL_H = 2160;
     /** Last pixel column / row: the vendor full frame (persist.sys.keystone.positions default). */

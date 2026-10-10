@@ -6,6 +6,9 @@ public final class AllTests {
         IntentGuardTest.run();
         RankerTest.run();
         SnapshotTest.run();
+        HeroArtTest.run();
+        HeaderContrastTest.run();
+        ResolutionTest.run();
         System.out.println("tests passed=" + T.passed + " failed=" + T.failed);
         System.exit(T.failed == 0 ? 0 : 1);
     }

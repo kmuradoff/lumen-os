@@ -48,6 +48,16 @@
     <string name="done_ok_title">Абноўлена да Lumen OS %1$s</string>
     <string name="done_rollback_title">Абнаўленне не запусцілася</string>
     <string name="done_rollback_body">Адноўлена Lumen OS %1$s. Нічога не страчана.</string>
+    <string name="done_unhealthy_title">Lumen OS %1$s працуе</string>
+    <string name="done_unhealthy_body">Праверка пасля абнаўлення выявіла праблему: %1$s. Калі нешта не працуе, скарыстайцеся рэжымам аднаўлення (rescue) ва ўсталёўшчыку для камп’ютара. Даныя захоўваюцца.</string>
+    <string name="done_rescue_scan">Адскануйце код, каб адкрыць інструкцыю па аднаўленні.</string>
+    <string name="done_details">Тэхнічныя падрабязнасці: %1$s</string>
+    <string name="why_restarted">сістэма нечакана перазапусцілася</string>
+    <string name="why_service">не запусцілася сістэмная служба</string>
+    <string name="why_lamp">не запусцілася служба лямпы і вентылятараў</string>
+    <string name="why_confirm">сістэме не ўдалося пацвердзіць, што новая версія працуе</string>
+    <string name="why_no_rollback">вярнуцца да папярэдняй версіі было немагчыма</string>
+    <string name="why_unknown">падрабязнасці не запісаны</string>
     <string name="blk_vbmeta_title">Патрэбны аднаразовы крок для абнаўленняў</string>
     <string name="blk_vbmeta_body">Перад першым абнаўленнем другі сістэмны слот (%1$s) трэба адзін раз падрыхтаваць з камп’ютара, як апісана ў інструкцыі па ўсталёўцы (крок vbmeta). Адскануйце код, каб адкрыць інструкцыю.</string>
     <string name="blk_vbmeta_unknown">Не ўдалося прачытаць стан другога сістэмнага слота. Перазапусціце праектар і паспрабуйце зноў.</string>
@@ -55,6 +65,7 @@
     <string name="blk_merge_body">Гэта зойме некалькі хвілін у фоне. Можна працягваць глядзець.</string>
     <string name="blk_pending">Гэтая версія яшчэ правяраецца пасля апошняга абнаўлення. Паспрабуйце праз некалькі хвілін.</string>
     <string name="blk_vendor">Гэтае абнаўленне не падыходзіць для прашыўкі праектара (%1$s).</string>
+    <string name="blk_channel">Гэтае абнаўленне для іншай рэдакцыі Lumen OS (%1$s).</string>
     <string name="blk_min_version">Для гэтага абнаўлення патрэбна Lumen OS %1$s або навейшая. Скарыстайцеся ўсталёўшчыкам для камп’ютара.</string>
     <string name="blk_thermal">Праектар зараз занадта гарачы. Паспрабуйце пазней.</string>
     <string name="blk_space">Не хапае месца: трэба %1$s.</string>

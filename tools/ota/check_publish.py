@@ -6,7 +6,11 @@
     check_publish.py --files a b c         check just these files (e.g. 'git diff --name-only')
     check_publish.py --push-stdin          pre-push hook: read "<local ref> <local sha> <remote ref>
                                            <remote sha>" lines from stdin and check EVERY blob that the
-                                           push adds to the remote (all commits, not just the work tree)
+                                           push adds to the remote (all commits, not just the work tree),
+                                           and every pushed commit itself: its author and committer (and
+                                           an annotated tag's tagger) must be a users.noreply.github.com
+                                           identity or one listed as '!commit-identity' in the local
+                                           patterns file; its message gets the personal-data checks
     check_publish.py --write-key-hashes [KEYS_DIR]   owner's Mac only: write the sha256 of every
                                            release key file (default ~/.lumen-keys/*.pk8) and of its DER
                                            public key to ~/.config/lumen/key_hashes (local, never published)
@@ -22,8 +26,10 @@ Fails (exit 1) on any of:
     security; SHA-256 of the DER SubjectPublicKeyInfo in AOSP_TEST_PUBKEYS), wherever it sits: a
     release key copied anywhere (also apps/sdk/testkeys/) is blocked. Needs openssl, else blocked.
   - a file > 5 MB
-  - personal data: device serial, builder login, ssh key name, GSF ID (matched by token hash),
-    private IP addresses, e-mail addresses (except no-reply/test ones), absolute home paths
+  - personal data: device serials, builder login, ssh key name, GSF ID (matched by token hash, also
+    inside '_'-joined words),
+    private IP addresses, e-mail addresses (except no-reply/test ones), absolute home paths, and the
+    regexes of the local, never published ~/.config/lumen/personal_patterns (see LOCAL_PATTERNS_FILE)
   - a path on the never-publish list (backup/, logs/, research/, vendor dumps, c2store, keys dirs)
 Only the paths/patterns are printed, never matching secret content.
 """
@@ -42,17 +48,29 @@ MTK_SHA = {
     "f1e325c8955b1af57dafadc77bdd09efc9f8b3cd0119b1846d606abc34385c65",
     "66e9a1676bcaa8a7dddb724eab3e5d9f4b474ea857bf09eca1ea2e2372953b83",
     "21dffeba0d3fae032d53b607d838141d58aea2e826a0a44e803d9ae73e260645",
+    # MediaTek VNDK libstagefright_foundation (lib, lib64) and XGIMI's audio policy (stock, Lumen copy):
+    # z9x_blobs files of public images (tools/ota/image/blobs_allow.txt), never in git
+    "d6cd92ce457c6594866bca064cce52ae69d16f89e1e7379f2d1f7db229601727",
+    "8e36f8eafb74db1f6b4db15bec3adad99a9811f14e9ce3bcd9f0e357c8d5a65c",
+    "19b9d27d55ddef1408094b2ea7d09d0b73462aac992ed42ce89512797f312cbe",
+    "c8ee620addf084b5a777b5fbfdb534efbceacefeec881a5c13b7d99548a261ed",
 }
-# Personal identifiers are matched by the SHA-256 of a token, so this public file does not contain
-# them: the device serial, the build laptop login and ssh key name, the GSF ID. More (local, never
-# published) patterns may be listed one per line in ~/.config/lumen/personal_patterns (regex).
-PERSONAL_TOKEN_SHA = {
-    "0609752bf21a75c0ae1e94269bd18a50ba400c88be965431280b454ce89e7652": "device serial",
-    "c6d87d72691722d3f6964fa17473c012606479a3015afee4e12531ac9fe040a4": "builder login",
-    "0a836f32f50969a3eaf1b77b6799262334563bb827b9fd71be0878978cdafef3": "ssh key name",
-    "c4d5884c33516e812c46a86e8f4d6a3c2bf29e1ac0873629fe4092dbf6194ac3": "GSF ID",
-}
+# Personal identifiers are matched by the SHA-256 of a token. The hashes live only in the local, never
+# published LOCAL_PATTERNS_FILE (below): short identifiers such as a serial can be brute-forced from an
+# unsalted hash, so not even the hashes are published.
+PERSONAL_TOKEN_SHA = {}   # filled from LOCAL_PATTERNS_FILE ("!token-sha256<TAB>hex<TAB>label" lines)
 TOKEN = re.compile(rb"[A-Za-z0-9_]{6,}")
+TOKEN_CHARS = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+
+
+def token_hits(data):
+    """Labels of the PERSONAL_TOKEN_SHA tokens in data: every run of [A-Za-z0-9_] (>= 6), and each
+    '_'-separated part of one (>= 6), so 'friend_<serial>' or 'user_<login>' is found too."""
+    toks = set(TOKEN.findall(data))
+    toks |= {p for t in toks if b"_" in t for p in t.split(b"_") if len(p) >= 6}
+    return {PERSONAL_TOKEN_SHA[h] for h in (hashlib.sha256(t).hexdigest() for t in toks) if h in PERSONAL_TOKEN_SHA}
+
+
 PERSONAL = [
     (re.compile(rb"\b(192\.168|10\.\d{1,3}|172\.(1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b"), "private IPv4 address"),
     (re.compile(rb"\bfd[0-9a-f]{2}:[0-9a-f:]+"), "private IPv6 address"),
@@ -62,11 +80,44 @@ PERSONAL = [
 EMAIL = re.compile(rb"[A-Za-z0-9._%+-]+@[A-Za-z][A-Za-z0-9-]*(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b")
 EMAIL_OK = re.compile(rb"^(android@android\.com|android-wifi-team@google\.com|"
                       rb"[^@]+@users\.noreply\.github\.com|[^@]+@example\.(com|org))$")
-_local = os.path.expanduser("~/.config/lumen/personal_patterns")
-if os.path.exists(_local):
-    for _l in open(_local, "rb").read().splitlines():
-        if _l.strip() and not _l.startswith(b"#"):
-            PERSONAL.append((re.compile(_l.strip()), "personal pattern (local list)"))
+# The local, never published list of personal identifiers (mode 600), shared with
+# docs/repo/export_repo.py. One entry per line, UTF-8:
+#   <regex>                                  blocked here; export_repo.py writes <redacted> instead
+#   <regex><TAB><replacement>                blocked here; export_repo.py writes <replacement> instead
+#   !commit-identity<TAB><Name> <<e-mail>>   an author / committer identity a pushed commit may carry
+#   # comment (blank lines are ignored too)
+# The regex is matched on raw bytes here (no case folding outside ASCII: list both cases of a
+# non-Latin word) and on text in export_repo.py.
+LOCAL_PATTERNS_FILE = os.path.expanduser("~/.config/lumen/personal_patterns")
+
+
+def load_local_patterns(path=LOCAL_PATTERNS_FILE):
+    """([(bytes regex, label)], [(str regex, replacement)], {b"Name <e-mail>"}) of the local list."""
+    personal, scrub, idents = [], [], set()
+    if not os.path.exists(path):
+        return personal, scrub, idents
+    for n, line in enumerate(open(path, "rb").read().decode("utf-8").splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line.startswith("!commit-identity\t"):
+            idents.add(line.split("\t", 1)[1].strip().encode("utf-8"))
+            continue
+        if line.startswith("!token-sha256\t"):
+            _, h, label = (line.split("\t") + ["", ""])[:3]
+            PERSONAL_TOKEN_SHA[h.strip().lower()] = label.strip() or "personal token"
+            continue
+        rx, _, rep = line.partition("\t")
+        rx = rx.strip()
+        personal.append((re.compile(rx.encode("utf-8")), f"personal pattern (local list, line {n})"))
+        scrub.append((re.compile(rx), rep.strip() or "<redacted>"))
+    return personal, scrub, idents
+
+
+# the local list alone (check_release_assets.py applies it to every file of a release image too)
+LOCAL_PERSONAL, LOCAL_SCRUB, COMMIT_IDENTITIES = load_local_patterns()
+PERSONAL += LOCAL_PERSONAL
+# identities a pushed commit may carry besides the local '!commit-identity' ones
+COMMIT_IDENT_OK = re.compile(rb"[^<>\n]*<[^<>@\s]+@users\.noreply\.github\.com>")
 PRIVKEY = re.compile(rb"-----BEGIN (RSA |EC |DSA |ENCRYPTED |OPENSSH )?PRIVATE KEY-----")
 KEYFILE = re.compile(r"\.(pk8|p12|pfx|jks|keystore|key)$", re.I)
 BINARY_NAME = re.compile(r"\.(img|img\.xz|tar|tgz|zip|apk|apex|capex|so|odex|vdex|oat|art|jar|bin)$", re.I)
@@ -187,9 +238,7 @@ def check(root, rels, reader=None):
             if not EMAIL_OK.match(m.group(0)):
                 why.append("e-mail address")
                 break
-        hits = {PERSONAL_TOKEN_SHA[h] for h in (hashlib.sha256(t).hexdigest() for t in set(TOKEN.findall(data)))
-                if h in PERSONAL_TOKEN_SHA}
-        why += ["personal data: " + w for w in sorted(hits)]
+        why += ["personal data: " + w for w in sorted(token_hits(data))]
         if why:
             bad.append((rel, why))
     return bad
@@ -199,10 +248,11 @@ def git(root, *a, inp=None):
     return subprocess.run(["git", "-C", root] + list(a), input=inp, capture_output=True, check=True).stdout
 
 
-def pushed_blobs(root, lines):
-    """{path@blob: blob sha} of every blob reachable from the pushed commits and not from the remote."""
+def pushed_objects(root, lines):
+    """({path@blob: blob sha}, [commit or tag sha]) of every blob and commit reachable from the pushed
+    refs and not from the remote, plus each pushed annotated tag object."""
     zero = "0" * 40
-    out = {}
+    out, commits = {}, []
     for line in lines:
         parts = line.split()
         if len(parts) != 4:
@@ -210,6 +260,8 @@ def pushed_blobs(root, lines):
         _, lsha, _, rsha = parts
         if lsha == zero:
             continue                                   # branch deletion
+        if git(root, "cat-file", "-t", lsha).strip() == b"tag" and lsha not in commits:
+            commits.append(lsha)                       # an annotated tag: its tagger is checked too
         rng = [lsha, "--not", "--remotes"] if rsha == zero else [lsha, "--not", rsha]
         objs = git(root, "rev-list", "--objects", *rng).decode("utf-8", "surrogateescape").splitlines()
         shas = [o.split(" ", 1) for o in objs]
@@ -219,7 +271,40 @@ def pushed_blobs(root, lines):
         for x in shas:
             if len(x) == 2 and kind.get(x[0]) == "blob":
                 out[x[1] + "@" + x[0][:12]] = x[0]
-    return out
+            elif kind.get(x[0]) in ("commit", "tag") and x[0] not in commits:
+                commits.append(x[0])
+    return out, commits
+
+
+def pushed_blobs(root, lines):
+    """{path@blob: blob sha} of every blob reachable from the pushed commits and not from the remote."""
+    return pushed_objects(root, lines)[0]
+
+
+def check_commit(raw):
+    """Why a raw commit / tag object (git cat-file) may not be pushed: an author, committer or tagger
+    identity that is neither a GitHub no-reply address nor a local '!commit-identity', and personal
+    data in the message. Only the field names are reported, never the identity itself."""
+    head, _, msg = raw.partition(b"\n\n")
+    why = []
+    for line in head.splitlines():
+        field, _, rest = line.partition(b" ")
+        if field not in (b"author", b"committer", b"tagger"):
+            continue
+        ident = rest.rsplit(b" ", 2)[0] if rest.count(b" ") >= 2 else rest   # drop "<epoch> <tz>"
+        if not (COMMIT_IDENT_OK.fullmatch(ident) or ident in COMMIT_IDENTITIES):
+            why.append(f"{field.decode()} identity is not a users.noreply.github.com address and not a "
+                       "local '!commit-identity'")
+    for rx, what in PERSONAL:
+        if rx.search(msg):
+            why.append("message: personal data: " + what)
+    own = {i[i.rfind(b"<") + 1:-1] for i in COMMIT_IDENTITIES if i.endswith(b">")}
+    for m in EMAIL.finditer(msg):
+        if not EMAIL_OK.match(m.group(0)) and m.group(0) not in own:
+            why.append("message: e-mail address")
+            break
+    why += ["message: personal data: " + w for w in sorted(token_hits(msg))]
+    return why
 
 
 def write_key_hashes(keys_dir):
@@ -255,12 +340,17 @@ def main():
         return write_key_hashes(args[1] if len(args) > 1 else "~/.lumen-keys")
     if args and args[0] == "--push-stdin":
         root = git(os.getcwd(), "rev-parse", "--show-toplevel").decode().strip()
-        blobs = pushed_blobs(root, sys.stdin.read().splitlines())
+        blobs, commits = pushed_objects(root, sys.stdin.read().splitlines())
         bad = check(root, blobs.keys(), reader=lambda k: git(root, "cat-file", "blob", blobs[k]))
         bad = [(rel.rsplit("@", 1)[0] + " (blob " + rel.rsplit("@", 1)[1] + ")", why) for rel, why in bad]
+        for c in commits:
+            kind = git(root, "cat-file", "-t", c).decode().strip()
+            why = check_commit(git(root, "cat-file", kind, c))
+            if why:
+                bad.append((f"{kind} {c[:12]}", why))
         for rel, why in bad:
             print(f"BLOCKED {rel}: {'; '.join(why)}")
-        print(f"check_publish (push): {len(blobs)} new blobs, {len(bad)} blocked")
+        print(f"check_publish (push): {len(blobs)} new blobs, {len(commits)} new commits/tags, {len(bad)} blocked")
         return 1 if bad else 0
     if args and args[0] == "--files":
         root, rels = os.getcwd(), args[1:]

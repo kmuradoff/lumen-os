@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simplified Chinese translation of res/values/strings_report.xml (English base). Hand-written for
+     Lumen OS 1.0.1 problem reports; keep names/placeholders. -->
+<resources>
+    <string name="report_title">发送问题报告</string>
+    <string name="report_intro">帮助 Lumen OS 开发者了解出了什么问题。在您按下“发送报告”之前，不会发送任何内容。</string>
+    <string name="report_included">包含的内容</string>
+    <string name="report_inc_system">系统版本、运行时间和系统槽位</string>
+    <string name="report_inc_logs">最近 30 分钟的系统和 Lumen 应用日志</string>
+    <string name="report_inc_crashes">含应用名称的崩溃、卡死和重启记录</string>
+    <string name="report_inc_kernel">上次重启的内核日志和更新日志</string>
+    <string name="report_inc_state">屏幕、内存和网络类型</string>
+    <string name="report_excluded">已删除或不包含的内容</string>
+    <string name="report_exc_accounts">账号、电子邮件地址和电话号码</string>
+    <string name="report_exc_network">Wi-Fi 网络名称、IP 和 MAC 地址</string>
+    <string name="report_exc_serial">序列号：改用本投影仪的随机 ID</string>
+    <string name="report_exc_apps">您自己安装的应用的日志</string>
+    <string name="report_exc_files">照片、文件和密码</string>
+    <string name="report_footer">报告保留 30 天，只有 Lumen OS 开发者可以打开。</string>
+    <string name="report_last">上次报告：%1$s，%2$s</string>
+    <string name="report_send">发送报告</string>
+    <string name="report_collecting">正在收集信息…（%1$d/%2$d）</string>
+    <string name="report_log_hint">如果 Android 询问是否允许访问设备日志，请选择“允许”。</string>
+    <string name="report_sending">正在发送… %1$s/%2$s</string>
+    <string name="report_done_title">报告已发送</string>
+    <string name="report_done_text">请将此代码连同问题的简短描述一起发送给 Lumen OS 开发者。</string>
+    <string name="report_failed_title">报告未发送</string>
+    <string name="report_err_no_network">没有网络连接。请检查网络后再试。</string>
+    <string name="report_err_network">无法连接报告服务器，请稍后再试。</string>
+    <string name="report_err_rate">当前报告过多，请稍后再试。</string>
+    <string name="report_err_rejected">报告服务器未接受该报告。</string>
+    <string name="report_err_server">报告服务器出现问题，请稍后再试。</string>
+    <string name="report_err_collect">无法准备报告。</string>
+    <string name="report_retry">重试</string>
+    <string name="report_close">关闭</string>
+</resources>

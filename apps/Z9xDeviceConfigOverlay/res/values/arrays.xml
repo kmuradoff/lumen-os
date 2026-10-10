@@ -5,8 +5,8 @@
      config_customizedMaxCachedProcesses in Z9xFrameworkKeysOverlay. -->
 <resources>
     <string-array name="configs_device" translatable="false">
-        <!-- 32 -> 16 cached processes (empty-process limit 8); same value as the framework RRO -->
-        <item>activity_manager/max_cached_processes=16</item>
+        <!-- 32 -> 16 (1.0) -> 10 (1.0.1: less zram pressure); same value as the framework RRO -->
+        <item>activity_manager/max_cached_processes=10</item>
         <!-- pinned: the cached-app freezer stays on (frozen cached apps cost no CPU, their idle pages
              go to zram) -->
         <item>activity_manager_native_boot/use_freezer=true</item>

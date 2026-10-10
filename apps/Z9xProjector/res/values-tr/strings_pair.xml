@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Turkish translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">Kumandanızı yeniden bağlayın</string>
+    <string name="remote_lost_text">Işık yanıp sönene kadar Geri ve Ana Ekran tuşlarını birlikte 3 saniye basılı tutun.</string>
+    <string name="remote_lost_found">%1$s bulundu</string>
+    <string name="remote_lost_battery">Hiçbir şey olmuyor mu? Kumandanın pillerini kontrol edin.</string>
+    <string name="remote_lost_dismiss">Şimdi değil</string>
+    <string name="remote_lost_wake">Kumandada herhangi bir tuşa basın</string>
+</resources>

@@ -43,6 +43,7 @@ toast_not_ready=Der Projektor ist noch nicht bereit
 toast_failed=Das hat nicht geklappt
 toast_curtain_offer=Das Bild hat sich verschoben: Projektor → Trapezkorrektur → „Jetzt an Leinwand anpassen“
 toast_setup_running=Zuerst die Einrichtung abschließen
+slot_home_apps=Lumen Home: Apps
 
 @projector/strings_ak.xml
 ak_caption_keystone=Automatische Trapezkorrektur läuft
@@ -540,6 +541,38 @@ voice_hold=Halte die Mikrofontaste gedrückt, während du sprichst
 kb_title=Tastatur
 kb_get_app=Tastatur für %1$s holen
 kb_no_play=Google Play ist nicht verfügbar. Installiere eine Tastatur-App, um in deiner Sprache zu tippen.
+tab_home=Startseite
+hero_resume=Fortsetzen
+hero_more=Mehr Infos
+hero_kind_next=Nächste Folge
+hero_kind_watchlist=Merkliste
+weather_line=%1$s, %2$s
+wx_clear=klar
+wx_partly=teils bewölkt
+wx_cloudy=bewölkt
+wx_fog=Nebel
+wx_drizzle=Nieselregen
+wx_rain=Regen
+wx_snow=Schnee
+wx_showers=Schauer
+wx_thunder=Gewitter
+cz_wallpaper=Hintergrund
+cz_wallpaper_sub=Eine lebendige Landschaft auf dem Startbildschirm und im Bildschirmschoner: Ihr Himmel folgt der echten Sonne und dem Wetter.
+cz_continue=Weiterschauen auf der Startseite
+cz_continue_sub=Ausgeblendet zeigt die Startseite nur Uhrzeit, Datum und Wetter über dem lebendigen Hintergrund sowie Ihre Apps. Auch App-Kanäle werden nicht angezeigt.
+cz_continue_show=Anzeigen
+cz_continue_hide=Ausblenden
+apps_install_usb=Von USB installieren
+usb_title=Von USB installieren
+usb_none=Stecke einen USB-Stick mit .apk-Dateien ein (im Hauptordner oder in einem Ordner apks).
+usb_empty=Keine .apk-Dateien auf dem USB-Stick. Lege sie in den Hauptordner oder in einen Ordner apks.
+usb_new=Neu
+usb_update=Update
+usb_installing=Wird installiert: %1$d%%
+usb_done=%1$s ist installiert
+usb_failed=%1$s wurde nicht installiert: %2$s
+kb_no_store=Installiere eine Tastatur-App von einem USB-Stick: Apps > Von USB installieren.
+voice_none=Die Sprachsuche braucht eine Spracherkennungs-App. Bitte tippe deine Suche.
 @updater/strings.xml
 app_name=Lumen OS-Update
 settings_title=Lumen OS-Update
@@ -625,6 +658,17 @@ n_available_body=Öffnen, um herunterzuladen und zu installieren.
 n_ready_title=Zum Abschließen des Updates neu starten
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s läuft
+done_unhealthy_body=Eine Prüfung nach dem Update hat ein Problem gefunden: %1$s. Wenn etwas nicht funktioniert, nutze den Rettungsmodus (rescue) des Installationsprogramms. Deine Daten bleiben erhalten.
+done_rescue_scan=Scanne den Code, um die Anleitung zum Rettungsmodus zu öffnen.
+done_details=Technische Details: %1$s
+why_restarted=das System wurde unerwartet neu gestartet
+why_service=ein Systemdienst wurde nicht gestartet
+why_lamp=der Dienst für Lampe und Lüfter wurde nicht gestartet
+why_confirm=das System konnte nicht bestätigen, dass die neue Version funktioniert
+why_no_rollback=die Rückkehr zur vorherigen Version war nicht möglich
+why_unknown=es wurden keine Details aufgezeichnet
+blk_channel=Dieses Update ist für eine andere Lumen OS-Edition (%1$s).
 @projector/strings_recents.xml
 recents_title=Zuletzt verwendete Apps
 recents_close=Schließen
@@ -763,6 +807,8 @@ name_other=Andere…
 name_hint=Name (bis zu 32 Zeichen)
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=Die Einstellungen verwenden diese Sprache. Lumen-Apps ohne Übersetzung bleiben auf Englisch.
+done_offline_hint_nogms=Kein Internet: Zeitzone später in den Einstellungen festlegen.
 @projector/strings_cec.xml
 cec_entry=HDMI-Geräte (CEC)
 cec_unavailable=HDMI-CEC ist nicht verfügbar

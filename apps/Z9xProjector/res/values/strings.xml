@@ -35,6 +35,7 @@
     <string name="key_slot4">bilibili key</string>
     <string name="slot_default_fmt">%1$s (default)</string>
     <string name="slot_default_item">Default: %1$s</string>
+    <string name="slot_home_apps">Lumen Home: Apps</string>
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
     <string name="app_not_found">No app found for this key</string>

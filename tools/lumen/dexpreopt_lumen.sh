@@ -13,7 +13,9 @@
 #                  must carry the same bootclasspath-checksums, else the run fails
 #
 # Flags = the build's own out/target/product/generic_arm64/obj/APPS/webview_intermediates/dexpreopt.sh
-# with --compiler-filter=speed. Class loader context PCL[] (lumen_checks.py apks refuses APKs with
+# with --compiler-filter=speed, and --avoid-storing-invocation like soong: without it the odex header key
+# 'dex2oat-cmdline' stores this command line, i.e. the laptop's home paths (the builder's login) in a
+# public image; lumen_checks.py oatcheck refuses an odex with that key. Class loader context PCL[] (lumen_checks.py apks refuses APKs with
 # <uses-library> for dexpreopt). Runs under nice/ionice (the laptop is shared: light use).
 # Safe failure on the device: a stale or mismatching odex is rejected by ART and the app runs JIT.
 # Env: LINEAGE (default ~/lineage), PRODUCT (generic_arm64), FILTER (speed), DEX2OAT (dex2oatd64).
@@ -66,6 +68,7 @@ ANDROID_LOG_TAGS='*:e' nice -n 19 ionice -c3 "$DEX2OAT" \
   --no-generate-debug-info --generate-build-id --abort-on-hard-verifier-error --force-determinism \
   --no-inline-from=core-oj.jar "${GC[@]}" \
   --copy-dex-files=false --compiler-filter="$FILTER" --generate-mini-debug-info \
+  --avoid-storing-invocation \
   --compilation-reason=prebuilt -j2
 [ -s "$OUT/oat/arm64/$NAME.odex" ] && [ -s "$OUT/oat/arm64/$NAME.vdex" ] || die "dex2oat produced no odex/vdex for $NAME"
 python3 "$H/lumen_checks.py" oatcheck "$OUT/oat/arm64/$NAME.odex" "$REF" "$FILTER"

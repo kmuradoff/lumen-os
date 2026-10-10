@@ -171,6 +171,18 @@ def recompute(payload_path, info, image, old_image):
         die("payload is not a partial update (would touch every partition)")
     if top.get(14, [None])[0] != info["timestamp"]:
         die(f"max_timestamp {top.get(14)} != ota.json timestamp {info['timestamp']}")
+    if pu.get(17) != str(info["timestamp"]).encode():
+        die(f"system version {pu.get(17)!r} != ota.json timestamp (a partial update needs it, see make_ota.py)")
+    sg = info.get("super_group") or {}
+    groups = []
+    for n, _, v, _ in fields(top.get(15, [b""])[0]):
+        if n == 1:
+            g = {}
+            for gn, _, gv, _ in fields(v):
+                g.setdefault(gn, []).append(gv)
+            groups.append((g.get(1, [b""])[0].decode(), g.get(2, [0])[0], [x.decode() for x in g.get(3, [])]))
+    if groups != [(sg.get("name"), sg.get("size"), ["system"])]:
+        die(f"dynamic partition groups {groups} != ota.json super_group {sg} with exactly system")
     if 7 not in pu:
         die("no new_partition_info")
     nsize, nhash = partition_info(pu[7])
@@ -226,12 +238,24 @@ def main():
     ap.add_argument("--image", required=True, help="the new system image as verified on the Mac (check_image.py)")
     ap.add_argument("--old-image", help="delta: the exact image on the devices")
     ap.add_argument("--private", action="store_true", help="sign a PRIVATE package (owner's device only)")
+    ap.add_argument("--clean-delta", action="store_true",
+                    help="private --image and --old-image, payload proven free of MediaTek / XGIMI bytes (delta_proof.py)")
     ap.add_argument("--keys", default=os.environ.get("KEYS_DIR", os.path.expanduser("~/.lumen-keys")))
     a = ap.parse_args()
     info = json.load(open(os.path.join(a.dir, "ota.json")))
-    if info.get("variant") not in ("public", "private"):
+    if info.get("variant") not in ("public", "private", "clean-delta"):
         die("ota.json has no variant: rebuild with the current make_ota.py")
     scanned = image_variant(a.image)
+    if a.clean_delta:
+        if a.private or scanned != "private" or info["variant"] != "clean-delta" or info["type"] != "delta" \
+                or not a.old_image:
+            die("--clean-delta: private --image, --old-image, a delta and ota.json variant clean-delta, without --private")
+        import delta_proof
+        errs = []
+        if not delta_proof.prove(os.path.join(a.dir, "payload.unsigned.bin"), a.image, a.old_image, errs):
+            die("delta proof failed: " + "; ".join(errs[:8]))
+        print("delta proof OK: no MediaTek / XGIMI byte in the payload")
+        scanned = "clean-delta"
     if info["variant"] != scanned:
         die(f"ota.json says variant {info['variant']}, but --image scans as {scanned} on the Mac: not signing")
     if scanned == "private" and not a.private:

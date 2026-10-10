@@ -45,6 +45,7 @@ toast_not_ready=جهاز العرض غير جاهز بعد
 toast_failed=تعذّر تنفيذ ذلك
 toast_curtain_offer=تحرّكت الصورة: جهاز العرض ← تصحيح شبه المنحرف ← «ملاءمة الشاشة الآن»
 toast_setup_running=أكمل الإعداد أولاً
+slot_home_apps=Lumen Home: التطبيقات
 
 @projector/strings_ak.xml
 ak_caption_keystone=جارٍ تصحيح شبه المنحرف تلقائيًا
@@ -550,6 +551,38 @@ voice_hold=اضغط مع الاستمرار على زر الميكروفون أ�
 kb_title=لوحة المفاتيح
 kb_get_app=الحصول على لوحة مفاتيح: %1$s
 kb_no_play=‏Google Play غير متاح. ثبّت تطبيق لوحة مفاتيح للكتابة بلغتك.
+tab_home=الرئيسية
+hero_resume=متابعة
+hero_more=مزيد من المعلومات
+hero_kind_next=الحلقة التالية
+hero_kind_watchlist=قائمة المشاهدة
+weather_line=%1$s، %2$s
+wx_clear=صافٍ
+wx_partly=غائم جزئيًا
+wx_cloudy=غائم
+wx_fog=ضباب
+wx_drizzle=رذاذ
+wx_rain=مطر
+wx_snow=ثلج
+wx_showers=زخات مطر
+wx_thunder=عاصفة رعدية
+cz_wallpaper=الخلفية
+cz_wallpaper_sub=منظر طبيعي حي في الشاشة الرئيسية وفي شاشة التوقف: تتبع سماؤه الشمس والطقس الحقيقيين.
+cz_continue=متابعة المشاهدة في الرئيسية
+cz_continue_sub=عند الإخفاء، لا تعرض الرئيسية إلا الساعة والتاريخ والطقس فوق الخلفية الحية وتطبيقاتك. ولا تظهر قنوات التطبيقات أيضًا.
+cz_continue_show=إظهار
+cz_continue_hide=إخفاء
+apps_install_usb=التثبيت من USB
+usb_title=التثبيت من USB
+usb_none=أدخل ذاكرة USB فيها ملفات ‎.apk (في المجلد الرئيسي أو في مجلد apks).
+usb_empty=لا توجد ملفات ‎.apk على ذاكرة USB. ضعها في المجلد الرئيسي أو في مجلد apks.
+usb_new=جديد
+usb_update=تحديث
+usb_installing=جارٍ التثبيت: %1$d%%
+usb_done=تم تثبيت %1$s
+usb_failed=لم يتم تثبيت %1$s: %2$s
+kb_no_store=ثبّت تطبيق لوحة مفاتيح من ذاكرة USB: التطبيقات > التثبيت من USB.
+voice_none=يحتاج البحث الصوتي إلى تطبيق للتعرّف على الكلام. اكتب بحثك بدلاً من ذلك.
 @updater/strings.xml
 app_name=تحديث Lumen OS
 settings_title=تحديث Lumen OS
@@ -639,6 +672,17 @@ n_available_body=افتح للتنزيل والتثبيت.
 n_ready_title=أعِد التشغيل لإكمال التحديث
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=يعمل Lumen OS %1$s
+done_unhealthy_body=عثر فحص بعد التحديث على مشكلة: %1$s. إذا لم يعمل شيء ما، فاستخدم وضع الإنقاذ (rescue) في برنامج التثبيت على الكمبيوتر. تبقى بياناتك محفوظة.
+done_rescue_scan=امسح الرمز لفتح دليل وضع الإنقاذ.
+done_details=التفاصيل التقنية: %1$s
+why_restarted=أُعيد تشغيل النظام بشكل غير متوقع
+why_service=لم تبدأ إحدى خدمات النظام
+why_lamp=لم تبدأ خدمة المصباح والمراوح
+why_confirm=لم يتمكن النظام من التأكد من أن الإصدار الجديد يعمل
+why_no_rollback=لم تكن العودة إلى الإصدار السابق ممكنة
+why_unknown=لم تُسجَّل أي تفاصيل
+blk_channel=هذا التحديث مخصص لإصدار آخر من Lumen OS ‏(%1$s).
 @projector/strings_recents.xml
 recents_title=التطبيقات الأخيرة
 recents_close=إغلاق
@@ -777,6 +821,8 @@ name_other=غير ذلك…
 name_hint=الاسم (حتى 32 حرفًا)
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=تستخدم الإعدادات هذه اللغة. تبقى تطبيقات Lumen غير المترجمة بالإنجليزية.
+done_offline_hint_nogms=لا يوجد إنترنت: اضبط المنطقة الزمنية لاحقًا من الإعدادات.
 @projector/strings_cec.xml
 cec_entry=أجهزة HDMI ‏(CEC)
 cec_unavailable=HDMI-CEC غير متاح

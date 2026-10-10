@@ -1,0 +1,21 @@
+# Lumen OS without Google (1.0.1, docs/NOGMS_PLAN.md section 8): NEW strings for the merge into
+# langs/ko.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+apps_install_usb=USB에서 설치
+usb_title=USB에서 설치
+usb_none=.apk 파일이 있는 USB 메모리를 꽂으세요(루트 또는 apks 폴더).
+usb_empty=USB 메모리에 .apk 파일이 없습니다. 루트 또는 apks 폴더에 넣으세요.
+usb_new=새 앱
+usb_update=업데이트
+usb_installing=설치 중: %1$d%%
+usb_done=%1$s 설치됨
+usb_failed=%1$s 설치 실패: %2$s
+kb_no_store=USB 메모리에서 키보드 앱을 설치하세요: 앱 > USB에서 설치.
+voice_none=음성 검색에는 음성 인식 앱이 필요합니다. 검색어를 입력하세요.
+@updater/strings.xml
+blk_channel=이 업데이트는 다른 Lumen OS 에디션용입니다(%1$s).
+@setup/strings.xml
+lang_more_hint_nogms=설정에서 이 언어를 사용합니다. 번역되지 않은 Lumen 앱은 영어로 표시됩니다.
+done_offline_hint_nogms=인터넷 없음: 시간대는 나중에 설정에서 지정하세요.
+@projector/strings.xml
+slot_home_apps=Lumen Home: 앱

@@ -28,6 +28,7 @@
     <string name="key_slot4">Botón bilibili</string>
     <string name="slot_default_fmt">%1$s (predeterminada)</string>
     <string name="slot_default_item">Predeterminada: %1$s</string>
+    <string name="slot_home_apps">Lumen Home: Apps</string>
     <string name="cancel">Cancelar</string>
     <string name="ok">Aceptar</string>
     <string name="app_not_found">No hay ninguna aplicación para este botón</string>

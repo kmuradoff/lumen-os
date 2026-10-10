@@ -18,11 +18,15 @@ import org.z9x.home.data.AppSource;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 /**
- * "Apps" tab (SPEC 7.7): headline, a Favorites grid and an A-Z grid of 256x144 banners, 6 columns,
- * row pitch 144 + 64, the last tile "Get more apps". Move mode reorders favorites.
+ * "Apps" tab (SPEC 7.7, direction D): Prata headline, a Favorites grid and an A-Z grid of 264x149
+ * banners (16:9, the app's own banner or its icon on a tinted card), 6 columns, row pitch 149 + 72,
+ * the name under the focused tile only, the last tile "Get more apps". Move mode reorders favorites.
+ * What scrolls up under the header (tiles, titles) fades out: the header has no plate (1.0.1), its
+ * scrim is under the pages, so a bright banner behind the clock or a tab would hide them.
  */
 public class PageApps extends ViewGroup implements Page {
     public interface Host extends Page.Host {
@@ -36,6 +40,7 @@ public class PageApps extends ViewGroup implements Page {
     private final ArrayList<CardView> mFav = new ArrayList<>();
     private final ArrayList<CardView> mAll = new ArrayList<>();
     private final ArrayList<Card> mFavCards = new ArrayList<>();
+    private final HashSet<View> mUnder = new HashSet<>(); // faded out: would sit under the header
     private int mSec = 0;      // 0 favorites, 1 all
     private int mIdx = 0;
     private boolean mActive, mShown = true, mMoving;
@@ -45,25 +50,28 @@ public class PageApps extends ViewGroup implements Page {
         super(c);
         mHost = host;
         setClipChildren(false);
-        mCw = Theme.px(256);
-        mCh = Theme.px(144);
-        mGap = Theme.px(Theme.GAP);
-        mPitch = Theme.px(144 + 64);
+        mCw = Theme.px(264);
+        mCh = Theme.px(149);
+        mGap = Theme.px(Theme.GAP_APPS);
+        mPitch = Theme.px(149 + 72);
         mMargin = Theme.px(Theme.MARGIN);
         mContent = new Content(c);
         addView(mContent);
-        mHeadline = title(c, 44);
+        mHeadline = title(c, 64);
+        mHeadline.setTypeface(Theme.DISPLAY);
         mHeadline.setText(R.string.tab_apps);
-        mFavTitle = title(c, 30);
+        mFavTitle = title(c, 22);
+        Theme.heading(mFavTitle, 22, Theme.TEXT2);
         mFavTitle.setText(R.string.apps_favorites);
-        mAllTitle = title(c, 30);
+        mAllTitle = title(c, 22);
+        Theme.heading(mAllTitle, 22, Theme.TEXT2);
         SpannableStringBuilder sb = new SpannableStringBuilder(c.getString(R.string.apps_all));
         int s = sb.length();
         sb.append("  ·  ").append(c.getString(R.string.apps_az));
         sb.setSpan(new ForegroundColorSpan(Theme.TEXT3), s, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         mAllTitle.setText(sb);
         mCaption = new TextView(c);
-        Theme.text(mCaption, 26, Theme.MEDIUM, Theme.TEXT1);
+        Theme.text(mCaption, 22, Theme.MEDIUM, Theme.TEXT1);
         mCaption.setSingleLine(true);
         mCaption.setEllipsize(TextUtils.TruncateAt.END);
         mCaption.setAlpha(0);
@@ -94,6 +102,11 @@ public class PageApps extends ViewGroup implements Page {
             more.pkg = AppSource.PKG_PLAY;
             all.add(more);
         }
+        // 1.0.1: Install from USB, in every edition (the only store-free way on Lumen OS without Google)
+        Card usb = new Card(Card.MORE_APPS, "install_usb", getContext().getString(R.string.apps_install_usb));
+        usb.intent = "usb";
+        usb.icon = R.drawable.ic_usb;
+        all.add(usb);
         sync(mFav, mFavCards);
         sync(mAll, all);
         mFavTitle.setVisibility(mFav.isEmpty() ? GONE : VISIBLE);
@@ -117,6 +130,7 @@ public class PageApps extends ViewGroup implements Page {
         while (views.size() > cards.size()) {
             CardView v = views.remove(views.size() - 1);
             v.dropArt();
+            mUnder.remove(v);
             mContent.removeView(v);
         }
         for (int i = 0; i < cards.size(); i++) {
@@ -163,14 +177,20 @@ public class PageApps extends ViewGroup implements Page {
             List<CardView> l = list(s);
             for (int i = 0; i < l.size(); i++) {
                 boolean f = mActive && s == mSec && i == mIdx;
-                l.get(i).setFocusState(f, animate, i % COLS == 0);
+                CardView cv = l.get(i);
+                if (cv.focused() == f) continue;
+                cv.setFocusState(f, animate, i % COLS == 0);
+                // setFocusState cancels the tile's animator, a running band fade with it (UP, then
+                // LEFT / RIGHT / UP within 280 ms): finish it, or the tile keeps a half alpha
+                settleBand(cv, animate);
             }
         }
         CardView v = focusedView();
         if (mActive && v != null) {
             mCaption.setText(v.card().title);
             mCaption.setTranslationX(v.getLeft() - mCaption.getLeft());
-            mCaption.setTranslationY(v.getBottom() + Math.round(mCh * (Theme.FOCUS_SCALE - 1) / 2) + Theme.px(14) - mCaption.getTop());
+            mCaption.setTranslationY(v.getBottom() + Math.round(mCh * (Theme.FOCUS_SCALE - 1) / 2) + Math.round(Theme.ring())
+                    + Theme.px(10) - mCaption.getTop());
             mCaption.setAlpha(0);
             mCaption.animate().alpha(v.card().kind == Card.MORE_APPS ? 0 : 1).setStartDelay(60).setDuration(120).start();
             mHost.onFocusArt(null, null);
@@ -190,17 +210,54 @@ public class PageApps extends ViewGroup implements Page {
         int h = getHeight() > 0 ? getHeight() : getResources().getDisplayMetrics().heightPixels;
         float cur = mContent.getTranslationY();
         float y = cur;
-        int top = v.getTop() - Theme.px(80), bottom = v.getBottom() + Theme.px(90);
+        // the focused card's scale, ring and name stay 54 px off the bottom edge (TV safe area, keystone)
+        int top = v.getTop() - Theme.px(80), bottom = v.getBottom() + Math.round(mCh * (Theme.FOCUS_SCALE - 1) / 2)
+                + Math.round(Theme.ring()) + Theme.px(10) + mCaption.getMeasuredHeight() + Theme.px(Theme.SAFE);
         if (top + y < Theme.px(150)) y = Theme.px(150) - top;
         if (bottom + y > h) y = h - bottom;
         if (mSec == 0 && mIdx < COLS) y = 0;
         if (y > 0) y = 0;
+        applyBand(y, animate);
         if (animate) mContent.animate().translationY(y).setDuration(Theme.PAGE_SCROLL_MS).setInterpolator(Theme.EMPHASIZED)
                 .withEndAction(this::loadVisible).start();
         else {
             mContent.setTranslationY(y);
             loadVisible();
         }
+    }
+
+    /**
+     * At the target scroll {@code ty}, everything whose top would be above the header scrim's hold (y 140:
+     * the header ends at 138) is faded out, the rest in. The focused tile is never there (its top stays
+     * at y 230 or lower); a fade uses a layer for its 280 ms only.
+     */
+    private void applyBand(float ty, boolean animate) {
+        int line = Theme.px(Scrims.HEAD_HOLD);
+        for (int i = 0; i < mContent.getChildCount(); i++) {
+            View v = mContent.getChildAt(i);
+            if (v == mCaption) continue; // follows the focused tile
+            boolean under = v.getTop() + ty < line;
+            if (under == mUnder.contains(v)) continue;
+            if (under) mUnder.add(v);
+            else mUnder.remove(v);
+            fadeBand(v, animate);
+        }
+    }
+
+    /** Fades {@code v} to its band alpha: out while it would sit under the header ({@link #mUnder}), else in. */
+    private void fadeBand(View v, boolean animate) {
+        boolean fade = animate && Theme.animations();
+        // a new alpha animation replaces a running one; a tile's focus scale keeps running
+        v.animate().alpha(mUnder.contains(v) ? 0f : 1f).setDuration(fade ? Theme.PAGE_SCROLL_MS : 0).setStartDelay(0)
+                .setInterpolator(Theme.EMPHASIZED);
+        // the layer is cut to the bounds: never on the focused tile, whose ring and glow lie outside them
+        if (fade && !(v instanceof CardView && ((CardView) v).focused())) v.animate().withLayer();
+        v.animate().start();
+    }
+
+    /** After a tile's animator was cancelled (focus change, OK pulse): back to its band alpha. */
+    private void settleBand(CardView v, boolean animate) {
+        if (v.getAlpha() != (mUnder.contains(v) ? 0f : 1f)) fadeBand(v, animate);
     }
 
     private void loadVisible() {
@@ -271,6 +328,7 @@ public class PageApps extends ViewGroup implements Page {
                     if (v != null) {
                         Card k = v.card();
                         v.pulse(() -> mHost.onCardClick(k, v));
+                        settleBand(v, true);
                     }
                     return true;
                 }
@@ -393,13 +451,13 @@ public class PageApps extends ViewGroup implements Page {
 
         private int layoutPass(int w, boolean apply) {
             boolean rtl = Theme.rtl(this);
-            int y = Theme.px(150);
-            y = put(mHeadline, w, y, apply, rtl) + Theme.px(56);
+            int y = Theme.px(160);
+            y = put(mHeadline, w, y, apply, rtl) + Theme.px(48);
             if (!mFav.isEmpty()) {
-                y = put(mFavTitle, w, y, apply, rtl) + Theme.px(20);
-                y = grid(mFav, w, y, apply, rtl) + Theme.px(40);
+                y = put(mFavTitle, w, y, apply, rtl) + Theme.px(24);
+                y = grid(mFav, w, y, apply, rtl) + Theme.px(56);
             }
-            y = put(mAllTitle, w, y, apply, rtl) + Theme.px(20);
+            y = put(mAllTitle, w, y, apply, rtl) + Theme.px(24);
             y = grid(mAll, w, y, apply, rtl);
             if (apply) mCaption.layout(rtl ? w - mCaption.getMeasuredWidth() : 0, 0,
                     rtl ? w : mCaption.getMeasuredWidth(), mCaption.getMeasuredHeight());

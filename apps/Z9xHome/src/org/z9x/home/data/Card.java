@@ -30,11 +30,14 @@ public final class Card {
     public String id = "";            // stable key (component, program id, input id ...)
     public String title = "";
     public String meta = "";          // second line under the focused card
+    public String left = "";          // "6 min left" of a started program ("" = none), shown after the progress
     public String desc = "";          // hero description
     public String pkg = "";           // owning package
     public String appLabel = "";      // owning app's label
     public String image;              // art uri (app:, icon:, https:, content:, android.resource:)
     public int aspect = A_16_9;
+    public String image2;             // the program's other art (thumbnail next to poster art): the hero takes the larger
+    public int aspect2 = A_16_9;
     public int color;                 // placeholder / dominant colour (ARGB)
     public String intent;             // intent URI (programs), component (apps), action (tiles)
     public int progress = -1;         // permille, -1 = none
@@ -64,10 +67,11 @@ public final class Card {
     /** Everything that changes what is drawn (colour excluded: it is derived from the art). */
     public boolean sameContent(Card o) {
         return o != null && kind == o.kind && id.equals(o.id) && title.equals(o.title) && meta.equals(o.meta)
-                && Objects.equals(image, o.image) && aspect == o.aspect && progress == o.progress
+                && Objects.equals(image, o.image) && aspect == o.aspect && Objects.equals(image2, o.image2)
+                && aspect2 == o.aspect2 && progress == o.progress
                 && live == o.live && isNew == o.isNew && Objects.equals(intent, o.intent) && icon == o.icon
                 && state == o.state && showing == o.showing && desc.equals(o.desc) && appLabel.equals(o.appLabel)
-                && pkg.equals(o.pkg);
+                && pkg.equals(o.pkg) && left.equals(o.left) && wnType == o.wnType;
     }
 
     public boolean isProgram() {

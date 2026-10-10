@@ -46,6 +46,7 @@ import org.z9x.home.ui.ListPanel;
 import org.z9x.home.ui.ContextPanel;
 import org.z9x.home.ui.PageForYou;
 import org.z9x.home.ui.RowView;
+import org.z9x.home.usb.UsbInstallActivity;
 import org.z9x.home.ui.Theme;
 
 import java.util.ArrayList;
@@ -93,6 +94,7 @@ public class SearchActivity extends Activity implements RowView.Host, ChipRow.Li
     private ContextPanel mPanel;
     private final ArrayList<View> mSections = new ArrayList<>();
     private int mZone;            // -1 mic, 0 field, 1.. sections
+    private boolean mVoiceOk = true;  // a speech recognizer exists (else the mic is hidden)
     private VoiceInput mVoice;
     private long mVoiceStart;
     private View mFieldBg;
@@ -130,6 +132,17 @@ public class SearchActivity extends Activity implements RowView.Host, ChipRow.Li
     protected void onResume() {
         super.onResume();
         sActive = this;
+        updateVoiceOk();
+    }
+
+    /** No recognizer: the mic affordance goes away (asked at every start: a cheap query). */
+    private void updateVoiceOk() {
+        boolean ok = VoiceInput.available(this);
+        if (ok == mVoiceOk && mMic.getVisibility() == (ok ? View.VISIBLE : View.GONE)) return;
+        mVoiceOk = ok;
+        mMic.setVisibility(ok ? View.VISIBLE : View.GONE);
+        if (!ok && mZone == -1) setZone(0);
+        mRoot.requestLayout();
     }
 
     @Override
@@ -148,6 +161,7 @@ public class SearchActivity extends Activity implements RowView.Host, ChipRow.Li
     }
 
     private void handle(Intent i) {
+        updateVoiceOk();
         boolean voice = i.getComponent() != null && ALIAS.equals(i.getComponent().getClassName());
         boolean held = voice && i.getBooleanExtra(EXTRA_HELD, false);
         String q = i.getStringExtra(SearchManager.QUERY);
@@ -158,6 +172,12 @@ public class SearchActivity extends Activity implements RowView.Host, ChipRow.Li
         }
         setZone(0);
         if (voice) {
+            if (!mVoiceOk) {
+                // no speech recognizer (Lumen OS without Google, until the user installs one): keyboard
+                showStatus(getString(R.string.voice_none));
+                showIme();
+                return;
+            }
             if (VoiceInput.recentlyFailed()) {
                 showStatus(getString(R.string.voice_unavailable_hint));
                 showIme();
@@ -345,7 +365,11 @@ public class SearchActivity extends Activity implements RowView.Host, ChipRow.Li
         Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + KEYBOARD_APP))
                 .setPackage("com.android.vending").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         if (getPackageManager().resolveActivity(i, 0) == null) {
-            showStatus(getString(R.string.kb_no_play));
+            // no Play (Lumen OS without Google): a keyboard app comes from a USB stick
+            String hint = getString(R.string.kb_no_store);
+            showStatus(hint);
+            Launch.start(this, new Intent(this, UsbInstallActivity.class).putExtra(UsbInstallActivity.EXTRA_HINT, hint),
+                    "install from usb (keyboard)");
             return;
         }
         Launch.start(this, i, "keyboard app");
@@ -679,7 +703,7 @@ public class SearchActivity extends Activity implements RowView.Host, ChipRow.Li
                 return true;
             }
             if ((k == (rtl ? KeyEvent.KEYCODE_DPAD_RIGHT : KeyEvent.KEYCODE_DPAD_LEFT)) && mField.getSelectionStart() == 0) {
-                setZone(-1);
+                if (mVoiceOk) setZone(-1);
                 return true;
             }
             if (k == KeyEvent.KEYCODE_DPAD_UP) return true;
@@ -762,7 +786,8 @@ public class SearchActivity extends Activity implements RowView.Host, ChipRow.Li
             getChildAt(0).measure(MeasureSpec.makeMeasureSpec(w, ex), MeasureSpec.makeMeasureSpec(h, ex));
             mFieldBg.measure(MeasureSpec.makeMeasureSpec(w - 2 * Theme.px(Theme.MARGIN), ex), MeasureSpec.makeMeasureSpec(Theme.px(88), ex));
             mMic.measure(MeasureSpec.makeMeasureSpec(Theme.px(88), ex), MeasureSpec.makeMeasureSpec(Theme.px(88), ex));
-            int fw = w - 2 * Theme.px(Theme.MARGIN) - Theme.px(88 + 32 + 40);
+            int lead = mMic.getVisibility() == View.VISIBLE ? 88 + 32 : 40;   // no mic: the text starts inside the pill
+            int fw = w - 2 * Theme.px(Theme.MARGIN) - Theme.px(lead + 40);
             mField.measure(MeasureSpec.makeMeasureSpec(fw, ex), MeasureSpec.makeMeasureSpec(Theme.px(88), ex));
             mStatus.measure(MeasureSpec.makeMeasureSpec(w - 2 * Theme.px(Theme.MARGIN), ex), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
             results.measure(MeasureSpec.makeMeasureSpec(w, ex), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
@@ -780,7 +805,8 @@ public class SearchActivity extends Activity implements RowView.Host, ChipRow.Li
             mFieldBg.layout(m, y, w - m, y + Theme.px(88));
             int mx = rtl ? w - m - Theme.px(88) : m;
             mMic.layout(mx, y, mx + Theme.px(88), y + Theme.px(88));
-            int fx = rtl ? w - m - Theme.px(88 + 32) - mField.getMeasuredWidth() : m + Theme.px(88 + 32);
+            int lead = mMic.getVisibility() == View.VISIBLE ? 88 + 32 : 40;
+            int fx = rtl ? w - m - Theme.px(lead) - mField.getMeasuredWidth() : m + Theme.px(lead);
             mField.layout(fx, y, fx + mField.getMeasuredWidth(), y + Theme.px(88));
             int sy = y + Theme.px(88 + 20);
             mStatus.layout(m, sy, m + mStatus.getMeasuredWidth(), sy + mStatus.getMeasuredHeight());

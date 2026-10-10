@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS without Google, Google services add-on (image path /system/etc/z9x/gapps/sysconfig/z9x-gapps.xml).
+     Not read by itself: z9x_gapps.sh overlays this directory over /system/etc/sysconfig only while the user's
+     z9x_gapps<slot> partition is mounted, so SystemConfig sees these lines exactly when the packages they
+     name are there. They are the Google entries of the Google edition's /system/etc/sysconfig/z9x.xml
+     (overlay/v1/z9x-sysconfig.xml minus overlay/v1/z9x-sysconfig-nogms.xml; tools/lumen_v1.sh checks that
+     the three files cannot drift apart):
+     - initial-package-state: Lineage 21 starts a first-seen system package with a LAUNCHER activity in the
+       "stopped" state (config_stopSystemPackagesByDefault); the Android TV Remote Service starts only from
+       BOOT_COMPLETED, Play's boot and auto-update work, GMS / GSF (precaution);
+     - SetupWraith stays installed for Google sign-in (its AddAccount activities) but its own wizard and its
+       boot receiver never run: org.z9x.setup is the first-run setup;
+     - GMS's Pano system update screen is off: Lumen OS updates come only from org.z9x.updater. -->
+<config>
+    <initial-package-state package="com.google.android.tv.remote.service" stopped="false" />
+    <initial-package-state package="com.android.vending" stopped="false" />
+    <initial-package-state package="com.google.android.gms" stopped="false" />
+    <initial-package-state package="com.google.android.gsf" stopped="false" />
+
+    <component-override package="com.google.android.tungsten.setupwraith">
+        <component class="com.google.android.tungsten.setupwraith.MainActivity" enabled="false" />
+        <component class="com.google.android.tvsetup.app.BootCompletedReceiver" enabled="false" />
+    </component-override>
+
+    <component-override package="com.google.android.gms">
+        <component class="com.google.android.gms.update.SystemUpdatePanoActivity" enabled="false" />
+    </component-override>
+</config>

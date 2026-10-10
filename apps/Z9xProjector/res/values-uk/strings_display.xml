@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ukrainian translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">Екран</string>
+    <string name="uires_row">Роздільна здатність інтерфейсу</string>
+    <string name="uires_default_fmt">%1$s (за замовчуванням)</string>
+    <string name="uires_summary">4K — найчіткіший текст; 1080p, як у XGIMI, — найменше навантаження на графіку. Для зміни проєктор перезапуститься.</string>
+    <string name="uires_summary_fallback">Зараз %1$s: %2$s не запустився як слід на цьому проєкторі, тож він сам повернувся назад. Щоб спробувати знову, виберіть %2$s.</string>
+    <string name="uires_choose_text">4K використовує кожен піксель 4K-панелі. 1080p, як у XGIMI, малює вчетверо менше пікселів, а проєктор збільшує зображення.</string>
+    <string name="uires_opt_1080">Як у XGIMI: найлегше для графіки; текст трохи м’якший</string>
+    <string name="uires_opt_1440">Лише для перевірки: масштабування під панель не перевірено</string>
+    <string name="uires_opt_2160">Найчіткіший текст: кожен піксель 4K-панелі</string>
+    <string name="uires_current">Зараз</string>
+    <string name="uires_confirm_title">Перемкнути на %1$s?</string>
+    <string name="uires_confirm_up">Текст і меню стануть чіткішими. Графіці доведеться малювати більше, тож деякі застосунки можуть працювати трохи повільніше.</string>
+    <string name="uires_confirm_down">Графіці доведеться малювати менше, тож меню й застосунки можуть працювати швидше, а текст стане трохи м’якшим.</string>
+    <string name="uires_confirm_restart">Щоб застосувати, проєктор перезапуститься (приблизно хвилина). Якщо зображення не повернеться як слід, він сам повернеться до %1$s.</string>
+    <string name="uires_restart">Перезапустити</string>
+    <string name="uires_keep_title">Залишити цю роздільну здатність?</string>
+    <string name="uires_keep_text">Інтерфейс тепер працює в %1$s. Якщо текст і зображення виглядають правильно, виберіть «Залишити».</string>
+    <string name="uires_keep_countdown">Повернення до %1$s через %2$d с</string>
+    <string name="uires_keep">Залишити</string>
+    <string name="uires_revert">Повернути %1$s</string>
+    <string name="uires_failed">Не вдалося змінити роздільну здатність</string>
+</resources>

@@ -123,13 +123,34 @@ public final class Store {
 
     public String pendingTarget() { return p.getString("pend_target", ""); }
     public String pendingVersion() { return p.getString("pend_version", ""); }
+    public String pendingFrom() { return p.getString("pend_from", ""); }
     public String pendingFromVersion() { return p.getString("pend_from_version", ""); }
 
     public void clearPending() {
         p.edit().remove("pend_target").remove("pend_version").remove("pend_from").remove("pend_from_version").apply();
     }
 
-    /** Last result shown once in the UI after a restart: "ok:<version>" or "rollback:<version>". */
+    /**
+     * Last result shown once in the UI after a restart: "ok:<version>", "unhealthy:<version>" (runs, but
+     * the boot gate's check found a problem: {@link #lastWhy}) or "rollback:<version>". Recorded with the
+     * running build id ({@link #lastResultBuild}): it is about that build only (Outcome.resultStale).
+     */
     public String lastResult() { return p.getString("result", ""); }
-    public void setLastResult(String r) { p.edit().putString("result", r).apply(); changed(); }
+    public void setLastResult(String r) { setLastResult(r, ""); }
+
+    public void setLastResult(String r, String why) {
+        p.edit().putString("result", r).putString("result_why", why)
+                .putString("result_build", r.isEmpty() ? "" : Ota.buildId()).apply();
+        changed();
+    }
+
+    /** The gate's reason (sys.z9x.ota.why) that goes with an "unhealthy:" result, else "". */
+    public String lastWhy() { return p.getString("result_why", ""); }
+
+    /** Build id that ran when the last result was recorded; "" for results of the 1.0 / 1.0.0 updater. */
+    public String lastResultBuild() { return p.getString("result_build", ""); }
+
+    /** Version whose first boot still waits for the boot gate's verdict (CheckJob JOB_GATE), else "". */
+    public String gateWatch() { return p.getString("gate_watch", ""); }
+    public void setGateWatch(String version) { p.edit().putString("gate_watch", version).apply(); }
 }

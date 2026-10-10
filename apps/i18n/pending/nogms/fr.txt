@@ -1,0 +1,21 @@
+# Lumen OS without Google (1.0.1, docs/NOGMS_PLAN.md section 8): NEW strings for the merge into
+# langs/fr.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+apps_install_usb=Installer depuis une clé USB
+usb_title=Installer depuis une clé USB
+usb_none=Branchez une clé USB contenant des fichiers .apk (à la racine ou dans un dossier apks).
+usb_empty=Aucun fichier .apk sur la clé USB. Placez-les à la racine ou dans un dossier apks.
+usb_new=Nouveau
+usb_update=Mise à jour
+usb_installing=Installation : %1$d%%
+usb_done=%1$s est installé
+usb_failed=%1$s n’a pas été installé : %2$s
+kb_no_store=Installez une appli de clavier depuis une clé USB : Applis > Installer depuis une clé USB.
+voice_none=La recherche vocale nécessite une appli de reconnaissance vocale. Tapez plutôt votre recherche.
+@updater/strings.xml
+blk_channel=Cette mise à jour est destinée à une autre édition de Lumen OS (%1$s).
+@setup/strings.xml
+lang_more_hint_nogms=Les paramètres utilisent cette langue. Les applis Lumen non traduites restent en anglais.
+done_offline_hint_nogms=Pas d’Internet : réglez le fuseau horaire plus tard dans les paramètres.
+@projector/strings.xml
+slot_home_apps=Lumen Home : Applis

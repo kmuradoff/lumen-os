@@ -390,6 +390,38 @@ voice_hold=Удерживайте кнопку микрофона, пока го
 kb_title=Клавиатура
 kb_get_app=Установить клавиатуру: %1$s
 kb_no_play=Google Play недоступен. Установите приложение-клавиатуру, чтобы печатать на своём языке.
+tab_home=Главная
+hero_resume=Продолжить
+hero_more=Подробнее
+hero_kind_next=Следующая серия
+hero_kind_watchlist=Буду смотреть
+weather_line=%1$s, %2$s
+wx_clear=ясно
+wx_partly=переменная облачность
+wx_cloudy=облачно
+wx_fog=туман
+wx_drizzle=морось
+wx_rain=дождь
+wx_snow=снег
+wx_showers=ливень
+wx_thunder=гроза
+cz_wallpaper=Обои
+cz_wallpaper_sub=Живой пейзаж на главном экране и в заставке: его небо следует за настоящим солнцем и погодой.
+cz_continue=Продолжить просмотр на главной
+cz_continue_sub=Если скрыть, на главной останутся только часы, дата и погода над живыми обоями и ваши приложения. Каналы приложений тоже не показываются.
+cz_continue_show=Показывать
+cz_continue_hide=Скрыть
+apps_install_usb=Установить с USB
+usb_title=Установка с USB
+usb_none=Вставьте USB-накопитель с файлами .apk (в корне или в папке apks).
+usb_empty=На USB-накопителе нет файлов .apk. Положите их в корень или в папку apks.
+usb_new=Новое
+usb_update=Обновление
+usb_installing=Установка: %1$d%%
+usb_done=%1$s установлено
+usb_failed=%1$s не установлено: %2$s
+kb_no_store=Установите приложение-клавиатуру с USB-накопителя: Приложения > Установить с USB.
+voice_none=Для голосового поиска нужно приложение распознавания речи. Введите запрос вручную.
 @updater/strings.xml
 app_name=Обновление Lumen OS
 settings_title=Обновление Lumen OS
@@ -477,6 +509,17 @@ n_available_body=Откройте, чтобы загрузить и устано
 n_ready_title=Перезапустите, чтобы завершить обновление
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s работает
+done_unhealthy_body=Проверка после обновления нашла проблему: %1$s. Если что-то не работает, воспользуйтесь ремонтом (rescue) в установщике для компьютера. Данные сохраняются.
+done_rescue_scan=Отсканируйте код, чтобы открыть инструкцию по ремонту.
+done_details=Технические подробности: %1$s
+why_restarted=система неожиданно перезапустилась
+why_service=не запустилась системная служба
+why_lamp=не запустилась служба лампы и вентиляторов
+why_confirm=системе не удалось подтвердить, что новая версия работает
+why_no_rollback=вернуться к предыдущей версии было невозможно
+why_unknown=подробности не записаны
+blk_channel=Это обновление для другой редакции Lumen OS (%1$s).
 @projector/strings_recents.xml
 recents_title=Недавние приложения
 recents_close=Закрыть
@@ -615,6 +658,8 @@ name_other=Другое…
 name_hint=Имя (до 32 символов)
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=Этот язык будет в настройках. Приложения Lumen без перевода останутся на английском.
+done_offline_hint_nogms=Нет интернета: часовой пояс можно выбрать позже в настройках.
 @projector/strings_cec.xml
 cec_entry=HDMI-устройства (CEC)
 cec_unavailable=HDMI-CEC недоступен

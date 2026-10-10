@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">Anzeige</string>
+    <string name="uires_row">Auflösung der Oberfläche</string>
+    <string name="uires_default_fmt">%1$s (Standard)</string>
+    <string name="uires_summary">4K liefert den schärfsten Text; 1080p, wie bei XGIMI, ist für die Grafik am leichtesten. Zum Ändern startet der Projektor neu.</string>
+    <string name="uires_summary_fallback">Jetzt %1$s: %2$s ist auf diesem Projektor nicht richtig gestartet, daher hat er von selbst zurückgeschaltet. Wähle %2$s, um es erneut zu versuchen.</string>
+    <string name="uires_choose_text">4K nutzt jedes Pixel des 4K-Panels. 1080p, wie bei XGIMI, zeichnet ein Viertel davon, und der Projektor vergrößert das Bild.</string>
+    <string name="uires_opt_1080">Wie bei XGIMI: am leichtesten für die Grafik; Text etwas weicher</string>
+    <string name="uires_opt_1440">Nur zum Testen: Skalierung auf das Panel nicht geprüft</string>
+    <string name="uires_opt_2160">Schärfster Text: jedes Pixel des 4K-Panels</string>
+    <string name="uires_current">Aktuell</string>
+    <string name="uires_confirm_title">Auf %1$s umschalten?</string>
+    <string name="uires_confirm_up">Text und Menüs werden schärfer. Die Grafik muss mehr zeichnen, daher können sich manche Apps etwas langsamer anfühlen.</string>
+    <string name="uires_confirm_down">Die Grafik muss weniger zeichnen, daher können sich Menüs und Apps schneller anfühlen; Text wird etwas weicher.</string>
+    <string name="uires_confirm_restart">Dazu startet der Projektor neu (etwa eine Minute). Kommt das Bild nicht richtig zurück, kehrt er von selbst zu %1$s zurück.</string>
+    <string name="uires_restart">Jetzt neu starten</string>
+    <string name="uires_keep_title">Diese Auflösung behalten?</string>
+    <string name="uires_keep_text">Die Oberfläche läuft jetzt in %1$s. Wenn Text und Bild richtig aussehen, wähle Behalten.</string>
+    <string name="uires_keep_countdown">Zurück zu %1$s in %2$d s</string>
+    <string name="uires_keep">Behalten</string>
+    <string name="uires_revert">Zurück zu %1$s</string>
+    <string name="uires_failed">Die Auflösung konnte nicht geändert werden</string>
+</resources>

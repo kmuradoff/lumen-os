@@ -22,6 +22,9 @@ public final class Preflight {
     /** Is this manifest an update for this projector at all? null = yes. "uptodate" = nothing newer. */
     public static Block applicable(UpdateManifest m) {
         if (m.schema != 1 || !"z9x".equals(m.device)) return new Block("err_signature", "");
+        // the manifest's channel must be this image's own file (docs/ota.md "Variants"): a USB stick or a
+        // mirror may carry another edition's signed manifest, which must never be installed here
+        if (!("update-" + m.channel + ".json").equals(Ota.channelFile())) return new Block("blk_channel", m.channel);
         String vendor = Ota.prop("ro.vendor.build.version.incremental");
         if (!m.vendorIncremental.isEmpty() && !m.vendorIncremental.contains(vendor)) {
             return new Block("blk_vendor", vendor.isEmpty() ? "?" : vendor);

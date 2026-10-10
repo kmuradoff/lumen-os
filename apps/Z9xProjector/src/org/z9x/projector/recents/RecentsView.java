@@ -315,8 +315,11 @@ final class RecentsView extends FrameLayout {
         }
     }
 
+    /** when = TaskInfo.lastActiveTime, which counts from boot (SystemClock.elapsedRealtime), not the epoch:
+     *  shown as a calendar date it read "1 января 1970", so it is moved onto the wall clock first. */
     private static CharSequence age(Context c, long when) {
         long now = System.currentTimeMillis();
+        if (when > 0) when = now - (android.os.SystemClock.elapsedRealtime() - when);
         if (when <= 0 || now - when < DateUtils.MINUTE_IN_MILLIS) return c.getString(R.string.recents_now);
         return DateUtils.getRelativeTimeSpanString(when, now, DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE);
     }

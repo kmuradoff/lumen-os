@@ -5,6 +5,7 @@ package org.z9x.tvinput;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.media.tv.TvContract;
 import android.media.tv.TvInputManager;
@@ -67,6 +68,7 @@ public class PassthroughActivity extends Activity {
     /** A "source unplugged -> home" countdown is running; its message must stay on screen. */
     private boolean mUnplugPending;
     private int mRetries;
+    private int mDensityDpi;
 
     private final Runnable mHideBanner = Safe.wrap(TAG, "hideBanner", () -> {
         if (mBanner != null) mBanner.setVisibility(View.GONE);
@@ -200,9 +202,7 @@ public class PassthroughActivity extends Activity {
 
         mStatus = new TextView(this);
         mStatus.setTextColor(Color.WHITE);
-        mStatus.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
         mStatus.setGravity(Gravity.CENTER);
-        mStatus.setPadding(dp(24), dp(16), dp(24), dp(16));
         mStatus.setBackgroundColor(0xB0000000);
         mStatus.setVisibility(View.GONE);
         root.addView(mStatus, new FrameLayout.LayoutParams(
@@ -211,19 +211,40 @@ public class PassthroughActivity extends Activity {
 
         mBanner = new TextView(this);
         mBanner.setTextColor(Color.WHITE);
-        mBanner.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
-        mBanner.setPadding(dp(20), dp(10), dp(20), dp(10));
         mBanner.setBackgroundColor(0xB0000000);
         mBanner.setVisibility(View.GONE);
-        FrameLayout.LayoutParams bl = new FrameLayout.LayoutParams(
+        root.addView(mBanner, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.TOP | Gravity.START);
-        bl.setMargins(dp(32), dp(24), 0, 0);
-        root.addView(mBanner, bl);
+                Gravity.TOP | Gravity.START));
+        sizeOverlays();
+        mDensityDpi = getResources().getConfiguration().densityDpi;
 
         setContentView(root);
         tv.requestFocus();
         mTvView = tv;
+    }
+
+    /** dp / sp sizes of the status and the banner (they are px once set). */
+    private void sizeOverlays() {
+        mStatus.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+        mStatus.setPadding(dp(24), dp(16), dp(24), dp(16));
+        mBanner.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+        mBanner.setPadding(dp(20), dp(10), dp(20), dp(10));
+        FrameLayout.LayoutParams bl = (FrameLayout.LayoutParams) mBanner.getLayoutParams();
+        bl.setMargins(dp(32), dp(24), 0, 0);
+        mBanner.setLayoutParams(bl);
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Lumen OS 1.0.1: the UI resolution (1080p / 2K / 4K) changed under the viewer (configChanges
+        // keeps it and its stream; the TvView fills the window at any size): size the overlays again.
+        Safe.run(TAG, "onConfigurationChanged", () -> {
+            if (mStatus == null || mBanner == null || newConfig.densityDpi == mDensityDpi) return;
+            mDensityDpi = newConfig.densityDpi;
+            sizeOverlays();
+        });
     }
 
     @Override

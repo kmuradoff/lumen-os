@@ -28,6 +28,7 @@
     <string name="key_slot4">Кнопка bilibili</string>
     <string name="slot_default_fmt">%1$s (за замовчуванням)</string>
     <string name="slot_default_item">За замовчуванням: %1$s</string>
+    <string name="slot_home_apps">Lumen Home: застосунки</string>
     <string name="cancel">Скасувати</string>
     <string name="ok">OK</string>
     <string name="app_not_found">Не знайдено програму для цієї кнопки</string>

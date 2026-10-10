@@ -46,6 +46,16 @@
     <string name="done_ok_title">Lumen OS %1$s sürümüne güncellendi</string>
     <string name="done_rollback_title">Güncelleme başlatılamadı</string>
     <string name="done_rollback_body">Lumen OS %1$s geri yüklendi. Hiçbir şey kaybolmadı.</string>
+    <string name="done_unhealthy_title">Lumen OS %1$s çalışıyor</string>
+    <string name="done_unhealthy_body">Güncellemeden sonraki bir kontrol bir sorun buldu: %1$s. Bir şey çalışmazsa bilgisayar yükleyicisinin kurtarma modunu (rescue) kullanın. Verileriniz korunur.</string>
+    <string name="done_rescue_scan">Kurtarma kılavuzunu açmak için kodu tarayın.</string>
+    <string name="done_details">Teknik ayrıntılar: %1$s</string>
+    <string name="why_restarted">sistem beklenmedik şekilde yeniden başladı</string>
+    <string name="why_service">bir sistem hizmeti başlamadı</string>
+    <string name="why_lamp">lamba ve fan hizmeti başlamadı</string>
+    <string name="why_confirm">sistem yeni sürümün çalıştığını doğrulayamadı</string>
+    <string name="why_no_rollback">önceki sürüme dönmek mümkün olmadı</string>
+    <string name="why_unknown">ayrıntı kaydedilmedi</string>
     <string name="blk_vbmeta_title">Güncellemeler için tek seferlik bir adım gerekli</string>
     <string name="blk_vbmeta_body">İlk güncellemeden önce diğer sistem yuvasının (%1$s) kurulum kılavuzunda anlatıldığı gibi bir kez bilgisayarla hazırlanması gerekir (vbmeta adımı). Kılavuzu açmak için kodu tarayın.</string>
     <string name="blk_vbmeta_unknown">Diğer sistem yuvasının durumu okunamadı. Projektörü yeniden başlatıp tekrar deneyin.</string>
@@ -53,6 +63,7 @@
     <string name="blk_merge_body">Bu, arka planda birkaç dakika sürer. İzlemeye devam edebilirsiniz.</string>
     <string name="blk_pending">Bu sürüm son güncellemeden sonra hâlâ kontrol ediliyor. Birkaç dakika sonra tekrar deneyin.</string>
     <string name="blk_vendor">Bu güncelleme bu projektörün donanım yazılımı için değil (%1$s).</string>
+    <string name="blk_channel">Bu güncelleme başka bir Lumen OS sürümü için (%1$s).</string>
     <string name="blk_min_version">Bu güncelleme için Lumen OS %1$s veya daha yenisi gerekir. Lütfen bilgisayar yükleyicisini kullanın.</string>
     <string name="blk_thermal">Projektör şu anda çok sıcak. Daha sonra tekrar deneyin.</string>
     <string name="blk_space">Yeterli boş alan yok: %1$s gerekiyor.</string>

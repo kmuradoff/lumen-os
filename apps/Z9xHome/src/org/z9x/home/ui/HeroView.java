@@ -1,22 +1,17 @@
 package org.z9x.home.ui;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.LinearGradient;
-import android.graphics.Outline;
 import android.graphics.Paint;
-import android.graphics.RadialGradient;
-import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Shader;
-import android.graphics.drawable.Drawable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.TypefaceSpan;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -26,12 +21,17 @@ import org.z9x.home.img.ImageLoader;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Spotlight hero (SPEC 7.5): full-bleed art in the 1280x720 box at the right, three scrims, the text
- * block at x 96, two buttons at y 540 and page dots at y 628. Auto-advance every 9 s (owner decides
- * when), crossfade 600 ms, text out 150 ms then in 300 ms with a 16 px rise. Portrait art uses the
- * poster layout (2:3 poster on the right over its blurred enlargement).
+ * Hero of direction D (D_Home): over the stage art (or the living sky) at x 96, an overline
+ * "YOUTUBE · CONTINUE", the title in Prata (132 px, 104 px when it needs two lines), the meta line with
+ * the progress bar and the time left, two lines of description, and the buttons "Continue" (launches the
+ * program's own intent) and "More info" (details panel). The buttons sit 184 px above the first row (y 556
+ * over a row at 740; D_Home: 606 over 790, moved up with the row for the TV safe area) and the text grows
+ * upwards, so a long title never pushes them into the row below. LEFT past the first / RIGHT past the
+ * last button switches slides; dots show when there is more than one. The art itself is drawn by
+ * {@link Stage} behind the whole screen ({@link Host#onHeroShown}).
  */
 public class HeroView extends ViewGroup {
     public interface Host {
@@ -42,105 +42,88 @@ public class HeroView extends ViewGroup {
         void onHeroShown(Card k);
     }
 
+    private static final int TEXT_W = 900;
+    /** The buttons' distance above the first row (D_Home: 790 - 606), so the dots keep their gap. */
+    private static final int BUTTONS_ABOVE_ROW = 184;
+    private static final int TEXT_TOP = 150; // under the header (tabs end at y 122, the clock block at 138)
+    private static final int OVERLINE_COLOR = 0xFFDCD4C6;
+    private static final int META_COLOR = 0xFFCFC7BA;
+    private static final int DESC_COLOR = 0xFFE6DFD3;
+
     private final Host mHost;
-    private final Art mArt;
-    private final View mPoster;
     private final LinearLayout mText;
-    private final ImageView mProvIcon;
-    private final TextView mProvName, mTitle, mMeta, mDesc;
+    private final TextView mOverline, mTitle, mMeta, mLeft, mDesc;
     private final ProgressLine mProgress;
     private final PillButton mPrimary, mSecondary;
     private final Dots mDots;
-    private final Trailer mTrailer;
     private final ArrayList<Card> mSlides = new ArrayList<>();
+    private Map<Long, String> mChannelNames;
+    private Card mTransient;   // a "Continue watching" card focused in the row, not one of the slides
     private int mIndex;
     private int mFocusBtn = -1;
-    private Bitmap mPosterBmp;
-    private ImageLoader.Request mReq, mIconReq, mPosterReq;
+    private int mRowY = Theme.px(Theme.FIRST_ROW_Y);
+    private final float mTitleBig, mTitleSmall;
 
     public HeroView(Context c, Host host) {
         super(c);
         mHost = host;
         setClipChildren(false);
-        mArt = new Art(c);
-        addView(mArt);
-        mPoster = new View(c) {
-            @Override
-            protected void onDraw(Canvas cv) {
-                if (mPosterBmp != null) cv.drawBitmap(mPosterBmp, null, new RectF(0, 0, getWidth(), getHeight()), mArt.mBmpPaint);
-            }
-        };
-        mPoster.setOutlineProvider(new ViewOutlineProvider() {
-            @Override
-            public void getOutline(View v, Outline o) {
-                o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), Theme.pxf(18));
-            }
-        });
-        mPoster.setClipToOutline(true);
-        mPoster.setElevation(Theme.pxf(24));
-        mPoster.setVisibility(GONE);
-        addView(mPoster);
-        mTrailer = new Trailer(c);
-        addView(mTrailer.view());
-
         mText = new LinearLayout(c);
         mText.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout prov = new LinearLayout(c);
-        prov.setOrientation(LinearLayout.HORIZONTAL);
-        prov.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        mProvIcon = new ImageView(c);
-        mProvIcon.setOutlineProvider(new ViewOutlineProvider() {
-            @Override
-            public void getOutline(View v, Outline o) {
-                o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), Theme.pxf(10));
-            }
-        });
-        mProvIcon.setClipToOutline(true);
-        prov.addView(mProvIcon, new LinearLayout.LayoutParams(Theme.px(40), Theme.px(40)));
-        mProvName = new TextView(c);
-        Theme.text(mProvName, 24, Theme.MEDIUM, Theme.TEXT2);
-        mProvName.setSingleLine(true);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
-        lp.setMarginStart(Theme.px(14));
-        prov.addView(mProvName, lp);
-        mText.addView(prov, new LinearLayout.LayoutParams(-2, -2));
+        mText.setClipChildren(false);
+        mOverline = new TextView(c);
+        Theme.text(mOverline, 21, Theme.REGULAR, OVERLINE_COLOR);
+        mOverline.setLetterSpacing(0.06f);
+        mOverline.setSingleLine(true);
+        mOverline.setEllipsize(TextUtils.TruncateAt.END);
+        mText.addView(mOverline, new LinearLayout.LayoutParams(-1, -2));
         mTitle = new TextView(c);
-        Theme.text(mTitle, 64, Theme.MEDIUM, Theme.TEXT1);
-        mTitle.setLetterSpacing(-0.005f);
+        mTitleBig = Theme.pxf(132) * Theme.fontScale(c);
+        mTitleSmall = Theme.pxf(104) * Theme.fontScale(c);
+        Theme.text(mTitle, 132, Theme.DISPLAY, Theme.TEXT1);
+        mTitle.setLetterSpacing(-0.015f);
         mTitle.setMaxLines(2);
         mTitle.setEllipsize(TextUtils.TruncateAt.END);
-        mTitle.setLineSpacing(Theme.pxf(8), 1f);
+        mTitle.setLineSpacing(0f, 0.95f);
         LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(-1, -2);
-        tl.topMargin = Theme.px(18);
+        tl.topMargin = Theme.px(20);
         mText.addView(mTitle, tl);
         LinearLayout metaRow = new LinearLayout(c);
         metaRow.setOrientation(LinearLayout.HORIZONTAL);
         metaRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
         mMeta = new TextView(c);
-        Theme.text(mMeta, 24, Theme.REGULAR, Theme.TEXT2);
+        Theme.text(mMeta, 24, Theme.REGULAR, META_COLOR);
         mMeta.setSingleLine(true);
+        mMeta.setEllipsize(TextUtils.TruncateAt.END);
         metaRow.addView(mMeta, new LinearLayout.LayoutParams(-2, -2));
         mProgress = new ProgressLine(c);
-        LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(Theme.px(160), Theme.px(6));
-        pl.setMarginStart(Theme.px(16));
+        LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(Theme.px(160), Theme.px(5));
+        pl.setMarginStart(Theme.px(20));
         metaRow.addView(mProgress, pl);
+        mLeft = new TextView(c);
+        Theme.text(mLeft, 24, Theme.REGULAR, META_COLOR);
+        mLeft.setSingleLine(true);
+        LinearLayout.LayoutParams ll = new LinearLayout.LayoutParams(-2, -2);
+        ll.setMarginStart(Theme.px(12));
+        metaRow.addView(mLeft, ll);
         LinearLayout.LayoutParams ml = new LinearLayout.LayoutParams(-2, -2);
-        ml.topMargin = Theme.px(12);
+        ml.topMargin = Theme.px(22);
         mText.addView(metaRow, ml);
         mDesc = new TextView(c);
-        Theme.text(mDesc, 28, Theme.REGULAR, Theme.TEXT2);
+        Theme.text(mDesc, 28, Theme.REGULAR, DESC_COLOR);
         mDesc.setMaxLines(2);
         mDesc.setEllipsize(TextUtils.TruncateAt.END);
-        mDesc.setLineSpacing(Theme.pxf(12), 1f);
-        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Theme.px(860), -2);
-        dl.topMargin = Theme.px(14);
+        mDesc.setLineSpacing(0f, 1.32f);
+        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(Theme.px(760), -2);
+        dl.topMargin = Theme.px(22);
         mText.addView(mDesc, dl);
         addView(mText);
 
-        mPrimary = new PillButton(c, 64, 28, PillButton.STYLE_FILLED).icon(R.drawable.ic_play);
-        mSecondary = new PillButton(c, 64, 28, PillButton.STYLE_OUTLINE).icon(R.drawable.ic_open);
+        mPrimary = new PillButton(c, 76, 27, PillButton.STYLE_FILLED).icon(R.drawable.ic_play).padding(32, 40).glow(true);
+        mSecondary = new PillButton(c, 76, 27, PillButton.STYLE_FILLED).padding(36, 36).glow(true);
+        mSecondary.label(c.getString(R.string.hero_more));
         mPrimary.maxWidth(Theme.px(560));
-        mSecondary.maxWidth(Theme.px(560));
+        mSecondary.maxWidth(Theme.px(420));
         addView(mPrimary);
         addView(mSecondary);
         mDots = new Dots(c);
@@ -149,10 +132,19 @@ public class HeroView extends ViewGroup {
 
     // ------------------------------------------------------------------ slides
 
-    public void setSlides(List<Card> slides) {
+    /** @param channelNames channel id -> row title, for the overline of preview programs */
+    public void setSlides(List<Card> slides, Map<Long, String> channelNames) {
         Card cur = current();
+        mChannelNames = channelNames;
         mSlides.clear();
         mSlides.addAll(slides);
+        if (mTransient != null) {
+            for (Card k : slides) if (k.id.equals(mTransient.id)) mTransient = null;
+            if (mTransient != null) { // the page re-applies it from the focused row card
+                mIndex = Math.min(mIndex, Math.max(0, mSlides.size() - 1));
+                return;
+            }
+        }
         int idx = 0;
         if (cur != null) {
             for (int i = 0; i < mSlides.size(); i++) if (mSlides.get(i).id.equals(cur.id)) idx = i;
@@ -164,13 +156,8 @@ public class HeroView extends ViewGroup {
     }
 
     public Card current() {
+        if (mTransient != null) return mTransient;
         return mIndex < mSlides.size() ? mSlides.get(mIndex) : null;
-    }
-
-    /** Same slide (a refresh may replace the object with an equal one while art loads). */
-    private boolean isCurrent(Card k) {
-        Card c = current();
-        return c != null && c.id.equals(k.id) && java.util.Objects.equals(c.image, k.image);
     }
 
     public int count() {
@@ -178,26 +165,55 @@ public class HeroView extends ViewGroup {
     }
 
     public void next(boolean animate) {
-        if (mSlides.size() < 2) return;
-        mIndex = (mIndex + 1) % mSlides.size();
+        if (mSlides.size() < 2 && mTransient == null) return;
+        if (mTransient == null) mIndex = (mIndex + 1) % mSlides.size();
+        mTransient = null;
         show(animate);
     }
 
     public void prev(boolean animate) {
-        if (mSlides.size() < 2) return;
-        mIndex = (mIndex - 1 + mSlides.size()) % mSlides.size();
+        if (mSlides.size() < 2 && mTransient == null) return;
+        if (mTransient == null) mIndex = (mIndex - 1 + mSlides.size()) % mSlides.size();
+        mTransient = null;
         show(animate);
+    }
+
+    /**
+     * The hero follows the focused "Continue watching" card: one of the slides, or the card itself
+     * shown in its place (dots hidden) until the slides move on.
+     */
+    public void showCard(Card k, boolean animate) {
+        if (k == null) return;
+        Card cur = current();
+        if (cur != null && cur.id.equals(k.id)) return;
+        for (int i = 0; i < mSlides.size(); i++) {
+            if (mSlides.get(i).id.equals(k.id)) {
+                mTransient = null;
+                mIndex = i;
+                show(animate);
+                return;
+            }
+        }
+        mTransient = k;
+        show(animate);
+    }
+
+    public Card transientCard() {
+        return mTransient;
+    }
+
+    /** The followed card left "Continue watching" (removed, finished): back to the slides. */
+    public void dropTransient() {
+        if (mTransient == null) return;
+        mTransient = null;
+        show(false);
     }
 
     private void show(boolean animate) {
         Card k = current();
-        mDots.set(mSlides.size(), mIndex);
-        mTrailer.stop();
-        if (k == null) {
-            mArt.setBitmap(null, null, false);
-            return;
-        }
-        if (animate) {
+        mDots.set(mTransient != null ? 0 : mSlides.size(), mIndex);
+        if (k == null) return;
+        if (animate && Theme.animations()) {
             mText.animate().cancel();
             mText.animate().alpha(0).setDuration(150).withEndAction(() -> {
                 bindText(k);
@@ -209,131 +225,83 @@ public class HeroView extends ViewGroup {
             mText.setAlpha(1);
             mText.setTranslationY(0);
         }
-        loadArt(k, animate);
         mHost.onHeroShown(k);
     }
 
     private void bindText(Card k) {
-        boolean feature = k.kind == Card.FEATURE;
-        mProvName.setText(feature ? "Lumen OS" : k.appLabel);
-        mProvIcon.setImageDrawable(null);
-        if (mIconReq != null) mIconReq.cancel();
-        if (feature) {
-            mProvIcon.setImageDrawable(Theme.icon(getContext(), R.drawable.ic_spotlight, Theme.TEXT1));
-        } else if (!k.pkg.isEmpty()) {
-            int s = Theme.px(40);
-            Bitmap b = mHost.images().peek("icon:" + k.pkg, s, s);
-            if (b != null) mProvIcon.setImageBitmap(b);
-            else mIconReq = mHost.images().load("icon:" + k.pkg, s, s, ImageLoader.KIND_ICON, k.pkg, null, (bmp, col) -> {
-                if (isCurrent(k)) mProvIcon.setImageBitmap(bmp);
-            });
-        }
+        Context c = getContext();
+        mOverline.setText(overline(c, k));
         mTitle.setText(k.title);
+        fitTitle();
         mMeta.setText(k.meta);
         mMeta.setVisibility(k.meta.isEmpty() ? GONE : VISIBLE);
         mProgress.set(k.progress);
         mProgress.setVisibility(k.progress >= 0 ? VISIBLE : GONE);
+        ((LinearLayout.LayoutParams) mProgress.getLayoutParams()).setMarginStart(k.meta.isEmpty() ? 0 : Theme.px(20));
+        mLeft.setText(k.left);
+        mLeft.setVisibility(k.left.isEmpty() ? GONE : VISIBLE);
         mDesc.setText(k.desc);
+        mDesc.setMaxLines(2);
         mDesc.setVisibility(k.desc.isEmpty() ? GONE : VISIBLE);
-        Context c = getContext();
-        switch (k.intent == null ? "" : k.intent) {
-            case "feature:cast":
-                mPrimary.icon(R.drawable.ic_cast).label(c.getString(R.string.hero_how_to_cast));
-                mSecondary.setVisibility(GONE);
-                break;
-            case "feature:picture":
-                mPrimary.icon(R.drawable.ic_autofocus).label(c.getString(R.string.tile_autofocus));
-                mSecondary.icon(R.drawable.ic_keystone).label(c.getString(R.string.tile_keystone));
-                mSecondary.setVisibility(VISIBLE);
-                break;
-            case "feature:customize":
-                mPrimary.icon(R.drawable.ic_edit).label(c.getString(R.string.customize_home));
-                mSecondary.setVisibility(GONE);
-                break;
-            default: {
-                boolean cont = k.table == Card.T_WATCH_NEXT && k.progress >= 0;
-                boolean playable = k.intent != null && !k.intent.isEmpty();
-                mPrimary.icon(playable ? R.drawable.ic_play : R.drawable.ic_open)
-                        .label(c.getString(cont ? R.string.hero_continue : (playable ? R.string.hero_watch : R.string.hero_open)));
-                mSecondary.icon(R.drawable.ic_open).label(c.getString(R.string.hero_open_app, k.appLabel));
-                mSecondary.setVisibility(VISIBLE);
-            }
-        }
-        if (mFocusBtn == 1 && mSecondary.getVisibility() != VISIBLE) setFocusButton(0);
+        boolean cont = k.table == Card.T_WATCH_NEXT && (k.progress >= 0 || k.wnType == 0);
+        boolean playable = k.intent != null && !k.intent.isEmpty();
+        mPrimary.icon(playable ? R.drawable.ic_play : R.drawable.ic_open)
+                .label(c.getString(cont ? R.string.hero_resume : (playable ? R.string.hero_watch : R.string.hero_open)));
+        mPrimary.setContentDescription(mPrimary.label() + ", " + k.title);
         requestLayout();
     }
 
-    private void loadArt(Card k, boolean animate) {
-        if (mReq != null) mReq.cancel();
-        if (mPosterReq != null) mPosterReq.cancel();
-        if (k.kind == Card.FEATURE || k.image == null) {
-            mPoster.setVisibility(GONE);
-            mArt.setFeature(k, animate);
-            return;
+    /** "YOUTUBE · CONTINUE": the app in semibold, then what this item is (Watch Next type or channel). */
+    private CharSequence overline(Context c, Card k) {
+        String kind = "";
+        if (k.table == Card.T_WATCH_NEXT) {
+            switch (k.wnType) {
+                case 1: // WATCH_NEXT_TYPE_NEXT
+                    kind = c.getString(R.string.hero_kind_next);
+                    break;
+                case 2: // WATCH_NEXT_TYPE_NEW
+                    kind = c.getString(R.string.badge_new);
+                    break;
+                case 3: // WATCH_NEXT_TYPE_WATCHLIST
+                    kind = c.getString(R.string.hero_kind_watchlist);
+                    break;
+                default:
+                    kind = c.getString(R.string.hero_resume);
+            }
+        } else if (mChannelNames != null && k.channelId >= 0) {
+            String ch = mChannelNames.get(k.channelId);
+            if (ch != null && !ch.equals(k.appLabel)) kind = ch;
         }
-        ImageLoader il = mHost.images();
-        boolean portrait = k.aspect == Card.A_2_3;
-        if (portrait) {
-            Bitmap blur = il.peekBlur(k.image);
-            mPosterBmp = null;
-            int pw = Theme.px(300), ph = Theme.px(450);
-            Bitmap pb = il.peek(k.image, pw, ph);
-            mPosterBmp = pb;
-            mPoster.setVisibility(VISIBLE);
-            mPoster.invalidate();
-            if (pb == null) mPosterReq = il.load(k.image, pw, ph, ImageLoader.KIND_HERO, k.pkg, null, (b, c) -> {
-                if (!isCurrent(k)) return;
-                mPosterBmp = b;
-                mPoster.setAlpha(0);
-                mPoster.invalidate();
-                mPoster.animate().alpha(1).setDuration(300).start();
-            });
-            if (blur != null) mArt.setBitmap(blur, k, animate);
-            else mReq = il.loadBlur(k.image, k.pkg, (b, c) -> {
-                if (isCurrent(k)) mArt.setBitmap(b, k, true);
-            });
-            return;
+        SpannableStringBuilder sb = new SpannableStringBuilder(Theme.upper(k.appLabel));
+        sb.setSpan(new TypefaceSpan(Theme.SEMIBOLD), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (!kind.isEmpty()) {
+            int s = sb.length();
+            sb.append("  ·  ");
+            sb.setSpan(new ForegroundColorSpan(0xFF8F877A), s, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            sb.append(Theme.upper(kind));
         }
-        mPoster.setVisibility(GONE);
-        int w = Theme.px(1280), h = Theme.px(720);
-        Bitmap b = il.peek(k.image, w, h);
-        if (b != null) {
-            mArt.setBitmap(b, k, animate);
-            mTrailer.arm(k);
-            return;
-        }
-        mReq = il.load(k.image, w, h, ImageLoader.KIND_HERO, k.pkg, null, (bmp, col) -> {
-            if (!isCurrent(k)) return;
-            mArt.setBitmap(bmp, k, true);
-            mTrailer.arm(k);
-        });
+        return sb;
+    }
+
+    /** 132 px on one line; a title that needs two lines drops to 104 px (still max two lines). */
+    private void fitTitle() {
+        float avail = Theme.pxf(TEXT_W);
+        mTitle.getPaint().setTextSize(mTitleBig);
+        boolean one = mTitle.getPaint().measureText(mTitle.getText().toString()) <= avail;
+        mTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, one ? mTitleBig : mTitleSmall);
     }
 
     public boolean artReady() {
-        return mArt.mCur != null || (current() != null && (current().kind == Card.FEATURE || current().image == null));
+        return true;
     }
 
-    /** Low memory / hidden: drop bitmaps (re-loaded from cache on show). */
-    public void release() {
-        if (mReq != null) mReq.cancel();
-        if (mPosterReq != null) mPosterReq.cancel();
-        mTrailer.stop();
-        mArt.mCur = null;
-        mArt.mPrev = null;
-        mPosterBmp = null;
+    /** Top of the first row below (real px); measured before this view by the page. */
+    public void setRowY(int px) {
+        mRowY = px;
     }
 
-    public void reload() {
-        Card k = current();
-        if (k != null && mArt.mCur == null) loadArt(k, false);
-    }
-
-    public void setTrailersEnabled(boolean on) {
-        mTrailer.setEnabled(on);
-    }
-
-    public void pauseTrailer() {
-        mTrailer.stop();
+    private int buttonsY() {
+        return mRowY - Theme.px(BUTTONS_ABOVE_ROW);
     }
 
     // ------------------------------------------------------------------ focus
@@ -360,13 +328,12 @@ public class HeroView extends ViewGroup {
     public boolean onKey(int keyCode, KeyEvent e) {
         if (mFocusBtn < 0) return false;
         boolean rtl = Theme.rtl(this);
-        boolean two = mSecondary.getVisibility() == VISIBLE;
         switch (keyCode) {
             case KeyEvent.KEYCODE_DPAD_LEFT:
             case KeyEvent.KEYCODE_DPAD_RIGHT: {
                 boolean fwd = (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) != rtl;
                 if (fwd) {
-                    if (mFocusBtn == 0 && two) setFocusButton(1);
+                    if (mFocusBtn == 0) setFocusButton(1);
                     else next(true);
                 } else {
                     if (mFocusBtn == 1) setFocusButton(0);
@@ -395,30 +362,37 @@ public class HeroView extends ViewGroup {
     @Override
     protected void onMeasure(int wms, int hms) {
         int w = MeasureSpec.getSize(wms);
-        mArt.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(Theme.px(720), MeasureSpec.EXACTLY));
-        mPoster.measure(MeasureSpec.makeMeasureSpec(Theme.px(300), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(Theme.px(450), MeasureSpec.EXACTLY));
-        mTrailer.view().measure(MeasureSpec.makeMeasureSpec(Theme.px(1280), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(Theme.px(720), MeasureSpec.EXACTLY));
-        mText.measure(MeasureSpec.makeMeasureSpec(Theme.px(1000), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        int tws = MeasureSpec.makeMeasureSpec(Theme.px(TEXT_W), MeasureSpec.EXACTLY);
         int un = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        mText.measure(tws, un);
+        // a two-line title leaves room for one line of description, or none (the buttons never move)
+        int avail = buttonsY() - Theme.px(34 + TEXT_TOP);
+        if (mText.getMeasuredHeight() > avail && mDesc.getVisibility() == VISIBLE && mDesc.getMaxLines() > 1) {
+            mDesc.setMaxLines(1);
+            mText.measure(tws, un);
+        }
+        if (mText.getMeasuredHeight() > avail && mDesc.getVisibility() == VISIBLE) {
+            mDesc.setVisibility(GONE);
+            mText.measure(tws, un);
+        }
         mPrimary.measure(un, un);
         mSecondary.measure(un, un);
         mDots.measure(un, un);
-        setMeasuredDimension(w, Theme.px(720));
+        setMeasuredDimension(w, mRowY - Theme.px(20));
     }
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int w = r - l;
         boolean rtl = Theme.rtl(this);
-        mArt.layout(0, 0, w, Theme.px(720));
-        lay(mPoster, Theme.px(1404), Theme.px(120), w, rtl);
-        lay(mTrailer.view(), Theme.px(640), 0, w, rtl);
-        int textBottom = Theme.px(516);
-        lay(mText, Theme.px(Theme.MARGIN), textBottom - mText.getMeasuredHeight(), w, rtl);
+        int by = buttonsY();
+        // the text block ends 34 px above the buttons and never starts above y 150 (header)
+        int top = Math.max(Theme.px(TEXT_TOP), by - Theme.px(34) - mText.getMeasuredHeight());
+        lay(mText, Theme.px(Theme.MARGIN), top, w, rtl);
         int x = Theme.px(Theme.MARGIN);
-        lay(mPrimary, x, Theme.px(540), w, rtl);
-        lay(mSecondary, x + mPrimary.getMeasuredWidth() + Theme.px(20), Theme.px(540), w, rtl);
-        lay(mDots, x, Theme.px(628), w, rtl);
+        lay(mPrimary, x, by, w, rtl);
+        lay(mSecondary, x + mPrimary.getMeasuredWidth() + Theme.px(16), by, w, rtl);
+        lay(mDots, x, by + mPrimary.getMeasuredHeight() + Theme.px(34), w, rtl);
     }
 
     private static void lay(View v, int x, int y, int w, boolean rtl) {
@@ -427,121 +401,7 @@ public class HeroView extends ViewGroup {
         v.layout(lx, y, lx + vw, y + vh);
     }
 
-    // ------------------------------------------------------------------ art layer
-
-    /** Draws the art box (crossfade), the feature art and the three scrims in one pass. */
-    private final class Art extends View {
-        final Paint mBmpPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
-        private final Paint mScrim = new Paint();
-        private final Paint mGlow = new Paint(Paint.ANTI_ALIAS_FLAG);
-        Bitmap mCur, mPrev;
-        Card mCurFeature, mPrevFeature;
-        private long mFade;
-        private final RectF mBox = new RectF();
-        private final Rect mSrc = new Rect();
-        private LinearGradient mLeft, mBottom, mTop;
-        private final android.graphics.PorterDuffXfermode DST_IN = new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN);
-
-        Art(Context c) {
-            super(c);
-        }
-
-        void setBitmap(Bitmap b, Card k, boolean animate) {
-            mPrev = mCur;
-            mPrevFeature = mCurFeature;
-            mCur = b;
-            mCurFeature = null;
-            mFade = animate && Theme.animations() ? android.os.SystemClock.uptimeMillis() : 0;
-            invalidate();
-        }
-
-        void setFeature(Card k, boolean animate) {
-            mPrev = mCur;
-            mPrevFeature = mCurFeature;
-            mCur = null;
-            mCurFeature = k;
-            mFade = animate && Theme.animations() ? android.os.SystemClock.uptimeMillis() : 0;
-            invalidate();
-        }
-
-        @Override
-        protected void onSizeChanged(int w, int h, int ow, int oh) {
-            boolean rtl = Theme.rtl(this);
-            int bg = Theme.BG & 0x00FFFFFF;
-            float x0 = rtl ? w - Theme.pxf(640) : Theme.pxf(640), x1 = rtl ? w - Theme.pxf(1280) : Theme.pxf(1280);
-            // alpha masks: the art fades to transparent (into the ambient backdrop), so there is no seam
-            mLeft = new LinearGradient(x0, 0, x1, 0, 0x00000000, 0xFF000000, Shader.TileMode.CLAMP);
-            mBottom = new LinearGradient(0, Theme.pxf(420), 0, Theme.pxf(700), 0xFF000000, 0x00000000, Shader.TileMode.CLAMP);
-            mTop = new LinearGradient(0, 0, 0, Theme.pxf(230), bg | 0xB3000000, bg, Shader.TileMode.CLAMP);
-            float bx = rtl ? 0 : Theme.pxf(640);
-            mBox.set(bx, 0, bx + Theme.pxf(1280), Theme.pxf(720));
-        }
-
-        @Override
-        protected void onDraw(Canvas c) {
-            float t = 1f;
-            if (mFade > 0) {
-                t = Math.min(1f, (android.os.SystemClock.uptimeMillis() - mFade) / (float) Theme.HERO_FADE_MS);
-                t = Theme.EMPHASIZED.getInterpolation(t);
-                if (t < 1f) postInvalidateOnAnimation();
-                else {
-                    mFade = 0;
-                    mPrev = null;
-                    mPrevFeature = null;
-                }
-            }
-            int w = getWidth();
-            int sc = c.saveLayer(mBox, null);
-            if (t < 1f) layer(c, mPrev, mPrevFeature, 1f);
-            layer(c, mCur, mCurFeature, t);
-            mScrim.setXfermode(DST_IN);
-            mScrim.setShader(mLeft);
-            c.drawRect(mBox, mScrim);
-            mScrim.setShader(mBottom);
-            c.drawRect(mBox, mScrim);
-            mScrim.setXfermode(null);
-            c.restoreToCount(sc);
-            mScrim.setShader(mTop);
-            c.drawRect(0, 0, w, Theme.pxf(230), mScrim);
-            mScrim.setShader(null);
-        }
-
-        private void layer(Canvas c, Bitmap b, Card feature, float a) {
-            if (a <= 0f) return;
-            if (b != null) {
-                mSrc.set(0, 0, b.getWidth(), b.getHeight());
-                mBmpPaint.setAlpha((int) (255 * a));
-                c.drawBitmap(b, mSrc, mBox, mBmpPaint);
-                mBmpPaint.setAlpha(255);
-            } else if (feature != null) {
-                drawFeature(c, feature, a);
-            }
-        }
-
-        private void drawFeature(Canvas c, Card k, float a) {
-            float cx = mBox.centerX() + (Theme.rtl(this) ? -1 : 1) * Theme.pxf(120), cy = Theme.pxf(330);
-            float r = Theme.pxf(520);
-            int col = k.color != 0 ? k.color : Theme.SURFACE2;
-            mGlow.setShader(new RadialGradient(cx, cy, r, (col & 0x00FFFFFF) | 0xFF000000, col & 0x00FFFFFF, Shader.TileMode.CLAMP));
-            mGlow.setAlpha((int) (255 * a));
-            c.drawCircle(cx, cy, r, mGlow);
-            mGlow.setShader(new RadialGradient(cx + Theme.pxf(160), cy - Theme.pxf(120), Theme.pxf(300),
-                    (Theme.ACCENT & 0x00FFFFFF) | 0x55000000, Theme.ACCENT & 0x00FFFFFF, Shader.TileMode.CLAMP));
-            c.drawCircle(cx + Theme.pxf(160), cy - Theme.pxf(120), Theme.pxf(300), mGlow);
-            mGlow.setShader(null);
-            if (k.icon != 0) {
-                Drawable d = Theme.icon(getContext(), k.icon, Theme.ACCENT);
-                if (d != null) {
-                    int s = Theme.px(300);
-                    d.setAlpha((int) (210 * a));
-                    d.setBounds((int) cx - s / 2, (int) cy - s / 2, (int) cx + s / 2, (int) cy + s / 2);
-                    d.draw(c);
-                }
-            }
-        }
-    }
-
-    /** Small progress line next to the hero meta. */
+    /** Progress bar of the meta line: paper 22 % track, accent fill. */
     static final class ProgressLine extends View {
         private int mP = -1;
         private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -560,7 +420,7 @@ public class HeroView extends ViewGroup {
         protected void onDraw(Canvas c) {
             if (mP < 0) return;
             float h = getHeight(), w = getWidth();
-            mPaint.setColor(0x4DFFFFFF);
+            mPaint.setColor(Theme.alpha(Theme.TEXT1, 0.22f));
             mR.set(0, 0, w, h);
             c.drawRoundRect(mR, h / 2, h / 2, mPaint);
             mPaint.setColor(Theme.ACCENT);
@@ -574,7 +434,6 @@ public class HeroView extends ViewGroup {
     /** Page dots: 8x8 at 30 %, the active one a 28x8 pill (width animates 250 ms). */
     static final class Dots extends View {
         private int mN, mI;
-        private float mAnim = 1f;
         private int mPrevI;
         private long mStart;
         private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -616,7 +475,7 @@ public class HeroView extends ViewGroup {
                 float wi = d;
                 if (i == mI) wi = d + (wide - d) * t;
                 else if (i == mPrevI && t < 1f) wi = d + (wide - d) * (1f - t);
-                mPaint.setColor(i == mI ? 0xFFFFFFFF : 0x4DFFFFFF);
+                mPaint.setColor(i == mI ? Theme.TEXT1 : Theme.alpha(Theme.TEXT1, 0.3f));
                 float lx = rtl ? getWidth() - x - wi : x;
                 mR.set(lx, 0, lx + wi, d);
                 c.drawRoundRect(mR, d / 2, d / 2, mPaint);

@@ -1,0 +1,33 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox mount (tools/ota/test/blobs.sh, gapps.sh, installer_gapps.sh): logs every call to
+# $Z9X_T/mount.log; fails every call when $Z9X_T/mount_fail exists.
+#   '--bind SRC DST' / '-o bind SRC DST' (z9x_blobs.sh): records "<sha256 of SRC> DST" in $Z9X_T/binds; fails
+#     when DST is not an existing file or directory (like the kernel).
+#   '-t ext4 -o OPTS DEV DIR' (z9x_gapps.sh, gapps_fill.sh): the test's partition DEV is a directory; its
+#     content is copied into DIR (an rw mount is copied back by stubs/umount). Fails when
+#     $Z9X_T/mount_fail_ext4 exists or DEV is not a directory. Records "DIR ext4 DEV OPTS" in $Z9X_T/mounts.
+#   '-t overlay overlay -o OPTS DIR': records "DIR overlay - OPTS" in $Z9X_T/mounts; fails when the text of
+#     $Z9X_T/overlay_fail is the end of DIR.
+echo "mount $*" >> "$Z9X_T/mount.log"
+[ -e "$Z9X_T/mount_fail" ] && exit 1
+case "$1 ${2-}" in
+  "--bind "*) src=$2; dst=$3 ;;
+  "-o bind") src=$3; dst=$4 ;;
+  "-t ext4")
+    [ -e "$Z9X_T/mount_fail_ext4" ] && { echo "mount: $5: Invalid argument" >&2; exit 1; }
+    [ "$3" = -o ] && [ -d "$5" ] && [ -d "$6" ] || { echo "mount: bad ext4 mount: $*" >&2; exit 1; }
+    cp -R "$5/." "$6/" || exit 1
+    echo "$6 ext4 $5 $4" >> "$Z9X_T/mounts"
+    exit 0 ;;
+  "-t overlay")
+    [ "$3" = overlay ] && [ "$4" = -o ] && [ -d "$6" ] || { echo "mount: bad overlay mount: $*" >&2; exit 1; }
+    if [ -s "$Z9X_T/overlay_fail" ]; then
+      case "$6" in *"$(cat "$Z9X_T/overlay_fail")") echo "mount: $6: Invalid argument" >&2; exit 1 ;; esac
+    fi
+    echo "$6 overlay - $5" >> "$Z9X_T/mounts"
+    exit 0 ;;
+  *) exit 0 ;;
+esac
+[ -e "$src" ] && [ -e "$dst" ] || { echo "mount: $dst: No such file or directory" >&2; exit 1; }
+printf '%s %s\n' "$(sha256sum "$src" | cut -d' ' -f1)" "$dst" >> "$Z9X_T/binds"

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Japanese translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">リモコンのいずれかのボタンを押してください</string>
+    <string name="remote_later_hint">リモコンが手元にない場合は、プロジェクター本体のボタンかキーボードでスキップできます。後で同じ方法でペア設定できます。</string>
+    <string name="remote_press_ok">リモコンの OK ボタンを押してください</string>
+</resources>

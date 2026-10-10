@@ -4,8 +4,9 @@
 # это шаг пользователя, он делается до запуска. Короткая сессия: fastbootd XGIMI сам выходит через пару минут.
 set -u
 cd "$(dirname "$0")/.."
-S=<SERIAL>
-IMG=${1:-build/system_tv_v1.img}
+[ $# -ge 1 ] || { echo "укажите серийный номер проектора (см. adb devices): zsh tools/flash_tv.sh SERIAL [IMG]" >&2; exit 2; }
+S=$1
+IMG=${2:-build/system_tv_v1.img}
 log() { print -P "%D{%H:%M:%S} $*"; }
 [ -f "$IMG" ] || { log "нет $IMG"; exit 1; }
 

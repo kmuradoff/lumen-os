@@ -5,6 +5,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.text.TextPaint;
@@ -19,6 +21,11 @@ import android.text.TextPaint;
  * The caption under the board (stock: blue icon + "自动梯形校正中", or orange icon + "光学变焦中"
  * for event 115) is drawn separately by {@link #drawCaption} so it can be localized and switched
  * without a second bitmap. The caption band lies below the checkerboard (y 999..1035).
+ *
+ * Lumen OS 1.0.1 (interface resolution 1080p / 2K / 4K): the bitmap is an ALPHA_8 coverage mask
+ * ("how black", 0 = white) at the real UI size, drawn by AkWarpView in black over a white rect: the
+ * same picture as the opaque ARGB pattern of 1.0, sharp at every resolution, at a quarter of the
+ * memory (1080p 2.1 MB, 2K 3.7 MB, 4K 8.3 MB = what the 1080p ARGB bitmap took before).
  */
 final class AkPatternRenderer {
     static final int CAPTION_KEYSTONE = 0, CAPTION_ZOOM = 1;
@@ -27,12 +34,17 @@ final class AkPatternRenderer {
 
     private AkPatternRenderer() {}
 
-    /** Renders the pattern without caption into a new w x h bitmap (any thread). */
+    /**
+     * Renders the pattern without caption into a new w x h ALPHA_8 mask (any thread): alpha = the black
+     * of the pattern, 0 = its white. Same drawing order as the opaque one: the black path on the
+     * (cleared = white) background, then the white data cells taking the black away again (DST_OUT is
+     * exactly "white painted over black" for an anti-aliased edge).
+     */
     static Bitmap render(AkPatternSpec s, int w, int h) {
-        Bitmap b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Bitmap b = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8);
+        b.eraseColor(Color.TRANSPARENT);
         Canvas c = new Canvas(b);
         c.scale(w / (float) AkPatternSpec.W, h / (float) AkPatternSpec.H);
-        c.drawColor(Color.WHITE);
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setStyle(Paint.Style.FILL);
 
@@ -45,7 +57,7 @@ final class AkPatternRenderer {
         p.setColor(Color.BLACK);
         c.drawPath(black, p);
 
-        p.setColor(Color.WHITE);
+        p.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
         for (int id = 0; id < 4; id++) {
             Path white = new Path();
             white.setFillType(Path.FillType.WINDING);
@@ -75,7 +87,7 @@ final class AkPatternRenderer {
 
     /**
      * Draws icon + caption centred under the board, in DESIGN coordinates (the caller's canvas is
-     * already scaled to 1920 x 1080 and warped with the pattern). Our own simple glyphs: a keystone
+     * already scaled from 1920 x 1080 to the view at any UI resolution and warped with the pattern). Our own simple glyphs: a keystone
      * trapezoid (keystone) or a magnifier (optical zoom).
      */
     static void drawCaption(Canvas c, CaptionPaints cp, String caption, int kind) {

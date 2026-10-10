@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Traditional Chinese (Taiwan) translation of res/values/strings_pair.xml (Lumen OS 1.0 remote step). -->
+<resources>
+    <string name="remote_wake">請按遙控器上的任意鍵</string>
+    <string name="remote_later_hint">手邊沒有遙控器？可用投影機上的按鍵或鍵盤略過此步驟，之後以同樣方式配對。</string>
+    <string name="remote_press_ok">請按遙控器上的 OK 鍵</string>
+</resources>

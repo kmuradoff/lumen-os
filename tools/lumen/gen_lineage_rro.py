@@ -39,8 +39,8 @@ MANIFEST = '''<?xml version="1.0" encoding="utf-8"?>
      No code, no permissions. Signed with the release platform key by the sign stage. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.z9x.overlay.lineageplatform"
-    android:versionCode="100"
-    android:versionName="1.0">
+    android:versionCode="102"
+    android:versionName="1.0.1">
     <overlay
         android:targetPackage="lineageos.platform"
         android:isStatic="true"

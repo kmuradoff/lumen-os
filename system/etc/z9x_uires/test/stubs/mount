@@ -1,0 +1,99 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub of toybox mount, only the three forms z9x_uires.sh may use (paths in $Z9X_ROOT; the lines added
+# to $Z9X_ROOT/proc/self/mountinfo carry the paths without $Z9X_ROOT, in the shape of the Z9X's own lines):
+#   mount -t tmpfs -o OPTS NAME DIR  a fresh, empty, writable tmpfs at DIR (an existing directory; its own
+#                                    entries wait in $Z9X_T/mnt/<n>.hidden until its umount), DIR's mode from
+#                                    mode= (else 1777); line "<id> 34 0:<dev> / DIR rw,relatime shared:<g> -
+#                                    tmpfs NAME rw,seclabel,OPTS" (mode=0755 shown as mode=755, as the kernel)
+#   mount -o remount,ro DIR          DIR must be the top mount of a stub tmpfs: DIR and its files become
+#                                    read-only (a-w; the modes they had are listed in $Z9X_T/remount.modes as
+#                                    "MODE NAME" lines), its line ro in both option fields (as measured on the
+#                                    Z9X). Any other path is a misuse: the real toybox remounts whatever holds
+#                                    it (for a path on /dev: the whole /dev tmpfs)
+#   mount -o bind SRC DST            SRC a file directly in a stub tmpfs (the top mount of its directory),
+#                                    DST a file: DST then reads as SRC (SRC's bytes put into the 0444 DST,
+#                                    DST's own bytes kept in $Z9X_T/mnt/<n>.orig, back at its umount or at the
+#                                    next start); its line inherits the tmpfs's ro / rw in both option fields
+# Faults (files in $Z9X_T): tmpfs.fail = the tmpfs mount fails; tmpfs.noop = it returns 0, nothing mounted;
+# tmpfs.full = mounted, nothing can be written in it (ENOSPC); remount.fail = the remount fails; remount.noop =
+# it returns 0, the tmpfs stays read-write; mount.fail = the bind fails; mount.noop = it returns 0 without
+# effect; mount.rw = the bind lands read-write in both option fields. line.tmpfs / line.remount / line.bind:
+# that mountinfo line (a real one of the Z9X) instead of the one made here.
+# Calls go to $Z9X_T/mount.log; a misuse (any other form or path) also to $Z9X_T/stub.err: run.sh fails the
+# case on it (the script hides mount's stderr).
+echo "mount $*" >> "$Z9X_T/mount.log"
+mi=$Z9X_ROOT/proc/self/mountinfo
+M=$Z9X_T/mnt
+misuse() { echo "mount stub: $*" >&2; echo "mount: $*" >> "$Z9X_T/stub.err"; exit 1; }
+next_id() { mkdir -p "$M"; n=$(( $(cat "$M/seq" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$M/seq"; }
+top() { awk -v p="$1" '$5 == p { l = $0 } END { print l }' "$mi" 2>/dev/null; }   # the top mountinfo line at p
+
+if [ "${1-}" = -t ]; then
+  [ $# -eq 6 ] && [ "$2" = tmpfs ] && [ "$3" = -o ] || misuse "unexpected arguments: $*"
+  opts=$4; name=$5; dir=$6
+  case "$dir" in "$Z9X_ROOT"/*) ;; *) misuse "tmpfs outside the fake root: $dir" ;; esac
+  [ -d "$dir" ] || { echo "mount: $dir: No such file or directory" >&2; exit 1; }
+  [ -f "$Z9X_T/tmpfs.fail" ] && { echo "mount: $name->$dir: Permission denied" >&2; exit 1; }
+  [ -f "$Z9X_T/tmpfs.noop" ] && exit 0
+  next_id
+  mkdir "$M/$n.hidden"
+  find "$dir" -mindepth 1 -maxdepth 1 -exec mv {} "$M/$n.hidden/" \;
+  md=$(echo ",$opts" | sed -n -E 's/.*,mode=0*([0-7]+)(,.*)?$/\1/p')
+  chmod "${md:-1777}" "$dir"
+  [ -f "$Z9X_T/tmpfs.full" ] && chmod a-w "$dir"
+  printf '%s\n' "$dir" > "$M/$n.path"; echo tmpfs > "$M/$n.kind"
+  so=$(echo ",$opts" | sed -E 's/,mode=0+([0-7])/,mode=\1/g')
+  line="$((200 + n)) 34 0:$((90 + n)) / ${dir#"$Z9X_ROOT"} rw,relatime shared:$((40 + n)) - tmpfs $name rw,seclabel$so"
+  [ -f "$Z9X_T/line.tmpfs" ] && line=$(cat "$Z9X_T/line.tmpfs")
+  printf '%s\n' "$line" >> "$mi"
+  exit 0
+fi
+
+[ "${1-}" = -o ] && [ $# -ge 2 ] || misuse "unexpected arguments: $*"
+opts=$2; shift 2
+case "$opts" in
+remount,ro)
+  [ $# -eq 1 ] || misuse "remount,ro needs one path: $*"
+  p=${1#"$Z9X_ROOT"}
+  k=
+  for f in "$M"/*.path; do
+    [ -f "$f" ] && [ "$(cat "$f")" = "$1" ] && [ "$(cat "${f%.path}.kind")" = tmpfs ] && k=1
+  done
+  case "$(top "$p")" in *" - tmpfs "*) ;; *) k= ;; esac
+  [ -n "$k" ] || misuse "remount,ro of $p, not a stub tmpfs mount point (the real toybox would remount what holds it)"
+  [ -f "$Z9X_T/remount.fail" ] && { echo "mount: $p: Device or resource busy" >&2; exit 1; }
+  [ -f "$Z9X_T/remount.noop" ] && exit 0
+  for f in "$1"/* "$1"/.[!.]*; do [ -e "$f" ] && echo "$(/bin/ls -ld "$f" | cut -c1-10) ${f##*/}"; done > "$Z9X_T/remount.modes"
+  chmod -R a-w "$1"
+  awk -v p="$p" -v nl="$(cat "$Z9X_T/line.remount" 2>/dev/null)" '{ l[NR] = $0; if ($5 == p) k = NR }
+    END { for (i = 1; i <= NR; i++) {
+      if (i == k) {
+        if (nl != "") l[i] = nl
+        else { $0 = l[i]; sub(/^rw/, "ro", $6); for (j = 7; j < NF && $j != "-"; j++) ; sub(/^rw/, "ro", $(j + 3)); l[i] = $0 }
+      }
+      print l[i] } }' "$mi" > "$mi.tmp" && mv "$mi.tmp" "$mi"
+  ;;
+bind)
+  [ $# -eq 2 ] && [ -f "$1" ] && [ -f "$2" ] || misuse "bind needs two files: $*"
+  case "$2" in "$Z9X_ROOT"/*) ;; *) misuse "bind over a file outside the fake root: $2" ;; esac
+  tl=$(top "$(dirname "${1#"$Z9X_ROOT"}")")
+  case "$tl" in *" - tmpfs "*) ;; *) misuse "bind of $1: not a file of a stub tmpfs (on the Z9X: the /dev tmpfs, read-write)" ;; esac
+  [ -f "$Z9X_T/mount.fail" ] && { echo "mount: $1->$2: Invalid argument" >&2; exit 1; }
+  [ -f "$Z9X_T/mount.noop" ] && exit 0
+  next_id
+  printf '%s\n' "$2" > "$M/$n.path"; echo bind > "$M/$n.kind"
+  cp "$2" "$M/$n.orig"
+  chmod u+w "$2" && cat "$1" > "$2" && chmod a-w "$2"
+  rw=; [ -f "$Z9X_T/mount.rw" ] && rw=1
+  line=$(echo "$tl" | awk -v id=$((200 + n)) -v root="/${1##*/}" -v dst="${2#"$Z9X_ROOT"}" -v rw="$rw" '{
+    for (j = 7; j < NF && $j != "-"; j++) ;
+    o = $6; s = $(j + 3); if (rw) { sub(/^ro/, "rw", o); sub(/^ro/, "rw", s) }
+    opt = ""; for (k = 7; k < j; k++) opt = opt " " $k
+    print id " 111 " $3 " " root " " dst " " o opt " - " $(j + 1) " " $(j + 2) " " s }')
+  [ -f "$Z9X_T/line.bind" ] && line=$(cat "$Z9X_T/line.bind")
+  printf '%s\n' "$line" >> "$mi"
+  ;;
+*) misuse "unexpected options: $opts $*" ;;
+esac
+exit 0

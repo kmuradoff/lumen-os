@@ -43,6 +43,7 @@ toast_not_ready=프로젝터가 아직 준비되지 않았습니다
 toast_failed=실행하지 못했습니다
 toast_curtain_offer=화면이 이동했습니다: 프로젝터 → 키스톤 보정 → ‘지금 스크린에 맞추기’
 toast_setup_running=먼저 설정을 완료하세요
+slot_home_apps=Lumen Home: 앱
 
 @projector/strings_ak.xml
 ak_caption_keystone=자동 키스톤 보정 중
@@ -538,6 +539,38 @@ voice_hold=말하는 동안 마이크 버튼을 길게 누르세요
 kb_title=키보드
 kb_get_app=키보드 받기: %1$s
 kb_no_play=Google Play를 사용할 수 없습니다. 사용하는 언어로 입력하려면 키보드 앱을 설치하세요.
+tab_home=홈
+hero_resume=이어서 보기
+hero_more=자세히
+hero_kind_next=다음 에피소드
+hero_kind_watchlist=보고 싶은 목록
+weather_line=%1$s, %2$s
+wx_clear=맑음
+wx_partly=구름 조금
+wx_cloudy=흐림
+wx_fog=안개
+wx_drizzle=이슬비
+wx_rain=비
+wx_snow=눈
+wx_showers=소나기
+wx_thunder=뇌우
+cz_wallpaper=배경화면
+cz_wallpaper_sub=홈 화면과 화면 보호기에 살아 있는 풍경을 보여 줍니다. 하늘이 실제 해와 날씨에 따라 바뀝니다.
+cz_continue=홈에서 이어서 보기
+cz_continue_sub=숨기면 홈에는 살아 있는 배경화면 위의 시간, 날짜, 날씨와 앱만 표시됩니다. 앱 채널도 표시되지 않습니다.
+cz_continue_show=표시
+cz_continue_hide=숨기기
+apps_install_usb=USB에서 설치
+usb_title=USB에서 설치
+usb_none=.apk 파일이 있는 USB 메모리를 꽂으세요(루트 또는 apks 폴더).
+usb_empty=USB 메모리에 .apk 파일이 없습니다. 루트 또는 apks 폴더에 넣으세요.
+usb_new=새 앱
+usb_update=업데이트
+usb_installing=설치 중: %1$d%%
+usb_done=%1$s 설치됨
+usb_failed=%1$s 설치 실패: %2$s
+kb_no_store=USB 메모리에서 키보드 앱을 설치하세요: 앱 > USB에서 설치.
+voice_none=음성 검색에는 음성 인식 앱이 필요합니다. 검색어를 입력하세요.
 @updater/strings.xml
 app_name=Lumen OS 업데이트
 settings_title=Lumen OS 업데이트
@@ -622,6 +655,17 @@ n_available_body=열어서 다운로드하고 설치하세요.
 n_ready_title=다시 시작하여 업데이트 완료
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s 실행 중
+done_unhealthy_body=업데이트 후 확인에서 문제가 발견되었습니다: %1$s. 제대로 작동하지 않는 기능이 있으면 컴퓨터용 설치 프로그램의 복구 모드(rescue)를 사용하세요. 데이터는 그대로 유지됩니다.
+done_rescue_scan=코드를 스캔하면 복구 모드 가이드가 열립니다.
+done_details=기술 세부정보: %1$s
+why_restarted=시스템이 예기치 않게 다시 시작됨
+why_service=시스템 서비스가 시작되지 않음
+why_lamp=광원 및 팬 서비스가 시작되지 않음
+why_confirm=시스템이 새 버전의 정상 작동을 확인하지 못함
+why_no_rollback=이전 버전으로 되돌릴 수 없었음
+why_unknown=기록된 세부정보 없음
+blk_channel=이 업데이트는 다른 Lumen OS 에디션용입니다(%1$s).
 @projector/strings_recents.xml
 recents_title=최근 앱
 recents_close=닫기
@@ -760,6 +804,8 @@ name_other=기타…
 name_hint=이름(최대 32자)
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=설정에서 이 언어를 사용합니다. 번역되지 않은 Lumen 앱은 영어로 표시됩니다.
+done_offline_hint_nogms=인터넷 없음: 시간대는 나중에 설정에서 지정하세요.
 @projector/strings_cec.xml
 cec_entry=HDMI 기기(CEC)
 cec_unavailable=HDMI-CEC를 사용할 수 없습니다

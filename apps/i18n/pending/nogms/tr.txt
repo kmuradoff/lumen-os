@@ -1,0 +1,21 @@
+# Lumen OS without Google (1.0.1, docs/NOGMS_PLAN.md section 8): NEW strings for the merge into
+# langs/tr.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+apps_install_usb=USB’den yükle
+usb_title=USB’den yükle
+usb_none=.apk dosyaları olan bir USB bellek takın (kök klasörde veya apks klasöründe).
+usb_empty=USB bellekte .apk dosyası yok. Dosyaları kök klasöre veya apks klasörüne koyun.
+usb_new=Yeni
+usb_update=Güncelleme
+usb_installing=Yükleniyor: %%%1$d
+usb_done=%1$s yüklendi
+usb_failed=%1$s yüklenmedi: %2$s
+kb_no_store=Bir klavye uygulamasını USB bellekten yükleyin: Uygulamalar > USB’den yükle.
+voice_none=Sesli arama için bir konuşma tanıma uygulaması gerekir. Aramanızı yazın.
+@updater/strings.xml
+blk_channel=Bu güncelleme başka bir Lumen OS sürümü için (%1$s).
+@setup/strings.xml
+lang_more_hint_nogms=Ayarlar bu dili kullanır. Çevirisi olmayan Lumen uygulamaları İngilizce kalır.
+done_offline_hint_nogms=İnternet yok: saat dilimini daha sonra Ayarlar’dan seçin.
+@projector/strings.xml
+slot_home_apps=Lumen Home: Uygulamalar

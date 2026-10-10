@@ -43,6 +43,7 @@ toast_not_ready=Projektor nie jest jeszcze gotowy
 toast_failed=Nie udało się wykonać
 toast_curtain_offer=Obraz się przesunął: Projektor → Korekcja trapezu → „Dopasuj do ekranu teraz”
 toast_setup_running=Najpierw dokończ konfigurację
+slot_home_apps=Lumen Home: Aplikacje
 
 @projector/strings_ak.xml
 ak_caption_keystone=Trwa automatyczna korekcja trapezu
@@ -544,6 +545,38 @@ voice_hold=Przytrzymaj przycisk mikrofonu, gdy mówisz
 kb_title=Klawiatura
 kb_get_app=Pobierz klawiaturę: %1$s
 kb_no_play=Google Play jest niedostępny. Zainstaluj aplikację klawiatury, aby pisać w swoim języku.
+tab_home=Główna
+hero_resume=Kontynuuj
+hero_more=Więcej informacji
+hero_kind_next=Następny odcinek
+hero_kind_watchlist=Do obejrzenia
+weather_line=%1$s, %2$s
+wx_clear=bezchmurnie
+wx_partly=częściowe zachmurzenie
+wx_cloudy=pochmurno
+wx_fog=mgła
+wx_drizzle=mżawka
+wx_rain=deszcz
+wx_snow=śnieg
+wx_showers=przelotne opady
+wx_thunder=burza
+cz_wallpaper=Tapeta
+cz_wallpaper_sub=Żywy krajobraz na ekranie głównym i w wygaszaczu ekranu: jego niebo podąża za prawdziwym słońcem i pogodą.
+cz_continue=Oglądaj dalej na ekranie głównym
+cz_continue_sub=Po ukryciu ekran główny pokazuje tylko zegar, datę i pogodę na żywej tapecie oraz Twoje aplikacje. Kanały aplikacji też nie są wyświetlane.
+cz_continue_show=Pokazuj
+cz_continue_hide=Ukryj
+apps_install_usb=Zainstaluj z USB
+usb_title=Instalacja z USB
+usb_none=Włóż pamięć USB z plikami .apk (w katalogu głównym lub w folderze apks).
+usb_empty=Na pamięci USB nie ma plików .apk. Umieść je w katalogu głównym lub w folderze apks.
+usb_new=Nowa
+usb_update=Aktualizacja
+usb_installing=Instalowanie: %1$d%%
+usb_done=Zainstalowano: %1$s
+usb_failed=Nie zainstalowano: %1$s (%2$s)
+kb_no_store=Zainstaluj aplikację klawiatury z pamięci USB: Aplikacje > Zainstaluj z USB.
+voice_none=Wyszukiwanie głosowe wymaga aplikacji do rozpoznawania mowy. Wpisz zapytanie.
 @updater/strings.xml
 app_name=Aktualizacja Lumen OS
 settings_title=Aktualizacja Lumen OS
@@ -631,6 +664,17 @@ n_available_body=Otwórz, aby pobrać i zainstalować.
 n_ready_title=Uruchom ponownie, aby dokończyć aktualizację
 
 # Lumen OS 1.0: lane projector (merged in W2)
+done_unhealthy_title=Lumen OS %1$s działa
+done_unhealthy_body=Kontrola po aktualizacji wykryła problem: %1$s. Jeśli coś nie działa, użyj trybu ratunkowego (rescue) instalatora na komputer. Twoje dane zostaną zachowane.
+done_rescue_scan=Zeskanuj kod, aby otworzyć instrukcję trybu ratunkowego.
+done_details=Szczegóły techniczne: %1$s
+why_restarted=system nieoczekiwanie uruchomił się ponownie
+why_service=usługa systemowa się nie uruchomiła
+why_lamp=usługa lampy i wentylatorów się nie uruchomiła
+why_confirm=system nie mógł potwierdzić, że nowa wersja działa
+why_no_rollback=powrót do poprzedniej wersji nie był możliwy
+why_unknown=nie zapisano szczegółów
+blk_channel=Ta aktualizacja jest dla innej edycji Lumen OS (%1$s).
 @projector/strings_recents.xml
 recents_title=Ostatnie aplikacje
 recents_close=Zamknij
@@ -769,6 +813,8 @@ name_other=Inna…
 name_hint=Nazwa (do 32 znaków)
 
 # Lumen OS 1.0: lane cec (merged in W2)
+lang_more_hint_nogms=Ustawienia używają tego języka. Aplikacje Lumen bez tłumaczenia pozostaną po angielsku.
+done_offline_hint_nogms=Brak internetu: ustaw strefę czasową później w ustawieniach.
 @projector/strings_cec.xml
 cec_entry=Urządzenia HDMI (CEC)
 cec_unavailable=HDMI-CEC jest niedostępne

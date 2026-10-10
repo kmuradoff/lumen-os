@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arabic translation of res/values/strings_display.xml (English base), Lumen OS 1.0.1.
+     Hand-written (not in i18n/langs); checked by i18n/gen.py. Keep names/placeholders. -->
+<resources>
+    <string name="uires_section">الشاشة</string>
+    <string name="uires_row">دقة الواجهة</string>
+    <string name="uires_default_fmt">%1$s (افتراضي)</string>
+    <string name="uires_summary">تمنح 4K أوضح نص، و1080p، كما في XGIMI، هي الأخف على المعالج الرسومي. يُعاد تشغيل جهاز العرض لتغييرها.</string>
+    <string name="uires_summary_fallback">الآن %1$s: لم تعمل %2$s بشكل صحيح على جهاز العرض هذا، لذا عاد تلقائيًا. لإعادة المحاولة، اختر %2$s.</string>
+    <string name="uires_choose_text">تستخدم 4K كل بكسل في لوحة 4K. أما 1080p، كما في XGIMI، فترسم ربع البكسلات فقط ويكبّر جهاز العرض الصورة.</string>
+    <string name="uires_opt_1080">كما في XGIMI: الأخف على المعالج الرسومي، والنص أنعم قليلًا</string>
+    <string name="uires_opt_1440">للاختبار فقط: لم يُتحقق من التحجيم إلى اللوحة</string>
+    <string name="uires_opt_2160">أوضح نص: كل بكسل في لوحة 4K</string>
+    <string name="uires_current">الحالية</string>
+    <string name="uires_confirm_title">التبديل إلى %1$s؟</string>
+    <string name="uires_confirm_up">سيصبح النص والقوائم أوضح. على المعالج الرسومي أن يرسم أكثر، لذا قد تبدو بعض التطبيقات أبطأ قليلًا.</string>
+    <string name="uires_confirm_down">سيرسم المعالج الرسومي أقل، لذا قد تبدو القوائم والتطبيقات أسرع، ويصبح النص أنعم قليلًا.</string>
+    <string name="uires_confirm_restart">يُعاد تشغيل جهاز العرض للتطبيق (نحو دقيقة). إذا لم تعد الصورة بشكل صحيح، فسيعود تلقائيًا إلى %1$s.</string>
+    <string name="uires_restart">إعادة التشغيل الآن</string>
+    <string name="uires_keep_title">هل تريد الإبقاء على هذه الدقة؟</string>
+    <string name="uires_keep_text">تعمل الواجهة الآن بدقة %1$s. إذا كان النص والصورة يبدوان صحيحين، فاختر إبقاء.</string>
+    <string name="uires_keep_countdown">العودة إلى %1$s خلال %2$d ث</string>
+    <string name="uires_keep">إبقاء</string>
+    <string name="uires_revert">العودة إلى %1$s</string>
+    <string name="uires_failed">تعذّر تغيير الدقة</string>
+</resources>

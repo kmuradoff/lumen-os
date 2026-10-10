@@ -1,5 +1,6 @@
 package org.z9x.projector.dream;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.util.Log;
 
@@ -16,8 +17,8 @@ import org.z9x.projector.ui.ToggleRow;
 /**
  * MODULE "screensaver" (v6.2): the "Screensaver" section on the quick panel's All settings page,
  * added through the panel's extension point (registered by {@link DreamLamp#install}), so no panel
- * file is edited. Rows: on/off, start after, screensaver light, turn off after, use the clock
- * screensaver (only while another screensaver is active), start screensaver.
+ * file is edited. Rows: on/off, start after, screensaver light, turn off after, show (Lumen OS 1.0.1:
+ * the living sky or the clock, both ways; it replaces "Use the clock screensaver"), start screensaver.
  *
  * Main thread. Reads are cheap Settings lookups; every write goes through {@link DreamSettings},
  * which runs it on "z9x-lamp". No HAL call here (the lamp level is applied by DreamLamp while
@@ -29,7 +30,9 @@ final class DreamPanelRows implements QuickPanel.Extension {
     private Context app;
     private ToggleRow enabled;
     private ChoiceRow delay, light, sleep;
-    private NavRow useClock;
+    /** Lumen OS 1.0.1: "Show  < Living sky | Clock >" (only the clock while the sky is not installed). */
+    private ChoiceRow show;
+    private ComponentName[] showDreams;
     private NavRow startNow;
     private int[] delayMin;
     private int[] lampChoices;
@@ -84,13 +87,22 @@ final class DreamPanelRows implements QuickPanel.Extension {
             }
         }));
 
-        useClock = page.add(new NavRow(app, app.getString(R.string.dream_use_clock), () -> {
+        // the sky's name as TvSettings lists it (Lumen Home's label), the clock as ours
+        boolean sky = DreamSettings.skyInstalled(app);
+        showDreams = sky ? new ComponentName[]{DreamSettings.SKY, DreamSettings.CLOCK}
+                : new ComponentName[]{DreamSettings.CLOCK};
+        CharSequence[] showLabels = sky
+                ? new CharSequence[]{DreamSettings.skyLabel(app), app.getString(R.string.dream_label)}
+                : new CharSequence[]{app.getString(R.string.dream_label)};
+        show = page.add(new ChoiceRow(app, app.getString(R.string.dream_show), showLabels, (row, i) -> {
             try {
-                DreamSettings.makeClockActive(app, this::refresh);
+                if (i < 0 || i >= showDreams.length) return;
+                Log.i(TAG, "panel: show " + showDreams[i].flattenToShortString());
+                DreamSettings.makeActive(app, showDreams[i], this::refresh);
             } catch (Throwable t) {
-                Log.w(TAG, "use clock row: " + t);
+                Log.w(TAG, "show row: " + t);
             }
-        })).setChevron(false);
+        })).setCommitDelay(400);                              // quick LEFT/RIGHT presses: one write
         startNow = page.add(new NavRow(app, app.getString(R.string.dream_start_now), () -> {
             try {
                 if (!KeyReceiver.isSetupComplete(app)) {
@@ -123,8 +135,14 @@ final class DreamPanelRows implements QuickPanel.Extension {
             for (int i = 0; i < sleepMs.length; i++) if (sleepMs[i] == ms || (sleepMs[i] < 0 && ms < 0)) si = i;
             sleep.setSelected(si);
             light.setRowEnabled(on);
-            boolean clock = DreamSettings.isClockActive(app);
-            useClock.setRowEnabled(on && !clock);
+            DreamDefaults.Shown shown = DreamSettings.shown(app);
+            int si2 = -1;
+            for (int i = 0; i < showDreams.length; i++) {
+                if ((shown == DreamDefaults.Shown.SKY && DreamSettings.SKY.equals(showDreams[i]))
+                        || (shown == DreamDefaults.Shown.CLOCK && DreamSettings.CLOCK.equals(showDreams[i]))) si2 = i;
+            }
+            show.setSelected(si2);                            // another dream: "—"
+            show.setRowEnabled(on);
             if (startNow != null) startNow.setRowEnabled(on);   // startNow() does nothing while off
         } catch (Throwable t) {
             Log.w(TAG, "screensaver rows: " + t);
