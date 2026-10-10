@@ -224,13 +224,13 @@ EDITION_SFX=; [ "$GMS" = 0 ] && EDITION_SFX=-nogms
 MANIFEST_BASE=https://github.com/kmuradoff/lumen-os/releases/latest/download
 CHANNEL=$([ "$VARIANT" = public ] && echo public || echo stable)$EDITION_SFX
 MANIFEST_URL=$MANIFEST_BASE/update-$CHANNEL.json
-# Lumen OS release (1.0.1; 1.0.0 shipped 2026-10-08): user-facing version and the updater's version_code.
+# Lumen OS release (1.0.2; 1.0.0 shipped 2026-10-08, 1.0.1 on 2026-10-10): user-facing version and the updater's version_code.
 # Scheme (tools/ota/image/ota_props.txt, docs/ota.md): version_code = major*10000 + minor*100 + patch + 1,
 # so 1.0.0 = 10001 is offered over the 1.0 test builds (version_code 10000, build_id lumen-1.0-<date>)
-# and 1.0.1 = 10002 over 1.0.0.
+# 1.0.1 = 10002 over 1.0.0 and 1.0.2 = 10003 over 1.0.1.
 # ro.z9x.version, ro.lumen.version, the build id lumen-$VER-<date>[suffix] and the version_code are all
 # checked against VER in the preflight.
-VER=1.0.1
+VER=1.0.2
 BUILD_ID=lumen-$VER-$BUILD_DATE$BUILD_ID_SUFFIX
 case $(uname -s) in Linux) DEXPREOPT=${DEXPREOPT:-1} ;; *) DEXPREOPT=${DEXPREOPT:-0} ;; esac
 pick() { for c in "$@"; do if command -v "$c" >/dev/null 2>&1; then command -v "$c"; return 0; fi; done; return 1; }

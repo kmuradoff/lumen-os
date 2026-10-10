@@ -101,7 +101,7 @@ NEEDS_ACTION = {
     'org.z9x.updater': ['android.settings.SYSTEM_UPDATE_SETTINGS'],  # About > System update row
 }
 HOME_PRIO = {'org.z9x.setup': 10, 'org.z9x.home': 3}                 # plan C3
-VERSION_NAME = '1.0.1'  # Lumen OS 1.0.1 (1.0.0 had '1.0.0', the 1.0 builds '1.0')
+VERSION_NAME = '1.0.2'  # Lumen OS 1.0.2 (1.0.1 had '1.0.1', 1.0.0 '1.0.0', the 1.0 builds '1.0')
 
 
 def cmd_apks(apps, testcerts, releasecerts, plan_out):

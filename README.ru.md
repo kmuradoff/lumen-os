@@ -4,7 +4,7 @@
 
 Android TV 14 для проектора XGIMI Z9X на основе LineageOS 21.
 
-Состояние: версия 1.0.1, идёт тестирование.
+Текущая версия: 1.0.2.
 
 <p>
 <img src="docs/screenshots/01_sky.jpg" width="49%" alt="Lumen Home с живым небом">
