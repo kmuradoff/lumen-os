@@ -150,4 +150,12 @@
     <string name="panel_hdmi_settings">HDMI-Einstellungen</string>
     <string name="panel_lamp_hint">Bei 10 zweimal → drücken, um Boost einzuschalten.</string>
     <string name="panel_eye_desc">Das Licht wird gedimmt, wenn sich jemand vor dem Objektiv befindet.</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">Nebeneinander</string>
+    <string name="panel_3d_tb">Übereinander</string>
+    <string name="panel_3d_sbs_2d">Nebeneinander als 2D</string>
+    <string name="panel_3d_tb_2d">Übereinander als 2D</string>
+    <string name="panel_3d_summary">Während ein Video läuft. 3D braucht aktive DLP-Link-Brillen; „als 2D“ zeigt eine 3D-Datei flach, ohne Brille.</string>
+    <string name="panel_3d_need_video">3D funktioniert, während ein Video läuft: zuerst das Video starten</string>
+    <string name="panel_3d_not_now">3D ist gerade nicht verfügbar (HDR-Video, Spielmodus oder 120 Hz)</string>
 </resources>

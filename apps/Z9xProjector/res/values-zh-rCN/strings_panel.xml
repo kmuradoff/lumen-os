@@ -148,4 +148,12 @@
     <string name="panel_hdmi_settings">HDMI 设置</string>
     <string name="panel_lamp_hint">在 10 级时连按两次 → 开启 Boost。</string>
     <string name="panel_eye_desc">有人位于镜头前方时，光线会自动调暗。</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">左右</string>
+    <string name="panel_3d_tb">上下</string>
+    <string name="panel_3d_sbs_2d">左右转2D</string>
+    <string name="panel_3d_tb_2d">上下转2D</string>
+    <string name="panel_3d_summary">播放视频时可用。3D需要DLP-Link主动快门眼镜；“转2D”可不戴眼镜以平面方式观看3D片源。</string>
+    <string name="panel_3d_need_video">3D需在播放视频时使用，请先播放视频</string>
+    <string name="panel_3d_not_now">当前无法使用3D（HDR视频、游戏模式或120 Hz）</string>
 </resources>

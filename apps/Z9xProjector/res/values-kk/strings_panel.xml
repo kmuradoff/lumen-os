@@ -150,4 +150,12 @@
     <string name="panel_hdmi_settings">HDMI параметрлері</string>
     <string name="panel_lamp_hint">10 деңгейінде Boost қосу үшін → түймесін екі рет басыңыз.</string>
     <string name="panel_eye_desc">Объектив алдында адам болғанда жарық күңгірттеледі.</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">Қатар</string>
+    <string name="panel_3d_tb">Жоғары және төмен</string>
+    <string name="panel_3d_sbs_2d">Қатар, 2D ретінде</string>
+    <string name="panel_3d_tb_2d">Жоғары және төмен, 2D ретінде</string>
+    <string name="panel_3d_summary">Бейне ойнап тұрғанда. 3D үшін белсенді DLP-Link көзілдірігі керек. «2D ретінде» 3D файлды көзілдіріксіз кәдімгі сурет етіп көрсетеді.</string>
+    <string name="panel_3d_need_video">3D бейне ойнап тұрғанда жұмыс істейді: алдымен оны қосыңыз</string>
+    <string name="panel_3d_not_now">3D қазір қолжетімсіз (HDR бейне, ойын режимі немесе 120 Гц)</string>
 </resources>

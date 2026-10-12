@@ -189,4 +189,13 @@
     <string name="panel_hdmi_settings">HDMI settings</string>
     <string name="panel_lamp_hint">At 10, press → twice to turn on Boost.</string>
     <string name="panel_eye_desc">The light is dimmed when someone is in front of the lens.</string>
+    <!-- Lumen OS 1.0.2: 3D on the Picture page (display.ThreeD; the stock 3D modes) -->
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">Side by side</string>
+    <string name="panel_3d_tb">Top and bottom</string>
+    <string name="panel_3d_sbs_2d">Side by side as 2D</string>
+    <string name="panel_3d_tb_2d">Top and bottom as 2D</string>
+    <string name="panel_3d_summary">While a video plays. 3D needs active DLP-Link glasses; “as 2D” shows a 3D file flat, without glasses.</string>
+    <string name="panel_3d_need_video">3D works while a video plays: start the video first</string>
+    <string name="panel_3d_not_now">3D is not available now (HDR video, game mode or 120 Hz)</string>
 </resources>

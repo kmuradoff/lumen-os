@@ -183,6 +183,18 @@ public final class Gmpf2Client extends HidlCaller {
         return call(SET_KST_PREPARE, q, RET_BOOL);
     }
 
+    /**
+     * 18 setKstPrepare(enter, 2): stock ZoomStateView around an optical zoom session ((true,2) before the
+     * first step, (false,2) when it closes). Caller: panel.OpticalZoomPanel only. TSV W=writeBool,writeInt32 R=readBool.
+     */
+    public boolean setKstPrepareForZoom(boolean enter) throws RemoteException {
+        need();
+        HwParcel q = request();
+        q.writeBool(enter);
+        q.writeInt32(2);
+        return call(SET_KST_PREPARE, q, RET_BOOL);
+    }
+
     /** 201 setPushPullScreenOnOff(FALSE) only, when switching to ceiling mount (FS 2.9). TSV W=writeBool R=readBool. */
     public boolean disablePushPullScreenForCeiling() throws RemoteException { need(); return callBoolRetBool(SET_PUSH_PULL_SCREEN, false); }
 

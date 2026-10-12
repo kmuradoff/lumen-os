@@ -219,6 +219,14 @@ panel_lamp_hint=10 のときに → を 2 回押すと Boost がオンになり�
 panel_eye_desc=レンズの前に人がいるときは光を弱めます。
 # v6.2 tile grid
 panel_hdmi_settings=HDMI 設定
+panel_3d=3D
+panel_3d_sbs=サイドバイサイド
+panel_3d_tb=トップアンドボトム
+panel_3d_sbs_2d=サイドバイサイドを2Dで
+panel_3d_tb_2d=トップアンドボトムを2Dで
+panel_3d_summary=動画の再生中に使えます。3DにはDLP-Link対応のアクティブ3Dメガネが必要です。「2Dで」は3Dファイルをメガネなしで平面表示します。
+panel_3d_need_video=3Dは動画の再生中に使えます。先に動画を再生してください
+panel_3d_not_now=現在3Dは使えません(HDR動画、ゲームモード、120 Hz)
 
 @projector/strings_power.xml
 power_quick_wake_minutes=%1$d 分
@@ -325,6 +333,15 @@ kst_saved=台形補正を保存しました
 
 # v6.3 sound profiles
 kst_hint_view=メニュー：グリッド / 映像の上に枠 / テスト四角形
+panel_optical_zoom=光学ズーム
+panel_optical_zoom_summary=画質を落とさずに画面サイズを変えます。自動台形補正と「スクリーンに合わせる」はズームを再調整します。
+zoom_wait=準備中…
+zoom_hint=右: 大きく · 左: 小さく · 戻る: 完了
+zoom_position=サイズ %1$d / %2$d
+zoom_limit_big=これが最大の画面です
+zoom_limit_small=これが最小の画面です
+zoom_refused=プロジェクターがズームを動かしませんでした
+zoom_unavailable=現在、光学ズームは使えません
 @projector/strings_sound.xml
 sound_unknown_hint=現在のサウンド強化の状態は不明です。プロファイルを選ぶと再適用されます。
 sound_speaker_only=%1$s は内蔵スピーカーでのみ機能します

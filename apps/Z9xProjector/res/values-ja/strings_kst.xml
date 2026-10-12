@@ -21,4 +21,13 @@
     <string name="kst_reset_first">OKを長押しすると全画面に戻ります</string>
     <string name="kst_saved">台形補正を保存しました</string>
     <string name="kst_hint_view">メニュー：グリッド / 映像の上に枠 / テスト四角形</string>
+    <string name="panel_optical_zoom">光学ズーム</string>
+    <string name="panel_optical_zoom_summary">画質を落とさずに画面サイズを変えます。自動台形補正と「スクリーンに合わせる」はズームを再調整します。</string>
+    <string name="zoom_wait">準備中…</string>
+    <string name="zoom_hint">右: 大きく · 左: 小さく · 戻る: 完了</string>
+    <string name="zoom_position">サイズ %1$d / %2$d</string>
+    <string name="zoom_limit_big">これが最大の画面です</string>
+    <string name="zoom_limit_small">これが最小の画面です</string>
+    <string name="zoom_refused">プロジェクターがズームを動かしませんでした</string>
+    <string name="zoom_unavailable">現在、光学ズームは使えません</string>
 </resources>

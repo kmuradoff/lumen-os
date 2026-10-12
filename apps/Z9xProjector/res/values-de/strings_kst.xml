@@ -21,4 +21,13 @@
     <string name="kst_reset_first">OK halten, um auf das volle Bild zurückzusetzen</string>
     <string name="kst_saved">Trapezkorrektur gespeichert</string>
     <string name="kst_hint_view">Menü: Raster / über dem Bild / Testviereck</string>
+    <string name="panel_optical_zoom">Optischer Zoom</string>
+    <string name="panel_optical_zoom_summary">Bildgröße ohne Schärfeverlust. Die automatische Trapezkorrektur und „An Leinwand anpassen“ verstellen den Zoom wieder.</string>
+    <string name="zoom_wait">Vorbereitung …</string>
+    <string name="zoom_hint">Rechts: größer · Links: kleiner · Zurück: fertig</string>
+    <string name="zoom_position">Größe %1$d von %2$d</string>
+    <string name="zoom_limit_big">Das ist das größte Bild</string>
+    <string name="zoom_limit_small">Das ist das kleinste Bild</string>
+    <string name="zoom_refused">Der Projektor hat den Zoom nicht bewegt</string>
+    <string name="zoom_unavailable">Optischer Zoom ist gerade nicht verfügbar</string>
 </resources>

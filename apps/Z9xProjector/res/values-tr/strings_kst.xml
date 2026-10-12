@@ -21,4 +21,13 @@
     <string name="kst_reset_first">Tam görüntüye dönmek için OK\'yi basılı tutun</string>
     <string name="kst_saved">Yamuk düzeltme kaydedildi</string>
     <string name="kst_hint_view">Menü: ızgara / görüntü üzerinde / test dörtgeni</string>
+    <string name="panel_optical_zoom">Optik zoom</string>
+    <string name="panel_optical_zoom_summary">Netlik kaybı olmadan görüntü boyutu. Otomatik keystone ve “Ekrana sığdır” zoomu yeniden değiştirir.</string>
+    <string name="zoom_wait">Hazırlanıyor…</string>
+    <string name="zoom_hint">Sağ: daha büyük · Sol: daha küçük · Geri: bitti</string>
+    <string name="zoom_position">Boyut %1$d / %2$d</string>
+    <string name="zoom_limit_big">Bu en büyük görüntü</string>
+    <string name="zoom_limit_small">Bu en küçük görüntü</string>
+    <string name="zoom_refused">Projektör zoomu hareket ettirmedi</string>
+    <string name="zoom_unavailable">Optik zoom şu anda kullanılamıyor</string>
 </resources>

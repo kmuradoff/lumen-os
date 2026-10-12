@@ -221,6 +221,14 @@ panel_lamp_hint=Bei 10 zweimal → drücken, um Boost einzuschalten.
 panel_eye_desc=Das Licht wird gedimmt, wenn sich jemand vor dem Objektiv befindet.
 # v6.2 tile grid
 panel_hdmi_settings=HDMI-Einstellungen
+panel_3d=3D
+panel_3d_sbs=Nebeneinander
+panel_3d_tb=Übereinander
+panel_3d_sbs_2d=Nebeneinander als 2D
+panel_3d_tb_2d=Übereinander als 2D
+panel_3d_summary=Während ein Video läuft. 3D braucht aktive DLP-Link-Brillen; „als 2D“ zeigt eine 3D-Datei flach, ohne Brille.
+panel_3d_need_video=3D funktioniert, während ein Video läuft: zuerst das Video starten
+panel_3d_not_now=3D ist gerade nicht verfügbar (HDR-Video, Spielmodus oder 120 Hz)
 
 @projector/strings_power.xml
 power_quick_wake_minutes=%1$d Min.
@@ -327,6 +335,15 @@ kst_saved=Trapezkorrektur gespeichert
 
 # v6.3 sound profiles
 kst_hint_view=Menü: Raster / über dem Bild / Testviereck
+panel_optical_zoom=Optischer Zoom
+panel_optical_zoom_summary=Bildgröße ohne Schärfeverlust. Die automatische Trapezkorrektur und „An Leinwand anpassen“ verstellen den Zoom wieder.
+zoom_wait=Vorbereitung …
+zoom_hint=Rechts: größer · Links: kleiner · Zurück: fertig
+zoom_position=Größe %1$d von %2$d
+zoom_limit_big=Das ist das größte Bild
+zoom_limit_small=Das ist das kleinste Bild
+zoom_refused=Der Projektor hat den Zoom nicht bewegt
+zoom_unavailable=Optischer Zoom ist gerade nicht verfügbar
 @projector/strings_sound.xml
 sound_unknown_hint=Die aktuelle Klangverbesserung ist unbekannt. Wählen Sie ein Profil, um es erneut anzuwenden.
 sound_speaker_only=%1$s funktioniert nur mit dem eingebauten Lautsprecher

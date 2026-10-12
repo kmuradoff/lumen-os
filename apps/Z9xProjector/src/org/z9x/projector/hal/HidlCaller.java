@@ -1,5 +1,9 @@
 /*
- * HidlCaller: the single transact path shared by GmpfClient (IGmpf) and Gmpf2Client (IGmpf2).
+ * HidlCaller: the single transact path to XGIMI's vendor HAL (xgimi.hardware.gmpf@1.0), shared by every
+ * Lumen device app: Z9xProjector (GmpfClient = IGmpf, Gmpf2Client = IGmpf2) and Play6Projector (Play6Gmpf).
+ * SINGLE SOURCE: gsi/apps/common/hal/HidlCaller.java. The apps carry byte-identical copies made by
+ * `sh apps/common/sync.sh APP_DIR hal` (`--check` finds a drifted copy); never edit a copy.
+ * The method codes are NOT here: each device app keeps its own typed client with that device's code table.
  *
  * Wire rules (research/v6/RESULT_hal.json decisions[0], re-verified from the vendor proxy library
  * /vendor/lib64/xgimi.hardware.gmpf@1.0.so: every BpHwGmpf / BpHwGmpf2 proxy has `mov w4,wzr`):
@@ -116,7 +120,7 @@ abstract class HidlCaller {
                 q.releaseTemporaryStorage();
                 return ret.read(r);
             } catch (RuntimeException e) {
-                throw new GmpfClient.ReplyException("reply of " + code + ": " + e);
+                throw new ReplyException("reply of " + code + ": " + e);
             }
         } finally {
             try { r.release(); } catch (RuntimeException ignored) { }
@@ -211,6 +215,11 @@ abstract class HidlCaller {
     final int callRetU8(int code) throws RemoteException { return call(code, request(), RET_U8); }
 
     final byte callRetI8(int code) throws RemoteException { return call(code, request(), RET_I8); }
+
+    /** Request reached the HAL (transact returned) but the reply was bad. Do not repeat one-shot calls. */
+    public static final class ReplyException extends RemoteException {
+        ReplyException(String msg) { super(msg); }
+    }
 
     // ------------------------------------------------------------- argument checks
     static int checkRange(String what, int v, int min, int max) {

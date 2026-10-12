@@ -21,4 +21,13 @@
     <string name="kst_reset_first">전체 화면으로 되돌리려면 OK를 길게 누르세요</string>
     <string name="kst_saved">키스톤이 저장되었습니다</string>
     <string name="kst_hint_view">메뉴: 격자 / 화면 위 테두리 / 테스트 사각형</string>
+    <string name="panel_optical_zoom">광학 줌</string>
+    <string name="panel_optical_zoom_summary">선명도 손실 없이 화면 크기를 바꿉니다. 자동 키스톤과 ‘스크린에 맞추기’은(는) 줌을 다시 조정합니다.</string>
+    <string name="zoom_wait">준비 중…</string>
+    <string name="zoom_hint">오른쪽: 크게 · 왼쪽: 작게 · 뒤로: 완료</string>
+    <string name="zoom_position">크기 %1$d / %2$d</string>
+    <string name="zoom_limit_big">가장 큰 화면입니다</string>
+    <string name="zoom_limit_small">가장 작은 화면입니다</string>
+    <string name="zoom_refused">프로젝터가 줌을 움직이지 않았습니다</string>
+    <string name="zoom_unavailable">지금은 광학 줌을 사용할 수 없습니다</string>
 </resources>

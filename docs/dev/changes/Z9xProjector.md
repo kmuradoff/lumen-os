@@ -1,3 +1,35 @@
+# Z9xProjector, Lumen OS 1.0.2: 3D and optical zoom (2026-10-10)
+
+- **3D on the quick panel's Picture page** (`display/ThreeD`, registered by App): "3D < Off | Side by side |
+  Top and bottom | Side by side as 2D | Top and bottom as 2D >" plus a summary row. Exactly the five stock
+  calls of XGIMI's settings (V6.15.58 dump: newsettings PictureRepository.setImage3D -> GmDisplayManager ->
+  com.xgimi.gmpf.api.DisplayManager): IGmpf 190 enable3D(1 | 2 | 3) and 191 enable3DTo2D(2 | 3); never
+  190(4 | 5) or 191(0). Read-back 192 / 193 after 1.5 s (the vendor blanks the picture during a switch).
+- Before a 3D mode, as stock: 180 isVideoPlaying (hardware video path), 620 getHdrType == SDR (stock's 194
+  isPlayingHDRVideo is NOT used), picture mode != 4. gmpf_main Enable3D checks again (game mode, > 65 fps,
+  output timing) and refuses; a refusal shows a card ("start the video first" / "not available now").
+- While 3D is on, a watch on the HAL thread every 5 s turns it off (190(1)) when no video plays any more:
+  the vendor's own auto close is off on this model (isAutoClose3DEnable 0), so menus would stay split.
+- GmpfClient: 180 / 190 / 191 un-parked (check_hal_callers: 100 transacting methods, all with a caller).
+- Strings panel_3d* in English + 16 language sources (apps/i18n/gen.py).
+- **Optical zoom** (`panel/OpticalZoomPanel`, Keystone page row "Optical zoom" + summary): the Z9X zoom lens
+  (zoom.ini zoomEnable 1, throw ratio 0.98-1.3:1). Full-screen grid with the white edge line (as the manual
+  keystone); RIGHT / UP bigger, LEFT / DOWN smaller, held keys repeat, BACK done. Exactly the stock calls
+  (newsettings ZoomStateView / KeyStoneManager): IGmpf2 18(true,2), IGmpf 121 zoomStart(0), 117
+  getZoomStepRange, 116 getCurrentZoomStep2; per step a fresh 116 read then 119 setOpticalZoomStep(cur -/+ 1)
+  inside [0, opticalMax], one call in flight, >= 220 ms apart (each 119 is one bounded ~0.4 s move; the vendor
+  stops at its limits and stores the position); close 120(0) + 18(false,2), also from the connect hook when a
+  dead process left the session open (persisted marker). The 117 / 116 layouts are validated (optical 0..max,
+  max <= 64) before anything moves, else the session closes and "not available" shows. Autofocus (307(44)) after
+  a changed position. Never 153 / 297 / 283 / 457 / IGmpf2 14 (large or factory moves) or 301.
+- Owner's test on the 1.0.2 test build 20261012bnp (OTA over Wi-Fi, 2026-10-12): 3D switches (no glasses yet
+  to judge the depth). Optical zoom bug: LEFT then RIGHT at once turned the motor but left the number unchanged,
+  and later the screen said the picture was already the biggest. Cause: 116 was read right after 119, while
+  the ~0.4 s move was still running, so the next step started from a stale or in-between position.
+  Fix: after each 119 the panel polls 116 every 100 ms until it reads the target, or the same valid value 3 times
+  after 0.7 s (stopped at a limit), at most 2 s; keys wait meanwhile (inFlight). Still to check on the device:
+  every position both ways, the end messages, autofocus after, and the 117 / 116 values in the log.
+
 # 1.0.1, no-Google edition (2026-10-09)
 
 - `AppSlots`: an app key without an assignment falls back to the Play Store only when Play can be launched,

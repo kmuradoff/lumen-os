@@ -148,4 +148,12 @@
     <string name="panel_hdmi_settings">HDMI 설정</string>
     <string name="panel_lamp_hint">10에서 →를 두 번 누르면 Boost가 켜집니다.</string>
     <string name="panel_eye_desc">렌즈 앞에 사람이 있으면 빛이 어두워집니다.</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">사이드 바이 사이드</string>
+    <string name="panel_3d_tb">탑 앤 바텀</string>
+    <string name="panel_3d_sbs_2d">사이드 바이 사이드를 2D로</string>
+    <string name="panel_3d_tb_2d">탑 앤 바텀을 2D로</string>
+    <string name="panel_3d_summary">동영상 재생 중에 사용합니다. 3D는 DLP-Link 액티브 안경이 필요하며, ‘2D로’는 3D 파일을 안경 없이 평면으로 보여 줍니다.</string>
+    <string name="panel_3d_need_video">3D는 동영상 재생 중에 작동합니다. 먼저 동영상을 재생하세요</string>
+    <string name="panel_3d_not_now">지금은 3D를 사용할 수 없습니다(HDR 동영상, 게임 모드 또는 120Hz)</string>
 </resources>

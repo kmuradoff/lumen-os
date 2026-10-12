@@ -21,4 +21,13 @@
     <string name="kst_reset_first">Przytrzymaj OK, aby wrócić do pełnego obrazu</string>
     <string name="kst_saved">Korekcja trapezu zapisana</string>
     <string name="kst_hint_view">Menu: siatka / na obrazie / czworokąt testowy</string>
+    <string name="panel_optical_zoom">Zoom optyczny</string>
+    <string name="panel_optical_zoom_summary">Rozmiar obrazu bez utraty ostrości. Automatyczna korekcja trapezu i „Dopasowanie do ekranu” znowu zmieniają zoom.</string>
+    <string name="zoom_wait">Przygotowanie…</string>
+    <string name="zoom_hint">W prawo: większy · W lewo: mniejszy · Wstecz: gotowe</string>
+    <string name="zoom_position">Rozmiar %1$d z %2$d</string>
+    <string name="zoom_limit_big">To największy obraz</string>
+    <string name="zoom_limit_small">To najmniejszy obraz</string>
+    <string name="zoom_refused">Projektor nie przesunął zoomu</string>
+    <string name="zoom_unavailable">Zoom optyczny jest teraz niedostępny</string>
 </resources>

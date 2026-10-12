@@ -221,6 +221,14 @@ panel_lamp_hint=10 seviyesinde Boost'u açmak için → tuşuna iki kez basın.
 panel_eye_desc=Merceğin önünde biri olduğunda ışık kısılır.
 # v6.2 tile grid
 panel_hdmi_settings=HDMI ayarları
+panel_3d=3D
+panel_3d_sbs=Yan yana
+panel_3d_tb=Üst ve alt
+panel_3d_sbs_2d=Yan yana, 2D olarak
+panel_3d_tb_2d=Üst ve alt, 2D olarak
+panel_3d_summary=Bir video oynarken. 3D için aktif DLP-Link gözlük gerekir; “2D olarak” 3D dosyayı gözlüksüz, düz gösterir.
+panel_3d_need_video=3D bir video oynarken çalışır: önce videoyu başlatın
+panel_3d_not_now=3D şu anda kullanılamıyor (HDR video, oyun modu veya 120 Hz)
 
 @projector/strings_power.xml
 power_quick_wake_minutes=%1$d dk
@@ -327,6 +335,15 @@ kst_saved=Yamuk düzeltme kaydedildi
 
 # v6.3 sound profiles
 kst_hint_view=Menü: ızgara / görüntü üzerinde / test dörtgeni
+panel_optical_zoom=Optik zoom
+panel_optical_zoom_summary=Netlik kaybı olmadan görüntü boyutu. Otomatik keystone ve “Ekrana sığdır” zoomu yeniden değiştirir.
+zoom_wait=Hazırlanıyor…
+zoom_hint=Sağ: daha büyük · Sol: daha küçük · Geri: bitti
+zoom_position=Boyut %1$d / %2$d
+zoom_limit_big=Bu en büyük görüntü
+zoom_limit_small=Bu en küçük görüntü
+zoom_refused=Projektör zoomu hareket ettirmedi
+zoom_unavailable=Optik zoom şu anda kullanılamıyor
 @projector/strings_sound.xml
 sound_unknown_hint=Geçerli ses iyileştirme bilinmiyor. Yeniden uygulamak için bir profil seçin.
 sound_speaker_only=%1$s yalnızca dahili hoparlörde çalışır
