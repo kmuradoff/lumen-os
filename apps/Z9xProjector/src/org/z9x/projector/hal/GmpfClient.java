@@ -76,7 +76,10 @@ public final class GmpfClient extends HidlCaller {
     // 115 W=hidl_string,writeInt32,writeInt32 R=readInt8
     private static final int UI_HEART_BEAT_DO = 114;               // (hidl_string) -> i8
     private static final int UI_HEART_BEAT_SET = 115;              // (hidl_string, i32, i32) -> i8
-    // zoom & shift
+    // zoom & shift; optical zoom (Lumen OS 1.0.2, panel.OpticalZoomPanel)
+    private static final int GET_CURRENT_ZOOM_STEP2 = 116;         // ()      -> i32 + {optical, digital}
+    private static final int GET_ZOOM_STEP_RANGE = 117;            // ()      -> i32 + {optMin, optMax, digMin, digMax}
+    private static final int SET_OPTICAL_ZOOM_STEP = 119;          // (i32)   -> i32
     private static final int ZOOM_FINISH = 120;                    // (i32)   -> i32
     private static final int ZOOM_START = 121;                     // (i32)   -> i32
     private static final int TRANSLATION_KST = 141;                // (i32,bool) -> i32
@@ -375,10 +378,7 @@ public final class GmpfClient extends HidlCaller {
     /** AK overlay event types that are acknowledged with 146 (FS 1.1 table). 110 is never acked. */
     private static final int[] AK_ACK_TYPES = {106, 107, 109, 113, 114, 115, 116, 118};
 
-    /** Request reached the HAL (transact returned) but the reply was bad. Do not repeat one-shot calls. */
-    public static final class ReplyException extends RemoteException {
-        ReplyException(String msg) { super(msg); }
-    }
+    // ReplyException (reply bad, request delivered: never repeat one-shot calls) lives in HidlCaller.
 
     // ------------------------------------------------------------- NUI fifo reader gate (v6.2b)
     /**
@@ -725,6 +725,66 @@ public final class GmpfClient extends HidlCaller {
     public int getCurrentInputSource() throws RemoteException { return callRetI32(GET_CURRENT_INPUT_SOURCE); }
 
     // ------------------------------------------------------------------ 3D
+    // ------------------------------------------------------------------ 3D (Lumen OS 1.0.2, display.ThreeD)
+    // The stock path, traced in the V6.15.58 dump (newsettings PictureRepository.setImage3D ->
+    // GmDisplayManager -> com.xgimi.gmpf.api.DisplayManager -> IGmpf 190/191; client stub codes checked in
+    // system/lib64/xgimi.hardware.gmpf@1.0.so): exactly the five stock calls, nothing else (no 190(4|5),
+    // no 191(0)). gmpf_main Enable3D refuses by itself without a playing video, with HDR, game mode,
+    // > 65 fps or a non-default output timing.
+
+    /** 180 isVideoPlaying() -> bool. Read-only. TSV R=readBool. */
+    public boolean isVideoPlaying() throws RemoteException { return callRetBool(IS_VIDEO_PLAYING); }
+
+    /** 190 enable3D(u8 1 off | 2 side-by-side | 3 top-bottom) -> bool. TSV W=writeUint8 R=readBool. */
+    public boolean set3DMode(Mode3D m) throws RemoteException { return callU8RetBool(ENABLE_3D, m.wire); }
+
+    /** 191 enable3DTo2D(u8 2 side-by-side | 3 top-bottom) -> bool: one eye's picture, no glasses. TSV W=writeUint8 R=readBool. */
+    public boolean set3DTo2D(boolean topBottom) throws RemoteException { return callU8RetBool(ENABLE_3D_TO_2D, topBottom ? 3 : 2); }
+
+    // ------------------------------------------------------------------ optical zoom (Lumen OS 1.0.2, panel.OpticalZoomPanel)
+    // The stock path (V6.15.58 dump: newsettings keystone.json zoom_and_move -> ZoomMoveWind / ZoomStateView ->
+    // KeyStoneManager.zoomControl -> com.xgimi.gmpf.api.DisplayManager.setOpticalZoomStep; codes from the
+    // proxy stubs of xgimi.hardware.gmpf@1.0.so): session 121(0) ... 120(0), wrapped in IGmpf2 18(true|false, 2).
+    // Each 119 call is ONE bounded move (zoomUnitStep 16 x 10 = 160 motor steps, ~0.4 s at 400 pps) toward
+    // the target, refused (-1) outside [0, opticalMax]; the vendor stops at its limits and the left end
+    // sensor, and stores the position (MTK env) after every stop. Index 0 = the biggest picture. NEVER the
+    // other zoom codes (153 zoomControl, 297 controlZoomMotor, 283, 457, IGmpf2 14): large / factory moves.
+
+    /** 121 zoomStart(0) -> i32: opens the session (the vendor also takes the motor position here). TSV W=writeInt32 R=readInt32. */
+    public int zoomSessionStart() throws RemoteException { return callI32RetI32(ZOOM_START, 0); }
+
+    /** 120 zoomFinish(0) -> i32: closes the session; always after 121, also on errors. TSV W=writeInt32 R=readInt32. */
+    public int zoomSessionFinish() throws RemoteException { return callI32RetI32(ZOOM_FINISH, 0); }
+
+    /**
+     * 117 getZoomStepRange() -> {ret, opticalMin, opticalMax, digitalMin, digitalMax}. Only valid inside a
+     * 121 session. Struct layout from the native reply code, UNVERIFIED on the device: callers validate.
+     */
+    public int[] getZoomStepRange() throws RemoteException {
+        return call(GET_ZOOM_STEP_RANGE, request(), r -> {
+            int ret = r.readInt32();
+            HwBlob b = r.readBuffer(16);
+            return new int[] {ret, b.getInt32(0), b.getInt32(4), b.getInt32(8), b.getInt32(12)};
+        });
+    }
+
+    /** 116 getCurrentZoomStep2() -> {ret, optical, digital}. Layout UNVERIFIED on the device: callers validate. */
+    public int[] getZoomStep() throws RemoteException {
+        return call(GET_CURRENT_ZOOM_STEP2, request(), r -> {
+            int ret = r.readInt32();
+            HwBlob b = r.readBuffer(8);
+            return new int[] {ret, b.getInt32(0), b.getInt32(4)};
+        });
+    }
+
+    /**
+     * 119 setOpticalZoomStep(step) -> 0 ok / -1 refused. Callers send only the neighbour of a fresh 116 read
+     * (current +1 smaller, -1 bigger) inside [0, opticalMax], one call in flight, >= 220 ms apart, as stock.
+     */
+    public int setOpticalZoomStep(int step) throws RemoteException {
+        return callI32RetI32(SET_OPTICAL_ZOOM_STEP, checkRange("optical zoom step", step, 0, 64));
+    }
+
     /** 192 getCurrent3DFormat() -> u8. */
     public int getCurrent3DFormat() throws RemoteException { return callRetU8(GET_CURRENT_3D_FORMAT); }
     /** 193 is3DTo2DEnabled(). */
@@ -1110,10 +1170,7 @@ public final class GmpfClient extends HidlCaller {
     //     callU8(SEND_FOCUS_STATUS, FOCUS_STATUS_AF_CARD_DONE);
     // }
     //
-    // /** 121 zoomStart(0) / 120 zoomFinish(0): wrap a zoom & shift session (FS 2.5). TSV W=writeInt32 R=readInt32. */
-    // public int zoomSessionStart() throws RemoteException { return callI32RetI32(ZOOM_START, 0); }
-    //
-    // public int zoomSessionFinish() throws RemoteException { return callI32RetI32(ZOOM_FINISH, 0); }
+    // (121 / 120 zoom session: un-parked in Lumen OS 1.0.2 for the optical zoom, see the 3D / zoom section.)
     //
     // /**
     //  * 141 translationKst(dir, onlyCheck) -> i32 (-1 = not possible). Stock calls it with onlyCheck=true
@@ -1176,14 +1233,7 @@ public final class GmpfClient extends HidlCaller {
     //     return callI32RetBool(SET_DOLBY_VISION_PIC_MODE, soft ? 1 : 0);
     // }
     //
-    // /** 180 isVideoPlaying(). */
-    // public boolean isVideoPlaying() throws RemoteException { return callRetBool(IS_VIDEO_PLAYING); }
-    //
-    // /** 190 enable3D(u8 1|2|3). Only while isVideoPlaying (FS 3.6); resets software keystone. TSV W=writeUint8 R=readBool. */
-    // public boolean set3DMode(Mode3D m) throws RemoteException { return callU8RetBool(ENABLE_3D, m.wire); }
-    //
-    // /** 191 enable3DTo2D(u8 2 SBS | 3 TB). TSV W=writeUint8 R=readBool. */
-    // public boolean set3DTo2D(boolean topBottom) throws RemoteException { return callU8RetBool(ENABLE_3D_TO_2D, topBottom ? 3 : 2); }
+    // (180 / 190 / 191, 3D: un-parked in Lumen OS 1.0.2 for display.ThreeD, see the 3D section.)
     //
     // (41 / 42 volume levelling: un-parked in v6.3 for the Z9X sound profile, see the sound section.)
     //

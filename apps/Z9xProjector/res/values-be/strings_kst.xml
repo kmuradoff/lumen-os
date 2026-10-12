@@ -21,4 +21,13 @@
     <string name="kst_reset_first">Утрымлівайце OK, каб скінуць да поўнай выявы</string>
     <string name="kst_saved">Трапецыя захавана</string>
     <string name="kst_hint_view">Меню: сетка / па-над карцінкай / тэст-контур</string>
+    <string name="panel_optical_zoom">Аптычны зум</string>
+    <string name="panel_optical_zoom_summary">Памер карцінкі без страты выразнасці. Аўтатрапецыя і «Упісваць у экран» зноў змяняюць зум.</string>
+    <string name="zoom_wait">Падрыхтоўка…</string>
+    <string name="zoom_hint">Управа: больш · Улева: менш · Назад: гатова</string>
+    <string name="zoom_position">Памер %1$d з %2$d</string>
+    <string name="zoom_limit_big">Гэта самая вялікая карцінка</string>
+    <string name="zoom_limit_small">Гэта самая маленькая карцінка</string>
+    <string name="zoom_refused">Праектар не зрушыў зум</string>
+    <string name="zoom_unavailable">Аптычны зум зараз недаступны</string>
 </resources>

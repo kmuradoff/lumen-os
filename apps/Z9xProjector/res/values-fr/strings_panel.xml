@@ -152,4 +152,12 @@
     <string name="panel_hdmi_settings">Paramètres HDMI</string>
     <string name="panel_lamp_hint">Au niveau 10, appuyez deux fois sur → pour activer Boost.</string>
     <string name="panel_eye_desc">La lumière baisse lorsque quelqu\'un se trouve devant l\'objectif.</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">Côte à côte</string>
+    <string name="panel_3d_tb">Haut et bas</string>
+    <string name="panel_3d_sbs_2d">Côte à côte en 2D</string>
+    <string name="panel_3d_tb_2d">Haut et bas en 2D</string>
+    <string name="panel_3d_summary">Pendant une vidéo. La 3D demande des lunettes actives DLP-Link ; « en 2D » affiche un fichier 3D à plat, sans lunettes.</string>
+    <string name="panel_3d_need_video">La 3D fonctionne pendant une vidéo : lancez-la d’abord</string>
+    <string name="panel_3d_not_now">La 3D n’est pas disponible maintenant (vidéo HDR, mode jeu ou 120 Hz)</string>
 </resources>

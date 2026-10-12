@@ -154,4 +154,12 @@
     <string name="panel_hdmi_settings">Ustawienia HDMI</string>
     <string name="panel_lamp_hint">Na poziomie 10 naciśnij → dwa razy, aby włączyć Boost.</string>
     <string name="panel_eye_desc">Światło jest przyciemniane, gdy ktoś stoi przed obiektywem.</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">Obok siebie</string>
+    <string name="panel_3d_tb">Góra i dół</string>
+    <string name="panel_3d_sbs_2d">Obok siebie jako 2D</string>
+    <string name="panel_3d_tb_2d">Góra i dół jako 2D</string>
+    <string name="panel_3d_summary">Podczas filmu. 3D wymaga aktywnych okularów DLP-Link; „jako 2D” pokazuje plik 3D płasko, bez okularów.</string>
+    <string name="panel_3d_need_video">3D działa podczas odtwarzania filmu: najpierw go włącz</string>
+    <string name="panel_3d_not_now">3D jest teraz niedostępne (film HDR, tryb gry lub 120 Hz)</string>
 </resources>

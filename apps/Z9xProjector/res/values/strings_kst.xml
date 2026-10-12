@@ -22,4 +22,14 @@
     <string name="kst_reset_first">Hold OK to reset to the full picture first</string>
     <string name="kst_saved">Keystone saved</string>
     <string name="kst_hint_view">Menu: grid / over the picture / test quad</string>
+    <!-- Lumen OS 1.0.2: optical zoom (panel.OpticalZoomPanel) -->
+    <string name="panel_optical_zoom">Optical zoom</string>
+    <string name="panel_optical_zoom_summary">Picture size without losing sharpness. Auto keystone and “Fit to the screen” move the zoom again.</string>
+    <string name="zoom_wait">Preparing…</string>
+    <string name="zoom_hint">Right: bigger · Left: smaller · Back: done</string>
+    <string name="zoom_position">Size %1$d of %2$d</string>
+    <string name="zoom_limit_big">This is the biggest picture</string>
+    <string name="zoom_limit_small">This is the smallest picture</string>
+    <string name="zoom_refused">The projector did not move the zoom</string>
+    <string name="zoom_unavailable">Optical zoom is not available now</string>
 </resources>

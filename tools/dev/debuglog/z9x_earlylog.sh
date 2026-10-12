@@ -3,8 +3,8 @@
 # Lumen OS DIAG images only (never in a release image): boot log on a USB stick from the very start
 # of the boot, for a boot that never reaches 'on boot' (no adb, no z9x_diag). Started at 'on init' by
 # z9x_earlylog.rc. It loads the USB host modules itself (the vendor loads them only at
-# load_bpf_programs), mounts the first FAT/exFAT stick and writes ONLY into
-# <stick>/z9x_diag_logs/early/boot_N/ (N = 1..40; nothing else on the stick is read, changed or deleted).
+# load_bpf_programs on the Z9X, at early-boot on the Play 6), mounts the first FAT/exFAT stick and writes ONLY into
+# <stick>/lumen_os_diag_logs/early/boot_N/ (N = 1..40; nothing else on the stick is read, changed or deleted).
 #   once:   pstore of the previous boot (its logcat and kernel log: why it ended), cmdline, PM51
 #           boot_reason / wakeup_reason, dmesg at the start
 #   rounds: every 3 s (10 s after 3 min): dmesg, getprop, ps, /proc/boottime, logcat, a one-line
@@ -13,6 +13,7 @@
 # Read-only towards the system: no setprop, no service control, no write outside the stick folder.
 M=/dev/z9x_earlylog
 K=/vendor/lib/modules
+PLAY6=0; grep -q 'androidboot.xgimi.modelname=G0058' /proc/cmdline && PLAY6=1
 mkdir -p $M
 mounted=0
 for i in $(seq 1 120); do
@@ -20,6 +21,12 @@ for i in $(seq 1 120); do
     insmod $K/phy-mtk-tphy-tv.ko pm_degrad=1 2>/dev/null
     insmod $K/mtu3.ko mtu3_dev_en=1 2>/dev/null
     insmod $K/xhci-mtk-hcd-tv.ko 2>/dev/null
+  fi
+  # XGIMI Play 6 (G0058, MT5889): the vendor loads its MStar EHCI host only at early-boot
+  # (init.fusion.rc); same modules, same order. The vendor's own insmod later just finds them loaded.
+  if [ $PLAY6 = 1 ] && [ ! -d /sys/module/ehci_hcd ]; then
+    insmod $K/ehci-hcd.ko 2>/dev/null
+    insmod $K/phy-ms-usb.ko 2>/dev/null
   fi
   for d in /dev/block/sd?1 /dev/block/sd?; do
     [ -b "$d" ] || continue
@@ -30,7 +37,7 @@ for i in $(seq 1 120); do
   sleep 1
 done
 [ $mounted = 1 ] || exit 0
-B=$M/z9x_diag_logs/early
+B=$M/lumen_os_diag_logs/early
 mkdir -p $B || { umount $M; exit 0; }
 n=1
 while [ -e $B/boot_$n ] && [ $n -le 40 ]; do n=$((n + 1)); done
@@ -55,6 +62,7 @@ while [ $i -lt 400 ]; do
   ps -A -o PID,PPID,S,WCHAN,TIME,NAME,ARGS > $D/ps.txt 2>&1
   cat /proc/boottime > $D/boottime.txt 2>&1
   logcat -d -b all > $D/logcat.txt 2>&1
+  logcat -d -b crash > $D/crash.txt 2>&1
   pwm=0; [ -e /sys/class/pwm/pwmchip8 ] && pwm=1
   echo "$up stage=$(tail -n 1 /proc/boottime 2>/dev/null | cut -c1-60) apexd=$(getprop init.svc.apexd)/$(getprop apexd.status) odsign=$(getprop init.svc.odsign)/key$(getprop odsign.key.done)/ver$(getprop odsign.verification.done) uv=$(getprop init.svc.update_verifier) zygote=$(getprop init.svc.zygote) gmpf=$(getprop init.svc.gmpf_main) pwmchip8=$pwm ss=$(getprop sys.system_server.start_count) boot_completed=$(getprop sys.boot_completed)" >> $D/progress.txt
   if [ -d /data/misc ]; then

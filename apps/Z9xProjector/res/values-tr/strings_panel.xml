@@ -150,4 +150,12 @@
     <string name="panel_hdmi_settings">HDMI ayarları</string>
     <string name="panel_lamp_hint">10 seviyesinde Boost\'u açmak için → tuşuna iki kez basın.</string>
     <string name="panel_eye_desc">Merceğin önünde biri olduğunda ışık kısılır.</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">Yan yana</string>
+    <string name="panel_3d_tb">Üst ve alt</string>
+    <string name="panel_3d_sbs_2d">Yan yana, 2D olarak</string>
+    <string name="panel_3d_tb_2d">Üst ve alt, 2D olarak</string>
+    <string name="panel_3d_summary">Bir video oynarken. 3D için aktif DLP-Link gözlük gerekir; “2D olarak” 3D dosyayı gözlüksüz, düz gösterir.</string>
+    <string name="panel_3d_need_video">3D bir video oynarken çalışır: önce videoyu başlatın</string>
+    <string name="panel_3d_not_now">3D şu anda kullanılamıyor (HDR video, oyun modu veya 120 Hz)</string>
 </resources>

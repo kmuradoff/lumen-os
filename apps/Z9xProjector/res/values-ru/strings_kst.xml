@@ -21,4 +21,13 @@
     <string name="kst_reset_first">Удерживайте OK, чтобы сбросить к полной картинке</string>
     <string name="kst_saved">Трапеция сохранена</string>
     <string name="kst_hint_view">Меню: сетка / поверх картинки / тест-контур</string>
+    <string name="panel_optical_zoom">Оптический зум</string>
+    <string name="panel_optical_zoom_summary">Размер картинки без потери чёткости. Автотрапеция и «Вписывать в экран» снова меняют зум.</string>
+    <string name="zoom_wait">Подготовка…</string>
+    <string name="zoom_hint">Вправо: больше · Влево: меньше · Назад: готово</string>
+    <string name="zoom_position">Размер %1$d из %2$d</string>
+    <string name="zoom_limit_big">Это самая большая картинка</string>
+    <string name="zoom_limit_small">Это самая маленькая картинка</string>
+    <string name="zoom_refused">Проектор не сдвинул зум</string>
+    <string name="zoom_unavailable">Оптический зум сейчас недоступен</string>
 </resources>

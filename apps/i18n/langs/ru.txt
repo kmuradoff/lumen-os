@@ -154,6 +154,14 @@ panel_eye_desc=Свет приглушается, когда перед объе
 panel_hdmi_settings=Настройки HDMI
 
 # v6.3 manual keystone
+panel_3d=3D
+panel_3d_sbs=Бок о бок
+panel_3d_tb=Сверху и снизу
+panel_3d_sbs_2d=Бок о бок как 2D
+panel_3d_tb_2d=Сверху и снизу как 2D
+panel_3d_summary=Во время видео. Для 3D нужны активные очки DLP-Link. «Как 2D» показывает 3D-файл обычной картинкой, без очков.
+panel_3d_need_video=3D работает во время видео: сначала включите его
+panel_3d_not_now=3D сейчас недоступно (HDR-видео, игровой режим или 120 Гц)
 @projector/strings_kst.xml
 kst_tile=Ручная трапеция
 kst_hint_move=Стрелки: сдвиг угла · OK: следующий угол
@@ -176,6 +184,15 @@ kst_saved=Трапеция сохранена
 kst_hint_view=Меню: сетка / поверх картинки / тест-контур
 
 # v6.3 sound profiles
+panel_optical_zoom=Оптический зум
+panel_optical_zoom_summary=Размер картинки без потери чёткости. Автотрапеция и «Вписывать в экран» снова меняют зум.
+zoom_wait=Подготовка…
+zoom_hint=Вправо: больше · Влево: меньше · Назад: готово
+zoom_position=Размер %1$d из %2$d
+zoom_limit_big=Это самая большая картинка
+zoom_limit_small=Это самая маленькая картинка
+zoom_refused=Проектор не сдвинул зум
+zoom_unavailable=Оптический зум сейчас недоступен
 @projector/strings_sound.xml
 sound_unknown_hint=Текущее улучшение звука неизвестно. Выберите профиль, чтобы применить его заново.
 sound_speaker_only=%1$s работает только на встроенном динамике

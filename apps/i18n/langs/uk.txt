@@ -225,6 +225,14 @@ panel_lamp_hint=На рівні 10 натисніть → двічі, щоб у�
 panel_eye_desc=Світло приглушується, коли хтось перед об'єктивом.
 # v6.2 tile grid
 panel_hdmi_settings=Налаштування HDMI
+panel_3d=3D
+panel_3d_sbs=Пліч-о-пліч
+panel_3d_tb=Зверху і знизу
+panel_3d_sbs_2d=Пліч-о-пліч як 2D
+panel_3d_tb_2d=Зверху і знизу як 2D
+panel_3d_summary=Під час відео. Для 3D потрібні активні окуляри DLP-Link. «Як 2D» показує 3D-файл звичайним зображенням, без окулярів.
+panel_3d_need_video=3D працює під час відео: спершу увімкніть його
+panel_3d_not_now=3D зараз недоступне (HDR-відео, ігровий режим або 120 Гц)
 
 @projector/strings_power.xml
 power_quick_wake_minutes=%1$d хв
@@ -331,6 +339,15 @@ kst_saved=Трапецію збережено
 
 # v6.3 sound profiles
 kst_hint_view=Меню: сітка / поверх зображення / тест-контур
+panel_optical_zoom=Оптичний зум
+panel_optical_zoom_summary=Розмір зображення без втрати чіткості. Автотрапеція і «Вписувати в екран» знову змінюють зум.
+zoom_wait=Підготовка…
+zoom_hint=Праворуч: більше · Ліворуч: менше · Назад: готово
+zoom_position=Розмір %1$d з %2$d
+zoom_limit_big=Це найбільше зображення
+zoom_limit_small=Це найменше зображення
+zoom_refused=Проєктор не зрушив зум
+zoom_unavailable=Оптичний зум зараз недоступний
 @projector/strings_sound.xml
 sound_unknown_hint=Поточне покращення звуку невідоме. Виберіть профіль, щоб застосувати його знову.
 sound_speaker_only=%1$s працює лише на вбудованому динаміку

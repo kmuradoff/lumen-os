@@ -220,6 +220,14 @@ panel_lamp_hint=在 10 级时连按两次 → 开启 Boost。
 panel_eye_desc=有人位于镜头前方时，光线会自动调暗。
 # v6.2 tile grid
 panel_hdmi_settings=HDMI 设置
+panel_3d=3D
+panel_3d_sbs=左右
+panel_3d_tb=上下
+panel_3d_sbs_2d=左右转2D
+panel_3d_tb_2d=上下转2D
+panel_3d_summary=播放视频时可用。3D需要DLP-Link主动快门眼镜；“转2D”可不戴眼镜以平面方式观看3D片源。
+panel_3d_need_video=3D需在播放视频时使用，请先播放视频
+panel_3d_not_now=当前无法使用3D（HDR视频、游戏模式或120 Hz）
 
 @projector/strings_power.xml
 power_quick_wake_minutes=%1$d 分钟
@@ -326,6 +334,15 @@ kst_saved=梯形校正已保存
 
 # v6.3 sound profiles
 kst_hint_view=菜单：网格 / 画面上边框 / 测试四边形
+panel_optical_zoom=光学变焦
+panel_optical_zoom_summary=改变画面大小，不损失清晰度。自动梯形校正和“对齐幕布”会再次调整变焦。
+zoom_wait=准备中…
+zoom_hint=右：放大 · 左：缩小 · 返回：完成
+zoom_position=大小 %1$d / %2$d
+zoom_limit_big=已是最大画面
+zoom_limit_small=已是最小画面
+zoom_refused=投影仪未能调整变焦
+zoom_unavailable=当前无法使用光学变焦
 @projector/strings_sound.xml
 sound_unknown_hint=当前音效增强状态未知。请选择一个配置以重新应用。
 sound_speaker_only=%1$s 仅适用于内置扬声器

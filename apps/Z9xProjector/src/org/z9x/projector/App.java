@@ -68,6 +68,10 @@ public final class App extends Application {
         try { org.z9x.projector.cec.CecPolicy.install(this); } catch (Throwable t) { Log.e(TAG, "CecPolicy.install", t); }
         try { RemoteAutoPair.install(this); } catch (Throwable t) { Log.e(TAG, "RemoteAutoPair.install", t); }
         try { EyeGuard.install(this); } catch (Throwable t) { Log.e(TAG, "EyeGuard.install", t); }
+        // ===== Lumen OS 1.0.2: optical zoom, close a session a dead process left open (connect hook) =====
+        try { org.z9x.projector.panel.OpticalZoomPanel.install(this); } catch (Throwable t) { Log.e(TAG, "OpticalZoomPanel.install", t); }
+        // ===== Lumen OS 1.0.2 module "3d": the stock 3D modes on the quick panel's Picture page =====
+        try { org.z9x.projector.display.ThreeD.install(this); } catch (Throwable t) { Log.e(TAG, "ThreeD.install", t); }
         // ===== v6.2 module "screensaver": lamp dim/restore guard (marker recovery, SCREEN_OFF restore) =====
         try { org.z9x.projector.dream.DreamLamp.install(this); } catch (Throwable t) { Log.e(TAG, "DreamLamp.install", t); }
         // ===== v6.5: the idle timeout is ours (dream, never an Android sleep; screensaver turn-off -> standby) =====

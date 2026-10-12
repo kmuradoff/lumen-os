@@ -148,4 +148,12 @@
     <string name="panel_hdmi_settings">HDMI 設定</string>
     <string name="panel_lamp_hint">10 のときに → を 2 回押すと Boost がオンになります。</string>
     <string name="panel_eye_desc">レンズの前に人がいるときは光を弱めます。</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">サイドバイサイド</string>
+    <string name="panel_3d_tb">トップアンドボトム</string>
+    <string name="panel_3d_sbs_2d">サイドバイサイドを2Dで</string>
+    <string name="panel_3d_tb_2d">トップアンドボトムを2Dで</string>
+    <string name="panel_3d_summary">動画の再生中に使えます。3DにはDLP-Link対応のアクティブ3Dメガネが必要です。「2Dで」は3Dファイルをメガネなしで平面表示します。</string>
+    <string name="panel_3d_need_video">3Dは動画の再生中に使えます。先に動画を再生してください</string>
+    <string name="panel_3d_not_now">現在3Dは使えません(HDR動画、ゲームモード、120 Hz)</string>
 </resources>

@@ -158,4 +158,12 @@
     <string name="panel_hdmi_settings">إعدادات HDMI</string>
     <string name="panel_lamp_hint">عند المستوى 10، اضغط → مرتين لتفعيل Boost.</string>
     <string name="panel_eye_desc">يُخفَّض الضوء عند وجود شخص أمام العدسة.</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">جنبًا إلى جنب</string>
+    <string name="panel_3d_tb">أعلى وأسفل</string>
+    <string name="panel_3d_sbs_2d">جنبًا إلى جنب كصورة 2D</string>
+    <string name="panel_3d_tb_2d">أعلى وأسفل كصورة 2D</string>
+    <string name="panel_3d_summary">أثناء تشغيل فيديو. يحتاج 3D إلى نظارات نشطة DLP-Link، وخيار «كصورة 2D» يعرض ملف 3D مسطحًا بلا نظارات.</string>
+    <string name="panel_3d_need_video">يعمل 3D أثناء تشغيل فيديو: شغّله أولًا</string>
+    <string name="panel_3d_not_now">3D غير متاح الآن (فيديو HDR أو وضع الألعاب أو 120 هرتز)</string>
 </resources>

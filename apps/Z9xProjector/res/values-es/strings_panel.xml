@@ -152,4 +152,12 @@
     <string name="panel_hdmi_settings">Ajustes de HDMI</string>
     <string name="panel_lamp_hint">En 10, pulsa → dos veces para activar Boost.</string>
     <string name="panel_eye_desc">La luz se atenúa cuando hay alguien delante del objetivo.</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">Lado a lado</string>
+    <string name="panel_3d_tb">Arriba y abajo</string>
+    <string name="panel_3d_sbs_2d">Lado a lado como 2D</string>
+    <string name="panel_3d_tb_2d">Arriba y abajo como 2D</string>
+    <string name="panel_3d_summary">Mientras se reproduce un vídeo. El 3D necesita gafas activas DLP-Link; «como 2D» muestra un archivo 3D en plano, sin gafas.</string>
+    <string name="panel_3d_need_video">El 3D funciona mientras se reproduce un vídeo: inícialo primero</string>
+    <string name="panel_3d_not_now">El 3D no está disponible ahora (vídeo HDR, modo juego o 120 Hz)</string>
 </resources>

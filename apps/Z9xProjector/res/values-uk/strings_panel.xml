@@ -154,4 +154,12 @@
     <string name="panel_hdmi_settings">Налаштування HDMI</string>
     <string name="panel_lamp_hint">На рівні 10 натисніть → двічі, щоб увімкнути Boost.</string>
     <string name="panel_eye_desc">Світло приглушується, коли хтось перед об\'єктивом.</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">Пліч-о-пліч</string>
+    <string name="panel_3d_tb">Зверху і знизу</string>
+    <string name="panel_3d_sbs_2d">Пліч-о-пліч як 2D</string>
+    <string name="panel_3d_tb_2d">Зверху і знизу як 2D</string>
+    <string name="panel_3d_summary">Під час відео. Для 3D потрібні активні окуляри DLP-Link. «Як 2D» показує 3D-файл звичайним зображенням, без окулярів.</string>
+    <string name="panel_3d_need_video">3D працює під час відео: спершу увімкніть його</string>
+    <string name="panel_3d_not_now">3D зараз недоступне (HDR-відео, ігровий режим або 120 Гц)</string>
 </resources>

@@ -225,6 +225,14 @@ panel_lamp_hint=На ўзроўні 10 націсніце → двойчы, ка
 panel_eye_desc=Святло прыглушаецца, калі хтосьці перад аб'ектывам.
 # v6.2 tile grid
 panel_hdmi_settings=Налады HDMI
+panel_3d=3D
+panel_3d_sbs=Побач
+panel_3d_tb=Зверху і знізу
+panel_3d_sbs_2d=Побач як 2D
+panel_3d_tb_2d=Зверху і знізу як 2D
+panel_3d_summary=Падчас відэа. Для 3D патрэбныя актыўныя акуляры DLP-Link. «Як 2D» паказвае 3D-файл звычайнай карцінкай, без акуляраў.
+panel_3d_need_video=3D працуе падчас відэа: спачатку ўключыце яго
+panel_3d_not_now=3D зараз недаступнае (HDR-відэа, гульнявы рэжым або 120 Гц)
 
 @projector/strings_power.xml
 power_quick_wake_minutes=%1$d хв
@@ -331,6 +339,15 @@ kst_saved=Трапецыя захавана
 
 # v6.3 sound profiles
 kst_hint_view=Меню: сетка / па-над карцінкай / тэст-контур
+panel_optical_zoom=Аптычны зум
+panel_optical_zoom_summary=Памер карцінкі без страты выразнасці. Аўтатрапецыя і «Упісваць у экран» зноў змяняюць зум.
+zoom_wait=Падрыхтоўка…
+zoom_hint=Управа: больш · Улева: менш · Назад: гатова
+zoom_position=Памер %1$d з %2$d
+zoom_limit_big=Гэта самая вялікая карцінка
+zoom_limit_small=Гэта самая маленькая карцінка
+zoom_refused=Праектар не зрушыў зум
+zoom_unavailable=Аптычны зум зараз недаступны
 @projector/strings_sound.xml
 sound_unknown_hint=Бягучае паляпшэнне гуку невядомае. Выберыце профіль, каб ужыць яго зноў.
 sound_speaker_only=%1$s працуе толькі на ўбудаваным дынаміку

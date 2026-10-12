@@ -154,4 +154,12 @@
     <string name="panel_hdmi_settings">Налады HDMI</string>
     <string name="panel_lamp_hint">На ўзроўні 10 націсніце → двойчы, каб уключыць Boost.</string>
     <string name="panel_eye_desc">Святло прыглушаецца, калі хтосьці перад аб\'ектывам.</string>
+    <string name="panel_3d">3D</string>
+    <string name="panel_3d_sbs">Побач</string>
+    <string name="panel_3d_tb">Зверху і знізу</string>
+    <string name="panel_3d_sbs_2d">Побач як 2D</string>
+    <string name="panel_3d_tb_2d">Зверху і знізу як 2D</string>
+    <string name="panel_3d_summary">Падчас відэа. Для 3D патрэбныя актыўныя акуляры DLP-Link. «Як 2D» паказвае 3D-файл звычайнай карцінкай, без акуляраў.</string>
+    <string name="panel_3d_need_video">3D працуе падчас відэа: спачатку ўключыце яго</string>
+    <string name="panel_3d_not_now">3D зараз недаступнае (HDR-відэа, гульнявы рэжым або 120 Гц)</string>
 </resources>

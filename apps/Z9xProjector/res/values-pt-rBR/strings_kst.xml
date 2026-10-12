@@ -21,4 +21,13 @@
     <string name="kst_reset_first">Segure OK para voltar à imagem completa</string>
     <string name="kst_saved">Trapézio salvo</string>
     <string name="kst_hint_view">Menu: grade / sobre a imagem / quadrilátero de teste</string>
+    <string name="panel_optical_zoom">Zoom ótico</string>
+    <string name="panel_optical_zoom_summary">Tamanho da imagem sem perder nitidez. A correção trapezoidal automática e «Ajustar à tela» voltam a mover o zoom.</string>
+    <string name="zoom_wait">A preparar…</string>
+    <string name="zoom_hint">Direita: maior · Esquerda: menor · Voltar: concluído</string>
+    <string name="zoom_position">Tamanho %1$d de %2$d</string>
+    <string name="zoom_limit_big">Esta é a imagem maior</string>
+    <string name="zoom_limit_small">Esta é a imagem menor</string>
+    <string name="zoom_refused">O projetor não moveu o zoom</string>
+    <string name="zoom_unavailable">O zoom ótico não está disponível agora</string>
 </resources>

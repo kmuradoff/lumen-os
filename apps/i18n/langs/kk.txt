@@ -221,6 +221,14 @@ panel_lamp_hint=10 деңгейінде Boost қосу үшін → түймес
 panel_eye_desc=Объектив алдында адам болғанда жарық күңгірттеледі.
 # v6.2 tile grid
 panel_hdmi_settings=HDMI параметрлері
+panel_3d=3D
+panel_3d_sbs=Қатар
+panel_3d_tb=Жоғары және төмен
+panel_3d_sbs_2d=Қатар, 2D ретінде
+panel_3d_tb_2d=Жоғары және төмен, 2D ретінде
+panel_3d_summary=Бейне ойнап тұрғанда. 3D үшін белсенді DLP-Link көзілдірігі керек. «2D ретінде» 3D файлды көзілдіріксіз кәдімгі сурет етіп көрсетеді.
+panel_3d_need_video=3D бейне ойнап тұрғанда жұмыс істейді: алдымен оны қосыңыз
+panel_3d_not_now=3D қазір қолжетімсіз (HDR бейне, ойын режимі немесе 120 Гц)
 
 @projector/strings_power.xml
 power_quick_wake_minutes=%1$d мин
@@ -327,6 +335,15 @@ kst_saved=Трапеция сақталды
 
 # v6.3 sound profiles
 kst_hint_view=Мәзір: тор / сурет үстінде / тест контуры
+panel_optical_zoom=Оптикалық зум
+panel_optical_zoom_summary=Анықтықты жоғалтпай сурет өлшемі. Автотрапеция және «Экранға сыйғызу» зумды қайта өзгертеді.
+zoom_wait=Дайындалуда…
+zoom_hint=Оңға: үлкенірек · Солға: кішірек · Артқа: дайын
+zoom_position=Өлшем %1$d / %2$d
+zoom_limit_big=Бұл ең үлкен сурет
+zoom_limit_small=Бұл ең кіші сурет
+zoom_refused=Проектор зумды жылжытпады
+zoom_unavailable=Оптикалық зум қазір қолжетімсіз
 @projector/strings_sound.xml
 sound_unknown_hint=Ағымдағы дыбысты жақсарту белгісіз. Қайта қолдану үшін профильді таңдаңыз.
 sound_speaker_only=%1$s тек кірістірілген динамикте жұмыс істейді

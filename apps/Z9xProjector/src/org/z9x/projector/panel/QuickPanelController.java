@@ -493,6 +493,10 @@ final class QuickPanelController {
         // and says exactly why it refuses (a stale 647 read used to block it silently on Android).
         p.add(new NavRow(app, s(R.string.panel_manual_keystone), safe("manual keystone",
                 () -> openManualKeystone(QuickPanel.SECTION_KEYSTONE))));
+        // Lumen OS 1.0.2: the zoom lens (OpticalZoomPanel replaces the panel; BACK comes back here)
+        p.add(new NavRow(app, s(R.string.panel_optical_zoom), safe("optical zoom",
+                () -> OpticalZoomPanel.open(app, () -> show(QuickPanel.SECTION_KEYSTONE)))));
+        p.add(new TextRow(app, s(R.string.panel_optical_zoom_summary)));
         p.add(new NavRow(app, s(R.string.panel_reset_keystone), safe("reset keystone", () -> {
             if (snap != null && snap.isTopSpeedGame()) { Notify.show(app, s(R.string.panel_kst_game_mode)); return; }
             confirm(R.string.panel_reset_keystone, s(R.string.panel_reset_keystone_msg), R.string.panel_reset,

@@ -231,6 +231,14 @@ panel_lamp_hint=عند المستوى 10، اضغط → مرتين لتفعيل 
 panel_eye_desc=يُخفَّض الضوء عند وجود شخص أمام العدسة.
 # v6.2 tile grid
 panel_hdmi_settings=إعدادات HDMI
+panel_3d=3D
+panel_3d_sbs=جنبًا إلى جنب
+panel_3d_tb=أعلى وأسفل
+panel_3d_sbs_2d=جنبًا إلى جنب كصورة 2D
+panel_3d_tb_2d=أعلى وأسفل كصورة 2D
+panel_3d_summary=أثناء تشغيل فيديو. يحتاج 3D إلى نظارات نشطة DLP-Link، وخيار «كصورة 2D» يعرض ملف 3D مسطحًا بلا نظارات.
+panel_3d_need_video=يعمل 3D أثناء تشغيل فيديو: شغّله أولًا
+panel_3d_not_now=3D غير متاح الآن (فيديو HDR أو وضع الألعاب أو 120 هرتز)
 
 @projector/strings_power.xml
 power_quick_wake_minutes=%1$d د
@@ -337,6 +345,15 @@ kst_saved=تم حفظ شبه المنحرف
 
 # v6.3 sound profiles
 kst_hint_view=القائمة: شبكة / فوق الصورة / شكل اختبار
+panel_optical_zoom=تكبير بصري
+panel_optical_zoom_summary=حجم الصورة دون فقدان الوضوح. التصحيح التلقائي للتشوه و«ملاءمة الشاشة» يغيّران التكبير مجددًا.
+zoom_wait=جارٍ التحضير…
+zoom_hint=يمين: أكبر · يسار: أصغر · رجوع: تم
+zoom_position=الحجم %1$d من %2$d
+zoom_limit_big=هذه أكبر صورة
+zoom_limit_small=هذه أصغر صورة
+zoom_refused=لم يحرّك جهاز العرض التكبير
+zoom_unavailable=التكبير البصري غير متاح الآن
 @projector/strings_sound.xml
 sound_unknown_hint=حالة تحسين الصوت الحالية غير معروفة. اختر ملفًا شخصيًا لتطبيقه من جديد.
 sound_speaker_only=يعمل %1$s على مكبر الصوت المدمج فقط

@@ -21,4 +21,13 @@
     <string name="kst_reset_first">Толық кескінге қайтару үшін OK басып тұрыңыз</string>
     <string name="kst_saved">Трапеция сақталды</string>
     <string name="kst_hint_view">Мәзір: тор / сурет үстінде / тест контуры</string>
+    <string name="panel_optical_zoom">Оптикалық зум</string>
+    <string name="panel_optical_zoom_summary">Анықтықты жоғалтпай сурет өлшемі. Автотрапеция және «Экранға сыйғызу» зумды қайта өзгертеді.</string>
+    <string name="zoom_wait">Дайындалуда…</string>
+    <string name="zoom_hint">Оңға: үлкенірек · Солға: кішірек · Артқа: дайын</string>
+    <string name="zoom_position">Өлшем %1$d / %2$d</string>
+    <string name="zoom_limit_big">Бұл ең үлкен сурет</string>
+    <string name="zoom_limit_small">Бұл ең кіші сурет</string>
+    <string name="zoom_refused">Проектор зумды жылжытпады</string>
+    <string name="zoom_unavailable">Оптикалық зум қазір қолжетімсіз</string>
 </resources>

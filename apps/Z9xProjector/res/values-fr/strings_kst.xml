@@ -21,4 +21,13 @@
     <string name="kst_reset_first">Maintenez OK pour revenir à l\'image complète</string>
     <string name="kst_saved">Trapèze enregistré</string>
     <string name="kst_hint_view">Menu : grille / sur l\'image / quadrilatère de test</string>
+    <string name="panel_optical_zoom">Zoom optique</string>
+    <string name="panel_optical_zoom_summary">Taille de l’image sans perte de netteté. La correction trapézoïdale auto et « Ajuster à l\'écran » déplacent à nouveau le zoom.</string>
+    <string name="zoom_wait">Préparation…</string>
+    <string name="zoom_hint">Droite : plus grand · Gauche : plus petit · Retour : terminé</string>
+    <string name="zoom_position">Taille %1$d sur %2$d</string>
+    <string name="zoom_limit_big">C’est l’image la plus grande</string>
+    <string name="zoom_limit_small">C’est l’image la plus petite</string>
+    <string name="zoom_refused">Le projecteur n’a pas déplacé le zoom</string>
+    <string name="zoom_unavailable">Le zoom optique n’est pas disponible maintenant</string>
 </resources>
