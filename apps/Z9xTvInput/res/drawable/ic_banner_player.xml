@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     Viewer banner glyph: a streaming box with its top face, status light and feet (players). Our own drawing, white on the banner's accent tile
+     (PassthroughActivity); one even-odd path, cut-outs show the tile. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M6.2,6.5 H17.8 L21.5,10.5 H2.5 Z M3.7,11.4 H20.3 A1.2,1.2 0 0,1 21.5,12.6 V16.3 A1.2,1.2 0 0,1 20.3,17.5 H3.7 A1.2,1.2 0 0,1 2.5,16.3 V12.6 A1.2,1.2 0 0,1 3.7,11.4 Z M16.6,14 H19 V14.9 H16.6 Z M7.5,18.5 H9.5 V19.5 H7.5 Z M14.5,18.5 H16.5 V19.5 H14.5 Z" />
+</vector>

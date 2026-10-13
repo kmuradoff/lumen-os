@@ -12,9 +12,8 @@
 
     <string name="status_connecting">Подключение…</string>
     <string name="status_no_signal">Нет сигнала</string>
-    <string name="status_no_cable">Нет сигнала: кабель не подключён</string>
-    <string name="status_disconnected">Источник отключён</string>
-    <string name="status_disconnected_home">Источник отключён. Возврат на главный экран…</string>
+    <string name="status_device_disconnected">Устройство не подключено</string>
+    <string name="status_returning_home">Возврат на главный экран…</string>
     <string name="status_failed">Не удалось открыть HDMI</string>
     <string name="status_busy">Вход HDMI занят другим приложением</string>
     <string name="status_bad_input">Неизвестный вход HDMI</string>
@@ -22,6 +21,10 @@
     <string name="state_connected">подключено</string>
     <string name="state_standby">в режиме ожидания</string>
     <string name="state_disconnected">не подключено</string>
+    <string name="state_asleep">%1$s спит</string>
+    <string name="state_asleep_device">Устройство спит</string>
+    <string name="state_press_ok_wake">Нажмите OK, чтобы включить</string>
+    <string name="state_waking">Включение…</string>
 
     <string name="picker_title">Источник сигнала</string>
     <string name="picker_home">Главный экран</string>

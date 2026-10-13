@@ -133,7 +133,10 @@ final class HdmiWatcher {
 
         @Override
         public void onInputStateChanged(String inputId, int state) {
-            Safe.run(TAG, "onInputStateChanged", () -> handleState(inputId, state));
+            Safe.run(TAG, "onInputStateChanged", () -> {
+                PortState.changed(mContext, "input state");   // port (+5V) and CEC child (power) states
+                handleState(inputId, state);
+            });
         }
     };
 

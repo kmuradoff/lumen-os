@@ -188,7 +188,10 @@ final class HdmiInputs {
         }
     }
 
-    /** User-visible label: custom label from TV settings first, then ours. A CEC child: "HDMI 2 · PS5". */
+    /**
+     * User-visible label: custom label from TV settings first, then ours. A CEC child: "HDMI 2 · PlayStation", or
+     * just its port while the child still carries the port's own label (device name not known yet).
+     */
     static String labelOf(Context c, TvInputInfo info) {
         if (info == null) return "HDMI";
         try {
@@ -196,7 +199,8 @@ final class HdmiInputs {
                 CharSequence l = info.loadCustomLabel(c);
                 if (TextUtils.isEmpty(l)) l = info.loadLabel(c);
                 String parent = labelOf(c, info(c, info.getParentId()));
-                return TextUtils.isEmpty(l) ? parent : parent + " · " + l;
+                return TextUtils.isEmpty(l) || TextUtils.equals(l, defaultLabel(c, portOf(info)))
+                        ? parent : parent + " · " + l;
             }
         } catch (Throwable ignored) {
         }

@@ -58,6 +58,8 @@ final class HdmiSession extends TvInputService.Session {
     private boolean mStreaming;
     /** This session is counted as streaming in HdmiStateProvider (worker thread). */
     private boolean mCountedStreaming;
+    /** This session is counted as "no signal" in HdmiStateProvider (worker thread; PortState NO_SIGNAL). */
+    private boolean mCountedNoSignal;
     /** Another acquirer took the device (no TunerResourceManager on this build: latest acquire wins). */
     private boolean mLostToOtherClient;
     /** This session is counted in HdmiStateProvider (holds the hardware, not released). */
@@ -161,6 +163,16 @@ final class HdmiSession extends TvInputService.Session {
         if (want == mCountedStreaming) return;
         mCountedStreaming = want;
         HdmiStateProvider.onSessionStreaming(mPortId, want);
+        PortState.changed(mContext, "streaming");
+    }
+
+    /** Worker thread: HdmiStateProvider's per-port "no signal" count (a tuned session with no video). */
+    private void setNoSignal(boolean on) {
+        boolean want = on && !mReleased;
+        if (want == mCountedNoSignal) return;
+        mCountedNoSignal = want;
+        HdmiStateProvider.onSessionNoSignal(mPortId, want);
+        PortState.changed(mContext, "no signal");
     }
 
     /** Worker thread: keep HdmiStateProvider's open-session count in line with mHardware. */
@@ -257,6 +269,8 @@ final class HdmiSession extends TvInputService.Session {
 
     private void notifyState() {
         if (!mTuned || mReleased) return;
+        // No signal (PortState): the hardware is ours but no stream config came or the stream did not open.
+        setNoSignal(!mStreaming && mHardware != null && (pickConfig(mConfigs) == null || mSurface != null));
         if (mStreaming) {
             notifyVideoAvailable();
         } else if (mHardware == null) {
@@ -294,6 +308,7 @@ final class HdmiSession extends TvInputService.Session {
         mHardware = null;
         mSurface = null;
         setStreaming(false);
+        setNoSignal(false);
         updateCounted();
         Log.i(TAG, mInputId + ": released");
     }

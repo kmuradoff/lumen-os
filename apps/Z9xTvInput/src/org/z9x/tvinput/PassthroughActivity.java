@@ -4,10 +4,12 @@
 package org.z9x.tvinput;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.media.tv.TvContract;
+import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
 import android.media.tv.TvView;
 import android.net.Uri;
@@ -17,7 +19,6 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.InputEvent;
 import android.view.KeyEvent;
@@ -25,7 +26,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 
 import java.util.List;
 
@@ -38,9 +38,23 @@ import java.util.List;
  * HDMI audio patch only exist while the viewer is visible.
  *
  * <p>Keys: BACK leaves; MENU opens the source list; INFO (or OK when no CEC device consumes it)
- * shows the banner; everything else goes to TvView -> HdmiSession (forwarded over CEC when a CEC
- * source is present). The SOURCE key never reaches us: it is a global key (GlobalKeyReceiver).
- * Every lifecycle method and callback is crash-shielded (persistent process).
+ * shows the banner; OK on an asleep CEC source wakes it (deviceSelect, CEC control on); everything else goes
+ * to TvView -> HdmiSession (forwarded over CEC when a CEC source is present). The SOURCE key never reaches
+ * us: it is a global key (GlobalKeyReceiver).
+ *
+ * <p>Banner (top start, BrandCard): the CEC device's brand (Brands) or name large, with our glyph for its kind on
+ * an accent tile, and its port small ("HDMI 1"); without a device the port and its state. Shown on tune, on
+ * INFO / OK, when the picture first arrives after a tune or after the source was gone, and when the device's
+ * name or brand becomes known while it is on screen (its child input is published again:
+ * onTvInputInfoUpdated). It stays {@value #BANNER_MS} ms, then one {@value #BANNER_FADE_MS} ms fade.
+ *
+ * <p>State card (middle, BrandCard) while there is no picture, from PortState: asleep ("PlayStation is asleep",
+ * "Press OK to turn it on"; no return to the home screen), no signal, device not connected (the return to the
+ * home screen after {@value #UNPLUG_HOME_DELAY_MS} ms when that setting is on), else connecting. Refreshed on
+ * every PortState change (port and child input states, CEC device updates, session video), on the TvView's
+ * video callbacks and on tune. Plain views: no blur, no shadow, no animation while shown.
+ *
+ * <p>Every lifecycle method and callback is crash-shielded (persistent process).
  */
 public class PassthroughActivity extends Activity {
     private static final String TAG = "Z9xHdmiViewer";
@@ -52,32 +66,51 @@ public class PassthroughActivity extends Activity {
     /** After (re)start, e.g. wake from standby, HPD may still be low for a few seconds. */
     private static final long START_GRACE_MS = 10000;
     private static final long BANNER_MS = 3000;
+    private static final long BANNER_FADE_MS = 400;
+    /** "Turning on…" after OK woke a device, until a picture or this long. */
+    private static final long WAKE_MS = 15000;
     private static final int MAX_RETRIES = 3;
 
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private TvInputManager mTim;
     private TvView mTvView;
-    private TextView mStatus;
-    private TextView mBanner;
+    private BrandCard mStatus;
+    private BrandCard mBanner;
+    /** Title, kind and accent the banner last showed: a device update shows it again only when they change. */
+    private String mBannerKey;
+    /** Show the banner again when the picture arrives (set by a tune and when the source was gone). */
+    private boolean mBannerOnSignal;
     private String mInputId;
     /** Lumen OS 1.0: the input whose state means "source there" (the parent port of a CEC child input). */
     private String mStateFor, mStateId;
     private boolean mStarted;
     private long mStartedAt;
     private boolean mVideoAvailable;
-    /** A "source unplugged -> home" countdown is running; its message must stay on screen. */
+    /** Session error to show instead of the port state (string id; 0 = none): failed, busy, unknown input. */
+    private int mError;
+    /** A "source unplugged -> home" countdown is running. */
     private boolean mUnplugPending;
+    /** uptimeMillis of the last OK wake; 0 = none. */
+    private long mWakeAt;
+    /** The port as last shown (OK wakes its device only while it is ASLEEP). */
+    private PortState.Snapshot mSnap;
     private int mRetries;
     private int mDensityDpi;
 
-    private final Runnable mHideBanner = Safe.wrap(TAG, "hideBanner", () -> {
+    private final Runnable mBannerGone = Safe.wrap(TAG, "bannerGone", () -> {
         if (mBanner != null) mBanner.setVisibility(View.GONE);
+    });
+
+    /** One short fade, then GONE (a new showBanner cancels the fade before its end action runs). */
+    private final Runnable mHideBanner = Safe.wrap(TAG, "hideBanner", () -> {
+        if (mBanner == null || mBanner.getVisibility() != View.VISIBLE) return;
+        mBanner.animate().alpha(0f).setDuration(BANNER_FADE_MS).withLayer().withEndAction(mBannerGone).start();
     });
 
     private final Runnable mUnpluggedGoHome = Safe.wrap(TAG, "unpluggedGoHome", () -> {
         mUnplugPending = false;
         if (mInputId == null || isFinishing() || !mStarted) return;
-        if (HdmiInputs.stateOf(this, stateId()) == TvInputManager.INPUT_STATE_CONNECTED) return;
+        if (PortState.of(this, mInputId).state != PortState.DISCONNECTED) return;
         if (!Prefs.get(this, Prefs.RETURN_HOME)) return;
         Log.i(TAG, "source unplugged -> home");
         HdmiInputs.goHome(this);
@@ -88,11 +121,14 @@ public class PassthroughActivity extends Activity {
         if (mStarted && mInputId != null) tune(false);
     });
 
+    /** PortState changed (also the end of the "Turning on…" time). */
+    private final Runnable mRefresh = Safe.wrap(TAG, "refresh", this::refreshState);
+
     private final TvInputManager.TvInputCallback mStateCallback = new TvInputManager.TvInputCallback() {
         @Override
         public void onInputStateChanged(String inputId, int state) {
             Safe.run(TAG, "onInputStateChanged", () -> {
-                if (mStarted && inputId != null && mInputId != null && inputId.equals(stateId())) onSourceState(state);
+                if (mStarted && inputId != null && mInputId != null && inputId.equals(stateId())) refreshState();
             });
         }
 
@@ -109,9 +145,20 @@ public class PassthroughActivity extends Activity {
                         tune(false);
                         return;
                     }
-                    showStatus(getString(R.string.status_bad_input));
+                    mError = R.string.status_bad_input;
+                    refreshState();
                 }
             });
+        }
+
+        @Override
+        public void onInputAdded(String inputId) {
+            Safe.run(TAG, "onInputAdded", () -> onInputInfo(HdmiInputs.info(PassthroughActivity.this, inputId)));
+        }
+
+        @Override
+        public void onTvInputInfoUpdated(TvInputInfo info) {
+            Safe.run(TAG, "onTvInputInfoUpdated", () -> onInputInfo(info));
         }
     };
 
@@ -120,7 +167,8 @@ public class PassthroughActivity extends Activity {
         public void onConnectionFailed(String inputId) {
             Safe.run(TAG, "onConnectionFailed", () -> {
                 Log.w(TAG, "onConnectionFailed " + inputId);
-                showStatus(getString(R.string.status_failed));
+                mError = R.string.status_failed;
+                refreshState();
                 scheduleRetry();
             });
         }
@@ -129,7 +177,9 @@ public class PassthroughActivity extends Activity {
         public void onDisconnected(String inputId) {
             Safe.run(TAG, "onDisconnected", () -> {
                 Log.w(TAG, "onDisconnected " + inputId);
-                showStatus(getString(R.string.status_connecting));
+                mVideoAvailable = false;
+                mError = 0;
+                refreshState();
                 scheduleRetry();
             });
         }
@@ -139,7 +189,13 @@ public class PassthroughActivity extends Activity {
             Safe.run(TAG, "onVideoAvailable", () -> {
                 mRetries = 0;
                 mVideoAvailable = true;
-                hideStatus();
+                mError = 0;
+                mWakeAt = 0;
+                refreshState();
+                if (mBannerOnSignal) {
+                    mBannerOnSignal = false;
+                    showBanner(true);
+                }
             });
         }
 
@@ -147,21 +203,9 @@ public class PassthroughActivity extends Activity {
         public void onVideoUnavailable(String inputId, int reason) {
             Safe.run(TAG, "onVideoUnavailable", () -> {
                 mVideoAvailable = false;
-                if (mUnplugPending) return; // keep "Источник отключён. Возврат…"
-                switch (reason) {
-                    case TvInputManager.VIDEO_UNAVAILABLE_REASON_TUNING:
-                        showStatus(getString(R.string.status_connecting));
-                        break;
-                    case TvInputManager.VIDEO_UNAVAILABLE_REASON_NOT_CONNECTED:
-                        showStatus(getString(R.string.status_no_cable));
-                        break;
-                    case TvInputManager.VIDEO_UNAVAILABLE_REASON_INSUFFICIENT_RESOURCE:
-                        showStatus(getString(R.string.status_busy));
-                        break;
-                    default:
-                        showStatus(getString(R.string.status_no_signal));
-                        break;
-                }
+                mError = reason == TvInputManager.VIDEO_UNAVAILABLE_REASON_INSUFFICIENT_RESOURCE
+                        ? R.string.status_busy : 0;
+                refreshState();
             });
         }
     };
@@ -200,19 +244,12 @@ public class PassthroughActivity extends Activity {
         root.addView(tv, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        mStatus = new TextView(this);
-        mStatus.setTextColor(Color.WHITE);
-        mStatus.setGravity(Gravity.CENTER);
-        mStatus.setBackgroundColor(0xB0000000);
-        mStatus.setVisibility(View.GONE);
+        mStatus = new BrandCard(this, 28);
         root.addView(mStatus, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
                 Gravity.CENTER));
 
-        mBanner = new TextView(this);
-        mBanner.setTextColor(Color.WHITE);
-        mBanner.setBackgroundColor(0xB0000000);
-        mBanner.setVisibility(View.GONE);
+        mBanner = new BrandCard(this, 26);
         root.addView(mBanner, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
                 Gravity.TOP | Gravity.START));
@@ -224,14 +261,13 @@ public class PassthroughActivity extends Activity {
         mTvView = tv;
     }
 
-    /** dp / sp sizes of the status and the banner (they are px once set). */
+    /** dp / sp sizes of the state card and the banner (they are px once set). */
     private void sizeOverlays() {
-        mStatus.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
-        mStatus.setPadding(dp(24), dp(16), dp(24), dp(16));
-        mBanner.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
-        mBanner.setPadding(dp(20), dp(10), dp(20), dp(10));
+        mStatus.size();
+        mBanner.size();
         FrameLayout.LayoutParams bl = (FrameLayout.LayoutParams) mBanner.getLayoutParams();
-        bl.setMargins(dp(32), dp(24), 0, 0);
+        bl.setMargins(0, dp(24), 0, 0);
+        bl.setMarginStart(dp(32));
         mBanner.setLayoutParams(bl);
     }
 
@@ -277,6 +313,7 @@ public class PassthroughActivity extends Activity {
                     Log.w(TAG, "registerCallback failed: " + t);
                 }
             }
+            PortState.addListener(mRefresh);
             tune(true);
         });
     }
@@ -287,6 +324,11 @@ public class PassthroughActivity extends Activity {
             mStarted = false;
             mUnplugPending = false;
             mHandler.removeCallbacksAndMessages(null);
+            PortState.removeListener(mRefresh);
+            if (mBanner != null) {
+                mBanner.animate().cancel();
+                mBanner.setVisibility(View.GONE);
+            }
             if (mTim != null) {
                 try {
                     mTim.unregisterCallback(mStateCallback);
@@ -316,20 +358,21 @@ public class PassthroughActivity extends Activity {
         mHandler.removeCallbacks(mRetune);
         if (userVisibleSwitch) mRetries = 0;
         mVideoAvailable = false;
-        showStatus(getString(R.string.status_connecting));
+        mError = 0;
+        mBannerOnSignal = true;
         Uri uri = TvContract.buildChannelUriForPassthroughInput(id);
         Log.i(TAG, "tune " + id);
         try {
             mTvView.tune(id, uri);
         } catch (Throwable t) {
             Log.e(TAG, "tune failed", t);
-            showStatus(getString(R.string.status_failed));
+            mError = R.string.status_failed;
+            refreshState();
             return;
         }
         Prefs.setString(this, Prefs.LAST_INPUT, id);
         showBanner();
-        int state = HdmiInputs.stateOf(this, stateId());
-        if (state != TvInputManager.INPUT_STATE_CONNECTED) onSourceState(state);
+        refreshState();
     }
 
     private void scheduleRetry() {
@@ -339,29 +382,92 @@ public class PassthroughActivity extends Activity {
         mHandler.postDelayed(mRetune, 1500L * mRetries);
     }
 
-    private void onSourceState(int state) {
-        if (state == TvInputManager.INPUT_STATE_CONNECTED) {
-            mHandler.removeCallbacks(mUnpluggedGoHome);
-            mUnplugPending = false;
-            // The session gets the new stream configs from the HAL and reopens the stream itself;
-            // the state change and onVideoAvailable can arrive in either order.
-            if (mVideoAvailable) {
-                hideStatus();
-            } else {
-                showStatus(getString(R.string.status_connecting));
-            }
+    /**
+     * The state card from the picture, a session error and PortState (main thread; binder calls). Idempotent:
+     * BrandCard only changes when its content does.
+     */
+    private void refreshState() {
+        if (!mStarted || mInputId == null || mStatus == null) return;
+        if (mVideoAvailable) {
+            mSnap = null;
+            cancelGoHome();
+            mStatus.setVisibility(View.GONE);
             return;
         }
-        boolean goHome = Prefs.get(this, Prefs.RETURN_HOME);
-        showStatus(getString(goHome ? R.string.status_disconnected_home
-                : R.string.status_disconnected));
-        mHandler.removeCallbacks(mUnpluggedGoHome);
-        mUnplugPending = goHome;
-        if (goHome) {
-            long sinceStart = SystemClock.uptimeMillis() - mStartedAt;
-            long delay = UNPLUG_HOME_DELAY_MS + Math.max(0, START_GRACE_MS - sinceStart);
-            mHandler.postDelayed(mUnpluggedGoHome, delay);
+        PortState.Snapshot s = PortState.of(this, mInputId);
+        mSnap = s;
+        String port = s.portLabel != null ? s.portLabel : HdmiInputs.labelOf(this, mInputId);
+        String where = s.title != null ? s.title + " · " + port : port;
+        int kind = s.brand != null ? s.brand.kind : Brands.KIND_OTHER;
+        int accent = s.brand != null ? s.brand.accent : Brands.ACCENT_NEUTRAL;
+        boolean waking = mWakeAt != 0 && SystemClock.uptimeMillis() - mWakeAt < WAKE_MS;
+        if (s.state != PortState.DISCONNECTED) cancelGoHome();
+        if (s.state == PortState.ASLEEP || s.state == PortState.DISCONNECTED) mBannerOnSignal = true;
+        String title;
+        String line;
+        if (mError != 0) {
+            title = getString(mError);
+            line = where;
+        } else if (waking && s.state != PortState.DISCONNECTED) {
+            title = s.title != null ? s.title : port;
+            line = getString(R.string.state_waking);
+        } else if (s.state == PortState.ASLEEP) {
+            title = s.title != null ? getString(R.string.state_asleep, s.title) : getString(R.string.state_asleep_device);
+            line = canWake() ? getString(R.string.state_press_ok_wake) : port;
+        } else if (s.state == PortState.NO_SIGNAL) {
+            title = getString(R.string.status_no_signal);
+            line = where;
+        } else if (s.state == PortState.DISCONNECTED) {
+            title = getString(R.string.status_device_disconnected);
+            line = scheduleGoHome() ? port + " · " + getString(R.string.status_returning_home) : port;
+            kind = Brands.KIND_OTHER;
+            accent = Brands.ACCENT_NEUTRAL;
+        } else {
+            title = getString(R.string.status_connecting);
+            line = where;
         }
+        mStatus.set(title, line, kind, accent);
+        mStatus.setVisibility(View.VISIBLE);
+    }
+
+    /** Starts the "unplugged -> home" countdown once (setting on); true while it runs. */
+    private boolean scheduleGoHome() {
+        if (!Prefs.get(this, Prefs.RETURN_HOME)) return false;
+        if (!mUnplugPending) {
+            mUnplugPending = true;
+            long sinceStart = SystemClock.uptimeMillis() - mStartedAt;
+            mHandler.postDelayed(mUnpluggedGoHome, UNPLUG_HOME_DELAY_MS + Math.max(0, START_GRACE_MS - sinceStart));
+        }
+        return true;
+    }
+
+    private void cancelGoHome() {
+        mHandler.removeCallbacks(mUnpluggedGoHome);
+        mUnplugPending = false;
+    }
+
+    /** OK may wake the asleep source: one is listed and CEC control is on. */
+    private boolean canWake() {
+        return mSnap != null && mSnap.device != null && Prefs.get(this, Prefs.CEC_CONTROL);
+    }
+
+    /**
+     * OK on an asleep source: HdmiTvClient.deviceSelect (the framework asks its power status, wakes it if it is in
+     * standby and routes to it; falls back to portSelect), as a tune of its CEC child input does.
+     */
+    private void wake() {
+        final PortState.Snapshot s = mSnap;
+        if (s == null || s.device == null) return;
+        final int deviceId = s.device.getId();
+        final int port = s.port;
+        final Context app = getApplicationContext();
+        Log.i(TAG, "OK: wake CEC device " + deviceId + " on HDMI " + port);
+        HdmiInputService.hwHandler().post(Safe.wrap(TAG, "wake",
+                () -> CecHelper.deviceSelect(app, deviceId, port)));
+        mWakeAt = SystemClock.uptimeMillis();
+        mHandler.removeCallbacks(mRefresh);
+        mHandler.postDelayed(mRefresh, WAKE_MS);
+        refreshState();
     }
 
     /** Main thread: the port input of a CEC child input, else mInputId itself (cached per input). */
@@ -375,24 +481,48 @@ public class PassthroughActivity extends Activity {
         return mStateId;
     }
 
-    private void showStatus(String text) {
-        if (mStatus == null) return;
-        mStatus.setText(text);
-        mStatus.setVisibility(View.VISIBLE);
-    }
-
-    private void hideStatus() {
-        if (mStatus != null) mStatus.setVisibility(View.GONE);
-    }
-
     private void showBanner() {
+        showBanner(true);
+    }
+
+    /**
+     * Fills and shows the banner for the input on screen. {@code always} false (a device or input info change):
+     * only when its title, kind or accent differ from what it last showed.
+     */
+    private void showBanner(boolean always) {
         if (mInputId == null || mBanner == null) return;
-        String label = HdmiInputs.labelOf(this, mInputId);
-        String state = HdmiInputs.stateText(this, HdmiInputs.stateOf(this, stateId()));
-        mBanner.setText(label + " · " + state);
+        PortState.Snapshot s = PortState.of(this, mInputId);
+        String port = s.portLabel != null ? s.portLabel : HdmiInputs.labelOf(this, mInputId);
+        String word = getString(s.state == PortState.ON || s.state == PortState.NO_SIGNAL ? R.string.state_connected
+                : s.state == PortState.ASLEEP ? R.string.state_standby : R.string.state_disconnected);
+        String title = s.title;
+        String line;
+        if (title == null) {
+            title = port;
+            line = word;
+        } else {
+            line = s.state == PortState.ON ? port : port + " · " + word;
+        }
+        int kind = s.brand != null ? s.brand.kind : Brands.KIND_OTHER;
+        int accent = s.brand != null ? s.brand.accent : Brands.ACCENT_NEUTRAL;
+        String key = title + "|" + kind + "|" + accent;
+        if (!always && key.equals(mBannerKey)) return;
+        mBannerKey = key;
+        mBanner.set(title, line, kind, accent);
+        mBanner.animate().cancel();
+        mBanner.setAlpha(1f);
         mBanner.setVisibility(View.VISIBLE);
         mHandler.removeCallbacks(mHideBanner);
         mHandler.postDelayed(mHideBanner, BANNER_MS);
+    }
+
+    /** An input was added or its TvInputInfo republished: the input on screen, or a CEC child of its port. */
+    private void onInputInfo(TvInputInfo info) {
+        if (!mStarted || info == null || mInputId == null) return;
+        if (info.getId().equals(mInputId)
+                || (info.getParentId() != null && info.getParentId().equals(stateId()))) {
+            showBanner(false);
+        }
     }
 
     @Override
@@ -414,6 +544,15 @@ public class PassthroughActivity extends Activity {
                 case KeyEvent.KEYCODE_INFO:
                     if (event.getAction() == KeyEvent.ACTION_UP) showBanner();
                     return true;
+                case KeyEvent.KEYCODE_DPAD_CENTER:
+                case KeyEvent.KEYCODE_ENTER:
+                case KeyEvent.KEYCODE_NUMPAD_ENTER:
+                    // the state card says "Press OK to turn it on": OK is ours, not the session's
+                    if (!mVideoAvailable && mError == 0 && mSnap != null && mSnap.state == PortState.ASLEEP && canWake()) {
+                        if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) wake();
+                        return true;
+                    }
+                    break;
                 default:
                     break;
             }

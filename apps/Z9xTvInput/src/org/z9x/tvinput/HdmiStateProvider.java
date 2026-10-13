@@ -18,7 +18,15 @@ import android.util.Log;
  * (game mode, aspect ratio) and the Ultra 120 Hz refusal use both signals.
  *
  * Only {@link #call}: method "hdmi_state" -> Bundle {active: boolean, ports: int[] of open ports,
- * streams: int[] of ports whose session streams a picture (Lumen OS 1.0)}.
+ * streams: int[] of ports whose session streams a picture (Lumen OS 1.0)}, plus per HDMI port (PortState):
+ * port_ids: int[] of our port inputs' ports, and for each such port n a Bundle "port_n" with, always:
+ * device_state ("on" | "asleep" | "no_signal" | "disconnected" | "unknown"), input_id (the port input), label
+ * (the port's label), input_state (int, TIF state of the port input), picture (boolean, a session shows a
+ * picture), kind ("console" | "player" | "other"), accent (int ARGB); with a CEC source on the port also power
+ * (int, its CEC power status), vendor_id (int) and child_input_id (its CEC child input, when there is one);
+ * when known title (what to call the device), brand and name (its own OSD name, never a placeholder). An absent
+ * key means "not known". Changes are announced on {@link PortState#URI} (ContentResolver.notifyChange; a
+ * ContentObserver needs this provider's permission).
  * Lumen OS 1.0 (CEC settings live in the projector's quick panel, cec spec 3.1 Prefs):
  * "get_cec_prefs" -> {cec_one_touch_play, cec_control, cec_internal_on_exit}; "set_cec_pref", arg = one
  * of those keys, extras {value: boolean} -> {ok}.
@@ -39,12 +47,36 @@ public final class HdmiStateProvider extends ContentProvider {
     private static final int[] sCount = new int[8];
     /** Streaming-session count per HDMI port (a picture is up), guarded by sCount. */
     private static final int[] sStreams = new int[8];
+    /** Count per HDMI port of sessions that hold the hardware, are tuned and report no video (no signal). */
+    private static final int[] sNoSignal = new int[8];
 
     /** HdmiSession worker thread: a session started (true) or stopped (false) streaming. */
     static void onSessionStreaming(int port, boolean on) {
         synchronized (sCount) {
             if (port < 0 || port >= sStreams.length) return;
             sStreams[port] = Math.max(0, sStreams[port] + (on ? 1 : -1));
+        }
+    }
+
+    /** HdmiSession worker thread: a session started (true) or stopped (false) reporting no signal. */
+    static void onSessionNoSignal(int port, boolean on) {
+        synchronized (sCount) {
+            if (port < 0 || port >= sNoSignal.length) return;
+            sNoSignal[port] = Math.max(0, sNoSignal[port] + (on ? 1 : -1));
+        }
+    }
+
+    /** A session on {@code port} streams a picture. Any thread. */
+    static boolean streaming(int port) {
+        synchronized (sCount) {
+            return port >= 0 && port < sStreams.length && sStreams[port] > 0;
+        }
+    }
+
+    /** A session on {@code port} reports no signal. Any thread. */
+    static boolean noSignal(int port) {
+        synchronized (sCount) {
+            return port >= 0 && port < sNoSignal.length && sNoSignal[port] > 0;
         }
     }
 
@@ -101,7 +133,38 @@ public final class HdmiStateProvider extends ContentProvider {
         b.putBoolean("active", n > 0);
         b.putIntArray("ports", ports);
         b.putIntArray("streams", streams);
+        putPortStates(b);
         return b;
+    }
+
+    /** port_ids and port_n (see the class comment), fresh from PortState. */
+    private void putPortStates(Bundle b) {
+        java.util.List<PortState.Snapshot> all = PortState.all(getContext());
+        int[] ids = new int[all.size()];
+        for (int i = 0; i < ids.length; i++) {
+            PortState.Snapshot s = all.get(i);
+            ids[i] = s.port;
+            Bundle p = new Bundle();
+            p.putString("device_state", PortState.name(s.state));
+            p.putString("input_id", s.portInputId);
+            p.putString("label", s.portLabel);
+            p.putInt("input_state", s.inputState);
+            p.putBoolean("picture", s.picture);
+            if (s.device != null) {
+                if (s.childInputId != null) p.putString("child_input_id", s.childInputId);
+                p.putInt("power", s.power());
+                p.putInt("vendor_id", s.device.getVendorId());
+                String own = Brands.realName(s.device);
+                if (own != null) p.putString("name", own);
+            }
+            int kind = s.brand != null ? s.brand.kind : Brands.KIND_OTHER;
+            p.putString("kind", kind == Brands.KIND_CONSOLE ? "console" : kind == Brands.KIND_PLAYER ? "player" : "other");
+            p.putInt("accent", s.brand != null ? s.brand.accent : Brands.ACCENT_NEUTRAL);
+            if (s.brand != null) p.putString("brand", s.brand.name);
+            if (s.title != null) p.putString("title", s.title);
+            b.putBundle("port_" + s.port, p);
+        }
+        b.putIntArray("port_ids", ids);
     }
 
     @Override

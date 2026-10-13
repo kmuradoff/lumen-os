@@ -3,12 +3,14 @@
  */
 package org.z9x.tvinput;
 
+import android.content.Context;
 import android.media.tv.TvInputHardwareInfo;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
 import android.media.tv.TvInputService;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.Process;
 import android.util.Log;
 import android.util.SparseArray;
@@ -70,6 +72,7 @@ public class HdmiInputService extends TvInputService {
                 sDeviceByInput.put(info.getId(), hw.getDeviceId());
             }
             Log.i(TAG, "onHardwareAdded " + hw + " -> " + info.getId());
+            PortState.changed(this, "hardware added");
             return info;
         } catch (Throwable t) {
             Log.e(TAG, "onHardwareAdded failed for " + hw, t);
@@ -100,6 +103,7 @@ public class HdmiInputService extends TvInputService {
                         + "/HW" + hw.getDeviceId();
             }
             Log.i(TAG, "onHardwareRemoved " + hw + " -> " + inputId);
+            PortState.changed(this, "hardware removed");
             return inputId;
         } catch (Throwable t) {
             Log.e(TAG, "onHardwareRemoved failed for " + hw, t);
@@ -111,19 +115,29 @@ public class HdmiInputService extends TvInputService {
     // processes a source's <Active Source> once a TvInputInfo carrying that device's HdmiDeviceInfo exists
     // (isInputReady); without it the message stays buffered forever and One Touch Play never fires.
     // So every CEC source device (playback / tuner / recorder) behind one of our ports gets a child input
-    // (AOSP pattern, as the stock XGIMI tvinput did): parent = that port's input, label = its OSD name.
+    // (AOSP pattern, as the stock XGIMI tvinput did): parent = that port's input, label below.
     // Audio systems (soundbar / AVR) and devices on unknown ports get none. Our port lists ignore children
     // (HdmiInputs.isOurPortInput); Lumen Home groups them under their port (PLAN C15). The v6.2
     // ProjectorEvents sends (game module) are kept.
+    // Child label: Brands.label (brand, else the real OSD name), else the port's own label; never the
+    // framework's placeholder name. A device first appears as "Playback_1" and sends its OSD name and vendor id
+    // about a second later, so onHdmiDeviceUpdated publishes the child again (TvInputManager.updateTvInputInfo)
+    // whenever its OSD name or vendor id changes.
 
     /** HdmiDeviceInfo id -> child input id (main thread: TvInputService callbacks). */
     private static final SparseArray<String> sChildByDevice = new SparseArray<>();
+    /** HdmiDeviceInfo id -> {@link #nameKey} the child input was last published with. */
+    private static final SparseArray<String> sChildKey = new SparseArray<>();
+    private static final Handler sMain = new Handler(Looper.getMainLooper());
+    /** One more look at a new child's device after this delay (see onHdmiDeviceAdded). */
+    private static final long CHILD_RECHECK_MS = 3000;
 
     @Override
     public TvInputInfo onHdmiDeviceAdded(android.hardware.hdmi.HdmiDeviceInfo device) {
         try {
             if (device == null) return null;
             ProjectorEvents.send(this, device.getPortId(), true, "cec_added");
+            PortState.changed(this, "cec added");
             if (!device.isCecDevice() || !isSourceType(device.getDeviceType())) {
                 Log.i(TAG, "onHdmiDeviceAdded " + device + ": no child input (not a source)");
                 return null;
@@ -133,18 +147,19 @@ public class HdmiInputService extends TvInputService {
                 Log.i(TAG, "onHdmiDeviceAdded " + device + ": no child input (port " + device.getPortId() + " unknown)");
                 return null;
             }
-            String osd = device.getDisplayName();
-            CharSequence label = osd == null || osd.trim().isEmpty()
-                    ? HdmiInputs.defaultLabel(this, device.getPortId()) : osd.trim();
-            TvInputInfo info = new TvInputInfo.Builder(this, HdmiInputs.serviceComponent(this))
-                    .setHdmiDeviceInfo(device)
-                    .setParentId(parent)
-                    .setLabel(label)
-                    .build();
+            CharSequence label = childLabel(this, device);
+            TvInputInfo info = childInfo(this, device, parent, label);
             synchronized (sLock) {
                 sChildByDevice.put(device.getId(), info.getId());
+                sChildKey.put(device.getId(), nameKey(device));
             }
             Log.i(TAG, "onHdmiDeviceAdded " + device + " -> child " + info.getId() + " of " + parent + " '" + label + "'");
+            // An update that comes while the framework is still registering this child is dropped
+            // (TvInputHardwareManager: "Could not resolve input ID"): look at the device once more.
+            final Context app = getApplicationContext();
+            final int deviceId = device.getId();
+            sMain.postDelayed(Safe.wrap(TAG, "child recheck",
+                    () -> updateChild(app, CecHelper.device(app, deviceId), "recheck")), CHILD_RECHECK_MS);
             return info;
         } catch (Throwable t) {
             Log.w(TAG, "onHdmiDeviceAdded: " + t);
@@ -157,10 +172,12 @@ public class HdmiInputService extends TvInputService {
         try {
             if (device == null) return null;
             ProjectorEvents.send(this, device.getPortId(), false, "cec_removed");
+            PortState.changed(this, "cec removed");
             String id;
             synchronized (sLock) {
                 id = sChildByDevice.get(device.getId());
                 sChildByDevice.remove(device.getId());
+                sChildKey.remove(device.getId());
             }
             if (id == null && device.isCecDevice() && isSourceType(device.getDeviceType())) {
                 // service instance recreated: the framework still knows the child under its generated id
@@ -172,6 +189,74 @@ public class HdmiInputService extends TvInputService {
             Log.w(TAG, "onHdmiDeviceRemoved: " + t);
             return null;
         }
+    }
+
+    /** A CEC device behind one of our ports changed (OSD name, vendor id, power status ...). */
+    @Override
+    public void onHdmiDeviceUpdated(android.hardware.hdmi.HdmiDeviceInfo device) {
+        try {
+            PortState.changed(this, "cec update");
+            updateChild(this, device, "update");
+        } catch (Throwable t) {
+            Log.w(TAG, "onHdmiDeviceUpdated: " + t);
+        }
+    }
+
+    /**
+     * Publishes the child input of {@code device} again (TvInputManager.updateTvInputInfo: same id, the new
+     * HdmiDeviceInfo and label) when its OSD name or vendor id differs from what it was last published with.
+     * Nothing for other changes (power status), for a device without a child input, or when the input id would
+     * change (a new physical address: the framework removes and adds the device then). Main thread; never throws.
+     */
+    static void updateChild(Context c, android.hardware.hdmi.HdmiDeviceInfo device, String why) {
+        try {
+            if (device == null || !device.isCecDevice() || !isSourceType(device.getDeviceType())) return;
+            String key = nameKey(device);
+            String id;
+            synchronized (sLock) {
+                if (key.equals(sChildKey.get(device.getId()))) return;
+                id = sChildByDevice.get(device.getId());
+            }
+            if (id == null) id = HdmiInputs.findChildInputId(c, device.getId());
+            TvInputInfo old = HdmiInputs.info(c, id);
+            TvInputManager tim = HdmiInputs.tim(c);
+            if (old == null || old.getParentId() == null || tim == null) return;
+            CharSequence label = childLabel(c, device);
+            TvInputInfo info = childInfo(c, device, old.getParentId(), label);
+            if (!id.equals(info.getId())) {
+                Log.i(TAG, "child " + id + ": " + device + " would be " + info.getId() + " (" + why + "): not updated");
+                return;
+            }
+            tim.updateTvInputInfo(info);
+            synchronized (sLock) {
+                sChildByDevice.put(device.getId(), id);
+                sChildKey.put(device.getId(), key);
+            }
+            Log.i(TAG, "child " + id + " '" + label + "' (" + why + ": " + device.getDisplayName()
+                    + ", vendor 0x" + Integer.toHexString(device.getVendorId()) + ")");
+        } catch (Throwable t) {
+            Log.w(TAG, "updateChild (" + why + "): " + t);
+        }
+    }
+
+    private static TvInputInfo childInfo(Context c, android.hardware.hdmi.HdmiDeviceInfo device, String parent,
+            CharSequence label) {
+        return new TvInputInfo.Builder(c, HdmiInputs.serviceComponent(c))
+                .setHdmiDeviceInfo(device)
+                .setParentId(parent)
+                .setLabel(label)
+                .build();
+    }
+
+    /** Brand or real OSD name; until the device has told its name, the port's own label ("HDMI 1"). */
+    private static CharSequence childLabel(Context c, android.hardware.hdmi.HdmiDeviceInfo device) {
+        String l = Brands.label(device);
+        return l != null ? l : HdmiInputs.defaultLabel(c, device.getPortId());
+    }
+
+    /** What the child's label and published device name depend on. */
+    private static String nameKey(android.hardware.hdmi.HdmiDeviceInfo device) {
+        return device.getVendorId() + "|" + device.getDisplayName();
     }
 
     static boolean isSourceType(int type) {
