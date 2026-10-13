@@ -101,7 +101,14 @@ NEEDS_ACTION = {
     'org.z9x.updater': ['android.settings.SYSTEM_UPDATE_SETTINGS'],  # About > System update row
 }
 HOME_PRIO = {'org.z9x.setup': 10, 'org.z9x.home': 3}                 # plan C3
-VERSION_NAME = '1.0.2'  # Lumen OS 1.0.2 (1.0.1 had '1.0.1', 1.0.0 '1.0.0', the 1.0 builds '1.0')
+VERSION_NAME = '1.0.3'  # Lumen OS 1.0.3 (1.0.2 had '1.0.2', 1.0.1 '1.0.1', 1.0.0 '1.0.0', the 1.0 builds '1.0')
+# Since 1.0.3 an app or RRO whose sources did not change keeps its earlier build byte for byte, and so its
+# version (overlay/apps_v1/README.txt): name -> the versionName it kept. A self-build (LUMEN_SELF=1,
+# docs/selfbuild) builds every APK from source, so there VERSION_NAME is accepted for them too.
+KEPT_VERSION = {
+    'Z9xUpdater': '1.0.2', 'Z9xFrameworkKeysOverlay': '1.0.2',
+    'Z9xLineagePlatformOverlay': '1.0.2', 'Z9xDeviceConfigOverlay': '1.0.2',
+}
 
 
 def cmd_apks(apps, testcerts, releasecerts, plan_out):
@@ -147,9 +154,13 @@ def cmd_apks(apps, testcerts, releasecerts, plan_out):
         if kind == 'pinned' and name not in pins and PINNED.get(name) and PINNED[name] != h \
                 and os.environ.get('LUMEN_SELF') != '1':
             err('%s: sha256 %s is not the pinned v6.5 build %s' % (name, h, PINNED[name]))
-        if kind in ('app', 'rro') and m['versionName'] != VERSION_NAME:
-            err('%s: versionName %r, expected %r (build_apk.sh VERSION_NAME=%s / manifest)'
-                % (name, m['versionName'], VERSION_NAME, VERSION_NAME))
+        if kind in ('app', 'rro'):
+            want = KEPT_VERSION.get(name, VERSION_NAME)
+            if m['versionName'] != want and not (os.environ.get('LUMEN_SELF') == '1'
+                                                 and m['versionName'] == VERSION_NAME):
+                err('%s: versionName %r, expected %r (build_apk.sh VERSION_NAME=%s / manifest%s)'
+                    % (name, m['versionName'], want, want,
+                       '; kept unchanged since %s, KEPT_VERSION' % want if name in KEPT_VERSION else ''))
         if cert in test_platform:
             signer = 'test-platform'
         elif cert in rel_platform:
