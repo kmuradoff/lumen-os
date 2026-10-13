@@ -1,0 +1,32 @@
+== exit 0
+== output
+12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
+12:00:00   ! --no-blobs: no sound and no protected video (e.g. Kinopoisk HD) with this install
+12:00:00   ✓ SHA256SUMS signature: Lumen OS release key
+12:00:00 checking the image checksum (about a minute)
+12:00:00   ✓ lumen-os-1.0.2-nogms-system.img sha256 c26fc63dd3403258…
+12:00:00   ✓ edition: Lumen OS without Google
+12:00:00   ! the edition installed on this projector is unknown here: make sure the image is the same edition (with or without Google)
+
+RESCUE: writes Lumen OS again into the slot the projector cannot start from, WITHOUT wiping data
+(apps, accounts, settings and files stay). If that slot holds an unfinished Lumen OS update, it is
+finished or cancelled first (this image replaces its system anyway; a cancelled update may also leave
+the other slot unable to start, as the two share that storage until an update is finished); *-cow
+update leftovers are removed. Calibration, vendor and boot stay untouched, and so does the other slot
+otherwise. Use it only for a projector that runs Lumen OS and no longer starts.
+Type WRITE to continue: 12:00:00 waiting for the projector in fastboot mode (up to 15 minutes). After 3 failed starts in a row Lumen OS goes there by itself; the picture may stay dark. Keep the A-to-A cable in the USB 2.0 port. Fastboot mode ends by itself after about 2 minutes and the projector tries to start again: this command simply waits for its next visit.
+12:00:00   ✓ fastbootd on ZF62TEST0009, slot b
+12:00:00 removing update leftover system_b-cow
+12:00:00 writing system (about 40 s)
+12:00:00   ✓ written. The projector starts now (1-3 minutes, your data is kept). If it ends up in fastboot mode again after 3 more failed starts, the system partition was not the cause: the stock restore at the end of the guide is the way out (it erases everything).
+== adb
+version
+== fastboot
+--version
+--version
+devices
+-s ZF62TEST0009 getvar all
+-s ZF62TEST0009 delete-logical-partition system_b-cow
+-s ZF62TEST0009 flash system <C>/inst/lumen-os-1.0.2-nogms-system.img
+-s ZF62TEST0009 reboot
+== unexpected

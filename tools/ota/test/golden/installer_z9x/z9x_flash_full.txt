@@ -1,0 +1,60 @@
+== exit 0
+== output
+12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
+12:00:00   ✓ XGIMI Z9X ZF62TEST0009, firmware v6.15.58, slot b, system: XGIMI stock
+12:00:00   ! --no-blobs: no sound and no protected video (e.g. Kinopoisk HD) with this install
+12:00:00   ✓ SHA256SUMS signature: Lumen OS release key
+12:00:00 checking the image checksum (about a minute)
+12:00:00   ✓ lumen-os-1.0.2-nogms-system.img sha256 c26fc63dd3403258…
+12:00:00   ✓ edition: Lumen OS without Google
+
+ONE MANUAL STEP: vbmeta (you do it yourself; this installer never runs any vbmeta command)
+  Lumen OS is not signed by XGIMI, so the projector must be told once not to verify the system
+  partition. You do this with Google's official GSI instructions, section 'Requirements for flashing
+  GSIs': flash Google's unchanged vbmeta.img with verification disabled.
+  Do it for BOTH slots (the current one and the other one) in the same fastboot session: then
+  future updates over Wi-Fi need nothing more. Restart, let the projector start normally, connect
+  the cable again.
+  Google: https://source.android.com/docs/core/tests/vts/gsi#flashing-gsis
+  Guide: https://github.com/kmuradoff/lumen-os/blob/main/docs/install/en.md#vbmeta
+
+Have you done the vbmeta step and did the projector start normally after it? [yes/no] 12:00:00   ✓ vbmeta: verification is off on slot b (no system-verity)
+
+Writing Lumen OS to slot b and then ERASING ALL DATA on the projector (apps, accounts,
+settings, files). On slot b XGIMI's product_b and system_ext_b partitions are DELETED
+(parts of the stock system that Lumen OS does not use; the stock system on the other slot keeps its
+own), plus any *-cow update leftovers. XGIMI's calibration, the other slot, vendor and boot stay
+untouched.
+Type ERASE to continue: 12:00:00 restarting into fastbootd (about 30 s)
+12:00:00 removing update leftover system_b-cow
+12:00:00 removing unused XGIMI partition product_b
+12:00:00 removing unused XGIMI partition system_ext_b
+12:00:00 writing system (about 40 s)
+12:00:00 wiping data (format userdata, metadata, cache)
+12:00:00   ✓ written. First start takes 2-4 minutes; the setup screen appears on the projector.
+== adb
+version
+devices
+-s ZF62TEST0009 shell getprop ro.boot.xgimi.modelname
+-s ZF62TEST0009 shell getprop ro.boot.hardware
+-s ZF62TEST0009 shell getprop ro.vendor.build.version.incremental
+-s ZF62TEST0009 shell getprop ro.boot.slot_suffix
+-s ZF62TEST0009 shell getprop ro.z9x.version
+-s ZF62TEST0009 shell getprop ro.boot.slot_suffix
+-s ZF62TEST0009 shell ls /dev/block/mapper/
+-s ZF62TEST0009 shell getprop ro.debuggable
+-s ZF62TEST0009 reboot fastboot
+== fastboot
+--version
+--version
+devices
+-s ZF62TEST0009 getvar all
+-s ZF62TEST0009 delete-logical-partition system_b-cow
+-s ZF62TEST0009 delete-logical-partition product_b
+-s ZF62TEST0009 delete-logical-partition system_ext_b
+-s ZF62TEST0009 flash system <C>/inst/lumen-os-1.0.2-nogms-system.img
+-s ZF62TEST0009 --fs-options=casefold,projid format:f2fs userdata
+-s ZF62TEST0009 format:f2fs metadata
+-s ZF62TEST0009 format:ext4 cache
+-s ZF62TEST0009 reboot
+== unexpected

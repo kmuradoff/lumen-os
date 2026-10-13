@@ -1,0 +1,59 @@
+== exit 0
+== output
+12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
+12:00:00   ✓ XGIMI Z9X ZF62TEST0009, прошивка v6.15.58, слот b, система: родная XGIMI
+12:00:00   ! --no-blobs: не будет звука и защищённого видео (например, Кинопоиск HD)
+12:00:00   ✓ подпись SHA256SUMS: ключ Lumen OS
+12:00:00 проверяю контрольную сумму образа (около минуты)
+12:00:00   ✓ lumen-os-1.0.2-nogms-system.img sha256 c26fc63dd3403258…
+12:00:00   ✓ редакция: Lumen OS без Google
+
+ОДИН РУЧНОЙ ШАГ: vbmeta (вы делаете его сами; установщик никогда не выполняет команды vbmeta)
+  Lumen OS не подписана XGIMI, поэтому проектору один раз нужно разрешить не проверять раздел
+  system. Это делается по официальной инструкции Google для GSI, раздел «Requirements for flashing
+  GSIs»: прошейте неизменённый vbmeta.img Google с отключённой проверкой (verification disabled).
+  Сделайте это для ОБОИХ слотов (текущего и второго) в одной сессии fastboot: тогда будущие
+  обновления по Wi-Fi ничего больше не потребуют. Перезагрузите, дайте проектору нормально
+  загрузиться, снова подключите кабель.
+  Google: https://source.android.com/docs/core/tests/vts/gsi#flashing-gsis
+  Инструкция: https://github.com/kmuradoff/lumen-os/blob/main/docs/install/ru.md#vbmeta
+
+Вы сделали шаг vbmeta и проектор после него нормально загрузился? [да/нет] 12:00:00   ✓ vbmeta: проверка в слоте b выключена (нет system-verity)
+
+Записываю Lumen OS в слот b, затем СТИРАЮ ВСЕ ДАННЫЕ проектора (приложения, аккаунты,
+настройки, файлы). В слоте b УДАЛЯЮТСЯ разделы XGIMI product_b и system_ext_b (части
+стоковой системы, Lumen OS их не использует; стоковая система в другом слоте сохраняет свои) и
+остатки обновлений *-cow. Калибровка XGIMI, второй слот, vendor и boot не затрагиваются.
+Введите ERASE, чтобы продолжить: 12:00:00 перезагрузка в fastbootd (около 30 секунд)
+12:00:00 удаляю остаток обновления system_b-cow
+12:00:00 удаляю неиспользуемый раздел XGIMI product_b
+12:00:00 удаляю неиспользуемый раздел XGIMI system_ext_b
+12:00:00 записываю system (около 40 секунд)
+12:00:00 очистка данных (format userdata, metadata, cache)
+12:00:00   ✓ записано. Первый запуск 2–4 минуты; на проекторе появится экран настройки.
+== adb
+version
+devices
+-s ZF62TEST0009 shell getprop ro.boot.xgimi.modelname
+-s ZF62TEST0009 shell getprop ro.boot.hardware
+-s ZF62TEST0009 shell getprop ro.vendor.build.version.incremental
+-s ZF62TEST0009 shell getprop ro.boot.slot_suffix
+-s ZF62TEST0009 shell getprop ro.z9x.version
+-s ZF62TEST0009 shell getprop ro.boot.slot_suffix
+-s ZF62TEST0009 shell ls /dev/block/mapper/
+-s ZF62TEST0009 shell getprop ro.debuggable
+-s ZF62TEST0009 reboot fastboot
+== fastboot
+--version
+--version
+devices
+-s ZF62TEST0009 getvar all
+-s ZF62TEST0009 delete-logical-partition system_b-cow
+-s ZF62TEST0009 delete-logical-partition product_b
+-s ZF62TEST0009 delete-logical-partition system_ext_b
+-s ZF62TEST0009 flash system <C>/inst/lumen-os-1.0.2-nogms-system.img
+-s ZF62TEST0009 --fs-options=casefold,projid format:f2fs userdata
+-s ZF62TEST0009 format:f2fs metadata
+-s ZF62TEST0009 format:ext4 cache
+-s ZF62TEST0009 reboot
+== unexpected

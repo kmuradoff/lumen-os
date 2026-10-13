@@ -1,0 +1,11 @@
+== exit 0
+== output
+12:00:00   ✓ this Lumen OS has no Google services: nothing to register
+12:00:00 To add them: bash lumen-install.sh gapps --zip FILE (guide, section 'Adding Google services')
+== adb
+devices
+-s ZF62TEST0009 shell getprop ro.z9x.version
+-s ZF62TEST0009 shell pm path com.google.android.gsf
+-s ZF62TEST0009 shell getprop ro.z9x.gms
+== fastboot
+== unexpected

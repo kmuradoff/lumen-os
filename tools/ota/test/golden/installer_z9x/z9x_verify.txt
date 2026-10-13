@@ -1,0 +1,28 @@
+== exit 0
+== output
+12:00:00 waiting for the projector to finish starting (up to 5 minutes)
+12:00:00   ✓ Lumen OS 1.0.2 (lumen-1.0.2-20261010enp, public, without Google)
+12:00:00   ✓ no Google package
+12:00:00   ✓ release keys
+12:00:00   ✓ projector service (lamp, fans) running
+12:00:00   ✓ codec and audio files (z9x_blobs) ok
+12:00:00   ✓ audio outputs present
+12:00:00   ✓ /data f2fs
+== adb
+devices
+-s ZF62TEST0009 shell getprop sys.boot_completed
+-s ZF62TEST0009 shell getprop sys.boot_completed
+-s ZF62TEST0009 shell getprop ro.z9x.version
+-s ZF62TEST0009 shell getprop ro.z9x.keys
+-s ZF62TEST0009 shell getprop sys.z9x.blobs
+-s ZF62TEST0009 shell getprop init.svc.gmpf_main
+-s ZF62TEST0009 shell getprop ro.z9x.gms
+-s ZF62TEST0009 shell getprop ro.z9x.build_id
+-s ZF62TEST0009 shell getprop ro.z9x.variant
+-s ZF62TEST0009 shell getprop sys.z9x.gapps
+-s ZF62TEST0009 shell pm list packages
+-s ZF62TEST0009 shell getprop sys.z9x.gapps
+-s ZF62TEST0009 shell dumpsys media.audio_policy
+-s ZF62TEST0009 shell mount | grep " /data "
+== fastboot
+== unexpected

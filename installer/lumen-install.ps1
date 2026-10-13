@@ -1,10 +1,14 @@
 ﻿# SPDX-License-Identifier: Apache-2.0
-# Lumen OS installer for the XGIMI Z9X - Windows (PowerShell 5.1+). BETA: not yet tested on Windows.
-# Same steps and the same safety rules as lumen-install.sh (macOS/Linux):
+# Lumen OS installer for the XGIMI Z9X and the XGIMI Play 6 - Windows (PowerShell 5.1+). BETA: not yet tested on
+# Windows. Same steps and the same safety rules as lumen-install.sh (macOS/Linux):
 #
 #   lumen-install.cmd [command] [-Image FILE] [-Serial S] [-KeepData] [-Wipe format|factory-reset]
 #                     [-Lang en|ru] [-Blobs partition|embedded] [-NoBlobs] [-UnsignedImage] [-Zip FILE] [-Remove]
+#                     [-Ip ADDRESS[:PORT]] [-Device z9x|play6] [-Path FOLDER]
 #   commands: (none = continue) check | backup | blobs | vbmeta | flash | verify | gsf | rescue | gapps | status | reset
+#   XGIMI Play 6 (-Ip: its Wi-Fi address; it has no USB debugging): (none) | check | backup | flash | verify |
+#   rescue | stick -Path E:\ | status | reset. 'flash' writes system in fastboot mode over the A-to-A cable, waits
+#   for the first start of Lumen OS, then asks Android for its factory reset (XGIMI's recovery erases the data).
 #   gapps -Zip FILE: Lumen OS without Google + Google services from YOUR OWN MindTheGapps download (the guide
 #   names the one accepted file), in their own partition z9x_gapps_<slot>, then the data wipe of 'flash'
 #   (-KeepData: no wipe). gapps -Remove: takes them out (also from fastboot mode). gapps: their state.
@@ -23,9 +27,11 @@
 # formats anything. NEVER vbmeta (your manual step), boot, vendor, persist, xgimi*, misc, frp, the
 # other slot; never 'fastboot -w' or 'fastboot erase'.
 # A Windows USB driver for the projector's adb/fastboot interface may be needed (Google USB Driver).
+# XGIMI Play 6: only system is written (Fb-Allowed); the data wipe is Android's own factory reset. Never vendor,
+# boot, recovery, MBOOT, env, calibration or factory data. Its model, firmware list and image name: lib\devices.conf.
 param([string]$Command = "", [string]$Image = "", [string]$Serial = "", [switch]$KeepData,
       [string]$Wipe = "format", [string]$Lang = "", [string]$Blobs = "", [switch]$NoBlobs, [switch]$UnsignedImage,
-      [string]$Zip = "", [switch]$Remove)
+      [string]$Zip = "", [switch]$Remove, [string]$Ip = "", [string]$Device = "", [string]$Path = "")
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
@@ -47,6 +53,13 @@ if (-not $Blobs) { $Blobs = if ($conf["BLOBS"]) { $conf["BLOBS"] } else { "parti
 if (@("partition", "embedded", "none") -notcontains $Blobs) { Write-Host "-Blobs partition|embedded|none (-NoBlobs)"; exit 2 }
 if (@("format", "factory-reset") -notcontains $Wipe) { Write-Host "-Wipe format|factory-reset"; exit 2 }
 if ($Command -ne "gapps" -and ($Zip -or $Remove)) { Write-Host "-Zip / -Remove belong to 'gapps'"; exit 2 }
+if (@("", "z9x", "play6") -notcontains $Device) { Write-Host "-Device z9x|play6"; exit 2 }
+$RelDevice = if ($conf["DEVICE"]) { $conf["DEVICE"] } else { "" }   # the projector this download's image is for (none: z9x)
+$script:Projector = "z9x"     # the projector profile (Resolve-Device); the Z9X path is the one this script always had
+$script:SD = $StateDir        # where the device's progress is kept (the Z9X: $StateDir\state, as always)
+$script:AdbT = ""             # XGIMI Play 6: adb over Wi-Fi, ADDR:PORT ($script:Serial is then the fastboot serial)
+$script:ImgGlob = "lumen-os-*-system.img"
+$script:EraseNow = $false; $script:WipedNow = $false
 
 function T($en, $ru) { if ($Lang -eq "ru") { $ru } else { $en } }
 function Say($m) { Write-Host ("{0} {1}" -f (Get-Date -Format HH:mm:ss), $m) }
@@ -60,24 +73,26 @@ function Sha256($f) { (Get-FileHash $f -Algorithm SHA256).Hash.ToLower() }
 function File-Key($f) { $i = Get-Item -LiteralPath $f; "{0}:{1}" -f $i.Length, $i.LastWriteTimeUtc.Ticks }
 
 function State-Get($k) {
-  $f = Join-Path $StateDir "state"
+  $f = Join-Path $script:SD "state"
   if (-not (Test-Path $f)) { return "" }
   $l = Get-Content $f | Where-Object { $_ -like "$k=*" } | Select-Object -Last 1
   if ($l) { return $l.Substring($k.Length + 1) } else { return "" }
 }
 function State-Set($k, $v) {
-  New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
-  $f = Join-Path $StateDir "state"
+  New-Item -ItemType Directory -Force -Path $script:SD | Out-Null
+  $f = Join-Path $script:SD "state"
   $lines = @(); if (Test-Path $f) { $lines = @(Get-Content $f | Where-Object { $_ -notlike "$k=*" }) }
   $lines += "$k=$v"
   Set-Content -Path $f -Value $lines -Encoding UTF8
 }
 
-function Adb { & adb -s $script:Serial @args 2>$null }
+function Adb { $t = if ($script:AdbT) { $script:AdbT } else { $script:Serial }; & adb -s $t @args 2>$null }   # AdbT: never set on the Z9X
 function Prop($p) { ((Adb shell getprop $p) | Out-String).Trim() }
 function Fb { & fastboot -s $script:Serial @args 2>&1 | ForEach-Object { "$_" } }
 
 function Fb-Allowed($act, $part) {
+  # XGIMI Play 6: system and nothing else (single slot; no create, resize, delete or format)
+  if ($script:Projector -eq "play6") { return ("${act}:$part" -ceq "flash:system") }
   $s = State-Get slot
   $ok = @("flash:system", "flash:z9x_blobs$s", "create:z9x_blobs$s", "resize:z9x_blobs$s",
           "create:z9x_gapps$s", "resize:z9x_gapps$s", "format:z9x_gapps$s", "delete:z9x_gapps$s",
@@ -115,12 +130,20 @@ function Pick-Device {
 }
 
 function Find-Image {
-  if ($script:Image) { if (-not (Test-Path $script:Image)) { Die (T "no image $($script:Image)" "нет образа $($script:Image)") }; return }
-  $c = @(Get-ChildItem -Path (Join-Path $Here "lumen-os-*-system.img"), (Join-Path (Split-Path -Parent $Here) "lumen-os-*-system.img") -ErrorAction SilentlyContinue)
-  if ($c.Count -lt 1) { Die (T "no lumen-os-*-system.img found; use -Image FILE" "не найден lumen-os-*-system.img; укажите -Image ФАЙЛ") }
+  if ($script:Image) { if (-not (Test-Path $script:Image)) { Die (T "no image $($script:Image)" "нет образа $($script:Image)") }; Image-Owner; return }
+  $g = $script:ImgGlob
+  $c = @(Get-ChildItem -Path (Join-Path $Here $g), (Join-Path (Split-Path -Parent $Here) $g) -ErrorAction SilentlyContinue)
+  if ($c.Count -lt 1) { Die (T "no $g found; use -Image FILE" "не найден $g; укажите -Image ФАЙЛ") }
   # never pick one of several by name order: the editions (with and without Google) differ
   if ($c.Count -gt 1) { Die (T "several images found (with and without Google?): choose one with -Image FILE" "найдено несколько образов (с Google и без?): выберите один через -Image ФАЙЛ") }
   $script:Image = $c[0].FullName
+  Image-Owner
+}
+
+# a Z9X never takes an image named for another projector (lumen-os-play6-... matches lumen-os-*-system.img)
+function Image-Owner {
+  if ($script:Projector -ne "z9x") { return }
+  if ((Split-Path -Leaf $script:Image) -like "*play6*") { Die (T "this image is for the $(Dev-Name play6), not for the XGIMI Z9X. Nothing was written." "этот образ для $(Dev-Name play6), а не для XGIMI Z9X. Ничего не записано.") }
 }
 
 # the edition of the image (1.0.1): 0 = Lumen OS without Google (-nogms- in the name, ro.z9x.gms=0), 1 = with
@@ -159,7 +182,7 @@ function Check-Tools {
   $v = ((& fastboot --version | Select-Object -First 1) | Out-String).Trim()
   if ($v -notmatch "fastboot version (\d+)" -or [int]$Matches[1] -lt 35) { Die (T "fastboot is too old ($v): need Platform-Tools 35+" "fastboot слишком старый ($v): нужны Platform-Tools 35+") }
   $dir = Split-Path -Parent (Get-Command fastboot).Source
-  if (-not $KeepData -and $Wipe -eq "format") {
+  if ($script:Projector -eq "z9x" -and -not $KeepData -and $Wipe -eq "format") {
     if (-not ((Test-Path (Join-Path $dir "make_f2fs.exe")) -and (Test-Path (Join-Path $dir "mke2fs.exe")))) {
       Die (T "make_f2fs.exe/mke2fs.exe missing next to fastboot ($dir): use the official Platform-Tools zip" "нет make_f2fs.exe/mke2fs.exe рядом с fastboot ($dir): используйте официальный архив Platform-Tools")
     }
@@ -221,7 +244,7 @@ function Check-Device {
   Pick-Device
   $code = Prop ro.boot.xgimi.modelname; $board = Prop ro.boot.hardware
   $vend = Prop ro.vendor.build.version.incremental; $slot = Prop ro.boot.slot_suffix; $sys = Prop ro.z9x.version
-  if ($code -ne $ModelCode -or $board -ne $Board) { Die (T "this is not an XGIMI Z9X (model '$code', board '$board'). Nothing was done." "это не XGIMI Z9X (код '$code', плата '$board'). Ничего не сделано.") }
+  if ($code -ne $ModelCode -or $board -ne $Board) { Die ((T "this is not an XGIMI Z9X (model '$code', board '$board'). Nothing was done." "это не XGIMI Z9X (код '$code', плата '$board'). Ничего не сделано.") + (Other-Hint $code $board)) }
   if ($VendorOk -notcontains $vend) { Die (T "XGIMI firmware $vend is not supported (V6.15.58 or V6.15.19 only). Let stock update itself to V6.15.58, then run again." "прошивка XGIMI $vend не поддерживается (только V6.15.58 или V6.15.19). Дайте стоку обновиться до V6.15.58 и запустите снова.") }
   State-Set serial $script:Serial; State-Set slot $slot
   if ($sys) { $g = Prop ro.z9x.gms; State-Set dev_gms $(if ($g) { $g } else { "1" }) } else { State-Set dev_gms stock }
@@ -232,11 +255,14 @@ function Check-Device {
 function Cmd-Check { Check-Tools; Check-Device; Check-Image; Ok (T "check passed; nothing was written" "проверка пройдена; ничего не записано"); State-Set step_check done }
 
 function Cmd-Backup {
-  Pick-Device
-  $d = Join-Path $BackupRoot (Get-Date -Format "yyyyMMdd-HHmm")
+  $pre = ""
+  if ($script:Projector -eq "play6") { if (-not (Play6-Adb 60)) { Die (P6-NoConn) }; $pre = "play6-" } else { Pick-Device }
+  $d = Join-Path $BackupRoot ($pre + (Get-Date -Format "yyyyMMdd-HHmm"))
   New-Item -ItemType Directory -Force -Path (Join-Path $d "apps"), (Join-Path $d "sdcard"), (Join-Path $d "settings") | Out-Null
   Say (T "backup to $d" "резервная копия в $d")
-  if ((State-Get image_gms) -eq "0") {
+  if ($script:Projector -eq "play6") {
+    Say (T "over Wi-Fi this takes about 1 minute per GB" "по Wi-Fi это около минуты на каждый ГБ")
+  } elseif ((State-Get image_gms) -eq "0") {
     Say (T "Recommended: remove your Google account on the projector first (Settings > Accounts). Lumen OS without Google does not ask for it, but a later switch to an image with Google services would (Factory Reset Protection)." "Рекомендуется: сначала удалите аккаунт Google на проекторе (Настройки > Аккаунты). Lumen OS без Google его не спросит, но при переходе позже на образ с сервисами Google его спросит защита от сброса.")
   } else {
     Say (T "IMPORTANT: remove your Google account on the projector first (Settings > Accounts)." "ВАЖНО: сначала удалите аккаунт Google на проекторе (Настройки > Аккаунты).")
@@ -777,6 +803,731 @@ function Cmd-Gapps {
   if ($Remove) { Gapps-Remove } elseif ($Zip) { Gapps-Install } else { Gapps-Status }
 }
 
+# ------------------------------------------------------------------ projector profiles (lib\devices.conf)
+# What a projector IS comes from lib\devices.conf: data only, checked line by line here and never run. What the
+# installer DOES (its steps, and Fb-Allowed) stays in this script, so that file cannot widen what is written. The
+# Z9X runs on the constants at the top and does not need lib\devices.conf (it only names other projectors from it).
+$DevConf = Join-Path $Here "lib\devices.conf"
+$PKeys = @("NAME", "MODEL", "BOARD", "FB_PRODUCT", "VENDOR_OK", "CERT", "IMAGE_TOKEN", "IMAGE_FS", "VERSION_PROP", "LUMEN_PROP",
+           "LOGICAL", "SUPER_RESERVE", "GUIDE", "RESTORE_BIN", "RESTORE_MD5")
+$script:Prof = @{}
+function Devconf-Lines { if (Test-Path -LiteralPath $DevConf) { @(Get-Content -LiteralPath $DevConf -Encoding UTF8) } else { @() } }
+function Devconf-Check {  # stops on a missing file, a broken line, an unknown key or a key given twice
+  if (-not (Test-Path -LiteralPath $DevConf)) { Die "internal: lib\devices.conf is missing: re-download the installer" }
+  $seen = @{}; $n = 0
+  foreach ($l in (Devconf-Lines)) {
+    $n++
+    if ($l -eq "" -or $l.StartsWith("#")) { continue }
+    $good = $false
+    if ($l -cmatch '^([a-z0-9]+)\.([A-Z][A-Z0-9_]*)=[A-Za-z0-9 ._:/-]*$') {
+      $k = "$($Matches[1]).$($Matches[2])"
+      if (($PKeys -ccontains $Matches[2]) -and -not $seen.ContainsKey($k)) { $seen[$k] = $true; $good = $true }
+    }
+    if (-not $good) { Die "internal: lib\devices.conf line $n is not valid (unknown key, a key given twice, or characters that are not allowed): re-download the installer" }
+  }
+}
+function Devconf-Get($id, $key) {  # id KEY -> value ("" without lib\devices.conf)
+  $pre = "$id.$key="
+  foreach ($l in (Devconf-Lines)) { if ($l.StartsWith($pre, [StringComparison]::Ordinal)) { return $l.Substring($pre.Length) } }
+  return ""
+}
+function Dev-Name($id) {  # id -> the name shown to the user
+  $n = Devconf-Get $id "NAME"
+  if ($n) { return $n }
+  if ($id -eq "z9x") { return "XGIMI Z9X" } elseif ($id -eq "play6") { return "XGIMI Play 6" } else { return $id }
+}
+function Profile-Of($model, $board) {  # model board -> the id of the profile that has both ("": unknown)
+  $mo = @{}; $bo = @{}; $order = @()
+  foreach ($l in (Devconf-Lines)) {
+    if ($l -cmatch '^([a-z0-9]+)\.MODEL=(.*)$') { $mo[$Matches[1]] = $Matches[2]; $order += $Matches[1] }
+    elseif ($l -cmatch '^([a-z0-9]+)\.BOARD=(.*)$') { $bo[$Matches[1]] = $Matches[2] }
+  }
+  foreach ($i in $order) { if ($mo[$i] -ceq $model -and $bo[$i] -ceq $board) { return $i } }
+  return ""
+}
+function Join-And($items) {  # "a, b and c" (T)
+  $items = @($items)
+  if ($items.Count -le 1) { return ($items -join "") }
+  return (($items[0..($items.Count - 2)] -join ", ") + " " + (T "and" "и") + " " + $items[-1])
+}
+function Profiles-Named {  # "XGIMI Z9X (G0082) and XGIMI Play 6 (...)": every projector of lib\devices.conf
+  $nm = @{}; $mo = @{}; $order = @()
+  foreach ($l in (Devconf-Lines)) {
+    if ($l -cmatch '^([a-z0-9]+)\.NAME=(.*)$') { $nm[$Matches[1]] = $Matches[2]; $order += $Matches[1] }
+    elseif ($l -cmatch '^([a-z0-9]+)\.MODEL=(.*)$') { $mo[$Matches[1]] = $Matches[2] }
+  }
+  return (Join-And @($order | ForEach-Object { "$($nm[$_]) ($($mo[$_]))" }))
+}
+function Load-Profile($id) {  # id: $script:Prof (NAME, MODEL, ...) of that projector
+  Devconf-Check
+  if (-not (Devconf-Get $id "NAME")) { Die "internal: lib\devices.conf has no projector '$id': re-download the installer" }
+  $script:Prof = @{}
+  foreach ($k in $PKeys) { $script:Prof[$k] = Devconf-Get $id $k }
+  foreach ($k in @("MODEL", "BOARD", "FB_PRODUCT", "VENDOR_OK", "CERT", "IMAGE_TOKEN", "IMAGE_FS", "VERSION_PROP", "LUMEN_PROP", "LOGICAL", "SUPER_RESERVE")) {
+    if (-not $script:Prof[$k]) { Die "internal: lib\devices.conf: '$id' has no ${k}: re-download the installer" }
+  }
+  if ($script:Prof["SUPER_RESERVE"] -notmatch '^[0-9]+$') { Die "internal: lib\devices.conf: $id.SUPER_RESERVE" }
+  if ($script:Prof["LUMEN_PROP"] -notmatch ' ') { Die "internal: lib\devices.conf: $id.LUMEN_PROP" }
+}
+function Other-Hint($model, $board) {  # the Z9X check met another projector this installer knows: its way in
+  if ((Profile-Of $model $board) -eq "play6") { return " " + (T "It is an $(Dev-Name play6): it installs over Wi-Fi, run the installer with -Ip ADDRESS (see its section of the guide)." "Это $(Dev-Name play6): он ставится по Wi-Fi, запустите установщик с -Ip АДРЕС (см. его раздел инструкции).") }
+  return ""
+}
+function P6-Unfinished {  # a Play 6 install is saved that was checked and has not reached the wipe yet
+  $f = Join-Path (Join-Path $StateDir "play6") "state"
+  if (-not (Test-Path -LiteralPath $f)) { return $false }
+  $c = @(Get-Content -LiteralPath $f)
+  return (($c -contains "step_check=done") -and -not ($c | Where-Object { $_ -like "step_wipe=?*" }))
+}
+function Z9x-Unfinished {
+  $f = Join-Path $StateDir "state"
+  if (-not (Test-Path -LiteralPath $f)) { return $false }
+  $c = @(Get-Content -LiteralPath $f)
+  return (($c -contains "step_check=done") -and -not ($c -contains "step_flash=done"))
+}
+function Resolve-Device {  # the projector: -Device, else -Ip or 'stick' (Play 6), this download, an unfinished own build
+  if (@("", "z9x", "play6") -notcontains $RelDevice) { Die "internal: release.conf DEVICE=${RelDevice}: re-download the installer" }
+  # A download names its projector (release.conf DEVICE, none = the Z9X), so a Z9X download behaves exactly as it
+  # always did, also on a computer that keeps an unfinished Play 6 install. Only the owner's own builds
+  # (-UnsignedImage, not bound to a download) let an unfinished install name the projector.
+  if ($Device) { $script:Projector = $Device }
+  elseif ($Ip -or $Command -eq "stick") { $script:Projector = "play6" }
+  elseif ($RelDevice) { $script:Projector = $RelDevice }
+  elseif ($UnsignedImage -and (P6-Unfinished)) {
+    if (Z9x-Unfinished) { Die (T "two unfinished installs are saved, an XGIMI Z9X and an $(Dev-Name play6): choose one with -Device z9x or -Device play6" "сохранены две незаконченные установки, XGIMI Z9X и $(Dev-Name play6): выберите одну через -Device z9x или -Device play6") }
+    $script:Projector = "play6"
+  }
+  $script:Projector = "$($script:Projector)".ToLower()
+  if ($script:Projector -eq "z9x" -and $Ip) { Die (T "-Ip is for the $(Dev-Name play6); the XGIMI Z9X installs over the USB cable (guide)" "-Ip нужен для $(Dev-Name play6); XGIMI Z9X ставится по кабелю USB (инструкция)") }
+  if ($script:Projector -eq "play6") {
+    Load-Profile "play6"
+    $script:SD = Join-Path $StateDir "play6"
+    $script:ImgGlob = "lumen-os-$($script:Prof['IMAGE_TOKEN'])-*-system.img"
+  }
+}
+function Release-Guard {  # the image of this download belongs to one projector (release.conf DEVICE; none = the Z9X)
+  $rel = if ($RelDevice) { "$RelDevice".ToLower() } else { "z9x" }
+  if ($rel -eq $script:Projector) { return }
+  if ($UnsignedImage) {
+    Warn (T "this installer folder came with the $(Dev-Name $rel) release; your own image is used (-UnsignedImage)" "эта папка установщика из релиза для $(Dev-Name $rel); используется ваш собственный образ (-UnsignedImage)")
+    return
+  }
+  Die (T "this download of the installer is for the $(Dev-Name $rel), not for the $(Dev-Name $script:Projector): download the $(Dev-Name $script:Projector) release (see the guide). Nothing was done." "этот установщик скачан для $(Dev-Name $rel), а не для $(Dev-Name $script:Projector): скачайте релиз для $(Dev-Name $script:Projector) (см. инструкцию). Ничего не сделано.")
+}
+
+# ------------------------------------------------------------------ XGIMI Play 6 (see lumen-install.sh, section 'XGIMI Play 6')
+# adb runs over Wi-Fi only ($script:AdbT = ADDR:PORT): the projector's one USB-A port is a host port under Android.
+# fastbootd is reached with 'adb reboot fastboot' sent over Wi-Fi and a USB A-to-A cable in that port; the projector
+# does not start while that cable is in, so it goes in only for the write. Steps: check -> backup (asked) -> write
+# (fastbootd, system only) -> boot1 (first start on the old data) -> wipe (Android's own factory reset as root over
+# adb, carried out by XGIMI's recovery) -> verify (optional, later). Progress: $StateDir\play6\state.
+$P6App = "org.z9x.projector"                      # the projector app of the image
+$P6Tuner = "com.zacharee1.systemuituner"          # installed on stock to turn debugging on; a wipe removes it
+$P6Marker = "/data/local/tmp/lumen-install-wipe"  # written before the wipe; a real wipe removes it
+function P6-LProp { return ($script:Prof["LUMEN_PROP"] -split " ", 2)[0] }
+function P6-LVal { return ($script:Prof["LUMEN_PROP"] -split " ", 2)[1] }
+function P6-Name { return $script:Prof["NAME"] }
+function P6-Guide { $g = if ($Lang -eq "ru") { $GuideRu } else { $GuideEn }; return "$g#$($script:Prof['GUIDE'])" }
+$script:P6St = ""   # what 'adb get-state' said last in Wifi-Connect (unauthorized: the allow prompt was not accepted)
+function P6-NoConn($secs) {  # why Wifi-Connect gave up, as the user can act on it
+  $nm = P6-Name; $t = $script:AdbT
+  if (-not $secs -or $secs -eq 60) { $en = "within a minute"; $ru = "за минуту" } else { $en = "within $([int]($secs / 60)) minutes"; $ru = "за $([int]($secs / 60)) мин." }
+  if ($script:P6St -match "unauthorized") {
+    return (T "the projector at $t did not allow this computer $en. On the projector: allow debugging from this computer, tick `"Always allow from this computer`" and press OK; then run the installer again. Nothing was done." "проектор по адресу $t не разрешил отладку с этого компьютера $ru. На проекторе разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK, затем запустите установщик снова. Ничего не сделано.")
+  }
+  return (T "no adb connection to $t over Wi-Fi $en. On the projector: is Wi-Fi on, is network debugging on (guide, section '$nm'), is it this address (the projector's network settings show it)? This computer must be in the same network. Nothing was done." "нет связи adb с $t по Wi-Fi $ru. На проекторе включены Wi-Fi и отладка по сети (инструкция, раздел «${nm}»), адрес тот же (он виден в настройках сети проектора)? Компьютер должен быть в той же сети. Ничего не сделано.")
+}
+function P6-State { return ((@(& adb -s $script:AdbT get-state 2>&1 | ForEach-Object { "$_" }) -join "`n").Trim()) }
+function P6-Alive {  # $true = the projector answers on a NEW connection (an old one may still say 'device' after a restart)
+  & adb disconnect $script:AdbT 2>&1 | Out-Null
+  & adb connect $script:AdbT 2>&1 | Out-Null
+  return ((P6-State) -eq "device")
+}
+$P6NoMark = "lumen-install-no-check-file"
+function P6-Marker {  # the wipe's check file: 'there' (no wipe since it was written), 'gone' (erased), '' (could not read)
+  # Every attempt writes the file before it saves the token and before it asks for the reset, so a file that is
+  # there, whatever token it holds, means that no wipe happened after the last request.
+  $m = ((Adb shell "cat $P6Marker 2>/dev/null || echo $P6NoMark") | Out-String).Trim()
+  if ($m -ceq $P6NoMark) { return "gone" }
+  if ($m.StartsWith("lumen-")) { return "there" }
+  return ""
+}
+function P6-Discover($ser) {  # ADDR:PORT of the one projector that 'adb mdns services' lists (with that serial), or ""
+  $pre = if ($ser) { "adb-$ser-" } else { "" }
+  $found = @(& adb mdns services 2>$null | ForEach-Object {
+    $f = @("$_".Trim() -split "\s+")
+    if ($f.Count -ge 3 -and $f[0] -like "adb-*" -and $f[1] -match '^_adb\._tcp\.?$' -and (-not $pre -or $f[0].StartsWith($pre))) { $f[-1] }
+  } | Sort-Object -Unique)
+  if ($found.Count -eq 1) { return $found[0] } else { return "" }
+}
+function Wifi-Connect($secs) {  # adb to $script:AdbT until it answers as 'device' ($true) or the time is up ($false)
+  # The time counts both the pauses and the real clock (adb connect and get-state can take seconds each on a
+  # network that drops packets), so "a minute" stays about a minute.
+  $said = $false; $sw = [Diagnostics.Stopwatch]::StartNew()
+  for ($i = 0; ; $i += 5) {
+    & adb connect $script:AdbT 2>&1 | Out-Null
+    $st = P6-State
+    $script:P6St = $st
+    if ($st -eq "device") { return $true }
+    if ($st -match "unauthorized") {
+      if (-not $said) { Say (T "On the projector: allow debugging from this computer. Tick `"Always allow from this computer`" and press OK." "На проекторе разрешите отладку с этого компьютера: отметьте «Всегда разрешать с этого компьютера» и нажмите OK."); $said = $true }
+    } elseif ($st -match "offline") { & adb disconnect $script:AdbT 2>&1 | Out-Null }
+    if ($i -ge $secs -or $sw.Elapsed.TotalSeconds -ge $secs) { return $false }
+    # the address may have changed (DHCP): the projector's mDNS name carries its serial (only that projector, also
+    # with -Ip: P6-Identity checks the serial again)
+    if ($script:Serial -and ($i % 30) -eq 25) {
+      $a = P6-Discover $script:Serial
+      if ($a -and $a -ne $script:AdbT) { Say (T "the projector answers at a new address: $a" "проектор отвечает по новому адресу: $a"); $script:AdbT = $a }
+    }
+    Start-Sleep 5
+  }
+}
+function P6-Identity {  # the device at AdbT: this projector model, and the saved one (DHCP may give its address away)
+  $code = Prop ro.boot.xgimi.modelname; $board = Prop ro.boot.hardware; $ser = Prop ro.serialno; $t = $script:AdbT
+  if ($code -cne $script:Prof["MODEL"] -or $board -cne $script:Prof["BOARD"]) {
+    & adb disconnect $t 2>&1 | Out-Null
+    if ((Profile-Of $code $board) -eq "z9x") { Die (T "the device at $t is an XGIMI Z9X: it installs over the USB cable, without -Ip (guide). Nothing was done." "устройство по адресу $t это XGIMI Z9X: он ставится по кабелю USB, без -Ip (инструкция). Ничего не сделано.") }
+    Die (T "this projector is not supported: model '$code', board '$board'. Lumen OS installs on $(Profiles-Named). Nothing was done." "этот проектор не поддерживается: код модели '$code', плата '$board'. Lumen OS ставится на $(Profiles-Named). Ничего не сделано.")
+  }
+  if (-not $ser) { Die (T "the projector at $t reports no serial number. Nothing was done." "проектор по адресу $t не сообщает серийный номер. Ничего не сделано.") }
+  if ($script:Serial -and $script:Serial -cne $ser) {
+    & adb disconnect $t 2>&1 | Out-Null
+    $saved = $script:Serial
+    if ($script:SerialFromState) { Die (T "the projector at $t has the serial $ser, but this install was started on $saved. Another projector? Then first: lumen-install.cmd reset -Device play6. Nothing was done." "у проектора по адресу $t серийный номер $ser, а установка начиналась на $saved. Другой проектор? Тогда сначала: lumen-install.cmd reset -Device play6. Ничего не сделано.") }
+    Die (T "the projector at $t has the serial $ser, not $saved (-Serial). Nothing was done." "у проектора по адресу $t серийный номер $ser, а не $saved (-Serial). Ничего не сделано.")
+  }
+  $script:Serial = $ser
+}
+function P6-Usb-Hint {  # no address for a Play 6: a Z9X on the USB cable means the wrong download or the wrong option
+  $l = @(& adb devices 2>$null | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" } | ForEach-Object { ($_ -split "\t")[0] } | Where-Object { $_ -notmatch ":" })
+  if ($l.Count -ne 1) { return }
+  $code = ((& adb -s $l[0] shell getprop ro.boot.xgimi.modelname 2>$null) | Out-String).Trim()
+  $board = ((& adb -s $l[0] shell getprop ro.boot.hardware 2>$null) | Out-String).Trim()
+  if ((Profile-Of $code $board) -eq "z9x") {
+    $nm = P6-Name
+    if ($RelDevice -eq "play6") { Die (T "the projector on the USB cable is an XGIMI Z9X, and this download of the installer is for the ${nm}: download the XGIMI Z9X release (see the guide). Nothing was done." "на кабеле USB проектор XGIMI Z9X, а этот установщик скачан для ${nm}: скачайте релиз для XGIMI Z9X (см. инструкцию). Ничего не сделано.") }
+    Die (T "the projector on the USB cable is an XGIMI Z9X: run the installer without -Device play6. Nothing was done." "на кабеле USB проектор XGIMI Z9X: запустите установщик без -Device play6. Ничего не сделано.")
+  }
+}
+function Play6-Adb($secs) {  # adb over Wi-Fi to the Play 6 (-Ip, the saved address, or mDNS) and who it is; $false = no answer
+  if (-not $script:AdbT) {
+    $a = State-Get ip
+    if (-not $a) {
+      $a = P6-Discover ""
+      if (-not $a -or -not (Ask (T "A projector answers at $a. Is it yours, the one to install on?" "По адресу $a отвечает проектор. Это ваш, на который ставим?"))) {
+        P6-Usb-Hint
+        $nm = P6-Name
+        Die (T "give the projector's Wi-Fi address: lumen-install.cmd -Ip 192.168.x.y (the projector's network settings show it; see the guide, section '$nm'). The $nm has no USB debugging: this computer reaches it over Wi-Fi. Nothing was done." "укажите адрес проектора в Wi-Fi: lumen-install.cmd -Ip 192.168.x.y (он виден в настройках сети проектора; см. инструкцию, раздел «${nm}»). У $nm нет отладки по USB: компьютер подключается к нему по Wi-Fi. Ничего не сделано.")
+      }
+    }
+    $script:AdbT = $a
+  }
+  Say (T "connecting to $($script:AdbT) over Wi-Fi" "подключаюсь к $($script:AdbT) по Wi-Fi")
+  if (-not (Wifi-Connect $secs)) { return $false }
+  P6-Identity
+  return $true
+}
+function P6-Fw-List { return (Join-And @($script:Prof["VENDOR_OK"] -split " " | ForEach-Object { "V" + $_.Substring(1) })) }
+function P6-Fw-First { return ("V" + ($script:Prof["VENDOR_OK"] -split " ")[0].Substring(1)) }
+function Play6-Device {  # connected: firmware, single slot, stock or Lumen OS; saves serial, address, firmware
+  $nm = P6-Name
+  $vend = Prop ro.vendor.build.version.incremental; $slot = Prop ro.boot.slot_suffix; $lum = Prop (P6-LProp)
+  if (@($script:Prof["VENDOR_OK"] -split " ") -cnotcontains $vend) {
+    $all = P6-Fw-List; $first = P6-Fw-First
+    Die (T "XGIMI firmware $vend is not supported: Lumen OS for the $nm is tested on $all only. Older: let the stock system update itself to $first (Settings, Wi-Fi), or install $first from a USB stick (guide, 'Back to stock'). Newer: wait for a Lumen OS release that supports it, or install $first from a USB stick. Nothing was done." "прошивка XGIMI $vend не поддерживается: Lumen OS для $nm проверена только на $all. Если ваша старее, дайте стоку обновиться до $first (настройки, Wi-Fi) или поставьте $first с флешки (инструкция, «Откат на сток»). Если новее, дождитесь релиза Lumen OS с её поддержкой или поставьте $first с флешки. Ничего не сделано.")
+  }
+  if ($slot) { Die (T "this projector has a second system slot ($slot): it is not the $nm this installer knows. Nothing was done." "у этого проектора есть второй системный слот ($slot): это не тот $nm, который знает установщик. Ничего не сделано.") }
+  if (-not $lum) {
+    State-Set dev_lumen 0; State-Set dev_version ""; $ver = T "XGIMI stock" "родная XGIMI"
+    # a downloaded XGIMI update arms the next restart; the installer's own restart into fastbootd does not run it
+    $up = Prop xgimi.ota.update.onboot
+    if (-not $up) { $up = ((Adb shell settings get system xgimi_ota_update) | Out-String).Trim() }
+    if ($up -eq "1" -or $up -eq "2") { Warn (T "a downloaded XGIMI update waits for the next restart: do not restart the projector yourself until the installer has written Lumen OS (it replaces that system anyway). Next time turn automatic updates off first." "скачанное обновление XGIMI ждёт следующей перезагрузки: не перезагружайте проектор сами, пока установщик не запишет Lumen OS (она всё равно заменит эту систему). В следующий раз сначала выключите автообновление.") }
+  } elseif ($lum -ceq (P6-LVal)) { $v = Prop $script:Prof['VERSION_PROP']; State-Set dev_lumen 1; State-Set dev_version $v; $ver = "Lumen OS $v" }
+  else { Die (T "this projector runs Lumen OS for another device ('$lum'). Nothing was done." "на проекторе Lumen OS для другого устройства ('$lum'). Ничего не сделано.") }
+  State-Set serial $script:Serial; State-Set ip $script:AdbT; State-Set vendor $vend
+  Ok "$nm $($script:Serial) ($($script:AdbT)), $(T 'firmware' 'прошивка') $vend, $(T 'system' 'система'): $ver"
+}
+function Read-Hex($f, $off, $n) {  # n bytes of file f at off, as lower-case hex ("" when the file is shorter)
+  $fs = [IO.File]::OpenRead($f)
+  try {
+    if ($fs.Length -lt ($off + $n)) { return "" }
+    $null = $fs.Seek($off, [IO.SeekOrigin]::Begin)
+    $b = New-Object byte[] $n
+    $null = $fs.Read($b, 0, $n)
+    return (($b | ForEach-Object { $_.ToString("x2") }) -join "")
+  } finally { $fs.Close() }
+}
+function Verify-Sig($sums, $sig, $cert) {  # SHA256SUMS.sig made with the key of this certificate
+  $c = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $cert
+  $rsa = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($c)
+  return $rsa.VerifyData([IO.File]::ReadAllBytes($sums), [IO.File]::ReadAllBytes($sig),
+         [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
+}
+function Play6-Check-Image([switch]$Force) {  # name, file system, size, signature, checksum, content
+  Find-Image
+  $img = $script:Image; $name = Split-Path -Leaf $img; $dir = Split-Path -Parent $img; $nm = P6-Name; $tok = $script:Prof["IMAGE_TOKEN"]
+  $sums = Join-Path $dir "SHA256SUMS"; $sig = "$sums.sig"; $cert = Join-Path $Here ($script:Prof["CERT"] -replace '/', '\')
+  if (-not $name.Contains($tok)) { Die (T "$name is not an image for the $nm (its name must contain '$tok'). Nothing was written." "$name не образ для $nm (в имени должно быть '$tok'). Ничего не записано.") }
+  if ($name -cmatch "PRIVATE") { Die (T "$name is a private image: it is never installed on the $nm. Nothing was written." "$name частный образ: на $nm он не ставится. Ничего не записано.") }
+  $nv = ""
+  if (-not $UnsignedImage) {
+    if ($name -notlike "*-nogms-*") { Die (T "$name is not a release file (the $nm has Lumen OS without Google only: '-nogms-' in the name). Nothing was written." "$name не файл релиза (для $nm есть только Lumen OS без Google: '-nogms-' в имени). Ничего не записано.") }
+    # the release version is in the name, and the signed SHA256SUMS lists the image under that name: a file of another
+    # release (signed with the same key) next to this installer stops here, before anything is written
+    if (-not $conf["VERSION"]) { Die "internal: release.conf has no VERSION: re-download the installer of the $nm release" }
+    if ($name -cmatch "^lumen-os-$([regex]::Escape($tok))-(.+)-nogms-system\.img$") { $nv = $Matches[1] }
+    if (-not $nv) { Die (T "$name is not named like a release file (lumen-os-$tok-<version>-nogms-system.img): use the file exactly as downloaded. Nothing was written." "$name назван не как файл релиза (lumen-os-$tok-<версия>-nogms-system.img): используйте файл ровно таким, как он скачан. Ничего не записано.") }
+    if ($nv -cne $conf["VERSION"]) { Die (T "$name is Lumen OS $nv, but this installer download is for Lumen OS $($conf['VERSION']): download the image and the installer from the same release (guide, section '$nm'). Nothing was written." "$name это Lumen OS $nv, а этот установщик скачан для Lumen OS $($conf['VERSION']): скачайте образ и установщик из одного релиза (инструкция, раздел «${nm}»). Ничего не записано.") }
+  }
+  # the file system, read without any tool: raw ext4 has 53 ef at byte 1080
+  if ($script:Prof["IMAGE_FS"] -eq "ext4" -and (Read-Hex $img 1080 2) -ne "53ef") {
+    if ((Read-Hex $img 1024 4) -eq "e2e1f5e0") { Die (T "$name is an XGIMI Z9X image (erofs), not one for the $nm. Nothing was written." "$name образ для XGIMI Z9X (erofs), а не для $nm. Ничего не записано.") }
+    if ((Read-Hex $img 0 4) -eq "3aff26ed") { Die (T "$name is a sparse image, not the release file. Nothing was written." "$name разреженный (sparse) образ, а не файл релиза. Ничего не записано.") }
+    Die (T "$name is not an ext4 system image. Nothing was written." "$name не системный образ ext4. Ничего не записано.")
+  }
+  if ((Get-Item -LiteralPath $img).Length % 4096 -ne 0) { Die (T "$name has a size that is not a multiple of 4096: damaged. Nothing was written." "размер $name не кратен 4096: файл испорчен. Ничего не записано.") }
+  if ((Test-Path -LiteralPath $sums) -and (Test-Path -LiteralPath $sig) -and (Test-Path -LiteralPath $cert)) {
+    if (-not (Verify-Sig $sums $sig $cert)) { Die (T "SHA256SUMS is not signed with the Lumen OS key for the ${nm}: do not install this image" "SHA256SUMS не подписан ключом Lumen OS для ${nm}: не устанавливайте этот образ") }
+    Ok (T "SHA256SUMS signature: Lumen OS key for the $nm" "подпись SHA256SUMS: ключ Lumen OS для $nm")
+  } elseif ($UnsignedImage) {
+    Warn (T "-UnsignedImage: this image is NOT authenticated (no signed SHA256SUMS). Only for your own build." "-UnsignedImage: образ НЕ проверен (нет подписанного SHA256SUMS). Только для собственной сборки.")
+    if ((State-Get unsigned_ok) -ne "${name}:$(File-Key $img)") {
+      if ((Read-Host (T "Type UNSIGNED to install $name anyway" "Введите UNSIGNED, чтобы всё равно установить $name")) -cne "UNSIGNED") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
+      State-Set unsigned_ok "${name}:$(File-Key $img)"
+    }
+    if (-not (Test-Path -LiteralPath $sums)) {   # a list that names the image, or the image's own .sha256
+      $sums = $null
+      $cand = @(Get-ChildItem -Path (Join-Path $dir "SHA256SUMS*") -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike "*.sig" }) + @(Get-Item -LiteralPath "$img.sha256" -ErrorAction SilentlyContinue)
+      foreach ($f in ($cand | Where-Object { $_ })) {
+        if (Get-Content -LiteralPath $f.FullName | Where-Object { $_ -match "\s\*?$([regex]::Escape($name))$" }) { $sums = $f.FullName; break }
+      }
+    }
+  } else {
+    if (-not (Test-Path -LiteralPath $sums)) { Die (T "no SHA256SUMS next to the image: it cannot be checked. Download SHA256SUMS and SHA256SUMS.sig from the same release." "рядом с образом нет SHA256SUMS: его нельзя проверить. Скачайте SHA256SUMS и SHA256SUMS.sig из того же релиза.") }
+    if (-not (Test-Path -LiteralPath $sig)) { Die (T "no SHA256SUMS.sig next to the image: its origin cannot be checked" "рядом с образом нет SHA256SUMS.sig: происхождение образа нельзя проверить") }
+    Die (T "installer certificate $($script:Prof['CERT']) missing: re-download the installer of the $nm release" "нет сертификата установщика $($script:Prof['CERT']): скачайте установщик из релиза для $nm заново")
+  }
+  if ($sums -and (Test-Path -LiteralPath $sums)) {
+    $want = (Get-Content -LiteralPath $sums | Where-Object { $_ -match "\s\*?$([regex]::Escape($name))$" } | ForEach-Object { ($_ -split "\s+")[0] }) | Select-Object -First 1
+    if (-not $want) { Die (T "$name is not listed in $(Split-Path -Leaf $sums)" "$name нет в $(Split-Path -Leaf $sums)") }
+    if ($Force -or (State-Get image_ok) -ne "${want}:$(File-Key $img)") {
+      Say (T "checking the image checksum (about a minute)" "проверяю контрольную сумму образа (около минуты)")
+      if ((Sha256 $img) -ne $want.ToLower()) { State-Set image_ok none; Die (T "checksum mismatch: the image is damaged or not the right file" "контрольная сумма не совпала: образ повреждён или не тот") }
+      State-Set image_ok "${want}:$(File-Key $img)"
+    }
+    Ok "$name sha256 $($want.Substring(0,16))..."
+  } else { Warn (T "-UnsignedImage without any SHA256SUMS file: checksum not checked" "-UnsignedImage без файла SHA256SUMS: контрольная сумма не проверена") }
+  # what the image says about itself, when debugfs (e2fsprogs) is installed. Without it the name (its version, checked
+  # above against release.conf) and the signed SHA256SUMS (which lists the file under that name) bind the image to
+  # this release; this also catches a release built wrong. The files in the order init reads them: the last one wins.
+  $bound = if ($nv) { T "the signed SHA256SUMS lists this file as Lumen OS $nv, the version of this installer download" "подписанный SHA256SUMS называет этот файл Lumen OS $nv, версией этого установщика" } else { T "an own build (-UnsignedImage)" "собственная сборка (-UnsignedImage)" }
+  if (Get-Command debugfs -ErrorAction SilentlyContinue) {
+    $bp = @(foreach ($pf in @("/system/etc/prop.default", "/system/build.prop", "/system/system_ext/etc/build.prop", "/system/product/etc/build.prop")) { & debugfs -R "cat $pf" $img 2>$null })
+    if ($bp.Count -gt 0) {
+      $pv = { param($k) $l = $bp | Where-Object { $_ -like "$k=*" } | Select-Object -Last 1; if ($l) { $l.Substring($k.Length + 1).Trim() } else { "" } }
+      $v = & $pv (P6-LProp)
+      if ($v -cne (P6-LVal)) { Die (T "$name is not Lumen OS for the $nm ($(P6-LProp)='$v'). Nothing was written." "$name не Lumen OS для $nm ($(P6-LProp)='$v'). Ничего не записано.") }
+      $v = & $pv $script:Prof["VERSION_PROP"]; $sec = & $pv "ro.adb.secure"
+      if (-not $UnsignedImage) {
+        if ($v -cne $conf["VERSION"]) { Die (T "$name holds Lumen OS '$v', the release is $($conf['VERSION']). Nothing was written." "в $name Lumen OS '$v', а релиз $($conf['VERSION']). Ничего не записано.") }
+        if ($sec -ne "1") { Die (T "$name is a test build (ro.adb.secure='$sec'), not a release. Nothing was written." "$name тестовая сборка (ro.adb.secure='$sec'), а не релиз. Ничего не записано.") }
+      }
+      Ok (T "image: Lumen OS $v for the $nm" "образ: Lumen OS $v для $nm")
+    } else { Warn (T "debugfs could not read the image content (not needed: $bound)" "debugfs не смог прочитать содержимое образа (не обязательно: $bound)") }
+  } else { Say (T "image content not read (debugfs not installed): $bound" "содержимое образа не прочитано (нет debugfs): $bound") }
+  State-Set image_gms 0
+  Ok (T "edition: Lumen OS without Google" "редакция: Lumen OS без Google")
+}
+function Play6-Check {
+  Check-Tools
+  if (-not (Play6-Adb 60)) { Die (P6-NoConn) }
+  Play6-Device
+  $free = (Get-PSDrive -Name (Get-Item -LiteralPath $HOME).PSDrive.Name -ErrorAction SilentlyContinue).Free
+  if ($free -and $free -lt 4GB) { Warn (T "less than 4 GB free on this computer" "на компьютере свободно меньше 4 ГБ") }
+  Play6-Check-Image
+  Ok (T "check passed; nothing was written" "проверка пройдена; ничего не записано")
+  State-Set step_check done
+}
+function P6-In-Fastboot {
+  if (-not $script:Serial) { return $false }
+  return (@(& fastboot devices 2>$null | ForEach-Object { ("$_".Trim() -split "\s+")[0] }) -ccontains $script:Serial)
+}
+function P6-Fb-Wait($secs) {  # the projector ($script:Serial) in fastboot mode on the cable
+  for ($i = 0; $i -lt $secs; $i += 2) {
+    if (P6-In-Fastboot) { return $true }
+    if ($i -gt 0 -and ($i % 60) -eq 0) { Say (T "still waiting for fastboot mode..." "всё ещё жду режима fastboot...") }
+    Start-Sleep 2
+  }
+  return $false
+}
+function P6-Fb-Stop($m) {  # leave fastbootd for the old system: nothing was written
+  Fb reboot | Out-Null
+  Die ($m + " " + (T "Nothing was written. Unplug the A-to-A cable: the projector then starts its old system (press the power button if the picture does not come back)." "Ничего не записано. Выньте кабель A–A: проектор загрузит прежнюю систему (если изображения нет, нажмите кнопку питания)."))
+}
+function Gv-Val($gv, $k) { $l = $gv | Where-Object { "$_" -like "(bootloader) ${k}:*" } | Select-Object -First 1; if ($l) { return ("$l".Substring(("(bootloader) ${k}:").Length)).Trim() } else { return "" } }
+function Play6-Fbd-Check {  # fastbootd: this Play 6 (serial), its firmware and the known layout of super; returns 'getvar all'
+  $gv = @(Fb getvar all); $nm = P6-Name; $why = ""
+  if ((Gv-Val $gv "is-userspace") -ne "yes") { $why = T "not fastbootd" "это не fastbootd" }
+  elseif ((Gv-Val $gv "product") -cne $script:Prof["FB_PRODUCT"]) { $why = (T "fastbootd is not the one of the $nm" "fastbootd не от $nm") + " ($(Gv-Val $gv 'product'))" }
+  elseif ((Gv-Val $gv "unlocked") -ne "yes") { $why = T "the bootloader is locked" "загрузчик заблокирован" }
+  elseif ((Gv-Val $gv "serialno") -cne $script:Serial) { $why = (T "another projector in fastboot mode" "в режиме fastboot другой проектор") + " (serialno $(Gv-Val $gv 'serialno'), $(T 'expected' 'ожидался') $($script:Serial))" }
+  elseif (@("", "0") -notcontains (Gv-Val $gv "slot-count")) { $why = "slot-count $(Gv-Val $gv 'slot-count')" }
+  elseif (Gv-Val $gv "current-slot") { $why = "current-slot $(Gv-Val $gv 'current-slot')" }
+  elseif ((Gv-Val $gv "super-partition-name") -cne "super") { $why = "super-partition-name '$(Gv-Val $gv 'super-partition-name')'" }
+  else {
+    $l = (@($gv | ForEach-Object { if ("$_" -match '^\(bootloader\) is-logical:([^:]+):yes') { $Matches[1] } } | Sort-Object -Unique -CaseSensitive) -join " ")
+    $want = (@($script:Prof["LOGICAL"] -split " " | Sort-Object -Unique -CaseSensitive) -join " ")
+    if ($l -cne $want) { $why = (T "the partitions in super are not the known ones" "разделы в super не те, что известны") + " ($l)" }
+    else {
+      $fp = Gv-Val $gv "vendor-fingerprint"; $fw = $false
+      foreach ($v in ($script:Prof["VENDOR_OK"] -split " ")) { if ($fp -like "*/$($v.Substring(1)):*") { $fw = $true } }
+      if (-not $fw) { $why = (T "XGIMI firmware not supported" "прошивка XGIMI не поддерживается") + " ($fp)" }
+    }
+  }
+  if ($why) { P6-Fb-Stop ((T "fastboot mode check failed" "проверка режима fastboot не пройдена") + ": $why.") }
+  Ok (T "fastboot mode: $nm $($script:Serial)" "режим fastboot: $nm $($script:Serial)")
+  return $gv
+}
+function P6-Room($gv) {  # the image must fit into super next to the other logical partitions (each rounded up to 1 MiB)
+  $sup = Gv-Size $gv "super"
+  if ($null -eq $sup) { P6-Fb-Stop (T "fastbootd did not report the size of super." "fastbootd не сообщил размер super.") }
+  $used = [int64]0
+  foreach ($p in ($script:Prof["LOGICAL"] -split " ")) {
+    if ($p -eq "system") { continue }
+    $sz = Gv-Size $gv $p
+    if ($null -eq $sz) { P6-Fb-Stop (T "fastbootd did not report the size of $p." "fastbootd не сообщил размер $p.") }
+    $used += [int64]([math]::Ceiling($sz / 1MB) * 1MB)
+  }
+  $room = [int64]($sup - $used - [int64]$script:Prof["SUPER_RESERVE"])
+  $len = (Get-Item -LiteralPath $script:Image).Length
+  if ($len -gt $room) { P6-Fb-Stop (T "the image does not fit into super ($([math]::Truncate($room / 1MB)) MB free, $([math]::Ceiling($len / 1MB)) MB needed)." "образ не помещается в super (свободно $([math]::Truncate($room / 1MB)) МБ, нужно $([math]::Ceiling($len / 1MB)) МБ).") }
+}
+function P6-Cable-Out {  # after 'fastboot reboot': the projector does not start while the computer's cable is in
+  $nm = P6-Name
+  Write-Host ""
+  Write-Host (T "Written. Unplug the A-to-A cable from the projector NOW: the $nm does not start while it is connected. If the picture does not come back within a minute, press the power button." "Записано. Сейчас выньте кабель A–A из проектора: пока он подключён, $nm не загружается. Если через минуту изображения нет, нажмите кнопку питания.")
+  $null = Read-Host (T "Press Enter when the cable is out" "Когда кабель вынут, нажмите Enter")
+}
+function Play6-Write {  # check, confirmation, cable, fastbootd, write system, restart (resumes in fastbootd)
+  $nm = P6-Name; $infb = $false
+  Check-Tools
+  if ((State-Get step_fastboot) -and (State-Get step_flash) -ne "done" -and (P6-In-Fastboot)) {
+    $infb = $true
+    if ((State-Get step_flash_system) -eq "done") {   # fastboot said OKAY, the restart was not sent
+      Ok (T "system is already written; restarting the projector" "system уже записан; перезагружаю проектор")
+      Fb reboot | Out-Null
+      State-Set step_flash done
+      P6-Cable-Out
+      return
+    }
+    Say (T "the projector waits in fastboot mode on the cable: continuing there" "проектор ждёт в режиме fastboot на кабеле: продолжаю там")
+  } else {
+    if (-not (Play6-Adb 60)) {
+      # an earlier run sent the projector to fastboot mode: it is neither there (on the cable) nor back in its system
+      if (State-Get step_fastboot) { Die (T "the projector is neither in fastboot mode on the cable nor reachable over Wi-Fi at $($script:AdbT). If the picture is dark: unplug the A-to-A cable (the $nm does not start while it is in) and press the power button; a USB stick in the port helps it start. When its system is back, run the installer again: it sends the projector to fastboot mode again. If it stays dark: guide, section '$nm', 'Back to stock'." "проектора нет ни в режиме fastboot на кабеле, ни в Wi-Fi по адресу $($script:AdbT). Если изображения нет, выньте кабель A–A (пока он вставлен, $nm не загружается) и нажмите кнопку питания; флешка в порту помогает ему загрузиться. Когда система загрузится, запустите установщик снова: он снова отправит проектор в режим fastboot. Если изображения так и нет: инструкция, раздел «${nm}», «Откат на сток».") }
+      Die (P6-NoConn)
+    }
+    Play6-Device
+  }
+  Play6-Check-Image -Force
+  Write-Host ""
+  if ($KeepData) {
+    Write-Host (T "Writing Lumen OS to the system partition of the $nm WITHOUT erasing data (a repair). XGIMI's firmware stays untouched: vendor, boot, recovery, MBOOT, calibration and factory data." "Записываю Lumen OS в раздел system $nm БЕЗ стирания данных (ремонт). Прошивка XGIMI не затрагивается: vendor, boot, recovery, MBOOT, калибровка и заводские данные.")
+    if ((Read-Host (T "Type WRITE to continue" "Введите WRITE, чтобы продолжить")) -cne "WRITE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
+  } else {
+    Write-Host (T "Writing Lumen OS to the system partition of the $nm, then ERASING ALL DATA (apps, accounts, settings, files, Wi-Fi networks) with Android's factory reset after the first start. XGIMI's firmware stays untouched: vendor, boot, recovery, MBOOT, calibration and factory data. The $nm has only one system: if the write is cut off by a power loss, the way back is the USB stick restore (guide, 'Back to stock'). Keep the power adapter connected." "Записываю Lumen OS в раздел system $nm, затем СТИРАЮ ВСЕ ДАННЫЕ (приложения, аккаунты, настройки, файлы, сети Wi-Fi) сбросом Android к заводским настройкам после первого запуска. Прошивка XGIMI не затрагивается: vendor, boot, recovery, MBOOT, калибровка и заводские данные. Система у $nm одна: если запись оборвётся из-за отключения питания, вернуть проектор можно только восстановлением с флешки (инструкция, «Откат на сток»). Блок питания держите подключённым.")
+    if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
+    $script:EraseNow = $true
+    State-Set erase_ok (Get-Date -Format "yyyyMMdd-HHmmss")
+  }
+  if (-not $infb) {
+    foreach ($k in @("step_fastboot", "step_flash_system", "step_flash", "step_boot1", "step_wipe", "step_verify", "wipe_marker")) { State-Set $k "" }
+    Write-Host ""
+    Write-Host (T "Take the USB stick out of the projector's USB port, if one is in, and connect that port to this computer with the USB A-to-A cable. Keep the power adapter connected." "Выньте флешку из USB-порта проектора, если она там, и соедините этот порт с компьютером кабелем USB A–A. Блок питания оставьте подключённым.")
+    $null = Read-Host (T "Press Enter when the cable is in" "Когда кабель вставлен, нажмите Enter")
+    Say (T "restarting into fastboot mode (about 30 seconds)" "перезагрузка в режим fastboot (около 30 секунд)")
+    # saved first: a restart that happens although adb reports an error (the Wi-Fi connection drops with it) is still
+    # continued in fastboot mode by the next run
+    State-Set step_fastboot (Get-Date -Format "yyyyMMdd-HHmmss")
+    Adb reboot fastboot | Out-Null
+    if ($LASTEXITCODE -ne 0 -and (P6-Alive)) {
+      State-Set step_fastboot ""
+      Die (T "adb reboot fastboot failed: the projector still runs its system. Nothing was written. Unplug the A-to-A cable and run the installer again." "adb reboot fastboot не удался: проектор работает в своей системе. Ничего не записано. Выньте кабель A–A и запустите установщик снова.")
+    }
+    & adb disconnect $script:AdbT 2>&1 | Out-Null
+  }
+  if (-not (P6-Fb-Wait 180)) { Die (T "the projector did not appear on the cable within 3 minutes. Is the cable in the projector's USB port (not a hub)? On Windows the Google USB Driver is needed. Nothing was written. Run the installer again: it finds the projector in fastboot mode or sends it there again." "проектор не появился на кабеле за 3 минуты. Кабель в USB-порту проектора (не через хаб)? На Windows нужен Google USB Driver. Ничего не записано. Запустите установщик снова: он найдёт проектор в режиме fastboot или снова отправит его туда.") }
+  $gv = Play6-Fbd-Check
+  P6-Room $gv
+  Say (T "writing system (about 1 minute). Do not unplug the cable or the power until it is done." "записываю system (около минуты). Не отключайте кабель и питание, пока запись не закончится.")
+  if (-not (Fb-Do flash system $script:Image)) { Die (T "system was not written completely. The projector stays in fastboot mode: keep the cable in and run the installer again, it writes system again." "system записан не полностью. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите установщик снова, он запишет system ещё раз.") }
+  State-Set step_flash_system done
+  Fb reboot | Out-Null
+  State-Set step_flash done
+  P6-Cable-Out
+}
+function P6-Write-Again {  # the write did not take effect: the next run (or 'flash') writes system again from the start
+  foreach ($k in @("step_fastboot", "step_flash_system", "step_flash")) { State-Set $k "" }
+}
+function Play6-Boot1 {  # the first start of Lumen OS on the old data: Wi-Fi and debugging carry over from stock
+  $nm = P6-Name
+  if (-not $script:AdbT) { $script:AdbT = State-Get ip }
+  if (-not $script:AdbT) { Die "internal: no saved address of the projector" }
+  Say (T "waiting for Lumen OS over Wi-Fi (the first start takes up to 10 minutes)" "жду Lumen OS по Wi-Fi (первый запуск занимает до 10 минут)")
+  if (-not (Wifi-Connect 600)) {
+    if ($script:P6St -match "unauthorized") { Die (T "Lumen OS runs, but it did not allow this computer within 10 minutes. On the projector: allow debugging from this computer, tick `"Always allow from this computer`" and press OK; then run the installer again. Nothing was erased; your data is still there." "Lumen OS работает, но проектор за 10 минут не разрешил отладку с этого компьютера. На проекторе разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK, затем запустите установщик снова. Ничего не стёрто, данные на месте.") }
+    Die (T "Lumen OS did not answer over Wi-Fi within 10 minutes. Is the A-to-A cable out of the projector? The $nm does not start while it is in. If the picture stays dark: unplug the cable and press the power button; a USB stick in the projector's USB port helps the $nm start. If Lumen Home is on the screen: look up its address in Settings > Network & Internet and run the installer again with -Ip ADDRESS. Nothing else was changed; your data is still there." "Lumen OS не ответила по Wi-Fi за 10 минут. Кабель A–A вынут из проектора? Пока он вставлен, $nm не загружается. Если изображения нет, выньте кабель и нажмите кнопку питания; флешка в USB-порту помогает $nm загрузиться. Если на экране Lumen Home, посмотрите адрес в «Настройки > Сеть и Интернет» и запустите установщик снова с -Ip АДРЕС. Больше ничего не изменено, данные на месте.")
+  }
+  P6-Identity
+  $sw = [Diagnostics.Stopwatch]::StartNew()
+  for ($i = 0; (Prop sys.boot_completed) -ne "1"; $i += 5) {
+    if ($i -ge 300 -or $sw.Elapsed.TotalSeconds -ge 300) { Die (T "Lumen OS did not finish starting within 5 more minutes. Restart the projector with the power button and run the installer again." "Lumen OS не загрузилась до конца ещё за 5 минут. Перезагрузите проектор кнопкой питания и запустите установщик снова.") }
+    Start-Sleep 5
+  }
+  $lum = Prop (P6-LProp)
+  if (-not $lum) {
+    P6-Write-Again
+    Die (T "the projector still runs XGIMI's system: the write did not take effect. Nothing was erased. Run the installer again with the A-to-A cable at hand: it writes system again. If this happens again, report it with the installer output." "на проекторе всё ещё система XGIMI: запись не применилась. Ничего не стёрто. Запустите установщик снова, держа кабель A–A под рукой: он запишет system ещё раз. Если это повторится, напишите об этом и приложите вывод установщика.")
+  }
+  if ($lum -cne (P6-LVal)) { Die (T "the projector runs Lumen OS for another device ('$lum'). Nothing was erased." "на проекторе Lumen OS для другого устройства ('$lum'). Ничего не стёрто.") }
+  $v = Prop $script:Prof["VERSION_PROP"]
+  if (-not $UnsignedImage -and $conf["VERSION"] -and $v -cne $conf["VERSION"]) {
+    if ((State-Get dev_lumen) -eq "1" -and $v -ceq (State-Get dev_version)) {
+      P6-Write-Again
+      Die (T "the projector still runs the Lumen OS $v it had before: the write did not take effect. Nothing was erased. Run the installer again with the A-to-A cable at hand: it writes system again." "на проекторе всё ещё прежняя Lumen OS ${v}: запись не применилась. Ничего не стёрто. Запустите установщик снова, держа кабель A–A под рукой: он запишет system ещё раз.")
+    }
+    # the image was checked against this release before the write (name, signature, checksum): only its own version
+    # name differs, which does not make the wipe of this projector any less right
+    Warn (T "Lumen OS '$v' runs, and this installer download is for $($conf['VERSION']): the image names its version differently from its release. Please report it; the install goes on." "работает Lumen OS '$v', а этот установщик для $($conf['VERSION']): образ называет свою версию иначе, чем его релиз. Сообщите об этом; установка продолжается.")
+  }
+  Ok ((T "Lumen OS $v started" "Lumen OS $v запустилась") + " ($($script:Serial), $($script:AdbT))")
+  if (((Adb shell pidof $P6App) | Out-String).Trim()) { Ok (T "projector app running" "приложение проектора работает") } else { Warn (T "the projector app ($P6App) is not running yet" "приложение проектора ($P6App) пока не запущено") }
+  State-Set ip $script:AdbT
+  State-Set step_boot1 done
+}
+function P6-Root {  # adb root restarts adbd, so connect again. 0 = root; 1 = this system gives no root (not userdebug);
+  # 2 = no answer after 'adb root' (the allow prompt was not accepted, or the network): try again later
+  if ((Prop ro.debuggable) -ne "1") { return 1 }
+  if (((Adb shell id "-u") | Out-String).Trim() -eq "0") { return 0 }
+  Adb root | Out-Null
+  Start-Sleep 3
+  if (-not (Wifi-Connect 60)) { return 2 }
+  if (((Adb shell id "-u") | Out-String).Trim() -eq "0") { return 0 } else { return 1 }
+}
+function Play6-Wipe {  # Android's own factory reset on the first Lumen OS start; XGIMI's recovery carries it out
+  $nm = P6-Name
+  if ((State-Get step_boot1) -ne "done") { Die "internal: no factory reset before Lumen OS has started" }
+  if ($KeepData) { Die "internal: no factory reset with -KeepData" }
+  if (-not $script:AdbT) { $script:AdbT = State-Get ip }
+  if (-not (Wifi-Connect 120)) {
+    # a factory reset asked for by an earlier run (cut off before it saved that) erases Wi-Fi and turns debugging off
+    if ((State-Get wipe_marker) -and $script:P6St -notmatch "unauthorized") { Die (T "the projector does not answer over Wi-Fi at $($script:AdbT). If it shows Lumen OS without your apps, the factory reset of an earlier run has already erased the data, the Wi-Fi network too: join Wi-Fi with the remote (Settings > Network & Internet), turn debugging on (guide, section '$nm', 'Check the install') and run the installer again with -Ip ADDRESS; it then sees that the data is erased. Otherwise: is the projector on, in the same network, debugging on? Nothing was done." "проектор не отвечает по Wi-Fi по адресу $($script:AdbT). Если на нём Lumen OS без ваших приложений, сброс прошлого запуска уже стёр данные и сеть Wi-Fi тоже: подключитесь к Wi-Fi пультом («Настройки > Сеть и Интернет»), включите отладку (инструкция, раздел «${nm}», «Проверьте установку») и запустите установщик снова с -Ip АДРЕС; он увидит, что данные стёрты. Иначе: проектор включён, в той же сети, отладка включена? Ничего не сделано.") }
+    Die (P6-NoConn 120)
+  }
+  P6-Identity
+  if ((Prop (P6-LProp)) -cne (P6-LVal)) { Die (T "the projector does not run Lumen OS for the ${nm}: no factory reset is sent. Nothing was changed." "на проекторе не Lumen OS для ${nm}: сброс не отправлен. Ничего не изменено.") }
+  # an earlier run asked for the reset and was cut off before it saved that: the check file tells what happened
+  if ((State-Get wipe_marker) -and (P6-Marker) -eq "gone") {
+    Ok (T "the data is already erased (the check file written before the factory reset is gone): no second factory reset" "данные уже стёрты (проверочного файла, записанного до сброса, нет): второй сброс не нужен")
+    State-Set step_wipe done
+    return
+  }
+  if (-not $script:EraseNow) {
+    Write-Host ""
+    Write-Host (T "Lumen OS runs on the old data. Next, Android's factory reset ERASES ALL DATA on the projector (apps, accounts, settings, files, Wi-Fi networks). XGIMI's recovery carries it out, as for Settings > Reset." "Lumen OS работает на старых данных. Дальше сброс Android к заводским настройкам СТИРАЕТ ВСЕ ДАННЫЕ проектора (приложения, аккаунты, настройки, файлы, сети Wi-Fi). Его выполняет recovery XGIMI, как при сбросе из настроек.")
+    if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") { Die (T "cancelled, nothing was erased" "отменено, ничего не стёрто") }
+    $script:EraseNow = $true
+  }
+  # the proof for 'verify': /data/local/tmp does not survive a real wipe
+  $tok = "lumen-$(Get-Date -Format 'yyyyMMddHHmmss')-$PID"
+  Adb shell "echo $tok > $P6Marker" | Out-Null
+  if (((Adb shell cat $P6Marker) | Out-String).Trim() -cne $tok) { Die (T "could not write the check file $P6Marker on the projector; nothing was erased" "не удалось записать проверочный файл $P6Marker на проектор; ничего не стёрто") }
+  State-Set wipe_marker $tok
+  $rc = P6-Root
+  if ($rc -eq 2) { Die (T "after 'adb root' the projector did not answer over Wi-Fi again within a minute (adbd restarts with it). If the projector asks: allow debugging from this computer, tick `"Always allow from this computer`" and press OK. Then run the installer again. Nothing was erased." "после 'adb root' проектор не ответил по Wi-Fi снова за минуту (adbd при этом перезапускается). Если проектор спрашивает, разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK. Затем запустите установщик снова. Ничего не стёрто.") }
+  if ($rc -ne 0) {
+    Warn (T "adb root is not possible on this system: the installer cannot start the factory reset" "adb root на этой системе невозможен: установщик не может запустить сброс")
+    Say (T "On the projector: Settings > Device Preferences > Reset > Factory reset." "На проекторе: Настройки > Настройки устройства > Сброс > Сброс к заводским настройкам.")
+    State-Set step_wipe manual
+    return
+  }
+  Say (T "asking Android for its factory reset" "запускаю сброс Android к заводским настройкам")
+  # --user 0: MasterClearReceiver wipes only the sending user when that is not user 0
+  $out = ((Adb shell am broadcast "--user" "0" "-a" "android.intent.action.FACTORY_RESET" "-p" "android" "--receiver-foreground" "--es" "android.intent.extra.REASON" "lumen-install") | Out-String).Trim()
+  if ($out -notmatch "Broadcast completed") { Die (T "the factory reset was not accepted ($out). Your data is unchanged. On the projector: Settings > Device Preferences > Reset > Factory reset." "сброс не принят ($out). Данные не изменены. На проекторе: Настройки > Настройки устройства > Сброс > Сброс к заводским настройкам.") }
+  # the projector restarts into XGIMI's recovery: it stops answering. Asked on a new connection each time, since the
+  # computer's old one can still say 'device' for a while after the projector went away.
+  $sw = [Diagnostics.Stopwatch]::StartNew()
+  for ($i = 0; (P6-Alive); $i += 5) {
+    if ($i -ge 60 -or $sw.Elapsed.TotalSeconds -ge 60) { Die (T "the projector still answers a minute after the factory reset was asked for: the factory reset did not start, your data is unchanged. On the projector: Settings > Device Preferences > Reset > Factory reset. To report it, send the logcat lines of MasterClearReceiver and uncrypt." "проектор отвечает и через минуту после запроса сброса: сброс не начался, данные не изменены. На проекторе: Настройки > Настройки устройства > Сброс > Сброс к заводским настройкам. Для отчёта пришлите строки logcat от MasterClearReceiver и uncrypt.") }
+    Start-Sleep 5
+  }
+  & adb disconnect $script:AdbT 2>&1 | Out-Null
+  State-Set step_wipe requested
+  $script:WipedNow = $true
+  Write-Host ""
+  Write-Host (T "The projector restarts into XGIMI's recovery, which erases the data (a few minutes), then starts Lumen OS clean. The Wi-Fi network is erased too." "Проектор перезагружается в recovery XGIMI, которое стирает данные (несколько минут), и затем запускает чистую Lumen OS. Сеть Wi-Fi тоже стирается.")
+  if (Ask (T "Wait for Lumen Home on the projector (up to 10 minutes). Do you see Lumen Home?" "Дождитесь Lumen Home на проекторе (до 10 минут). Lumen Home на экране?")) { Ok (T "Lumen OS started clean" "Lumen OS запустилась начисто") }
+  else { Warn (T "Press the power button once. If the picture stays dark for 10 more minutes: guide, section '$nm', 'Something went wrong'." "Нажмите кнопку питания один раз. Если ещё 10 минут изображения нет: инструкция, раздел «${nm}», «Если что-то пошло не так».") }
+}
+function Play6-Verify($secs) {  # over Wi-Fi, after the wipe (the user joined Wi-Fi and turned debugging on again)
+  $nm = P6-Name
+  if (-not $script:AdbT) { $script:AdbT = State-Get ip }
+  if (-not $script:AdbT -and $script:Serial) { $script:AdbT = P6-Discover $script:Serial }   # only this projector, by its serial
+  $script:P6St = ""
+  if (-not $script:AdbT -or -not (Wifi-Connect $secs)) {
+    if ($script:P6St -match "unauthorized") { Warn (T "the projector at $($script:AdbT) did not allow this computer. On the projector: allow debugging from this computer, tick `"Always allow from this computer`" and press OK; then run 'verify' again." "проектор по адресу $($script:AdbT) не разрешил отладку с этого компьютера. На проекторе разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK, затем запустите 'verify' снова.") }
+    else { Warn (T "no adb connection to the projector over Wi-Fi. After the wipe Wi-Fi and debugging are off: that is normal. To check the install: join Wi-Fi on the projector, turn on debugging (guide, section '$nm', 'Check the install') and run: lumen-install.cmd verify -Ip ADDRESS" "нет связи adb с проектором по Wi-Fi. После сброса Wi-Fi и отладка выключены: это нормально. Чтобы проверить установку, подключите проектор к Wi-Fi, включите отладку (инструкция, раздел «${nm}», «Проверьте установку») и запустите: lumen-install.cmd verify -Ip АДРЕС") }
+    return
+  }
+  P6-Identity
+  if ((Prop sys.boot_completed) -eq "1") { Ok (T "started" "загружена") } else { Warn "sys.boot_completed=$(Prop sys.boot_completed)" }
+  if ((Prop (P6-LProp)) -cne (P6-LVal)) { Die (T "the projector does not run Lumen OS for the $nm" "на проекторе не Lumen OS для $nm") }
+  $v = Prop $script:Prof["VERSION_PROP"]; $sec = Prop ro.adb.secure
+  if (-not $UnsignedImage -and $conf["VERSION"] -and $v -cne $conf["VERSION"]) { Warn "Lumen OS $v ($(T 'expected' 'ожидалась') $($conf['VERSION']))" } else { Ok "Lumen OS $v ($($script:Serial), $($script:AdbT))" }
+  if ($sec -eq "1") { Ok (T "debugging asks before a new computer may connect (ro.adb.secure=1)" "отладка спрашивает разрешение для нового компьютера (ro.adb.secure=1)") } else { Warn "ro.adb.secure=$sec ($(T 'a test build' 'тестовая сборка'))" }
+  $st = State-Get step_wipe
+  if (@("requested", "manual", "done") -contains $st) {
+    $mk = P6-Marker
+    if ($mk -eq "there") {
+      Warn (T "the data was NOT erased: the check file from before the factory reset is still there" "данные НЕ стёрты: проверочный файл, записанный до сброса, на месте")
+      if (Ask (T "Erase all data now with Android's factory reset?" "Стереть все данные сейчас сбросом Android к заводским настройкам?")) { $script:EraseNow = $false; Play6-Wipe; return }
+    } elseif ($mk -eq "gone") {
+      Ok (T "data erased (the check file from before the factory reset is gone)" "данные стёрты (проверочного файла, записанного до сброса, нет)")
+      State-Set step_wipe done
+    } else { Warn (T "the check file of the factory reset could not be read: run 'verify' again" "проверочный файл сброса прочитать не удалось: запустите 'verify' снова") }
+    if (-not ((Adb shell pm path $P6Tuner) | Out-String).Trim()) { Ok (T "SystemUI Tuner from stock is gone" "SystemUI Tuner со стока удалён") } else { Warn (T "SystemUI Tuner from stock is still installed" "SystemUI Tuner со стока всё ещё установлен") }
+    $n = @(Adb shell pm list packages "-3" | Where-Object { "$_" -like "package:*" }).Count
+    if ($n -eq 0) { Ok (T "no apps from before" "приложений со старой системы нет") } else { Say (T "user apps: $n" "приложений пользователя: $n") }
+  } elseif ($st -eq "keep") { Ok (T "your data was kept (-KeepData)" "ваши данные сохранены (-KeepData)") }
+  $flags = ""
+  foreach ($s in @(@("global", "device_provisioned"), @("secure", "user_setup_complete"), @("secure", "tv_user_setup_complete"))) { $flags += ((Adb shell settings get $s[0] $s[1]) | Out-String).Trim() }
+  if ($flags -eq "111") { Ok (T "the projector is marked set up (Home and the remote work)" "проектор отмечен как настроенный (Home и пульт работают)") }
+  else { Warn (T "the projector is not marked set up ($flags): Home and the remote may not work; report it" "проектор не отмечен как настроенный ($flags): Home и пульт могут не работать; сообщите об этом") }
+  if (((Adb shell pidof $P6App) | Out-String).Trim()) { Ok (T "projector app running" "приложение проектора работает") } else { Warn (T "the projector app ($P6App) is not running" "приложение проектора ($P6App) не запущено") }
+  if ((Adb shell dumpsys media.audio_policy) -match "Output") { Ok (T "audio outputs present" "аудиовыходы есть") } else { Warn (T "no audio outputs listed" "аудиовыходы не найдены") }
+  State-Set step_verify done
+}
+function Play6-Install {  # write, first start, wipe: each step once, continued where it stopped
+  if ((State-Get step_flash) -ne "done") { Play6-Write }
+  if ((State-Get step_boot1) -ne "done") { Play6-Boot1 }
+  if (-not (State-Get step_wipe)) { if ($KeepData) { State-Set step_wipe keep } else { Play6-Wipe } }
+}
+function Play6-Done {
+  $nm = P6-Name; $w = State-Get step_wipe
+  Write-Host ""
+  if ($w -eq "keep") {
+    if ((State-Get step_verify) -ne "done") { Play6-Verify 30 }
+    Write-Host (T "Done. Lumen OS runs on the $nm with your data kept." "Готово. Lumen OS работает на $nm, ваши данные сохранены.")
+  } elseif ($w -eq "manual") {
+    Write-Host (T "Lumen OS is written. Finish with the factory reset on the projector (Settings > Device Preferences > Reset > Factory reset), then join your Wi-Fi in Settings > Network & Internet." "Lumen OS записана. Завершите сбросом на проекторе («Настройки > Настройки устройства > Сброс > Сброс к заводским настройкам»), затем подключитесь к Wi-Fi в «Настройки > Сеть и Интернет».")
+  } else {
+    # a later run: the projector may answer again (Wi-Fi joined, debugging on): then check it
+    if (-not $script:WipedNow -and (State-Get step_verify) -ne "done") {
+      if (-not $script:AdbT) { $script:AdbT = State-Get ip }
+      if ($script:AdbT -and (Wifi-Connect 0)) { Play6-Verify 0; Write-Host "" }
+    }
+    Write-Host (T "Done. On the projector: Settings > Network & Internet: join your Wi-Fi. To check the install from this computer later: turn on debugging (guide, section '$nm', 'Check the install') and run: lumen-install.cmd verify -Ip ADDRESS" "Готово. На проекторе: «Настройки > Сеть и Интернет», подключитесь к своему Wi-Fi. Проверить установку с компьютера можно позже: включите отладку (инструкция, раздел «${nm}», «Проверьте установку») и запустите: lumen-install.cmd verify -Ip АДРЕС")
+  }
+  Write-Host "  $(T 'Guide' 'Инструкция'): $(P6-Guide)"
+}
+function Play6-Flash {  # the 'flash' command: a new write, unless a write waits in fastbootd (then it continues there)
+  if (-not ((State-Get step_fastboot) -and (State-Get step_flash) -ne "done" -and (P6-In-Fastboot))) {
+    # a finished earlier write leaves nothing to continue: its step_fastboot must not count for this new write
+    if ((State-Get step_flash) -eq "done") { P6-Write-Again }
+  }
+  Play6-Install
+  Play6-Done
+}
+function Play6-All {
+  if ((State-Get step_check) -ne "done") { Play6-Check }
+  if (-not (State-Get step_backup) -and -not (P6-In-Fastboot)) {
+    if (Ask (T "Make a backup of your apps and files first (recommended)?" "Сначала сделать копию ваших приложений и файлов (рекомендуется)?")) { Cmd-Backup } else { State-Set step_backup skipped }
+  }
+  Play6-Install
+  Play6-Done
+}
+function Play6-Rescue {  # the projector waits in fastboot mode: write system again, keep the data
+  $nm = P6-Name
+  $script:KeepData = $true
+  Check-Tools
+  Play6-Check-Image -Force
+  Write-Host (T "RESCUE ($nm): writes Lumen OS again into system from fastboot mode, WITHOUT erasing data (apps, accounts, settings and files stay). XGIMI's firmware stays untouched. Use it for a projector with Lumen OS that waits in fastboot mode (it does not start any more, or a write was cut off)." "РЕМОНТ ($nm): заново записывает Lumen OS в system из режима fastboot, БЕЗ стирания данных (приложения, аккаунты, настройки и файлы сохраняются). Прошивка XGIMI не затрагивается. Для проектора с Lumen OS, который ждёт в режиме fastboot (больше не загружается или запись оборвалась).")
+  if ((Read-Host (T "Type WRITE to continue" "Введите WRITE, чтобы продолжить")) -cne "WRITE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
+  $saved = State-Get serial
+  Say (T "Take the USB stick out and connect the projector's USB port to this computer with the A-to-A cable. Waiting for the projector in fastboot mode (up to 15 minutes); the picture may stay dark." "Выньте флешку и соедините USB-порт проектора с компьютером кабелем A–A. Жду проектор в режиме fastboot (до 15 минут); изображения может не быть.")
+  if (-not (Fbd-Find 900)) { Die (T "the projector did not appear in fastboot mode within 15 minutes. Cable in the projector's USB port? USB driver? Nothing was written. If it never gets there: guide, 'Back to stock'." "проектор не появился в режиме fastboot за 15 минут. Кабель в USB-порту проектора? Драйвер USB? Ничего не записано. Если он туда не попадает: инструкция, «Откат на сток».") }
+  # fastbootd cannot tell stock from Lumen OS here (its system-fingerprint is XGIMI's recovery's own, stock on every
+  # Play 6), so the saved progress does: this projector last seen on stock with nothing written to it stays stock
+  if ($script:Serial -ceq $saved -and (State-Get dev_lumen) -eq "0" -and -not ((State-Get step_fastboot) + (State-Get step_flash) + (State-Get step_rescue))) {
+    P6-Fb-Stop (T "this computer last saw this projector on XGIMI's stock system and has written nothing to it: 'rescue' would put Lumen OS over the stock data. To install, run the installer without a command (guide, section '$nm'). If Lumen OS was put on it another way since: lumen-install.cmd reset -Device play6, then 'rescue' again." "этот компьютер в последний раз видел проектор на родной системе XGIMI и ничего на него не записывал: 'rescue' поставит Lumen OS поверх стоковых данных. Для установки запустите установщик без команды (инструкция, раздел «${nm}»). Если Lumen OS с тех пор поставили на него иначе: lumen-install.cmd reset -Device play6, затем снова 'rescue'.")
+  }
+  # fastbootd's product name is shared by other XGIMI models: the serial must be this projector's
+  if (-not $saved -or $script:Serial -cne $saved) {
+    if ((Read-Host (T "In fastboot mode: $($script:Serial). Type this serial to confirm it is your $nm" "В режиме fastboot: $($script:Serial). Введите этот серийный номер, чтобы подтвердить, что это ваш $nm")) -cne $script:Serial) { P6-Fb-Stop (T "cancelled." "отменено.") }
+  }
+  $gv = Play6-Fbd-Check
+  P6-Room $gv
+  Say (T "writing system (about 1 minute). Do not unplug the cable or the power until it is done." "записываю system (около минуты). Не отключайте кабель и питание, пока запись не закончится.")
+  if (-not (Fb-Do flash system $script:Image)) { Die (T "system was not written completely. The projector stays in fastboot mode: keep the cable in and run 'rescue' again." "system записан не полностью. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите 'rescue' снова.") }
+  State-Set serial $script:Serial
+  Fb reboot | Out-Null
+  State-Set step_rescue (Get-Date -Format "yyyyMMdd-HHmm")
+  P6-Cable-Out
+  Ok (T "written; your data is kept. If Lumen OS still does not start, the system was not the cause: guide, 'Back to stock' (it erases everything)." "записано; данные сохранены. Если Lumen OS всё равно не загружается, дело не в системе: инструкция, «Откат на сток» (стирает всё).")
+}
+function Stick-Check {  # the stock-restore USB stick of this projector, read only (it never formats anything)
+  $nm = P6-Name; $bin = $script:Prof["RESTORE_BIN"]; $bad = $false
+  if (-not $bin) { Die (T "'stick' checks the restore stick of the $(Dev-Name play6): lumen-install.cmd stick -Device play6 -Path E:\" "'stick' проверяет флешку восстановления $(Dev-Name play6): lumen-install.cmd stick -Device play6 -Path E:\") }
+  $m = if ($Path) { $Path } elseif ($script:Image) { $script:Image } else { "" }   # 'stick E:\' binds E:\ to -Image
+  if (-not $m) { Die (T "which stick? lumen-install.cmd stick -Path E:\ (the stick's drive)" "какая флешка? lumen-install.cmd stick -Path E:\ (диск флешки)") }
+  if (-not (Test-Path -LiteralPath $m -PathType Container)) { Die (T "$m is not a folder" "$m не папка") }
+  Say (T "checking the stock restore stick $m (read only)" "проверяю флешку восстановления $m (только чтение)")
+  # the partition table and the file system (MBOOT reads only MBR + one FAT32 partition)
+  $pt = ""
+  try {
+    $drv = (Get-Item -LiteralPath $m).PSDrive.Name
+    $part = Get-Partition -DriveLetter $drv -ErrorAction Stop
+    $pt = "$((Get-Disk -Number $part.DiskNumber -ErrorAction Stop).PartitionStyle)"
+    $parts = @(Get-Partition -DiskNumber $part.DiskNumber -ErrorAction Stop).Count
+    $fs = "$((Get-Volume -DriveLetter $drv -ErrorAction Stop).FileSystem)"
+  } catch { $pt = "" }
+  if (-not $pt) { Warn (T "the partition table could not be read on this computer: make sure it is MBR with one FAT32 partition" "схему разделов на этом компьютере прочитать не удалось: убедитесь, что это MBR с одним разделом FAT32") }
+  else {
+    if ($pt -eq "MBR") { Ok (T "partition table: MBR" "схема разделов: MBR") } else { Warn (T "partition table '$pt': it must be MBR (master boot record), not GPT" "схема разделов '$pt': нужна MBR (главная загрузочная запись), не GPT"); $bad = $true }
+    if ($parts -eq 1) { Ok (T "one partition" "один раздел") } else { Warn (T "$parts partitions: there must be exactly one" "разделов: $parts, а нужен ровно один"); $bad = $true }
+    if ($fs -eq "FAT32") { Ok (T "file system: FAT32" "файловая система: FAT32") } else { Warn (T "file system '$fs': it must be FAT32" "файловая система '$fs': нужна FAT32"); $bad = $true }
+  }
+  # exactly the firmware file and an empty factory.txt (folders the computer makes itself do no harm)
+  foreach ($e in @(Get-ChildItem -LiteralPath $m -Force -ErrorAction SilentlyContinue)) {
+    $n = $e.Name
+    if (@($bin, "factory.txt", ".fseventsd", ".Spotlight-V100", ".Trashes", ".TemporaryItems", "System Volume Information") -ccontains $n) { continue }
+    if ($n.StartsWith("._")) { Warn (T "${n}: a macOS helper file; delete it" "${n}: служебный файл macOS; удалите его"); $bad = $true }
+    else { Warn (T "${n}: nothing else may be on the stick" "${n}: на флешке не должно быть ничего лишнего"); $bad = $true }
+  }
+  $ft = Join-Path $m "factory.txt"
+  if (Test-Path -LiteralPath $ft) {
+    if ((Get-Item -LiteralPath $ft).Length -gt 0) { Warn (T "factory.txt must be empty" "factory.txt должен быть пустым"); $bad = $true } else { Ok (T "factory.txt, empty" "factory.txt, пустой") }
+  } else { Warn (T "no factory.txt: create an empty file with that name" "нет factory.txt: создайте пустой файл с таким именем"); $bad = $true }
+  $bf = Join-Path $m $bin
+  if (Test-Path -LiteralPath $bf) {
+    Say (T "checking $bin (md5, about a minute)" "проверяю $bin (md5, около минуты)")
+    $sum = (Get-FileHash -LiteralPath $bf -Algorithm MD5).Hash.ToLower()
+    $ver = ""
+    foreach ($e in ($script:Prof["RESTORE_MD5"] -split " ")) { $kv = $e -split ":", 2; if ($kv[0] -eq $sum) { $ver = $kv[1] } }
+    if ($ver) { Ok "${bin}: $(T 'XGIMI firmware' 'прошивка XGIMI') $ver (md5 $sum)" }
+    else { Warn (T "$bin is not a firmware file the installer knows (md5 $sum): download it again" "$bin не известный установщику файл прошивки (md5 $sum): скачайте его заново"); $bad = $true }
+  } else { Warn (T "no $bin on the stick (exactly this name)" "на флешке нет $bin (ровно с таким именем)"); $bad = $true }
+  if ($bad) { Die (T "the stick is not ready: fix the lines marked ! (guide, section '$nm', 'Back to stock')" "флешка не готова: исправьте строки с ! (инструкция, раздел «${nm}», «Откат на сток»)") }
+  Ok (T "the stick is ready. Restore: power cable out, stick in the projector's USB port, hold the power button, plug the power in and keep holding about 5 seconds (guide)." "флешка готова. Восстановление: отключите питание, вставьте флешку в USB-порт проектора, зажмите кнопку питания, подключите питание и держите кнопку около 5 секунд (инструкция).")
+}
+function Play6-Not-Needed($c) {  # the Z9X commands the Play 6 has no use for
+  $nm = P6-Name
+  if ($c -eq "gsf" -or $c -eq "gapps") { Die (T "Google services cannot be added on the $nm yet. Nothing was done." "на $nm сервисы Google пока добавить нельзя. Ничего не сделано.") }
+  Die (T "'$c' is not needed on the $nm. Nothing was done." "на $nm шаг '$c' не нужен. Ничего не сделано.")
+}
+
 function Cmd-All {
   if ((State-Get step_check) -ne "done") { Cmd-Check }
   if ((State-Get step_backup) -ne "done") { if (Ask (T "Make a backup of your apps and files first (recommended)?" "Сначала сделать копию ваших приложений и файлов (рекомендуется)?")) { Cmd-Backup } else { State-Set step_backup skipped } }
@@ -792,7 +1543,44 @@ function Cmd-All {
 }
 
 $script:Image = $Image; $script:Serial = $Serial; $script:SerialFromState = $false
+if ($Ip) {
+  if ($Ip -notmatch '^[A-Za-z0-9._-]+(:[0-9]+)?$') { Die (T "-Ip: '$Ip' is not an address (for example -Ip 192.168.x.y, as the projector's network settings show it)" "-Ip: '$Ip' не адрес (например -Ip 192.168.x.y, как в настройках сети проектора)") }
+  $script:AdbT = if ($Ip -match ":") { $Ip } else { "${Ip}:5555" }
+}
+if ($Command -eq "status") {   # the saved progress only: no projector, no profile needed
+  $shown = $false; $p6s = Join-Path (Join-Path $StateDir "play6") "state"; $f = Join-Path $StateDir "state"
+  if ($Device -ne "play6" -and (Test-Path $f)) { Get-Content $f; $shown = $true }
+  if ($Device -ne "z9x" -and (Test-Path $p6s)) { Write-Host "$(Dev-Name play6):"; Get-Content $p6s | ForEach-Object { "  $_" }; $shown = $true }
+  if (-not $shown) { Write-Host (T "no saved progress" "сохранённого прогресса нет") }
+  exit 0
+}
+if ($Command -eq "reset") {
+  if ($Device -eq "play6") { Remove-Item -Recurse -Force (Join-Path $StateDir "play6") -ErrorAction SilentlyContinue }
+  elseif ($Device -eq "z9x") { Get-ChildItem -LiteralPath $StateDir -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "play6" } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue }
+  else { Remove-Item -Recurse -Force $StateDir -ErrorAction SilentlyContinue }
+  Write-Host (T "progress forgotten" "прогресс сброшен")
+  exit 0
+}
+Resolve-Device
 if (-not $script:Serial) { $script:Serial = State-Get serial; if ($script:Serial) { $script:SerialFromState = $true } }
+if (@("", "check", "flash", "rescue") -contains $Command) { Release-Guard }
+if ($script:Projector -eq "play6") {
+  switch ($Command) {
+    ""       { Play6-All }
+    "check"  { Play6-Check }
+    "backup" { Cmd-Backup }
+    "flash"  { Play6-Flash }
+    "verify" { Play6-Verify 60 }
+    "rescue" { Play6-Rescue }
+    "stick"  { Stick-Check }
+    "blobs"  { Play6-Not-Needed $Command }
+    "vbmeta" { Play6-Not-Needed $Command }
+    "gsf"    { Play6-Not-Needed $Command }
+    "gapps"  { Play6-Not-Needed $Command }
+    default  { Get-Content $PSCommandPath -TotalCount 20 | Select-Object -Skip 1; exit 2 }  # the usage lines above
+  }
+  exit 0
+}
 switch ($Command) {
   ""       { Cmd-All }
   "check"  { Cmd-Check }
@@ -804,7 +1592,6 @@ switch ($Command) {
   "gsf"    { Cmd-Gsf }
   "rescue" { Cmd-Rescue }
   "gapps"  { Cmd-Gapps }
-  "status" { $f = Join-Path $StateDir "state"; if (Test-Path $f) { Get-Content $f } else { Write-Host (T "no saved progress" "сохранённого прогресса нет") } }
-  "reset"  { Remove-Item -Recurse -Force $StateDir -ErrorAction SilentlyContinue; Write-Host (T "progress forgotten" "прогресс сброшен") }
-  default  { Get-Content $PSCommandPath -TotalCount 15 | Select-Object -Skip 1; exit 2 }  # the usage lines above
+  "stick"  { Stick-Check }
+  default  { Get-Content $PSCommandPath -TotalCount 20 | Select-Object -Skip 1; exit 2 }  # the usage lines above
 }
