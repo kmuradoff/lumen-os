@@ -3,6 +3,12 @@
 Сверху новые версии. Версии 1.0.x выходят для XGIMI Z9X, у XGIMI Play 6 свои записи с пометкой Play 6.
 [English below](#english).
 
+## Следующая версия Z9X (1.0.4, ещё не вышла)
+
+- Из быстрой панели убран ручной оптический зум. Встроенная логика XGIMI теряет положение объектива при движении
+  назад и может упирать его в край. Чтобы вписать картинку в экран, используйте «Вписать в экран сейчас» на той же
+  странице: она двигает зум сама и находит положение объектива.
+
 ## XGIMI Play 6, бета 1, октябрь 2026
 
 Первая бета Lumen OS для XGIMI Play 6 (G0058) с прошивкой XGIMI V1.7.116. Релиз с тегом `play6-beta1`
@@ -98,6 +104,12 @@ HDMI, заставка, 3D и оптический зум. На 1.0.2 обнов
 <a name="english"></a>
 
 Newest first. Versions 1.0.x are for the XGIMI Z9X; the XGIMI Play 6 has its own entries marked Play 6.
+
+## Next Z9X version (1.0.4, not released yet)
+
+- The manual optical zoom is gone from the quick panel. XGIMI's own zoom logic loses the lens position when
+  moving back and can drive the lens against its end. To fit the picture to the screen, use "Fit to screen
+  now" on the same page: it moves the zoom itself and finds the lens position.
 
 ## XGIMI Play 6, beta 1, October 2026
 
