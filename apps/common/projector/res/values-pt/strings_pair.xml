@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portuguese (Brazil; values-pt and values-pt-rBR are identical) translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">Reconecte o controle remoto</string>
+    <string name="remote_lost_text">Mantenha Voltar e Início pressionados juntos por 3 segundos até a luz piscar.</string>
+    <string name="remote_lost_found">%1$s encontrado</string>
+    <string name="remote_lost_battery">Nada acontece? Verifique as pilhas do controle remoto.</string>
+    <string name="remote_lost_dismiss">Agora não</string>
+    <string name="remote_lost_wake">Pressione qualquer botão do controle remoto</string>
+</resources>

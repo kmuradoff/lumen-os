@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Spanish translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">Vuelve a conectar el mando</string>
+    <string name="remote_lost_text">Mantén pulsados Atrás e Inicio a la vez durante 3 segundos hasta que la luz parpadee.</string>
+    <string name="remote_lost_found">Encontrado: %1$s</string>
+    <string name="remote_lost_battery">¿No pasa nada? Revisa las pilas del mando.</string>
+    <string name="remote_lost_dismiss">Ahora no</string>
+    <string name="remote_lost_wake">Pulsa cualquier botón del mando</string>
+</resources>
