@@ -44,6 +44,7 @@ import org.z9x.home.ui.Backdrop;
 import org.z9x.home.ui.ChipRow;
 import org.z9x.home.ui.ListPanel;
 import org.z9x.home.ui.ContextPanel;
+import org.z9x.home.ui.Gfx;
 import org.z9x.home.ui.PageForYou;
 import org.z9x.home.ui.RowView;
 import org.z9x.home.usb.UsbInstallActivity;
@@ -281,6 +282,8 @@ public class SearchActivity extends Activity implements RowView.Host, ChipRow.Li
         mPanel = new ContextPanel(this);
         mRoot.addView(mPanel);
         setContentView(mRoot);
+        // weak GPUs (ui/Gfx): the backdrop paints every pixel; bg_start under it is a full-screen overdraw
+        if (Gfx.LITE) getWindow().setBackgroundDrawable(null);
         showRecent();
     }
 

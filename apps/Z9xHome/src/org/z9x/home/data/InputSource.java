@@ -14,13 +14,16 @@ import android.provider.Settings;
 import android.util.Log;
 
 import org.z9x.home.App;
+import org.z9x.home.Props;
 import org.z9x.home.R;
+import org.z9x.home.proj.ProjectorBridge;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +35,13 @@ import java.util.regex.Pattern;
  */
 public final class InputSource {
     private InputSource() {}
+
+    /**
+     * Device switch {@code ro.lumen.home.cec_names} (Props): 1 = the cards of CEC devices get a friendly name
+     * and a mark (CecNames) instead of the raw CEC name, which is a placeholder such as "Playback_1" until
+     * the device sent its OSD name; HomeActivity then also refreshes on TvInputInfo updates. Unset: as 1.0.2.
+     */
+    public static final boolean CEC_NAMES = Props.num("cec_names", 0) > 0;
 
     public static final String TVINPUT_PKG = "org.z9x.tvinput";
     public static final String PKG_CHROMECAST = "com.google.android.apps.mediashell";
@@ -51,7 +61,9 @@ public final class InputSource {
             return out;
         }
         Map<Integer, HdmiDeviceInfo> cec = cecDevices(c);
-        int[] showingPorts = showingPorts(c);
+        Bundle hdmi = hdmiState(c);
+        int[] showingPorts = showingPorts(hdmi);
+        Map<Integer, Bundle> devices = portDevices(hdmi);   // empty unless the TV input app reports them
         HashMap<String, List<TvInputInfo>> children = new HashMap<>();
         ArrayList<TvInputInfo> tops = new ArrayList<>();
         for (TvInputInfo ii : all) {
@@ -83,6 +95,16 @@ public final class InputSource {
             }
             if (dev == null && port > 0) dev = cec.get(port);
             String devName = dev != null ? dev.getDisplayName() : null;
+            HdmiDeviceInfo live = null;   // cec_names: the system's CEC entry of the port
+            CecNames.Device friendly = null;
+            if (CEC_NAMES) { // the device's names, best first; none of them real: the port's label below
+                if (port > 0) live = cec.get(port);
+                String kidLabel = kids != null && !kids.isEmpty() ? childLabel(c, kids.get(0)) : null;
+                int vendor = dev != null ? dev.getVendorId() : 0;
+                if (vendor == 0 && live != null) vendor = live.getVendorId();
+                friendly = CecNames.of(vendor, devName, live != null ? live.getDisplayName() : null, kidLabel);
+                devName = friendly.name;
+            }
             String custom = customLabels.get(ii.getId());
             if (custom != null && !custom.isEmpty()) {
                 k.title = custom;
@@ -107,6 +129,13 @@ public final class InputSource {
             k.pkg = ii.getServiceInfo().packageName;
             k.meta = stateText(c, st);
             k.color = 0;
+            if (friendly != null) { // cec_names: the device's mark, tinted on the card by k.color (0 = paper)
+                if (friendly.mark == CecNames.MARK_CONSOLE) k.icon = R.drawable.ic_gamepad;
+                else if (friendly.mark == CecNames.MARK_PLAYER) k.icon = R.drawable.ic_player;
+                k.color = friendly.tint;
+            }
+            Bundle reported = port > 0 ? devices.get(port) : null;   // the TV input app's view of the port
+            if (reported != null) applyDevice(c, k, reported, customLabels.get(ii.getId()), portLabel);
             out.add(k);
         }
         return out;
@@ -140,6 +169,17 @@ public final class InputSource {
         }
         int p = port(ii);
         return p > 0 ? "HDMI " + p : ii.getId();
+    }
+
+    /** cec_names: the label the TV input gave a CEC device's input (it may carry the OSD name), or null. */
+    private static String childLabel(Context c, TvInputInfo kid) {
+        try {
+            CharSequence l = kid.loadCustomLabel(c);
+            if (l == null || l.length() == 0) l = kid.loadLabel(c);
+            return l != null ? l.toString() : null;
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     static int port(TvInputInfo ii) {
@@ -203,17 +243,105 @@ public final class InputSource {
         }
     }
 
-    /** Ports that currently have an open HDMI session (org.z9x.tvinput "hdmi_state", HDMI_STATE perm). */
-    private static int[] showingPorts(Context c) {
+    /** org.z9x.tvinput's "hdmi_state" (HDMI_STATE perm), null when it cannot be read. */
+    private static Bundle hdmiState(Context c) {
         try (ContentProviderClient cl = c.getContentResolver()
                 .acquireUnstableContentProviderClient(Uri.parse("content://org.z9x.tvinput.hdmistate"))) {
-            if (cl == null) return new int[0];
-            Bundle b = cl.call("hdmi_state", null, null);
+            if (cl == null) return null;
+            return cl.call("hdmi_state", null, null);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** Ports that currently have an open HDMI session ("ports" of hdmi_state). */
+    private static int[] showingPorts(Bundle b) {
+        try {
             int[] p = b != null ? b.getIntArray("ports") : null;
             return p != null ? p : new int[0];
         } catch (Throwable t) {
             return new int[0];
         }
+    }
+
+    // ------------------------------------------------------------------ the TV input app's device states
+
+    /** Change notifications of the port states below (org.z9x.tvinput's provider), a content Uri. */
+    public static final String PORTS_URI = "content://org.z9x.tvinput.hdmistate/ports";
+    private static volatile boolean sPortStates;
+
+    /** True once the TV input app reported per-port device states (then Home observes PORTS_URI). */
+    public static boolean portStates() {
+        return sPortStates;
+    }
+
+    /**
+     * Port number -> the TV input app's bundle of the device behind it ("port_ids", "port_<n>": state, names,
+     * glyph kind, accent, the input to open; docs of org.z9x.tvinput HdmiStateProvider). Empty when the app
+     * does not report them (older TV input app): every card as before.
+     */
+    private static Map<Integer, Bundle> portDevices(Bundle b) {
+        HashMap<Integer, Bundle> m = new HashMap<>();
+        try {
+            int[] ids = b != null ? b.getIntArray("port_ids") : null;
+            if (ids == null) return m;
+            sPortStates = true;
+            for (int id : ids) {
+                Bundle p = b.getBundle("port_" + id);
+                if (p != null && p.getString("device_state") != null) m.put(id, p);
+            }
+        } catch (Throwable t) {
+            m.clear();
+        }
+        return m;
+    }
+
+    /**
+     * The card of a port the TV input app describes: its state (on, asleep, no signal, not connected; an
+     * unknown state keeps the TIF one), the device's name over the port's label (a name the user gave the
+     * input still wins), the glyph of its kind in a softened brand accent, and the input to open (the
+     * device's own input routes to it, and on an asleep device the TV input app's viewer offers OK to wake).
+     */
+    private static void applyDevice(Context c, Card k, Bundle d, String custom, String portLabel) {
+        int st = CecNames.deviceState(d.getString("device_state"));
+        if (st < 0) return;
+        String label = nonEmpty(d.getString("label"), portLabel);
+        String title = d.getString("title");
+        if (custom != null && !custom.isEmpty()) {
+            k.title = custom;
+            k.desc = nonEmpty(title, label);
+        } else if (title != null && !title.trim().isEmpty()) {
+            k.title = title.trim();
+            k.desc = label;
+        } else {
+            k.title = label;
+            k.desc = "";
+        }
+        k.state = st;
+        k.meta = devText(c, st);
+        String kind = d.getString("kind");
+        if ("console".equals(kind)) k.icon = R.drawable.ic_gamepad;
+        else if ("player".equals(kind)) k.icon = R.drawable.ic_player;
+        int accent = d.getInt("accent", 0);
+        k.color = accent == 0 || accent == NEUTRAL_ACCENT ? 0 : CecNames.softAccent(accent);
+        String target = nonEmpty(d.getString("child_input_id"), d.getString("input_id"));
+        if (target != null) k.intent = TvContract.buildChannelUriForPassthroughInput(target).toString();
+    }
+
+    /** The TV input app's colour for a device without a brand accent. */
+    private static final int NEUTRAL_ACCENT = 0xFF3A3F47;
+
+    public static String devText(Context c, int st) {
+        switch (st) {
+            case Card.DEV_ON: return c.getString(R.string.input_on);
+            case Card.DEV_ASLEEP: return c.getString(R.string.input_asleep);
+            case Card.DEV_NO_SIGNAL: return c.getString(R.string.input_no_signal);
+            default: return c.getString(R.string.input_not_connected);
+        }
+    }
+
+    private static String nonEmpty(String a, String b) {
+        return a != null && !a.trim().isEmpty() ? a.trim() : b;
     }
 
     private static boolean contains(int[] a, int v) {
@@ -262,7 +390,11 @@ public final class InputSource {
         return out;
     }
 
-    /** Projector shortcuts (SPEC 5.6): intent = "section:x", "action:x" or "settings". */
+    /**
+     * Projector shortcuts (SPEC 5.6): intent = "section:x", "action:x" or "settings". A projector app with the
+     * device-state provider may list tiles its projector does not support (ProjectorBridge.unsupportedTiles,
+     * by intent or Card id): those are left out. Without the provider (the Z9X) every tile, as before.
+     */
     public static List<Card> tiles(Context c) {
         ArrayList<Card> out = new ArrayList<>();
         tile(out, c, "action:autofocus", R.string.tile_autofocus, R.drawable.ic_autofocus);
@@ -275,6 +407,8 @@ public final class InputSource {
         tile(out, c, "action:sleep_timer", R.string.tile_sleep_timer, R.drawable.ic_timer);
         tile(out, c, "section:general", R.string.tile_projector_settings, R.drawable.ic_tune);
         tile(out, c, "settings", R.string.tile_android_settings, R.drawable.ic_settings);
+        Set<String> off = ProjectorBridge.unsupportedTiles(c);
+        if (!off.isEmpty()) out.removeIf(k -> off.contains(k.intent) || off.contains(k.id));
         return out;
     }
 

@@ -10,6 +10,9 @@
     <string name="inputs_button">Ingressi</string>
     <string name="settings_button">Impostazioni</string>
     <string name="update_ready">Aggiornamento pronto</string>
+    <string name="battery_level">Batteria %1$s</string>
+    <string name="battery_charging">Batteria %1$s, in carica</string>
+    <string name="battery_plugged">Batteria %1$s, alimentatore collegato</string>
     <string name="row_your_apps">Le tue app</string>
     <string name="row_continue">Continua a guardare</string>
     <string name="row_inputs">Ingressi</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">Collegato</string>
     <string name="input_not_connected">Non collegato</string>
     <string name="input_standby">In standby</string>
+    <string name="input_on">Acceso</string>
+    <string name="input_asleep">In riposo</string>
+    <string name="input_no_signal">Nessun segnale</string>
+    <string name="input_wake_hint">Premi OK per accenderlo</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">«%1$s» · Pronto</string>

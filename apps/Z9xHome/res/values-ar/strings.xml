@@ -10,6 +10,9 @@
     <string name="inputs_button">المداخل</string>
     <string name="settings_button">الإعدادات</string>
     <string name="update_ready">التحديث جاهز</string>
+    <string name="battery_level">البطارية %1$s</string>
+    <string name="battery_charging">البطارية %1$s، قيد الشحن</string>
+    <string name="battery_plugged">البطارية %1$s، محوّل الطاقة موصول</string>
     <string name="row_your_apps">تطبيقاتك</string>
     <string name="row_continue">متابعة المشاهدة</string>
     <string name="row_inputs">المداخل</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">متصل</string>
     <string name="input_not_connected">غير متصل</string>
     <string name="input_standby">وضع الاستعداد</string>
+    <string name="input_on">قيد التشغيل</string>
+    <string name="input_asleep">في وضع السكون</string>
+    <string name="input_no_signal">لا توجد إشارة</string>
+    <string name="input_wake_hint">اضغط OK للتشغيل</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">«%1$s» · جاهز</string>
@@ -125,7 +132,7 @@
     <string name="voice_search">البحث الصوتي</string>
     <string name="voice_listening">جارٍ الاستماع…</string>
     <string name="voice_nothing_heard">لم أفهم. اضغط مطولاً على زر الميكروفون وتحدّث.</string>
-    <string name="voice_unavailable">البحث الصوتي غير متاح — اكتب بدلاً من ذلك</string>
+    <string name="voice_unavailable">البحث الصوتي غير متاح. اكتب بدلاً من ذلك.</string>
     <string name="voice_unavailable_hint">اكتب بحثك. كان البحث الصوتي غير متاح مؤخرًا.</string>
     <string name="voice_hold">اضغط مع الاستمرار على زر الميكروفون أثناء التحدث</string>
     <string name="kb_title">لوحة المفاتيح</string>

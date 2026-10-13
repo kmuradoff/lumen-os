@@ -56,6 +56,13 @@ public class CardView extends View {
     private final Path mBadgeClip = new Path();
     private Drawable mChevL, mChevR;
     private CharSequence mLine1 = "", mLine2 = "", mLine3 = "";
+    // input / cast status ("HDMI 1 · Asleep"): one line, or two when it does not fit (our texts are never cut)
+    private static final CharSequence[] NO_LINES = new CharSequence[0];
+    private CharSequence[] mStatus = NO_LINES;
+    // an asleep device's card, focused: "Press OK to wake it", its own line under a one-line status, else in
+    // place of the status (empty = none)
+    private CharSequence[] mHint = NO_LINES;
+    private long mBlurAt;   // unfocus time of a card whose focused text differs (the hint), for its way back
     private CharSequence[] mTitleLines = new CharSequence[0];
     private Drawable mIcon;
     private LinearGradient mScrim;
@@ -119,8 +126,11 @@ public class CardView extends View {
     private void layoutText() {
         Card k = mCard;
         float fs = Theme.fontScale(getContext());
-        mIcon = k.icon != 0 ? Theme.icon(getContext(), k.icon, Theme.TEXT1) : null;
+        // an input's mark may carry its device's accent (data/InputSource with cec_names; 0 = paper white)
+        mIcon = k.icon != 0 ? Theme.icon(getContext(), k.icon, k.kind == Card.INPUT && k.color != 0 ? k.color : Theme.TEXT1) : null;
         mLine3 = "";
+        mStatus = NO_LINES;
+        mHint = NO_LINES;
         switch (k.kind) {
             case Card.INPUT:
             case Card.CAST: {
@@ -131,8 +141,10 @@ public class CardView extends View {
                 mSmall.setColor(Theme.TEXT2);
                 float avail = mW - Theme.pxf(64);
                 mLine1 = TextUtils.ellipsize(k.title, mTitle, avail, TextUtils.TruncateAt.END);
-                String sub = k.kind == Card.INPUT && !k.desc.isEmpty() ? k.desc + " · " + k.meta : k.meta;
-                mLine2 = TextUtils.ellipsize(sub, mSmall, avail - Theme.pxf(22), TextUtils.TruncateAt.END);
+                float lineW = avail - Theme.pxf(22);
+                mStatus = statusLines(k.kind == Card.INPUT ? k.desc : "", k.meta, mSmall, lineW);
+                mHint = k.kind == Card.INPUT && k.state == Card.DEV_ASLEEP
+                        ? twoLines(getContext().getString(R.string.input_wake_hint), mSmall, lineW) : NO_LINES;
                 break;
             }
             case Card.TILE:
@@ -169,6 +181,18 @@ public class CardView extends View {
                         : (k.isNew && k.kind == Card.PROGRAM ? getResources().getString(R.string.badge_new) : "");
             }
         }
+    }
+
+    /**
+     * An input's status: "desc · state" on one line when it fits (as always), else the port (or device) on
+     * the first line and the state on the second, so a long label or state is wrapped, not cut.
+     */
+    private static CharSequence[] statusLines(String desc, String state, TextPaint p, float w) {
+        String one = desc.isEmpty() ? state : desc + " · " + state;
+        if (p.measureText(one) <= w) return new CharSequence[]{one};
+        if (desc.isEmpty()) return twoLines(state, p, w);
+        return new CharSequence[]{TextUtils.ellipsize(desc, p, w, TextUtils.TruncateAt.END),
+                TextUtils.ellipsize(state, p, w, TextUtils.TruncateAt.END)};
     }
 
     private static CharSequence[] twoLines(String s, TextPaint p, float w) {
@@ -251,6 +275,9 @@ public class CardView extends View {
             setPivotX(pivotLeft ? (Theme.rtl(this) ? mW : 0) : mW / 2f);
             if (mGlowMask == null) mGlowMask = Glow.mask(mW, mH, mRadius, mGlowB);
             mFocusAt = animate && Theme.animations() ? android.os.SystemClock.uptimeMillis() : 0;
+            mBlurAt = 0;
+        } else {
+            mBlurAt = animate && Theme.animations() && mHint.length > 0 ? android.os.SystemClock.uptimeMillis() : 0;
         }
         float s = f ? Theme.FOCUS_SCALE : 1f;
         float z = f ? Theme.pxf(28) : 0;
@@ -447,22 +474,69 @@ public class CardView extends View {
     private void drawInput(Canvas c, Card k, int w, int h) {
         float pad = Theme.pxf(32);
         boolean rtl = Theme.rtl(this);
+        // Text from the bottom: the last line on h - 34, the title 32 above the first. A two-line status
+        // lifts the title by a line; a focused asleep card adds the hint (its own line under a one-line
+        // status, else in place of the status), following the focus animation. A card with a one-line
+        // status and no hint draws exactly as before.
+        float lh = mSmall.getTextSize() * 1.3f;
+        int n0 = Math.max(1, mStatus.length);
+        boolean below = mHint.length == 1 && n0 == 1;
+        int n1 = mHint.length == 0 ? n0 : below ? 2 : mHint.length;
+        float e = mHint.length == 0 ? 0f : expand();
+        float lift = (n0 - 1 + (n1 - n0) * e) * lh;
+        float titleY = h - Theme.pxf(66) - lift;
         if (mIcon != null) {
-            int s = Theme.px(60);
+            // 60 px; smaller only when a lifted title would reach it (a large font scale)
+            float room = titleY - mTitle.getTextSize() * 0.78f - Theme.pxf(10) - pad;
+            int s = Math.max(Theme.px(36), Math.min(Theme.px(60), (int) room));
             int ix = rtl ? (int) (w - pad - s) : (int) pad;
             mIcon.setBounds(ix, (int) pad, ix + s, (int) pad + s);
             mIcon.draw(c);
         }
         float t1 = mTitle.measureText(mLine1, 0, mLine1.length());
-        c.drawText(mLine1, 0, mLine1.length(), rtl ? w - pad - t1 : pad, h - Theme.pxf(66), mTitle);
-        float dotY = h - Theme.pxf(34);
+        c.drawText(mLine1, 0, mLine1.length(), rtl ? w - pad - t1 : pad, titleY, mTitle);
+        float statusY = h - Theme.pxf(34) - lift;              // the first status line, by the dot
         boolean connected = k.kind == Card.CAST || k.state == TvInputManager.INPUT_STATE_CONNECTED;
         boolean standby = k.kind == Card.INPUT && k.state == TvInputManager.INPUT_STATE_CONNECTED_STANDBY;
         mFill.setColor(connected ? Theme.OK : (standby ? Theme.ACCENT : Theme.TEXT3));
+        // the TV input app's device state: on green, asleep warm, no signal red, not connected grey
+        if (k.kind == Card.INPUT && k.state >= Card.DEV_ON) mFill.setColor(k.state == Card.DEV_ON ? Theme.OK
+                : k.state == Card.DEV_ASLEEP ? Theme.ACCENT : k.state == Card.DEV_NO_SIGNAL ? Theme.LIVE : Theme.TEXT3);
         float dotX = rtl ? w - pad - Theme.pxf(5) : pad + Theme.pxf(5);
-        c.drawCircle(dotX, dotY - Theme.pxf(7), Theme.pxf(5), mFill);
-        float t2 = mSmall.measureText(mLine2, 0, mLine2.length());
-        c.drawText(mLine2, 0, mLine2.length(), rtl ? w - pad - Theme.pxf(22) - t2 : pad + Theme.pxf(22), dotY, mSmall);
+        c.drawCircle(dotX, statusY - Theme.pxf(7), Theme.pxf(5), mFill);
+        drawLines(c, mStatus, statusY, lh, Theme.TEXT2, below ? 1f : 1f - e, rtl, w, pad);
+        if (e > 0f) drawLines(c, mHint, below ? statusY + lh : statusY, lh, Theme.TEXT1, e, rtl, w, pad);
+    }
+
+    private void drawLines(Canvas c, CharSequence[] lines, float y, float lh, int color, float a, boolean rtl, int w,
+                           float pad) {
+        if (a <= 0f) return;
+        mSmall.setColor(color);
+        mSmall.setAlpha(Math.round((color >>> 24) * Math.min(1f, a)));
+        float x0 = pad + Theme.pxf(22);
+        for (CharSequence l : lines) {
+            float tw = mSmall.measureText(l, 0, l.length());
+            c.drawText(l, 0, l.length(), rtl ? w - x0 - tw : x0, y, mSmall);
+            y += lh;
+        }
+        mSmall.setColor(Theme.TEXT2);
+    }
+
+    /** 0..1: how far a focused card's own text (an asleep device's hint) has come in, with the focus scale. */
+    private float expand() {
+        long now = android.os.SystemClock.uptimeMillis();
+        if (mFocused) {
+            if (mFocusAt <= 0) return 1f;
+            return Theme.EMPHASIZED.getInterpolation(Math.min(1f, (now - mFocusAt) / (float) Theme.FOCUS_IN_MS));
+        }
+        if (mBlurAt <= 0) return 0f;
+        float a = (now - mBlurAt) / (float) Theme.FOCUS_OUT_MS;
+        if (a >= 1f) {
+            mBlurAt = 0;
+            return 0f;
+        }
+        postInvalidateOnAnimation();
+        return 1f - Theme.EMPHASIZED.getInterpolation(a);
     }
 
     private void drawTile(Canvas c, int w, int h) {

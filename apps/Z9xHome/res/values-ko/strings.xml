@@ -10,6 +10,9 @@
     <string name="inputs_button">입력</string>
     <string name="settings_button">설정</string>
     <string name="update_ready">업데이트 준비됨</string>
+    <string name="battery_level">배터리 %1$s</string>
+    <string name="battery_charging">배터리 %1$s, 충전 중</string>
+    <string name="battery_plugged">배터리 %1$s, 전원 어댑터 연결됨</string>
     <string name="row_your_apps">내 앱</string>
     <string name="row_continue">이어서 보기</string>
     <string name="row_inputs">입력</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">연결됨</string>
     <string name="input_not_connected">연결 안 됨</string>
     <string name="input_standby">대기</string>
+    <string name="input_on">켜짐</string>
+    <string name="input_asleep">절전 중</string>
+    <string name="input_no_signal">신호 없음</string>
+    <string name="input_wake_hint">OK를 눌러 켜기</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">‘%1$s’ · 준비됨</string>

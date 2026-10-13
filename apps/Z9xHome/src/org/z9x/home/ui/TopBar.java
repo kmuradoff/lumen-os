@@ -2,9 +2,13 @@ package org.z9x.home.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
@@ -15,6 +19,7 @@ import android.widget.TextClock;
 
 import org.z9x.home.R;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
@@ -31,7 +36,9 @@ import java.util.Locale;
  * more even over pure white, and the clock, the tabs and the icons have soft shadows. The clock block is
  * a focus stop while weather is shown (OK opens the forecast). It is on screen in every state but one:
  * the calm Home's top, where the big clock replaces it. In browse mode everything but the clock fades
- * out. A tab switches the page when it keeps focus for 120 ms.
+ * out. A tab switches the page when it keeps focus for 120 ms. Projectors with an internal battery (only
+ * when org.z9x.projector reports one, {@link #setBattery}) also get a battery mark before search; without
+ * it the header is exactly as before.
  */
 public class TopBar extends ViewGroup {
     public static final String A_SEARCH = "search", A_UPDATE = "update", A_WEATHER = "weather", A_INPUT = "input",
@@ -51,6 +58,7 @@ public class TopBar extends ViewGroup {
     private final PillButton[] mTabs = new PillButton[TABS];
     private final PillButton mUpdate, mSearch, mGear;
     private final ClockBlock mClock;
+    private BatteryMark mBattery;   // made at the first battery reading only (never on a projector without one)
     private final ArrayList<View> mOrder = new ArrayList<>();
     private int mFocus = -1;     // index into mOrder, -1 = not focused
     private int mSelectedTab;
@@ -210,6 +218,29 @@ public class TopBar extends ViewGroup {
         }
     }
 
+    /**
+     * The battery mark: {@code level} 0..100, or negative for none (no battery reported, or the reading
+     * failed). It is created at the first level, so a projector that reports none never has the view; it
+     * is not a focus stop (a status, not a button) and fades with the buttons in browse mode.
+     */
+    public void setBattery(int level, boolean adapter, boolean charging) {
+        if (level < 0) {
+            if (mBattery == null || mBattery.getVisibility() == GONE) return;
+            mBattery.setVisibility(GONE);
+            requestLayout();
+            return;
+        }
+        if (mBattery == null) {
+            mBattery = new BatteryMark(getContext());
+            mBattery.setAlpha(mBrowse ? 0f : 1f);
+            addView(mBattery);   // lays the header out again
+        } else if (mBattery.getVisibility() != VISIBLE) {
+            mBattery.setVisibility(VISIBLE);
+            requestLayout();
+        }
+        mBattery.set(level, adapter, charging);
+    }
+
     public void setUpdateReady(boolean ready) {
         if ((mUpdate.getVisibility() == VISIBLE) == ready) return;
         mUpdate.setVisibility(ready ? VISIBLE : GONE);
@@ -277,6 +308,7 @@ public class TopBar extends ViewGroup {
         if (mButtonsBesideClock) xr -= mClock.getMeasuredWidth() + Theme.px(16);
         xr = placeR(mGear, xr, h, w, rtl) - Theme.px(20);
         xr = placeR(mSearch, xr, h, w, rtl) - Theme.px(20);
+        if (mBattery != null && mBattery.getVisibility() == VISIBLE) xr = placeR(mBattery, xr, h, w, rtl) - Theme.px(20);
         if (mUpdate.getVisibility() == VISIBLE) placeR(mUpdate, xr, h, w, rtl);
     }
 
@@ -448,6 +480,180 @@ public class TopBar extends ViewGroup {
             boolean rtl = Theme.rtl(this);
             float x = rtl ? mPad : w - mPad - sw;
             c.drawText(s, 0, s.length(), x, mLineBase, mLine);
+        }
+    }
+
+    // ------------------------------------------------------------------ battery mark
+
+    /**
+     * "85 %" in the header font, then a battery glyph with the fill level on the end side, centred on the
+     * header line like the 52 px icon pills (the glyph as tall as the search and settings glyphs, its
+     * outline as thick as their strokes, its cap towards the end in every layout direction, as the icons
+     * are not mirrored either). The header's soft shadows, as PillButton's: the outline's blurred copy
+     * ({@link Glow#iconShadow}, made once, never in onDraw) and the tabs' text shadow. While the power
+     * adapter is in, a bolt: cut out of the fill and solid over its empty part, so it reads at every level.
+     * On the battery alone at 20 % or less the fill and the figure turn to the warm accent
+     * (test/HeaderContrastTest: readable over white). The width is fixed (the widest level in the locale's
+     * percent format, tabular figures), so a new level never moves the buttons nor asks for a layout pass.
+     */
+    static final class BatteryMark extends View {
+        // design px; the search / settings glyphs are 29 px icons drawn with 1.9 of 24 (2.3 px) strokes
+        private static final float BODY_W = 36, BODY_H = 19, STROKE = 2.3f, BODY_R = 5.5f, CAP_W = 3, CAP_H = 8,
+                CAP_R = 1.5f, CAP_GAP = 1.5f, INSET = 2f, FILL_R = 2f, MIN_FILL = 1.5f, TEXT_PX = 22, BOLT_H = 15;
+        private static final int H = 52, PAD = 12, GAP = 10, LOW = 20;
+        private static final int SHADOW = 0x8C000000;   // as the icons' and the tabs' (PillButton)
+        // Glow caches icon shadows by drawable resource id; the outline is drawn in code: a key no id can be
+        private static final int SHADOW_KEY = -1;
+        // the bolt in a unit box (x, y pairs): top, left middle, inner corner, bottom tip, right middle, inner corner
+        private static final float[] BOLT = {0.70f, 0f, 0.05f, 0.58f, 0.47f, 0.58f, 0.30f, 1f, 0.95f, 0.42f, 0.53f, 0.42f};
+        private final TextPaint mText = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.SUBPIXEL_TEXT_FLAG);
+        private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint mShadowPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        private final NumberFormat mPct = NumberFormat.getPercentInstance(Locale.getDefault());
+        private final RectF mR = new RectF(), mBox = new RectF();
+        private final Path mFill = new Path(), mBolt = new Path();
+        // the glyph lies centred in a square box of its own width (real px), the shape Glow's icon shadows want
+        private final int mH, mPad, mGap, mBoxW, mTextW;
+        private final float mBaseline;   // from the line's centre, as PillButton centres its label
+        private final Glow.Shadow mShadow;
+        private int mLevel = -1;
+        private boolean mAdapter, mCharging, mLow;
+        private String mFigure = "";
+        private float mFigureW;
+
+        BatteryMark(Context c) {
+            super(c);
+            setFocusable(false);
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+            mH = Theme.px(H);
+            mPad = Theme.px(PAD);
+            mGap = Theme.px(GAP);
+            mBoxW = (int) Math.ceil(Theme.pxf(BODY_W + CAP_GAP + CAP_W));
+            mText.setTypeface(Theme.MEDIUM);
+            mText.setTextSize(Theme.pxf(TEXT_PX) * Theme.fontScale(c));
+            mText.setFontFeatureSettings("tnum, lnum");
+            mText.setShadowLayer(Theme.pxf(12), 0, Theme.pxf(1), SHADOW);
+            float widest = 0;
+            for (int l = 0; l <= 100; l++) widest = Math.max(widest, mText.measureText(mPct.format(l / 100.0)));
+            mTextW = (int) Math.ceil(widest);
+            Paint.FontMetrics fm = mText.getFontMetrics();
+            mBaseline = -(fm.ascent + fm.descent) / 2f;
+            mShadow = Glow.iconShadow(new OutlineDrawable(), SHADOW_KEY, mBoxW, Theme.pxf(10));
+            mShadowPaint.setColor(SHADOW);
+        }
+
+        void set(int level, boolean adapter, boolean charging) {
+            level = Math.max(0, Math.min(100, level));
+            if (level == mLevel && adapter == mAdapter && charging == mCharging) return;
+            mLevel = level;
+            mAdapter = adapter;
+            mCharging = charging;
+            mLow = level <= LOW && !adapter;
+            mFigure = mPct.format(level / 100.0);
+            mFigureW = mText.measureText(mFigure);
+            int desc = !adapter ? R.string.battery_level : (charging ? R.string.battery_charging : R.string.battery_plugged);
+            setContentDescription(getContext().getString(desc, mFigure));
+            shape();
+            invalidate();
+        }
+
+        @Override
+        protected void onMeasure(int wms, int hms) {
+            setMeasuredDimension(mPad + mTextW + mGap + mBoxW + mPad, mH);
+        }
+
+        /** Shadows reach past the bounds: a fade (browse mode) without an offscreen layer cut to them. */
+        @Override
+        public boolean hasOverlappingRendering() {
+            return false;
+        }
+
+        /** The body outline and the cap in the glyph box (0..mBoxW square, real px). */
+        private void drawOutline(Canvas c, Paint p) {
+            float st = Theme.pxf(STROKE), top = (mBoxW - Theme.pxf(BODY_H)) / 2f, mid = mBoxW / 2f;
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(st);
+            mR.set(st / 2, top + st / 2, Theme.pxf(BODY_W) - st / 2, top + Theme.pxf(BODY_H) - st / 2);
+            c.drawRoundRect(mR, Theme.pxf(BODY_R) - st / 2, Theme.pxf(BODY_R) - st / 2, p);
+            p.setStyle(Paint.Style.FILL);
+            float cx = Theme.pxf(BODY_W + CAP_GAP);
+            mR.set(cx, mid - Theme.pxf(CAP_H) / 2, cx + Theme.pxf(CAP_W), mid + Theme.pxf(CAP_H) / 2);
+            c.drawRoundRect(mR, Theme.pxf(CAP_R), Theme.pxf(CAP_R), p);
+        }
+
+        /** The fill (with the bolt cut out) and the bolt over the empty part, in the glyph box. */
+        private void shape() {
+            mFill.rewind();
+            mBolt.rewind();
+            float st = Theme.pxf(STROKE), in = st + Theme.pxf(INSET), top = (mBoxW - Theme.pxf(BODY_H)) / 2f;
+            float l = in, t = top + in, r = Theme.pxf(BODY_W) - in, b = top + Theme.pxf(BODY_H) - in;
+            float fw = (r - l) * mLevel / 100f;
+            if (mLevel > 0) fw = Math.max(fw, Theme.pxf(MIN_FILL));
+            if (fw > 0) mFill.addRoundRect(l, t, l + fw, b, Theme.pxf(FILL_R), Theme.pxf(FILL_R), Path.Direction.CW);
+            if (!mAdapter) return;
+            float bh = Theme.pxf(BOLT_H), bw = bh * 0.62f, bx = Theme.pxf(BODY_W) / 2 - bw / 2, by = mBoxW / 2f - bh / 2;
+            mBolt.moveTo(bx + BOLT[0] * bw, by + BOLT[1] * bh);
+            for (int i = 2; i < BOLT.length; i += 2) mBolt.lineTo(bx + BOLT[i] * bw, by + BOLT[i + 1] * bh);
+            mBolt.close();
+            Path cut = new Path(mFill);   // not in onDraw: only when the reading changes
+            mFill.op(mBolt, Path.Op.DIFFERENCE);
+            mBolt.op(cut, Path.Op.DIFFERENCE);
+        }
+
+        @Override
+        protected void onDraw(Canvas c) {
+            if (mLevel < 0) return;
+            boolean rtl = Theme.rtl(this);
+            int gx = rtl ? mPad : getWidth() - mPad - mBoxW, gy = (getHeight() - mBoxW) / 2; // as PillButton's icons
+            Glow.Shadow sh = mShadow;
+            if (sh != null) {
+                float dy = Theme.pxf(1); // as the text's
+                mBox.set(gx + sh.x, gy + sh.y + dy, gx + sh.x + sh.w, gy + sh.y + dy + sh.h);
+                c.drawBitmap(sh.bmp, null, mBox, mShadowPaint);
+            }
+            int ink = mLow ? Theme.ACCENT : Theme.TEXT1;
+            c.save();
+            c.translate(gx, gy);
+            mPaint.setColor(Theme.TEXT1);
+            drawOutline(c, mPaint);
+            mPaint.setColor(ink);
+            c.drawPath(mFill, mPaint);
+            if (mAdapter) {
+                mPaint.setColor(Theme.TEXT1);
+                c.drawPath(mBolt, mPaint);
+            }
+            c.restore();
+            mText.setColor(ink);
+            float x = rtl ? gx + mBoxW + mGap : gx - mGap - mFigureW;
+            c.drawText(mFigure, x, getHeight() / 2f + mBaseline, mText);
+        }
+
+        /** The outline as a drawable of any square size, for its shadow (Glow renders it once, smaller). */
+        private final class OutlineDrawable extends Drawable {
+            private final Paint mInk = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+            @Override
+            public void draw(Canvas c) {
+                Rect b = getBounds();
+                c.save();
+                c.translate(b.left, b.top);
+                c.scale(b.width() / (float) mBoxW, b.height() / (float) mBoxW);
+                drawOutline(c, mInk);
+                c.restore();
+            }
+
+            @Override
+            public void setAlpha(int alpha) {
+            }
+
+            @Override
+            public void setColorFilter(ColorFilter cf) {
+            }
+
+            @Override
+            public int getOpacity() {
+                return PixelFormat.TRANSLUCENT;
+            }
         }
     }
 }

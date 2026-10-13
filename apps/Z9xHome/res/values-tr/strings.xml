@@ -10,6 +10,9 @@
     <string name="inputs_button">Girişler</string>
     <string name="settings_button">Ayarlar</string>
     <string name="update_ready">Güncelleme hazır</string>
+    <string name="battery_level">Pil %1$s</string>
+    <string name="battery_charging">Pil %1$s, şarj oluyor</string>
+    <string name="battery_plugged">Pil %1$s, güç adaptörü takılı</string>
     <string name="row_your_apps">Uygulamalarınız</string>
     <string name="row_continue">İzlemeye devam et</string>
     <string name="row_inputs">Girişler</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">Bağlı</string>
     <string name="input_not_connected">Bağlı değil</string>
     <string name="input_standby">Beklemede</string>
+    <string name="input_on">Açık</string>
+    <string name="input_asleep">Uyku modunda</string>
+    <string name="input_no_signal">Sinyal yok</string>
+    <string name="input_wake_hint">Açmak için OK’e basın</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">“%1$s” · Hazır</string>
@@ -125,7 +132,7 @@
     <string name="voice_search">Sesli arama</string>
     <string name="voice_listening">Dinliyorum…</string>
     <string name="voice_nothing_heard">Anlayamadım. Mikrofon düğmesini basılı tutup konuşun.</string>
-    <string name="voice_unavailable">Sesli arama kullanılamıyor — yazarak arayın</string>
+    <string name="voice_unavailable">Sesli arama kullanılamıyor. Yazarak arayın.</string>
     <string name="voice_unavailable_hint">Aramanızı yazın. Sesli arama kısa süre önce kullanılamıyordu.</string>
     <string name="voice_hold">Konuşurken mikrofon düğmesini basılı tutun</string>
     <string name="kb_title">Klavye</string>

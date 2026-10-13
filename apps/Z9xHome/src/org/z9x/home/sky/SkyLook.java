@@ -13,7 +13,7 @@ final class SkyLook {
     /** Design y where the sky meets the land, per scene (the sun sets there). */
     static final float[] HORIZON = {640, 690, 740, 760, 690, 720};
 
-    static final int CLEAR = 0, CLOUDS = 1, FOG = 2, RAIN = 3, SNOW = 4;
+    static final int CLEAR = 0, CLOUDS = 1, FOG = 2, RAIN = 3, SNOW = 4, OVERCAST = 5;
     static final int WINTER = 0, SPRING = 1, SUMMER = 2, AUTUMN = 3;
 
     private static final long DAY_MS = 86_400_000L;
@@ -102,15 +102,18 @@ final class SkyLook {
             case FOG: over = 0xFF8C949B; overA = 0.42f; break;
             case RAIN: over = 0xFF3A424C; overA = 0.55f; break;
             case SNOW: over = 0xFF9AA3AC; overA = 0.42f; break;
+            // a closed cloud deck: a light grey day keyed to the sun behind it, slate at dusk, dark at night
+            case OVERCAST: over = mix(0xFF262B31, 0xFFC5CBD1, clamp01((el + 6) / 22f)); overA = 0.86f; break;
             default: over = 0; overA = 0;
         }
         if (overA > 0) {
-            float f = overA * clamp((el + 12) / 20f, 0.35f, 1f);
+            // overcast: the deck covers most of the dusk colours too (at least 0.55 of its strength)
+            float f = overA * clamp((el + 12) / 20f, weather == OVERCAST ? 0.55f : 0.35f, 1f);
             skyTop = mix(skyTop, over, f);
             skyMid = mix(skyMid, over, f);
             skyLow = mix(skyLow, over, f);
         }
-        clear = weather == CLEAR ? 1f : weather == CLOUDS ? 0.45f : 0f;
+        clear = weather == CLEAR ? 1f : weather == CLOUDS ? 0.45f : 0f;   // overcast 0: no sun disc, moon, stars
         light = clamp01((el + 6) / 22f);
         dark = clamp01((-el - 2) / 10f);
         warm = 0.25f * clamp01((el + 4) / 2f) * clamp01((9 - el) / 2f);
@@ -143,7 +146,8 @@ final class SkyLook {
         snow = season[WINTER];
         capScale = 0.35f + 0.65f * Math.max(snow, weather == SNOW ? 1f : 0f);
 
-        float wl = weather == RAIN ? 0.75f : weather == FOG || weather == SNOW ? 0.9f : weather == CLOUDS ? 0.92f : 1f;
+        float wl = weather == RAIN ? 0.75f : weather == OVERCAST ? 0.88f : weather == FOG || weather == SNOW ? 0.9f
+                : weather == CLOUDS ? 0.92f : 1f;
         float moonLit = moonEl > 0 && clear > 0 ? 0.06f * moonK * dark : 0f;
         landLight = clamp01(light * wl + moonLit);
         float l = landLight;
@@ -170,6 +174,7 @@ final class SkyLook {
         cloudN = weather == CLEAR ? 1 : weather == CLOUDS ? 4 : weather == FOG ? 2 : 5;
         cloudColor = mix(0xFF1E2530, 0xFFF4F5F7, light);
         if (weather == RAIN) cloudColor = mix(cloudColor, 0xFF3A424C, 0.4f);
+        if (weather == OVERCAST) cloudColor = mix(cloudColor, 0xFF8F979F, 0.35f); // grey streaks in the deck
         cloudColor = mix(cloudColor, glowColor, warm * 1.6f * (clear > 0 ? 1f : 0.4f)); // dusk tints them
         cloudA = weather == CLEAR ? 0.35f : 0.6f;
         rimColor = sunColor;
@@ -190,7 +195,8 @@ final class SkyLook {
             fogA[1] = 0.16f;
         }
 
-        birds = el > 3 && (weather == CLEAR || weather == CLOUDS) && season[WINTER] < 0.5f && scene != CITY;
+        birds = el > 3 && (weather == CLEAR || weather == CLOUDS || weather == OVERCAST) && season[WINTER] < 0.5f
+                && scene != CITY;
         birdColor = mix(0xFF2A3138, 0xFF4A5560, light);
         starA = clear > 0 ? clamp01((-el - 6) / 6f) * (0.25f + 0.75f * clear) : 0f;
 

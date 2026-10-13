@@ -10,6 +10,9 @@
     <string name="inputs_button">Entradas</string>
     <string name="settings_button">Configurações</string>
     <string name="update_ready">Atualização pronta</string>
+    <string name="battery_level">Bateria %1$s</string>
+    <string name="battery_charging">Bateria %1$s, carregando</string>
+    <string name="battery_plugged">Bateria %1$s, adaptador de energia conectado</string>
     <string name="row_your_apps">Seus apps</string>
     <string name="row_continue">Continuar assistindo</string>
     <string name="row_inputs">Entradas</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">Conectado</string>
     <string name="input_not_connected">Não conectado</string>
     <string name="input_standby">Em espera</string>
+    <string name="input_on">Ligado</string>
+    <string name="input_asleep">Em repouso</string>
+    <string name="input_no_signal">Sem sinal</string>
+    <string name="input_wake_hint">Pressione OK para ligar</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">“%1$s” · Pronto</string>
@@ -125,7 +132,7 @@
     <string name="voice_search">Pesquisa por voz</string>
     <string name="voice_listening">Ouvindo…</string>
     <string name="voice_nothing_heard">Não entendi. Segure o botão do microfone e fale.</string>
-    <string name="voice_unavailable">Pesquisa por voz indisponível — digite</string>
+    <string name="voice_unavailable">Pesquisa por voz indisponível. Digite a pesquisa.</string>
     <string name="voice_unavailable_hint">Digite sua pesquisa. A pesquisa por voz esteve indisponível há pouco.</string>
     <string name="voice_hold">Mantenha pressionado o botão do microfone enquanto fala</string>
     <string name="kb_title">Teclado</string>

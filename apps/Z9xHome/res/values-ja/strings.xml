@@ -10,6 +10,9 @@
     <string name="inputs_button">入力</string>
     <string name="settings_button">設定</string>
     <string name="update_ready">アップデートの準備完了</string>
+    <string name="battery_level">バッテリー %1$s</string>
+    <string name="battery_charging">バッテリー %1$s、充電中</string>
+    <string name="battery_plugged">バッテリー %1$s、電源アダプター接続中</string>
     <string name="row_your_apps">あなたのアプリ</string>
     <string name="row_continue">視聴を続ける</string>
     <string name="row_inputs">入力</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">接続済み</string>
     <string name="input_not_connected">未接続</string>
     <string name="input_standby">スタンバイ</string>
+    <string name="input_on">オン</string>
+    <string name="input_asleep">スリープ中</string>
+    <string name="input_no_signal">信号なし</string>
+    <string name="input_wake_hint">OK を押すと起動します</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">「%1$s」· 準備完了</string>

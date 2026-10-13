@@ -10,6 +10,9 @@
     <string name="inputs_button">Eingänge</string>
     <string name="settings_button">Einstellungen</string>
     <string name="update_ready">Update bereit</string>
+    <string name="battery_level">Akku %1$s</string>
+    <string name="battery_charging">Akku %1$s, wird geladen</string>
+    <string name="battery_plugged">Akku %1$s, Netzteil angeschlossen</string>
     <string name="row_your_apps">Deine Apps</string>
     <string name="row_continue">Weiterschauen</string>
     <string name="row_inputs">Eingänge</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">Verbunden</string>
     <string name="input_not_connected">Nicht verbunden</string>
     <string name="input_standby">Standby</string>
+    <string name="input_on">Eingeschaltet</string>
+    <string name="input_asleep">Im Ruhemodus</string>
+    <string name="input_no_signal">Kein Signal</string>
+    <string name="input_wake_hint">Zum Einschalten OK drücken</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">„%1$s“ · Bereit</string>

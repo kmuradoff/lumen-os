@@ -26,6 +26,12 @@ public final class Card {
     public static final int T_PREVIEW = 1;
     public static final int T_WATCH_NEXT = 2;
 
+    /**
+     * {@link #state} of an INPUT card when the TV input app reports its device's state (InputSource, its
+     * provider's port bundles); otherwise {@code state} is the TIF input state (TvInputManager.INPUT_STATE_*).
+     */
+    public static final int DEV_ON = 10, DEV_ASLEEP = 11, DEV_NO_SIGNAL = 12, DEV_DISCONNECTED = 13;
+
     public int kind;
     public String id = "";            // stable key (component, program id, input id ...)
     public String title = "";

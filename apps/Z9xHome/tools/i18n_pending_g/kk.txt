@@ -1,0 +1,7 @@
+# Lumen Home (Inputs device states): NEW strings for the merge into
+# langs/kk.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+input_on=Қосулы
+input_asleep=Ұйқы режимінде
+input_no_signal=Сигнал жоқ
+input_wake_hint=Қосу үшін OK басыңыз

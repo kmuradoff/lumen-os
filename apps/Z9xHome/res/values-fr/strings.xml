@@ -10,6 +10,9 @@
     <string name="inputs_button">Entrées</string>
     <string name="settings_button">Paramètres</string>
     <string name="update_ready">Mise à jour prête</string>
+    <string name="battery_level">Batterie %1$s</string>
+    <string name="battery_charging">Batterie %1$s, en charge</string>
+    <string name="battery_plugged">Batterie %1$s, adaptateur secteur branché</string>
     <string name="row_your_apps">Vos applis</string>
     <string name="row_continue">Reprendre la lecture</string>
     <string name="row_inputs">Entrées</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">Connecté</string>
     <string name="input_not_connected">Non connecté</string>
     <string name="input_standby">En veille</string>
+    <string name="input_on">Allumé</string>
+    <string name="input_asleep">En veille</string>
+    <string name="input_no_signal">Aucun signal</string>
+    <string name="input_wake_hint">Appuyez sur OK pour l’allumer</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">« %1$s » · Prêt</string>
@@ -125,7 +132,7 @@
     <string name="voice_search">Recherche vocale</string>
     <string name="voice_listening">J’écoute…</string>
     <string name="voice_nothing_heard">Je n’ai pas compris. Maintenez le bouton du micro et parlez.</string>
-    <string name="voice_unavailable">Recherche vocale indisponible — tapez plutôt</string>
+    <string name="voice_unavailable">Recherche vocale indisponible. Tapez votre recherche.</string>
     <string name="voice_unavailable_hint">Tapez votre recherche. La recherche vocale était indisponible récemment.</string>
     <string name="voice_hold">Maintenez le bouton du micro enfoncé pendant que vous parlez</string>
     <string name="kb_title">Clavier</string>

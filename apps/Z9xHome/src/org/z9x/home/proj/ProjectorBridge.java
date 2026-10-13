@@ -3,6 +3,8 @@ package org.z9x.home.proj;
 import android.content.ContentProviderClient;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -10,6 +12,10 @@ import android.provider.Settings;
 import android.util.Log;
 
 import org.z9x.home.App;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Lumen Home's only links to org.z9x.projector and org.z9x.updater. Every call is an explicit,
@@ -24,6 +30,13 @@ import org.z9x.home.App;
  *  - content://org.z9x.projector.standbystate call("standby_state") -> {standby} (perm STANDBY_STATE).
  *  - content://org.z9x.updater/state (perm org.z9x.updater.permission.OTA_STATE): call("state") or query,
  *    field "state"; "ready" (or "downloaded", "reboot_required") shows the "Update ready" badge.
+ *  - Optional: content://org.z9x.projector.device (read only, no permission),
+ *    only on projectors whose projector app has it (one with an internal battery or with Projector tab
+ *    tiles it cannot serve). call("battery") -> {level int 0..100 (-1 while present is false), adapter,
+ *    charging, full, present, eco}; notifyChange on content://org.z9x.projector.device/battery at every
+ *    change. call("caps") -> {unsupported: String[]} = tile intents of data/InputSource.tiles to hide.
+ *    Used only when the authority belongs to the system app org.z9x.projector (any app could declare it);
+ *    without it (the Z9X) Home looks it up once and changes nothing.
  */
 public final class ProjectorBridge {
     private ProjectorBridge() {}
@@ -114,6 +127,82 @@ public final class ProjectorBridge {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } catch (Throwable t) {
             Log.w(App.TAG, "updater: " + t);
+        }
+    }
+
+    // ------------------------------------------------------------------ device state (optional provider)
+
+    public static final String DEVICE_AUTHORITY = "org.z9x.projector.device";
+    /** Notified by the projector app whenever one of the battery values changes. */
+    public static final Uri DEVICE_BATTERY_URI = Uri.parse("content://" + DEVICE_AUTHORITY + "/battery");
+    private static volatile int sDevice;   // 0 = not looked up yet, 1 = there, -1 = none (looked up once)
+
+    /** The internal battery as the projector app reports it. Immutable. */
+    public static final class Battery {
+        public final int level;            // 0..100
+        public final boolean adapter;      // the power adapter is in
+        public final boolean charging;     // adapter in and not full yet
+
+        Battery(int level, boolean adapter, boolean charging) {
+            this.level = level;
+            this.adapter = adapter;
+            this.charging = charging;
+        }
+    }
+
+    /**
+     * True when org.z9x.projector (a system app) has the device-state provider. A PackageManager lookup only
+     * (no provider start, no "failed to find provider" log), once per process: the provider comes with
+     * the image. A failed lookup is not remembered.
+     */
+    public static boolean hasDeviceState(Context c) {
+        int d = sDevice;
+        if (d != 0) return d > 0;
+        try {
+            ProviderInfo pi = c.getPackageManager().resolveContentProvider(DEVICE_AUTHORITY, 0);
+            boolean ok = pi != null && PROJECTOR.equals(pi.packageName) && pi.applicationInfo != null
+                    && (pi.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
+            sDevice = ok ? 1 : -1;
+            return ok;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * The internal battery (io thread). Null without the provider, while it reports none (present false)
+     * and on any failure (projector app restarting, an exception, a permission refused): no battery mark.
+     */
+    public static Battery battery(Context c) {
+        if (!hasDeviceState(c)) return null;
+        try (ContentProviderClient cl = c.getContentResolver().acquireUnstableContentProviderClient(DEVICE_AUTHORITY)) {
+            if (cl == null) return null;
+            Bundle b = cl.call("battery", null, null);
+            if (b == null || !b.getBoolean("present", false)) return null;
+            int level = b.getInt("level", -1);
+            if (level < 0) return null;
+            return new Battery(Math.min(100, level), b.getBoolean("adapter", false), b.getBoolean("charging", false));
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /**
+     * Projector tab tiles this projector does not support (io thread), by tile intent ("section:eye", ...)
+     * as data/InputSource.tiles names them. Empty without the provider and on any failure: every tile.
+     */
+    public static Set<String> unsupportedTiles(Context c) {
+        if (!hasDeviceState(c)) return Collections.emptySet();
+        try (ContentProviderClient cl = c.getContentResolver().acquireUnstableContentProviderClient(DEVICE_AUTHORITY)) {
+            if (cl == null) return Collections.emptySet();
+            Bundle b = cl.call("caps", null, null);
+            String[] a = b != null ? b.getStringArray("unsupported") : null;
+            if (a == null || a.length == 0) return Collections.emptySet();
+            HashSet<String> out = new HashSet<>();
+            for (String s : a) if (s != null && !s.isEmpty()) out.add(s);
+            return out;
+        } catch (Throwable t) {
+            return Collections.emptySet();
         }
     }
 }

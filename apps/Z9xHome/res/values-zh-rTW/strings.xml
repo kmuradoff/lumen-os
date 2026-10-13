@@ -10,6 +10,9 @@
     <string name="inputs_button">訊號源</string>
     <string name="settings_button">設定</string>
     <string name="update_ready">更新已就緒</string>
+    <string name="battery_level">電池電量 %1$s</string>
+    <string name="battery_charging">電池電量 %1$s，充電中</string>
+    <string name="battery_plugged">電池電量 %1$s，已接上電源變壓器</string>
     <string name="row_your_apps">你的應用程式</string>
     <string name="row_continue">繼續觀看</string>
     <string name="row_inputs">訊號源</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">已連線</string>
     <string name="input_not_connected">未連線</string>
     <string name="input_standby">待機</string>
+    <string name="input_on">已開啟</string>
+    <string name="input_asleep">休眠中</string>
+    <string name="input_no_signal">無訊號</string>
+    <string name="input_wake_hint">按 OK 鍵喚醒</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">「%1$s」· 就緒</string>

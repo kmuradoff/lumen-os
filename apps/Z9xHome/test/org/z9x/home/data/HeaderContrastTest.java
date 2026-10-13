@@ -20,14 +20,15 @@ public final class HeaderContrastTest {
     private static final int WHITE = 0xFFFFFFFF;
     private static final int DATE = 0xFFE6DFD3; // TopBar.ClockBlock.LINE_COLOR
     // header items, design px (TopBar: header line y 60-132): the clock block (time over date, also its
-    // focus pill) y 54-138; tabs, search, settings, update badge: 52 px pills on the line, y 70-122
+    // focus pill) y 54-138; tabs, search, settings, update badge, battery mark: 52 px on the line, y 70-122
     private static final int CLOCK_TOP = 54, CLOCK_BOTTOM = 138, PILL_TOP = 70, PILL_BOTTOM = 122;
 
     public static void run() throws Exception {
         String dir = System.getProperty("home.dir", ".");
         String xml = new String(Files.readAllBytes(new File(dir, "res/values/colors_lumen.xml").toPath()), StandardCharsets.UTF_8);
         int ground = color(xml, "lumen_ground"), text = color(xml, "lumen_text"), text2 = color(xml, "lumen_text2"),
-                focus = color(xml, "lumen_focus"), onFocus = color(xml, "lumen_on_focus");
+                focus = color(xml, "lumen_focus"), onFocus = color(xml, "lumen_on_focus"),
+                accent = color(xml, "lumen_accent");
         // the scrim's shape: flat behind the header, then eased out to nothing, never rising
         T.ok(Scrims.headDrawn(0) == Scrims.HEAD_ALPHA && Scrims.headDrawn(Scrims.HEAD_HOLD) == Scrims.HEAD_ALPHA,
                 "header scrim holds " + Scrims.HEAD_ALPHA + " down to y " + Scrims.HEAD_HOLD);
@@ -58,6 +59,9 @@ public final class HeaderContrastTest {
             check(mode + " tab (text2) over white", text2, pillBg);
             check(mode + " selected tab (text on 15 % paper) over white", text, Scrims.over(text, 0.15f, pillBg));
             check(mode + " update badge (text on 14 % paper) over white", text, Scrims.over(text, 0.14f, pillBg));
+            // the battery mark (projectors with a battery): its figure and glyph, and the low warning tint
+            check(mode + " battery mark (text) over white", text, pillBg);
+            check(mode + " battery 20 % or less (accent) over white", accent, pillBg);
         }
         // the stage's crossfade to or from no art: white art at alpha a over a white sky that has its own
         // header scrim, then the stage's header scrim at Scrims.headOverArt(a), never lighter than the hold
