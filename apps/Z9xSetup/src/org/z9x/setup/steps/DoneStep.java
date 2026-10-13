@@ -29,19 +29,24 @@ import org.z9x.setup.ui.Row;
 import org.z9x.setup.ui.Sheet;
 import org.z9x.setup.ui.Ui;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
 /**
  * Done (SPEC 4.8, PLAN C12, C17): "Lumen OS is ready", a summary (language, network, remote, Google,
- * time zone [Change], projector name [Change: XGIMI Z9X / Z9X / Projector / rooms / Other…], home
- * screen) and [Start], which runs the finish. Shows the "protected video components missing" line
- * when sys.z9x.blobs is set and not ok, and the offline hint when there was no internet.
+ * time zone [Change], projector name [Change: the projector's own names / Projector / rooms / Other…],
+ * home screen) and [Start], which runs the finish. The projector's own names are XGIMI Z9X / Z9X unless
+ * the projector app names its device in the ping reply ("names", 1 to 4 clean names, the first one is
+ * the default). Shows the "protected video components missing" line when sys.z9x.blobs is set and not
+ * ok, and the offline hint when there was no internet.
  */
 public class DoneStep extends Step {
     public static final String ID = "done";
-    private static final String DEFAULT_NAME = "XGIMI Z9X";
+    /** The projector's own names when the bridge sends none (the first one is the default name). */
+    private static final String[] DEFAULT_NAMES = {"XGIMI Z9X", "Z9X"};
 
     private Row mTz;
     private Row mName;
@@ -302,7 +307,21 @@ public class DoneStep extends Step {
             n = Settings.Global.getString(host.getContentResolver(), Settings.Global.DEVICE_NAME);
         } catch (RuntimeException ignored) {
         }
-        return n == null || n.trim().isEmpty() ? DEFAULT_NAME : n;
+        return n == null || n.trim().isEmpty() ? ownNames()[0] : n;
+    }
+
+    /**
+     * The projector's own names: the ping reply's "names" when the projector app sends them (1 to 4
+     * entries, each already a clean name, see Bridge.cleanName), else {@link #DEFAULT_NAMES}.
+     */
+    private String[] ownNames() {
+        Bundle info = host.bridgeInfo;
+        String[] n = info == null ? null : info.getStringArray("names");
+        if (n == null || n.length < 1 || n.length > 4) return DEFAULT_NAMES;
+        for (String x : n) {
+            if (x == null || !x.equals(Bridge.cleanName(x))) return DEFAULT_NAMES;
+        }
+        return n;
     }
 
     private void bindName() {
@@ -313,8 +332,9 @@ public class DoneStep extends Step {
         Sheet sh = new Sheet(ctx(), s(R.string.name_pick_title), null);
         LinearLayout list = sh.addList();
         String cur = currentName();
-        String[] options = {DEFAULT_NAME, "Z9X", s(R.string.name_projector), s(R.string.name_living_room),
-                s(R.string.name_bedroom), s(R.string.name_cinema), s(R.string.name_office)};
+        List<String> options = new ArrayList<>(Arrays.asList(ownNames()));
+        options.addAll(Arrays.asList(s(R.string.name_projector), s(R.string.name_living_room),
+                s(R.string.name_bedroom), s(R.string.name_cinema), s(R.string.name_office)));
         View focus = null;
         boolean matched = false;
         for (String o : options) {
