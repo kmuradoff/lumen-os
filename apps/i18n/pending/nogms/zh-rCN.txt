@@ -17,5 +17,5 @@ blk_channel=此更新适用于另一个 Lumen OS 版本（%1$s）。
 @setup/strings.xml
 lang_more_hint_nogms=设置将使用此语言。尚未翻译的 Lumen 应用仍显示英文。
 done_offline_hint_nogms=无互联网：可稍后在设置中设置时区。
-@projector/strings.xml
+@common/strings.xml
 slot_home_apps=Lumen Home：应用

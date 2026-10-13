@@ -3,9 +3,12 @@
 .updater from
 compact per-language sources (langs/<locale>.txt), and validate every locale dir
 (including hand-written ones such as values-ru) against the English base.
+Target common = apps/common/projector/res: the strings files that the projector apps share (listed in
+apps/common/projector/FILES); the projector target skips them, and apps/common/sync.sh copies the
+generated files into each app.
 
 Source format (UTF-8):
-    @<app>/<file>          app = projector | tvinput | airplay | home | setup | updater, file = strings_panel.xml ...
+    @<app>/<file>          app = projector | common | tvinput | airplay | home | setup | updater, file = strings_panel.xml ...
     key=text               plain text, no XML escaping (the generator escapes)
     key#quantity=text      plural item
     # comment / blank lines ignored
@@ -26,8 +29,11 @@ RES = {"projector": APPS + "/Z9xProjector/res", "tvinput": APPS + "/Z9xTvInput/r
        "airplay": APPS + "/Z9xAirPlay/res",
        # Lumen OS 1.0 (W2): new apps; every values-<locale>/strings.xml of these is generated
        "home": APPS + "/Z9xHome/res", "setup": APPS + "/Z9xSetup/res",
-       "updater": APPS + "/Z9xUpdater/res"}
+       "updater": APPS + "/Z9xUpdater/res",
+       # strings files shared by the projector apps (single source, copied by apps/common/sync.sh projector)
+       "common": APPS + "/common/projector/res"}
 HERE = os.path.dirname(os.path.abspath(__file__))
+SHARED = APPS + "/common/projector/FILES"     # paths relative to an app dir; the projector target skips these
 
 # locale -> list of output dirs (values-pt and values-pt-rBR are the same text)
 LOCALES = {
@@ -105,10 +111,21 @@ def parse_res(path):
     return res
 
 
+def shared_files():
+    """Paths listed in apps/common/projector/FILES (empty set while there is none)."""
+    if not os.path.exists(SHARED):
+        return set()
+    with open(SHARED, encoding="utf-8") as fh:
+        return {ln.split("#", 1)[0].strip() for ln in fh} - {""}
+
+
 def base_files():
     out = {}
+    shared = shared_files()
     for app, res in RES.items():
         for f in sorted(glob.glob(res + "/values/strings*.xml")):
+            if app == "projector" and "res/values/" + os.path.basename(f) in shared:
+                continue  # target common
             b = parse_res(f)
             if any(v[1] for v in b.values()):
                 out[(app, os.path.basename(f))] = b

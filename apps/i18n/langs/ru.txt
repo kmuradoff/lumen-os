@@ -1,7 +1,7 @@
 # Russian: only strings_panel.xml is generated; the other values-ru files are hand-written
 # by the module owners and only validated. Terms follow research picture-ai/strings_zh_ru.txt
 # (XGIMI's own RU wording): Режим изображения, Точная цветопередача, AI-качество, Ultra 120 Гц, Турбо.
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=Быстрые настройки
 panel_sec_image_correction=Коррекция изображения
 panel_sec_picture=Изображение
@@ -208,8 +208,8 @@ eq_preset_voice=Голос
 eq_preset_night=Ночь
 eq_preset_custom=Свой
 eq_db=дБ
-eq_hint_select=◀ ▶ полоса · OK — настроить
-eq_hint_adjust=▲ ▼ изменить · OK — готово
+eq_hint_select=◀ ▶ полоса · OK настроить
+eq_hint_adjust=▲ ▼ изменить · OK готово
 eq_reset=Сбросить эквалайзер
 eq_reset_done=Эквалайзер сброшен на «Ровный»
 eq_limit=Предел: общий подъём ограничен +6 дБ
@@ -300,7 +300,7 @@ feature_cast_title=Трансляция с телефона
 feature_cast_desc=Chromecast built-in и AirPlay: видео, музыка и экран с телефона, планшета или ноутбука.
 feature_picture_title=Идеальная картинка
 feature_picture_desc=Автофокус и коррекция трапеции выровняют и сделают резким изображение, где бы ни стоял проектор.
-feature_customize_title=Ваши приложения — по-вашему
+feature_customize_title=Приложения на ваш вкус
 feature_customize_desc=Выберите любимые приложения, скройте ненужные ряды и решите, что показывать на главном экране.
 apps_favorites=Избранное
 apps_all=Все приложения
@@ -357,7 +357,7 @@ units_c=Цельсий (°C)
 units_f=Фаренгейт (°F)
 weather_turn_off=Отключить погоду
 weather_show=Показывать погоду
-weather_privacy=Местоположение определяется по IP-адресу. Передаётся только местоположение, никаких данных о вас. VPN может его изменить — тогда выберите город вручную.
+weather_privacy=Местоположение определяется по IP-адресу. Передаётся только местоположение, никаких данных о вас. Если VPN его изменит, выберите город вручную.
 weather_attribution=Данные о погоде: Open-Meteo.com (CC BY 4.0)
 search_hint=Поиск приложений, фильмов, сериалов…
 search_apps=Приложения
@@ -370,7 +370,7 @@ search_no_results=Ничего не найдено. Попробуйте дру�
 voice_search=Голосовой поиск
 voice_listening=Слушаю…
 voice_nothing_heard=Не расслышал. Удерживайте кнопку микрофона и говорите.
-voice_unavailable=Голосовой поиск недоступен — введите текст
+voice_unavailable=Голосовой поиск недоступен. Введите текст.
 voice_unavailable_hint=Введите запрос. Голосовой поиск недавно был недоступен.
 cz_subtitle=Выберите, что показывать на главном экране
 cz_rows=Ряды
@@ -439,6 +439,13 @@ usb_done=%1$s установлено
 usb_failed=%1$s не установлено: %2$s
 kb_no_store=Установите приложение-клавиатуру с USB-накопителя: Приложения > Установить с USB.
 voice_none=Для голосового поиска нужно приложение распознавания речи. Введите запрос вручную.
+battery_level=Батарея %1$s
+battery_charging=Батарея %1$s, заряжается
+battery_plugged=Батарея %1$s, адаптер питания подключён
+input_on=Включено
+input_asleep=Спит
+input_no_signal=Нет сигнала
+input_wake_hint=Нажмите OK, чтобы включить
 @updater/strings.xml
 app_name=Обновление Lumen OS
 settings_title=Обновление Lumen OS
@@ -537,7 +544,7 @@ why_confirm=системе не удалось подтвердить, что н
 why_no_rollback=вернуться к предыдущей версии было невозможно
 why_unknown=подробности не записаны
 blk_channel=Это обновление для другой редакции Lumen OS (%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=Недавние приложения
 recents_close=Закрыть
 recents_close_all=Закрыть все
@@ -545,13 +552,13 @@ recents_empty=Нет открытых приложений
 recents_now=сейчас
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Главный экран
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (классический)
 launcher_switch=Переключить
-launcher_confirm_classic=Будет включён классический главный экран Android TV, а Lumen Home — выключен. Вернуться можно здесь в любой момент.
-launcher_confirm_lumen=Будет включён Lumen Home, а классический главный экран — выключен. Вернуться можно здесь в любой момент.
+launcher_confirm_classic=Включится классический главный экран Android TV, а Lumen Home выключится. Вернуться можно здесь в любой момент.
+launcher_confirm_lumen=Включится Lumen Home, а классический главный экран выключится. Вернуться можно здесь в любой момент.
 launcher_switch_failed=Не удалось сменить главный экран
 search_unavailable=Поиск недоступен
 

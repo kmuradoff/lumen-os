@@ -1,5 +1,5 @@
 # Kazakh (Cyrillic). "Жарайды" for OK as in Android's own Kazakh UI.
-@projector/strings.xml
+@common/strings.xml
 app_name=Проектор
 version_line=Нұсқа %1$s
 sec_focus=Фокус
@@ -74,7 +74,7 @@ ak_curtain_interrupt=Экранға туралау тоқтатылды
 ak_wall_color_on=Автоматты кескін реттеуден бұрын қабырға түсіне бейімдеуді өшіріңіз
 ak_cali_point_error=Калибрлеу орындалмады: қашықтықты өзгертіңіз немесе камераның жабылмағанын тексеріңіз
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=Жылдам параметрлер
 panel_sec_image_correction=Кескінді түзету
 panel_sec_picture=Кескін
@@ -230,7 +230,7 @@ panel_3d_summary=Бейне ойнап тұрғанда. 3D үшін белсе�
 panel_3d_need_video=3D бейне ойнап тұрғанда жұмыс істейді: алдымен оны қосыңыз
 panel_3d_not_now=3D қазір қолжетімсіз (HDR бейне, ойын режимі немесе 120 Гц)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d мин
 power_quick_wake_hours=%1$d сағ
 power_standby_now=Бірден
@@ -256,7 +256,7 @@ power_action_failed=Орындалмады. Қайталап көріңіз.
 power_menu_sleep=Ұйқы
 power_sleep_summary=Қуат түймесі, ұйқы таймері және әрекетсіздік жарықты сөндіріп, проекторды ұйқы режиміне ауыстырады. Қуат түймесін басыңыз: ол бірнеше секундта тоқтаған жерден жалғастырады.
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=Пульт қосылды
 remote_pairing=Пульт жұптасуда…
 remote_pair_searching=Пульт ізделуде…
@@ -267,7 +267,7 @@ remote_pair_failed=Пультті жұптау мүмкін болмады
 remote_bt_off=Bluetooth өшірулі
 remote_pair_action=Пультті жұптау
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=Кіріс көзі
 source_home=Негізгі экран
 source_hdmi=HDMI %1$d
@@ -288,15 +288,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=Қосылуда…
 status_no_signal=Сигнал жоқ
-status_no_cable=Сигнал жоқ: кабель жалғанбаған
-status_disconnected=Көз ажыратылды
-status_disconnected_home=Көз ажыратылды. Негізгі экранға оралуда…
+status_device_disconnected=Құрылғы қосылмаған
+status_returning_home=Басты экранға оралу…
 status_failed=HDMI ашу мүмкін емес
 status_busy=HDMI кірісін басқа қолданба пайдаланып жатыр
 status_bad_input=Белгісіз HDMI кірісі
 state_connected=қосылған
 state_standby=күту режимінде
 state_disconnected=қосылмаған
+state_asleep=%1$s ұйқы режимінде
+state_asleep_device=Құрылғы ұйқы режимінде
+state_press_ok_wake=Қосу үшін OK түймесін басыңыз
+state_waking=Қосылуда…
 picker_title=Кіріс көзі
 picker_home=Негізгі экран
 picker_settings=HDMI параметрлері
@@ -359,8 +362,8 @@ eq_preset_voice=Дауыс
 eq_preset_night=Түн
 eq_preset_custom=Өзіндік
 eq_db=дБ
-eq_hint_select=◀ ▶ жолақ · OK — реттеу
-eq_hint_adjust=▲ ▼ өзгерту · OK — дайын
+eq_hint_select=◀ ▶ жолақ · OK реттеу
+eq_hint_adjust=▲ ▼ өзгерту · OK дайын
 eq_reset=Эквалайзерді қалпына келтіру
 eq_reset_done=Эквалайзер «Тегіс» күйіне қайтарылды
 eq_limit=Шек: жалпы күшейту +6 дБ-мен шектелген
@@ -451,7 +454,7 @@ feature_cast_title=Телефоннан трансляция
 feature_cast_desc=Chromecast built-in және AirPlay: телефоннан, планшеттен не ноутбуктан бейне, музыка және экран жіберіңіз.
 feature_picture_title=Мінсіз сурет
 feature_picture_desc=Автофокус пен трапецияны түзету проектор қай жерде тұрса да кескінді түзетіп, анық етеді.
-feature_customize_title=Қолданбаларыңыз — өз қалауыңызша
+feature_customize_title=Қолданбалар өз қалауыңызша
 feature_customize_desc=Сүйікті қолданбаларды таңдаңыз, қажетсіз қатарларды жасырыңыз және басты экранда не көрсетілетінін шешіңіз.
 apps_favorites=Таңдаулылар
 apps_all=Барлық қолданбалар
@@ -508,7 +511,7 @@ units_c=Цельсий (°C)
 units_f=Фаренгейт (°F)
 weather_turn_off=Ауа райын өшіру
 weather_show=Ауа райын көрсету
-weather_privacy=Орналасу IP мекенжайы бойынша анықталады. Тек орналасу жіберіледі, сізді анықтайтын ештеңе жіберілмейді. VPN оны өзгертуі мүмкін — онда қаланы қолмен таңдаңыз.
+weather_privacy=Орналасу IP мекенжайы бойынша анықталады. Тек орналасу жіберіледі, сізді анықтайтын ештеңе жіберілмейді. VPN оны өзгертсе, қаланы қолмен таңдаңыз.
 weather_attribution=Ауа райы деректері: Open-Meteo.com (CC BY 4.0)
 search_hint=Қолданбаларды, фильмдерді, сериалдарды іздеу…
 search_apps=Қолданбалар
@@ -521,7 +524,7 @@ search_no_results=Ештеңе табылмады. Басқа сөзді бай�
 voice_search=Дауыспен іздеу
 voice_listening=Тыңдап тұрмын…
 voice_nothing_heard=Түсінбедім. Микрофон түймесін басып тұрып сөйлеңіз.
-voice_unavailable=Дауыспен іздеу қолжетімсіз — мәтінді теріңіз
+voice_unavailable=Дауыспен іздеу қолжетімсіз. Мәтінді теріңіз.
 voice_unavailable_hint=Сұрауды теріңіз. Жақында дауыспен іздеу қолжетімсіз болды.
 cz_subtitle=Басты экранда не көрсетілетінін таңдаңыз
 cz_rows=Қатарлар
@@ -590,6 +593,13 @@ usb_done=%1$s орнатылды
 usb_failed=%1$s орнатылмады: %2$s
 kb_no_store=Пернетақта қолданбасын USB жинақтағышынан орнатыңыз: Қолданбалар > USB-ден орнату.
 voice_none=Дауыспен іздеу үшін сөйлеуді тану қолданбасы керек. Сұрауды теріп жазыңыз.
+battery_level=Батарея %1$s
+battery_charging=Батарея %1$s, зарядталуда
+battery_plugged=Батарея %1$s, қуат адаптері қосулы
+input_on=Қосулы
+input_asleep=Ұйқы режимінде
+input_no_signal=Сигнал жоқ
+input_wake_hint=Қосу үшін OK басыңыз
 @updater/strings.xml
 app_name=Lumen OS жаңартуы
 settings_title=Lumen OS жаңартуы
@@ -686,7 +696,7 @@ why_confirm=жүйе жаңа нұсқаның жұмыс істейтінін �
 why_no_rollback=алдыңғы нұсқаға қайту мүмкін болмады
 why_unknown=мәліметтер жазылмаған
 blk_channel=Бұл жаңарту Lumen OS-тің басқа нұсқасына арналған (%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=Соңғы қолданбалар
 recents_close=Жабу
 recents_close_all=Барлығын жабу
@@ -694,7 +704,7 @@ recents_empty=Ашық қолданбалар жоқ
 recents_now=қазір
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Басты экран
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (классикалық)

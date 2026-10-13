@@ -1,6 +1,6 @@
 # Simplified Chinese (mainland terms: 投影仪, 幕布, 吊装, 信号源). Our own wording; meaning checked
 # against the stock zh strings only for the AK result notices.
-@projector/strings.xml
+@common/strings.xml
 app_name=投影仪
 version_line=版本 %1$s
 sec_focus=对焦
@@ -75,7 +75,7 @@ ak_curtain_interrupt=幕布对齐已中断
 ak_wall_color_on=请先关闭墙面颜色适配，再进行自动画面调整
 ak_cali_point_error=校准失败，请调整投影距离，或检查摄像头是否被遮挡
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=快捷设置
 panel_sec_image_correction=画面校正
 panel_sec_picture=图像
@@ -229,7 +229,7 @@ panel_3d_summary=播放视频时可用。3D需要DLP-Link主动快门眼镜；�
 panel_3d_need_video=3D需在播放视频时使用，请先播放视频
 panel_3d_not_now=当前无法使用3D（HDR视频、游戏模式或120 Hz）
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d 分钟
 power_quick_wake_hours=%1$d 小时
 power_standby_now=立即
@@ -255,7 +255,7 @@ power_action_failed=操作失败，请重试。
 power_menu_sleep=睡眠
 power_sleep_summary=电源键、睡眠定时器和闲置时间会关闭光源并让投影仪进入睡眠。按电源键，几秒内即可从上次停下的地方继续。
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=遥控器已连接
 remote_pairing=正在配对遥控器…
 remote_pair_searching=正在搜索遥控器…
@@ -266,7 +266,7 @@ remote_pair_failed=遥控器配对失败
 remote_bt_off=蓝牙已关闭
 remote_pair_action=配对遥控器
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=信号源
 source_home=主屏幕
 source_hdmi=HDMI %1$d
@@ -287,15 +287,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=正在连接…
 status_no_signal=无信号
-status_no_cable=无信号：未连接线缆
-status_disconnected=信号源已断开
-status_disconnected_home=信号源已断开，正在返回主屏幕…
+status_device_disconnected=设备未连接
+status_returning_home=正在返回主屏幕…
 status_failed=无法打开 HDMI
 status_busy=HDMI 输入正被其他应用使用
 status_bad_input=未知的 HDMI 输入
 state_connected=已连接
 state_standby=待机
 state_disconnected=未连接
+state_asleep=%1$s 处于待机状态
+state_asleep_device=设备处于待机状态
+state_press_ok_wake=按 OK 键开启
+state_waking=正在开启…
 picker_title=信号源
 picker_home=主屏幕
 picker_settings=HDMI 设置
@@ -589,6 +592,13 @@ usb_done=已安装 %1$s
 usb_failed=未能安装 %1$s：%2$s
 kb_no_store=请从 U 盘安装键盘应用：应用 > 从 U 盘安装。
 voice_none=语音搜索需要语音识别应用。请改为输入文字。
+battery_level=电池电量 %1$s
+battery_charging=电池电量 %1$s，正在充电
+battery_plugged=电池电量 %1$s，电源适配器已接入
+input_on=已开启
+input_asleep=休眠中
+input_no_signal=无信号
+input_wake_hint=按 OK 键唤醒
 @updater/strings.xml
 app_name=Lumen OS 更新
 settings_title=Lumen OS 更新
@@ -684,7 +694,7 @@ why_confirm=系统无法确认新版本运行正常
 why_no_rollback=无法回到上一个版本
 why_unknown=没有记录详细信息
 blk_channel=此更新适用于另一个 Lumen OS 版本（%1$s）。
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=最近使用的应用
 recents_close=关闭
 recents_close_all=全部关闭
@@ -692,7 +702,7 @@ recents_empty=没有打开的应用
 recents_now=刚刚
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=主屏幕
 launcher_lumen=Lumen Home
 launcher_classic=Android TV（经典）

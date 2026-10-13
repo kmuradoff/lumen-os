@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Polish translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">Połącz pilota ponownie</string>
+    <string name="remote_lost_text">Przytrzymaj jednocześnie Wstecz i Ekran główny przez 3 sekundy, aż lampka zacznie migać.</string>
+    <string name="remote_lost_found">Znaleziono %1$s</string>
+    <string name="remote_lost_battery">Nic się nie dzieje? Sprawdź baterie w pilocie.</string>
+    <string name="remote_lost_dismiss">Nie teraz</string>
+    <string name="remote_lost_wake">Naciśnij dowolny przycisk na pilocie</string>
+</resources>

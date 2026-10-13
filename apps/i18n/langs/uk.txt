@@ -1,5 +1,5 @@
 # Ukrainian. Terms parallel the Russian ones (Автотрапеція, Турбо, AI-якість) for a consistent product voice.
-@projector/strings.xml
+@common/strings.xml
 app_name=Проєктор
 version_line=Версія %1$s
 sec_focus=Фокус
@@ -74,7 +74,7 @@ ak_curtain_interrupt=Вирівнювання за екраном перерва
 ak_wall_color_on=Вимкніть адаптацію до кольору стіни перед автовирівнюванням
 ak_cali_point_error=Не вдалося відкалібрувати: змініть відстань або перевірте, чи не закрита камера
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=Швидкі налаштування
 panel_sec_image_correction=Корекція зображення
 panel_sec_picture=Зображення
@@ -234,7 +234,7 @@ panel_3d_summary=Під час відео. Для 3D потрібні актив
 panel_3d_need_video=3D працює під час відео: спершу увімкніть його
 panel_3d_not_now=3D зараз недоступне (HDR-відео, ігровий режим або 120 Гц)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d хв
 power_quick_wake_hours=%1$d год
 power_standby_now=Одразу
@@ -258,9 +258,9 @@ power_timer_warn=Вимкнення за 1 хвилину
 power_timer_warn_desc=Утримуйте кнопку живлення, щоб змінити таймер
 power_action_failed=Не вдалося. Спробуйте ще раз.
 power_menu_sleep=Сон
-power_sleep_summary=Кнопка живлення, таймер сну та бездіяльність гасять світло й переводять проєктор у сон. Натисніть кнопку живлення — він прокинеться за кілька секунд там, де ви зупинилися.
+power_sleep_summary=Кнопка живлення, таймер сну та бездіяльність гасять світло й переводять проєктор у сон. Натисніть кнопку живлення, і він прокинеться за кілька секунд там, де ви зупинилися.
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=Пульт підключено
 remote_pairing=Підключення пульта…
 remote_pair_searching=Пошук пульта…
@@ -271,7 +271,7 @@ remote_pair_failed=Не вдалося підключити пульт
 remote_bt_off=Bluetooth вимкнено
 remote_pair_action=Підключити пульт
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=Джерело сигналу
 source_home=Головний екран
 source_hdmi=HDMI %1$d
@@ -292,15 +292,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=Підключення…
 status_no_signal=Немає сигналу
-status_no_cable=Немає сигналу: кабель не підключено
-status_disconnected=Джерело відключено
-status_disconnected_home=Джерело відключено. Повернення на головний екран…
+status_device_disconnected=Пристрій не підключено
+status_returning_home=Повернення на головний екран…
 status_failed=Не вдалося відкрити HDMI
 status_busy=Вхід HDMI зайнятий іншою програмою
 status_bad_input=Невідомий вхід HDMI
 state_connected=підключено
 state_standby=у режимі очікування
 state_disconnected=не підключено
+state_asleep=%1$s у режимі сну
+state_asleep_device=Пристрій у режимі сну
+state_press_ok_wake=Натисніть OK, щоб увімкнути
+state_waking=Увімкнення…
 picker_title=Джерело сигналу
 picker_home=Головний екран
 picker_settings=Налаштування HDMI
@@ -363,8 +366,8 @@ eq_preset_voice=Голос
 eq_preset_night=Ніч
 eq_preset_custom=Власний
 eq_db=дБ
-eq_hint_select=◀ ▶ смуга · OK — налаштувати
-eq_hint_adjust=▲ ▼ змінити · OK — готово
+eq_hint_select=◀ ▶ смуга · OK налаштувати
+eq_hint_adjust=▲ ▼ змінити · OK готово
 eq_reset=Скинути еквалайзер
 eq_reset_done=Еквалайзер скинуто на «Рівний»
 eq_limit=Межа: загальне підсилення обмежене +6 дБ
@@ -455,7 +458,7 @@ feature_cast_title=Трансляція з телефона
 feature_cast_desc=Chromecast built-in і AirPlay: відео, музика та екран з телефона, планшета чи ноутбука.
 feature_picture_title=Ідеальне зображення
 feature_picture_desc=Автофокус і корекція трапеції вирівняють і зроблять різким зображення, де б не стояв проєктор.
-feature_customize_title=Ваші застосунки — по-вашому
+feature_customize_title=Застосунки на ваш смак
 feature_customize_desc=Оберіть улюблені застосунки, сховайте зайві ряди й вирішіть, що показувати на головному екрані.
 apps_favorites=Обране
 apps_all=Усі застосунки
@@ -512,7 +515,7 @@ units_c=Цельсій (°C)
 units_f=Фаренгейт (°F)
 weather_turn_off=Вимкнути погоду
 weather_show=Показувати погоду
-weather_privacy=Місцезнаходження визначається за IP-адресою. Надсилається лише місцезнаходження, жодних даних про вас. VPN може його змінити — тоді виберіть місто вручну.
+weather_privacy=Місцезнаходження визначається за IP-адресою. Надсилається лише місцезнаходження, жодних даних про вас. Якщо VPN його змінить, виберіть місто вручну.
 weather_attribution=Дані про погоду: Open-Meteo.com (CC BY 4.0)
 search_hint=Пошук застосунків, фільмів, серіалів…
 search_apps=Застосунки
@@ -525,7 +528,7 @@ search_no_results=Нічого не знайдено. Спробуйте інш�
 voice_search=Голосовий пошук
 voice_listening=Слухаю…
 voice_nothing_heard=Не почув. Утримуйте кнопку мікрофона й говоріть.
-voice_unavailable=Голосовий пошук недоступний — введіть текст
+voice_unavailable=Голосовий пошук недоступний. Введіть текст.
 voice_unavailable_hint=Введіть запит. Голосовий пошук нещодавно був недоступний.
 cz_subtitle=Виберіть, що показувати на головному екрані
 cz_rows=Ряди
@@ -594,6 +597,13 @@ usb_done=%1$s установлено
 usb_failed=%1$s не установлено: %2$s
 kb_no_store=Установіть застосунок-клавіатуру з USB-накопичувача: Застосунки > Установити з USB.
 voice_none=Для голосового пошуку потрібен застосунок розпізнавання мовлення. Введіть запит вручну.
+battery_level=Батарея %1$s
+battery_charging=Батарея %1$s, заряджається
+battery_plugged=Батарея %1$s, блок живлення підключено
+input_on=Увімкнено
+input_asleep=Спить
+input_no_signal=Немає сигналу
+input_wake_hint=Натисніть OK, щоб увімкнути
 @updater/strings.xml
 app_name=Оновлення Lumen OS
 settings_title=Оновлення Lumen OS
@@ -692,7 +702,7 @@ why_confirm=системі не вдалося підтвердити, що но
 why_no_rollback=повернутися до попередньої версії було неможливо
 why_unknown=подробиці не записано
 blk_channel=Це оновлення для іншої редакції Lumen OS (%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=Нещодавні програми
 recents_close=Закрити
 recents_close_all=Закрити всі
@@ -700,13 +710,13 @@ recents_empty=Немає відкритих програм
 recents_now=щойно
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Головний екран
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (класичний)
 launcher_switch=Перемкнути
-launcher_confirm_classic=Буде увімкнено класичний головний екран Android TV, а Lumen Home — вимкнено. Повернутися можна тут будь-коли.
-launcher_confirm_lumen=Буде увімкнено Lumen Home, а класичний головний екран — вимкнено. Повернутися можна тут будь-коли.
+launcher_confirm_classic=Увімкнеться класичний головний екран Android TV, а Lumen Home вимкнеться. Повернутися можна тут будь-коли.
+launcher_confirm_lumen=Увімкнеться Lumen Home, а класичний головний екран вимкнеться. Повернутися можна тут будь-коли.
 launcher_switch_failed=Не вдалося змінити головний екран
 search_unavailable=Пошук недоступний
 

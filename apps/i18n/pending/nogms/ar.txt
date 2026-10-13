@@ -17,5 +17,5 @@ blk_channel=هذا التحديث مخصص لإصدار آخر من Lumen OS ‏
 @setup/strings.xml
 lang_more_hint_nogms=تستخدم الإعدادات هذه اللغة. تبقى تطبيقات Lumen غير المترجمة بالإنجليزية.
 done_offline_hint_nogms=لا يوجد إنترنت: اضبط المنطقة الزمنية لاحقًا من الإعدادات.
-@projector/strings.xml
+@common/strings.xml
 slot_home_apps=Lumen Home: التطبيقات

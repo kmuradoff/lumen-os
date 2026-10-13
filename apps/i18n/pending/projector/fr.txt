@@ -2,14 +2,14 @@
 # strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
 # strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
 # Product names stay untranslated: Lumen Home, Android TV.
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=Applications récentes
 recents_close=Fermer
 recents_close_all=Tout fermer
 recents_empty=Aucune application ouverte
 recents_now=maintenant
 
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Écran d'accueil
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (classique)
@@ -19,6 +19,6 @@ launcher_confirm_lumen=Lumen Home sera activé et l'écran d'accueil classique d
 launcher_switch_failed=Impossible de changer d'écran d'accueil
 search_unavailable=La recherche n'est pas disponible
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_menu_sleep=Veille
 power_sleep_summary=Le bouton marche, la minuterie de veille et l'inactivité éteignent la lumière et mettent le projecteur en veille. Un appui sur marche le réveille en quelques secondes, là où vous en étiez.

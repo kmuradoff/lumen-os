@@ -1,5 +1,5 @@
 # Traditional Chinese, Taiwan terms (投影機, 布幕, 吊掛, 訊號來源, 裝置, 設定, 螢幕).
-@projector/strings.xml
+@common/strings.xml
 app_name=投影機
 version_line=版本 %1$s
 sec_focus=對焦
@@ -74,7 +74,7 @@ ak_curtain_interrupt=布幕對齊已中斷
 ak_wall_color_on=請先關閉牆面色彩調適，再進行自動畫面調整
 ak_cali_point_error=校準失敗，請調整投影距離，或檢查攝影機是否被遮擋
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=快速設定
 panel_sec_image_correction=畫面校正
 panel_sec_picture=影像
@@ -228,7 +228,7 @@ panel_3d_summary=播放影片時可用。3D需要DLP-Link主動式快門眼鏡�
 panel_3d_need_video=3D需在播放影片時使用，請先播放影片
 panel_3d_not_now=目前無法使用3D（HDR影片、遊戲模式或120 Hz）
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d 分鐘
 power_quick_wake_hours=%1$d 小時
 power_standby_now=立即
@@ -254,7 +254,7 @@ power_action_failed=操作失敗，請再試一次。
 power_menu_sleep=睡眠
 power_sleep_summary=電源鍵、睡眠定時器和閒置時間會關閉光源並讓投影機進入睡眠。按下電源鍵，幾秒內就能從上次停下的地方繼續。
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=遙控器已連線
 remote_pairing=正在配對遙控器…
 remote_pair_searching=正在搜尋遙控器…
@@ -265,7 +265,7 @@ remote_pair_failed=無法配對遙控器
 remote_bt_off=藍牙已關閉
 remote_pair_action=配對遙控器
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=訊號來源
 source_home=主畫面
 source_hdmi=HDMI %1$d
@@ -286,15 +286,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=連線中…
 status_no_signal=無訊號
-status_no_cable=無訊號：未連接纜線
-status_disconnected=訊號來源已中斷
-status_disconnected_home=訊號來源已中斷，正在返回主畫面…
+status_device_disconnected=裝置未連接
+status_returning_home=正在返回主畫面…
 status_failed=無法開啟 HDMI
 status_busy=HDMI 輸入正由其他應用程式使用中
 status_bad_input=不明的 HDMI 輸入
 state_connected=已連線
 state_standby=待機
 state_disconnected=未連線
+state_asleep=%1$s 處於待機狀態
+state_asleep_device=裝置處於待機狀態
+state_press_ok_wake=按 OK 鍵開啟
+state_waking=正在開啟…
 picker_title=訊號來源
 picker_home=主畫面
 picker_settings=HDMI 設定
@@ -588,6 +591,13 @@ usb_done=已安裝 %1$s
 usb_failed=無法安裝 %1$s：%2$s
 kb_no_store=請從 USB 隨身碟安裝鍵盤應用程式：應用程式 > 從 USB 安裝。
 voice_none=語音搜尋需要語音辨識應用程式。請改為輸入文字。
+battery_level=電池電量 %1$s
+battery_charging=電池電量 %1$s，充電中
+battery_plugged=電池電量 %1$s，已接上電源變壓器
+input_on=已開啟
+input_asleep=休眠中
+input_no_signal=無訊號
+input_wake_hint=按 OK 鍵喚醒
 @updater/strings.xml
 app_name=Lumen OS 更新
 settings_title=Lumen OS 更新
@@ -683,7 +693,7 @@ why_confirm=系統無法確認新版本運作正常
 why_no_rollback=無法回到上一個版本
 why_unknown=沒有記錄詳細資料
 blk_channel=此更新適用於另一個 Lumen OS 版本（%1$s）。
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=最近使用的應用程式
 recents_close=關閉
 recents_close_all=全部關閉
@@ -691,7 +701,7 @@ recents_empty=沒有開啟的應用程式
 recents_now=剛剛
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=主畫面
 launcher_lumen=Lumen Home
 launcher_classic=Android TV（經典）

@@ -17,5 +17,5 @@ blk_channel=Це оновлення для іншої редакції Lumen OS 
 @setup/strings.xml
 lang_more_hint_nogms=Цю мову використовуватимуть налаштування. Застосунки Lumen без перекладу залишаться англійською.
 done_offline_hint_nogms=Немає інтернету: вибрати часовий пояс можна пізніше в налаштуваннях.
-@projector/strings.xml
+@common/strings.xml
 slot_home_apps=Lumen Home: застосунки

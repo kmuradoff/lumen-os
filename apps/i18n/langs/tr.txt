@@ -1,5 +1,5 @@
 # Turkish. Suffixes after abbreviations follow pronunciation: HDMI'ya / HDMI'yı / HDMI'dan, 3D'yi.
-@projector/strings.xml
+@common/strings.xml
 app_name=Projektör
 version_line=Sürüm %1$s
 sec_focus=Odak
@@ -74,7 +74,7 @@ ak_curtain_interrupt=Ekrana hizalama kesildi
 ak_wall_color_on=Otomatik görüntü ayarından önce duvar rengi uyarlamasını kapatın
 ak_cali_point_error=Kalibrasyon başarısız. Mesafeyi değiştirin veya kameranın önünde engel olup olmadığını kontrol edin
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=Hızlı ayarlar
 panel_sec_image_correction=Görüntü düzeltme
 panel_sec_picture=Görüntü
@@ -230,7 +230,7 @@ panel_3d_summary=Bir video oynarken. 3D için aktif DLP-Link gözlük gerekir; �
 panel_3d_need_video=3D bir video oynarken çalışır: önce videoyu başlatın
 panel_3d_not_now=3D şu anda kullanılamıyor (HDR video, oyun modu veya 120 Hz)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d dk
 power_quick_wake_hours=%1$d sa
 power_standby_now=Hemen
@@ -256,7 +256,7 @@ power_action_failed=Yapılamadı. Lütfen tekrar deneyin.
 power_menu_sleep=Uyku
 power_sleep_summary=Güç tuşu, uyku zamanlayıcısı ve hareketsizlik ışığı kapatır ve projektörü uyku moduna alır. Güç tuşuna basın, saniyeler içinde kaldığınız yerden devam eder.
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=Kumanda bağlandı
 remote_pairing=Kumanda eşleniyor…
 remote_pair_searching=Kumanda aranıyor…
@@ -267,7 +267,7 @@ remote_pair_failed=Kumanda eşlenemedi
 remote_bt_off=Bluetooth kapalı
 remote_pair_action=Kumandayı eşle
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=Giriş
 source_home=Ana ekran
 source_hdmi=HDMI %1$d
@@ -288,15 +288,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=Bağlanıyor…
 status_no_signal=Sinyal yok
-status_no_cable=Sinyal yok: kablo bağlı değil
-status_disconnected=Kaynak bağlantısı kesildi
-status_disconnected_home=Kaynak bağlantısı kesildi. Ana ekrana dönülüyor…
+status_device_disconnected=Cihaz bağlı değil
+status_returning_home=Ana ekrana dönülüyor…
 status_failed=HDMI açılamıyor
 status_busy=HDMI girişi başka bir uygulama tarafından kullanılıyor
 status_bad_input=Bilinmeyen HDMI girişi
 state_connected=bağlı
 state_standby=bekleme modunda
 state_disconnected=bağlı değil
+state_asleep=%1$s uyku modunda
+state_asleep_device=Cihaz uyku modunda
+state_press_ok_wake=Açmak için OK tuşuna basın
+state_waking=Açılıyor…
 picker_title=Giriş
 picker_home=Ana ekran
 picker_settings=HDMI ayarları
@@ -521,7 +524,7 @@ search_no_results=Hiçbir şey bulunamadı. Başka bir kelime deneyin veya aşa�
 voice_search=Sesli arama
 voice_listening=Dinliyorum…
 voice_nothing_heard=Anlayamadım. Mikrofon düğmesini basılı tutup konuşun.
-voice_unavailable=Sesli arama kullanılamıyor — yazarak arayın
+voice_unavailable=Sesli arama kullanılamıyor. Yazarak arayın.
 voice_unavailable_hint=Aramanızı yazın. Sesli arama kısa süre önce kullanılamıyordu.
 cz_subtitle=Ana ekranda neyin görüneceğini seçin
 cz_rows=Satırlar
@@ -590,6 +593,13 @@ usb_done=%1$s yüklendi
 usb_failed=%1$s yüklenmedi: %2$s
 kb_no_store=Bir klavye uygulamasını USB bellekten yükleyin: Uygulamalar > USB’den yükle.
 voice_none=Sesli arama için bir konuşma tanıma uygulaması gerekir. Aramanızı yazın.
+battery_level=Pil %1$s
+battery_charging=Pil %1$s, şarj oluyor
+battery_plugged=Pil %1$s, güç adaptörü takılı
+input_on=Açık
+input_asleep=Uyku modunda
+input_no_signal=Sinyal yok
+input_wake_hint=Açmak için OK’e basın
 @updater/strings.xml
 app_name=Lumen OS güncellemesi
 settings_title=Lumen OS güncellemesi
@@ -686,7 +696,7 @@ why_confirm=sistem yeni sürümün çalıştığını doğrulayamadı
 why_no_rollback=önceki sürüme dönmek mümkün olmadı
 why_unknown=ayrıntı kaydedilmedi
 blk_channel=Bu güncelleme başka bir Lumen OS sürümü için (%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=Son uygulamalar
 recents_close=Kapat
 recents_close_all=Tümünü kapat
@@ -694,7 +704,7 @@ recents_empty=Açık uygulama yok
 recents_now=şimdi
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Ana ekran
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (klasik)

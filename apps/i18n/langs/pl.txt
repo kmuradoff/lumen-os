@@ -1,5 +1,5 @@
 # Polish. "Ostrość" = focus; sharpness uses "Wyostrzenie" to avoid the clash.
-@projector/strings.xml
+@common/strings.xml
 app_name=Projektor
 version_line=Wersja %1$s
 sec_focus=Ostrość
@@ -74,7 +74,7 @@ ak_curtain_interrupt=Wyrównywanie do ekranu przerwane
 ak_wall_color_on=Przed automatyczną regulacją obrazu wyłącz dopasowanie do koloru ściany
 ak_cali_point_error=Kalibracja nie powiodła się. Zmień odległość lub sprawdź, czy kamera nie jest zasłonięta
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=Szybkie ustawienia
 panel_sec_image_correction=Korekcja obrazu
 panel_sec_picture=Obraz
@@ -234,7 +234,7 @@ panel_3d_summary=Podczas filmu. 3D wymaga aktywnych okularów DLP-Link; „jako 
 panel_3d_need_video=3D działa podczas odtwarzania filmu: najpierw go włącz
 panel_3d_not_now=3D jest teraz niedostępne (film HDR, tryb gry lub 120 Hz)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d min
 power_quick_wake_hours=%1$d godz.
 power_standby_now=Od razu
@@ -260,7 +260,7 @@ power_action_failed=Nie udało się. Spróbuj ponownie.
 power_menu_sleep=Uśpij
 power_sleep_summary=Przycisk zasilania, wyłącznik czasowy i bezczynność gaszą światło i usypiają projektor. Naciśnij zasilanie, a w kilka sekund wróci dokładnie tam, gdzie skończyłeś.
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=Pilot połączony
 remote_pairing=Parowanie pilota…
 remote_pair_searching=Wyszukiwanie pilota…
@@ -271,7 +271,7 @@ remote_pair_failed=Nie udało się sparować pilota
 remote_bt_off=Bluetooth jest wyłączony
 remote_pair_action=Sparuj pilota
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=Wejście
 source_home=Ekran główny
 source_hdmi=HDMI %1$d
@@ -292,15 +292,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=Łączenie…
 status_no_signal=Brak sygnału
-status_no_cable=Brak sygnału: kabel nie jest podłączony
-status_disconnected=Źródło odłączone
-status_disconnected_home=Źródło odłączone. Powrót do ekranu głównego…
+status_device_disconnected=Urządzenie nie jest podłączone
+status_returning_home=Powrót do ekranu głównego…
 status_failed=Nie można otworzyć HDMI
 status_busy=Wejście HDMI jest używane przez inną aplikację
 status_bad_input=Nieznane wejście HDMI
 state_connected=połączono
 state_standby=czuwanie
 state_disconnected=nie połączono
+state_asleep=%1$s jest w trybie uśpienia
+state_asleep_device=Urządzenie jest w trybie uśpienia
+state_press_ok_wake=Naciśnij OK, aby włączyć
+state_waking=Włączanie…
 picker_title=Wejście
 picker_home=Ekran główny
 picker_settings=Ustawienia HDMI
@@ -525,7 +528,7 @@ search_no_results=Nic nie znaleziono. Spróbuj innego słowa lub poszukaj w apli
 voice_search=Wyszukiwanie głosowe
 voice_listening=Słucham…
 voice_nothing_heard=Nie zrozumiałem. Przytrzymaj przycisk mikrofonu i mów.
-voice_unavailable=Wyszukiwanie głosowe niedostępne — wpisz tekst
+voice_unavailable=Wyszukiwanie głosowe niedostępne. Wpisz zapytanie.
 voice_unavailable_hint=Wpisz zapytanie. Wyszukiwanie głosowe było niedawno niedostępne.
 cz_subtitle=Wybierz, co pokazuje ekran główny
 cz_rows=Rzędy
@@ -594,6 +597,13 @@ usb_done=Zainstalowano: %1$s
 usb_failed=Nie zainstalowano: %1$s (%2$s)
 kb_no_store=Zainstaluj aplikację klawiatury z pamięci USB: Aplikacje > Zainstaluj z USB.
 voice_none=Wyszukiwanie głosowe wymaga aplikacji do rozpoznawania mowy. Wpisz zapytanie.
+battery_level=Bateria %1$s
+battery_charging=Bateria %1$s, ładowanie
+battery_plugged=Bateria %1$s, zasilacz podłączony
+input_on=Włączone
+input_asleep=Uśpione
+input_no_signal=Brak sygnału
+input_wake_hint=Naciśnij OK, aby włączyć
 @updater/strings.xml
 app_name=Aktualizacja Lumen OS
 settings_title=Aktualizacja Lumen OS
@@ -692,7 +702,7 @@ why_confirm=system nie mógł potwierdzić, że nowa wersja działa
 why_no_rollback=powrót do poprzedniej wersji nie był możliwy
 why_unknown=nie zapisano szczegółów
 blk_channel=Ta aktualizacja jest dla innej edycji Lumen OS (%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=Ostatnie aplikacje
 recents_close=Zamknij
 recents_close_all=Zamknij wszystkie
@@ -700,7 +710,7 @@ recents_empty=Brak otwartych aplikacji
 recents_now=teraz
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Ekran główny
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (klasyczny)

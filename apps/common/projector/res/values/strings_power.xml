@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "power" strings (owner: the power module agent). English base; translations go to
+     values-<lang>/strings_power.xml. Prefix every name with "power_". -->
+<resources>
+    <string name="power_placeholder" translatable="false">power</string>
+
+    <!-- Quick panel item (All settings, panel_standby_off_after): v6.5 a short POWER press puts the
+         projector in standby (light off, ready to wake instantly); after the chosen time it powers
+         off completely (PowerPolicy.quickWakeChoices / quickWakeLabel, StandbyController).
+         The power key, the sleep timer and the idle time ("screensaver off" / the screensaver's
+         "Turn off after") all enter this standby.
+         Choices: Right away, 5 min ... 4 h. "Never" is not offered in v6.5 (display-on, lamp-off
+         standby thermals not logged yet; a stored "Never" becomes 4 h); power_standby_never stays
+         for the label. -->
+    <string name="power_standby_now">Right away</string>
+    <string name="power_standby_never">Never</string>
+    <string name="power_quick_wake_minutes">%1$d min</string>
+    <string name="power_quick_wake_hours">%1$d h</string>
+    <string name="power_standby_summary">The power key, the sleep timer and the idle time turn the light off and keep the projector ready to wake instantly. After this time it powers off completely.</string>
+    <!-- Lumen OS 1.0 (real STR): replaces power_standby_summary in the quick panel's All settings page
+         (the standby window row is gone; power_standby_* stay only for the allow_str=0 kill switch). -->
+    <string name="power_sleep_summary">The power key, the sleep timer and the idle time turn the light off and put the projector to sleep. Press power to wake it within seconds, right where you left off.</string>
+    <!-- v6.2 power UI (own power key, power menu, sleep timer, wake curtain; PowerMenu / SleepTimer / PowerKey) -->
+    <!-- Thin wordmark on the wake / power-off curtain (WakeCurtain). Our own mark, not translated. -->
+    <string name="power_wordmark" translatable="false">Lumen</string>
+    <!-- Long-press power menu: Sleep, Power off, Restart, Sleep timer. Timer page: presets, custom (LEFT/RIGHT), turn off. -->
+    <!-- Lumen OS 1.0: first tile, the same as a short POWER press (light off, then sleep) -->
+    <string name="power_menu_sleep">Sleep</string>
+    <string name="power_menu_off">Power off</string>
+    <string name="power_menu_restart">Restart</string>
+    <string name="power_menu_timer">Sleep timer</string>
+    <string name="power_timer_min">%1$d min</string>
+    <string name="power_timer_hours">%1$d h</string>
+    <string name="power_timer_hours_min">%1$d h %2$d min</string>
+    <string name="power_timer_custom">Custom</string>
+    <string name="power_timer_cancel">Turn off timer</string>
+    <string name="power_timer_left">%1$s left</string>
+    <string name="power_timer_hint">When the time is up, sound and light fade out and the projector goes to standby.</string>
+    <string name="power_timer_running">Turns off at %1$s</string>
+    <string name="power_timer_started">Sleep timer: %1$s</string>
+    <string name="power_timer_canceled">Sleep timer off</string>
+    <string name="power_timer_warn">Turning off in 1 minute</string>
+    <string name="power_timer_warn_desc">Hold the power key to change the timer</string>
+    <string name="power_action_failed">That did not work. Please try again.</string>
+    <!-- end v6.2 power UI -->
+</resources>

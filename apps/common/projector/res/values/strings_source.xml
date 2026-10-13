@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "source" strings (owner: the source module agent). English base; translations go to
+     values-<lang>/strings_source.xml. Prefix every name with "source_". -->
+<resources>
+    <string name="source_placeholder" translatable="false">source</string>
+
+    <!-- Title of the input chooser opened by the Source key. -->
+    <string name="source_title">Input</string>
+    <!-- Row that returns to the TV home screen (launcher). -->
+    <string name="source_home">Home screen</string>
+    <!-- Fallback input labels when the input has no label of its own. %1$d = HDMI port number. -->
+    <string name="source_hdmi">HDMI %1$d</string>
+    <string name="source_hdmi_arc">HDMI %1$d (ARC)</string>
+    <!-- Input state shown at the right of an HDMI row. -->
+    <string name="source_state_connected">Connected</string>
+    <string name="source_state_no_signal">No signal</string>
+    <string name="source_state_disconnected">Not connected</string>
+    <string name="source_state_unavailable">Unavailable</string>
+    <!-- Notification when an input cannot be opened. %1$s = input name, e.g. "HDMI 1". -->
+    <string name="source_open_failed">Cannot open %1$s</string>
+</resources>

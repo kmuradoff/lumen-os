@@ -17,5 +17,5 @@ blk_channel=Cette mise à jour est destinée à une autre édition de Lumen OS (
 @setup/strings.xml
 lang_more_hint_nogms=Les paramètres utilisent cette langue. Les applis Lumen non traduites restent en anglais.
 done_offline_hint_nogms=Pas d’Internet : réglez le fuseau horaire plus tard dans les paramètres.
-@projector/strings.xml
+@common/strings.xml
 slot_home_apps=Lumen Home : Applis

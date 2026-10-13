@@ -2,14 +2,14 @@
 # strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
 # strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
 # Product names stay untranslated: Lumen Home, Android TV.
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=최근 앱
 recents_close=닫기
 recents_close_all=모두 닫기
 recents_empty=열려 있는 앱 없음
 recents_now=방금
 
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=홈 화면
 launcher_lumen=Lumen Home
 launcher_classic=Android TV(클래식)
@@ -19,6 +19,6 @@ launcher_confirm_lumen=Lumen Home이 켜지고 클래식 홈 화면은 꺼집니
 launcher_switch_failed=홈 화면을 전환하지 못했습니다
 search_unavailable=검색을 사용할 수 없습니다
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_menu_sleep=절전
 power_sleep_summary=전원 버튼, 절전 타이머, 무입력 시간이 지나면 광원이 꺼지고 프로젝터가 절전 상태가 됩니다. 전원 버튼을 누르면 몇 초 만에 멈춘 곳에서 다시 시작합니다.

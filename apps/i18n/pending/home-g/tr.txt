@@ -1,0 +1,7 @@
+# Lumen Home (Inputs device states): NEW strings for the merge into
+# langs/tr.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+input_on=Açık
+input_asleep=Uyku modunda
+input_no_signal=Sinyal yok
+input_wake_hint=Açmak için OK’e basın

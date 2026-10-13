@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simplified Chinese translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">重新连接遥控器</string>
+    <string name="remote_lost_text">同时按住返回键和主页键 3 秒，直到指示灯闪烁。</string>
+    <string name="remote_lost_found">已找到 %1$s</string>
+    <string name="remote_lost_battery">没有反应？请检查遥控器的电池。</string>
+    <string name="remote_lost_dismiss">以后再说</string>
+    <string name="remote_lost_wake">请按遥控器上的任意键</string>
+</resources>

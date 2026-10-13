@@ -17,5 +17,5 @@ blk_channel=Bu güncelleme başka bir Lumen OS sürümü için (%1$s).
 @setup/strings.xml
 lang_more_hint_nogms=Ayarlar bu dili kullanır. Çevirisi olmayan Lumen uygulamaları İngilizce kalır.
 done_offline_hint_nogms=İnternet yok: saat dilimini daha sonra Ayarlar’dan seçin.
-@projector/strings.xml
+@common/strings.xml
 slot_home_apps=Lumen Home: Uygulamalar

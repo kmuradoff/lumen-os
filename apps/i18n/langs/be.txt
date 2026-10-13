@@ -1,5 +1,5 @@
 # Belarusian (official orthography). Terms parallel the Russian/Ukrainian ones.
-@projector/strings.xml
+@common/strings.xml
 app_name=Праектар
 version_line=Версія %1$s
 sec_focus=Фокус
@@ -74,7 +74,7 @@ ak_curtain_interrupt=Выраўноўванне па экране перарва
 ak_wall_color_on=Выключыце адаптацыю да колеру сцяны перад аўтавыраўноўваннем
 ak_cali_point_error=Не ўдалося адкалібраваць: змяніце адлегласць або праверце, ці не закрыта камера
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=Хуткія налады
 panel_sec_image_correction=Карэкцыя відарыса
 panel_sec_picture=Відарыс
@@ -234,7 +234,7 @@ panel_3d_summary=Падчас відэа. Для 3D патрэбныя акты�
 panel_3d_need_video=3D працуе падчас відэа: спачатку ўключыце яго
 panel_3d_not_now=3D зараз недаступнае (HDR-відэа, гульнявы рэжым або 120 Гц)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d хв
 power_quick_wake_hours=%1$d гадз
 power_standby_now=Адразу
@@ -258,9 +258,9 @@ power_timer_warn=Выключэнне праз 1 хвіліну
 power_timer_warn_desc=Утрымлівайце кнопку сілкавання, каб змяніць таймер
 power_action_failed=Не атрымалася. Паспрабуйце яшчэ раз.
 power_menu_sleep=Сон
-power_sleep_summary=Кнопка сілкавання, таймер сну і бяздзейнасць гасяць святло і пераводзяць праектар у сон. Націсніце кнопку сілкавання — ён прачнецца за некалькі секунд там, дзе вы спыніліся.
+power_sleep_summary=Кнопка сілкавання, таймер сну і бяздзейнасць гасяць святло і пераводзяць праектар у сон. Націсніце кнопку сілкавання, і ён прачнецца за некалькі секунд там, дзе вы спыніліся.
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=Пульт падключаны
 remote_pairing=Падключэнне пульта…
 remote_pair_searching=Пошук пульта…
@@ -271,7 +271,7 @@ remote_pair_failed=Не ўдалося падключыць пульт
 remote_bt_off=Bluetooth выключаны
 remote_pair_action=Падключыць пульт
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=Крыніца сігналу
 source_home=Галоўны экран
 source_hdmi=HDMI %1$d
@@ -292,15 +292,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=Падключэнне…
 status_no_signal=Няма сігналу
-status_no_cable=Няма сігналу: кабель не падключаны
-status_disconnected=Крыніца адключана
-status_disconnected_home=Крыніца адключана. Вяртанне на галоўны экран…
+status_device_disconnected=Прылада не падключана
+status_returning_home=Вяртанне на галоўны экран…
 status_failed=Не ўдалося адкрыць HDMI
 status_busy=Уваход HDMI заняты іншай праграмай
 status_bad_input=Невядомы ўваход HDMI
 state_connected=падключана
 state_standby=у рэжыме чакання
 state_disconnected=не падключана
+state_asleep=%1$s у рэжыме сну
+state_asleep_device=Прылада ў рэжыме сну
+state_press_ok_wake=Націсніце OK, каб уключыць
+state_waking=Уключэнне…
 picker_title=Крыніца сігналу
 picker_home=Галоўны экран
 picker_settings=Налады HDMI
@@ -363,8 +366,8 @@ eq_preset_voice=Голас
 eq_preset_night=Ноч
 eq_preset_custom=Свой
 eq_db=дБ
-eq_hint_select=◀ ▶ паласа · OK — наладзіць
-eq_hint_adjust=▲ ▼ змяніць · OK — гатова
+eq_hint_select=◀ ▶ паласа · OK наладзіць
+eq_hint_adjust=▲ ▼ змяніць · OK гатова
 eq_reset=Скінуць эквалайзер
 eq_reset_done=Эквалайзер скінуты на «Роўны»
 eq_limit=Мяжа: агульны ўздым абмежаваны +6 дБ
@@ -455,7 +458,7 @@ feature_cast_title=Трансляцыя з тэлефона
 feature_cast_desc=Chromecast built-in і AirPlay: відэа, музыка і экран з тэлефона, планшэта ці ноўтбука.
 feature_picture_title=Ідэальная карцінка
 feature_picture_desc=Аўтафокус і карэкцыя трапецыі выраўнуюць і зробяць выразным відарыс, дзе б ні стаяў праектар.
-feature_customize_title=Вашы праграмы — па-вашаму
+feature_customize_title=Праграмы на ваш густ
 feature_customize_desc=Выберыце любімыя праграмы, схавайце непатрэбныя рады і вырашыце, што паказваць на галоўным экране.
 apps_favorites=Абранае
 apps_all=Усе праграмы
@@ -512,7 +515,7 @@ units_c=Цэльсій (°C)
 units_f=Фарэнгейт (°F)
 weather_turn_off=Адключыць надвор’е
 weather_show=Паказваць надвор’е
-weather_privacy=Месцазнаходжанне вызначаецца па IP-адрасе. Перадаецца толькі месцазнаходжанне, ніякіх даных пра вас. VPN можа яго змяніць — тады выберыце горад уручную.
+weather_privacy=Месцазнаходжанне вызначаецца па IP-адрасе. Перадаецца толькі месцазнаходжанне, ніякіх даных пра вас. Калі VPN яго зменіць, выберыце горад уручную.
 weather_attribution=Даныя пра надвор’е: Open-Meteo.com (CC BY 4.0)
 search_hint=Пошук праграм, фільмаў, серыялаў…
 search_apps=Праграмы
@@ -525,7 +528,7 @@ search_no_results=Нічога не знойдзена. Паспрабуйце �
 voice_search=Галасавы пошук
 voice_listening=Слухаю…
 voice_nothing_heard=Не пачуў. Утрымлівайце кнопку мікрафона і гаварыце.
-voice_unavailable=Галасавы пошук недаступны — увядзіце тэкст
+voice_unavailable=Галасавы пошук недаступны. Увядзіце тэкст.
 voice_unavailable_hint=Увядзіце запыт. Галасавы пошук нядаўна быў недаступны.
 cz_subtitle=Выберыце, што паказваць на галоўным экране
 cz_rows=Рады
@@ -594,6 +597,13 @@ usb_done=%1$s усталявана
 usb_failed=%1$s не ўсталявана: %2$s
 kb_no_store=Усталюйце праграму-клавіятуру з USB-назапашвальніка: Праграмы > Усталяваць з USB.
 voice_none=Для галасавога пошуку патрэбна праграма распазнавання маўлення. Увядзіце запыт уручную.
+battery_level=Батарэя %1$s
+battery_charging=Батарэя %1$s, зараджаецца
+battery_plugged=Батарэя %1$s, блок сілкавання падключаны
+input_on=Уключана
+input_asleep=Спіць
+input_no_signal=Няма сігналу
+input_wake_hint=Націсніце OK, каб уключыць
 @updater/strings.xml
 app_name=Абнаўленне Lumen OS
 settings_title=Абнаўленне Lumen OS
@@ -692,7 +702,7 @@ why_confirm=сістэме не ўдалося пацвердзіць, што н
 why_no_rollback=вярнуцца да папярэдняй версіі было немагчыма
 why_unknown=падрабязнасці не запісаны
 blk_channel=Гэтае абнаўленне для іншай рэдакцыі Lumen OS (%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=Нядаўнія праграмы
 recents_close=Закрыць
 recents_close_all=Закрыць усе
@@ -700,13 +710,13 @@ recents_empty=Няма адкрытых праграм
 recents_now=зараз
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Галоўны экран
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (класічны)
 launcher_switch=Пераключыць
-launcher_confirm_classic=Будзе ўключаны класічны галоўны экран Android TV, а Lumen Home — выключаны. Вярнуцца можна тут у любы момант.
-launcher_confirm_lumen=Будзе ўключаны Lumen Home, а класічны галоўны экран — выключаны. Вярнуцца можна тут у любы момант.
+launcher_confirm_classic=Уключыцца класічны галоўны экран Android TV, а Lumen Home выключыцца. Вярнуцца можна тут у любы момант.
+launcher_confirm_lumen=Уключыцца Lumen Home, а класічны галоўны экран выключыцца. Вярнуцца можна тут у любы момант.
 launcher_switch_failed=Не ўдалося змяніць галоўны экран
 search_unavailable=Пошук недаступны
 

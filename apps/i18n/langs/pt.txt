@@ -1,5 +1,5 @@
 # Portuguese (Brazilian wording); written to both values-pt and values-pt-rBR (identical).
-@projector/strings.xml
+@common/strings.xml
 app_name=Projetor
 version_line=Versão %1$s
 sec_focus=Foco
@@ -74,7 +74,7 @@ ak_curtain_interrupt=Alinhamento com a tela interrompido
 ak_wall_color_on=Desative a adaptação à cor da parede antes do ajuste automático da imagem
 ak_cali_point_error=Falha na calibração. Ajuste a distância ou verifique se a câmera está obstruída
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=Configurações rápidas
 panel_sec_image_correction=Correção de imagem
 panel_sec_picture=Imagem
@@ -228,11 +228,11 @@ panel_3d_sbs=Lado a lado
 panel_3d_tb=Cima e baixo
 panel_3d_sbs_2d=Lado a lado como 2D
 panel_3d_tb_2d=Cima e baixo como 2D
-panel_3d_summary=Durante um vídeo. O 3D precisa de óculos ativos DLP-Link; «como 2D» mostra um ficheiro 3D plano, sem óculos.
+panel_3d_summary=Durante um vídeo. O 3D precisa de óculos ativos DLP-Link; “como 2D” mostra um arquivo 3D plano, sem óculos.
 panel_3d_need_video=O 3D funciona durante um vídeo: inicie-o primeiro
 panel_3d_not_now=O 3D não está disponível agora (vídeo HDR, modo de jogo ou 120 Hz)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d min
 power_quick_wake_hours=%1$d h
 power_standby_now=Imediatamente
@@ -258,7 +258,7 @@ power_action_failed=Não foi possível. Tente de novo.
 power_menu_sleep=Suspender
 power_sleep_summary=O botão liga/desliga, o timer e a inatividade apagam a luz e colocam o projetor em suspensão. Aperte liga/desliga e ele volta em segundos, exatamente de onde parou.
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=Controle remoto conectado
 remote_pairing=Pareando o controle remoto…
 remote_pair_searching=Procurando o controle remoto…
@@ -269,7 +269,7 @@ remote_pair_failed=Não foi possível parear o controle remoto
 remote_bt_off=O Bluetooth está desativado
 remote_pair_action=Parear controle remoto
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=Entrada
 source_home=Tela inicial
 source_hdmi=HDMI %1$d
@@ -290,15 +290,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=Conectando…
 status_no_signal=Sem sinal
-status_no_cable=Sem sinal: cabo não conectado
-status_disconnected=Fonte desconectada
-status_disconnected_home=Fonte desconectada. Voltando para a tela inicial…
+status_device_disconnected=Dispositivo não conectado
+status_returning_home=Voltando para a tela inicial…
 status_failed=Não é possível abrir o HDMI
 status_busy=A entrada HDMI está em uso por outro app
 status_bad_input=Entrada HDMI desconhecida
 state_connected=conectado
 state_standby=em espera
 state_disconnected=desconectado
+state_asleep=%1$s está em repouso
+state_asleep_device=O dispositivo está em repouso
+state_press_ok_wake=Pressione OK para ligar
+state_waking=Ligando…
 picker_title=Entrada
 picker_home=Tela inicial
 picker_settings=Configurações de HDMI
@@ -523,7 +526,7 @@ search_no_results=Nada encontrado. Tente outra palavra ou pesquise em um app aba
 voice_search=Pesquisa por voz
 voice_listening=Ouvindo…
 voice_nothing_heard=Não entendi. Segure o botão do microfone e fale.
-voice_unavailable=Pesquisa por voz indisponível — digite
+voice_unavailable=Pesquisa por voz indisponível. Digite a pesquisa.
 voice_unavailable_hint=Digite sua pesquisa. A pesquisa por voz esteve indisponível há pouco.
 cz_subtitle=Escolha o que a tela inicial mostra
 cz_rows=Fileiras
@@ -592,6 +595,13 @@ usb_done=%1$s foi instalado
 usb_failed=%1$s não foi instalado: %2$s
 kb_no_store=Instale um app de teclado a partir de um pendrive: Apps > Instalar por USB.
 voice_none=A pesquisa por voz precisa de um app de reconhecimento de fala. Digite a pesquisa.
+battery_level=Bateria %1$s
+battery_charging=Bateria %1$s, carregando
+battery_plugged=Bateria %1$s, adaptador de energia conectado
+input_on=Ligado
+input_asleep=Em repouso
+input_no_signal=Sem sinal
+input_wake_hint=Pressione OK para ligar
 @updater/strings.xml
 app_name=Atualização do Lumen OS
 settings_title=Atualização do Lumen OS
@@ -689,7 +699,7 @@ why_confirm=o sistema não conseguiu confirmar que a nova versão funciona
 why_no_rollback=não foi possível voltar à versão anterior
 why_unknown=nenhum detalhe foi registrado
 blk_channel=Esta atualização é para outra edição do Lumen OS (%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=Apps recentes
 recents_close=Fechar
 recents_close_all=Fechar tudo
@@ -697,7 +707,7 @@ recents_empty=Nenhum app aberto
 recents_now=agora
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Tela inicial
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (clássica)

@@ -1,5 +1,5 @@
 # French. gen.py inserts no-break spaces before : ; ! ? and inside « ».
-@projector/strings.xml
+@common/strings.xml
 app_name=Projecteur
 version_line=Version %1$s
 sec_focus=Mise au point
@@ -74,7 +74,7 @@ ak_curtain_interrupt=Alignement sur l'écran interrompu
 ak_wall_color_on=Désactivez l'adaptation à la couleur du mur avant l'ajustement automatique de l'image
 ak_cali_point_error=Échec du calibrage, modifiez la distance ou vérifiez que la caméra n'est pas masquée
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=Réglages rapides
 panel_sec_image_correction=Correction de l'image
 panel_sec_picture=Image
@@ -232,7 +232,7 @@ panel_3d_summary=Pendant une vidéo. La 3D demande des lunettes actives DLP-Link
 panel_3d_need_video=La 3D fonctionne pendant une vidéo : lancez-la d’abord
 panel_3d_not_now=La 3D n’est pas disponible maintenant (vidéo HDR, mode jeu ou 120 Hz)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d min
 power_quick_wake_hours=%1$d h
 power_standby_now=Immédiatement
@@ -258,7 +258,7 @@ power_action_failed=Échec. Veuillez réessayer.
 power_menu_sleep=Veille
 power_sleep_summary=Le bouton marche, la minuterie de veille et l'inactivité éteignent la lumière et mettent le projecteur en veille. Un appui sur marche le réveille en quelques secondes, là où vous en étiez.
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=Télécommande connectée
 remote_pairing=Association de la télécommande…
 remote_pair_searching=Recherche de la télécommande…
@@ -269,7 +269,7 @@ remote_pair_failed=Impossible d'associer la télécommande
 remote_bt_off=Le Bluetooth est désactivé
 remote_pair_action=Associer la télécommande
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=Entrée
 source_home=Écran d'accueil
 source_hdmi=HDMI %1$d
@@ -290,15 +290,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=Connexion…
 status_no_signal=Aucun signal
-status_no_cable=Aucun signal : câble non branché
-status_disconnected=Source déconnectée
-status_disconnected_home=Source déconnectée. Retour à l'écran d'accueil…
+status_device_disconnected=Appareil non connecté
+status_returning_home=Retour à l'écran d'accueil…
 status_failed=Impossible d'ouvrir l'entrée HDMI
 status_busy=L'entrée HDMI est utilisée par une autre application
 status_bad_input=Entrée HDMI inconnue
 state_connected=connecté
 state_standby=en veille
 state_disconnected=non connecté
+state_asleep=%1$s est en veille
+state_asleep_device=L'appareil est en veille
+state_press_ok_wake=Appuyez sur OK pour l'allumer
+state_waking=Allumage…
 picker_title=Entrée
 picker_home=Écran d'accueil
 picker_settings=Paramètres HDMI
@@ -523,7 +526,7 @@ search_no_results=Aucun résultat. Essayez un autre mot ou cherchez dans une app
 voice_search=Recherche vocale
 voice_listening=J’écoute…
 voice_nothing_heard=Je n’ai pas compris. Maintenez le bouton du micro et parlez.
-voice_unavailable=Recherche vocale indisponible — tapez plutôt
+voice_unavailable=Recherche vocale indisponible. Tapez votre recherche.
 voice_unavailable_hint=Tapez votre recherche. La recherche vocale était indisponible récemment.
 cz_subtitle=Choisissez ce qu’affiche l’accueil
 cz_rows=Rangées
@@ -592,6 +595,13 @@ usb_done=%1$s est installé
 usb_failed=%1$s n’a pas été installé : %2$s
 kb_no_store=Installez une appli de clavier depuis une clé USB : Applis > Installer depuis une clé USB.
 voice_none=La recherche vocale nécessite une appli de reconnaissance vocale. Tapez plutôt votre recherche.
+battery_level=Batterie %1$s
+battery_charging=Batterie %1$s, en charge
+battery_plugged=Batterie %1$s, adaptateur secteur branché
+input_on=Allumé
+input_asleep=En veille
+input_no_signal=Aucun signal
+input_wake_hint=Appuyez sur OK pour l’allumer
 @updater/strings.xml
 app_name=Mise à jour Lumen OS
 settings_title=Mise à jour Lumen OS
@@ -689,7 +699,7 @@ why_confirm=le système n’a pas pu confirmer que la nouvelle version fonctionn
 why_no_rollback=le retour à la version précédente n’était pas possible
 why_unknown=aucun détail n’a été enregistré
 blk_channel=Cette mise à jour est destinée à une autre édition de Lumen OS (%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=Applications récentes
 recents_close=Fermer
 recents_close_all=Tout fermer
@@ -697,7 +707,7 @@ recents_empty=Aucune application ouverte
 recents_now=maintenant
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Écran d'accueil
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (classique)

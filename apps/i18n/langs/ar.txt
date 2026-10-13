@@ -1,7 +1,7 @@
 # Arabic (MSA). org.z9x.projector is supportsRtl=false: arrows → ← and ◀ ▶ name physical D-pad keys
 # and stay as they are; only the breadcrumb in toast_curtain_offer uses ← (reading direction).
 # Plurals: one/two use the idiomatic forms without the number (gen.py allows that for ar only).
-@projector/strings.xml
+@common/strings.xml
 app_name=جهاز العرض
 version_line=الإصدار %1$s
 sec_focus=التركيز
@@ -76,7 +76,7 @@ ak_curtain_interrupt=تمت مقاطعة المحاذاة مع الشاشة
 ak_wall_color_on=أوقف مواءمة لون الجدار قبل الضبط التلقائي للصورة
 ak_cali_point_error=تعذّرت المعايرة، يُرجى تعديل مسافة العرض أو التحقق من أن الكاميرا غير محجوبة
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=الإعدادات السريعة
 panel_sec_image_correction=تصحيح الصورة
 panel_sec_picture=الصورة
@@ -240,7 +240,7 @@ panel_3d_summary=أثناء تشغيل فيديو. يحتاج 3D إلى نظار
 panel_3d_need_video=يعمل 3D أثناء تشغيل فيديو: شغّله أولًا
 panel_3d_not_now=3D غير متاح الآن (فيديو HDR أو وضع الألعاب أو 120 هرتز)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d د
 power_quick_wake_hours=%1$d س
 power_standby_now=فورًا
@@ -266,7 +266,7 @@ power_action_failed=تعذّر ذلك. حاول مرة أخرى.
 power_menu_sleep=سكون
 power_sleep_summary=زر التشغيل ومؤقت النوم وفترة الخمول تطفئ الضوء وتضع جهاز العرض في وضع السكون. اضغط زر التشغيل ليستيقظ خلال ثوانٍ من حيث توقفت.
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=تم توصيل جهاز التحكم عن بُعد
 remote_pairing=جارٍ إقران جهاز التحكم عن بُعد…
 remote_pair_searching=جارٍ البحث عن جهاز التحكم عن بُعد…
@@ -277,7 +277,7 @@ remote_pair_failed=تعذّر إقران جهاز التحكم عن بُعد
 remote_bt_off=البلوتوث متوقف
 remote_pair_action=إقران جهاز التحكم عن بُعد
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=مصدر الإدخال
 source_home=الشاشة الرئيسية
 source_hdmi=HDMI %1$d
@@ -298,15 +298,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=جارٍ الاتصال…
 status_no_signal=لا توجد إشارة
-status_no_cable=لا توجد إشارة: الكابل غير موصول
-status_disconnected=تم فصل المصدر
-status_disconnected_home=تم فصل المصدر. جارٍ الرجوع إلى الشاشة الرئيسية…
+status_device_disconnected=الجهاز غير متصل
+status_returning_home=جارٍ العودة إلى الشاشة الرئيسية…
 status_failed=يتعذّر فتح HDMI
 status_busy=مدخل HDMI قيد الاستخدام بواسطة تطبيق آخر
 status_bad_input=مدخل HDMI غير معروف
 state_connected=متصل
 state_standby=في وضع الاستعداد
 state_disconnected=غير متصل
+state_asleep=%1$s في وضع السكون
+state_asleep_device=الجهاز في وضع السكون
+state_press_ok_wake=اضغط OK لتشغيله
+state_waking=جارٍ التشغيل…
 picker_title=مصدر الإدخال
 picker_home=الشاشة الرئيسية
 picker_settings=إعدادات HDMI
@@ -531,7 +534,7 @@ search_no_results=لم يُعثر على شيء. جرّب كلمة أخرى أو
 voice_search=البحث الصوتي
 voice_listening=جارٍ الاستماع…
 voice_nothing_heard=لم أفهم. اضغط مطولاً على زر الميكروفون وتحدّث.
-voice_unavailable=البحث الصوتي غير متاح — اكتب بدلاً من ذلك
+voice_unavailable=البحث الصوتي غير متاح. اكتب بدلاً من ذلك.
 voice_unavailable_hint=اكتب بحثك. كان البحث الصوتي غير متاح مؤخرًا.
 cz_subtitle=اختر ما تعرضه الشاشة الرئيسية
 cz_rows=الصفوف
@@ -600,6 +603,13 @@ usb_done=تم تثبيت %1$s
 usb_failed=لم يتم تثبيت %1$s: %2$s
 kb_no_store=ثبّت تطبيق لوحة مفاتيح من ذاكرة USB: التطبيقات > التثبيت من USB.
 voice_none=يحتاج البحث الصوتي إلى تطبيق للتعرّف على الكلام. اكتب بحثك بدلاً من ذلك.
+battery_level=البطارية %1$s
+battery_charging=البطارية %1$s، قيد الشحن
+battery_plugged=البطارية %1$s، محوّل الطاقة موصول
+input_on=قيد التشغيل
+input_asleep=في وضع السكون
+input_no_signal=لا توجد إشارة
+input_wake_hint=اضغط OK للتشغيل
 @updater/strings.xml
 app_name=تحديث Lumen OS
 settings_title=تحديث Lumen OS
@@ -700,7 +710,7 @@ why_confirm=لم يتمكن النظام من التأكد من أن الإصد�
 why_no_rollback=لم تكن العودة إلى الإصدار السابق ممكنة
 why_unknown=لم تُسجَّل أي تفاصيل
 blk_channel=هذا التحديث مخصص لإصدار آخر من Lumen OS ‏(%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=التطبيقات الأخيرة
 recents_close=إغلاق
 recents_close_all=إغلاق الكل
@@ -708,7 +718,7 @@ recents_empty=لا توجد تطبيقات مفتوحة
 recents_now=الآن
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=الشاشة الرئيسية
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (الكلاسيكية)

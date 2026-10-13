@@ -17,5 +17,5 @@ blk_channel=Гэтае абнаўленне для іншай рэдакцыі L
 @setup/strings.xml
 lang_more_hint_nogms=Гэтую мову будуць выкарыстоўваць налады. Праграмы Lumen без перакладу застануцца на англійскай.
 done_offline_hint_nogms=Няма інтэрнэту: выбраць часавы пояс можна пазней у наладах.
-@projector/strings.xml
+@common/strings.xml
 slot_home_apps=Lumen Home: праграмы

@@ -152,7 +152,7 @@ def main():
                 ru_xml = os.path.join(gen.RES[sec[0]], "values-ru", sec[1])
                 if loc == "ru" and not in_langs and os.path.exists(ru_xml) and \
                         os.path.exists(os.path.join(gen.RES[sec[0]], "values", sec[1])) and \
-                        sec[0] in ("projector", "tvinput", "airplay"):
+                        sec[0] in ("projector", "common", "tvinput", "airplay"):
                     if ru_xml in out:
                         errs.append(f"{ru_xml}: touched twice; merge by hand")
                         continue

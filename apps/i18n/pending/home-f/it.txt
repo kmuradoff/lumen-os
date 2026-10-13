@@ -1,0 +1,6 @@
+# Lumen Home (header battery mark): NEW strings for the merge into
+# langs/it.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+battery_level=Batteria %1$s
+battery_charging=Batteria %1$s, in carica
+battery_plugged=Batteria %1$s, alimentatore collegato

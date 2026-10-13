@@ -1,0 +1,6 @@
+# Lumen Home (header battery mark): NEW strings for the merge into
+# langs/zh-rTW.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+battery_level=電池電量 %1$s
+battery_charging=電池電量 %1$s，充電中
+battery_plugged=電池電量 %1$s，已接上電源變壓器

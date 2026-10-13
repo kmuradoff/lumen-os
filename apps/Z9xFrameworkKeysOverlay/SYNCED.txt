@@ -1,0 +1,1 @@
+Synced copies, never edit them here: res/xml/global_keys.xml and res/layout/shutdown_dialog.xml. Edit apps/common/overlay and run `sh apps/common/sync.sh APP_DIR keys` for every framework key overlay.

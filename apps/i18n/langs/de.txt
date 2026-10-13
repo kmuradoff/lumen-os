@@ -1,5 +1,5 @@
 # German. Neutral infinitive style for instructions (no du/Sie), as common in German device UIs.
-@projector/strings.xml
+@common/strings.xml
 app_name=Projektor
 version_line=Version %1$s
 sec_focus=Fokus
@@ -74,7 +74,7 @@ ak_curtain_interrupt=Leinwandausrichtung abgebrochen
 ak_wall_color_on=Vor der automatischen Bildanpassung die Wandfarbanpassung ausschalten
 ak_cali_point_error=Kalibrierung fehlgeschlagen. Bitte den Abstand ändern oder prüfen, ob die Kamera verdeckt ist
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=Schnelleinstellungen
 panel_sec_image_correction=Bildkorrektur
 panel_sec_picture=Bild
@@ -230,7 +230,7 @@ panel_3d_summary=Während ein Video läuft. 3D braucht aktive DLP-Link-Brillen; 
 panel_3d_need_video=3D funktioniert, während ein Video läuft: zuerst das Video starten
 panel_3d_not_now=3D ist gerade nicht verfügbar (HDR-Video, Spielmodus oder 120 Hz)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d Min.
 power_quick_wake_hours=%1$d Std.
 power_standby_now=Sofort
@@ -256,7 +256,7 @@ power_action_failed=Das hat nicht geklappt. Bitte erneut versuchen.
 power_menu_sleep=Ruhemodus
 power_sleep_summary=Ein/Aus-Taste, Sleep-Timer und Inaktivität schalten das Licht aus und versetzen den Projektor in den Ruhemodus. Ein Druck auf Ein/Aus weckt ihn in Sekunden, genau dort, wo er aufgehört hat.
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=Fernbedienung verbunden
 remote_pairing=Fernbedienung wird gekoppelt…
 remote_pair_searching=Fernbedienung wird gesucht…
@@ -267,7 +267,7 @@ remote_pair_failed=Fernbedienung konnte nicht gekoppelt werden
 remote_bt_off=Bluetooth ist aus
 remote_pair_action=Fernbedienung koppeln
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=Eingang
 source_home=Startbildschirm
 source_hdmi=HDMI %1$d
@@ -288,15 +288,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=Verbindung wird hergestellt…
 status_no_signal=Kein Signal
-status_no_cable=Kein Signal: Kabel nicht angeschlossen
-status_disconnected=Quelle getrennt
-status_disconnected_home=Quelle getrennt. Zurück zum Startbildschirm…
+status_device_disconnected=Gerät nicht verbunden
+status_returning_home=Zurück zum Startbildschirm…
 status_failed=HDMI kann nicht geöffnet werden
 status_busy=Der HDMI-Eingang wird von einer anderen App verwendet
 status_bad_input=Unbekannter HDMI-Eingang
 state_connected=verbunden
 state_standby=Standby
 state_disconnected=nicht verbunden
+state_asleep=%1$s ist im Ruhemodus
+state_asleep_device=Das Gerät ist im Ruhemodus
+state_press_ok_wake=Zum Einschalten OK drücken
+state_waking=Wird eingeschaltet…
 picker_title=Eingang
 picker_home=Startbildschirm
 picker_settings=HDMI-Einstellungen
@@ -590,6 +593,13 @@ usb_done=%1$s ist installiert
 usb_failed=%1$s wurde nicht installiert: %2$s
 kb_no_store=Installiere eine Tastatur-App von einem USB-Stick: Apps > Von USB installieren.
 voice_none=Die Sprachsuche braucht eine Spracherkennungs-App. Bitte tippe deine Suche.
+battery_level=Akku %1$s
+battery_charging=Akku %1$s, wird geladen
+battery_plugged=Akku %1$s, Netzteil angeschlossen
+input_on=Eingeschaltet
+input_asleep=Im Ruhemodus
+input_no_signal=Kein Signal
+input_wake_hint=Zum Einschalten OK drücken
 @updater/strings.xml
 app_name=Lumen OS-Update
 settings_title=Lumen OS-Update
@@ -686,7 +696,7 @@ why_confirm=das System konnte nicht bestätigen, dass die neue Version funktioni
 why_no_rollback=die Rückkehr zur vorherigen Version war nicht möglich
 why_unknown=es wurden keine Details aufgezeichnet
 blk_channel=Dieses Update ist für eine andere Lumen OS-Edition (%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=Zuletzt verwendete Apps
 recents_close=Schließen
 recents_close_all=Alle schließen
@@ -694,7 +704,7 @@ recents_empty=Keine geöffneten Apps
 recents_now=jetzt
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Startbildschirm
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (klassisch)

@@ -1,0 +1,6 @@
+# Lumen Home (header battery mark): NEW strings for the merge into
+# langs/tr.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+battery_level=Pil %1$s
+battery_charging=Pil %1$s, şarj oluyor
+battery_plugged=Pil %1$s, güç adaptörü takılı

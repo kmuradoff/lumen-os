@@ -1,0 +1,7 @@
+# Lumen Home (Inputs device states): NEW strings for the merge into
+# langs/ru.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+input_on=Включено
+input_asleep=Спит
+input_no_signal=Нет сигнала
+input_wake_hint=Нажмите OK, чтобы включить

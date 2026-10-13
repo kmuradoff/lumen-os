@@ -1,5 +1,5 @@
 # Italian.
-@projector/strings.xml
+@common/strings.xml
 app_name=Proiettore
 version_line=Versione %1$s
 sec_focus=Messa a fuoco
@@ -74,7 +74,7 @@ ak_curtain_interrupt=Allineamento allo schermo interrotto
 ak_wall_color_on=Disattiva l'adattamento al colore della parete prima della regolazione automatica dell'immagine
 ak_cali_point_error=Calibrazione non riuscita, modifica la distanza o controlla che la fotocamera non sia coperta
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=Impostazioni rapide
 panel_sec_image_correction=Correzione immagine
 panel_sec_picture=Immagine
@@ -232,7 +232,7 @@ panel_3d_summary=Durante un video. Il 3D richiede occhiali attivi DLP-Link; «co
 panel_3d_need_video=Il 3D funziona durante un video: avvialo prima
 panel_3d_not_now=Il 3D non è disponibile ora (video HDR, modalità gioco o 120 Hz)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d min
 power_quick_wake_hours=%1$d h
 power_standby_now=Subito
@@ -258,7 +258,7 @@ power_action_failed=Operazione non riuscita. Riprova.
 power_menu_sleep=Sospensione
 power_sleep_summary=Il tasto di accensione, il timer di spegnimento e l'inattività spengono la luce e sospendono il proiettore. Premi accensione: si riattiva in pochi secondi, esattamente dove eri rimasto.
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=Telecomando connesso
 remote_pairing=Associazione del telecomando…
 remote_pair_searching=Ricerca del telecomando…
@@ -269,7 +269,7 @@ remote_pair_failed=Impossibile associare il telecomando
 remote_bt_off=Il Bluetooth è disattivato
 remote_pair_action=Associa telecomando
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=Ingresso
 source_home=Schermata Home
 source_hdmi=HDMI %1$d
@@ -290,15 +290,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=Connessione…
 status_no_signal=Nessun segnale
-status_no_cable=Nessun segnale: cavo non collegato
-status_disconnected=Sorgente scollegata
-status_disconnected_home=Sorgente scollegata. Ritorno alla schermata Home…
+status_device_disconnected=Dispositivo non connesso
+status_returning_home=Ritorno alla schermata Home…
 status_failed=Impossibile aprire HDMI
 status_busy=L'ingresso HDMI è in uso da un'altra app
 status_bad_input=Ingresso HDMI sconosciuto
 state_connected=connesso
 state_standby=in standby
 state_disconnected=non connesso
+state_asleep=%1$s è in standby
+state_asleep_device=Il dispositivo è in standby
+state_press_ok_wake=Premi OK per accenderlo
+state_waking=Accensione…
 picker_title=Ingresso
 picker_home=Schermata Home
 picker_settings=Impostazioni HDMI
@@ -592,6 +595,13 @@ usb_done=%1$s è installata
 usb_failed=%1$s non è stata installata: %2$s
 kb_no_store=Installa un’app tastiera da una chiavetta USB: App > Installa da USB.
 voice_none=La ricerca vocale richiede un’app di riconoscimento vocale. Digita la ricerca.
+battery_level=Batteria %1$s
+battery_charging=Batteria %1$s, in carica
+battery_plugged=Batteria %1$s, alimentatore collegato
+input_on=Acceso
+input_asleep=In riposo
+input_no_signal=Nessun segnale
+input_wake_hint=Premi OK per accenderlo
 @updater/strings.xml
 app_name=Aggiornamento Lumen OS
 settings_title=Aggiornamento Lumen OS
@@ -689,7 +699,7 @@ why_confirm=il sistema non ha potuto confermare che la nuova versione funziona
 why_no_rollback=non è stato possibile tornare alla versione precedente
 why_unknown=non è stato registrato alcun dettaglio
 blk_channel=Questo aggiornamento è per un’altra edizione di Lumen OS (%1$s).
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=App recenti
 recents_close=Chiudi
 recents_close_all=Chiudi tutto
@@ -697,7 +707,7 @@ recents_empty=Nessuna app aperta
 recents_now=ora
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=Schermata Home
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (classica)

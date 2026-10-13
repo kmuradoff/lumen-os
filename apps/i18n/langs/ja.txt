@@ -1,5 +1,5 @@
 # Japanese (projector terms: 台形補正, 投写, 天吊り, 入力切替).
-@projector/strings.xml
+@common/strings.xml
 app_name=プロジェクター
 version_line=バージョン %1$s
 sec_focus=フォーカス
@@ -74,7 +74,7 @@ ak_curtain_interrupt=スクリーンの位置合わせが中断されました
 ak_wall_color_on=自動映像調整の前に壁色補正をオフにしてください
 ak_cali_point_error=キャリブレーションに失敗しました。投写距離を調整するか、カメラが覆われていないか確認してください
 
-@projector/strings_panel.xml
+@common/strings_panel.xml
 panel_title=クイック設定
 panel_sec_image_correction=映像補正
 panel_sec_picture=映像
@@ -228,7 +228,7 @@ panel_3d_summary=動画の再生中に使えます。3DにはDLP-Link対応の�
 panel_3d_need_video=3Dは動画の再生中に使えます。先に動画を再生してください
 panel_3d_not_now=現在3Dは使えません(HDR動画、ゲームモード、120 Hz)
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_quick_wake_minutes=%1$d 分
 power_quick_wake_hours=%1$d 時間
 power_standby_now=すぐに
@@ -254,7 +254,7 @@ power_action_failed=失敗しました。もう一度お試しください。
 power_menu_sleep=スリープ
 power_sleep_summary=電源ボタン、スリープタイマー、無操作時間で光源が消え、プロジェクターはスリープします。電源ボタンを押すと数秒で、止めたところから再開します。
 
-@projector/strings_remote.xml
+@common/strings_remote.xml
 remote_connected=リモコンが接続されました
 remote_pairing=リモコンをペア設定しています…
 remote_pair_searching=リモコンを探しています…
@@ -265,7 +265,7 @@ remote_pair_failed=リモコンをペア設定できませんでした
 remote_bt_off=Bluetooth がオフです
 remote_pair_action=リモコンをペア設定
 
-@projector/strings_source.xml
+@common/strings_source.xml
 source_title=入力切替
 source_home=ホーム画面
 source_hdmi=HDMI %1$d
@@ -286,15 +286,18 @@ input_label=HDMI %1$d
 input_label_arc=HDMI %1$d (ARC)
 status_connecting=接続しています…
 status_no_signal=信号なし
-status_no_cable=信号なし：ケーブルが接続されていません
-status_disconnected=ソースが切断されました
-status_disconnected_home=ソースが切断されました。ホーム画面に戻ります…
+status_device_disconnected=デバイスが接続されていません
+status_returning_home=ホーム画面に戻ります…
 status_failed=HDMI を開けません
 status_busy=HDMI 入力は別のアプリで使用中です
 status_bad_input=不明な HDMI 入力
 state_connected=接続済み
 state_standby=スタンバイ
 state_disconnected=未接続
+state_asleep=%1$s はスリープ中です
+state_asleep_device=デバイスはスリープ中です
+state_press_ok_wake=OK を押すと電源が入ります
+state_waking=電源を入れています…
 picker_title=入力切替
 picker_home=ホーム画面
 picker_settings=HDMI 設定
@@ -588,6 +591,13 @@ usb_done=%1$s をインストールしました
 usb_failed=%1$s をインストールできませんでした: %2$s
 kb_no_store=キーボード アプリを USB メモリからインストールしてください: アプリ > USB からインストール。
 voice_none=音声検索には音声認識アプリが必要です。検索語を入力してください。
+battery_level=バッテリー %1$s
+battery_charging=バッテリー %1$s、充電中
+battery_plugged=バッテリー %1$s、電源アダプター接続中
+input_on=オン
+input_asleep=スリープ中
+input_no_signal=信号なし
+input_wake_hint=OK を押すと起動します
 @updater/strings.xml
 app_name=Lumen OS アップデート
 settings_title=Lumen OS アップデート
@@ -683,7 +693,7 @@ why_confirm=新しいバージョンが正常に動作していることをシ�
 why_no_rollback=以前のバージョンに戻すことはできませんでした
 why_unknown=詳細は記録されていません
 blk_channel=このアップデートは別の Lumen OS エディション（%1$s）向けです。
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=最近使用したアプリ
 recents_close=閉じる
 recents_close_all=すべて閉じる
@@ -691,7 +701,7 @@ recents_empty=開いているアプリはありません
 recents_now=たった今
 
 # Lumen OS 1.0: lane projector (merged in W2)
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=ホーム画面
 launcher_lumen=Lumen Home
 launcher_classic=Android TV（クラシック）

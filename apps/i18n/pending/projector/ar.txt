@@ -2,14 +2,14 @@
 # strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
 # strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
 # Product names stay untranslated: Lumen Home, Android TV.
-@projector/strings_recents.xml
+@common/strings_recents.xml
 recents_title=التطبيقات الأخيرة
 recents_close=إغلاق
 recents_close_all=إغلاق الكل
 recents_empty=لا توجد تطبيقات مفتوحة
 recents_now=الآن
 
-@projector/strings_home.xml
+@common/strings_home.xml
 launcher_row=الشاشة الرئيسية
 launcher_lumen=Lumen Home
 launcher_classic=Android TV (الكلاسيكية)
@@ -19,6 +19,6 @@ launcher_confirm_lumen=سيتم تشغيل Lumen Home وإيقاف الشاشة 
 launcher_switch_failed=تعذّر تبديل الشاشة الرئيسية
 search_unavailable=البحث غير متاح
 
-@projector/strings_power.xml
+@common/strings_power.xml
 power_menu_sleep=سكون
 power_sleep_summary=زر التشغيل ومؤقت النوم وفترة الخمول تطفئ الضوء وتضع جهاز العرض في وضع السكون. اضغط زر التشغيل ليستيقظ خلال ثوانٍ من حيث توقفت.

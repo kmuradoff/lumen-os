@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0 remote-lost prompt (remote.RemotePrompt): full screen, shown after the setup when the
+     paired XGIMI remote is unpaired, or did not connect within 60 s of turning on. English base;
+     translations in values-<lang>/strings_pair.xml (hand-written, checked by i18n/gen.py). The key names
+     are the ones of remote_pair_hint; the status lines reuse remote_pair_searching / remote_connected. -->
+<resources>
+    <string name="remote_lost_title">Reconnect your remote</string>
+    <string name="remote_lost_text">Hold Back and Home together for 3 seconds until the light blinks.</string>
+    <string name="remote_lost_found">Found %1$s</string>
+    <string name="remote_lost_battery">Nothing happens? Check the batteries in the remote.</string>
+    <string name="remote_lost_dismiss">Not now</string>
+    <!-- Status: a remote is still paired but not connected (asleep, or the 60 s rule); any key
+         wakes and reconnects it. Same text as Lumen Setup's remote_wake. -->
+    <string name="remote_lost_wake">Press any button on the remote</string>
+</resources>

@@ -17,5 +17,5 @@ blk_channel=このアップデートは別の Lumen OS エディション（%1$s
 @setup/strings.xml
 lang_more_hint_nogms=設定でこの言語が使われます。翻訳のない Lumen アプリは英語のままです。
 done_offline_hint_nogms=インターネットなし: タイムゾーンは後で設定から指定できます。
-@projector/strings.xml
+@common/strings.xml
 slot_home_apps=Lumen Home: アプリ
