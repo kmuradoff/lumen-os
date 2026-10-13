@@ -1,0 +1,87 @@
+# Lumen OS for the XGIMI Play 6, test builds (never a release): appended to system/product/etc/build.prop,
+# which init reads last, so these lines win over the base and the vendor (a later line of the same file
+# wins too). tools/play6/compose.sh adds ro.lumen.version=play6-<VARIANT> after them.
+ro.lumen.device=play6
+# First-boot diagnostics: the Play 6 has no USB device mode under Android, so adb listens on Wi-Fi
+# (port 5555) without the key prompt. A release build must not have these two lines.
+ro.adb.secure=0
+service.adb.tcp.port=5555
+# GPU driver name (t5 USB log: surfaceflinger and zygote aborted 232 times with "couldn't find an OpenGL ES
+# implementation"). The vendor ships /vendor/lib/egl/libGLES_mali.so; stock Android 11's loader found it
+# with a libGLES_*.so wildcard, Android 14 only tries libGLES_<ro.hardware.egl> and libGLES_<board>
+# (mt5889), so the name has to be set.
+ro.hardware.egl=mali
+
+# ---- identity (docs/play6/SETTINGS_PLAN.md 1.1 and step 13). t10 showed the base's "AOSP TV on ARM"
+# (ro.product.model is derived from ro.product.product.model when nobody sets it) and stock showed
+# "XGIMI TV"; the pinned Lumen apps fall back to Z9X names when nothing better is there. org.z9x.projector
+# copies this model into Settings.Global device_name once (empty or a Z9X name only).
+ro.product.model=XGIMI Play 6
+bluetooth.device.default_name=XGIMI Play 6
+# Bluetooth class of device as the Z9X image (tools/lumen_v1.sh): Audio/Video, video display and
+# loudspeaker. The base product build.prop says 90,2,12, the goldfish emulator's smartphone value.
+bluetooth.device.class_of_device=44,4,60
+# The base product build.prop says "emulator" (stock: tv). Check on the device that `wm density` stays 320.
+ro.build.characteristics=tv
+# First-boot language (t19, docs/play6/impl/setup-design.md section 8): the vendor sets ro.product.locale=zh-CN
+# (a China build), so wiped data, and with it Lumen Setup's first step and its preselected language, would start
+# in Chinese. English as on the Z9X image; the language the owner picks in the Setup is persist.sys.locale in
+# /data and wins from then on. The time zone has no default here (the vendor's Asia/Shanghai stays until the
+# Setup's IP lookup, or the owner in its Done step, sets one; a fixed default is an owner decision).
+ro.product.locale=en-US
+
+# ---- performance (docs/play6/inventory/D_play6_performance.md 6.1, plan section 4 items 7 and 8). The vendor
+# build.prop already sets ro.config.low_ram=true, the dalvik heap (8m/192m/512m, 0.75, 512k/2m), dex2oat
+# threads 4/4 and the lmkd PSI strategy; only the values below change.
+# background dexopt (idle + AC): one thread on the vendor's background CPU (cpuset background = 3)
+dalvik.vm.background-dex2oat-threads=1
+dalvik.vm.background-dex2oat-cpu-set=3
+# vendor debug logging below INFO dropped at the source (gmpf_main about 50 lines/s on t10), only D's six
+# tags. MCU_BUS, IOT_CTRL and FACTORY_ENV stay at their default: they are the only vendor traces of the
+# power state that test B19 needs. Re-enable one on a test build with: setprop log.tag.Motion_det_ctl D
+log.tag.Motion_det_ctl=I
+log.tag.GM_DISP_CTRL=I
+log.tag.GmTvManagerService=I
+log.tag.XGIMI_PERCEPTION_DEBUG=I
+log.tag.XlabControl=I
+log.tag.gralloc4=I
+
+# ---- Lumen Home on the Play 6 GPU (Mali-G52, one core at 504 MHz; every frame is also composed by the GPU):
+# docs/play6/research/performance.md 4, docs/play6/impl/t13-home.md, t14-home.md. Read by Lumen Home (Props.java)
+# from the t14 build on; an older Home ignores the new ones. The Z9X sets none of them, so Home draws there
+# exactly as 1.0.2. Test other values on a test build with: adb shell setprop debug.lumen.home.sky_fps N
+# (or .sky_scale, .sky_yield, .lite, .cec_names), then adb shell am force-stop org.z9x.home (debug.* wins over ro.*, gone
+# after a reboot).
+# the living sky at most 12 frames/s, its particles on a run clock (no jumps; t13's still sky 0 looked dead)
+ro.lumen.home.sky_fps=12
+# the sky in parts: static parts in one cached layer, clouds and fog at half resolution drawn enlarged, the
+# small particles crisp (about 11 ms of GPU per sky frame with clouds instead of about 25 ms)
+ro.lumen.home.sky_scale=0.5
+# the sky stops during keys, transitions and while the quick panel has the focus; back 1.5 s later, eased in
+ro.lumen.home.sky_yield=1
+# no starting-window background under the sky, GPU layers for the hero stage, layers for fades
+ro.lumen.home.lite=1
+# Inputs cards: a friendly name and mark for HDMI-CEC devices instead of the raw "Playback_1" (t15)
+ro.lumen.home.cec_names=1
+
+# ---- experiments, test builds only (D 6.1, plan section 4): every line below starts with '#expN ', so it is a
+# comment. tools/play6/compose.sh --exp[=N,...] removes that prefix for the chosen experiments only (--exp
+# alone = 1, 2, 3 and 5). EXP-2 and EXP-3 are overlay/play6/play6_perf.rc.
+# EXP-1 (D item 9): SurfaceFlinger skips the start-up shader priming: tests whether the 4.5 s WaitForDisplay
+# of t10 is SurfaceFlinger's main thread waiting for RenderEngine. Shaders then compile on first use.
+#exp1 service.sf.prime_shader_cache=0
+# EXP-4 (D item 12): Bluetooth profiles a projector does not need (the base enables the phone set). Only
+# after the remote and speaker tests (plan section 4), so never part of --exp alone: --exp=4 names it.
+#exp4 bluetooth.profile.hfp.ag.enabled=false
+#exp4 bluetooth.profile.map.server.enabled=false
+#exp4 bluetooth.profile.pbap.server.enabled=false
+#exp4 bluetooth.profile.opp.enabled=false
+#exp4 bluetooth.profile.pan.nap.enabled=false
+#exp4 bluetooth.profile.pan.panu.enabled=false
+#exp4 bluetooth.profile.hid.device.enabled=false
+#exp4 bluetooth.profile.mcp.server.enabled=false
+# EXP-5 (D item 6, test builds only until D 8 shows THRASHING or LOW_SWAP kills of wanted apps): lmkd at
+# the Z9X values (overlay/v1/product_prop_v1.txt) = the lmkd defaults for low-RAM devices. Without it the
+# vendor's 15 / 20 stay. All 5 kills on t10 were LOW_MEM with swap 100 % free, which neither line touches.
+#exp5 ro.lmk.swap_free_low_percentage=10
+#exp5 ro.lmk.thrashing_limit=30

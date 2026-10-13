@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS for the XGIMI Play 6 (G0058): always-on settings (install as /system/etc/init/play6_base.rc,
+# tools/play6/compose.sh). A fork of the Z9X's overlay/v1/z9x_base.rc with only its Bluetooth line
+# (docs/play6/SETTINGS_PLAN.md step 13; tools/play6/forks.tsv, check F). Left out on purpose:
+#  - the smart_ak_server stop rule: written for the G0082, where Perception_SmartAK is disabled; the Play 6
+#    vendor ships and uses /vendor/bin/smart_ak_server.
+#  - ro.audio.flinger_standbytime_ms 30000: tied to the Z9X lamp-off and STR.
+#  - sys.z9x.feat 1: it turns on Z9X-only code paths.
+# A further line comes here only after test A7 shows that it applies to the G0058.
+#
+# Only init builtins (setprop), no exec, no wait: nothing here can delay early-boot. Bluetooth reads the
+# privacy flag much later, when system_server enables the adapter.
+#  - bluetooth.core.gap.le.privacy.enabled=false: public address, so the XGIMI BLE remote (000d:3841, the
+#    same remote as the Z9X's) reconnects after a reboot without re-pairing.
+on early-boot
+    setprop bluetooth.core.gap.le.privacy.enabled false

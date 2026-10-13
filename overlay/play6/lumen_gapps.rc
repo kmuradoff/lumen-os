@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS on the XGIMI Play 6: the Google add-on (docs/play6/OTA_GMS_PLAN.md 3, owner decision D4). Google's
+# files live in their own logical partition lumen_gapps next to system in super, never in the system image, so
+# a Lumen update (system only) keeps them. Without that partition this does nothing (sys.lumen.gapps=none).
+# Before the package scan: overlay mounts at post-fs-data, the same moment as play6_compat.rc's bind mounts.
+on post-fs-data
+    exec_start lumen_gapps
+
+service lumen_gapps /system/bin/sh /system/etc/xgimi/lumen_gapps.sh
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS DIAG/test images only (never in a release image): a test build that never finishes booting
+# reboots itself into fastbootd, so the next image can be flashed over the cable without a stock restore.
+# See /system/etc/xgimi/lumen_escape.sh. Domain u:r:su:s0 exists only on userdebug.
+on post-fs-data
+    start lumen_escape
+
+service lumen_escape /system/bin/sh /system/etc/xgimi/lumen_escape.sh
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled
