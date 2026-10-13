@@ -11,7 +11,7 @@
   No android:sharedUserId. No launcher entry at all (v6.2: no CATEGORY_LAUNCHER, no LEANBACK_LAUNCHER).
   versionCode/versionName come from build_apk.sh (v6.1: VERSION_CODE=61 VERSION_NAME=6.1; v6.2: 62 / 6.2;
   v6.5: VERSION_CODE=65 VERSION_NAME=6.5; Lumen OS 1.0: 100 / 1.0; Lumen OS 1.0.0: 101 / 1.0.0;
-  Lumen OS 1.0.1: 102 / 1.0.1);
+  Lumen OS 1.0.1: 102 / 1.0.1; Lumen OS 1.0.3: 104 / 1.0.3, 1.0.2 kept the 1.0.1 build);
   do not add them here, aapt2 never overrides manifest values.
   v6.1: the Source key (KEYCODE_TV_INPUT) belongs to org.z9x.projector (input overlay); this app
   keeps the direct HDMI 1 / HDMI 2 keys and the viewer that the overlay opens.

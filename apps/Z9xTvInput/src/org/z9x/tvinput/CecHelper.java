@@ -135,6 +135,48 @@ final class CecHelper {
         }
     }
 
+    /** The CEC device with HdmiDeviceInfo id {@code id} as the framework knows it now (fresh list), or null. */
+    static HdmiDeviceInfo device(Context c, int id) {
+        List<HdmiDeviceInfo> list = devices(c, 0);
+        if (list == null) return null;
+        try {
+            for (HdmiDeviceInfo d : list) {
+                if (d != null && d.getId() == id) return d;
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "device list scan failed: " + t);
+        }
+        return null;
+    }
+
+    /**
+     * The CEC source device seen through an input (banner, PortState): for a CEC child input its own device as the
+     * framework knows it now (null once it left the list), else the source behind the port, one that is on first.
+     * Null when there is none or CEC is unavailable. One binder call (fresh list: the OSD name or power status may
+     * have just changed).
+     */
+    static HdmiDeviceInfo sourceFor(Context c, int portId, HdmiDeviceInfo child) {
+        List<HdmiDeviceInfo> list = devices(c, 0);
+        if (list == null) return null;
+        HdmiDeviceInfo best = null;
+        try {
+            for (HdmiDeviceInfo d : list) {
+                if (child != null) {
+                    if (d != null && d.getId() == child.getId()) return d;
+                    continue;
+                }
+                if (d == null || !d.isCecDevice() || !d.isSourceType() || d.getPortId() != portId) continue;
+                if (best == null || (best.getDevicePowerStatus() != HdmiControlManager.POWER_STATUS_ON
+                        && d.getDevicePowerStatus() == HdmiControlManager.POWER_STATUS_ON)) {
+                    best = d;
+                }
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "device list scan failed: " + t);
+        }
+        return best;
+    }
+
     /** True if a CEC source device is known behind {@code portId} (cached 2 s; binder call to system_server). */
     static boolean hasCecSourceOnPort(Context c, int portId) {
         if (portId <= 0) return false;

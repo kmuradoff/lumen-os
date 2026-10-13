@@ -13,9 +13,8 @@
 
     <string name="status_connecting">Connecting…</string>
     <string name="status_no_signal">No signal</string>
-    <string name="status_no_cable">No signal: cable not connected</string>
-    <string name="status_disconnected">Source disconnected</string>
-    <string name="status_disconnected_home">Source disconnected. Returning to the home screen…</string>
+    <string name="status_device_disconnected">Device not connected</string>
+    <string name="status_returning_home">Returning to the home screen…</string>
     <string name="status_failed">Cannot open HDMI</string>
     <string name="status_busy">The HDMI input is in use by another app</string>
     <string name="status_bad_input">Unknown HDMI input</string>
@@ -23,6 +22,11 @@
     <string name="state_connected">connected</string>
     <string name="state_standby">standby</string>
     <string name="state_disconnected">not connected</string>
+    <!-- viewer state card for a CEC source in standby (PortState ASLEEP); %1$s = brand or device name -->
+    <string name="state_asleep">%1$s is asleep</string>
+    <string name="state_asleep_device">The device is asleep</string>
+    <string name="state_press_ok_wake">Press OK to turn it on</string>
+    <string name="state_waking">Turning on…</string>
 
     <string name="picker_title">Input</string>
     <string name="picker_home">Home screen</string>
