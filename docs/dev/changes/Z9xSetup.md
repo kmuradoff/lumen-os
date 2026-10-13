@@ -1,3 +1,30 @@
+# Lumen Setup, Lumen OS 1.0.3 build (2026-10-13)
+
+Author kmuradoff. Lumen OS 1.0.3 takes the two seams below, so the 1.0.2 APK (3c12e6a7...) no longer matches its
+sources: the manifest says 1.0.3 / versionCode 104 and the APK is rebuilt, sha256
+db778a25fe5da076545aa09741673d270a111b58fc8fff8c705bb122a715ea4c in overlay/apps_v1 (test platform key; a second
+build gave the same bytes). The same sources built as 1.0.2 / 103 differ from it only in AndroidManifest.xml, and
+from the 1.0.2 APK only in classes.dex. On the Z9X the screens stay the same (see below).
+
+# Lumen Setup (2026-10-13): the projector app may name its device
+
+Two neutral seams, nothing else (no step logic, no string, no manifest change besides the 1.0.3 version):
+- Projector names (Done step): the projector app may name its device in its `ping` reply, `names` = 1 to 4
+  clean names (each equal to `Bridge.cleanName` of itself), the first one being the default. The name picker
+  lists them before Projector / the rooms / Other..., and an empty `device_name` shows the first one. Without
+  `names` (the Z9X projector app sends none) the names stay "XGIMI Z9X" / "Z9X", so the picker is the same
+  list as before. `SetupActivity.bridgeInfo` keeps the successful ping reply.
+- Version footer: `ro.z9x.version`, else `ro.lumen.version` when the old one is unset, else "1.0". The Lumen OS
+  image sets both to the same value, so its footer is unchanged.
+
+# Lumen OS 1.0.3 (2026-10-13, first plan): unchanged
+
+The first 1.0.3 plan kept the 1.0.2 APK byte for byte (3c12e6a7695958f25a8ca4a010b5ae0cf430203d770ad28b3100933b2aba63fb,
+1.0.2 / 103 in the manifest; kept in gsi/build/apps_v1-1.0.2c/), as the sources then rebuilt to it exactly. The two
+seams above came the same day, so 1.0.3 rebuilds it (top of this file). Stay awake on mains power
+(Settings.Global stay_on_while_plugged_in) is now really owned by Z9xProjector's IdleOwner, as Finisher's comment
+says.
+
 # 1.0.1, no-Google edition (2026-10-09)
 
 - No flow change. Without Google Play services the "more languages" hint and the Done screen's offline

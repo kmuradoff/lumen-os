@@ -19,7 +19,12 @@ with the owner's OK. Keys never leave the Mac; the build laptop only ever receiv
 `tools/lumen_v1.sh` composes `system_tv_lumen<ver>.tar` from the base tar + overlay/v1 + APKs built on
 the Mac with `apps/build_apk.sh` (Lumen OS 1.0.1: every app and RRO of ours is versionName `1.0.1`,
 versionCode 102; the env-built ones with `VERSION_CODE=102 VERSION_NAME=1.0.1`, see
-`overlay/apps_v1/README.txt`; 1.0.0 was `1.0.0` / 101). The OS version is `VER` in `tools/lumen_v1.sh`; `ro.z9x.version_code` in
+`overlay/apps_v1/README.txt`; 1.0.0 was `1.0.0` / 101, 1.0.2 `1.0.2` / 103). Since 1.0.3 only an APK whose
+sources changed is rebuilt, as the release's version (1.0.3: `VERSION_CODE=104 VERSION_NAME=1.0.3`, or the
+manifest for Z9xHome, Z9xSetup and the RROs); an unchanged one keeps its file and version, listed in
+`tools/lumen/lumen_checks.py` `KEPT_VERSION` (1.0.3: Z9xUpdater and the three RROs stay 1.0.2 / 103).
+Which APKs changed: rebuild every APK of the set with its current version in a scratch dir (`BUILD_DIR`) and
+compare it with its file; a different classes.dex or resource means changed sources. The OS version is `VER` in `tools/lumen_v1.sh`; `ro.z9x.version_code` in
 `tools/ota/image/ota_props.txt` must follow it (docs/ota.md, "Version numbers").
 
 ## 2. Sign and make the image (Mac)
@@ -124,7 +129,9 @@ stick (the updater's "Install from a USB stick" reads `update-stable.json` there
   `python3 tools/ota/check_publish.py <repo>` (0 blocked). The pre-push hook runs it on every push.
 - Release assets: `lumen-os-<ver>-nogms-system.img`, the `-nogms-` OTA zips + `-payload_metadata.bin`,
   `update-public-nogms.json` + `.sig`, `SHA256SUMS` + `.sig`, the installer zip
-  (`lumen-os-<ver>-installer.zip`, the name the install guide gives), the GPL source of the
+  (`lumen-os-<ver>-installer.zip`, the name the install guide gives; made from the exported repository's
+  `installer/` folder, whose `release.conf` must say `VERSION=<ver>`: the working tree's installer may be
+  held back, docs/repo/README.md "Held files"), the GPL source of the
   AirPlay app as a plain `.zip`. Nothing of the Google edition (image, OTA zip, `update-public.json`,
   `update-stable.json`): `check_release_assets.py` refuses it.
   A zip asset may not contain another archive or image (zip, tar, gz, xz, img, payload.bin, ...: refused

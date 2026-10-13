@@ -2,9 +2,10 @@
 
 Design: research v7 `ota/SPEC.md` + `PLAN.md` (C16, C17), decisions of 2026-10-06. Status: everything
 below is implemented. Lumen OS 1.0.0 was the first update published and installed over the air
-(2026-10-08, GitHub release v1.0.0). 1.0.1 (version_code 10002) brings the rewritten boot gate (boot HAL
-through `service call`, measured on that update) and the boot rescue; its image is built, its OTA is not
-made or published yet.
+(2026-10-08, GitHub release v1.0.0). 1.0.1 (version_code 10002) brought the rewritten boot gate (boot HAL
+through `service call`, measured on that update) and the boot rescue. The no-Google releases 1.0.1 and 1.0.2
+(10003) were published with their OTA packages and `update-public-nogms.json`; 1.0.3 (10004) is made the same
+way.
 
 ## In one picture
 
@@ -28,7 +29,7 @@ GitHub Releases (kmuradoff/lumen-os, latest)          Projector, running slot B
 
 | Piece | Where | What |
 |---|---|---|
-| Updater app | `apps/Z9xUpdater` (`org.z9x.updater` 1.0.0, versionCode 101) | TvSettings "Lumen OS update", checks, download, install, About (version, build, author, project QR, licences) |
+| Updater app | `apps/Z9xUpdater` (`org.z9x.updater` 1.0.2, versionCode 103; Lumen OS 1.0.3 keeps that build) | TvSettings "Lumen OS update", checks, download, install, About (version, build, author, project QR, licences) |
 | Gate + slot facts | `tools/ota/image/z9x_ota.{rc,sh}`, `update_verifier.rc` | attempt counter, deadline, rollback before boot_completed, health report, `sys.z9x.*` properties, vbmeta header flags (read only) |
 | Boot rescue | `tools/ota/image/z9x_rescue.{rc,sh}` (1.0.1) | 3 starts in a row without boot_completed ▶ fastbootd for `lumen-install rescue` |
 | Host tests | `tools/ota/test/run.sh`, `installer_rescue.sh`, `blobs.sh`, `installer_blobs.sh`, `public_members.sh` | gate + rescue with stubbed getprop/setprop/boot HAL; installer `rescue` with a fake fastboot; z9x_blobs.sh, installer `blobs`/`check` and the public image members with made-up files |

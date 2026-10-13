@@ -1,3 +1,27 @@
+# Lumen OS 1.0.3 (2026-10-13): unchanged
+
+The 1.0.2 APK stays, byte for byte (de7393386e2e9ba32d321fe22dc4bf4d1fc234a5430166ca3e7a40e689e88750, 1.0.2 / 103):
+the current sources rebuild to it exactly, so it keeps its version (tools/lumen/lumen_checks.py KEPT_VERSION). The
+lic_disclaimer dash below is still deferred.
+
+# Translation audit (2026-10-13): lic_disclaimer dash deferred to the next updater release
+
+Nothing changed in the app. In ru, uk, be and kk lic_disclaimer puts a long dash after "Lumen OS". Not fixed now:
+Z9xUpdater is pinned (overlay/apps_v1/Z9xUpdater.apk, 1.0.2/103) and any change of its res changes the APK.
+Its @updater/strings.xml in apps/i18n/langs stays equal to res/values-*, so a `gen.py --write` for another app
+leaves this APK byte-identical. When a release may move this pin, set lic_disclaimer in
+apps/i18n/langs/<locale>.txt (@updater/strings.xml) and apps/i18n/pending/ota/<locale>.txt (both, so
+merge_pending.py stays clean) to:
+- ru: Проект Lumen OS независим и не связан с XGIMI, Google или LineageOS.
+- uk: Проєкт Lumen OS незалежний і не пов’язаний з XGIMI, Google чи LineageOS.
+- be: Праект Lumen OS незалежны і не звязаны з XGIMI, Google або LineageOS.
+- kk: Lumen OS тәуелсіз жоба және XGIMI, Google не LineageOS компанияларымен байланысты емес.
+
+then `gen.py --write`, rebuild and pin the new APK. The rest of the audit is fine: all 92 keys in all 16
+languages (values-pt-rBR = pt), placeholders as in the base; the strings equal to English are a brand or the
+same word in that language (status_version "Lumen OS %1$s"; de "Update · %1$s"; de, fr "Pause" and "Version";
+de, fr, it, pt "Build").
+
 # 1.0.1, no-Google edition (2026-10-09)
 
 - `Ota.channelFile()`: the image's own manifest file (basename of `ro.z9x.ota.manifest_url`, default

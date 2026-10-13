@@ -44,3 +44,66 @@ Versions unchanged (`VERSION_CODE=102 VERSION_NAME=1.0.1`).
 - Device checks (2K default, then 4K): HDMI 1 / 2 picture fills the screen with no crop, border or zoom
   (compare with 1080p); "Connecting" / "No signal" status and the "HDMI 2 · ..." banner have the 1080p size
   in proportion; the picker and HDMI settings pages look the same.
+
+## After 1.0.1: CEC device labels and the brand banner (2026-10-13, not pinned)
+Versions unchanged (`VERSION_CODE=102 VERSION_NAME=1.0.1` when built). The Z9X keeps its 1.0.1 pin.
+- **Live child labels.** A CEC source first appears as `Playback_1` (framework placeholder) and sends its OSD name
+  and vendor id about a second later. `HdmiInputService.onHdmiDeviceUpdated` (new) publishes the child input again
+  with `TvInputManager.updateTvInputInfo` (same id, the new HdmiDeviceInfo and label) when the OSD name or vendor
+  id changes; nothing for power status changes. One more look 3 s after `onHdmiDeviceAdded` covers an update the
+  framework drops while it is still registering the child ("Could not resolve input ID").
+- **Label** = `Brands.label`: the brand ("PlayStation", "Xbox", "Nintendo Switch", "Apple TV", "NVIDIA Shield",
+  "Chromecast", "Fire TV", "Roku"), else the device's own OSD name, else (placeholder or empty name) the port's
+  label "HDMI 1". A placeholder is never a label. `HdmiInputs.labelOf` shows just the port while the child carries
+  the port's label ("HDMI 1", not "HDMI 1 · HDMI 1").
+- **Brands** (new): one table by OSD name and CEC vendor id, sources in its comments (libCEC / v4l-utils vendor
+  lists, IEEE registry). Kind (console, player, other) and accent colour (PlayStation blue, Xbox green, Nintendo
+  red, neutral grey otherwise).
+- **Banner** (`PassthroughActivity`): brand or device name large, our own glyph on an accent tile
+  (`ic_banner_console`, `ic_banner_player`, `ic_banner_hdmi`, new vector drawables), the port small ("HDMI 1", plus
+  its state when not connected); without a CEC device the port and its state, as before. Shown on tune, INFO / OK,
+  the first picture after a tune or after the source was gone, and when the name or brand arrives while it is on
+  screen (`onTvInputInfoUpdated`, `onInputAdded`). 3 s, then one 400 ms fade (`withLayer`); no blur, no shadow.
+- **CecHelper**: `device(id)` and `sourceFor(port, child)` (fresh `getConnectedDevices`, a powered-on source first).
+- No new string, permission or manifest change.
+
+## After 1.0.1: one HDMI device state (2026-10-13, not pinned)
+- **PortState** (new): per port and its CEC source one state, `on` / `asleep` / `no_signal` / `disconnected` /
+  `unknown`, computed on demand from the port input's TIF state (CONNECTED = HDMI hotplug +5V; the vendor HAL
+  reports cable status unknown), the CEC device list (fresh) with the source's power status, and our sessions
+  (picture, no signal). Asleep = a listed source in standby / transient to standby, or no +5V while it is still
+  listed (a source going to sleep drops +5V before its power status changes). Rule table in `PortState.classify`.
+  Refreshed by events only: port and child input states (`HdmiWatcher`), CEC device added / updated / removed
+  (`HdmiInputService`), session streaming / no signal (`HdmiSession`); coalesced, logged as transitions
+  (`Z9xHdmiPortState`), announced on `content://org.z9x.tvinput.hdmistate/ports`. No background polling. Android 14
+  gives an app no way to send `<Give Device Power Status>` alone, so the state relies on the framework's own
+  power status updates and on +5V.
+- **HdmiStateProvider** `hdmi_state`: new `port_ids` and `port_<n>` bundles (device_state, input_id, label,
+  input_state, picture, kind, accent, power, vendor_id, child_input_id, title, brand, name); old keys unchanged.
+- **Viewer** state card (BrandCard, the banner's style, in the middle): asleep "<brand> is asleep" / "Press OK to
+  turn it on" (OK sends `deviceSelect`: the framework asks the power status, wakes and routes; CEC control
+  setting on), "Turning on…" after OK, "No signal", "Device not connected" (return home countdown as before),
+  "Connecting…". An asleep source no longer counts as unplugged: no return to the home screen.
+- **BrandCard** (new): the tile + title + line card shared by banner and state card.
+- Strings: + `status_device_disconnected`, `status_returning_home`, `state_asleep`, `state_asleep_device`,
+  `state_press_ok_wake`, `state_waking`; - `status_no_cable`, `status_disconnected`, `status_disconnected_home`
+  (unused now). All 17 locale dirs (values-ru by hand, the others from apps/i18n/langs).
+
+## After 1.0.1: viewer cards sized to their text (2026-10-13, not pinned)
+- **BrandCard**: the title and the line are WRAP_CONTENT. A vertical LinearLayout gives its children MATCH_PARENT
+  by default, and such a TextView kept the width of its first text when a longer state followed with the same
+  height ("Connecting…" then "PlayStation is asleep" / "Press OK to turn it on"): both were cut with an ellipsis.
+  The card is as wide as its widest line plus paddings (at least 180 dp, the content centred; text column at most
+  480 dp); longer text wraps with balanced lines (title up to 2, line up to 3) and the card grows in height, the
+  tile centred against the text. An ellipsis only past those limits. Wrapped lines take their real width (no
+  empty band at the end). End padding 16 dp (was 28), as the start. No new string, no animation, no blur.
+- Checked with the card render harness on the test emulator (1920 x 1080): every state card and banner in
+  English, Russian and German, longest and shortest names, no ellipsis.
+
+## 1.0.3 (versionCode 104), Lumen OS 1.0.3 (2026-10-13)
+- Build: `VERSION_CODE=104 VERSION_NAME=1.0.3`, sha256 92335a1299ffe0a6fd93e398d6ddf640dde54eab4bf46b78cd5f13e57d430333
+  (test key), pinned in overlay/apps_v1/PINS.sha256 (was the 1.0.1 build 76c3afa5..., which 1.0.2 kept). The same
+  sources built as 1.0.1 / 102 give the same classes.dex, and a second build gave the same bytes.
+- It carries the three "After 1.0.1" sections above: live CEC device labels and the brand banner, one HDMI device
+  state with the viewer's state cards, and cards sized to their text. The picture itself comes from Z9xProjector
+  1.0.3 (IGmpf 698 follows this app's HDMI sessions; this app still makes no IGmpf call).

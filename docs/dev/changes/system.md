@@ -1,3 +1,30 @@
+# 1.0.3: system library slot (2026-10-13)
+
+- `tools/lumen_v1.sh` SYSLIB (1 | 0; default 1 from VER 1.0.3, 0 before): `overlay/v1/syslib/system/lib/` and
+  `system/lib64/libandroid_servers.so`, our rebuild of the base's library (both ABIs, the base has both) from the
+  LineageOS 21 source of the base + `lineage/patches/z9x` (`lineage/z9x_lib_build.sh` on the build laptop, output
+  `~/z9x-lib-out/target/product/*/system/{lib,lib64}/`): JTvInputHal no longer locks its stream lock twice, so an
+  HDMI signal or cable change can no longer hang system_server (black HDMI picture, then a watchdog restart).
+- Built like the libcodec2_vndk slot: preflight wants exactly the SYSLIBS files, each an ELF shared object of its
+  path's class (lib64: 64-bit AArch64, lib: 32-bit ARM) whose sha256 is pinned in SYSLIBSHA (a self-build: ELF
+  checks only); the base check pins the members they replace (SYSLIBBASESHA, read from the 1.0.2 build's tar);
+  prep replaces them with the same mode 0644 and label system_lib_file (member diff with content check, image
+  read-back as for every replaced member). `.info` gets `syslib=` and each file's sha256; `remote` passes SYSLIB
+  to the laptop.
+- Until the files are dropped in and pinned, SYSLIB=1 stops in the preflight with a clear message (the sha256 to
+  pin once the file is there); SYSLIB=0 keeps the base's libraries. Default builds of 1.0.2 are unchanged.
+- `docs/repo/publish_audit.py`: `overlay/v1/syslib/` is REGENERATE (in the image, not git).
+- Review follow-up (same day): each file must also export `_ZN7android11JTvInputHal18removeStreamLockedEii`
+  (SYSLIBMARK, checked before the pin and in a self-build), the symbol only the patched source has: an unpatched
+  rebuild is a valid ELF too. `lineage/z9x_overrides.sh` writes `overrides.sha256` and `lineage/z9x_lib_build.sh`
+  stops (EXIT=3) when the patched files are not what /src shows, so an override that was not mounted can no longer
+  give an unpatched build; its documented docker line takes the overrides into a variable first (a failed patch
+  stops there). `tools/selfbuild/build.sh tree` copies the self-builder's own patched `libandroid_servers.so` into
+  `overlay/v1/syslib` (docs/selfbuild).
+- VER 1.0.3: `ro.z9x.version` / `ro.lumen.version` 1.0.3, `ro.z9x.build_id=lumen-1.0.3-<DATE>`,
+  `ro.z9x.version_code=10004`; the preflight now also wants VER to equal `tools/lumen/lumen_checks.py`
+  VERSION_NAME (a version bump of only one of them stops the build).
+
 # 1.0.1, no-Google edition (2026-10-09, docs/NOGMS_PLAN.md)
 
 - `tools/lumen_v1.sh GMS=0` (only with `VARIANT=public`): name `lumen_v1_public_nogms`, the 26 paths of

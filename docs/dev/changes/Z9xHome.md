@@ -1,3 +1,160 @@
+# Lumen Home 1.0.3 (2026-10-13): release build
+
+Author kmuradoff. versionCode 104 / versionName 1.0.3 in the manifest (was 103 / 1.0.2); nothing else changed for
+the bump: the same sources with the old version give the same classes.dex. sha256
+9b8c2de0d07972e29ab0e933e553d1f2ddf819efc7beb117d687501f466c20d1 (test key) in overlay/apps_v1, a second build gave
+the same bytes; was 8851bbe8661aadf346f1613beff88e28e37e87ab3de94e40ae2326e5b2d3169e (1.0.2). It carries every
+2026-10-12 and 2026-10-13 section below. On the Z9X image that means: the sky's day no longer turns into a dark
+night, the overcast sky, the HDMI device's own state and name on the Inputs cards, cards that never cut their text,
+and strings without long dashes. The weak-GPU switches and friendly CEC names stay off there (no
+`ro.lumen.home.*` property in the image), and so do the battery mark and the hidden tiles (Z9xProjector has no
+device-state provider).
+
+# Lumen Home (2026-10-13): no em dashes in the strings
+
+Author kmuradoff. Still 1.0.2 / versionCode 103. Strings only (translation audit).
+- voice_unavailable (English base and ru, uk, be, kk, fr, pt, pl, tr, ar): two short sentences in place of
+  the dash, "Voice search isn’t available. Type instead."; feature_customize_title and weather_privacy
+  (ru, uk, be, kk) rephrased without the dash ("Приложения на ваш вкус", "Если VPN его изменит, ...").
+- Changed in apps/i18n/langs/<locale>.txt (@home/strings.xml), apps/i18n/pending/L-HOME/<locale>.txt and
+  en.txt (kept equal to langs and the base for merge_pending.py) and tools/i18n_home_{a,b}.py; the
+  res/values-*/strings.xml re-rendered with gen.render(), gen.py --check-only OK.
+
+# Lumen Home (2026-10-13): Inputs cards never cut their own text
+
+Author kmuradoff. Still 1.0.2 / versionCode 103. An input card's second line ("HDMI 1 (ARC) · Standby") was
+cut with an ellipsis when it was longer than the card (Russian "HDMI 1 (ARC) · Режим ожидания" at the normal
+font size, most long lines at font scale 1.3), and a focused asleep card replaced its state with the hint.
+- `ui/CardView`: the status is one line when it fits, exactly as before; otherwise the port (or device) and
+  the state on two lines, and the title moves up a line. A focused asleep card keeps its state and shows
+  "Press OK to wake it" as its own line under it (in place of it only when both do not fit in two lines),
+  sliding in with the focus scale. At a large font scale the icon gets smaller only where a lifted title
+  would reach it. Card size and the row are unchanged.
+
+# Lumen Home (2026-10-13): the HDMI device's own state on the Inputs cards
+
+Author kmuradoff. Still 1.0.2 / versionCode 103. A card read the TIF input state of the port, so a console
+asleep over HDMI-CEC (no +5V) showed "Standby" and a pulled cable could look the same. The TV input app now
+reports each port's device ("hdmi_state" of content://org.z9x.tvinput.hdmistate: "port_ids" and a "port_<n>"
+bundle with device_state, label, title, kind, accent, child_input_id, ...; changes notified on
+content://org.z9x.tvinput.hdmistate/ports). With an older TV input app (no "port_ids") every card is as before.
+- `data/InputSource`: one "hdmi_state" call per refresh (it already made it for the open ports); a reported
+  port's card gets the device's state ("On", "Asleep", "No signal", "Not connected"; "unknown" keeps the TIF
+  state), its title over the port's label (a name the user gave the input still wins), the gamepad or player
+  glyph for its kind in the softened brand accent, and the input to open (the device's own input). OK on an
+  asleep device opens it: the TV input app's viewer shows its asleep card and wakes the device on OK.
+- `ui/CardView`: the dot by state (on green, asleep warm, no signal red, not connected grey); focused, an
+  asleep card's second line says "Press OK to wake it". TIF states draw as before.
+- `HomeActivity`: a ContentObserver on the ports Uri while Home is started, registered only once the TV input
+  app has reported device states; a change refreshes the rows (no polling).
+- `data/Card.DEV_*` (the reported states in `Card.state`, no snapshot format change), `data/CecNames`
+  (`deviceState`, `softAccent`, `mix`). Strings (18 locales, `tools/i18n_home_g.py`, lane home-g): input_on,
+  input_asleep, input_no_signal, input_wake_hint; `tools/i18n_home_f.py` now holds the shared `run()`.
+
+# Lumen Home (2026-10-13, screensaver report): the sky's day turning into a dark night; overcast
+
+Author kmuradoff. Still 1.0.2 / versionCode 103. Report from a Z9X running Home 1.0.2: the Lumen screensaver
+started on a daytime sky and within the first minute the sky turned dark charcoal while the land stayed
+lit, the sun and a thin moon both shown (logs/z9x_dream/dream_s.png). A fix for every device.
+- **Root cause, `sky/SkyRenderer`**: `moon()` leaves the shared `mPaint` at a 10 % colour (its last ink, the
+  maria), and a paint's alpha multiplies its shader, so `sky()` of every later render drew the sky gradient
+  at 10 % into an opaque bitmap: a near black sky behind a daylit land, from the first minute render after
+  any render with a moon (Home's sky too, until Home restarted). `sky()` now starts from an opaque paint.
+  Proof with a render harness of the sky sources on the test emulator: the same moment rendered twice with
+  one renderer gives sky pixel 0xFF7A96B0, then 0x2314171A with 1.0.2's code, 0xFF7996AF with the fix.
+- Place and weather were already applied before the first frame (the screensaver's `env(reading())`
+  before the view is added, Home's `showWeather()` in `build()`); a later weather change crossfades.
+- **Overcast** (`SkyView.WEATHER_OVERCAST`, `SkyLook.OVERCAST`; `SkyEnv.weatherFromWmo` maps WMO 3 to it,
+  WMO 2 "partly cloudy" stays the sun-and-clouds sky): a closed grey deck keyed to the sun behind it, light
+  grey by day, slate at dusk, dark at night; no sun disc (a diffuse glow where it is), no moon, no stars;
+  flat grey streaks; the land a little dimmer. Checked as renders for sun elevations -6, 0, 10, 30, 50 with
+  clear, clouds, overcast, fog, rain and snow; the other weathers are unchanged. Test: `test/sky` overcast.
+
+# Lumen Home (2026-10-13, later): the sky in parts on View layers; friendly names for CEC devices
+
+Author kmuradoff. Still 1.0.2 / versionCode 103. Without the properties Home draws and behaves as 1.0.2.
+- **Fix: no sky with `lite` and `sky_scale` together** (a plain ground-coloured background on the target
+  projector; the emulator, which has no partial-update EGL, drew it). The parts of the sky were standalone
+  RenderNodes with compositing layers drawn from the sky view, which had no layer itself; with `lite` the
+  window is opaque and has no background, and on that GPU those layers stayed at the content of their first
+  render (the fade-in's first, all ground colour). Without `lite`, and in the one-draw path, where the sky is
+  a View's own layer, it drew. Now the parts are View layers, the proven path: `SkyView` itself holds the
+  static parts in its own layer (invalidated only when they change), the new `SkyView.motionView()` (a view
+  Home adds right above it) draws stars and glints, its child holds clouds and fog at `sky_scale` in a small
+  layer enlarged by the child's scale, then birds, lights, fireflies, rain and snow. No RenderNode API any
+  more. Emulator check: the parts give the same picture as the one draw (mean difference 0.07 of 255).
+- **Friendly CEC names** (`ro.lumen.home.cec_names`, `data/CecNames`, `data/InputSource`): an Inputs card
+  of an HDMI-CEC device no longer shows the placeholder Android uses before the device sent its OSD name
+  ("Playback_1", "Recorder_1", "Tuner_1"): the first real name of the device's own name, the system's CEC
+  list and the TV input's label for it; known devices by name or an unambiguous vendor id (PlayStation,
+  Xbox, Nintendo Switch, Apple TV, NVIDIA Shield, Chromecast, Fire TV, Roku), their own model name kept
+  ("PlayStation 5"); else the port's label. Marks: our own gamepad glyph for consoles (PlayStation blue,
+  Xbox green, Nintendo red, softened, at least 4:1 on the card), our player glyph for streaming boxes; no
+  logos. With the switch Home also refreshes on `onTvInputInfoUpdated` (a TV input renaming a device).
+  `ui/CardView` tints an input's mark with `Card.color` when it is set (0 = paper white, as before).
+- `Props` (new): the device switches' reader (`debug.lumen.home.*` wins over `ro.lumen.home.*`), shared by
+  `ui/Gfx` and `InputSource`. Tests: `CecNamesTest` (new), `GfxTest`.
+
+# Lumen Home (2026-10-13): an adaptive sky for weak GPUs
+
+Author kmuradoff. Still 1.0.2 / versionCode 103 (the version is the owner's call at pin time). Feedback on
+the 2026-10-12 switches: a still sky (sky_fps 0) looks dead, and its jump with each minute render reads as
+lag. The motion comes back, cheaper and out of the UI's way. All new paths are off unless a
+`ro.lumen.home.*` / `debug.lumen.home.*` property is set; without them Home draws as 1.0.2.
+- **Run clock** (`sky/SkyView.setWeakGpu`, any of sky_fps, sky_scale, sky_yield): the particles move on a
+  clock that advances only while sky frames run; a stop and a restart never make them jump, and after a
+  restart their speed eases in over 600 ms. Fades run on it too. With sky_fps 0 the sky now stands
+  really still (no move at the minute render any more). `sky_fps` N still caps the rate.
+- **Sky in parts** (`ro.lumen.home.sky_scale`, 0 < s <= 1; `SkyView.drawSplit`): the static parts (sky,
+  sun, moon, land, scrims) in one full-resolution GPU layer (a RenderNode with a compositing layer) that is
+  re-rendered only when they change; the soft moving parts (clouds, cut out behind the land, and fog) in a
+  layer at s of the real pixels over the band they can reach, drawn enlarged (HWUI samples layers
+  bilinearly) and darkened by the scrims with SRC_ATOP; the small crisp particles (stars, glints, birds,
+  mast lights, fireflies, rain, snow) at full resolution, each in the scrims' darkening at its place
+  (`scrimAt`), the stars under the land, the sun or the moon left out. The same picture as one draw except
+  the soft layer's resolution. `drawFrame` draws groups of parts for this (all of them: the 1.0.2 draw).
+- **Yield** (`ro.lumen.home.sky_yield`; `SkyView.yieldFor`, `setHeld`; `HomeActivity.skyYield`): every key
+  (`dispatchKeyEvent`), tab switch, browse-mode change, Home mode change, hero change and HOME intent stops
+  the sky's frames at once (the shown frame stays; a first frame still fades in); another window with the
+  focus (`onWindowFocusChanged`) holds it. 1.5 s after the last of them the motion eases back in. One
+  delayed message meanwhile, no other wakeup; a fade stopped half way goes on from where it was.
+- `ui/Gfx`: `SKY_SCALE`, `SKY_YIELD`, `parseFloat`, `scale`; one property reader. Tests: `GfxTest` (+12).
+
+# Lumen Home (2026-10-12): weak-GPU switches, battery mark, unsupported Projector tiles
+
+Author kmuradoff. Still 1.0.2 / versionCode 103 in the manifest: the version is the owner's call when he pins
+the APK ("About this screen" shows the name, so a bump would be the one change a Z9X user could see). Every
+new path is off unless a `ro.lumen.home.*` / `debug.lumen.home.*` property is set (a device whose image asks
+for weak-GPU drawing) or org.z9x.projector has the device-state provider (a projector app that reports an
+internal battery or tiles it cannot serve). The Z9X has neither, so Home draws and behaves there as 1.0.2.
+No device name or device check in Home's code: the switches are properties and a capability provider.
+- **Weak-GPU switches** (`ui/Gfx`, new): `ro.lumen.home.sky_fps` (unset or negative: as the scene needs; 0: a
+  still sky that changes with its minute render and fades only; N: at most N fps; `sky/SkyView.setMaxFps`,
+  the particles move on the sky's own ticks, so a redraw for the UI never moves them) and
+  `ro.lumen.home.lite` (1: no window background under the sky and the search backdrop, which paint every
+  pixel; the capped sky and the hero `ui/Stage` in GPU layers, the stage only while trailers are off;
+  `withLayer()` for the tab switch, the stage fade and the Home top block in `ui/PageForYou`; transparent
+  full-bleed art gets the ground colour under it). `debug.lumen.home.<name>` wins (A/B tests on a test build:
+  setprop, then force-stop Home). The screensaver is not capped.
+- **Battery mark** in the header (`ui/TopBar.BatteryMark`): before search, "85 %" in the header font (the
+  locale's percent format) and a battery glyph with the fill, a bolt while the power adapter is in, the warm
+  accent at 20 % or less on battery; the header's soft shadows (the outline's blurred copy through
+  `Glow.iconShadow`, the tabs' text shadow); not a focus stop. Only while org.z9x.projector's provider
+  (content://org.z9x.projector.device, call "battery") reports a battery; the view is made at the first
+  reading, so without it the header is laid out exactly as before. Updates from the provider's notify Uri
+  (content://org.z9x.projector.device/battery) while Home is started (`HomeActivity.startBattery`, observer
+  registered in onStart, removed in onStop), no polling.
+- **Unsupported Projector tiles**: `data/InputSource.tiles` leaves out the tiles the provider's call("caps")
+  lists in "unsupported" (tile intents such as "section:eye", or Card ids). No provider: every tile.
+- `proj/ProjectorBridge`: the provider client. `hasDeviceState`: the authority must belong to the system app
+  org.z9x.projector (any app could declare it), a PackageManager lookup once per process (no provider start,
+  no log); `battery`, `unsupportedTiles` through an unstable client; a missing provider, an exception or a
+  refused permission all read as "nothing".
+- Strings (18 locales, `tools/i18n_home_f.py`, lane `apps/i18n/pending/home-f` merged into apps/i18n/langs):
+  battery_level, battery_charging, battery_plugged (the mark's spoken description). Tests (tools/run_tests.sh):
+  `GfxTest` (no property: every switch off), two more rows in `HeaderContrastTest` (the figure 7.84:1, the
+  low tint 4.86:1 over white).
+
 # Lumen Home 1.0.1, no-Google edition (2026-10-09): Install from USB
 
 Author kmuradoff. Still 1.0.1 / versionCode 102; one APK for both editions (docs/NOGMS_PLAN.md section 8).

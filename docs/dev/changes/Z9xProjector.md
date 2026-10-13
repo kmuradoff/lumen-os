@@ -1,3 +1,100 @@
+# Z9xProjector, Lumen OS 1.0.3 build (2026-10-13)
+
+- `VERSION_CODE=104 VERSION_NAME=1.0.3` (test platform key; the release keys come with the image's sign stage):
+  sha256 95ae9f4a58031b078612d116b32ab3a85a2a981b5fbfb37558841af6f2a8034c in overlay/apps_v1. The same sources
+  built as 1.0.2 / 103 give the same classes.dex, and a second build gave the same bytes.
+- Replaces 7d00979726d7e73b511e2a26ebafdd6278ba4f0eb04f90054f77999c2c77dee7 (the 1.0.2b / 1.0.2c test builds: 3D,
+  optical zoom and its fix). The published 1.0.2 image had edf4ccb3cc02b447b10ad9a872729e3cfab22134e0a245b3f3e297a909f3cf02,
+  without 3D and the optical zoom.
+- So against the published 1.0.2 it brings every section below up to "Lumen OS 1.0.2: 3D and optical zoom": the
+  HDMI picture (IGmpf 698), the screensaver on mains power (stay_on_while_plugged_in), the notification card sized
+  to its text, the language fixes of the shared strings, 3D, and the optical zoom with the position fix.
+- HDMI without a system_server hang on a signal or cable change also needs the image's 1.0.3 system library
+  (tools/lumen_v1.sh SYSLIB); this APK alone brings the picture.
+
+# Z9xProjector, Lumen OS 1.0.3: HDMI picture and screensaver (2026-10-13, not pinned)
+
+- **HDMI picture** (`source/HdmiSource`, new; installed by App, fed by `game/HdmiEventReceiver`): every HDMI view
+  was black because nothing connected the HDMI input to the main video window. The vendor TV input HAL only hands
+  out the sideband handle; on stock firmware the HDMI player sends IGmpf 698 switchInputSourceWithCallingPid(source,
+  its pid) when it tunes and (0, pid) when it leaves, and org.z9x.tvinput (TIF, no IGmpf) never did. Now each
+  tvinput "session" event schedules one decision 150 ms later on z9x-hal (a newer event replaces it): the port
+  tvinput shows (hdmi_state "ports", new shared `TifHdmiState.readPorts`; unknown = nothing sent) gives the
+  source, port 1 -> 1 (HDMI 1), port 2 -> 2 (HDMI 2), none -> 0 (Android), the same numbers 696 reports and the
+  stock player sends for its HDMI1 / HDMI2 inputs; 698 (source, our pid) only when it differs from the last value
+  sent (696 at the start of a connection). After every IGmpf connect the same decision runs against 696; at
+  SCREEN_ON only the self-heal (696 reads HDMI while no session is shown -> 698(0)), never a switch to HDMI. During
+  the lamp-only standby no switch to HDMI: it is held until the standby ends (`StandbyController.exit`, or the
+  next SCREEN_ON after a sleep), so a device that opens a session in standby gets no picture or vendor sound path
+  behind the black screen; a switch back to 0 goes at once. One Z9xHdmi line per 698 call with its result; a
+  bad reply is not repeated, an undelivered call is retried by the next event or connect.
+- GmpfClient: typed `switchInputSource(source)` = 698 (i32 source, u32 Process.myPid()) -> bool, sources 0 / 1 / 2
+  only (check_hal_callers: 107 transacting methods, all with a caller). `apps/check_hal_callers.py` now also fails
+  on a banned code in any transact site of GmpfClient / Gmpf2Client (zoom 153 / 297 / 283 / 457 and IGmpf2 14,
+  autofocus 299 / 301, factory, calibration, reset and power codes of the client headers), resolved through the
+  clients' code constants.
+- What comes with it: 696 now reads the shown HDMI port, so GameProfile's per-source apply / restore, the quick
+  panel's HDMI-only rows and the source list's check mark see HDMI the way their rules always expected.
+- **HDMI volume: not changed.** Checked against this projector's audio HAL first (vendor
+  `audio.primary.mt5877.so`, 64-bit, from the stock firmware dump): `adev_set_audio_port_config` only stores the
+  HDMI In port gain the framework sends (no volume call, nothing reads it back, not even a mute switch), so
+  Android's port gain does not set the HDMI level. The HAL's real speaker level, `spk_volume=N`
+  (AudioManager.setParameters), is applied only while `xgimi_audiopath_switch_end` has selected the speaker path:
+  that field is 0 from adev_open, and the branch that applies to every output needs a build flag that is always 0
+  here. Lumen never sends switch_start / switch_end (AudioPathReporter: switch_end would restore the stored
+  spk_volume, zeroed at adev_open, i.e. a silent speaker). A spk_volume follow-up from this app would only be
+  stored and change nothing, so it is not added; the HDMI level stays the HAL's start level until a device-tested
+  change (spk_volume first, then the speaker path) exists.
+- **Screensaver never started** (`dream/IdleOwner`): Settings.Global stay_on_while_plugged_in defaults to 1 on this
+  base (dumpsys settings: default 1, package android), so on mains power PowerManagerService never reached the
+  idle time. IdleOwner now owns it, as Z9xSetup's Finisher already said: 0 at every process start (so once per
+  boot) and whenever something else changes it (observed with the other keys), written only when it is not 0,
+  one Z9xIdle line per write. Developer options "Stay awake" no longer sticks.
+- Shared (apps/common/projector, copied into both projector apps; `sync.sh --check` clean): `TifHdmiState.readPorts`
+  only, the same hdmi_state call answered with the ports. No new strings.
+- To check on the device (image 1.0.3 with the rebuilt libandroid_servers.so, tools/lumen_v1.sh SYSLIB): HDMI 1
+  and HDMI 2 with a source show a picture (Z9xHdmi "IGmpf 698 (1, pid N) -> true", the vendor's "calling pid = N,
+  inputSource = 1"); Home again sends 698 (0, ...) and Android video plays; a cable or signal change while HDMI is
+  shown no longer restarts system_server; the screensaver starts at the idle time and
+  `settings get global stay_on_while_plugged_in` reads 0.
+- Also to check, new with 698 (until now 696 read 0 during TIF HDMI, so GameProfile's gate always refused and auto
+  game mode never wrote anything): a console with CEC on (or the input marked "This input is a console") on HDMI 1.
+  The game cue shows; 648 (game mode option), IGmpf2 56 / 57, on the top speed path 207 (keystone reset), the 161
+  Ultra 120 Hz resend and the EDID / HFR change for "120 Hz for consoles" now really run, and the EDID change makes
+  the console renegotiate HDMI. The picture must come back by itself after that renegotiation, with exactly one
+  Z9xHdmi 698 line per real change: no 698 (0) / 698 (1) pair from a session that tvinput releases and opens again
+  (HdmiSource debounces only 150 ms and has no other churn guard). Leaving the input (Home) restores the picture
+  settings (GameProfile restore, Z9xGame lines) and sends 698 (0). If the picture flips or stays black there, turn
+  "Auto game mode for consoles" off in the quick panel and note it before the release.
+- Also to check: the volume keys while HDMI is shown (this build does not port the HDMI volume, see above). If the
+  HDMI loudness does not change, add the known issue to docs/repo/RELEASE_1.0.3.md and CHANGELOG.md before the
+  release: "Громкость звука со входа HDMI пока не меняется кнопками пульта: регулируйте её на самом устройстве." /
+  "The volume keys do not change the loudness of an HDMI input yet: set it on the source device."
+
+# Z9xProjector, after 1.0.2: language fixes of the shared strings (2026-10-13, not pinned)
+
+- **No em dashes in the shared strings** (apps/common/projector, target common): ru manual_focus_panel
+  ("OK/Назад: готово", like uk and be), ru / uk / be launcher_confirm_classic and launcher_confirm_lumen
+  (reworded with "включится / выключится" and the same in uk and be) and power_sleep_summary ("..., и он
+  проснётся ..."). ru strings.xml and strings_power.xml are hand-written; the rest through apps/i18n/langs
+  (and pending/projector, so merge_pending stays clean), gen.py --write, sync.sh into both projector apps.
+- pt / pt-rBR panel_3d_summary: Brazilian "arquivo" and “como 2D” quotes instead of "ficheiro" and «».
+
+# Z9xProjector, after 1.0.2: notification card sized to its text (2026-10-13, not pinned)
+
+- **Notify** (shared, apps/common/projector): the capsule card is no longer a fixed 468 x 156 that cut longer
+  text with an ellipsis and left a short one in a wide empty card. Width = widest text line + icon + paddings,
+  clamped to 360..760 design px (shorter content centred); title up to 2 lines, description up to 3, balanced
+  line breaks; height follows the text; paddings 32 / 28, icon gap 24, icon centred against the text block.
+  A message without a description is split at its first sentence or clause break into a bold title and the
+  rest ("Eye protection is not ready" over "Restart the projector and try again."); a comma only when the text
+  would not fit two title lines. A list of parts joined by " · " (game cue chips) breaks only between parts.
+  Right-to-left locales mirror the card. An ellipsis only past the line limits (foreign text through
+  NotifyRequestReceiver, at most 160 characters). Colours, radius, stroke, margin, top-right place, the 500 ms
+  slide, the hold time and the relayout next to a right-side panel are unchanged; the window is card-sized.
+- Checked with the card render harness (test emulator only, never shipped): every Notify call site in
+  English, Russian and German (longest and shortest variable parts), with and without icon: no ellipsis.
+
 # Z9xProjector, Lumen OS 1.0.2: 3D and optical zoom (2026-10-10)
 
 - **3D on the quick panel's Picture page** (`display/ThreeD`, registered by App): "3D < Off | Side by side |
