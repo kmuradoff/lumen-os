@@ -15,8 +15,8 @@
     <string name="eq_preset_night">Ніч</string>
     <string name="eq_preset_custom">Власний</string>
     <string name="eq_db">дБ</string>
-    <string name="eq_hint_select">◀ ▶ смуга · OK — налаштувати</string>
-    <string name="eq_hint_adjust">▲ ▼ змінити · OK — готово</string>
+    <string name="eq_hint_select">◀ ▶ смуга · OK налаштувати</string>
+    <string name="eq_hint_adjust">▲ ▼ змінити · OK готово</string>
     <string name="eq_reset">Скинути еквалайзер</string>
     <string name="eq_reset_done">Еквалайзер скинуто на «Рівний»</string>
     <string name="eq_limit">Межа: загальне підсилення обмежене +6 дБ</string>

@@ -5,7 +5,7 @@
     <string name="uires_section">Экран</string>
     <string name="uires_row">Интерфейс ажыратымдылығы</string>
     <string name="uires_default_fmt">%1$s (әдепкі)</string>
-    <string name="uires_summary">4K — ең анық мәтін; 1080p, XGIMI-дегідей, графикаға ең жеңіл. Өзгерту үшін проектор қайта қосылады.</string>
+    <string name="uires_summary">4K ең анық мәтін береді; 1080p, XGIMI-дегідей, графикаға ең жеңіл. Өзгерту үшін проектор қайта қосылады.</string>
     <string name="uires_summary_fallback">Қазір %1$s: %2$s бұл проекторда дұрыс іске қосылмады, сондықтан ол өздігінен қайтты. Қайта байқап көру үшін %2$s таңдаңыз.</string>
     <string name="uires_choose_text">4K 4K панельдің әр пикселін пайдаланады. 1080p, XGIMI-дегідей, пикселдердің төрттен бірін ғана салады, ал проектор суретті үлкейтеді.</string>
     <string name="uires_opt_1080">XGIMI-дегідей: графикаға ең жеңіл; мәтін сәл жұмсағырақ</string>

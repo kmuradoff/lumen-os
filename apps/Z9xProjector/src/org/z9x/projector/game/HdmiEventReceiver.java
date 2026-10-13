@@ -13,7 +13,8 @@ import android.util.Log;
  * "session": one of tvinput's HdmiSessions got (active) or lost its HDMI hardware, i.e. a TvView
  * started / stopped showing that HDMI port. Main thread; hands over to StandbyController (v6.5: a
  * session that starts during the lamp-only standby never wakes it: the black screen comes back and
- * the lamp stays off) and GameProfile.
+ * the lamp stays off), source.HdmiSource (Lumen OS 1.0.3: the vendor source switch, IGmpf 698) and
+ * GameProfile.
  */
 public final class HdmiEventReceiver extends BroadcastReceiver {
     public static final String ACTION = "org.z9x.projector.action.HDMI_EVENT";
@@ -28,6 +29,15 @@ public final class HdmiEventReceiver extends BroadcastReceiver {
                         intent.getBooleanExtra("active", false), intent.getStringExtra("reason"));
             } catch (Throwable t) {
                 Log.w("Z9xGame", "standby HDMI event: " + t);
+            }
+            // Lumen OS 1.0.3: the HDMI picture (IGmpf 698 follows tvinput's sessions)
+            if ("session".equals(intent.getStringExtra("reason"))) {
+                try {
+                    org.z9x.projector.source.HdmiSource.onSessionEvent(intent.getIntExtra("port", -1),
+                            intent.getBooleanExtra("active", false));
+                } catch (Throwable t) {
+                    Log.w("Z9xGame", "HDMI source event: " + t);
+                }
             }
             GameProfile.onHdmiEvent(ctx, intent);
         } catch (Throwable t) {

@@ -157,7 +157,7 @@
     <string name="panel_3d_tb">Cima e baixo</string>
     <string name="panel_3d_sbs_2d">Lado a lado como 2D</string>
     <string name="panel_3d_tb_2d">Cima e baixo como 2D</string>
-    <string name="panel_3d_summary">Durante um vídeo. O 3D precisa de óculos ativos DLP-Link; «como 2D» mostra um ficheiro 3D plano, sem óculos.</string>
+    <string name="panel_3d_summary">Durante um vídeo. O 3D precisa de óculos ativos DLP-Link; “como 2D” mostra um arquivo 3D plano, sem óculos.</string>
     <string name="panel_3d_need_video">O 3D funciona durante um vídeo: inicie-o primeiro</string>
     <string name="panel_3d_not_now">O 3D não está disponível agora (vídeo HDR, modo de jogo ou 120 Hz)</string>
 </resources>

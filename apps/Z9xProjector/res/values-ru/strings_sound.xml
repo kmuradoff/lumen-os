@@ -15,8 +15,8 @@
     <string name="eq_preset_night">Ночь</string>
     <string name="eq_preset_custom">Свой</string>
     <string name="eq_db">дБ</string>
-    <string name="eq_hint_select">◀ ▶ полоса · OK — настроить</string>
-    <string name="eq_hint_adjust">▲ ▼ изменить · OK — готово</string>
+    <string name="eq_hint_select">◀ ▶ полоса · OK настроить</string>
+    <string name="eq_hint_adjust">▲ ▼ изменить · OK готово</string>
     <string name="eq_reset">Сбросить эквалайзер</string>
     <string name="eq_reset_done">Эквалайзер сброшен на «Ровный»</string>
     <string name="eq_limit">Предел: общий подъём ограничен +6 дБ</string>

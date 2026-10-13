@@ -15,8 +15,8 @@
     <string name="eq_preset_night">Түн</string>
     <string name="eq_preset_custom">Өзіндік</string>
     <string name="eq_db">дБ</string>
-    <string name="eq_hint_select">◀ ▶ жолақ · OK — реттеу</string>
-    <string name="eq_hint_adjust">▲ ▼ өзгерту · OK — дайын</string>
+    <string name="eq_hint_select">◀ ▶ жолақ · OK реттеу</string>
+    <string name="eq_hint_adjust">▲ ▼ өзгерту · OK дайын</string>
     <string name="eq_reset">Эквалайзерді қалпына келтіру</string>
     <string name="eq_reset_done">Эквалайзер «Тегіс» күйіне қайтарылды</string>
     <string name="eq_limit">Шек: жалпы күшейту +6 дБ-мен шектелген</string>

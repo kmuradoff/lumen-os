@@ -52,8 +52,14 @@ import org.z9x.projector.power.StandbyController;
  *    reasons); a stored -1 becomes the longest choice ({@link #LONGEST_TURN_OFF_MS}). A process start
  *    while a screensaver already runs (no ACTION_DREAMING_STARTED for this process) arms the timer
  *    from that moment ({@link #checkAlreadyDreaming}).
- * Every Secure write runs on "z9x-lamp" and is idempotent; a ContentObserver re-applies the rules when
- * anything else changes these keys. If the dream cannot start or standby cannot be entered,
+ *  - Lumen OS 1.0.3: Global stay_on_while_plugged_in = 0. This base defaults it to 1 (stay awake on AC,
+ *    package "android"), and a projector is always on mains power, so PowerManagerService never reached
+ *    the idle time and the screensaver (and the standby after it) never started. SetupWraith's finish
+ *    writes it; our first-run (Z9xSetup Finisher) leaves it to this class. Written at every process start
+ *    (so once per boot) and when anything changes it, only when it is not 0 already (Developer options
+ *    "Stay awake" does not stick: the idle time is ours).
+ * Every Secure / Global write runs on "z9x-lamp" and is idempotent; a ContentObserver re-applies the rules
+ * when anything else changes these keys. If the dream cannot start or standby cannot be entered,
  * PowerManagerService's own sleep follows (PowerPolicy's sleep path: lamp off, no STR, power-off).
  */
 public final class IdleOwner {
@@ -67,6 +73,8 @@ public final class IdleOwner {
     private static final String ACTIVATE_ON_SLEEP = "screensaver_activate_on_sleep";
     private static final String SLEEP_TIMEOUT = "sleep_timeout";
     private static final String ATTENTIVE_TIMEOUT = "attentive_timeout";
+    /** Settings.Global, Lumen OS 1.0.3 (class comment). */
+    private static final String STAY_ON_WHILE_PLUGGED_IN = Settings.Global.STAY_ON_WHILE_PLUGGED_IN;
 
     static final String K_USER_OFF = "dream_user_off";
     private static final String K_SAVED = "dream_saved_components";
@@ -112,6 +120,7 @@ public final class IdleOwner {
                     ATTENTIVE_TIMEOUT}) {
                 cr.registerContentObserver(Settings.Secure.getUriFor(k), false, obs);
             }
+            cr.registerContentObserver(Settings.Global.getUriFor(STAY_ON_WHILE_PLUGGED_IN), false, obs);
         } catch (Throwable t) {
             Log.w(TAG, "observer: " + t);
         }
@@ -303,6 +312,19 @@ public final class IdleOwner {
             }
         } catch (Throwable t) {
             Log.w(TAG, "enforce (" + why + "): " + t);
+        }
+        // 4. Lumen OS 1.0.3: PowerManagerService's idle time must run on mains power too (class comment);
+        //    its own try, so a failure above never keeps the screensaver from starting
+        try {
+            ContentResolver cr = sApp.getContentResolver();
+            int so = Settings.Global.getInt(cr, STAY_ON_WHILE_PLUGGED_IN, 0);
+            if (so != 0) {
+                boolean ok = Settings.Global.putInt(cr, STAY_ON_WHILE_PLUGGED_IN, 0);
+                Log.i(TAG, STAY_ON_WHILE_PLUGGED_IN + " " + so + " -> 0 (" + why + "; the idle time starts the screensaver): "
+                        + ok);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, STAY_ON_WHILE_PLUGGED_IN + " (" + why + "): " + t);
         }
     }
 

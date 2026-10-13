@@ -2,7 +2,7 @@
 <!-- Module "game": қазақша translation of values/strings_game.xml. -->
 <resources>
     <string name="game_auto_console">Консоль үшін авторежим</string>
-    <string name="game_input_is_console">Бұл кіріс — ойын консолі</string>
+    <string name="game_input_is_console">Бұл кірісте ойын консолі</string>
     <string name="game_cue_title">Ойын режимі қосулы</string>
     <string name="game_chip_low_latency">Төмен кідіріс</string>
     <string name="game_chip_hz">%1$d Гц</string>

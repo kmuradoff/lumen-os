@@ -2,7 +2,7 @@
 <!-- Module "game": українська translation of values/strings_game.xml. -->
 <resources>
     <string name="game_auto_console">Автоматично для консолей</string>
-    <string name="game_input_is_console">Цей вхід — консоль</string>
+    <string name="game_input_is_console">Консоль на цьому вході</string>
     <string name="game_cue_title">Ігровий режим увімкнено</string>
     <string name="game_chip_low_latency">Низька затримка</string>
     <string name="game_chip_hz">%1$d Гц</string>

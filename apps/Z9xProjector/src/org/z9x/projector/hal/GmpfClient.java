@@ -168,6 +168,8 @@ public final class GmpfClient extends HidlCaller {
     private static final int GET_3DNR = 670;                       // (i32)   -> i32
     private static final int SET_3DNR = 671;                       // (i32,i32) -> bool
     private static final int GET_CURRENT_INPUT_SOURCE = 696;       // ()      -> i32
+    // Lumen OS 1.0.3 HDMI picture (source.HdmiSource): the stock HDMI player's source switch.
+    private static final int SWITCH_INPUT_SOURCE_WITH_CALLING_PID = 698; // (i32, u32) -> bool
 
     /** Picture/PQ calls always address window/source 0 (stock XgimiVideo: setPictureMode(0, i)). */
     private static final int WINDOW_MAIN = 0;
@@ -723,6 +725,21 @@ public final class GmpfClient extends HidlCaller {
 
     /** 696 getCurrentInputSource() -> SOURCE_*. UNVERIFIED whether it reports 1/2 while our TIF plays HDMI (QS open question). */
     public int getCurrentInputSource() throws RemoteException { return callRetI32(GET_CURRENT_INPUT_SOURCE); }
+
+    /**
+     * 698 switchInputSourceWithCallingPid(source, our pid) -> bool. SOURCE_HDMI1 / SOURCE_HDMI2 connect that
+     * HDMI input to the main video window (the vendor's setInputSource: disconnect, connect, unmute, enable),
+     * SOURCE_MEDIA gives the window back to Android: exactly what the stock HDMI player sends when it tunes and
+     * when it leaves (the vendor TV input HAL never switches by itself). The vendor keeps the pid only for its
+     * "client died, switch to MM" fallback, which needs 699 (never sent). Any other source is refused.
+     * TSV: W=writeInt32,writeUint32 R=readBool (a u32 is the same 4 bytes as an i32 on the wire).
+     */
+    public boolean switchInputSource(int source) throws RemoteException {
+        if (source != SOURCE_MEDIA && source != SOURCE_HDMI1 && source != SOURCE_HDMI2) {
+            throw new IllegalArgumentException("source " + source);
+        }
+        return callI32I32RetBool(SWITCH_INPUT_SOURCE_WITH_CALLING_PID, source, Process.myPid());
+    }
 
     // ------------------------------------------------------------------ 3D
     // ------------------------------------------------------------------ 3D (Lumen OS 1.0.2, display.ThreeD)
