@@ -1,0 +1,6 @@
+# Lumen OS Play 6 APEX keys (public). Per module: SHA-256 of the container certificate (DER) and of the
+# payload public key (AVB format = the apex_pubkey entry).
+com.android.configinfrastructure         container eb2777ce8aa4fc67c82ba03878a537c6da7540c05576915bb6bf8dea3b8d8c51  payload eb55d5dd0848a74cf6a91944e0edd143c4fefdd2b98776a91fd4891dd3f51f87
+com.android.devicelock                   container f6c7fc0d5e2cdabb97ea9f28bfe0fb4cd9240bdaeab7230f9324786e5981ba0f  payload ebe76f47f7bed443f57dcdda51f75f6830041eccff472c86cf5df127ec1b4d93
+com.android.ondevicepersonalization      container 1803771992afeeedb55eccf94a70201ca7f9137b7ef4e7137193490a631d8553  payload 04a84827bd078df7d45bf9f59c9b0a60b4cec2ff681af93cbbcae9f998b2b15c
+com.android.permission                   container 2f78c6d5c07111ebf765eb6f19e5e6297de06513b5be13833e8d4b0ca9e3b1a5  payload e7a6cd1535c92108a19abaca0cafeb4e820edd3b93b52b2794d0148c69e83152

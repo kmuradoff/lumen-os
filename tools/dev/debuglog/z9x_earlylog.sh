@@ -3,7 +3,8 @@
 # Lumen OS DIAG images only (never in a release image): boot log on a USB stick from the very start
 # of the boot, for a boot that never reaches 'on boot' (no adb, no z9x_diag). Started at 'on init' by
 # z9x_earlylog.rc. It loads the USB host modules itself (the vendor loads them only at
-# load_bpf_programs on the Z9X, at early-boot on the Play 6), mounts the first FAT/exFAT stick and writes ONLY into
+# load_bpf_programs on the Z9X; a device image whose vendor loads more of them later in the boot adds
+# /system/etc/xgimi/earlylog_usb.sh, sourced in every round with $K), mounts the first FAT/exFAT stick and writes ONLY into
 # <stick>/lumen_os_diag_logs/early/boot_N/ (N = 1..40; nothing else on the stick is read, changed or deleted).
 #   once:   pstore of the previous boot (its logcat and kernel log: why it ended), cmdline, PM51
 #           boot_reason / wakeup_reason, dmesg at the start
@@ -13,7 +14,7 @@
 # Read-only towards the system: no setprop, no service control, no write outside the stick folder.
 M=/dev/z9x_earlylog
 K=/vendor/lib/modules
-PLAY6=0; grep -q 'androidboot.xgimi.modelname=G0058' /proc/cmdline && PLAY6=1
+U=/system/etc/xgimi/earlylog_usb.sh
 mkdir -p $M
 mounted=0
 for i in $(seq 1 120); do
@@ -22,12 +23,8 @@ for i in $(seq 1 120); do
     insmod $K/mtu3.ko mtu3_dev_en=1 2>/dev/null
     insmod $K/xhci-mtk-hcd-tv.ko 2>/dev/null
   fi
-  # XGIMI Play 6 (G0058, MT5889): the vendor loads its MStar EHCI host only at early-boot
-  # (init.fusion.rc); same modules, same order. The vendor's own insmod later just finds them loaded.
-  if [ $PLAY6 = 1 ] && [ ! -d /sys/module/ehci_hcd ]; then
-    insmod $K/ehci-hcd.ko 2>/dev/null
-    insmod $K/phy-ms-usb.ko 2>/dev/null
-  fi
+  # optional device hook (insmod only): more USB host modules of this device's vendor
+  [ -f $U ] && . $U
   for d in /dev/block/sd?1 /dev/block/sd?; do
     [ -b "$d" ] || continue
     if mount -t vfat -o rw,noatime "$d" $M 2>/dev/null || mount -t exfat -o rw,noatime "$d" $M 2>/dev/null; then

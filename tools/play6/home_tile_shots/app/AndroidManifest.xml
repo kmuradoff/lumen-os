@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Render harness of Lumen Home's Inputs tiles (tools/play6/home_tile_shots/run.sh). Test emulator only, never
+  shipped. Package org.z9x.home so Home's own sources and resources build unchanged; no Application class, no
+  HOME filter: it is not a launcher. run.sh uninstalls it afterwards.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.home"
+    android:versionCode="1"
+    android:versionName="1.0">
+    <application android:label="Tile shots" android:supportsRtl="true">
+        <activity
+            android:name=".shots.TileShotsActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
+    </application>
+</manifest>

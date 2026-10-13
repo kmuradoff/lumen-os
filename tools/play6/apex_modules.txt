@@ -1,0 +1,12 @@
+# APEX modules of the Play 6 base that the Play 6 sign stage re-signs (docs/play6/SETTINGS_PLAN.md 2.1, rule S1;
+# docs/play6/impl/p0-2-signing.md, Finding A). Each holds an APK on the AOSP test platform certificate
+# (sign_play6.py, t11 base, 2026-10-12). That APK moves to the Play 6 platform key together with framework-res,
+# so its payload is rebuilt (laptop, apex_laptop.py through build_test.sh) and signed with a Play 6 APEX payload
+# key, and the container with a Play 6 APEX container key: tools/play6/gen_play6_keys.sh makes one pair per
+# module below in ~/.lumen-keys/play6/apex. D 6.6 forbids removing any of them (classpath jars).
+# Every other APEX of the base stays byte for byte as built. A base APEX with a test-platform APK whose module
+# is not listed here stops sign_play6.py: add it here, run gen_play6_keys.sh, then sign again.
+com.android.configinfrastructure
+com.android.devicelock
+com.android.ondevicepersonalization
+com.android.permission

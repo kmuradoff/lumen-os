@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS on the XGIMI Play 6 (G0058): compatibility with XGIMI's vendor partition, which is never modified;
+# everything here swaps something in at boot with a bind mount (the same approach as the Z9X's xgimi_compat.rc).
+# 1) XGIMI ships system apps signed with its own platform key under sharedUserId android.uid.system in
+#    /vendor/priv-app (com.xgimi.appdb, com.xgimiui.api) and /vendor/app. A framework signed with another
+#    key aborts in PackageManager ("Signature mismatch on system package ... for shared user", t6 USB log),
+#    before any overlay can hide them, so both folders are hidden before the package scan.
+on post-fs-data
+    mount none /system/etc/empty_dir /vendor/app bind
+    mount none /system/etc/empty_dir /vendor/priv-app bind

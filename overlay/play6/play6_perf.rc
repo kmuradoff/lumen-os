@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS on the XGIMI Play 6: memory and speed experiments (docs/play6/inventory/D_play6_performance.md
+# 6.2, docs/play6/SETTINGS_PLAN.md section 4), test builds only. tools/play6/compose.sh installs it as
+# /system/product/etc/init/play6_perf.rc only with --exp naming 2 or 3, and removes the '#expN ' prefix of
+# the chosen experiments; the other lines stay comments.
+# Product rc on purpose: parsed after /vendor/etc/init, so on sys.boot_completed=1 these run after the
+# vendor's init.fusion.rc. Init builtins only (write, stop): nothing here can block or fail the boot.
+
+# EXP-2: the vendor raises extra_free_kbytes to 51200 at boot_completed (init.fusion.rc:175). With the
+# Android 14 lmkd, free memory under the low watermark alone kills cached apps (t10: 5 LOW_MEM kills
+# 2 s after boot, 580 MB page cache, zram untouched). Put back the framework's own value
+# (ProcessList: 1920 x 1080 x 4 x 3 / 1024 = 24300).
+#exp2 on property:sys.boot_completed=1 && property:sys.sysctl.extra_free_kbytes=*
+#exp2     write /proc/sys/vm/extra_free_kbytes ${sys.sysctl.extra_free_kbytes}
+
+# EXP-3: xgimipref only reads /proc and logs "CPU Pressure"; it keeps `top -b -d 10` running for that.
+#exp3 on property:init.svc.xgimipref=running
+#exp3     stop xgimipref

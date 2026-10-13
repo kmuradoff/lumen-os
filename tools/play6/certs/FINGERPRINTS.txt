@@ -1,0 +1,5 @@
+# Lumen OS Play 6 certificates (public). SHA-256 of the DER certificate.
+# Separate from the Z9X list (tools/sign/release_certs/FINGERPRINTS.txt): no Play 6 key may appear there.
+# APEX keys: apex/FINGERPRINTS.txt. installer/certs/play6/ota.x509.pem is a byte copy of ota.x509.pem.
+platform      e697631cf7cd5c4c4f3eb220398ce949a177a6b35744631f1b3620c431f56e1e
+ota           6134064fe6533e4a17d6a0ec57b3193f01fa743178048545f7a4e9d967e4c872
