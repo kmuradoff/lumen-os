@@ -1,3 +1,14 @@
+# Z9xProjector, next (Lumen OS 1.0.4, not built yet)
+
+- Manual optical zoom removed from the quick panel (Keystone page), owner 2026-10-14. Test on 1.0.3 with logs
+  (docs/z9x/OPEN_zoom_103.md): every 119 moves the lens about 80 motor steps and the picture changes each time,
+  but XGIMI's position index (116) counts 13 coarse positions and lags 2 or 3 presses; worse, stepping back from
+  the small end, XGIMI's zoom controller reads its reference sensor near motor step 1870, resets its counter
+  to 0 and from then on believes the lens is at the big end while it is at the small one, so further steps
+  push the lens against the end. Not something the app can correct. "Fit to screen now" (same page) moves
+  the zoom with XGIMI's own logic and finds the position itself. OpticalZoomPanel stays only for its connect
+  hook, which closes a zoom session a dead process left open (120 + 18(false,2)).
+
 # Z9xProjector, Lumen OS 1.0.3 build (2026-10-13)
 
 - `VERSION_CODE=104 VERSION_NAME=1.0.3` (test platform key; the release keys come with the image's sign stage):
