@@ -47,6 +47,17 @@ cd ~/lineage/frameworks/av
 git apply ~/lumen-os/lineage/patches/frameworks_av_C2Store_igba_hidl.patch
 ```
 
+Our fix for the HDMI inputs (since 1.0.3: a signal or cable change no longer hangs the system). Its paths
+start at the top of the LineageOS tree, so `-p3` strips `a/frameworks/base/`:
+
+```sh
+cd ~/lineage/frameworks/base
+git apply -p3 ~/lumen-os/lineage/patches/z9x/0001-tvinput-jni-stream-lock-deadlock.patch
+```
+
+Apply both before the build in step 2. If you built LineageOS before applying the second one, run
+`m libandroid_servers` after it.
+
 ## 2. Build LineageOS
 
 ```sh
@@ -99,7 +110,7 @@ The finished files land in `build/selfbuild/release/`: the image, `SHA256SUMS`, 
 From here on, follow the [install guide](../install/en.md), but use the installer from the build folder:
 
 ```sh
-build/selfbuild/release/installer/lumen-install.sh --image build/selfbuild/release/lumen-os-1.0.2-nogms-system.img
+build/selfbuild/release/installer/lumen-install.sh --image build/selfbuild/release/lumen-os-1.0.3-nogms-system.img
 ```
 
 ## How this was checked
@@ -113,8 +124,9 @@ build/selfbuild/release/installer/lumen-install.sh --image build/selfbuild/relea
   certificate, the SELinux rules that name the platform certificate, and the build number in build.prop.
 - The image build runs the same checks as our releases: no MediaTek or XGIMI files, no Google apps, every
   app and APEX module signed with your keys, every file in the image identical to what was built. The one
-  difference: instead of the checksums of our own builds (`libcodec2_vndk`, TvInput, AirPlay), yours are
-  checked.
+  difference: instead of the checksums of our own builds (`libcodec2_vndk`, `libandroid_servers`, TvInput,
+  AirPlay), yours are checked. Since 1.0.3 the build also checks that your `libandroid_servers` carries the
+  HDMI fix.
 
 If something does not build, open an [issue](https://github.com/kmuradoff/lumen-os/issues) with the
 command output.

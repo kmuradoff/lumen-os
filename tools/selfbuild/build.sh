@@ -12,7 +12,8 @@
 #
 # Environment:
 #   LINEAGE      your LineageOS 21 tree, synced from lineage/manifests/lumen-lineage-21.xml, with
-#                lineage/patches applied, `breakfast gsi_tv_arm64` + `m systemimage apksigner` done (required)
+#                lineage/patches and lineage/patches/z9x applied, `breakfast gsi_tv_arm64` +
+#                `m systemimage apksigner` done (required)
 #   APKSIGNER    an apksigner with --alignment-preserved (default: the one `m apksigner` builds; the
 #                prebuilt in prebuilts/sdk is too old)
 #   KEYS_DIR     your keys (default ~/.lumen-self-keys; made by 'keys'; never inside this repository)
@@ -120,7 +121,7 @@ cmd_tree() {
   a=$(ls "$L"/out/soong/.intermediates/frameworks/base/framework/android_common/*/turbine-combined/framework.jar 2>/dev/null | head -n 1)
   [ -n "$a" ] || die "no framework header jar in $L/out/soong (finish 'm systemimage')"
   cp "$a" "$TREE/apps/sdk/framework-full-headers.jar"
-  log "3/6 libcodec2_vndk with lineage/patches (overlay/v1/c2vndk)"
+  log "3/6 libcodec2_vndk with lineage/patches (overlay/v1/c2vndk), libandroid_servers with lineage/patches/z9x (overlay/v1/syslib)"
   git -C "$L/frameworks/av" apply --reverse --check "$REPO/lineage/patches/frameworks_av_C2Store_igba_hidl.patch" 2>/dev/null \
     || die "lineage/patches/frameworks_av_C2Store_igba_hidl.patch is not applied in $L/frameworks/av (apply it, rebuild: docs/selfbuild)"
   # the system variant of the patched library (soong output; also there when the patch came after the
@@ -135,6 +136,27 @@ cmd_tree() {
     fi
     mkdir -p "$TREE/overlay/v1/c2vndk/system/${b%%:*}"; cp "$a" "$TREE/overlay/v1/c2vndk/system/${b%%:*}/libcodec2_vndk.so"
     log "  ${b%%:*}: ${a#$L/}"
+  done
+  # 1.0.3: libandroid_servers with lineage/patches/z9x (overlay/v1/syslib; the image build, SYSLIB=1 from 1.0.3,
+  # checks that each copy carries the fix). These patches are against frameworks/base (paths
+  # a/frameworks/base/...), applied there with git apply -p3; the installed copies must be newer than every
+  # patched file.
+  local p f newest=""
+  for p in "$REPO"/lineage/patches/z9x/*.patch; do
+    [ -f "$p" ] || continue
+    for f in $(sed -n 's#^+++ b/##p' "$p" | sed 's/[[:space:]].*//'); do
+      case $f in frameworks/base/*) ;; *) die "lineage/patches/z9x/${p##*/}: $f is not in frameworks/base (build.sh 'tree' applies these there)" ;; esac
+      if [ -z "$newest" ] || [ "$L/$f" -nt "$newest" ]; then newest=$L/$f; fi
+    done
+    git -C "$L/frameworks/base" apply -p3 --reverse --check "$p" 2>/dev/null \
+      || die "lineage/patches/z9x/${p##*/} is not applied in $L/frameworks/base (git apply -p3, then rebuild: docs/selfbuild)"
+  done
+  [ -n "$newest" ] || die "no patch in lineage/patches/z9x"
+  for b in lib lib64; do
+    a=$L/out/target/product/generic_arm64/system/$b/libandroid_servers.so
+    [ -f "$a" ] && [ "$a" -nt "$newest" ] || die "no system/$b/libandroid_servers.so built after lineage/patches/z9x: run 'm libandroid_servers' (or 'm systemimage') in $L"
+    mkdir -p "$TREE/overlay/v1/syslib/system/$b"; cp "$a" "$TREE/overlay/v1/syslib/system/$b/libandroid_servers.so"
+    log "  $b: ${a#$L/}"
   done
   log "4/6 boot animation (tools/brand/gen_bootanim.py)"
   if [ -n "${BOOTANIM_ZIP:-}" ]; then

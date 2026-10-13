@@ -105,12 +105,24 @@
 #   - 1.0.1 final, 20261009e: Z9xFrameworkKeysOverlay sets config_maxUiWidth 3840 (TvFrameworkOverlay's 1920
 #     made WindowManager run the 4K start of 20261009d at 1920x1080, so it fell back); preflight requires it
 #     while ro.z9x.uires.allow=1 (lumen_checks.py maxui). Z9xProjector: the OFF switch is visible again.
+#   - 1.0.3: system library slot overlay/v1/syslib (SYSLIB=1, the default from VER 1.0.3; SYSLIBS / SYSLIBSHA /
+#     SYSLIBBASESHA below), built like the libcodec2_vndk one: our rebuild of the base's libandroid_servers.so
+#     (both ABIs, the base has both; system_server loads the 64-bit one) from the LineageOS 21 source of the
+#     base + lineage/patches/z9x (lineage/z9x_lib_build.sh on the build laptop): JTvInputHal no longer locks
+#     its stream lock twice, so an HDMI signal or cable change cannot hang system_server. Each file must be an
+#     ELF shared object of its path's class (lib64: 64-bit AArch64, lib: 32-bit ARM) with the sha256 pinned in
+#     SYSLIBSHA, must export the symbol only the patched source has (SYSLIBMARK: an unpatched rebuild, for
+#     example from an override that was not mounted, is refused before any pin), and replaces the base member
+#     (mode 0644, label system_lib_file; the base check pins the member it replaces). A missing file or pin
+#     stops the preflight with a clear message (the sha256 to pin when the file is there) only while SYSLIB=1;
+#     SYSLIB=0 keeps the base's libraries (1.0.2 and older).
 #
 # Kept from v6.5 (same checks as z9x_v65.sh): keylayouts (STB_POWER WAKE, factory remotes POWER),
 # Generic.kl (base + key 142), idc, z9x_audio (click curve), z9x_setup.rc (byte-identical, C25),
 # z9x_nui, z9x_bootinfo, z9x_poweroff, z9x_diag (passive), the MTK Codec2 store plugin (6 stock libs,
 # pinned) + our libcodec2_vndk rebuild (pinned), audio stream volumes, the bluetooth class fix,
-# ro.setupwizard.mode removal, persist.z9x.firstrun.
+# ro.setupwizard.mode removal, persist.z9x.firstrun. Since 1.0.3 the same kind of pinned rebuild for system
+# libraries: overlay/v1/syslib (libandroid_servers.so, SYSLIB=1).
 #
 # Review fixes 2026-10-07:
 #   - USB debugging: ro.adb.secure=1 and persist.sys.usb.config=none (system_ext lines patched, product
@@ -167,6 +179,8 @@
 #     VARIANT=public: ./ota/image/{z9x_blobs.sh,z9x_blobs.rc,blobs_allow.txt,xgimi_compat_public.rc} (no c2store),
 #                     ./ota/image/{z9x_gapps.sh,z9x_gapps.rc,gapps_allow.txt,z9x-gapps-sysconfig.xml}, ./ota/gapps_allow.py
 #   ../overlay/v1/z9x_uires/{z9x_uires.sh,init.lineage.atv.scaling.rc,product_prop.txt,test/}
+#   SYSLIB=1 (1.0.3): ../overlay/v1/syslib/system/{lib,lib64}/libandroid_servers.so (exactly SYSLIBS, pinned in
+#     SYSLIBSHA; lineage/z9x_lib_build.sh -> ~/z9x-lib-out/target/product/*/system/{lib,lib64}/ on the laptop)
 #   ./sign/{testcerts,release_certs}/*.x509.pem (public certificates only)
 # Env: BASE OUTDIR TOOLS V1 APPS OTAIMG MKFS FSCK DUMP MIN_FREE_KB (8000000) INCREMENTAL_SUFFIX (lumen10)
 #      BUILD_DATE (yyyymmdd, default today UTC) MTIME_EPOCH (mtime of added members, default now) DEXPREOPT (1 on Linux, 0 elsewhere) LINEAGE (~/lineage)
@@ -176,6 +190,7 @@
 #      ALLOW_TEST_KEYS=1 (image of the unsigned tar for a lab test; ro.z9x.keys becomes 'test')
 #      VARIANT (private | public, default private; see above)  GMS (1 | 0, default 1; 0 only with VARIANT=public)
 #      RELDIR (release files of 'remote', default $LUMEN_OUT/release)
+#      SYSLIB (1 | 0: the overlay/v1/syslib slot; default 1 from VER 1.0.3, else 0; 'remote' passes it to the laptop)
 #      BUILDER (user@host of the build laptop) BUILDER_KEY (its ssh key; else SSH_KEY, else ~/.ssh/id_ed25519):
 #      sign / remote only, from the environment or ~/.config/lumen/builder.env (personal, never in the repo)
 #      LUMEN_OUT (gsi/build/lumen_v1)
@@ -226,14 +241,24 @@ EDITION_SFX=; [ "$GMS" = 0 ] && EDITION_SFX=-nogms
 MANIFEST_BASE=https://github.com/kmuradoff/lumen-os/releases/latest/download
 CHANNEL=$([ "$VARIANT" = public ] && echo public || echo stable)$EDITION_SFX
 MANIFEST_URL=$MANIFEST_BASE/update-$CHANNEL.json
-# Lumen OS release (1.0.2; 1.0.0 shipped 2026-10-08, 1.0.1 on 2026-10-10): user-facing version and the updater's version_code.
+# Lumen OS release (1.0.3; 1.0.0 shipped 2026-10-08, 1.0.1 and 1.0.2 on 2026-10-10): user-facing version and the updater's version_code.
 # Scheme (tools/ota/image/ota_props.txt, docs/ota.md): version_code = major*10000 + minor*100 + patch + 1,
 # so 1.0.0 = 10001 is offered over the 1.0 test builds (version_code 10000, build_id lumen-1.0-<date>)
-# 1.0.1 = 10002 over 1.0.0 and 1.0.2 = 10003 over 1.0.1.
-# ro.z9x.version, ro.lumen.version, the build id lumen-$VER-<date>[suffix] and the version_code are all
-# checked against VER in the preflight.
-VER=1.0.2
+# 1.0.1 = 10002 over 1.0.0, 1.0.2 = 10003 over 1.0.1 and 1.0.3 = 10004 over 1.0.2.
+# ro.z9x.version, ro.lumen.version, the build id lumen-$VER-<date>[suffix], the version_code and the APK set's
+# versionName (tools/lumen/lumen_checks.py VERSION_NAME) are all checked against VER in the preflight.
+VER=1.0.3
 BUILD_ID=lumen-$VER-$BUILD_DATE$BUILD_ID_SUFFIX
+# 1.0.3 system library slot (header, SYSLIBS below): on by default from VER 1.0.3; SYSLIB=0 keeps the base's
+# libraries. Only these two values (an unset or empty SYSLIB takes the default).
+SYSLIB_DEFAULT=0
+case $VER in
+  [0-9]*.[0-9]*.[0-9]*)
+    _r=${VER#*.}
+    if [ $((10#${VER%%.*} * 10000 + 10#${_r%%.*} * 100 + 10#${_r#*.})) -ge 10003 ]; then SYSLIB_DEFAULT=1; fi ;;
+esac
+SYSLIB=${SYSLIB:-$SYSLIB_DEFAULT}
+case $SYSLIB in 0|1) ;; *) echo "ERROR: SYSLIB must be 1 or 0 (got '$SYSLIB')" >&2; exit 1 ;; esac
 case $(uname -s) in Linux) DEXPREOPT=${DEXPREOPT:-1} ;; *) DEXPREOPT=${DEXPREOPT:-0} ;; esac
 pick() { for c in "$@"; do if command -v "$c" >/dev/null 2>&1; then command -v "$c"; return 0; fi; done; return 1; }
 LH=${LINEAGE:-$HOME/lineage}/out/host/linux-x86/bin
@@ -355,6 +380,17 @@ VNDKSHA=(8164f62fd64015c3db567900859b48138fa4facd24fe28d15a3e3e00c8d357ee
          a7c29ef2c1fd31abcce24d447042c4e8f4fd87e420de8736e2d91e250ad11182)
 VNDKBASESHA=(143175136c483f455f3ea4a61c65e03bf9b62250a8803a9c71c450726f1ce049
              295489d93b4f06712f2fca086830483e6ca3acb9246f979598a57d2cf74f2099)
+# 1.0.3 system library slot (header; SYSLIB=1): overlay/v1/syslib/<path> replaces the base member <path>.
+# SYSLIBSHA: sha256 of our rebuilds ('-' = not pinned yet: SYSLIB=1 stops and prints the file's sha256);
+# SYSLIBBASESHA: the base members they replace (system_tv_v4.tar, read from the 1.0.2 build's tar, where they
+# were copied unchanged).
+SYSLIBS=(system/lib/libandroid_servers.so system/lib64/libandroid_servers.so)
+SYSLIBSHA=(6b44f10a73814704e3a7bf0be2c5c9c775ac24ee255bf46525babff3997997c8 28144163b58edd18f4baf771e000d71836a7c8d73765bc465349c6fe261003bf)
+SYSLIBBASESHA=(5ea44afb03b2112633a8d693a25e2b9541725444aa200dd0bef13f0f5097ac6a
+               e52b8e6b1a3cc582decc6267d4ab969fb71407c2df223d0a96ef4da4ff8fefea)
+# SYSLIBMARK: a dynamic symbol that only the patched source exports, checked in each file before its pin
+# (lineage/patches/z9x/0001: JTvInputHal::removeStreamLocked; the base exports removeStream only)
+SYSLIBMARK=(_ZN7android11JTvInputHal18removeStreamLockedEii _ZN7android11JTvInputHal18removeStreamLockedEii)
 c2dest() { case $1 in system_ext/*) echo "system/$1" ;; *) echo "$1" ;; esac; }
 # VARIANT=public (tools/ota/image/HANDOFF.md section 2): the base's XGIMI / MediaTek audio files (bound by the
 # base's xgimi_compat.rc on the private image) leave the image; z9x_blobs.sh binds the user's own copies
@@ -653,6 +689,9 @@ preflight() {
   grep -qx "ro.z9x.version_code=$OS_VERSION_CODE" "$OTAIMG/ota_props.txt" \
     || die "ota_props.txt: ro.z9x.version_code must be $OS_VERSION_CODE for $VER (major*10000 + minor*100 + patch + 1)"
   [ "$OS_VERSION_CODE" -gt 10000 ] || die "version_code $OS_VERSION_CODE is not above the 1.0 test builds (10000)"
+  # the APK set is built for one release: its versionName (lumen_checks.py VERSION_NAME) is this VER
+  vn=$(sed -n "s/^VERSION_NAME = '\([^']*\)'.*/\1/p" "$CHK")
+  [ "$vn" = "$VER" ] || die "VER=$VER, but tools/lumen/lumen_checks.py VERSION_NAME is '$vn': bump both together"
   case ",$AB_OTA," in *,vbmeta,*|*,system,*|*,vendor,*) die "ab_ota_partitions must not list vbmeta/system/vendor" ;; esac
   if cat "$V1/build_prop_v1.txt" "$V1/product_prop_v1.txt" "$UIRES/product_prop.txt" "$OTAIMG/ota_props.txt" | grep -v '^#' \
       | grep -qE '^(ro\.product\.(system\.|product\.|system_ext\.|vendor\.|odm\.)?(brand|model|manufacturer|device|name)|ro\.build\.(fingerprint|tags|type|id|version\.release|version\.sdk)|ro\.setupwizard\.mode|ro\.build\.display\.id|ro\.lineage)='; then
@@ -713,6 +752,8 @@ preflight() {
   else
     for i in "${!VNDKLIBS[@]}"; do [ "$(sha256 "$V1/c2vndk/${VNDKLIBS[$i]}")" = "${VNDKSHA[$i]}" ] || die "c2vndk/${VNDKLIBS[$i]}: not the pinned rebuild"; done
   fi
+  # ---- 1.0.3 system library slot (SYSLIB=1)
+  syslib_preflight
   # ---- XML inputs
   python3 - "$V1" "$OTAIMG/$OTA_PERM" "$V1/z9x-sysconfig-nogms.xml" <<'PY' || die "XML check failed"
 import os, sys, xml.etree.ElementTree as ET
@@ -845,6 +886,45 @@ for p in paths:
 assert paths == from_bash, 'bash read %s' % from_bash
 print('nogms_remove ok: %d paths' % len(paths))
 PY
+}
+
+# 1.0.3 system library slot (header): with SYSLIB=1 exactly the SYSLIBS files in overlay/v1/syslib, each an ELF
+# shared object of its path's class (lib64: 64-bit little-endian AArch64, lib: 32-bit little-endian ARM) with
+# its SYSLIBMARK symbol and the pinned rebuild (SYSLIBSHA; a self-build's own rebuild is not pinned, like c2vndk).
+# SYSLIB=0 reads nothing.
+syslib_preflight() {
+  local i f h cls mach kind got n
+  [ ${#SYSLIBS[@]} -eq ${#SYSLIBSHA[@]} ] && [ ${#SYSLIBS[@]} -eq ${#SYSLIBBASESHA[@]} ] && [ ${#SYSLIBS[@]} -eq ${#SYSLIBMARK[@]} ] \
+    || die "SYSLIBS, SYSLIBSHA, SYSLIBBASESHA and SYSLIBMARK must list the same number of entries"
+  if [ "$SYSLIB" = 0 ]; then
+    echo "syslib: off (SYSLIB=0): the base's ${SYSLIBS[*]} stay"
+    return 0
+  fi
+  for i in "${!SYSLIBS[@]}"; do
+    f=$V1/syslib/${SYSLIBS[$i]}
+    [ -s "$f" ] || die "SYSLIB=1: no $f. Copy the rebuilt library there (build laptop: lineage/z9x_lib_build.sh -> ~/z9x-lib-out/target/product/*/${SYSLIBS[$i]}) and pin its sha256 in SYSLIBSHA (tools/lumen_v1.sh); SYSLIB=0 builds with the base's library, without the fix"
+    case ${SYSLIBS[$i]} in
+      system/lib64/*) cls=02; mach=b700; kind="64-bit AArch64" ;;
+      system/lib/*) cls=01; mach=2800; kind="32-bit ARM" ;;
+      *) die "SYSLIBS: ${SYSLIBS[$i]} is not under system/lib or system/lib64" ;;
+    esac
+    # e_ident (magic, class, little-endian), e_type ET_DYN at 16, e_machine at 18
+    h=$(od -An -tx1 -N20 "$f" | tr -d ' \n')
+    [ "${h:0:12}" = "7f454c46${cls}01" ] && [ "${h:32:4}" = 0300 ] && [ "${h:36:4}" = "$mach" ] \
+      || die "syslib/${SYSLIBS[$i]}: not a $kind ELF shared object (header $h)"
+    # the fix itself, also in a self-build: an unpatched rebuild is a valid ELF too
+    LC_ALL=C grep -a -q -F "${SYSLIBMARK[$i]}" "$f" \
+      || die "syslib/${SYSLIBS[$i]}: no ${SYSLIBMARK[$i]} in it, so it is not built with lineage/patches/z9x (an override not mounted? lineage/z9x_lib_build.sh)"
+    if [ "${LUMEN_SELF:-0}" != 1 ]; then
+      got=$(sha256 "$f")
+      [ "${SYSLIBSHA[$i]}" != - ] \
+        || die "syslib/${SYSLIBS[$i]}: not pinned yet. Once it is the rebuild with lineage/patches/z9x, set its SYSLIBSHA entry in tools/lumen_v1.sh to $got"
+      [ "$got" = "${SYSLIBSHA[$i]}" ] || die "syslib/${SYSLIBS[$i]}: sha256 $got, not the pinned rebuild ${SYSLIBSHA[$i]}"
+    fi
+  done
+  n=$(find "$V1/syslib" -type f | wc -l | tr -d ' ')
+  [ "$n" -eq ${#SYSLIBS[@]} ] || die "$V1/syslib has $n files, expected exactly ${#SYSLIBS[@]}: ${SYSLIBS[*]}"
+  echo "syslib: ${#SYSLIBS[@]} rebuilt libraries ($([ "${LUMEN_SELF:-0}" = 1 ] && echo 'self-build, ELF checks only' || echo 'pinned'))"
 }
 
 # VARIANT=public inputs (tools/ota/image/HANDOFF.md section 2): z9x_blobs.{sh,rc}, blobs_allow.txt and
@@ -1091,6 +1171,14 @@ gapps_members() {
   add system/etc/z9x/gapps/sysconfig/z9x-gapps.xml "$OTAIMG/$GAPPS_XML" 644
 }
 
+# 1.0.3 system library slot (SYSLIB=1, prep only): our rebuilds over the base members, same mode and label
+# (the member diff checks the replacement and its bytes; the image stage reads it back)
+syslib_members() {
+  local l
+  [ "$SYSLIB" = 1 ] || return 0
+  for l in "${SYSLIBS[@]}"; do repl "$l" "$V1/syslib/$l" 644 "$LIBLABEL"; done
+}
+
 # ======================================================================== stage: members (host test)
 # tools/ota/test/public_members.sh: only codec_members (+ the XGIMI_FILES removal of a public image, + for
 # GMS=0 the removal of every nogms_remove.txt path the test base has) applied to BASE (a small test tar)
@@ -1162,7 +1250,11 @@ stage_prep() {
       system/product/priv-app/LineageCustomizer/LineageCustomizer.apk "$UIRES_RC") \
   VNDK="$(for i in "${!VNDKLIBS[@]}"; do
             if [ "${LUMEN_SELF:-0}" = 1 ]; then echo "${VNDKLIBS[$i]}=$(tarcat "$BASE" "${VNDKLIBS[$i]}" | sha256in)"
-            else echo "${VNDKLIBS[$i]}=${VNDKBASESHA[$i]}"; fi; done)" \
+            else echo "${VNDKLIBS[$i]}=${VNDKBASESHA[$i]}"; fi; done
+          # 1.0.3: the base members the system library slot replaces, same check, SYSLIB=1 only
+          if [ "$SYSLIB" = 1 ]; then for i in "${!SYSLIBS[@]}"; do
+            if [ "${LUMEN_SELF:-0}" = 1 ]; then echo "${SYSLIBS[$i]}=$(tarcat "$BASE" "${SYSLIBS[$i]}" | sha256in)"
+            else echo "${SYSLIBS[$i]}=${SYSLIBBASESHA[$i]}"; fi; done; fi)" \
   LIBLABEL=$LIBLABEL GENERIC_KL=$V1/keylayout/Generic.kl LINEAGE_DISPLAY_PROP_FILE=system/build.prop \
     python3 "$CHK" base "$BASE" "${REMOVE[@]}" || die "base check failed"
   # the LineageOS file z9x_uires replaces: still exactly its two 'on fs' setprops (a rebase that changes it
@@ -1256,6 +1348,7 @@ PY
   fi
   codec_members
   if [ "$VARIANT" = public ]; then gapps_members; fi
+  syslib_members
 
   # ---- props
   bid=$(tarprop "$BASE" system/build.prop ro.build.id); [ -n "$bid" ] || die "no ro.build.id in the base"
@@ -1345,6 +1438,8 @@ ro.adb.secure=1'
   {
     echo "name=$NAME"; echo "variant=$VARIANT"; echo "gms=$GMS"; echo "build_date=$BUILD_DATE"; echo "build_id=$BUILD_ID"; echo "mtime_epoch=$MTIME_EPOCH"; echo "dexpreopt=$DEXPREOPT"
     echo "partial=${ALLOW_MISSING_APKS:-0}"; echo "power_rc=${POWERRC[*]:-none}"
+    echo "syslib=$SYSLIB"
+    if [ "$SYSLIB" = 1 ]; then for l in "${SYSLIBS[@]}"; do echo "syslib_file=$l sha256=$(sha256 "$V1/syslib/$l")"; done; fi
     echo "base=$(basename "$BASE") $(wc -c < "$BASE" | tr -d ' ')"
     echo "script_sha256=$(sha256 "$0")"
     while IFS=$'\t' read -r n pkg dest dexo signer h vn vc; do echo "apk=$n $pkg $vn ($vc) $signer dexpreopt=$dexo sha256=$h"; done < "$PLAN"
@@ -1560,7 +1655,7 @@ stage_remote() {
     && die "a private key reached the laptop" || true
   log "[remote] 3/6 prep on the laptop"
   thermal
-  "${SSH[@]}" "cd ~/z9x/out && VARIANT=$VARIANT GMS=$GMS BUILD_DATE=$BUILD_DATE BUILD_ID_SUFFIX=$BUILD_ID_SUFFIX MTIME_EPOCH=$MTIME_EPOCH INCREMENTAL_SUFFIX=$INCREMENTAL_SUFFIX nice -n 10 ionice -c3 bash ../tools/lumen_v1.sh prep"
+  "${SSH[@]}" "cd ~/z9x/out && VARIANT=$VARIANT GMS=$GMS SYSLIB=$SYSLIB BUILD_DATE=$BUILD_DATE BUILD_ID_SUFFIX=$BUILD_ID_SUFFIX MTIME_EPOCH=$MTIME_EPOCH INCREMENTAL_SUFFIX=$INCREMENTAL_SUFFIX nice -n 10 ionice -c3 bash ../tools/lumen_v1.sh prep"
   grep -qx "build_id=$BUILD_ID" <("${SSH[@]}" "cat ~/z9x/out/system_tv_${NAME}_unsigned.tar.info") \
     || die "the laptop's unsigned tar is not build $BUILD_ID"
   log "[remote] 4/6 unsigned tar -> Mac, sign"
@@ -1594,9 +1689,11 @@ stage_remote() {
 # (KEYS_DIR, tools/sign/gen_keys.sh) and their public certificates (LUMEN_RELEASE_CERTS = gen_keys.sh
 # CERTS_OUT), the no-Google edition only. Every check of a release build runs, except the pins of Lumen OS's
 # own build outputs, which a self-build replaces by its own (LUMEN_SELF=1): the libcodec2_vndk rebuild
-# (overlay/v1/c2vndk = your LineageOS build), the base's libcodec2_vndk, and the two pinned APKs (TvInput,
-# AirPlay: built from source). Your projector's codec and audio files are checked against blobs_allow.txt
-# like ours (tools/selfbuild/make_base.sh). tools/selfbuild/build.sh runs this with the right environment.
+# (overlay/v1/c2vndk = your LineageOS build), the base's libcodec2_vndk, with SYSLIB=1 the system library
+# rebuilds (overlay/v1/syslib = your LineageOS build with lineage/patches/z9x, ELF checks only) and the base
+# members they replace, and the two pinned APKs (TvInput, AirPlay: built from source). Your projector's codec
+# and audio files are checked against blobs_allow.txt like ours (tools/selfbuild/make_base.sh).
+# tools/selfbuild/build.sh runs this with the right environment.
 stage_self() {
   [ "${LUMEN_SELF:-0}" = 1 ] || die "self: set LUMEN_SELF=1 (docs/selfbuild; tools/selfbuild/build.sh does)"
   [ "$VARIANT" = public ] && [ "$GMS" = 0 ] || die "self: VARIANT=public GMS=0 only"

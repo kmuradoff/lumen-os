@@ -47,6 +47,17 @@ cd ~/lineage/frameworks/av
 git apply ~/lumen-os/lineage/patches/frameworks_av_C2Store_igba_hidl.patch
 ```
 
+Наше исправление для входов HDMI (с 1.0.3: смена сигнала или кабеля больше не вешает систему). Пути в нём
+начинаются от корня дерева LineageOS, поэтому `-p3` убирает `a/frameworks/base/`:
+
+```sh
+cd ~/lineage/frameworks/base
+git apply -p3 ~/lumen-os/lineage/patches/z9x/0001-tvinput-jni-stream-lock-deadlock.patch
+```
+
+Оба патча нужно применить до сборки в шаге 2. Если LineageOS уже была собрана до второго патча, после него
+выполните `m libandroid_servers`.
+
 ## 2. Сборка LineageOS
 
 ```sh
@@ -99,7 +110,7 @@ tools/selfbuild/build.sh all ~/lineage/out/target/product/generic_arm64/system.i
 Дальше всё как в [инструкции по установке](../install/ru.md), только установщик берите из папки сборки:
 
 ```sh
-build/selfbuild/release/installer/lumen-install.sh --image build/selfbuild/release/lumen-os-1.0.2-nogms-system.img
+build/selfbuild/release/installer/lumen-install.sh --image build/selfbuild/release/lumen-os-1.0.3-nogms-system.img
 ```
 
 ## Как это проверено
@@ -114,7 +125,8 @@ build/selfbuild/release/installer/lumen-install.sh --image build/selfbuild/relea
 - При сборке образа работают те же проверки, что и для наших релизов. Нет файлов MediaTek и XGIMI, нет
   приложений Google, каждое приложение и модуль APEX подписаны вашими ключами, каждый файл образа
   совпадает с собранным. Отличие одно: вместо наших контрольных сумм собственных сборок
-  (`libcodec2_vndk`, TvInput, AirPlay) проверяются ваши.
+  (`libcodec2_vndk`, `libandroid_servers`, TvInput, AirPlay) проверяются ваши. С 1.0.3 сборка ещё проверяет,
+  что в вашей `libandroid_servers` есть исправление для HDMI.
 
 Если что-то не собирается, напишите в [Issues](https://github.com/kmuradoff/lumen-os/issues) и
 приложите вывод команды.

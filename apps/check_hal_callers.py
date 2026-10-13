@@ -10,6 +10,14 @@ arguments are UNVERIFIED, a device test) exists.
 Source-level check (javac does not shrink and d8 runs without R8, so every compiled method ends up
 in classes.dex): a method that is not compiled is not in the dex.
 
+Also fails when a transact site (call(...) / callXxx(...)) of a client sends a banned code (BANNED below:
+the hard rules of the GmpfClient / Gmpf2Client headers and the optical zoom, kept here as data so a new
+method cannot bring one back): the code argument is resolved through the client's own
+"static final int NAME = <code>;" constants or taken as an integer literal. A site whose code is a
+parameter is checked at its callers only when its helper is itself named call* (each call of it is then a
+transact site); a helper with another name (e.g. zh(457)) and an enum field are not checked: keep such
+helpers out of the clients, or review their callers by hand.
+
 Usage: check_hal_callers.py SRC_ROOT        (SRC_ROOT = Z9xProjector/src)
 """
 import os
@@ -17,6 +25,21 @@ import re
 import sys
 
 CLIENTS = ("GmpfClient.java", "Gmpf2Client.java")
+# codes that never leave this app, per interface (IGmpf = GmpfClient, IGmpf2 = Gmpf2Client)
+BANNED = {
+    "GmpfClient.java": {
+        24: "newAutoKst", 80: "no sensor", 155: "no sensor",
+        94: "factory white balance", 95: "factory white balance", 533: "factory white balance",
+        556: "factory white balance", 99: "auto-colour calibration", 101: "auto-colour calibration",
+        102: "auto-colour calibration", 229: "power", 233: "power", 241: "power", 422: "power", 543: "power",
+        299: "autofocus", 301: "autoFocus", 400: "reset", 421: "reset", 453: "factoryControlMotor",
+        583: "gyroscopeCorrection", 153: "zoomControl (large zoom move)",
+        297: "controlZoomMotor (large zoom move)", 283: "zoom (factory move)", 457: "zoom (factory move)",
+    },
+    "Gmpf2Client.java": {14: "zoom (large move)", 76: "cleanAllCalibrationData"},
+}
+CONST = re.compile(r"\bstatic\s+final\s+int\s+(\w+)\s*=\s*(0x[0-9a-fA-F]+|\d+)\s*;")
+CODE_ARG = re.compile(r"\bcall(?:[A-Z]\w*)?\s*\(\s*([A-Za-z_]\w*|0x[0-9a-fA-F]+|\d+)\s*[,)]")
 METHOD = re.compile(r"^\s*(?:public|protected|private)?\s*(?:static\s+)?(?:final\s+)?"
                     r"(?:synchronized\s+)?[\w.<>\[\], ?]+\s+(\w+)\s*\([^;{]*\)\s*(?:throws [\w., ]+)?\s*\{")
 TRANSACT = re.compile(r"\bcall(?:[A-Z]\w*)?\s*\(")
@@ -97,6 +120,20 @@ def main():
     if unparsed:
         print("check_hal_callers: transact call outside a recognised method (fix the parser or the "
               "code layout): " + ", ".join(unparsed))
+        return 1
+    banned = []
+    for f in CLIENTS:
+        src = strip_comments(open(os.path.join(hal_dir, f), encoding="utf-8").read())
+        consts = {n: int(v, 0) for n, v in CONST.findall(src)}
+        for n, line in enumerate(src.split("\n")):
+            for arg in CODE_ARG.findall(line):
+                code = int(arg, 0) if arg[0].isdigit() else consts.get(arg)
+                if code is not None and code in BANNED[f]:
+                    banned.append("%s:%d sends %d (%s)" % (f, n + 1, code, BANNED[f][code]))
+    if banned:
+        for b in banned:
+            print("check_hal_callers: banned code: " + b)
+        print("check_hal_callers: FAILED (%d banned code(s) in a transact site)." % len(banned))
         return 1
     transact = {k for k, bodies in meths.items() if any(TRANSACT.search(b.split("{", 1)[1]) for b in bodies)}
     # HidlCaller's own call* helpers are not whitelist entries

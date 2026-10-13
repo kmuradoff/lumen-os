@@ -187,6 +187,8 @@ system/usr/keylayout/Vendor_9999_Product_0666.kl	overlay/v1/keylayout/Vendor_999
 system/usr/keylayout/Vendor_9999_Product_0777.kl	overlay/v1/keylayout/Vendor_9999_Product_0777.kl
 tools/build_system.sh	tools/lumen_v1.sh
 tools/dev/debuglog/debuglog.sh	overlay/debug/debuglog.sh
+tools/dev/debuglog/lumen_escape.rc	overlay/debug/lumen_escape.rc
+tools/dev/debuglog/lumen_escape.sh	overlay/debug/lumen_escape.sh
 tools/dev/debuglog/z9x_debuglog.rc	overlay/debug/z9x_debuglog.rc
 tools/dev/debuglog/z9x_earlylog.rc	overlay/debug/z9x_earlylog.rc
 tools/dev/debuglog/z9x_earlylog.sh	overlay/debug/z9x_earlylog.sh
