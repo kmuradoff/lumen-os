@@ -10,6 +10,9 @@
     <string name="inputs_button">Кірістер</string>
     <string name="settings_button">Параметрлер</string>
     <string name="update_ready">Жаңарту дайын</string>
+    <string name="battery_level">Батарея %1$s</string>
+    <string name="battery_charging">Батарея %1$s, зарядталуда</string>
+    <string name="battery_plugged">Батарея %1$s, қуат адаптері қосулы</string>
     <string name="row_your_apps">Сіздің қолданбаларыңыз</string>
     <string name="row_continue">Көруді жалғастыру</string>
     <string name="row_inputs">Кірістер</string>
@@ -36,7 +39,7 @@
     <string name="feature_cast_desc">Chromecast built-in және AirPlay: телефоннан, планшеттен не ноутбуктан бейне, музыка және экран жіберіңіз.</string>
     <string name="feature_picture_title">Мінсіз сурет</string>
     <string name="feature_picture_desc">Автофокус пен трапецияны түзету проектор қай жерде тұрса да кескінді түзетіп, анық етеді.</string>
-    <string name="feature_customize_title">Қолданбаларыңыз — өз қалауыңызша</string>
+    <string name="feature_customize_title">Қолданбалар өз қалауыңызша</string>
     <string name="feature_customize_desc">Сүйікті қолданбаларды таңдаңыз, қажетсіз қатарларды жасырыңыз және басты экранда не көрсетілетінін шешіңіз.</string>
     <string name="apps_favorites">Таңдаулылар</string>
     <string name="apps_all">Барлық қолданбалар</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">Қосылған</string>
     <string name="input_not_connected">Қосылмаған</string>
     <string name="input_standby">Күту режимі</string>
+    <string name="input_on">Қосулы</string>
+    <string name="input_asleep">Ұйқы режимінде</string>
+    <string name="input_no_signal">Сигнал жоқ</string>
+    <string name="input_wake_hint">Қосу үшін OK басыңыз</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">«%1$s» · Дайын</string>
@@ -102,7 +109,7 @@
     <string name="units_f">Фаренгейт (°F)</string>
     <string name="weather_turn_off">Ауа райын өшіру</string>
     <string name="weather_show">Ауа райын көрсету</string>
-    <string name="weather_privacy">Орналасу IP мекенжайы бойынша анықталады. Тек орналасу жіберіледі, сізді анықтайтын ештеңе жіберілмейді. VPN оны өзгертуі мүмкін — онда қаланы қолмен таңдаңыз.</string>
+    <string name="weather_privacy">Орналасу IP мекенжайы бойынша анықталады. Тек орналасу жіберіледі, сізді анықтайтын ештеңе жіберілмейді. VPN оны өзгертсе, қаланы қолмен таңдаңыз.</string>
     <string name="weather_attribution">Ауа райы деректері: Open-Meteo.com (CC BY 4.0)</string>
     <string name="weather_line">%1$s, %2$s</string>
     <string name="wx_clear">ашық</string>
@@ -125,7 +132,7 @@
     <string name="voice_search">Дауыспен іздеу</string>
     <string name="voice_listening">Тыңдап тұрмын…</string>
     <string name="voice_nothing_heard">Түсінбедім. Микрофон түймесін басып тұрып сөйлеңіз.</string>
-    <string name="voice_unavailable">Дауыспен іздеу қолжетімсіз — мәтінді теріңіз</string>
+    <string name="voice_unavailable">Дауыспен іздеу қолжетімсіз. Мәтінді теріңіз.</string>
     <string name="voice_unavailable_hint">Сұрауды теріңіз. Жақында дауыспен іздеу қолжетімсіз болды.</string>
     <string name="voice_hold">Сөйлеген кезде микрофон түймесін басып тұрыңыз</string>
     <string name="kb_title">Пернетақта</string>

@@ -58,7 +58,8 @@ public final class SkyEnv {
     /** WMO weather code (Open-Meteo) to SkyView.WEATHER_*. */
     public static int weatherFromWmo(int code) {
         if (code <= 1) return SkyView.WEATHER_CLEAR;
-        if (code == 2 || code == 3) return SkyView.WEATHER_CLOUDS;
+        if (code == 2) return SkyView.WEATHER_CLOUDS;      // partly cloudy: the sun between the clouds
+        if (code == 3) return SkyView.WEATHER_OVERCAST;    // overcast: a closed grey deck, no sun disc or moon
         if (code == 45 || code == 48) return SkyView.WEATHER_FOG;
         if ((code >= 71 && code <= 77) || code == 85 || code == 86) return SkyView.WEATHER_SNOW;
         if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95) return SkyView.WEATHER_RAIN;

@@ -114,6 +114,10 @@ final class SkyRenderer {
         float s = f.sky.getWidth() / 1920f;
         c.save();
         c.scale(s, s);
+        // an opaque paint: the shaders' own colours only. moon() leaves mPaint at a 10 % colour, and a paint's
+        // alpha multiplies its shader: every sky after the first frame with a moon came out at 10 % (a dark
+        // charcoal sky over a daylit land, "day, then suddenly night" in the screensaver's first minute)
+        mPaint.setColor(0xFF000000);
         mPaint.setShader(new LinearGradient(0, 0, 0, 1080, new int[]{k.skyTop, k.skyMid, k.skyLow, k.skyLow},
                 new float[]{0, k.midStop, k.lowStop, 1}, Shader.TileMode.CLAMP));
         c.drawRect(0, 0, 1920, 1080, mPaint);

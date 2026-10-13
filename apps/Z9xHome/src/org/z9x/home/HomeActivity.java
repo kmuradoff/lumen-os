@@ -14,6 +14,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.media.AudioPlaybackConfiguration;
 import android.media.tv.TvContract;
+import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -33,6 +34,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewPropertyAnimator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 
@@ -52,6 +54,7 @@ import org.z9x.home.sky.SkySettings;
 import org.z9x.home.sky.SkyView;
 import org.z9x.home.ui.CardView;
 import org.z9x.home.ui.ContextPanel;
+import org.z9x.home.ui.Gfx;
 import org.z9x.home.ui.ListPanel;
 import org.z9x.home.ui.Page;
 import org.z9x.home.ui.PageApps;
@@ -91,6 +94,8 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     private static final int TAB_HOME = 0, TAB_APPS = 1, TAB_PROJECTOR = 2;
     private static final long HERO_ADVANCE_MS = 9000;
     private static final long LONG_PRESS_MS = 500;
+    /** Weak GPUs (Gfx.SKY_YIELD): the sky's motion comes back this long after the last key or transition. */
+    private static final long SKY_YIELD_MS = 1500;
     private static final float VEIL_ROWS = 0.72f, VEIL_TABS = 0.68f;
     private static boolean sCreatedOnce;
 
@@ -128,6 +133,9 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     private SharedPreferences.OnSharedPreferenceChangeListener mPrefsCb;
     private BroadcastReceiver mTimeRx;
     private AudioManager.AudioPlaybackCallback mPlaybackCb;
+    private ContentObserver mBatteryObserver;   // only while started on a projector that reports a battery
+    private ContentObserver mPortsObserver;     // only while started, once the TV input app reports device states
+    private final Runnable mBatteryRead = this::readBattery;
 
     private final Runnable mLongPress = () -> {
         if (mOkDown && !mOkLong) {
@@ -208,6 +216,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     }
 
     private void handleIntent(Intent i, boolean create) {
+        skyYield();
         if (i != null && Intent.ACTION_ALL_APPS.equals(i.getAction())) {
             Log.i(App.TAG, "intent ALL_APPS");
             if (mPanel.isOpen()) mPanel.close();
@@ -293,6 +302,14 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         }
     }
 
+    /** Weak GPUs (Gfx.SKY_YIELD): no sky frames while another window (the quick panel, ...) has the focus. */
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (mSafeMode) return;
+        if (Gfx.SKY_YIELD) mSky.setHeld(!hasFocus, SKY_YIELD_MS);
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -310,9 +327,15 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         Log.i(App.TAG, "ui " + dm.widthPixels + "x" + dm.heightPixels + " dpi=" + dm.densityDpi + " scale=" + Theme.scale());
         mRoot = new Root(this);
         mSky = new SkyView(this);
+        // weak GPUs (ui/Gfx, properties the Z9X does not set): the sky on its run clock, capped, drawn in parts
+        // or in one GPU layer (lite), yielding to the UI
+        if (Gfx.SKY_FPS >= 0 || Gfx.SKY_SCALE > 0f || Gfx.SKY_YIELD) mSky.setWeakGpu(Gfx.SKY_FPS, Gfx.SKY_SCALE, Gfx.LITE);
         // the header's scrim in every state the sky shows (the stage draws the same one over its art)
         mSky.setHeaderScrim(Scrims.HEAD_A, Scrims.HEAD_POS, Scrims.HEAD_END);
         mRoot.addView(mSky);
+        // drawn in parts (Gfx.SKY_SCALE): the sky's moving parts in their own view right above it
+        View skyMotion = mSky.motionView();
+        if (skyMotion != null) mRoot.addView(skyMotion);
         mStage = new Stage(this, mApp.images());
         mStage.setListener(this);
         mRoot.addView(mStage);
@@ -350,6 +373,10 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         mPanel.setOnClosed(() -> mLastKey = SystemClock.uptimeMillis());
         mRoot.addView(mPanel);
         setContentView(mRoot);
+        // weak GPUs: the sky (or the covering stage) paints every pixel; bg_start under it costs a solid fill
+        // and two full-screen radial gradients per frame, almost half of a calm Home frame's pixels. The
+        // starting window keeps it (theme), safe mode never gets here.
+        if (Gfx.LITE) getWindow().setBackgroundDrawable(null);
         applySkyScrim();
         showWeather();
     }
@@ -358,6 +385,28 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     public void onModel(HomeModel m) {
         if (mSafeMode) return;
         Safe.run("bind", () -> bind(m));
+        observePorts(); // the first refresh may be the one that found the TV input app's device states
+    }
+
+    /**
+     * The TV input app's per-port device states (InputSource.portStates: its provider reports them): their
+     * changes (a device asleep, woken, unplugged, a CEC name arriving) refresh the Inputs row while Home is
+     * started. Without them (an older TV input app) nothing is registered.
+     */
+    private void observePorts() {
+        if (!mStarted || mPortsObserver != null || !InputSource.portStates()) return;
+        ContentObserver o = new ContentObserver(mMain) {
+            @Override
+            public void onChange(boolean selfChange) {
+                mApp.repo().refresh("ports", 300);
+            }
+        };
+        try {
+            getContentResolver().registerContentObserver(Uri.parse(InputSource.PORTS_URI), false, o);
+            mPortsObserver = o;
+        } catch (Throwable t) {
+            Log.w(App.TAG, "ports observer: " + t);
+        }
     }
 
     private void bind(HomeModel m) {
@@ -449,6 +498,12 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
                 public void onInputUpdated(String id) {
                     mApp.repo().refresh("input", 300);
                 }
+
+                @Override
+                public void onTvInputInfoUpdated(TvInputInfo info) {
+                    // cec_names: a TV input renames a CEC device's input once its OSD name arrived
+                    if (InputSource.CEC_NAMES) mApp.repo().refresh("input", 300);
+                }
             };
             tim.registerCallback(mInputCb, h);
         }
@@ -533,6 +588,53 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         } catch (Throwable t) {
             mPlaybackCb = null;
         }
+        startBattery();
+        observePorts();
+    }
+
+    /**
+     * The header's battery mark, only on a projector whose org.z9x.projector has the device-state provider
+     * (ProjectorBridge) and reports a battery. The provider is looked up
+     * on io; without it (the Z9X) nothing is registered and the header stays as it is. Changes come from its
+     * notify Uri while Home is started (no polling, no wakeups); a failed read hides the mark quietly.
+     */
+    private void startBattery() {
+        mApp.io().post(() -> {
+            if (!ProjectorBridge.hasDeviceState(this)) return;
+            ProjectorBridge.Battery b = ProjectorBridge.battery(this);
+            mMain.post(() -> {
+                if (!mStarted) return;
+                if (mBatteryObserver == null) {
+                    ContentObserver o = new ContentObserver(mMain) {
+                        @Override
+                        public void onChange(boolean selfChange) {
+                            mApp.io().removeCallbacks(mBatteryRead);
+                            mApp.io().post(mBatteryRead);
+                        }
+                    };
+                    try {
+                        getContentResolver().registerContentObserver(ProjectorBridge.DEVICE_BATTERY_URI, false, o);
+                        mBatteryObserver = o;
+                    } catch (Throwable t) {
+                        Log.w(App.TAG, "battery observer: " + t);
+                    }
+                }
+                applyBattery(b);
+            });
+        });
+    }
+
+    /** io thread: the provider's current battery, applied while the observer is registered. */
+    private void readBattery() {
+        ProjectorBridge.Battery b = ProjectorBridge.battery(this);
+        mMain.post(() -> {
+            if (mBatteryObserver != null) applyBattery(b);
+        });
+    }
+
+    private void applyBattery(ProjectorBridge.Battery b) {
+        if (b == null) mBar.setBattery(-1, false, false);
+        else mBar.setBattery(b.level, b.adapter, b.charging);
     }
 
     /**
@@ -563,6 +665,17 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             if (mTimeRx != null) unregisterReceiver(mTimeRx);
             if (mPlaybackCb != null) getSystemService(AudioManager.class).unregisterAudioPlaybackCallback(mPlaybackCb);
         });
+        if (mBatteryObserver != null) {
+            ContentObserver o = mBatteryObserver;
+            mBatteryObserver = null;
+            mApp.io().removeCallbacks(mBatteryRead);
+            Safe.run("battery observer", () -> getContentResolver().unregisterContentObserver(o));
+        }
+        if (mPortsObserver != null) {
+            ContentObserver o = mPortsObserver;
+            mPortsObserver = null;
+            Safe.run("ports observer", () -> getContentResolver().unregisterContentObserver(o));
+        }
         mTimeRx = null;
         mPlaybackCb = null;
         mAppsCb = null;
@@ -647,6 +760,14 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         mSky.setStill(mTab != TAB_HOME);
     }
 
+    /**
+     * Weak GPUs (Gfx.SKY_YIELD): the UI is busy (a key, a page or tab transition, the hero changing): the
+     * sky stops its motion now and eases back in SKY_YIELD_MS after the last of them (SkyView.yieldFor).
+     */
+    private void skyYield() {
+        if (Gfx.SKY_YIELD) mSky.yieldFor(SKY_YIELD_MS);
+    }
+
     /** The header clock: everywhere except the calm Home's top, where the big clock is. */
     private void applyHeaderClock() {
         mBar.setCalm(mTab == TAB_HOME && !mForYou.heroMode() && !mBrowse);
@@ -686,13 +807,16 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             if (k != null) mStage.show(k, false); // no-op when it already shows this art
         }
         if (animate && Theme.animations()) {
-            mStage.animate().alpha(a).setDuration(Theme.PAGE_SCROLL_MS).withEndAction(() -> {
+            ViewPropertyAnimator sa = mStage.animate().alpha(a).setDuration(Theme.PAGE_SCROLL_MS).withEndAction(() -> {
                 if (!stageWanted()) {
                     mStage.setVisibility(View.INVISIBLE);
                     mStage.pauseTrailer();
                 }
                 updateSky();
-            }).start();
+            });
+            // weak GPUs: a layer for the fade unless the stage keeps its own (Stage, trailers off)
+            if (Gfx.LITE && mStage.getLayerType() != View.LAYER_TYPE_HARDWARE) sa.withLayer();
+            sa.start();
         } else {
             mStage.setAlpha(a);
             mStage.setVisibility(want ? View.VISIBLE : View.INVISIBLE);
@@ -735,6 +859,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
 
     private void switchTab(int t, boolean animate) {
         if (t == mTab) return;
+        skyYield();
         Page old = page();
         mTab = t;
         Page nu = page();
@@ -745,11 +870,18 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         ov.animate().cancel();
         nv.animate().cancel();
         if (animate) {
-            ov.animate().alpha(0).setDuration(Theme.TAB_OUT_MS).withEndAction(() -> ov.setVisibility(View.GONE)).start();
+            ViewPropertyAnimator out = ov.animate().alpha(0).setDuration(Theme.TAB_OUT_MS)
+                    .withEndAction(() -> ov.setVisibility(View.GONE));
+            // weak GPUs: each page rendered once into a layer, not into an offscreen buffer every frame
+            if (Gfx.LITE) out.withLayer();
+            out.start();
             nv.setAlpha(0);
             nv.setTranslationY(Theme.pxf(24));
             nv.setVisibility(View.VISIBLE);
-            nv.animate().alpha(1).translationY(0).setStartDelay(60).setDuration(Theme.TAB_IN_MS).setInterpolator(Theme.DECEL).start();
+            ViewPropertyAnimator in = nv.animate().alpha(1).translationY(0).setStartDelay(60).setDuration(Theme.TAB_IN_MS)
+                    .setInterpolator(Theme.DECEL);
+            if (Gfx.LITE) in.withLayer();
+            in.start();
         } else {
             ov.setVisibility(View.GONE);
             nv.setAlpha(1);
@@ -820,6 +952,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
         if (mSafeMode) return super.dispatchKeyEvent(e);
+        skyYield();
         int k = e.getKeyCode();
         mLastKey = SystemClock.uptimeMillis();
         try {
@@ -918,6 +1051,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
 
     @Override
     public void onBrowseMode(boolean browse) {
+        skyYield();
         mBrowse = browse;
         // the tabs and buttons go, the time stays (on the calm Home it takes over from the big clock)
         mBar.setBrowse(browse);
@@ -928,6 +1062,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
 
     @Override
     public void onHomeMode(boolean hero) {
+        skyYield();
         Log.i(App.TAG, "home mode=" + (hero ? "hero" : "calm"));
         applyHeaderClock();
         applySkyScrim();
@@ -948,6 +1083,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
 
     @Override
     public void onHeroShown(Card k) {
+        skyYield();   // the stage crossfades
         if (mTab == TAB_HOME && mForYou.heroMode()) mStage.show(k, true);
     }
 

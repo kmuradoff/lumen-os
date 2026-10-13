@@ -10,6 +10,9 @@
     <string name="inputs_button">Входи</string>
     <string name="settings_button">Налаштування</string>
     <string name="update_ready">Оновлення готове</string>
+    <string name="battery_level">Батарея %1$s</string>
+    <string name="battery_charging">Батарея %1$s, заряджається</string>
+    <string name="battery_plugged">Батарея %1$s, блок живлення підключено</string>
     <string name="row_your_apps">Ваші застосунки</string>
     <string name="row_continue">Продовжити перегляд</string>
     <string name="row_inputs">Входи</string>
@@ -36,7 +39,7 @@
     <string name="feature_cast_desc">Chromecast built-in і AirPlay: відео, музика та екран з телефона, планшета чи ноутбука.</string>
     <string name="feature_picture_title">Ідеальне зображення</string>
     <string name="feature_picture_desc">Автофокус і корекція трапеції вирівняють і зроблять різким зображення, де б не стояв проєктор.</string>
-    <string name="feature_customize_title">Ваші застосунки — по-вашому</string>
+    <string name="feature_customize_title">Застосунки на ваш смак</string>
     <string name="feature_customize_desc">Оберіть улюблені застосунки, сховайте зайві ряди й вирішіть, що показувати на головному екрані.</string>
     <string name="apps_favorites">Обране</string>
     <string name="apps_all">Усі застосунки</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">Підключено</string>
     <string name="input_not_connected">Не підключено</string>
     <string name="input_standby">Режим очікування</string>
+    <string name="input_on">Увімкнено</string>
+    <string name="input_asleep">Спить</string>
+    <string name="input_no_signal">Немає сигналу</string>
+    <string name="input_wake_hint">Натисніть OK, щоб увімкнути</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">«%1$s» · Готово</string>
@@ -102,7 +109,7 @@
     <string name="units_f">Фаренгейт (°F)</string>
     <string name="weather_turn_off">Вимкнути погоду</string>
     <string name="weather_show">Показувати погоду</string>
-    <string name="weather_privacy">Місцезнаходження визначається за IP-адресою. Надсилається лише місцезнаходження, жодних даних про вас. VPN може його змінити — тоді виберіть місто вручну.</string>
+    <string name="weather_privacy">Місцезнаходження визначається за IP-адресою. Надсилається лише місцезнаходження, жодних даних про вас. Якщо VPN його змінить, виберіть місто вручну.</string>
     <string name="weather_attribution">Дані про погоду: Open-Meteo.com (CC BY 4.0)</string>
     <string name="weather_line">%1$s, %2$s</string>
     <string name="wx_clear">ясно</string>
@@ -125,7 +132,7 @@
     <string name="voice_search">Голосовий пошук</string>
     <string name="voice_listening">Слухаю…</string>
     <string name="voice_nothing_heard">Не почув. Утримуйте кнопку мікрофона й говоріть.</string>
-    <string name="voice_unavailable">Голосовий пошук недоступний — введіть текст</string>
+    <string name="voice_unavailable">Голосовий пошук недоступний. Введіть текст.</string>
     <string name="voice_unavailable_hint">Введіть запит. Голосовий пошук нещодавно був недоступний.</string>
     <string name="voice_hold">Утримуйте кнопку мікрофона, поки говорите</string>
     <string name="kb_title">Клавіатура</string>

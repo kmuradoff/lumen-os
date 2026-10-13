@@ -10,6 +10,9 @@
     <string name="inputs_button">Уваходы</string>
     <string name="settings_button">Налады</string>
     <string name="update_ready">Абнаўленне гатовае</string>
+    <string name="battery_level">Батарэя %1$s</string>
+    <string name="battery_charging">Батарэя %1$s, зараджаецца</string>
+    <string name="battery_plugged">Батарэя %1$s, блок сілкавання падключаны</string>
     <string name="row_your_apps">Вашы праграмы</string>
     <string name="row_continue">Працягнуць прагляд</string>
     <string name="row_inputs">Уваходы</string>
@@ -36,7 +39,7 @@
     <string name="feature_cast_desc">Chromecast built-in і AirPlay: відэа, музыка і экран з тэлефона, планшэта ці ноўтбука.</string>
     <string name="feature_picture_title">Ідэальная карцінка</string>
     <string name="feature_picture_desc">Аўтафокус і карэкцыя трапецыі выраўнуюць і зробяць выразным відарыс, дзе б ні стаяў праектар.</string>
-    <string name="feature_customize_title">Вашы праграмы — па-вашаму</string>
+    <string name="feature_customize_title">Праграмы на ваш густ</string>
     <string name="feature_customize_desc">Выберыце любімыя праграмы, схавайце непатрэбныя рады і вырашыце, што паказваць на галоўным экране.</string>
     <string name="apps_favorites">Абранае</string>
     <string name="apps_all">Усе праграмы</string>
@@ -56,6 +59,10 @@
     <string name="input_connected">Падключана</string>
     <string name="input_not_connected">Не падключана</string>
     <string name="input_standby">Рэжым чакання</string>
+    <string name="input_on">Уключана</string>
+    <string name="input_asleep">Спіць</string>
+    <string name="input_no_signal">Няма сігналу</string>
+    <string name="input_wake_hint">Націсніце OK, каб уключыць</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">«%1$s» · Гатова</string>
@@ -102,7 +109,7 @@
     <string name="units_f">Фарэнгейт (°F)</string>
     <string name="weather_turn_off">Адключыць надвор’е</string>
     <string name="weather_show">Паказваць надвор’е</string>
-    <string name="weather_privacy">Месцазнаходжанне вызначаецца па IP-адрасе. Перадаецца толькі месцазнаходжанне, ніякіх даных пра вас. VPN можа яго змяніць — тады выберыце горад уручную.</string>
+    <string name="weather_privacy">Месцазнаходжанне вызначаецца па IP-адрасе. Перадаецца толькі месцазнаходжанне, ніякіх даных пра вас. Калі VPN яго зменіць, выберыце горад уручную.</string>
     <string name="weather_attribution">Даныя пра надвор’е: Open-Meteo.com (CC BY 4.0)</string>
     <string name="weather_line">%1$s, %2$s</string>
     <string name="wx_clear">ясна</string>
@@ -125,7 +132,7 @@
     <string name="voice_search">Галасавы пошук</string>
     <string name="voice_listening">Слухаю…</string>
     <string name="voice_nothing_heard">Не пачуў. Утрымлівайце кнопку мікрафона і гаварыце.</string>
-    <string name="voice_unavailable">Галасавы пошук недаступны — увядзіце тэкст</string>
+    <string name="voice_unavailable">Галасавы пошук недаступны. Увядзіце тэкст.</string>
     <string name="voice_unavailable_hint">Увядзіце запыт. Галасавы пошук нядаўна быў недаступны.</string>
     <string name="voice_hold">Утрымлівайце кнопку мікрафона, пакуль гаворыце</string>
     <string name="kb_title">Клавіятура</string>

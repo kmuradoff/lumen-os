@@ -22,6 +22,7 @@ public final class SolarCalcTest {
         moonPhases();
         polar();
         dailyScene();
+        overcast();
         System.out.println("sky tests passed=" + passed + " failed=" + failed);
         System.exit(failed == 0 ? 0 : 1);
     }
@@ -106,6 +107,35 @@ public final class SolarCalcTest {
         if (Double.isNaN(min)) return "--:--";
         int t = (int) Math.round(min);
         return String.format("%02d:%02d", t / 60, t % 60);
+    }
+
+    /**
+     * Overcast (WMO 3): a bright grey day, no sun disc, no moon, no stars; dark at night. Mid-October
+     * early afternoon at SkyView's default place (a thin moon is up, as in the screensaver report).
+     */
+    private static void overcast() {
+        long noon = java.time.ZonedDateTime.of(2026, 10, 13, 11, 13, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli();
+        SkyLook d = new SkyLook();
+        d.compute(noon, TZ_MS, LAT, LON, SkyLook.MOUNTAINS, SkyLook.OVERCAST);
+        ok(!d.sunShow && !d.moonShow && d.starA == 0f, "overcast day: no sun disc, no moon, no stars");
+        ok(lum(d.skyTop) > 0.45 && lum(d.skyLow) > 0.45, "overcast day: a light sky (top " + lum(d.skyTop) + ")");
+        ok(sat(d.skyTop) < 0.2, "overcast day: grey, not blue (saturation " + sat(d.skyTop) + ")");
+        SkyLook c = new SkyLook();
+        c.compute(noon, TZ_MS, LAT, LON, SkyLook.MOUNTAINS, SkyLook.CLOUDS);
+        ok(c.sunShow, "partly cloudy day: the sun shows");
+        SkyLook n = new SkyLook();
+        n.compute(noon + 12 * 3600_000L, TZ_MS, LAT, LON, SkyLook.MOUNTAINS, SkyLook.OVERCAST);
+        ok(n.el < -12 && lum(n.skyTop) < 0.1, "overcast night: dark (top " + lum(n.skyTop) + ")");
+    }
+
+    private static double lum(int c) {
+        return (0.2126 * ((c >> 16) & 0xFF) + 0.7152 * ((c >> 8) & 0xFF) + 0.0722 * (c & 0xFF)) / 255.0;
+    }
+
+    private static double sat(int c) {
+        int r = (c >> 16) & 0xFF, g = (c >> 8) & 0xFF, b = c & 0xFF;
+        int mx = Math.max(r, Math.max(g, b)), mn = Math.min(r, Math.min(g, b));
+        return mx == 0 ? 0 : (mx - mn) / (double) mx;
     }
 
     private static void near(double got, double want, double tol, String what) {

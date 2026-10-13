@@ -33,7 +33,9 @@ import org.z9x.home.img.ImageLoader;
  * px) and the header scrim ({@link Scrims#HEAD_ALPHA} to y 140, eased out by y 340: the whole header
  * reads on white art; the sky draws the same one when the stage is empty) are dithered. Without art the
  * stage is empty and the sky shows through. Art changes crossfade over 700 ms; {@link #covering()} tells
- * the activity when the sky is fully hidden (it then pauses the sky).
+ * the activity when the sky is fully hidden (it then pauses the sky). Weak GPUs ({@link Gfx#LITE} only):
+ * the stage keeps a GPU layer while trailers are off, and transparent full-bleed art gets the ground
+ * colour under it (the window then has no background).
  */
 public class Stage extends ViewGroup {
     public interface Listener {
@@ -82,6 +84,8 @@ public class Stage extends ViewGroup {
         mArtBottom = Theme.px(ART_BOTTOM);
         setWillNotDraw(false);
         setClipChildren(false);
+        // weak GPUs (Gfx): art, three scrims and the framed card as one texture (dropped while trailers are allowed)
+        if (Gfx.LITE) setLayerType(LAYER_TYPE_HARDWARE, null);
         mTrailer = new Trailer(c);
         mTrailer.setOnPlaying(this::onTrailerPlaying);
         addView(mTrailer.view());
@@ -356,6 +360,10 @@ public class Stage extends ViewGroup {
 
     public void setTrailersEnabled(boolean on) {
         mTrailer.setEnabled(on);
+        if (!Gfx.LITE) return;
+        // a playing trailer would refresh the layer every video frame: no layer while trailers are allowed
+        int want = on ? LAYER_TYPE_NONE : LAYER_TYPE_HARDWARE;
+        if (getLayerType() != want) setLayerType(want, null);
     }
 
     public void pauseTrailer() {
@@ -444,6 +452,8 @@ public class Stage extends ViewGroup {
         mDst.set(0, 0, w, h);
         mBmp.setAlpha((int) (255 * a * (l.blurred ? BLUR_ALPHA : 1f)));
         if (l.blurred) c.drawColor(Theme.alpha(Theme.BG, a));
+        // weak GPUs (Gfx): no window background shows through transparent art any more, the ground does
+        else if (Gfx.LITE && l.back.hasAlpha()) c.drawColor(Theme.alpha(Theme.BG, a));
         c.drawBitmap(l.back, mSrc, mDst, mBmp);
         mBmp.setAlpha(255);
     }

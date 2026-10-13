@@ -16,6 +16,11 @@
     <string name="inputs_button">Inputs</string>
     <string name="settings_button">Settings</string>
     <string name="update_ready">Update ready</string>
+    <!-- header battery mark (projectors with an internal battery only), read out by a screen reader;
+         %1$s = the level in the locale's percent format (85%) -->
+    <string name="battery_level">Battery %1$s</string>
+    <string name="battery_charging">Battery %1$s, charging</string>
+    <string name="battery_plugged">Battery %1$s, power adapter connected</string>
 
     <!-- rows -->
     <string name="row_your_apps">Your apps</string>
@@ -71,6 +76,11 @@
     <string name="input_connected">Connected</string>
     <string name="input_not_connected">Not connected</string>
     <string name="input_standby">Standby</string>
+    <!-- the device behind an HDMI port, as the TV input app reports it (input_not_connected: not connected) -->
+    <string name="input_on">On</string>
+    <string name="input_asleep">Asleep</string>
+    <string name="input_no_signal">No signal</string>
+    <string name="input_wake_hint">Press OK to wake it</string>
     <string name="cast_chromecast">Chromecast built-in</string>
     <string name="cast_airplay">AirPlay</string>
     <string name="cast_ready">“%1$s” · Ready</string>
@@ -147,7 +157,7 @@
     <string name="voice_search">Voice search</string>
     <string name="voice_listening">Listening…</string>
     <string name="voice_nothing_heard">Didn’t catch that. Hold the mic button and speak.</string>
-    <string name="voice_unavailable">Voice search isn’t available — type instead</string>
+    <string name="voice_unavailable">Voice search isn’t available. Type instead.</string>
     <string name="voice_unavailable_hint">Type your search. Voice search was unavailable recently.</string>
     <string name="voice_hold">Hold the mic button while you speak</string>
     <!-- search screen: own on-screen keyboard / keyboard app (review 2026-10-07) -->

@@ -9,6 +9,8 @@ public final class AllTests {
         HeroArtTest.run();
         HeaderContrastTest.run();
         ResolutionTest.run();
+        GfxTest.run();
+        CecNamesTest.run();
         System.out.println("tests passed=" + T.passed + " failed=" + T.failed);
         System.exit(T.failed == 0 ? 0 : 1);
     }

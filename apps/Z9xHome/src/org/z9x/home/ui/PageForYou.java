@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewPropertyAnimator;
 
 import org.z9x.home.R;
 import org.z9x.home.data.Card;
@@ -255,7 +256,11 @@ public class PageForYou extends ViewGroup implements Page {
         mTrackY = y;
         if (animate) {
             mTrack.animate().translationY(y).setDuration(Theme.PAGE_SCROLL_MS).setInterpolator(Theme.EMPHASIZED).start();
-            top.animate().translationY(topY).alpha(topA).setDuration(Theme.PAGE_SCROLL_MS).setInterpolator(Theme.EMPHASIZED).start();
+            ViewPropertyAnimator ta = top.animate().translationY(topY).alpha(topA).setDuration(Theme.PAGE_SCROLL_MS)
+                    .setInterpolator(Theme.EMPHASIZED);
+            // weak GPUs (Gfx): the block rendered once into a layer, not into an offscreen buffer every frame
+            if (Gfx.LITE) ta.withLayer();
+            ta.start();
         } else {
             mTrack.setTranslationY(y);
             top.setTranslationY(topY);

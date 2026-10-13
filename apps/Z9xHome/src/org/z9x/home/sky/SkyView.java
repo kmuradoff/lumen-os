@@ -4,9 +4,12 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Shader;
@@ -19,6 +22,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Choreographer;
 import android.view.View;
+import android.view.ViewGroup;
 
 import org.z9x.home.R;
 
@@ -41,9 +45,15 @@ import java.util.TimeZone;
  * rate the visible motion needs (8..30 fps, vsync multiples at 60 Hz); with nothing moving a 1 s tick only watches the clock.
  * Everything stops while paused, still (once a frame is shown), hidden or detached; bitmaps are freed
  * on detach and 20 s after the window is hidden. With system animations off the particles stand still.
+ * Weak GPUs (Home, ui/Gfx properties; never called otherwise): {@link #setWeakGpu} moves the particles on
+ * a run clock that advances only while sky frames run (stops and restarts never make them jump, the speed
+ * eases in), may cap the rate, may draw the sky in parts (a cached static layer, a small soft layer drawn
+ * enlarged, the crisp particles at full resolution) and lets Home stop the frames while the UI is busy
+ * ({@link #yieldFor}, {@link #setHeld}).
  */
 public final class SkyView extends View {
-    public static final int WEATHER_CLEAR = 0, WEATHER_CLOUDS = 1, WEATHER_FOG = 2, WEATHER_RAIN = 3, WEATHER_SNOW = 4;
+    public static final int WEATHER_CLEAR = 0, WEATHER_CLOUDS = 1, WEATHER_FOG = 2, WEATHER_RAIN = 3, WEATHER_SNOW = 4,
+            WEATHER_OVERCAST = 5;
     public static final String AUTO = "auto";
 
     private static final String TAG = "Z9xSky";
@@ -87,6 +97,22 @@ public final class SkyView extends View {
     private float mS = 1, mOx, mOy, mRenderScale = 1;
     private final long mT0 = SystemClock.uptimeMillis();
     private final double[] mTmp = new double[4];
+    // weak GPUs (ui/Gfx, setWeakGpu; all off otherwise, the 1.0.2 drawing)
+    private static final long EASE_MS = 600;   // the motion's speed eases in over this after a (re)start
+    private boolean mWeak;                     // set once by setWeakGpu: run clock, cap, yield, split
+    private int mMaxFps = -1;                  // -1 = as the scene needs
+    private boolean mCacheLayer;               // the view in a GPU layer (in parts: always; else capped + lite)
+    private double mRunT, mRunReal;            // run clock (eased) and the real time it ran, seconds
+    private long mRunAt = -1;                  // uptime of the run clock's last step, -1 = stopped
+    private long mEaseAt = -1;                 // uptime of the last (re)start while the speed eases in
+    private double mFadeRun0;                  // mRunReal when the fade started (fades run on the run clock)
+    private boolean mYielded, mHeld, mFreeBackWait;
+    private float mSplit;                      // 0 = one draw; else the soft layer's scale (drawn in parts)
+    private Motion mMotion;                    // drawn in parts: the moving parts' view (motionView)
+    private Paint mErase, mAtop;
+    private boolean[] mStarHid;                // stars under the land, the sun or the moon of mStarFor
+    private SkyRenderer.Frame mStarFor;
+    private float[] mHeadA, mHeadPos;          // the header scrim's stops (setHeaderScrim), for scrimAt
 
     // ------------------------------------------------------------------ drawing (preallocated)
     private final Paint mBmp = new Paint(Paint.FILTER_BITMAP_FLAG);
@@ -142,7 +168,7 @@ public final class SkyView extends View {
 
     /** One of WEATHER_*. */
     public void setWeather(int weather) {
-        if (weather < WEATHER_CLEAR || weather > WEATHER_SNOW) weather = WEATHER_CLEAR;
+        if (weather < WEATHER_CLEAR || weather > WEATHER_OVERCAST) weather = WEATHER_CLEAR;
         if (weather == mWeather) return;
         mWeather = weather;
         changed();
@@ -173,6 +199,95 @@ public final class SkyView extends View {
         if (still == mStill) return;
         mStill = still;
         updateActive();
+    }
+
+    /**
+     * Weak GPUs (ui/Gfx, Home only; call it before the first frame). The particles then move on a run
+     * clock: it advances only while sky frames run, so a redraw for the UI on top, a pause or a yield never
+     * moves them, and after every (re)start their speed eases in ({@code EASE_MS}); fades run on it too.
+     * {@code fps}: at most that many sky frames per second, 0 = still (the minute render and the fades
+     * only), negative = as the scene needs. {@code scale} in (0, 1]: the sky drawn in parts (this view the
+     * static parts in its GPU layer, {@link #motionView} the moving ones), else one draw. {@code cacheLayer}
+     * (lite): capped, the whole view stays in a GPU layer while it is visible (the UI's frames blit one
+     * texture).
+     */
+    public void setWeakGpu(int fps, float scale, boolean cacheLayer) {
+        mWeak = true;
+        mMaxFps = fps < 0 ? -1 : fps;
+        mSplit = scale > 0f && scale <= 1f ? Math.max(0.25f, scale) : 0f;
+        mCacheLayer = mSplit > 0f || mMaxFps >= 0 && cacheLayer;
+        if (mSplit > 0f && mMotion == null) {
+            mMotion = new Motion(getContext());
+            mErase = new Paint(Paint.FILTER_BITMAP_FLAG);
+            mErase.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+            mAtop = new Paint(Paint.DITHER_FLAG);
+            mAtop.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
+            mStarHid = new boolean[STARS];
+        }
+        applyLayer();
+        if (mActive) {
+            stopCallbacks();
+            schedule();
+        }
+    }
+
+    /**
+     * Weak GPUs: the UI is busy (a key, a page or tab transition): no sky frame from now on (the shown one
+     * stays) until {@code ms} after the last call, then the motion eases back in. One delayed message, no
+     * other wakeup meanwhile. Ignored without {@link #setWeakGpu}.
+     */
+    public void yieldFor(long ms) {
+        if (!mWeak) return;
+        mMain.removeCallbacks(mYieldEnd);
+        if (!mHeld) mMain.postDelayed(mYieldEnd, ms);
+        if (!mYielded) {
+            mYielded = true;
+            updateActive();
+        }
+    }
+
+    /**
+     * Weak GPUs: held while another window has the focus (an overlay over Home), no sky frame at all;
+     * released, the sky yields {@code ms} more (as after a key), then eases back in.
+     */
+    public void setHeld(boolean held, long ms) {
+        if (!mWeak || held == mHeld) return;
+        mHeld = held;
+        yieldFor(ms);
+    }
+
+    private final Runnable mYieldEnd = () -> {
+        if (mHeld || !mYielded) return;
+        mYielded = false;
+        updateActive();
+    };
+
+    /**
+     * Drawn in parts: the view of the moving parts, for the host to add right above this one with the same
+     * size (it follows this view's visibility). Null otherwise (one draw).
+     */
+    public View motionView() {
+        return mMotion;
+    }
+
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(visibility);
+        if (mCacheLayer) applyLayer();
+        if (mMotion != null) mMotion.setVisibility(visibility);
+    }
+
+    /** Drawn in parts, a change of the static parts (frame, fade, scrims) also redraws the moving ones. */
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        if (mMotion != null) mMotion.redraw();
+    }
+
+    /** The layer's GPU memory (8.3 MB at 1080p) only while the sky is shown (Home hides it under hero art). */
+    private void applyLayer() {
+        int want = mCacheLayer && getVisibility() == VISIBLE ? LAYER_TYPE_HARDWARE : LAYER_TYPE_NONE;
+        if (getLayerType() != want) setLayerType(want, null);
     }
 
     /**
@@ -212,6 +327,8 @@ public final class SkyView extends View {
             mHeadEnd = endDesign;
             mScrimH.setShader(new LinearGradient(0, 0, 0, endDesign, cols, pos, Shader.TileMode.CLAMP));
         }
+        mHeadA = alphas;   // read only by the drawing in parts (scrimAt)
+        mHeadPos = pos;
         invalidate();
     }
 
@@ -300,12 +417,18 @@ public final class SkyView extends View {
         // still: runs only for a first frame and its fade-in (freeBack re-checks when that is over)
         boolean still = mStill && mFront != null && mFadeStart == 0;
         boolean act = mAttached && mWinVisible && isShown() && !mPaused && !still && getWidth() > 0 && getHeight() > 0;
+        // the UI is busy: the shown frame stays (as still: a first frame is still made and faded in)
+        if (mWeak && mYielded && mFront != null && mFadeStart == 0) act = false;
         if (act == mActive) return;
         mActive = act;
         if (act) {
             mMain.removeCallbacks(mReleaseHidden);
             if (mFront == null || mDirty || minuteChanged()) requestRender();
             schedule();
+            if (mWeak && mFreeBackWait) { // a fade stopped half way goes on: look for its end again
+                mFreeBackWait = false;
+                mMain.postDelayed(mFreeBack, BACK_GRACE_MS);
+            }
         } else {
             stopCallbacks();
         }
@@ -332,6 +455,8 @@ public final class SkyView extends View {
         mBackFree = true;
         mBuiltScene = -1;
         mDirty = true;
+        if (mWeak) mFreeBackWait = false;
+        if (mMotion != null) mStarFor = null;
     }
 
     // ------------------------------------------------------------------ rendering
@@ -406,10 +531,12 @@ public final class SkyView extends View {
             if (old == null || structural) {
                 mFadeFrom = old;   // null: fade in from the ground colour
                 mFadeStart = SystemClock.uptimeMillis();
+                if (mWeak) mFadeRun0 = mRunReal;
             }
             mBackFree = false;
             mMain.removeCallbacks(mFreeBack);
             mMain.postDelayed(mFreeBack, mFadeStart > 0 ? FADE_MS + BACK_GRACE_MS : BACK_GRACE_MS);
+            if (mMotion != null) mMotion.placeSoft();   // the soft parts' band follows the new frame
             invalidate();
             schedule();
         } else {
@@ -433,6 +560,12 @@ public final class SkyView extends View {
      * allocates new ones, so only one set is kept between minutes) and let the next render use it.
      */
     private void freeBack() {
+        if (mWeak && mFadeStart > 0 && fadeAlpha() < 1f) {
+            // the fade runs on the run clock: while it is stopped (a yield), wait for the restart, no polling
+            if (mActive) mMain.postDelayed(mFreeBack, BACK_GRACE_MS);
+            else mFreeBackWait = true;
+            return;
+        }
         if (mFadeStart > 0 && SystemClock.uptimeMillis() - mFadeStart < FADE_MS) {
             mMain.postDelayed(mFreeBack, BACK_GRACE_MS);
             return;
@@ -516,7 +649,10 @@ public final class SkyView extends View {
         mFramePosted = false;
         if (!mActive) return;
         if (minuteChanged() && !mInFlight) requestRender();
-        invalidate();
+        if (mWeak) runClock();
+        // drawn in parts, a sky frame redraws the moving parts only (the static layer stays) but during a fade
+        if (mMotion != null && mFadeStart == 0) mMotion.redraw();
+        else invalidate();
         schedule();
     };
 
@@ -530,6 +666,7 @@ public final class SkyView extends View {
     private void schedule() {
         if (!mActive || mFront == null) return;
         int fps = targetFps(animTime());
+        if (mWeak && fps <= 0) mRunAt = -1;   // no frames: the run clock stops
         if (fps > 0) {
             if (mTickPosted) {
                 mMain.removeCallbacks(mTick);
@@ -550,10 +687,17 @@ public final class SkyView extends View {
         mFramePosted = false;
         mMain.removeCallbacks(mTick);
         mTickPosted = false;
+        if (mWeak) mRunAt = -1;
+    }
+
+    /** Frames per second to run at: the scene's need, capped on weak GPUs (a fade keeps its 30). */
+    private int targetFps(double t) {
+        int fps = sceneFps(t);
+        return mMaxFps >= 0 && mFadeStart == 0 ? Math.min(fps, mMaxFps) : fps;
     }
 
     /** Frames per second the visible motion needs; 0 = nothing moves (1 s clock tick only). */
-    private int targetFps(double t) {
+    private int sceneFps(double t) {
         if (mFadeStart > 0) return 30;
         if (!ValueAnimator.areAnimatorsEnabled()) return 0;
         SkyLook k = mFront.look;
@@ -566,7 +710,38 @@ public final class SkyView extends View {
     }
 
     private double animTime() {
-        return ValueAnimator.areAnimatorsEnabled() ? (SystemClock.uptimeMillis() - mT0) / 1000.0 : 0;
+        if (!ValueAnimator.areAnimatorsEnabled()) return 0;
+        if (mWeak) return mRunT;
+        return (SystemClock.uptimeMillis() - mT0) / 1000.0;
+    }
+
+    /**
+     * Weak GPUs, at each sky frame: the run clock steps to now. The first frame after a stop only starts it
+     * (the stop's time is never added) and the speed then eases in from 0 over EASE_MS.
+     */
+    private void runClock() {
+        long now = SystemClock.uptimeMillis();
+        if (mRunAt >= 0) {
+            double dt = (now - mRunAt) / 1000.0;
+            float speed = 1f;
+            if (mEaseAt >= 0) {
+                float e = (now - mEaseAt) / (float) EASE_MS;
+                if (e >= 1f) mEaseAt = -1;
+                else speed = smooth(e);
+            }
+            mRunT += dt * speed;
+            mRunReal += dt;
+        } else {
+            mEaseAt = now;
+        }
+        mRunAt = now;
+    }
+
+    /** The crossfade's progress: by the clock (1.0.2), on the run clock with setWeakGpu. */
+    private float fadeAlpha() {
+        if (mFadeStart <= 0) return 1f;
+        if (mWeak) return (float) Math.min(1.0, (mRunReal - mFadeRun0) * 1000.0 / FADE_MS);
+        return Math.min(1f, (SystemClock.uptimeMillis() - mFadeStart) / (float) FADE_MS);
     }
 
     private static boolean birdsFlying(double t) {
@@ -583,11 +758,16 @@ public final class SkyView extends View {
             return;
         }
         double t = animTime();
-        float a = 1f;
-        if (mFadeStart > 0) a = Math.min(1f, (SystemClock.uptimeMillis() - mFadeStart) / (float) FADE_MS);
+        float a = fadeAlpha();
         c.save();
         c.translate(mOx, mOy);
         c.scale(mS, mS);
+        drawBase(c, f, t, a, mMotion != null ? G_STATIC : G_ALL);   // in parts: the static ones here
+        c.restore();
+    }
+
+    /** The fading-out frame, the {@code groups} of this one, then the scrims (design px). */
+    private void drawBase(Canvas c, SkyRenderer.Frame f, double t, float a, int groups) {
         if (a < 1f) {
             SkyRenderer.Frame from = mFadeFrom;
             if (from != null && from.sky != null && !from.sky.isRecycled()) {
@@ -596,11 +776,245 @@ public final class SkyView extends View {
                 c.drawColor(BG);
             }
         }
-        drawFrame(c, f, t, a);
+        drawFrame(c, f, t, a, groups, false);
         if (mScrimLeft > 0) c.drawRect(0, 0, 1460, 1080, mScrimL);
         if (mScrimBottom > 0) c.drawRect(0, mScrimTop, 1920, 1080, mScrimB);
         if (mHeadEnd > 0) c.drawRect(0, 0, 1920, mHeadEnd, mScrimH);
-        c.restore();
+    }
+
+    // ------------------------------------------------------------------ drawing in parts (weak GPUs)
+
+    /**
+     * The sky in parts (setWeakGpu with a scale), each drawn only as often as it changes, all of them plain
+     * View layers (2026-10-13: standalone RenderNode layers drawn from a view without a layer stayed at
+     * their first content on the target device in an opaque window; a View's own layer is the proven path):
+     * <ol>
+     *   <li>static, this view: the sky, the sun, the moon, the land and the three scrims, in its own
+     *   full-resolution GPU layer; invalidated only when the frame, the fade or the scrims change, so every
+     *   other frame only blits it;</li>
+     *   <li>the {@link Motion} view right above it (motionView): stars and glints, crisp, at full resolution;
+     *   then its child {@link Soft}: clouds (cut where the land is, they pass behind it) and fog, in a small
+     *   GPU layer at mSplit of the real pixels over the band they can reach, enlarged by the child's scale
+     *   (HWUI samples layers bilinearly), the scrims darkening it where it has pixels (SRC_ATOP); then birds,
+     *   mast lights, fireflies, rain and snow, crisp, at full resolution.</li>
+     * </ol>
+     * The same picture as one draw: the crisp particles take the scrims' darkening in their own colour
+     * (scrimAt: exact for a particle over a uniform patch of scrim), the stars the land, the sun or the moon
+     * would cover are left out (their order is under all three), and the soft layer composited over the
+     * scrims with SRC_ATOP equals it under them. Left: the soft layer's resolution and, along the land's
+     * anti-aliased edge, a pixel of cloud. Order changes no one sees: glints under the clouds (clouds are cut
+     * out over the land and the water), birds over the land (they fly above it), mast lights over the fog.
+     */
+    private final class Motion extends ViewGroup {
+        final Soft soft;
+        private int mBandTop, mBandH;   // the soft band, real px of this view
+
+        Motion(Context c) {
+            super(c);
+            setWillNotDraw(false);
+            setClipChildren(false);
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+            soft = new Soft(c);
+            soft.setLayerType(LAYER_TYPE_HARDWARE, null);
+            soft.setPivotX(0);
+            soft.setPivotY(0);
+            addView(soft);
+        }
+
+        /** A sky frame: the crisp particles and the soft layer again (the static view stays as it is). */
+        void redraw() {
+            invalidate();
+            soft.invalidate();
+        }
+
+        @Override
+        protected void onMeasure(int wms, int hms) {
+            setMeasuredDimension(MeasureSpec.getSize(wms), MeasureSpec.getSize(hms));
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int l, int t, int r, int b) {
+            placeSoft();
+        }
+
+        /**
+         * The soft child over the band the clouds and the fog can reach, at mSplit of its real pixels,
+         * enlarged back by its scale; gone when there are none. Also called outside layout passes (a new
+         * frame): laying out one child does not lay out the window.
+         */
+        void placeSoft() {
+            SkyRenderer.Frame f = mFront;
+            int w = getWidth(), h = getHeight();
+            float top = 1080, bottom = 0;   // design px
+            if (f != null && w > 0) {
+                SkyLook k = f.look;
+                for (int i = 0; i < k.cloudN; i++) {
+                    if (f.clouds[i] == null) continue;
+                    top = Math.min(top, mCloudY[i]);
+                    bottom = Math.max(bottom, mCloudY[i] + SkyRenderer.CLOUD_H);
+                }
+                if (k.fogN > 0 && f.fog != null) {
+                    for (int i = 0; i < k.fogN; i++) {
+                        float y = k.fogY[i] - SkyRenderer.FOG_PAD;
+                        top = Math.min(top, y);
+                        bottom = Math.max(bottom, y + SkyRenderer.FOG_H);
+                    }
+                }
+            }
+            int y0 = Math.max(0, (int) Math.floor(mOy + mS * top)), y1 = Math.min(h, (int) Math.ceil(mOy + mS * bottom));
+            if (y1 <= y0) {
+                soft.setVisibility(GONE);
+                return;
+            }
+            mBandTop = y0;
+            mBandH = y1 - y0;
+            int lw = Math.max(1, Math.round(w * mSplit)), lh = Math.max(1, Math.round(mBandH * mSplit));
+            if (soft.getWidth() != lw || soft.getHeight() != lh) {
+                soft.measure(MeasureSpec.makeMeasureSpec(lw, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(lh, MeasureSpec.EXACTLY));
+                soft.layout(0, 0, lw, lh);
+            }
+            soft.setScaleX(w / (float) lw);
+            soft.setScaleY(mBandH / (float) lh);
+            soft.setTranslationY(y0);
+            soft.setVisibility(VISIBLE);
+            soft.invalidate();
+        }
+
+        /** Under the soft layer: stars and glints. */
+        @Override
+        protected void onDraw(Canvas c) {
+            SkyRenderer.Frame f = mFront;
+            if (f == null || f.sky == null || f.sky.isRecycled()) return;
+            if (f != mStarFor) hideStars(f);
+            c.save();
+            c.translate(mOx, mOy);
+            c.scale(mS, mS);
+            drawFrame(c, f, animTime(), fadeAlpha(), G_UNDER, true);
+            c.restore();
+        }
+
+        /** The soft layer (the child), then birds, mast lights, fireflies, rain and snow over it. */
+        @Override
+        protected void dispatchDraw(Canvas c) {
+            super.dispatchDraw(c);
+            SkyRenderer.Frame f = mFront;
+            if (f == null || f.sky == null || f.sky.isRecycled()) return;
+            c.save();
+            c.translate(mOx, mOy);
+            c.scale(mS, mS);
+            drawFrame(c, f, animTime(), fadeAlpha(), G_OVER, true);
+            c.restore();
+        }
+    }
+
+    /** Clouds and fog of the band, in the Soft view's own (reduced) pixels; its GPU layer is enlarged. */
+    private final class Soft extends View {
+        Soft(Context c) {
+            super(c);
+            setWillNotDraw(false);
+        }
+
+        @Override
+        protected void onDraw(Canvas c) {
+            SkyRenderer.Frame f = mFront;
+            Motion m = mMotion;
+            if (f == null || f.sky == null || f.sky.isRecycled() || m == null || m.mBandH <= 0) return;
+            SkyLook k = f.look;
+            double t = animTime();
+            float a = fadeAlpha();
+            c.save();
+            c.scale(getWidth() / (float) m.getWidth(), getHeight() / (float) m.mBandH);
+            c.translate(mOx, mOy - m.mBandTop);
+            c.scale(mS, mS);
+            float cloudBottom = 0;
+            for (int i = 0; i < k.cloudN; i++) if (f.clouds[i] != null) cloudBottom = Math.max(cloudBottom, mCloudY[i] + SkyRenderer.CLOUD_H);
+            if (cloudBottom > 0) {
+                drawFrame(c, f, t, a, G_CLOUDS, false);
+                // behind the land: cut out where it is, down to the lowest cloud's edge only
+                if (f.land != null && !f.land.isRecycled() && cloudBottom > f.landTop) {
+                    c.save();
+                    c.clipRect(0, f.landTop, 1920, cloudBottom);
+                    mDst.set(0, f.landTop, 1920, 1080);
+                    c.drawBitmap(f.land, null, mDst, mErase);
+                    c.restore();
+                }
+            }
+            drawFrame(c, f, t, a, G_FOG, false);
+            // under the scrims: darkened only where the layer has pixels
+            if (mScrimLeft > 0) atop(c, mScrimL, 0, 0, 1460, 1080);
+            if (mScrimBottom > 0) atop(c, mScrimB, 0, mScrimTop, 1920, 1080);
+            if (mHeadEnd > 0) atop(c, mScrimH, 0, 0, 1920, mHeadEnd);
+            c.restore();
+        }
+    }
+
+    private void atop(Canvas c, Paint scrim, float l, float t, float r, float b) {
+        mAtop.setShader(scrim.getShader());
+        c.drawRect(l, t, r, b, mAtop);
+    }
+
+    /** The stars the land, the sun or the moon of this frame cover (once per frame, main thread). */
+    private void hideStars(SkyRenderer.Frame f) {
+        mStarFor = f;
+        SkyLook k = f.look;
+        Bitmap land = f.land != null && !f.land.isRecycled() ? f.land : null;
+        float moonR = SkyRenderer.MOON_BOX / 2;
+        for (int i = 0; i < STARS; i++) {
+            float x = mStarX[i], y = mStarY[i];
+            boolean hid = k.sunShow && Math.hypot(x - k.sunX, y - k.sunY) < 48
+                    || k.moonShow && Math.hypot(x - k.moonX, y - k.moonY) < moonR;
+            if (!hid && land != null && y >= f.landTop) {
+                int px = (int) (x / 1920 * land.getWidth()), py = (int) ((y - f.landTop) / (1080 - f.landTop) * land.getHeight());
+                try {
+                    hid = px >= 0 && py >= 0 && px < land.getWidth() && py < land.getHeight() && Color.alpha(land.getPixel(px, py)) > 127;
+                } catch (Throwable ignored) {
+                }
+            }
+            mStarHid[i] = hid;
+        }
+    }
+
+    /**
+     * How much the three scrims cover the design point x, y (0..1), as the gradients draw them: the
+     * side scrim over x, the bottom and the header scrims over y, stacked (each over the others).
+     */
+    private float scrimAt(float x, float y) {
+        float keep = 1f;
+        if (mScrimLeft > 0 && x < 1460) {
+            float u = Math.max(0f, x) / 1460f;   // stops 0, 0.27 / 0.76, 0.57 / 0.76, 1 (setScrim)
+            float p1 = 0.27f / 0.76f, p2 = 0.57f / 0.76f, side;
+            if (u < p1) side = lerp(0.94f, 0.8f, u / p1);
+            else if (u < p2) side = lerp(0.8f, 0.22f, (u - p1) / (p2 - p1));
+            else side = lerp(0.22f, 0f, (u - p2) / (1 - p2));
+            keep *= 1 - mScrimLeft * side;
+        }
+        if (mScrimBottom > 0 && y > mScrimTop) {
+            float u = (1080 - Math.min(1080f, y)) / (1080 - mScrimTop);   // 0 at the bottom edge
+            keep *= 1 - mScrimBottom * (u <= 0.44f ? 1f : 1 - (u - 0.44f) / 0.56f);
+        }
+        float[] ha = mHeadA, hp = mHeadPos;
+        if (mHeadEnd > 0 && ha != null && hp != null && y < mHeadEnd) {
+            float u = Math.max(0f, y) / mHeadEnd, head = ha[ha.length - 1];
+            if (u <= hp[0]) head = ha[0];
+            else for (int i = 1; i < hp.length && i < ha.length; i++) {
+                if (u <= hp[i]) {
+                    float span = hp[i] - hp[i - 1];
+                    head = span > 0 ? lerp(ha[i - 1], ha[i], (u - hp[i - 1]) / span) : ha[i];
+                    break;
+                }
+            }
+            keep *= 1 - head;
+        }
+        return 1 - keep;
+    }
+
+    /** {@code color} under a scrim of coverage s: its RGB mixed towards the ground colour, alpha kept. */
+    private static int under(int color, float s) {
+        if (s <= 0f) return color;
+        int r = Math.round(Color.red(color) + (Color.red(BG) - Color.red(color)) * s);
+        int g = Math.round(Color.green(color) + (Color.green(BG) - Color.green(color)) * s);
+        int b = Math.round(Color.blue(color) + (Color.blue(BG) - Color.blue(color)) * s);
+        return (color & 0xFF000000) | (r << 16) | (g << 8) | b;
     }
 
     private void drawLayers(Canvas c, SkyRenderer.Frame f, float a) {
@@ -613,27 +1027,42 @@ public final class SkyView extends View {
         }
     }
 
-    private void drawFrame(Canvas c, SkyRenderer.Frame f, double t, float a) {
+    // drawFrame's groups, in its drawing order (G_SUN: the sun and the moon); the parts of the drawing in parts
+    private static final int G_SKY = 1, G_STARS = 2, G_SUN = 4, G_CLOUDS = 8, G_BIRDS = 16, G_LAND = 32,
+            G_LIGHTS = 64, G_GLINTS = 128, G_FOG = 256, G_FLIES = 512, G_PRECIP = 1024, G_ALL = 2047;
+    private static final int G_STATIC = G_SKY | G_SUN | G_LAND, G_UNDER = G_STARS | G_GLINTS,
+            G_OVER = G_BIRDS | G_LIGHTS | G_FLIES | G_PRECIP;
+
+    /**
+     * The frame's {@code g} groups (G_ALL: everything, the one draw). {@code mix} (drawing in parts, the
+     * crisp particles drawn over the scrims): each takes the scrims' darkening at its place in its colour,
+     * and the covered stars are left out.
+     */
+    private void drawFrame(Canvas c, SkyRenderer.Frame f, double t, float a, int g, boolean mix) {
         SkyLook k = f.look;
-        mBmp.setAlpha(Math.round(255 * a));
-        mDst.set(0, 0, 1920, 1080);
-        c.drawBitmap(f.sky, null, mDst, mBmp);
+        if ((g & G_SKY) != 0) {
+            mBmp.setAlpha(Math.round(255 * a));
+            mDst.set(0, 0, 1920, 1080);
+            c.drawBitmap(f.sky, null, mDst, mBmp);
+        }
 
         // stars twinkle (prototype lw-twinkle: 0.2 .. 1 over 2..6 s)
-        if (k.starA > 0.01f) {
+        if ((g & G_STARS) != 0 && k.starA > 0.01f) {
             mDot.setColor(0xFFFFFFFF);
             for (int i = 0; i < STARS; i++) {
+                if (mix && mStarHid[i]) continue;
+                if (mix) mDot.setColor(under(0xFFFFFFFF, scrimAt(mStarX[i], mStarY[i])));
                 float o = k.starA * (0.2f + 0.8f * wave(t, mStarP[i], mStarPh[i])) * a;
                 mDot.setAlpha(Math.round(255 * o));
                 c.drawCircle(mStarX[i], mStarY[i], mStarR[i], mDot);
             }
         }
-        if (k.sunShow) {
+        if ((g & G_SUN) != 0 && k.sunShow) {
             mDot.setColor(k.sunColor);
             mDot.setAlpha(Math.round(255 * a));
             c.drawCircle(k.sunX, k.sunY, 46, mDot);
         }
-        if (k.moonShow && f.moon != null) {
+        if ((g & G_SUN) != 0 && k.moonShow && f.moon != null) {
             mBmp.setAlpha(Math.round(255 * k.moonA * a));
             // on whole screen pixels and at the sprite's own pixels (MOON_BOX at the real scale): 1:1, sharp
             float box = f.moon.getWidth() / mS, h = box / 2;
@@ -643,7 +1072,7 @@ public final class SkyView extends View {
             c.drawBitmap(f.moon, null, mDst, mBmp);
         }
         // clouds drift across in 160..280 s (prototype lw-drift)
-        for (int i = 0; i < k.cloudN; i++) {
+        for (int i = 0; (g & G_CLOUDS) != 0 && i < k.cloudN; i++) {
             Bitmap b = f.clouds[i];
             if (b == null) continue;
             float x = -820 + 3020 * cyc(t, mCloudP[i], mCloudPh[i]);
@@ -654,7 +1083,7 @@ public final class SkyView extends View {
         }
         // a distant flock glides by now and then, wings beating slowly (not frozen mid-air with
         // system animations off: t is then 0)
-        if (k.birds && t > 0 && birdsFlying(t)) {
+        if ((g & G_BIRDS) != 0 && k.birds && t > 0 && birdsFlying(t)) {
             float q = (float) (((t + 40) % BIRD_PERIOD) / BIRD_CROSS);
             float bx = -300 + 2600 * q, by = -120 * q;
             mStroke.setColor(k.birdColor);
@@ -663,6 +1092,10 @@ public final class SkyView extends View {
             for (int i = 0; i < BIRDS; i++) {
                 float x = 80 + BIRD_DX[i] + bx, y = k.horizon - 330 + BIRD_DY[i] + by;
                 float s = 0.675f + 0.325f * (float) Math.cos(2 * Math.PI * cyc(t, 1.1f + (i % 3) * 0.15f, i * 0.3f));
+                if (mix) {
+                    mStroke.setColor(under(k.birdColor, scrimAt(x + 15, y + 7)));
+                    mStroke.setAlpha(Math.round(255 * a));
+                }
                 mBird.rewind();
                 mBird.moveTo(x + 1, y + 7 + 2 * s);
                 mBird.quadTo(x + 8, y + 7 - 6 * s, x + 15, y + 7 + s);
@@ -671,18 +1104,18 @@ public final class SkyView extends View {
             }
         }
 
-        if (f.land != null && !f.land.isRecycled()) {
+        if ((g & G_LAND) != 0 && f.land != null && !f.land.isRecycled()) {
             mBmp.setAlpha(Math.round(255 * a));
             mDst.set(0, f.landTop, 1920, 1080);
             c.drawBitmap(f.land, null, mDst, mBmp);
         }
 
         // aviation lights on the city masts
-        if (k.scene == SkyLook.CITY && k.windows > 0.3f) {
+        if ((g & G_LIGHTS) != 0 && k.scene == SkyLook.CITY && k.windows > 0.3f) {
             float[] l = Scenes.city().lights;
             for (int i = 0; i < l.length; i += 3) {
                 float on = cyc(t, 1.6f, l[i + 2]) < 0.2f ? 1f : 0.15f;
-                mDot.setColor(0xFFFF4A3D);
+                mDot.setColor(mix ? under(0xFFFF4A3D, scrimAt(l[i], l[i + 1])) : 0xFFFF4A3D);
                 mDot.setAlpha(Math.round(255 * on * k.windows * a));
                 c.drawCircle(l[i], l[i + 1], 2.5f, mDot);
                 mDot.setAlpha(Math.round(64 * on * k.windows * a));
@@ -690,20 +1123,21 @@ public final class SkyView extends View {
             }
         }
         // glints on the water under the sun or the moon (prototype lw-glint 0.08 .. 0.85)
-        if (k.glintN > 0) {
+        if ((g & G_GLINTS) != 0 && k.glintN > 0) {
             mDot.setColor(k.glintColor);
             for (int i = 0; i < k.glintN; i++) {
                 float y = k.glintTop + i * i * 1.4f + i * 9;
                 if (y > k.glintMaxY) break;
                 float o = (0.08f + 0.77f * wave(t, mGlintP[i], mGlintPh[i])) * k.glintA * a;
-                mDot.setAlpha(Math.round(255 * o));
                 float x = k.glintX + mGlintDx[i];
+                if (mix) mDot.setColor(under(k.glintColor, scrimAt(x + mGlintW[i] / 2, y + 1.5f)));
+                mDot.setAlpha(Math.round(255 * o));
                 mDst.set(x, y, x + mGlintW[i], y + 3);
                 c.drawRoundRect(mDst, 1.5f, 1.5f, mDot);
             }
         }
         // fog bands sway (prototype lw-fog: +-60 px over 30..50 s)
-        if (k.fogN > 0 && f.fog != null) {
+        if ((g & G_FOG) != 0 && k.fogN > 0 && f.fog != null) {
             for (int i = 0; i < k.fogN; i++) {
                 float dx = -60 + 120 * wave(t, mFogP[i], mFogPh[i]);
                 float x = -200 - SkyRenderer.FOG_PAD + dx, y = k.fogY[i] - SkyRenderer.FOG_PAD;
@@ -713,7 +1147,7 @@ public final class SkyView extends View {
             }
         }
         // fireflies on summer nights over the hills
-        if (k.flies && mGlow != null) {
+        if ((g & G_FLIES) != 0 && k.flies && mGlow != null) {
             float fa = SkyLook.clamp01((k.dark - 0.4f) / 0.3f) * a;
             for (int i = 0; i < FLIES; i++) {
                 float p = cyc(t, mFlyP[i], mFlyPh[i]) * 3;
@@ -722,15 +1156,17 @@ public final class SkyView extends View {
                 float x = mFlyX[i] + lerp(FLY_X[seg], FLY_X[seg + 1], e);
                 float y = mFlyY[i] + lerp(FLY_Y[seg], FLY_Y[seg + 1], e);
                 float o = (0.15f + 0.85f * wave(t, mPulseP[i], mPulsePh[i])) * fa;
-                mBmp.setAlpha(Math.round(255 * o));
+                float sc = mix ? scrimAt(x + 3, y + 3) : 0f;   // the halo: dimmed by the scrim instead
+                mBmp.setAlpha(Math.round(mix ? 255 * o * (1 - sc) : 255 * o));
                 mDst.set(x - 21, y - 21, x + 27, y + 27);
                 c.drawBitmap(mGlow, null, mDst, mBmp);
-                mDot.setColor(0xFFFFE9A8);
+                mDot.setColor(mix ? under(0xFFFFE9A8, sc) : 0xFFFFE9A8);
                 mDot.setAlpha(Math.round(255 * o));
                 c.drawCircle(x + 3, y + 3, 3, mDot);
             }
         }
         // rain streaks and snowflakes
+        if ((g & G_PRECIP) == 0) return;
         if (k.precip == SkyLook.RAIN) {
             for (int i = 0; i < DROPS; i++) {
                 float q = cyc(t, mDropP[i], mDropPh[i]);
@@ -744,12 +1180,21 @@ public final class SkyView extends View {
             mStroke.setColor(0xFFD2E1F0);
             mStroke.setAlpha(Math.round(128 * a));
             mStroke.setStrokeWidth(2);
-            c.drawLines(mRain, 0, DROPS * 4, mStroke);
+            if (!mix) {
+                c.drawLines(mRain, 0, DROPS * 4, mStroke);
+                return;
+            }
+            for (int j = 0; j < DROPS * 4; j += 4) { // each streak in the scrims' darkening at its middle
+                mStroke.setColor(under(0xFFD2E1F0, scrimAt(mRain[j] - 3.5f, mRain[j + 1] + 17)));
+                mStroke.setAlpha(Math.round(128 * a));
+                c.drawLine(mRain[j], mRain[j + 1], mRain[j + 2], mRain[j + 3], mStroke);
+            }
         } else if (k.precip == SkyLook.SNOW) {
             mDot.setColor(0xFFFFFFFF);
             for (int i = 0; i < FLAKES; i++) {
                 float y = -60 + 1200 * cyc(t, mFlakeP[i], mFlakePh[i]);
                 float x = mFlakeX[i] - 14 + 28 * wave(t, mSwayP[i], mSwayPh[i]);
+                if (mix) mDot.setColor(under(0xFFFFFFFF, scrimAt(x, y)));
                 mDot.setAlpha(Math.round(255 * mFlakeA[i] * a));
                 c.drawCircle(x, y, mFlakeR[i], mDot);
             }
