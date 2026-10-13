@@ -1,0 +1,58 @@
+Lumen OS: fix a self-deadlock in JTvInputHal (TV input JNI of system_server).
+
+onStreamConfigurationsChanged() and onDeviceUnavailable() hold mStreamLock and call removeStream(), which
+locks the same non-recursive android::Mutex again. Once any stream of an HDMI device had been opened, the
+next stream configuration change (HDMI signal or cable change) hung the main thread of system_server:
+black HDMI picture, then the watchdog restarted system_server ("WATCHDOG KILLING SYSTEM PROCESS: Blocked
+in handler on main thread", main thread in JTvInputHal::removeStream from onStreamConfigurationsChanged).
+The body moves to removeStreamLocked(); removeStream() keeps its lock and calls it.
+Seen on the XGIMI Play 6 t13 (logs/<device>_<serial>/t13_hdmi). Device-neutral fix.
+
+diff -ruN a/frameworks/base/services/core/jni/tvinput/JTvInputHal.cpp b/frameworks/base/services/core/jni/tvinput/JTvInputHal.cpp
+--- a/frameworks/base/services/core/jni/tvinput/JTvInputHal.cpp	2026-10-02 01:37:31
++++ b/frameworks/base/services/core/jni/tvinput/JTvInputHal.cpp	2026-10-13 12:29:22
+@@ -119,6 +119,13 @@
+ 
+ int JTvInputHal::removeStream(int deviceId, int streamId) {
+     Mutex::Autolock autoLock(&mStreamLock);
++    return removeStreamLocked(deviceId, streamId);
++}
++
++// Lumen OS: the caller holds mStreamLock. Before this split, a stream configuration change (an HDMI
++// signal or cable change) after any stream of the device had been opened locked mStreamLock twice on
++// the main thread: system_server hung (black HDMI picture) until the watchdog restarted it.
++int JTvInputHal::removeStreamLocked(int deviceId, int streamId) {
+     KeyedVector<int, Connection>& connections = mConnections.editValueFor(deviceId);
+     if (connections.indexOfKey(streamId) < 0) {
+         return BAD_VALUE;
+@@ -277,7 +284,7 @@
+         Mutex::Autolock autoLock(&mStreamLock);
+         KeyedVector<int, Connection>& connections = mConnections.editValueFor(deviceId);
+         for (size_t i = 0; i < connections.size(); ++i) {
+-            removeStream(deviceId, connections.keyAt(i));
++            removeStreamLocked(deviceId, connections.keyAt(i));
+         }
+         connections.clear();
+         mConnections.removeItem(deviceId);
+@@ -291,7 +298,7 @@
+         Mutex::Autolock autoLock(&mStreamLock);
+         KeyedVector<int, Connection>& connections = mConnections.editValueFor(deviceId);
+         for (size_t i = 0; i < connections.size(); ++i) {
+-            removeStream(deviceId, connections.keyAt(i));
++            removeStreamLocked(deviceId, connections.keyAt(i));
+         }
+         connections.clear();
+     }
+diff -ruN a/frameworks/base/services/core/jni/tvinput/JTvInputHal.h b/frameworks/base/services/core/jni/tvinput/JTvInputHal.h
+--- a/frameworks/base/services/core/jni/tvinput/JTvInputHal.h	2026-10-02 01:37:31
++++ b/frameworks/base/services/core/jni/tvinput/JTvInputHal.h	2026-10-13 12:29:22
+@@ -236,6 +236,9 @@
+     void onCaptured(int deviceId, int streamId, uint32_t seq, bool succeeded);
+     void onTvMessage(int deviceId, int streamId, AidlTvMessageEventType type,
+                      AidlTvMessage& message, signed char data[], int dataLength);
++    // Lumen OS: removeStream's body for callers that already hold mStreamLock (android::Mutex is not
++    // recursive, so onStreamConfigurationsChanged / onDeviceUnavailable calling removeStream deadlocked).
++    int removeStreamLocked(int deviceId, int streamId);
+ 
+     Mutex mStreamLock;
+     jweak mThiz;

@@ -1,0 +1,41 @@
+--- a/packages/modules/Connectivity/service/jni/com_android_server_connectivity_ClatCoordinator.cpp	2026-10-12 04:11:53
++++ b/packages/modules/Connectivity/service/jni/com_android_server_connectivity_ClatCoordinator.cpp	2026-10-12 04:11:53
+@@ -29,7 +29,9 @@
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <sys/wait.h>
++#include <sys/utsname.h>
+ #include <sys/xattr.h>
++#include <stdio.h>
+ #include <string>
+ #include <unistd.h>
+ 
+@@ -90,6 +92,14 @@
+ 
+ #undef ALOGF
+ 
++// Lumen OS: kernel release >= maj.min (true when it cannot be read, so nothing is skipped by mistake).
++static bool kernelAtLeast(int maj, int min) {
++    struct utsname u;
++    int a = 0, b = 0;
++    if (uname(&u) || sscanf(u.release, "%d.%d", &a, &b) != 2) return true;
++    return a > maj || (a == maj && b >= min);
++}
++
+ static const char* kClatdDir = "/apex/com.android.tethering/bin/for-system";
+ static const char* kClatdBin = "/apex/com.android.tethering/bin/for-system/clatd";
+ 
+@@ -113,6 +123,13 @@
+     if (!modules::sdklevel::IsAtLeastT()) return;
+ 
+     V("/sys/fs/bpf", S_IFDIR|S_ISVTX|0777, ROOT, ROOT, "fs_bpf", DIR);
++    // Lumen OS: backport of the AOSP exception in later Connectivity releases. Old vendor kernels lack
++    // the ~5.10 'bpffs selinux genfscon' backport, so everything under /sys/fs/bpf is labelled fs_bpf
++    // and the checks below abort system_server. Let a GSI boot on such a kernel (XGIMI Play 6: 4.19).
++    if (!access("/system/system_ext/etc/init/init.gsi.rc", F_OK) && !kernelAtLeast(5, 10)) {
++        ALOGE("GSI with a pre-5.10 kernel lacking bpffs selinux genfscon support: clat bpf checks skipped");
++        return;
++    }
+     V("/sys/fs/bpf/net_shared", S_IFDIR|S_ISVTX|0777, ROOT, ROOT, "fs_bpf_net_shared", DIR);
+ 
+     // pre-U we do not have selinux privs to getattr on bpf maps/progs

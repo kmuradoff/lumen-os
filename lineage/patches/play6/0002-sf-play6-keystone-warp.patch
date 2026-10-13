@@ -1,0 +1,214 @@
+Lumen OS, XGIMI Play 6 only: software keystone in SurfaceFlinger, as the stock XGIMI SurfaceFlinger did.
+
+The vendor trapezoidServer publishes the keystone corners as vendor.mstar.pos_*_offset and bumps
+vendor.mstar.trapezoid.trigger.osd.offset; the vendor HWC then asks for a refresh. The stock (Android 11)
+SurfaceFlinger warped the client target with them (GLESTrapezoidalRenderEngine). This patch adds the
+corner quad to DisplaySettings (so the client composition cache misses on a change), fills it for physical
+displays in CompositionEngine Display, and applies a 4-point perspective transform in SkiaRenderEngine.
+Research: docs/play6/research/keystone_stock.md. Applied only to the Play 6 base build (play6_overrides.sh).
+
+diff -ruN a/frameworks/native/libs/renderengine/include/renderengine/DisplaySettings.h b/frameworks/native/libs/renderengine/include/renderengine/DisplaySettings.h
+--- a/frameworks/native/libs/renderengine/include/renderengine/DisplaySettings.h	2026-10-12 16:46:13
++++ b/frameworks/native/libs/renderengine/include/renderengine/DisplaySettings.h	2026-10-12 16:46:28
+@@ -29,6 +29,7 @@
+ #include <ui/Region.h>
+ #include <ui/Transform.h>
+ 
++#include <array>
+ #include <optional>
+ 
+ namespace android {
+@@ -89,6 +90,13 @@
+             aidl::android::hardware::graphics::composer3::RenderIntent::TONE_MAP_COLORIMETRIC;
+ 
+     std::vector<renderengine::BorderRenderInfo> borderInfoList;
++
++    // Lumen (XGIMI Play 6): software keystone of the whole client target, as the stock XGIMI
++    // SurfaceFlinger did. Set only for a physical display while the vendor publishes corners.
++    // keystoneQuad holds where the display's corners land: TL x, y, TR x, y, BR x, y, BL x, y, in
++    // physicalDisplay pixels. Part of operator== so the client composition cache misses on a change.
++    bool keystone = false;
++    std::array<float, 8> keystoneQuad{};
+ };
+ 
+ static inline bool operator==(const DisplaySettings& lhs, const DisplaySettings& rhs) {
+@@ -101,7 +109,8 @@
+             lhs.orientation == rhs.orientation &&
+             lhs.targetLuminanceNits == rhs.targetLuminanceNits &&
+             lhs.dimmingStage == rhs.dimmingStage && lhs.renderIntent == rhs.renderIntent &&
+-            lhs.borderInfoList == rhs.borderInfoList;
++            lhs.borderInfoList == rhs.borderInfoList && lhs.keystone == rhs.keystone &&
++            (!lhs.keystone || lhs.keystoneQuad == rhs.keystoneQuad);
+ }
+ 
+ static const char* orientation_to_string(uint32_t orientation) {
+@@ -146,6 +155,7 @@
+         << aidl::android::hardware::graphics::composer3::toString(settings.dimmingStage).c_str();
+     *os << "\n    .renderIntent = "
+         << aidl::android::hardware::graphics::composer3::toString(settings.renderIntent).c_str();
++    *os << "\n    .keystone = " << settings.keystone;
+     *os << "\n}";
+ }
+ 
+diff -ruN a/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp b/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp
+--- a/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp	2026-10-12 16:46:13
++++ b/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp	2026-10-12 16:46:28
+@@ -558,6 +558,24 @@
+     // displays might have different scaling when compared to the physical screen.
+ 
+     canvas->clipRect(getSkRect(display.physicalDisplay));
++
++    // Lumen (XGIMI Play 6): keystone. Map the display rectangle onto the corner quad the vendor
++    // published (a perspective transform, exact for four corners), before every other transform, so
++    // the whole client target is warped as on stock. Outside the quad stays the transparent clear.
++    if (CC_UNLIKELY(display.keystone)) {
++        const Rect& pd = display.physicalDisplay;
++        const auto& q = display.keystoneQuad;
++        const SkPoint src[4] = {{(SkScalar)pd.left, (SkScalar)pd.top},
++                                {(SkScalar)pd.right, (SkScalar)pd.top},
++                                {(SkScalar)pd.right, (SkScalar)pd.bottom},
++                                {(SkScalar)pd.left, (SkScalar)pd.bottom}};
++        const SkPoint dst[4] = {{q[0], q[1]}, {q[2], q[3]}, {q[4], q[5]}, {q[6], q[7]}};
++        SkMatrix warp;
++        if (warp.setPolyToPoly(src, dst, 4)) {
++            canvas->concat(warp);
++        }
++    }
++
+     canvas->translate(display.physicalDisplay.left, display.physicalDisplay.top);
+ 
+     const auto clipWidth = display.clip.width();
+diff -ruN a/frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/Display.h b/frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/Display.h
+--- a/frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/Display.h	2026-10-12 16:46:13
++++ b/frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/Display.h	2026-10-12 16:46:28
+@@ -63,6 +63,8 @@
+     void setExpensiveRenderingExpected(bool) override;
+     void finishFrame(GpuCompositionResult&&) override;
+     bool supportsOffloadPresent() const override;
++    renderengine::DisplaySettings generateClientCompositionDisplaySettings(
++            const std::shared_ptr<renderengine::ExternalTexture>& buffer) const override;
+ 
+     // compositionengine::Display overrides
+     DisplayId getId() const override;
+diff -ruN a/frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp b/frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp
+--- a/frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp	2026-10-12 16:46:13
++++ b/frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp	2026-10-12 16:53:57
+@@ -14,6 +14,7 @@
+  * limitations under the License.
+  */
+ 
++#include <android-base/properties.h>
+ #include <android-base/stringprintf.h>
+ #include <compositionengine/CompositionEngine.h>
+ #include <compositionengine/CompositionRefreshArgs.h>
+@@ -40,11 +41,78 @@
+ 
+ #include "DisplayHardware/PowerAdvisor.h"
+ 
++#include <array>
++#include <cstdio>
++#include <mutex>
++
+ using aidl::android::hardware::graphics::composer3::Capability;
+ using aidl::android::hardware::graphics::composer3::DisplayCapability;
+ 
+ namespace android::compositionengine::impl {
+ 
++namespace {
++
++// Lumen (XGIMI Play 6): the keystone corners. The vendor trapezoidServer stores them as inward
++// offsets "x:y" from each corner of the 1920x1080 panel, then bumps the trigger counter; the vendor
++// HWC sees the counter and asks SurfaceFlinger for a refresh. The stock (Android 11) XGIMI
++// SurfaceFlinger warped the client target with them; this does the same. The props are read again
++// only when the trigger counter changes, so a frame costs one serial check. Inert anywhere the vendor
++// does not publish them (enable must be 1 and the type the four-corner type 1).
++constexpr const char* kKeystoneTrigger = "vendor.mstar.trapezoid.trigger.osd.offset";
++constexpr int kPanelW = 1920, kPanelH = 1080;
++
++struct KeystoneOffsets {
++    bool on = false;
++    std::array<int, 8> off{}; // lt x, y, rt x, y, rb x, y, lb x, y (panel px, inward)
++};
++
++bool readKeystoneOffset(const char* name, int* x, int* y) {
++    const std::string v = base::GetProperty(name, "");
++    char tail;
++    if (std::sscanf(v.c_str(), "%d:%d%c", x, y, &tail) != 2) return false;
++    return *x >= 0 && *y >= 0 && *x <= kPanelW / 2 && *y <= kPanelH / 2;
++}
++
++KeystoneOffsets readKeystoneOffsets() {
++    KeystoneOffsets k;
++    if (base::GetIntProperty("vendor.mstar.trapezoid.enable", 0) != 1 ||
++        base::GetIntProperty("vendor.mstar.trapezoidCorrect.type", 0) != 1) {
++        return k;
++    }
++    static const char* const kNames[4] = {"vendor.mstar.pos_lt_offset", "vendor.mstar.pos_rt_offset",
++                                          "vendor.mstar.pos_rb_offset", "vendor.mstar.pos_lb_offset"};
++    for (size_t i = 0; i < 4; i++) {
++        if (!readKeystoneOffset(kNames[i], &k.off[2 * i], &k.off[2 * i + 1])) return KeystoneOffsets{};
++    }
++    for (int v : k.off) {
++        if (v != 0) k.on = true;
++    }
++    return k;
++}
++
++KeystoneOffsets currentKeystoneOffsets() {
++    static std::mutex sLock;
++    static base::CachedProperty sTrigger(kKeystoneTrigger); // serial check, no copy when unchanged
++    static bool sRead = false, sLogged = false;
++    static KeystoneOffsets sLast;
++    std::lock_guard<std::mutex> lock(sLock);
++    bool changed = false;
++    sTrigger.Get(&changed);
++    if (sRead && !changed) return sLast;
++    sRead = true;
++    const KeystoneOffsets k = readKeystoneOffsets();
++    if (!sLogged || k.on != sLast.on || k.off != sLast.off) {
++        const auto& o = k.off;
++        ALOGI("Lumen keystone %s: lt %d:%d rt %d:%d rb %d:%d lb %d:%d", k.on ? "on" : "off", o[0],
++              o[1], o[2], o[3], o[4], o[5], o[6], o[7]);
++        sLogged = true;
++    }
++    sLast = k;
++    return k;
++}
++
++} // namespace
++
+ std::shared_ptr<Display> createDisplay(
+         const compositionengine::CompositionEngine& compositionEngine,
+         const compositionengine::DisplayCreationArgs& args) {
+@@ -431,6 +499,31 @@
+     }
+ 
+     impl::Output::finishFrame(std::move(result));
++}
++
++renderengine::DisplaySettings Display::generateClientCompositionDisplaySettings(
++        const std::shared_ptr<renderengine::ExternalTexture>& buffer) const {
++    renderengine::DisplaySettings settings = Output::generateClientCompositionDisplaySettings(buffer);
++
++    // Lumen (XGIMI Play 6): keystone for a physical display only. Virtual displays, screen captures
++    // (not a Display) and the planner's cached layer sets are never warped.
++    if (mIsDisconnected || !PhysicalDisplayId::tryCast(mId)) {
++        return settings;
++    }
++    const KeystoneOffsets k = currentKeystoneOffsets();
++    const Rect& pd = settings.physicalDisplay;
++    if (!k.on || !pd.isValid() || pd.isEmpty()) {
++        return settings;
++    }
++    const float sx = static_cast<float>(pd.width()) / static_cast<float>(kPanelW);
++    const float sy = static_cast<float>(pd.height()) / static_cast<float>(kPanelH);
++    const auto l = static_cast<float>(pd.left), t = static_cast<float>(pd.top);
++    const auto r = static_cast<float>(pd.right), b = static_cast<float>(pd.bottom);
++    const auto o = [&k](size_t i) { return static_cast<float>(k.off[i]); };
++    settings.keystone = true;
++    settings.keystoneQuad = {l + o(0) * sx, t + o(1) * sy, r - o(2) * sx, t + o(3) * sy,
++                             r - o(4) * sx, b - o(5) * sy, l + o(6) * sx, b - o(7) * sy};
++    return settings;
+ }
+ 
+ bool Display::supportsOffloadPresent() const {
