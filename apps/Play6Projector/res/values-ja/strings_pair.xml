@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Japanese translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">リモコンを再接続</string>
+    <string name="remote_lost_text">ランプが点滅するまで、戻るボタンとホームボタンを同時に 3 秒間長押ししてください。</string>
+    <string name="remote_lost_found">%1$s が見つかりました</string>
+    <string name="remote_lost_battery">反応しない場合は、リモコンの電池を確認してください。</string>
+    <string name="remote_lost_dismiss">後で</string>
+    <string name="remote_lost_wake">リモコンのいずれかのボタンを押してください</string>
+</resources>

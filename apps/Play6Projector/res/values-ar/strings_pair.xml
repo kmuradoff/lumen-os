@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arabic translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">أعد توصيل جهاز التحكم</string>
+    <string name="remote_lost_text">اضغط مع الاستمرار على زري الرجوع والشاشة الرئيسية معًا لمدة 3 ثوانٍ حتى يومض الضوء.</string>
+    <string name="remote_lost_found">تم العثور على %1$s</string>
+    <string name="remote_lost_battery">لا يحدث شيء؟ تحقق من بطاريات جهاز التحكم.</string>
+    <string name="remote_lost_dismiss">ليس الآن</string>
+    <string name="remote_lost_wake">اضغط على أي زر في جهاز التحكم</string>
+</resources>

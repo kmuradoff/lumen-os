@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Back and Home lit in the warm accent (#F2B26B): the two keys to hold for pairing. Same viewport as
+     remote_xgimi.xml, drawn on top of it (RemoteArt fades it out once the remote is connected). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="140dp"
+    android:height="480dp"
+    android:viewportWidth="140"
+    android:viewportHeight="480">
+    <path android:fillColor="#FFF2B26B"
+        android:pathData="M24,214 a16,16 0 1,0 32,0 a16,16 0 1,0 -32,0 Z M84,214 a16,16 0 1,0 32,0 a16,16 0 1,0 -32,0 Z" />
+    <path android:strokeColor="#FF0A0908" android:strokeWidth="2.4" android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M47,214 H33.5 M38.5,209 L33.5,214 L38.5,219 M93,215 L100,208 L107,215 M95,213.5 V221 H105 V213.5" />
+</vector>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X v6.3 / Lumen OS 1.0: replaces framework-res layout/shutdown_dialog (Lineage 21
+     frameworks/base/core/res/res/layout/shutdown_dialog.xml, symbols.xml:3998), whose ONLY user is
+     TvSystemUI's ShutdownUi.showShutdownUi (SystemUI globalactions/ShutdownUi.java:138). That dialog
+     (TYPE_VOLUME_OVERLAY, layer 22, opaque black scrim on TV: TvSystemUI dimens
+     shutdown_scrim_behind_alpha 1.0) is what ShutdownThread shows for every power off / restart
+     (config_showSysuiShutdown true). Here it shows the same thin "Lumen" wordmark (Z9xProjector power_wordmark) + hairline as
+     org.z9x.projector's WakeCurtain instead of "Shutting down..." and the spinner, so whatever
+     layer is left on screen during the last seconds of a shutdown looks the same.
+     ShutdownUi.java needs these ids (findViewById, NPE otherwise): @android:id/progress
+     (getIndeterminateDrawable().setTint), @android:id/text1, @android:id/text2 (setTextColor /
+     setText / setVisibility). text2 (the "Shutting down..." message) and progress stay inside a GONE
+     container: never drawn, spinner never runs. text1 (the reason line) is GONE by default and
+     ShutdownUi.getReasonMessage makes it VISIBLE only for the reboot reasons "recovery-update"
+     (installing a system update) and "recovery" (factory reset): it sits under the wordmark in the
+     same thin style, so those long reboots are not mistaken for a plain power off (its colour is
+     set by ShutdownUi). Sizes in px on purpose: WakeCurtain draws in design px scaled by
+     width/1920 = 1.0 on the Z9X (1920x1080, density 240): text 84 px, letter spacing 0.42, weight
+     200, alpha 0xE0; hairline 56 px long, alpha 0x66, 34 px below the baseline (= ~63 px below the
+     text centre for Roboto 84 px: ascent 77.9, descent 20.5; UNVERIFIED pixel match, tune on the
+     device). WakeCurtain's 1.5 px stroke is given as 2 px here: a dimension is resolved through
+     getDimensionPixelSize, which would round 1.5 px to 2 px anyway. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF000000">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@android:id/text2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ProgressBar
+            android:id="@android:id/progress"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="30dp"
+            android:layout_height="30dp" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:includeFontPadding="false"
+        android:fontFamily="sans-serif"
+        android:textFontWeight="200"
+        android:letterSpacing="0.42"
+        android:textSize="84px"
+        android:textColor="#E0FFFFFF"
+        android:singleLine="true"
+        android:importantForAccessibility="no"
+        android:text="Lumen" />
+
+    <View
+        android:layout_width="56px"
+        android:layout_height="2px"
+        android:layout_gravity="center"
+        android:translationY="63px"
+        android:background="#66FFFFFF" />
+
+    <TextView
+        android:id="@android:id/text1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:translationY="130px"
+        android:visibility="gone"
+        android:includeFontPadding="false"
+        android:fontFamily="sans-serif"
+        android:textFontWeight="300"
+        android:letterSpacing="0.08"
+        android:textSize="30px"
+        android:alpha="0.7"
+        android:singleLine="true" />
+</FrameLayout>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Module "source": Russian translation of values/strings_source.xml. -->
+<resources>
+    <string name="source_title">Источник сигнала</string>
+    <string name="source_home">Главный экран</string>
+    <string name="source_hdmi">HDMI %1$d</string>
+    <string name="source_hdmi_arc">HDMI %1$d (ARC)</string>
+    <string name="source_state_connected">Подключено</string>
+    <string name="source_state_no_signal">Нет сигнала</string>
+    <string name="source_state_disconnected">Не подключено</string>
+    <string name="source_state_unavailable">Недоступно</string>
+    <string name="source_open_failed">Не удалось открыть %1$s</string>
+</resources>
