@@ -77,6 +77,8 @@ public class SetupActivity extends Activity implements NetMon.Listener {
     // cached async state (main thread)
     /** null = not known yet, then the SetupBridge answered ping or not. */
     public Boolean bridgeOk;
+    /** The successful ping reply (null until then, or when the bridge is missing): optional fields such as "names". */
+    public Bundle bridgeInfo;
     public boolean remoteConnected;
     public Bundle aliceInfo;
     private boolean mGeoStarted;
@@ -332,6 +334,7 @@ public class SetupActivity extends Activity implements NetMon.Listener {
         });
         Bridge.ping(this, r -> {
             bridgeOk = Bridge.ok(r) && r.getInt("version", 0) >= Bridge.API;
+            bridgeInfo = bridgeOk ? r : null;
             L.i("bridge ping ok=" + bridgeOk + " projector=" + (r == null ? "?" : r.get("projectorVersion")));
             refreshDots();
             if (!bridgeOk) return;

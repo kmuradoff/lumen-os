@@ -66,9 +66,12 @@ public final class Sys {
                 || "userdebug".equals(android.os.Build.TYPE) || "eng".equals(android.os.Build.TYPE);
     }
 
-    /** Lumen OS version for the footer (image prop names stay ro.z9x.* in v1). */
+    /**
+     * Lumen OS version for the footer (image prop names stay ro.z9x.* in v1); the Lumen version prop when
+     * the old one is unset (an image that sets both gives the same value).
+     */
     public static String osVersion() {
-        return prop("ro.z9x.version", "1.0");
+        return prop("ro.z9x.version", prop("ro.lumen.version", "1.0"));
     }
 
     /** Which launchers can be chosen. Lumen Home first. */
