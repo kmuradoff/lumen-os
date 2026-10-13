@@ -1,0 +1,24 @@
+== exit 0
+== output
+12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
+12:00:00   ✓ XGIMI Z9X ZF62TEST0009, прошивка v6.15.58, слот b, система: родная XGIMI
+12:00:00   ✓ подпись SHA256SUMS: ключ Lumen OS
+12:00:00 проверяю контрольную сумму образа (около минуты)
+12:00:00   ✓ lumen-os-1.0.2-nogms-system.img sha256 c26fc63dd3403258…
+12:00:00   ✓ редакция: Lumen OS без Google
+12:00:00   ✓ vbmeta: проверка в слоте b выключена (нет system-verity)
+12:00:00   ✓ проверка пройдена; ничего не записано
+== adb
+version
+devices
+-s ZF62TEST0009 shell getprop ro.boot.xgimi.modelname
+-s ZF62TEST0009 shell getprop ro.boot.hardware
+-s ZF62TEST0009 shell getprop ro.vendor.build.version.incremental
+-s ZF62TEST0009 shell getprop ro.boot.slot_suffix
+-s ZF62TEST0009 shell getprop ro.z9x.version
+-s ZF62TEST0009 shell getprop ro.boot.slot_suffix
+-s ZF62TEST0009 shell ls /dev/block/mapper/
+== fastboot
+--version
+--version
+== unexpected

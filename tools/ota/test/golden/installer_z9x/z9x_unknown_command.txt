@@ -1,0 +1,6 @@
+== exit 1
+== output
+12:00:00 STOP: unknown command frobnicate (see --help)
+== adb
+== fastboot
+== unexpected

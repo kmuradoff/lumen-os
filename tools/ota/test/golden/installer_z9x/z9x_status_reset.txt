@@ -1,0 +1,10 @@
+== exit 0
+== output
+serial=ZF62TEST0009
+slot=_b
+step_check=done
+progress forgotten
+no saved progress
+== adb
+== fastboot
+== unexpected

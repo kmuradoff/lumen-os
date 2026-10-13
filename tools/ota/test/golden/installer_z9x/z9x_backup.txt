@@ -1,0 +1,25 @@
+== exit 0
+== output
+12:00:00 backup to <C>/backup/20261013-1200
+12:00:00 IMPORTANT: remove your Google account on the projector first (Settings > Accounts), or Factory Reset Protection may ask for it after the wipe.
+12:00:00   ✓ 2 APK files of your apps (app data cannot be saved without root)
+12:00:00   ✓ backup done
+== adb
+devices
+-s ZF62TEST0009 shell pm list packages -3
+-s ZF62TEST0009 shell pm path com.example.player
+-s ZF62TEST0009 pull /data/app/com.example.player-1/base.apk <C>/backup/20261013-1200/apps/com.example.player/
+-s ZF62TEST0009 shell pm path org.example.notes
+-s ZF62TEST0009 pull /data/app/org.example.notes-1/base.apk <C>/backup/20261013-1200/apps/org.example.notes/
+-s ZF62TEST0009 shell [ -d /sdcard/Download ] && [ -n "$(ls -A /sdcard/Download 2>/dev/null)" ]
+-s ZF62TEST0009 shell [ -d /sdcard/Movies ] && [ -n "$(ls -A /sdcard/Movies 2>/dev/null)" ]
+-s ZF62TEST0009 shell [ -d /sdcard/Music ] && [ -n "$(ls -A /sdcard/Music 2>/dev/null)" ]
+-s ZF62TEST0009 shell [ -d /sdcard/Pictures ] && [ -n "$(ls -A /sdcard/Pictures 2>/dev/null)" ]
+-s ZF62TEST0009 shell [ -d /sdcard/DCIM ] && [ -n "$(ls -A /sdcard/DCIM 2>/dev/null)" ]
+-s ZF62TEST0009 shell [ -d /sdcard/Documents ] && [ -n "$(ls -A /sdcard/Documents 2>/dev/null)" ]
+-s ZF62TEST0009 shell settings list global
+-s ZF62TEST0009 shell settings list secure
+-s ZF62TEST0009 shell settings list system
+-s ZF62TEST0009 shell pm list packages -3
+== fastboot
+== unexpected
