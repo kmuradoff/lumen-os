@@ -502,8 +502,9 @@ What is different from the Z9X:
   data, then the installer asks Android for its own factory reset, and XGIMI's recovery erases the data,
   as Settings > Reset would.
 - Google services cannot be added on the Play 6 yet.
-- Protected video depends on your unit. Many Play 6 units have no Widevine L1 key from the factory, and
-  Lumen OS cannot add one.
+- Kinopoisk and other streaming apps work. On the Play 6 we tested, Widevine runs at the software level L3,
+  as on its stock firmware (that unit has no L1 key from the factory), so protected films may play in lower
+  quality. A unit with a factory L1 key should get L1.
 
 <a name="play6-need"></a>
 

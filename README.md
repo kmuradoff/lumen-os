@@ -20,8 +20,9 @@ another projector and any XGIMI firmware it does not know.
   and keeps your data. Updates over Wi-Fi come later.
 - XGIMI Play 6: Google services are not in the image and cannot be added yet. As on the Z9X, they are
   planned as an add-on that you make from your own MindTheGapps download.
-- XGIMI Play 6: protected video depends on the unit. Many Play 6 units have no Widevine L1 key from the
-  factory, and Lumen OS cannot add one.
+- XGIMI Play 6: Kinopoisk and other streaming apps work. On the Play 6 we tested, Widevine runs at the software level L3,
+  as on its stock firmware (that unit has no L1 key from the factory), so protected films may play in lower
+  quality. A unit with a factory L1 key should get L1.
 
 More projectors will come later.
 
