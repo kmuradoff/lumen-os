@@ -5,7 +5,7 @@
     <string name="uires_section">Экран</string>
     <string name="uires_row">Разрешение интерфейса</string>
     <string name="uires_default_fmt">%1$s (по умолчанию)</string>
-    <string name="uires_summary">4K — самый чёткий текст; 1080p, как у XGIMI, — самая лёгкая нагрузка на графику. Для смены проектор перезагрузится.</string>
+    <string name="uires_summary">4K даёт самый чёткий текст; 1080p, как у XGIMI, меньше всего нагружает графику. Для смены проектор перезагрузится.</string>
     <string name="uires_summary_fallback">Сейчас %1$s: в %2$s изображение не запустилось как надо, и проектор сам вернулся обратно. Чтобы попробовать снова, выберите %2$s.</string>
     <string name="uires_choose_text">4K использует каждый пиксель 4K-панели. 1080p, как у XGIMI, рисует вчетверо меньше пикселей, а проектор увеличивает картинку.</string>
     <string name="uires_opt_1080">Как у XGIMI: легче всего для графики; текст чуть мягче</string>

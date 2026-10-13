@@ -1,6 +1,6 @@
 /*
  * HidlCaller: the single transact path to XGIMI's vendor HAL (xgimi.hardware.gmpf@1.0), shared by every
- * Lumen device app: Z9xProjector (GmpfClient = IGmpf, Gmpf2Client = IGmpf2) and Play6Projector (Play6Gmpf).
+ * Lumen device app, each with its own typed clients (Z9xProjector: GmpfClient = IGmpf, Gmpf2Client = IGmpf2).
  * SINGLE SOURCE: gsi/apps/common/hal/HidlCaller.java. The apps carry byte-identical copies made by
  * `sh apps/common/sync.sh APP_DIR hal` (`--check` finds a drifted copy); never edit a copy.
  * The method codes are NOT here: each device app keeps its own typed client with that device's code table.

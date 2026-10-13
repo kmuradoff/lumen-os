@@ -120,3 +120,7 @@ native libraries are untouched.
   width with no crop or zoom; an AirPlay video (YouTube / Safari) fills the screen; the pairing code, the
   "Connecting" status and the music screen (cover sharp) have the 1080p layout in proportion; settings page
   the same; a 4K-quality mirror (Settings > Quality 4K) still plays smoothly.
+
+## Lumen OS 1.0.2 and 1.0.3: unchanged
+- The 1.0.1 APK stays, byte for byte (ffeee5e0..., 1.0.1 / 102, pinned in overlay/apps_v1/PINS.sha256): the
+  current sources and native libraries rebuild to it exactly (2026-10-13).

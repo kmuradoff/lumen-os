@@ -38,7 +38,7 @@
 
     <string name="diag_app_version">Версия приложения: %1$s</string>
 
-    <string name="manual_focus_panel">Ручной фокус   ◀ ▶     OK/Назад — готово</string>
+    <string name="manual_focus_panel">Ручной фокус   ◀ ▶     OK/Назад: готово</string>
 
     <string name="toast_af">Автофокус</string>
     <string name="toast_af_running">Автофокус…</string>

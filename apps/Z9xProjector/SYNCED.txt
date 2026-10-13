@@ -1,0 +1,1 @@
+Synced copies, never edit them here: src/org/z9x/projector/hal/HidlCaller.java and every path listed in apps/common/projector/FILES. Edit apps/common and run apps/common/sync.sh (rules: apps/common/projector/README.txt).

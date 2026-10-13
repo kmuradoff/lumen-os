@@ -4,7 +4,8 @@
   property names keep the internal z9x prefix in v1).
   Install: /system/app/Z9xProjector/Z9xProjector.apk (NOT priv-app), platform-signed, no sharedUserId.
   versionCode/versionName come from build_apk.sh (Lumen OS 1.0: VERSION_CODE=100 VERSION_NAME=1.0;
-  Lumen OS 1.0.0: VERSION_CODE=101 VERSION_NAME=1.0.0; Lumen OS 1.0.1: VERSION_CODE=102 VERSION_NAME=1.0.1).
+  Lumen OS 1.0.0: VERSION_CODE=101 VERSION_NAME=1.0.0; Lumen OS 1.0.1: VERSION_CODE=102 VERSION_NAME=1.0.1;
+  Lumen OS 1.0.2: VERSION_CODE=103 VERSION_NAME=1.0.2; Lumen OS 1.0.3: VERSION_CODE=104 VERSION_NAME=1.0.3).
 
   Permissions: protection levels checked in the Lineage 21 source
   (~/lineage/frameworks/base/core/res/AndroidManifest.xml on the build laptop, 2026-10-03).

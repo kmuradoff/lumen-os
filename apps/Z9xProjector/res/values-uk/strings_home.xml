@@ -6,8 +6,8 @@
     <string name="launcher_lumen">Lumen Home</string>
     <string name="launcher_classic">Android TV (класичний)</string>
     <string name="launcher_switch">Перемкнути</string>
-    <string name="launcher_confirm_classic">Буде увімкнено класичний головний екран Android TV, а Lumen Home — вимкнено. Повернутися можна тут будь-коли.</string>
-    <string name="launcher_confirm_lumen">Буде увімкнено Lumen Home, а класичний головний екран — вимкнено. Повернутися можна тут будь-коли.</string>
+    <string name="launcher_confirm_classic">Увімкнеться класичний головний екран Android TV, а Lumen Home вимкнеться. Повернутися можна тут будь-коли.</string>
+    <string name="launcher_confirm_lumen">Увімкнеться Lumen Home, а класичний головний екран вимкнеться. Повернутися можна тут будь-коли.</string>
     <string name="launcher_switch_failed">Не вдалося змінити головний екран</string>
     <string name="search_unavailable">Пошук недоступний</string>
 </resources>

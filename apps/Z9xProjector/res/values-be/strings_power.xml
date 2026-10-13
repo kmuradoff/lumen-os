@@ -7,7 +7,7 @@
     <string name="power_quick_wake_minutes">%1$d хв</string>
     <string name="power_quick_wake_hours">%1$d гадз</string>
     <string name="power_standby_summary">Кароткі націск кнопкі сілкавання гасіць святло, а праектар застаецца гатовым да імгненнага ўключэння. Пасля гэтага часу ён выключаецца цалкам.</string>
-    <string name="power_sleep_summary">Кнопка сілкавання, таймер сну і бяздзейнасць гасяць святло і пераводзяць праектар у сон. Націсніце кнопку сілкавання — ён прачнецца за некалькі секунд там, дзе вы спыніліся.</string>
+    <string name="power_sleep_summary">Кнопка сілкавання, таймер сну і бяздзейнасць гасяць святло і пераводзяць праектар у сон. Націсніце кнопку сілкавання, і ён прачнецца за некалькі секунд там, дзе вы спыніліся.</string>
     <string name="power_menu_sleep">Сон</string>
     <string name="power_menu_off">Выключыць</string>
     <string name="power_menu_restart">Перазапусціць</string>

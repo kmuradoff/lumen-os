@@ -78,6 +78,8 @@ public final class App extends Application {
         try { org.z9x.projector.dream.IdleOwner.install(this); } catch (Throwable t) { Log.e(TAG, "IdleOwner.install", t); }
         // ===== v6.2 module "game": HDMI console recognition + auto game profile (no HAL call here) =====
         try { org.z9x.projector.game.GameProfile.install(this); } catch (Throwable t) { Log.e(TAG, "GameProfile.install", t); }
+        // ===== Lumen OS 1.0.3: the HDMI picture, IGmpf 698 follows tvinput's HDMI sessions (connect hook) =====
+        try { org.z9x.projector.source.HdmiSource.install(this); } catch (Throwable t) { Log.e(TAG, "HdmiSource.install", t); }
         // ===== v6.3 manual keystone: resume real-time keystone if a session could not (paused marker) =====
         try { org.z9x.projector.panel.ManualKeystonePanel.install(this); } catch (Throwable t) { Log.e(TAG, "ManualKeystonePanel.install", t); }
         // ===== Lumen OS 1.0: SetupBridge events, Recents boot-clean at user unlock =====
@@ -155,6 +157,7 @@ public final class App extends Application {
                     try { org.z9x.projector.audio.SoundEq.onScreenOn(); } catch (Throwable t) { Log.w(TAG, "SoundEq.onScreenOn: " + t); }
                     try { org.z9x.projector.audio.AiSoundEngine.onScreenOn(); } catch (Throwable t) { Log.w(TAG, "AiSoundEngine.onScreenOn: " + t); }
                     try { org.z9x.projector.audio.VendorSoundWatch.onScreenOn(); } catch (Throwable t) { Log.w(TAG, "VendorSoundWatch.onScreenOn: " + t); }
+                    try { org.z9x.projector.source.HdmiSource.onScreenOn(); } catch (Throwable t) { Log.w(TAG, "HdmiSource.onScreenOn: " + t); }
                 }
             }
         };
