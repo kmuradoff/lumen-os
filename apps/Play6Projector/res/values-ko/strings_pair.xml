@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Korean translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">리모컨 다시 연결</string>
+    <string name="remote_lost_text">표시등이 깜박일 때까지 뒤로 버튼과 홈 버튼을 함께 3초 동안 누르세요.</string>
+    <string name="remote_lost_found">%1$s 발견됨</string>
+    <string name="remote_lost_battery">반응이 없나요? 리모컨 배터리를 확인하세요.</string>
+    <string name="remote_lost_dismiss">나중에</string>
+    <string name="remote_lost_wake">리모컨의 아무 버튼이나 누르세요</string>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">Fernbedienung erneut verbinden</string>
+    <string name="remote_lost_text">Halte Zurück und Home 3 Sekunden gleichzeitig gedrückt, bis die Leuchte blinkt.</string>
+    <string name="remote_lost_found">%1$s gefunden</string>
+    <string name="remote_lost_battery">Nichts passiert? Prüfe die Batterien der Fernbedienung.</string>
+    <string name="remote_lost_dismiss">Nicht jetzt</string>
+    <string name="remote_lost_wake">Drücke eine beliebige Taste auf der Fernbedienung</string>
+</resources>

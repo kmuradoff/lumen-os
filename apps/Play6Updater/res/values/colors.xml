@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     Lumen OS palette (research v7 brand/SPEC.md section 9, PLAN C7), app-local names so a shared
+     tokens.xml copied in later (z9x_*) cannot collide. Same values as the brand tokens. -->
+<resources>
+    <color name="lu_bg">#FF0F1115</color>
+    <color name="lu_surface">#FF1E232C</color>
+    <color name="lu_surface2">#FF263041</color>
+    <color name="lu_text">#FFE8EAED</color>
+    <color name="lu_text_dim">#FF9AA0A6</color>
+    <color name="lu_focus_text">#FF0E0E0F</color>
+    <color name="lu_accent">#FF8AB4F8</color>
+    <color name="lu_accent_strong">#FF3B78E7</color>
+    <color name="lu_warn">#FFF6AE2D</color>
+    <color name="lu_error">#FFF28B82</color>
+    <color name="lu_ok">#FF81C995</color>
+</resources>

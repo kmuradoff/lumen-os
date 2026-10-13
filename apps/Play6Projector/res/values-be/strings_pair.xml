@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Belarusian translation of res/values/strings_pair.xml (Lumen OS 1.0 remote-lost prompt). -->
+<resources>
+    <string name="remote_lost_title">Падключыце пульт зноў</string>
+    <string name="remote_lost_text">Утрымлівайце кнопкі «Назад» і «Дадому» 3 секунды, пакуль не замігціць індыкатар.</string>
+    <string name="remote_lost_found">Знойдзены %1$s</string>
+    <string name="remote_lost_battery">Нічога не адбываецца? Праверце батарэйкі пульта.</string>
+    <string name="remote_lost_dismiss">Не зараз</string>
+    <string name="remote_lost_wake">Націсніце любую кнопку на пульце</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Charging bolt in the quick panel's info line (Play 6 only, battery/BatteryRows.infoPart). Own drawing,
+     white; tinted at runtime to the info text colour. 14 x 24 viewport, so the span keeps its shape at the
+     text height. No XGIMI assets. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp"
+    android:height="24dp"
+    android:viewportWidth="14"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M9,1 L1,14 H6.5 L5,23 L13,9.5 H7.5 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

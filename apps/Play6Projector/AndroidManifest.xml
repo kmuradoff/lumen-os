@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  org.z9x.projector ("Projector") of Lumen OS for the XGIMI Play 6 (G0058, MT5889). Author kmuradoff.
+  docs/play6/SETTINGS_PLAN.md 2.1-2.3 (decision D1): the same package as the Z9X projector app, so the
+  pinned Lumen Home and TvInput (re-signed with the Play 6 platform key) work unchanged; built from
+  apps/Play6Projector only, installed at /system/app/Play6Projector/Play6Projector.apk on the Play 6 image
+  only (NOT priv-app), platform-signed with the Play 6 key (rule S1: never a certificate a Z9X image
+  trusts; tools/play6/build_play6.sh), no sharedUserId. versionCode 600000 + N is a readable marker only,
+  never a guard (t12 = 600012).
+
+  Process start: org.z9x.play6.App (persistent + directBootAware, the process starts at systemReady)
+  runs the stock boot handshake first (BootHandshake.java, unchanged, check K), then
+  org.z9x.projector.Play6App, which only posts work and starts the Lumen modules after the start gate.
+  Without the handshake the vendor process gmpf_main turns the projector off a few seconds after the
+  XGIMI logo (test build t1, 2026-10-12).
+  Direct boot (plan 2.2 step 7): only the application and org.z9x.play6.BootReceiver are direct-boot
+  aware; every other component says android:directBootAware="false" explicitly, so the shared receivers,
+  providers and activities never run before the user unlocked.
+
+  Components: the contract of plan 2.3 as far as its classes exist. Not declared on the Play 6:
+  OTA_STATE receiver (no updater; the permission is still defined), problem reports, the lamp-only standby
+  screen (the Play 6 standby uses an overlay key catcher). t19: Lumen Setup (org.z9x.setup) is the first-run
+  flow of the image (docs/play6/impl/setup-design.md), so the setupbridge provider is declared
+  (setup.SetupBridgeProvider, the Play 6 class of the same name) and this app requests SETUP_BRIDGE itself:
+  the Setup registers its SETUP_STATE receiver with that permission, so the sender must hold it. t14: the HDMI_EVENT receiver of org.z9x.tvinput
+  (game.HdmiEventReceiver: IGmpf 698 connects HDMI to the video window, docs/play6/research/hdmi_stock.md). No icon or banner: no launcher entry (as the Z9X app since v6.2).
+  Battery (plan section 3, step 17; docs/play6/research/battery_sound_features.md 6.1): vendor power events
+  through our IPowerCallback (IGmpf 235 / 242, registered by the Hal facade after the start gate) drive
+  battery/Battery, with a watchdog read; the test hook battery/BatteryTestReceiver (plan 3.3) is exported
+  but guarded by android.permission.DUMP (adb shell) and inert outside a Play 6 test build. The battery is
+  no longer shown in this app's quick panel: Lumen Home reads it from device/DeviceStateProvider
+  (content://org.z9x.projector.device, read only, no permission; docs/play6/impl/home-contract.md).
+  Shared code: src/org/z9x/projector/hal/HidlCaller.java (apps/common/hal) and the paths listed in
+  apps/common/projector/FILES are synced copies (apps/common/sync.sh); never edit a copy.
+
+  Permissions: the Z9X projector set (protection levels checked in the Lineage 21 source, see
+  apps/Z9xProjector/AndroidManifest.xml) minus the problem-report ones (INTERNET, READ_LOGS, DUMP,
+  ACCESS_WIFI_STATE) and the AI-sound ones (MODIFY_AUDIO_ROUTING, MEDIA_CONTENT_CONTROL,
+  QUERY_ALL_PACKAGES). A platform-signed APK gets every "signature" permission also from /system/app.
+  The two "dangerous" Bluetooth ones are pre-granted by /system/product/etc/default-permissions/
+  z9x-projector.xml (the Z9X file, package org.z9x.projector) and self-granted at runtime as a fallback.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.projector"
+    android:versionCode="600019"
+    android:versionName="play6-t19">
+
+    <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
+
+    <!-- The eight signature permissions of the Lumen contract (plan 2.3): every requesting APK of this
+         image is granted (all share the Play 6 platform cert). -->
+    <permission
+        android:name="org.z9x.projector.permission.SHOW_SOURCE"
+        android:protectionLevel="signature" />
+    <permission
+        android:name="org.z9x.projector.permission.NOTIFY"
+        android:protectionLevel="signature" />
+    <permission
+        android:name="org.z9x.projector.permission.HDMI_EVENT"
+        android:protectionLevel="signature" />
+    <permission
+        android:name="org.z9x.projector.permission.STANDBY_STATE"
+        android:protectionLevel="signature" />
+    <permission
+        android:name="org.z9x.projector.permission.SET_LAUNCHER"
+        android:protectionLevel="signature" />
+    <permission
+        android:name="org.z9x.projector.permission.SHOW_PANEL"
+        android:protectionLevel="signature" />
+    <permission
+        android:name="org.z9x.projector.permission.SETUP_BRIDGE"
+        android:protectionLevel="signature" />
+    <permission
+        android:name="org.z9x.projector.permission.OTA_STATE"
+        android:protectionLevel="signature" />
+
+    <!-- Ask org.z9x.tvinput whether an HDMI TIF session is open (its HdmiStateProvider). -->
+    <uses-permission android:name="org.z9x.tvinput.permission.HDMI_STATE" />
+    <!-- HdmiControlManager (console recognition, CEC page: plan P2 / P3). -->
+    <uses-permission android:name="android.permission.HDMI_CEC" />
+    <uses-permission android:name="org.z9x.projector.permission.STANDBY_STATE" />
+    <!-- SETUP_STATE events to Lumen Setup (setup.SetupEvents): its receiver requires the sender to hold it. -->
+    <uses-permission android:name="org.z9x.projector.permission.SETUP_BRIDGE" />
+    <!-- Lumen Home's MIC permission: start its VoiceSearchAlias and send MIC_UP (home.HomeSearch). -->
+    <uses-permission android:name="org.z9x.home.permission.MIC" />
+    <!-- Home screen switch, ASSISTANT role for Recents, first-boot APEX disables, Recent apps, Close /
+         Close all, the VPN owner uid of the Close protected set (as the Z9X app, PLAN C5). -->
+    <uses-permission android:name="android.permission.MANAGE_ROLE_HOLDERS" />
+    <uses-permission android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE" />
+    <uses-permission android:name="android.permission.REAL_GET_TASKS" />
+    <uses-permission android:name="android.permission.START_TASKS_FROM_RECENTS" />
+    <uses-permission android:name="android.permission.REMOVE_TASKS" />
+    <uses-permission android:name="android.permission.READ_FRAME_BUFFER" />
+    <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+    <uses-permission android:name="android.permission.NETWORK_SETTINGS" />
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+
+    <!-- normal -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- AudioManager.getDevicesForAttributes (Play6App's one-time speaker volume): QUERY_AUDIO_STATE =
+         signature|role. -->
+    <uses-permission android:name="android.permission.QUERY_AUDIO_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- launches from the key receiver; Ambient key -->
+    <uses-permission android:name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+    <uses-permission android:name="android.permission.WRITE_DREAM_STATE" />
+    <uses-permission android:name="android.permission.READ_DREAM_STATE" />
+
+    <!-- Overlay windows (ui.OverlayHost): quick panel, source chooser, notification card, wake curtain. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.INTERNAL_SYSTEM_WINDOW" />
+
+    <!-- Settings.Global device_name (Play6App, once), Settings.System, stale uid network policies. -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.MANAGE_NETWORK_POLICY" />
+
+    <!-- power: PowerManager.goToSleep / wakeUp (signature|role); power menu Power off / Restart (REBOOT,
+         signature|privileged, granted by the platform signature). -->
+    <uses-permission android:name="android.permission.DEVICE_POWER" />
+    <uses-permission android:name="android.permission.REBOOT" />
+
+    <!-- remote: BLE remote auto-pairing (RemoteAutoPair). -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
+    <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+
+    <!-- foreground app via UsageStatsManager (signature|privileged|development|appop|retailDemo). -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+
+    <!-- Package visibility for the remote app keys (launch + app picker), as the Z9X app. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <package android:name="com.google.android.youtube.tv" />
+        <package android:name="com.teamsmart.videomanager.tv" />
+        <package android:name="com.android.vending" />
+        <package android:name="org.z9x.home" />
+        <package android:name="org.z9x.setup" />
+        <package android:name="org.z9x.tvinput" />
+        <package android:name="com.android.tv.settings" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
+    <application
+        android:name="org.z9x.play6.App"
+        android:label="@string/app_name"
+        android:persistent="true"
+        android:directBootAware="true"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Z9x.Settings">
+
+        <!-- Backup start of the handshake if the process was not started as persistent (App.onCreate
+             does the same). The only component that runs before unlock. -->
+        <receiver
+            android:name="org.z9x.play6.BootReceiver"
+            android:exported="false"
+            android:directBootAware="true">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Recent apps on long-press HOME: the ASSIST target of the ASSISTANT role (shared, as the Z9X). -->
+        <activity
+            android:name=".recents.RecentsActivity"
+            android:directBootAware="false"
+            android:exported="true"
+            android:label="@string/recents_title"
+            android:theme="@style/Theme.Z9x.Recents"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:resizeableActivity="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection">
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Lumen Home: home screen switch (Customize) and the projector shortcut tiles. -->
+        <receiver
+            android:name=".home.LauncherRequestReceiver"
+            android:directBootAware="false"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.SET_LAUNCHER">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.SET_LAUNCHER" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".home.PanelRequestReceiver"
+            android:directBootAware="false"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.SHOW_PANEL">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.SHOW_PANEL" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Battery, power saving and the unsupported Home tiles for Lumen Home (docs/play6/impl/home-contract.md):
+             read only, answered from the battery cache (no HAL call), the facts Android gives every app in
+             ACTION_BATTERY_CHANGED, so no permission. -->
+        <provider
+            android:name=".device.DeviceStateProvider"
+            android:authorities="org.z9x.projector.device"
+            android:directBootAware="false"
+            android:exported="true" />
+
+        <!-- "Is the lamp-only standby active?" for org.z9x.tvinput and Lumen Home (call() only; t13: the real
+             state of power/StandbyController, the Play 6 lamp-only standby). -->
+        <provider
+            android:name=".power.StandbyStateProvider"
+            android:authorities="org.z9x.projector.standbystate"
+            android:directBootAware="false"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.STANDBY_STATE" />
+
+        <!-- Lumen Setup's SetupBridge (call() only; it checks SETUP_BRIDGE itself): remote, picture, device name
+             and launcher steps through the Hal facade, RemoteAutoPair and LauncherSwitcher
+             (docs/play6/impl/setup-design.md section 3). -->
+        <provider
+            android:name=".setup.SetupBridgeProvider"
+            android:authorities="org.z9x.projector.setupbridge"
+            android:directBootAware="false"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.SETUP_BRIDGE" />
+
+        <!-- GLOBAL_BUTTON from PhoneWindowManager (explicit, protected): no intent-filter. -->
+        <receiver
+            android:name=".KeyReceiver"
+            android:directBootAware="false"
+            android:exported="false" />
+
+        <!-- t14: org.z9x.tvinput's HDMI session and CEC events (its ProjectorEvents, explicit component,
+             signature permission HDMI_EVENT). A session event lets source/HdmiSource send IGmpf 698. -->
+        <receiver
+            android:name=".game.HdmiEventReceiver"
+            android:directBootAware="false"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.HDMI_EVENT">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.HDMI_EVENT" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Source overlay on request of org.z9x.tvinput (signature permission). -->
+        <receiver
+            android:name=".source.SourceRequestReceiver"
+            android:directBootAware="false"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.SHOW_SOURCE">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.SHOW_SOURCE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- "Projector" settings (quick panel > All settings > Projector settings, Hal.openProjectorSettings):
+             the Play 6 rows and Diagnostics. Not exported, no launcher entry. -->
+        <activity
+            android:name=".SettingsActivity"
+            android:directBootAware="false"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.Z9x.Settings" />
+
+        <!-- Manual focus overlay (Focus long press, quick panel > Focus): MotorController sends IGmpf 300 with
+             17 / 1 / 0 / 2 only. -->
+        <activity
+            android:name=".ManualFocusActivity"
+            android:directBootAware="false"
+            android:exported="false"
+            android:label="@string/act_manual_focus"
+            android:theme="@style/Theme.Z9x.Overlay"
+            android:taskAffinity="org.z9x.projector.manualfocus"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTask" />
+
+        <!-- Shared notification card on request of org.z9x.tvinput (signature permission). -->
+        <receiver
+            android:name=".ui.NotifyRequestReceiver"
+            android:directBootAware="false"
+            android:exported="true"
+            android:permission="org.z9x.projector.permission.NOTIFY">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.NOTIFY" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Battery test hook (plan 3.3, device tests C5 to C7): a vendor power event (type, value) from
+             adb shell am broadcast. DUMP = signature|privileged|development: the shell holds it, no app
+             can. The receiver itself does nothing outside a Play 6 test build (ro.lumen.version play6-t). -->
+        <receiver
+            android:name=".battery.BatteryTestReceiver"
+            android:directBootAware="false"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="org.z9x.projector.action.TEST_POWER_EVENT" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

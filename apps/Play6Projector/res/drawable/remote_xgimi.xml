@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The XGIMI Bluetooth remote, neutral layer (Lumen OS 1.0 remote pairing). Our own drawing, no XGIMI
+     asset: long rounded body, voice key / status light / power key, D-pad ring with OK, Back and Home,
+     menu and gear, volume rocker. remote_xgimi_glow.xml and remote_xgimi_keys.xml share this viewport and
+     are stacked on top (RemoteArt). Not mirrored in RTL: Back is on the left of the real remote. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="140dp"
+    android:height="480dp"
+    android:viewportWidth="140"
+    android:viewportHeight="480">
+
+    <!-- body -->
+    <path
+        android:pathData="M64,8 H76 A50,50 0 0 1 126,58 V422 A50,50 0 0 1 76,472 H64 A50,50 0 0 1 14,422 V58 A50,50 0 0 1 64,8 Z"
+        android:strokeColor="#FF4C453E"
+        android:strokeWidth="1.5">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="70" android:startY="8"
+                android:endX="70" android:endY="472"
+                android:startColor="#FF34302B"
+                android:endColor="#FF1B1916" />
+        </aapt:attr>
+    </path>
+
+    <!-- voice key with a microphone -->
+    <path android:fillColor="#FF35302B"
+        android:pathData="M33,44 a11,11 0 1,0 22,0 a11,11 0 1,0 -22,0 Z" />
+    <path android:fillColor="#FF9D9587"
+        android:pathData="M42,38 a2,2 0 0 1 4,0 v6 a2,2 0 0 1 -4,0 Z" />
+    <path android:strokeColor="#FF9D9587" android:strokeWidth="1.6" android:strokeLineCap="round"
+        android:pathData="M39.5,43.5 a4.5,4.5 0 0 0 9,0 M44,48 v2.5" />
+
+    <!-- status light (off) -->
+    <path android:fillColor="#FF4A443D"
+        android:pathData="M67.5,44 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0 Z" />
+
+    <!-- power key -->
+    <path android:fillColor="#FF35302B"
+        android:pathData="M85,44 a11,11 0 1,0 22,0 a11,11 0 1,0 -22,0 Z" />
+    <path android:strokeColor="#FFC9C1B4" android:strokeWidth="1.8" android:strokeLineCap="round"
+        android:pathData="M92.46,41.46 A5,5 0 1,0 99.54,41.46 M96,38.5 V44" />
+
+    <!-- D-pad ring, gap and OK -->
+    <path android:fillColor="#FF302B27" android:strokeColor="#FF3D3731" android:strokeWidth="1.5"
+        android:pathData="M24,132 a46,46 0 1,0 92,0 a46,46 0 1,0 -92,0 Z" />
+    <path android:fillColor="#FF1E1B18"
+        android:pathData="M46,132 a24,24 0 1,0 48,0 a24,24 0 1,0 -48,0 Z" />
+    <path android:fillColor="#FF3E3833"
+        android:pathData="M50,132 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0 Z" />
+    <path android:strokeColor="#FF9D9587" android:strokeWidth="2.2" android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M64.5,99 L70,93.5 L75.5,99 M64.5,165 L70,170.5 L75.5,165 M37,126.5 L31.5,132 L37,137.5 M103,126.5 L108.5,132 L103,137.5" />
+
+    <!-- Back (left) and Home (right): the two keys to hold -->
+    <path android:fillColor="#FF35302B"
+        android:pathData="M24,214 a16,16 0 1,0 32,0 a16,16 0 1,0 -32,0 Z M84,214 a16,16 0 1,0 32,0 a16,16 0 1,0 -32,0 Z" />
+    <path android:strokeColor="#FFC9C1B4" android:strokeWidth="2.2" android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M47,214 H33.5 M38.5,209 L33.5,214 L38.5,219 M93,215 L100,208 L107,215 M95,213.5 V221 H105 V213.5" />
+
+    <!-- menu and gear -->
+    <path android:fillColor="#FF35302B"
+        android:pathData="M26,264 a14,14 0 1,0 28,0 a14,14 0 1,0 -28,0 Z M86,264 a14,14 0 1,0 28,0 a14,14 0 1,0 -28,0 Z" />
+    <path android:strokeColor="#FF9D9587" android:strokeWidth="1.8" android:strokeLineCap="round"
+        android:pathData="M35,259 H45 M35,264 H45 M35,269 H45 M96,264 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 M100,256.5 v2.5 M100,269 v2.5 M92.5,264 h2.5 M105,264 h2.5" />
+
+    <!-- volume rocker -->
+    <path android:fillColor="#FF35302B"
+        android:pathData="M70,302 a14,14 0 0 1 14,14 V384 a14,14 0 0 1 -14,14 a14,14 0 0 1 -14,-14 V316 a14,14 0 0 1 14,-14 Z" />
+    <path android:strokeColor="#FFC9C1B4" android:strokeWidth="2" android:strokeLineCap="round"
+        android:pathData="M64.5,322 H75.5 M70,316.5 V327.5 M64.5,378 H75.5" />
+</vector>

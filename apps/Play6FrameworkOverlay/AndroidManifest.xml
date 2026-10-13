@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS for the XGIMI Play 6 (G0058): static RRO on framework-res ("android").
+     res/values/config.xml hides the XGIMI apps of the vendor partition with the framework's own
+     config_disableApksUnlessMatchedSku_apk_list: PackageManagerService.systemReady() marks each listed
+     package hidden and not installed for every user, before any of them can start (no SKU list, and the
+     Play 6 sets no ro.boot.hardware.sku). Nothing on /vendor is changed; removing this overlay brings the
+     apps back. They need XGIMI's own system frameworks, which Lumen does not ship.
+     The stock-firmware rule "never disable com.xgimi.home" is about XGIMI's system, which forces that
+     launcher at boot; Lumen's system does not use it.
+     t12 (docs/play6/SETTINGS_PLAN.md step 12): also the framework values of Lumen OS, a fork of the Z9X's
+     Z9xFrameworkKeysOverlay without the power-key items and config_maxUiWidth (res/values/config.xml), and
+     res/xml/global_keys.xml + res/layout/shutdown_dialog.xml, synced copies of apps/common/overlay (sync.sh
+     keys item; remote keys to org.z9x.projector and org.z9x.tvinput, the Lumen shutdown screen).
+     Priority 2001: ordered after TvFrameworkOverlay (0) and the Lineage product RRO, so these values win.
+     Install: /system/product/overlay/Play6FrameworkOverlay.apk (0644), Play 6 platform key via
+     tools/play6/build_play6.sh (rule S1). No code, no permissions. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.z9x.overlay.play6"
+    android:versionCode="1"
+    android:versionName="play6-t18">
+    <overlay
+        android:targetPackage="android"
+        android:isStatic="true"
+        android:priority="2001" />
+    <application android:hasCode="false" />
+</manifest>
