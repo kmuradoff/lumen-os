@@ -20,8 +20,8 @@
   на стоке. Приставки и консоли называются по имени (PlayStation, Xbox и другие).
 - Первая настройка Lumen Setup: пульт, язык, Wi-Fi, часовой пояс по IP.
 - Новая версия для Play 6 ставится тем же установщиком: `--keep-data flash` сохраняет данные.
-- Пока нет: обновлений по Wi-Fi, приёмника AirPlay, сервисов Google. Защищённое видео зависит от экземпляра:
-  во многих Play 6 с завода нет ключа Widevine L1.
+- Пока нет: обновлений по Wi-Fi, приёмника AirPlay, сервисов Google. Кинопоиск работает; на проверенном Play 6
+  Widevine уровня L3, как и на стоке, поэтому защищённые фильмы могут идти в пониженном качестве.
 
 ## 1.0.3, октябрь 2026
 
@@ -115,8 +115,8 @@ install guide. This is a beta: install it if you are ready to test and report ba
   Players and consoles show their name (PlayStation, Xbox and others).
 - First setup with Lumen Setup: remote, language, Wi-Fi, time zone from the IP address.
 - A newer version for the Play 6 goes on with the same installer: `--keep-data flash` keeps your data.
-- Not there yet: updates over Wi-Fi, the AirPlay receiver, Google services. Protected video depends on the
-  unit: many Play 6 units have no Widevine L1 key from the factory.
+- Not there yet: updates over Wi-Fi, the AirPlay receiver, Google services. Kinopoisk works; on the Play 6 we
+  tested Widevine is L3, as on stock, so protected films may play in lower quality.
 
 ## 1.0.3, October 2026
 
