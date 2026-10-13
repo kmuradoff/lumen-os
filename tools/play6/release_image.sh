@@ -6,13 +6,15 @@
 #   tools/play6/release_image.sh IN.img VERSION OUT.img
 #     IN.img   play6/tN/system_play6_tN.img (the build the owner tested on the device)
 #     VERSION  x.y.z, the version the installer checks (installer/release.conf VERSION = ro.lumen.version)
-#     OUT.img  e.g. dist/lumen-os-VERSION-play6-nogms-system.img
+#     OUT.img  e.g. build/release/play6-beta1/lumen-os-play6-VERSION-nogms-system.img (the installer's name)
 #
 # Changes (Mac, debugfs of Homebrew e2fsprogs; the vendor fstab mounts system without verity, so the stale AVB
 # footer is never read):
 #   system_ext/etc/build.prop  ro.adb.secure=0 -> 1, persist.sys.usb.config=adb -> none (the GSI default lines)
-#   product/etc/build.prop     drops the test lines ro.adb.secure=0 and service.adb.tcp.port=5555 (adb on Wi-Fi
-#                              without authorisation), adds ro.adb.secure=1 and persist.sys.usb.config=none, sets
+#   product/etc/build.prop     drops the test line ro.adb.secure=0 (adb on Wi-Fi without authorisation), keeps
+#                              service.adb.tcp.port=5555 and adds ro.adb.secure=1 and persist.sys.usb.config=none
+#                              (owner decision D1: the Play 6 has no USB device mode, Wi-Fi is its only adb; adbd
+#                              runs only while debugging is on, and every new computer is allowed on screen), sets
 #                              ro.lumen.version=VERSION, ro.lumen.version_code=major*10000+minor*100+patch and
 #                              ro.lumen.build_id=lumen-play6-VERSION-<UTC date of IN's build id>
 # Each file keeps mode 0644, owner root and the label system_file. Checks afterwards: the lines above are there,
@@ -36,6 +38,7 @@ EXT=/system/system_ext/etc/build.prop
 "$D" -R "cat $EXT" "$IN" > "$T/ext.prop" 2>/dev/null
 [ -s "$T/product.prop" ] && [ -s "$T/ext.prop" ] || die "cannot read the build.prop files of $IN"
 grep -qx 'ro.lumen.device=play6' "$T/product.prop" || die "$IN is not a Play 6 image"
+grep -qx 'service.adb.tcp.port=5555' "$T/product.prop" || die "$IN has no service.adb.tcp.port=5555 to keep"
 grep -q '^ro.lumen.gms=' "$T/product.prop" && die "$IN carries a Google mark"
 OLD_ID=$(sed -n 's/^ro\.lumen\.build_id=//p' "$T/product.prop")
 STAMP=$(printf '%s' "$OLD_ID" | grep -oE '[0-9]{12}$' || true)
@@ -47,7 +50,7 @@ sed -e 's/^ro\.adb\.secure=0$/ro.adb.secure=1/' -e 's/^persist\.sys\.usb\.config
     -e 's/^# GSI always disables adb authentication$/# Lumen OS release: adb needs authorisation, USB debugging off/' \
     "$T/ext.prop" > "$T/ext.new"
 # product: drop the test-build adb lines and their comment, set the version lines, add the release adb lines
-grep -v -E '^(ro\.adb\.secure=0|service\.adb\.tcp\.port=5555|# First-boot diagnostics: .*|ro\.lumen\.version=.*|ro\.lumen\.version_code=.*|ro\.lumen\.build_id=.*)$' \
+grep -v -E '^(ro\.adb\.secure=0|# First-boot diagnostics: .*|ro\.lumen\.version=.*|ro\.lumen\.version_code=.*|ro\.lumen\.build_id=.*)$' \
     "$T/product.prop" > "$T/product.new"
 { echo "ro.adb.secure=1"; echo "persist.sys.usb.config=none"
   echo "ro.lumen.version=$VER"; echo "ro.lumen.version_code=$VCODE"; echo "ro.lumen.build_id=$BUILD_ID"; } >> "$T/product.new"
@@ -77,11 +80,12 @@ put "$T/product.new" "$PROD"
 "$D" -R "cat $EXT" "$OUT.part" > "$T/e.chk" 2>/dev/null
 cmp -s "$T/p.chk" "$T/product.new" || die "product build.prop read back differs"
 cmp -s "$T/e.chk" "$T/ext.new" || die "system_ext build.prop read back differs"
+grep -qx service.adb.tcp.port=5555 "$T/p.chk" || die "product build.prop lacks service.adb.tcp.port=5555 (D1: the installer reaches the Play 6 only over Wi-Fi)"
 for l in ro.adb.secure=1 persist.sys.usb.config=none "ro.lumen.version=$VER" "ro.lumen.version_code=$VCODE" \
          "ro.lumen.build_id=$BUILD_ID" ro.lumen.device=play6; do
   grep -qx "$l" "$T/p.chk" || die "product build.prop lacks $l"
 done
-for l in ro.adb.secure=0 service.adb.tcp.port=5555 persist.sys.usb.config=adb; do
+for l in ro.adb.secure=0 persist.sys.usb.config=adb; do
   grep -qx "$l" "$T/p.chk" "$T/e.chk" && die "a build.prop still has $l"
 done
 grep -qx ro.adb.secure=1 "$T/e.chk" && grep -qx persist.sys.usb.config=none "$T/e.chk" || die "system_ext adb lines not set"
