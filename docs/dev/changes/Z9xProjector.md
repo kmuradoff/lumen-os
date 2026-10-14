@@ -40,6 +40,15 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   carried out, and 647 follows a moment later (owner: "Не удалось", yet the page showed the new speed when opened
   again; for top speed the 207 guard read the old 647 and refused). Now 648, then 647 polled every 100 ms for up to
   2 s until it reads the wanted option; only that read decides, and 207 correctKeystoneReset follows only then.
+- **Bluetooth headphones** (`audio/BtDspVolume`, new; NOT device-tested): the Z9X HAL plays A2DP itself
+  (hw_get_module_by_class("audio", "bluetooth") = vendor audio.bluetooth.default.so, AIDL provider V3) and keeps a
+  per-device A2DP volume table that starts at 0; only stock's patched AudioService filled it
+  ("bluetooth_volume=N;device=D", VolumeStreamState.setDspVolumesToHal). Predicted on 1.0.3: headphones connect,
+  the speaker goes quiet, the headphones stay silent. Now AudioPathReporter sends bluetooth_volume=100 for 0x80,
+  0x100 and 0x200 at boot / process start and whenever the media output is A2DP; Android keeps the volume
+  (software, or AVRCP absolute volume). Moving A2DP to a "bluetooth" policy module was rejected: AudioFlinger would
+  still send connect=128 to the primary HAL (two writers on one A2DP session) and XGIMI's sound processing would be
+  bypassed.
 - Not brought over, with the reason: power on with mains (IGmpf 543 rewrites the MBOOT environment in flash, kept
   banned), Total Surround / Total Immersion (XGIMI Sound speaker only), manual audio output (XGIMI's own
   AudioSystem.setForceUse configs), boot animation switch (a prop nothing on Lumen reads).
