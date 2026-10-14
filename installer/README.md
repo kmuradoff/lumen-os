@@ -1,6 +1,6 @@
 # Lumen OS installer
 
-Installs Lumen OS from a computer on an XGIMI Z9X (G0082, XGIMI firmware V6.15.58 or V6.15.19) or an
+Installs Lumen OS from a computer on an XGIMI Z9X (G0082, XGIMI firmware V6.15.58, V6.15.62 or V6.15.19) or an
 XGIMI Play 6 (G0058, XGIMI firmware V1.7.116). Follow the install guide, it has every step in order:
 [English](https://github.com/kmuradoff/lumen-os/blob/main/docs/install/en.md),
 [Русский](https://github.com/kmuradoff/lumen-os/blob/main/docs/install/ru.md); the XGIMI Play 6 has its own

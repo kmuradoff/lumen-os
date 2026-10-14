@@ -103,7 +103,7 @@ which then uses more of the COW space in /data.
   payload's own header ▶ `update_engine` checks the metadata and payload signatures against the same
   `otacerts.zip` ▶ `max_timestamp` forbids downgrades.
 - **Applicability:** device `z9x`, `ro.vendor.build.version.incremental` in `requires.vendor_incremental`
-  (`make_manifest.py` default: v6.15.58 and v6.15.19, as the installer), newer `version_code`, current
+  (`make_manifest.py` default: v6.15.58, v6.15.62 and v6.15.19, as the installer), newer `version_code`, current
   version >= `min_version_code`; a delta only when `from_build_id` equals `ro.z9x.build_id`, else the full
   package (see "Variants" for the manifest each image reads).
 - **Version numbers (since 1.0.0):** `ro.z9x.version` = `major.minor.patch` (About shows

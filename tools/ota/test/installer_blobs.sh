@@ -12,7 +12,7 @@
 # stock (the audio policy derived from the stock original with the allow-list's from=), a firmware whose
 # file does not match (refused), --no-blobs; the partition the installer builds is then read by the real
 # z9x_blobs.sh (round trip: every file bound). 'check' on a running Lumen 1.0.1 private system with
-# firmware v6.15.58 and v6.15.19 (accepted) and v6.15.30 (refused), a public image with --blobs=embedded
+# firmware v6.15.58, v6.15.62 and v6.15.19 (accepted) and v6.15.30 (refused), a public image with --blobs=embedded
 # (refused). The installer must never write to the projector here (no push, no fastboot flash).
 # Exit status 0 only when every case passes. Never touches anything outside its temp dir.
 set -u
@@ -140,6 +140,11 @@ dev_stock; sed -i.bak 's/^ro.vendor.build.version.incremental=.*/ro.vendor.build
 expect_rc 0; roundtrip
 end
 
+begin blobs_from_stock_v61562
+dev_stock; sed -i.bak 's/^ro.vendor.build.version.incremental=.*/ro.vendor.build.version.incremental=v6.15.62/' "$C/fb/props"; inst blobs
+expect_rc 0; roundtrip
+end
+
 begin blobs_other_firmware_refused
 dev_stock; echo "<other firmware's policy/>" > "$DEV/vendor/etc/audio_policy_configuration.xml"; inst blobs
 expect_rc 1; expect_out "etc/xgimi/audio_policy_configuration.xml from the projector does not match the allow-list"
@@ -179,9 +184,14 @@ sed -i.bak 's/^ro.vendor.build.version.incremental=.*/ro.vendor.build.version.in
 expect_rc 0; expect_out "firmware v6.15.19"; expect_out "check passed"
 end
 
+begin check_lumen_private_running_v61562
+sed -i.bak 's/^ro.vendor.build.version.incremental=.*/ro.vendor.build.version.incremental=v6.15.62/' "$C/fb/props"; inst check
+expect_rc 0; expect_out "firmware v6.15.62"; expect_out "check passed"
+end
+
 begin check_firmware_refused
 sed -i.bak 's/^ro.vendor.build.version.incremental=.*/ro.vendor.build.version.incremental=v6.15.30/' "$C/fb/props"; inst check
-expect_rc 1; expect_out "XGIMI firmware v6.15.30 is not supported (V6.15.58 or V6.15.19 only)"
+expect_rc 1; expect_out "XGIMI firmware v6.15.30 is not supported (V6.15.58, V6.15.62 or V6.15.19 only)"
 end
 
 begin check_public_image_embedded_refused

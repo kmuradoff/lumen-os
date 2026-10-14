@@ -38,7 +38,7 @@ $ErrorActionPreference = "Continue"
 $Here = $PSScriptRoot
 $StateDir = if ($env:LUMEN_STATE_DIR) { $env:LUMEN_STATE_DIR } else { Join-Path $HOME ".lumen-installer" }
 $BackupRoot = if ($env:LUMEN_BACKUP_DIR) { $env:LUMEN_BACKUP_DIR } else { Join-Path $HOME "Lumen-backup" }
-$ModelCode = "G0082"; $Board = "mt9952"; $FbProduct = "mt5877"; $VendorOk = @("v6.15.58", "v6.15.19")
+$ModelCode = "G0082"; $Board = "mt9952"; $FbProduct = "mt5877"; $VendorOk = @("v6.15.58", "v6.15.62", "v6.15.19")
 $GuideEn = "https://github.com/kmuradoff/lumen-os/blob/main/docs/install/en.md"
 $GuideRu = "https://github.com/kmuradoff/lumen-os/blob/main/docs/install/ru.md"
 $GoogleGsi = "https://source.android.com/docs/core/tests/vts/gsi#flashing-gsis"
@@ -245,7 +245,7 @@ function Check-Device {
   $code = Prop ro.boot.xgimi.modelname; $board = Prop ro.boot.hardware
   $vend = Prop ro.vendor.build.version.incremental; $slot = Prop ro.boot.slot_suffix; $sys = Prop ro.z9x.version
   if ($code -ne $ModelCode -or $board -ne $Board) { Die ((T "this is not an XGIMI Z9X (model '$code', board '$board'). Nothing was done." "это не XGIMI Z9X (код '$code', плата '$board'). Ничего не сделано.") + (Other-Hint $code $board)) }
-  if ($VendorOk -notcontains $vend) { Die (T "XGIMI firmware $vend is not supported (V6.15.58 or V6.15.19 only). Let stock update itself to V6.15.58, then run again." "прошивка XGIMI $vend не поддерживается (только V6.15.58 или V6.15.19). Дайте стоку обновиться до V6.15.58 и запустите снова.") }
+  if ($VendorOk -notcontains $vend) { Die (T "XGIMI firmware $vend is not supported (V6.15.58, V6.15.62 or V6.15.19 only). If it is older, let stock update itself (Settings, Wi-Fi), then run again. If it is newer, Lumen OS does not support it yet. Nothing was written." "прошивка XGIMI $vend не поддерживается (только V6.15.58, V6.15.62 или V6.15.19). Если она старее, дайте стоку обновиться (настройки, Wi-Fi) и запустите снова. Если новее, Lumen OS её пока не поддерживает. Ничего не записано.") }
   State-Set serial $script:Serial; State-Set slot $slot
   if ($sys) { $g = Prop ro.z9x.gms; State-Set dev_gms $(if ($g) { $g } else { "1" }) } else { State-Set dev_gms stock }
   if (-not $sys) { $sys = T "XGIMI stock" "родная XGIMI" }
