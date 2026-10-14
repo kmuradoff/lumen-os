@@ -13,6 +13,7 @@ import org.z9x.home.data.Card;
 import org.z9x.home.data.InputSource;
 import org.z9x.home.data.IntentGuard;
 import org.z9x.home.proj.ProjectorBridge;
+import org.z9x.home.usb.UsbFilesActivity;
 import org.z9x.home.usb.UsbInstallActivity;
 
 /** Opens what a card stands for. Untrusted program intents always go through IntentGuard. */
@@ -51,6 +52,10 @@ public final class Launch {
                 case Card.MORE_APPS: {
                     if ("usb".equals(k.intent)) {
                         start(c, new Intent(c, UsbInstallActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), "install from usb");
+                        return true;
+                    }
+                    if ("files".equals(k.intent)) {
+                        start(c, new Intent(c, UsbFilesActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), "files");
                         return true;
                     }
                     Intent i = IntentGuard.appLaunch(c, AppSource.PKG_PLAY);

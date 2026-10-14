@@ -79,6 +79,7 @@ public final class GmpfClient extends HidlCaller {
     // zoom & shift; optical zoom (Lumen OS 1.0.2, panel.OpticalZoomPanel)
     private static final int GET_CURRENT_ZOOM_STEP2 = 116;         // ()      -> i32 + {optical, digital}
     private static final int GET_ZOOM_STEP_RANGE = 117;            // ()      -> i32 + {optMin, optMax, digMin, digMax}
+    private static final int SET_DIGITAL_ZOOM_STEP = 118;          // (i32)   -> i32  [Lumen OS 1.0.4, panel.ZoomShiftPanel]
     private static final int SET_OPTICAL_ZOOM_STEP = 119;          // (i32)   -> i32
     private static final int ZOOM_FINISH = 120;                    // (i32)   -> i32
     private static final int ZOOM_START = 121;                     // (i32)   -> i32
@@ -167,6 +168,13 @@ public final class GmpfClient extends HidlCaller {
     private static final int SET_MEMC_LEVEL = 669;                 // (i32,i32) -> bool
     private static final int GET_3DNR = 670;                       // (i32)   -> i32
     private static final int SET_3DNR = 671;                       // (i32,i32) -> bool
+    // Lumen OS 1.0.4 HDMI settings and eARC (stock SignalRepository / VoiceRepository, research/z9x_stock_decompiled)
+    private static final int GET_EARC_ENABLE_STATE = 632;          // ()      -> bool
+    private static final int SET_EARC_ENABLE = 633;                // (bool)  -> bool
+    private static final int GET_HDMI_RANGE = 634;                 // ()      -> i8
+    private static final int SET_HDMI_RANGE = 635;                 // (i8)    -> bool
+    private static final int SET_EDID_VERSION = 660;               // (i32)   -> bool
+    private static final int GET_EDID_VERSION = 661;               // ()      -> i32
     private static final int GET_CURRENT_INPUT_SOURCE = 696;       // ()      -> i32
     // Lumen OS 1.0.3 HDMI picture (source.HdmiSource): the stock HDMI player's source switch.
     private static final int SWITCH_INPUT_SOURCE_WITH_CALLING_PID = 698; // (i32, u32) -> bool
@@ -247,6 +255,19 @@ public final class GmpfClient extends HidlCaller {
         PqItem(int g, int s) { get = g; set = s; }
     }
 
+    /**
+     * Lumen OS 1.0.4, 2-point white balance of the professional picture settings (stock PictureViewModel ->
+     * GmTvManager.setColorTemp*(0, v), research/z9x_stock_decompiled): gain and offset per colour, 0..100 sent
+     * as shown (no remapping), window 0. TSV: getters W=writeInt32 R=readInt32, setters W=writeInt32,writeInt32
+     * R=readBool. Never the factory white balance codes (94/95/96/533/556) or the Dolby Vision twins 595..608.
+     */
+    public enum WbItem {
+        RED_GAIN(682, 683), GREEN_GAIN(680, 681), BLUE_GAIN(678, 679),
+        RED_OFFSET(676, 677), GREEN_OFFSET(674, 675), BLUE_OFFSET(672, 673);
+        final int get, set;
+        WbItem(int g, int s) { get = g; set = s; }
+    }
+
     /** MEMC (motion compensation) 0 Off, 1 Low, 2 Medium, 3 High (FS 3.4). */
     public enum MemcLevel {
         OFF(0), LOW(1), MEDIUM(2), HIGH(3);
@@ -274,6 +295,21 @@ public final class GmpfClient extends HidlCaller {
         public final int wire;
         ColorSpace(int v) { wire = v; }
     }
+
+    /** Lumen OS 1.0.4: HDMI colour range of the current HDMI input (stock SignalEnum): 0 auto, 1 full, 2 limited. */
+    public enum HdmiRange {
+        AUTO(0), FULL(1), LIMITED(2);
+        public final int wire;
+        HdmiRange(int v) { wire = v; }
+    }
+
+    /**
+     * Lumen OS 1.0.4: EDID of the current HDMI input (stock gmpf GmTvManager EDID_VERSION_*: 0 = 1.4, 1 = 2.0,
+     * 2 = auto, 3 = the HDMI 2.1-style "enhanced" of models with the edid_2_version_val feature). The stock
+     * UI offers Compatible (0) and Enhanced (1, or 3 when the projector reads 3) and shows every other read
+     * as Compatible.
+     */
+    public static final int EDID_14 = 0, EDID_20 = 1, EDID_AUTO = 2, EDID_21 = 3;
 
     /** Projector put mode (FS 2.9 VERIFIED ProjectionRepository): 0 desk front .. 3 ceiling rear. */
     public enum PutMode {
@@ -585,6 +621,19 @@ public final class GmpfClient extends HidlCaller {
         ShiftDir(int v) { wire = v; }
     }
 
+    /**
+     * Lumen OS 1.0.4 (panel.ZoomShiftPanel): 141 translationKst(dir, onlyCheck) -> 0 possible / -1 at the edge.
+     * As stock PtzViewModel: first (dir, true), and (dir, false) only when that returned 0; the step size is
+     * the vendor's own. A software move of the picture inside the panel (no motor). TSV W=writeInt32,writeBool
+     * R=readInt32.
+     */
+    public int shiftPicture(ShiftDir d, boolean onlyCheck) throws RemoteException {
+        HwParcel q = request();
+        q.writeInt32(d.wire);
+        q.writeBool(onlyCheck);
+        return call(TRANSLATION_KST, q, RET_I32);
+    }
+
 
     // ------------------------------------------------- projection toggles (getter first, setter on click)
     /** 289 / 290: fit the picture into the projection screen (curtain). TSV 290 W=writeBool R=. */
@@ -715,6 +764,39 @@ public final class GmpfClient extends HidlCaller {
         return callI32I32RetBool(SET_MEMC_LEVEL, WINDOW_MAIN, l.wire);
     }
 
+    // ---- Lumen OS 1.0.4: professional picture settings (stock image mode 3.0 "专业设置", panel.ProPicture)
+    /** 682/680/678/676/674/672 getColorTemp*(0) -> 0..100. */
+    public int getWb(WbItem item) throws RemoteException { return callI32RetI32(item.get, WINDOW_MAIN); }
+    /** 683/681/679/677/675/673 setColorTemp*(0, 0..100), as stock (gains debounced 100 ms by the caller). */
+    public boolean setWb(WbItem item, int value) throws RemoteException {
+        return callI32I32RetBool(item.set, WINDOW_MAIN, checkRange(item.name(), value, 0, 100));
+    }
+
+    /** 651 getUcdLevel(0) -> 0..3 ("local contrast"). TSV W=writeInt32 R=readInt32. */
+    public int getLocalContrast() throws RemoteException { return callI32RetI32(GET_UCD_LEVEL, WINDOW_MAIN); }
+    /** 655 setUcdLevel(0, 0 off | 1 low | 2 medium | 3 high). TSV W=writeInt32,writeInt32 R=readBool. */
+    public boolean setLocalContrast(int level) throws RemoteException {
+        return callI32I32RetBool(SET_UCD_LEVEL, WINDOW_MAIN, checkRange("ucd level", level, 0, 3));
+    }
+
+    /** 670 get3DNR(0) -> 0..4. TSV W=writeInt32 R=readInt32. */
+    public int getNoiseReduction() throws RemoteException { return callI32RetI32(GET_3DNR, WINDOW_MAIN); }
+    /** 671 set3DNR(0, n) (stock MtkVideo.setNoiseReductionMode). TSV W=writeInt32,writeInt32 R=readBool. */
+    public boolean setNoiseReduction(NoiseReduction n) throws RemoteException {
+        return callI32I32RetBool(SET_3DNR, WINDOW_MAIN, n.wire);
+    }
+
+    /**
+     * 111 getDispColorSpace(source, pictureMode) -> ColorSpace wire. As stock PictureManager: source 1/2 on
+     * HDMI 1/2, else 0; the picture mode is 666's value. TSV W=writeInt32,writeInt32 R=readInt32.
+     */
+    public int getColorSpaceRaw(int source, int pictureMode) throws RemoteException {
+        return callI32I32RetI32(GET_DISP_COLOR_SPACE, checkRange("source", source, 0, 3),
+                checkRange("picture mode", pictureMode, 0, 40));
+    }
+    /** 112 switchDispColorSpace(cs) -> i32 (stock ignores the result and re-reads). TSV W=writeInt32 R=readInt32. */
+    public int setColorSpace(ColorSpace cs) throws RemoteException { return callI32RetI32(SWITCH_DISP_COLOR_SPACE, cs.wire); }
+
 
 
 
@@ -739,6 +821,30 @@ public final class GmpfClient extends HidlCaller {
             throw new IllegalArgumentException("source " + source);
         }
         return callI32I32RetBool(SWITCH_INPUT_SOURCE_WITH_CALLING_PID, source, Process.myPid());
+    }
+
+    // ---- Lumen OS 1.0.4: HDMI settings of the current input (quick panel Picture page, HDMI only)
+    /** 634 getHdmiRange() -> 0 auto / 1 full / 2 limited (the input the HAL shows now). TSV W= R=readInt8. */
+    public int getHdmiRange() throws RemoteException { return callRetI8(GET_HDMI_RANGE); }
+    /**
+     * 635 setHdmiRange(r): saved by the vendor per input (xgimicri, as every picture setting); no re-handshake.
+     * Caller checks HDMI is on screen. TSV W=writeInt8 R=readBool.
+     */
+    public boolean setHdmiRange(HdmiRange r) throws RemoteException {
+        HwParcel q = request();
+        q.writeInt8((byte) r.wire);
+        return call(SET_HDMI_RANGE, q, RET_BOOL);
+    }
+
+    /** 661 getEdidVersion() -> EDID_*. TSV W= R=readInt32. */
+    public int getEdidVersion() throws RemoteException { return callRetI32(GET_EDID_VERSION); }
+    /**
+     * 660 setEdidVersion(EDID_14 | EDID_20 | EDID_21): the source sees a new EDID and reconnects. Never
+     * EDID_AUTO (the stock UI does not send it). Caller checks HDMI is on screen. TSV W=writeInt32 R=readBool.
+     */
+    public boolean setEdidVersion(int v) throws RemoteException {
+        if (v != EDID_14 && v != EDID_20 && v != EDID_21) throw new IllegalArgumentException("edid " + v);
+        return callI32RetBool(SET_EDID_VERSION, v);
     }
 
     // ------------------------------------------------------------------ 3D
@@ -800,6 +906,17 @@ public final class GmpfClient extends HidlCaller {
      */
     public int setOpticalZoomStep(int step) throws RemoteException {
         return callI32RetI32(SET_OPTICAL_ZOOM_STEP, checkRange("optical zoom step", step, 0, 64));
+    }
+
+    /**
+     * Lumen OS 1.0.4 (panel.ZoomShiftPanel): 118 setDigitalZoomStep(step) -> i32, the stock digital zoom (the
+     * picture scaled inside the panel by the keystone engine, no motor; stock ZoomStateView "digital only"
+     * and the part of its dial past the optical end). Callers send only the neighbour of a fresh 116 digital
+     * read inside the 117 digital range (+1 smaller, -1 bigger, as stock setScreenResolutions(4 | 0)), within
+     * a 121 / 120 session, and check that 116's optical position did not move. TSV W=writeInt32 R=readInt32.
+     */
+    public int setDigitalZoomStep(int step) throws RemoteException {
+        return callI32RetI32(SET_DIGITAL_ZOOM_STEP, checkRange("digital zoom step", step, -200, 200));
     }
 
     /** 192 getCurrent3DFormat() -> u8. */
@@ -1021,6 +1138,29 @@ public final class GmpfClient extends HidlCaller {
         try { return callBoolRetBool(SET_VOLUME_BALANCE, false); } finally { noteSoundWrite(); }
     }
 
+    /**
+     * Lumen OS 1.0.4: 42 setVolumeBalanceEnable(on), the stock "Volume balance" switch (Sound > enhanced sound >
+     * other, SoundRepository.setVolumeBalance). User action only; SoundProfiles keeps the user's choice.
+     * TSV W=writeBool R=readBool.
+     */
+    public boolean setVolumeBalance(boolean on) throws RemoteException {
+        noteSoundWrite();
+        try { return callBoolRetBool(SET_VOLUME_BALANCE, on); } finally { noteSoundWrite(); }
+    }
+
+    /** Lumen OS 1.0.4: 632 getEARCEnableState() (stock eARC mode: true = Auto, false = Off). TSV W= R=readBool. */
+    public boolean getEarc() throws RemoteException { return callRetBool(GET_EARC_ENABLE_STATE); }
+    /** 633 setEARCEnable(bool), as stock VoiceRepository. TSV W=writeBool R=readBool. */
+    public boolean setEarc(boolean on) throws RemoteException { return callBoolRetBool(SET_EARC_ENABLE, on); }
+
+    /**
+     * Lumen OS 1.0.4: 420 / 419, the stock "Power-on music" (General > Advanced > Power on/off): the vendor
+     * plays its sound when the projector starts and keeps the flag in its own settings store (xgimicri, as
+     * every sound setting; not the MBOOT environment). TSV 420 W= R=readBool, 419 W=writeBool R= (void).
+     */
+    public boolean getPowerOnMusic() throws RemoteException { return callRetBool(IS_POWER_ON_MUSIC_ENABLED); }
+    public void setPowerOnMusic(boolean on) throws RemoteException { callBool(ENABLE_POWER_ON_MUSIC, on); }
+
 
 
     // ------------------------------------------------------------------ wall colour
@@ -1189,17 +1329,7 @@ public final class GmpfClient extends HidlCaller {
     //
     // (121 / 120 zoom session: un-parked in Lumen OS 1.0.2 for the optical zoom, see the 3D / zoom section.)
     //
-    // /**
-    //  * 141 translationKst(dir, onlyCheck) -> i32 (-1 = not possible). Stock calls it with onlyCheck=true
-    //  * first and repeats with false only when the result is not -1 (FS 2.5).
-    //  * TSV W=writeInt32,writeBool R=readInt32.
-    //  */
-    // public int shiftPicture(ShiftDir d, boolean onlyCheck) throws RemoteException {
-    //     HwParcel q = request();
-    //     q.writeInt32(d.wire);
-    //     q.writeBool(onlyCheck);
-    //     return call(TRANSLATION_KST, q, RET_I32);
-    // }
+    // (141 translationKst: un-parked in Lumen OS 1.0.4 for panel.ZoomShiftPanel.)
     //
     // /** 87 / 88: eye protection mode, 0 follow / 1 safe. TSV 88 W=writeInt32 R=readBool. */
     // public int getEyeProtectionMode() throws RemoteException { return callRetI32(GET_HUMAN_DETECT_MODE); }
@@ -1208,33 +1338,8 @@ public final class GmpfClient extends HidlCaller {
     //     return callI32RetBool(SET_HUMAN_DETECT_MODE, m.wire);
     // }
     //
-    // /** 670 get3DNR(0) -> 0..4. */
-    // public int getNoiseReduction() throws RemoteException { return callI32RetI32(GET_3DNR, WINDOW_MAIN); }
-    //
-    // /** 671 set3DNR(0, n). TSV W=writeInt32,writeInt32 R=readBool. */
-    // public boolean setNoiseReduction(NoiseReduction n) throws RemoteException {
-    //     return callI32I32RetBool(SET_3DNR, WINDOW_MAIN, n.wire);
-    // }
-    //
-    // /** 651 getUcdLevel(0) -> 0..3 ("local contrast"). */
-    // public int getLocalContrast() throws RemoteException { return callI32RetI32(GET_UCD_LEVEL, WINDOW_MAIN); }
-    //
-    // /** 655 setUcdLevel(0, 0..3). TSV W=writeInt32,writeInt32 R=readBool. */
-    // public boolean setLocalContrast(int level) throws RemoteException {
-    //     return callI32I32RetBool(SET_UCD_LEVEL, WINDOW_MAIN, checkRange("ucd level", level, 0, 3));
-    // }
-    //
-    // /**
-    //  * 111 getDispColorSpace(source, picMode) -> i32. UNVERIFIED argument meaning (FS 3.5 "read
-    //  * 111(source, picMode)"): pass getCurrentInputSource() and getPictureModeRaw().
-    //  */
-    // public int getColorSpaceRaw(int source, int pictureMode) throws RemoteException {
-    //     return callI32I32RetI32(GET_DISP_COLOR_SPACE, checkRange("source", source, 0, 2),
-    //             checkRange("picture mode", pictureMode, 0, 40));
-    // }
-    //
-    // /** 112 switchDispColorSpace(cs) -> i32. Not available in Boost (FS 3.5). TSV W=writeInt32 R=readInt32. */
-    // public int setColorSpace(ColorSpace cs) throws RemoteException { return callI32RetI32(SWITCH_DISP_COLOR_SPACE, cs.wire); }
+    // (670 / 671 noise reduction, 651 / 655 local contrast, 111 / 112 colour space: un-parked in Lumen OS 1.0.4
+    // for the professional picture settings, see the picture section.)
     //
     // /** 623 getDolbyVisionPicMode() -> 0 bright / 1 soft. Practically unreachable on this SKU (QS verdict). */
     // public int getDolbyVisionPicMode() throws RemoteException { return callRetI32(GET_DOLBY_VISION_PIC_MODE); }
@@ -1254,10 +1359,7 @@ public final class GmpfClient extends HidlCaller {
     //
     // (41 / 42 volume levelling: un-parked in v6.3 for the Z9X sound profile, see the sound section.)
     //
-    // /** 420 / 419: power-on sound (vendor plays it). TSV 419 W=writeBool R=. */
-    // public boolean getPowerOnMusic() throws RemoteException { return callRetBool(IS_POWER_ON_MUSIC_ENABLED); }
-    //
-    // public void setPowerOnMusic(boolean on) throws RemoteException { callBool(ENABLE_POWER_ON_MUSIC, on); }
+    // (420 / 419 power-on sound: un-parked in Lumen OS 1.0.4, see the sound section.)
     //
     // /**
     //  * 106 startAutoColor() -> bool. Stock sequence (FS 2.8): IGmpf2 53 setAEOnOff(false) first

@@ -54,6 +54,12 @@
     <string name="usb_installing">Установлення: %1$d%%</string>
     <string name="usb_done">%1$s установлено</string>
     <string name="usb_failed">%1$s не установлено: %2$s</string>
+    <string name="files_title">Файли</string>
+    <string name="files_none">Вставте флешку: тут з’являться її відео, музика й фото.</string>
+    <string name="files_empty">У цій папці немає відео, музики, фото й застосунків.</string>
+    <string name="files_more">Не показано: ще %1$d</string>
+    <string name="files_open_failed">Не вдається відкрити %1$s</string>
+    <string name="files_play_failed">Цей файл не можна відтворити на проєкторі.</string>
     <string name="inputs_connected">Підключені пристрої</string>
     <string name="inputs_cast">Трансляція на проєктор</string>
     <string name="input_connected">Підключено</string>

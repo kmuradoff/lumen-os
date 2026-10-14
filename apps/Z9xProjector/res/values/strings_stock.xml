@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0.4: stock Z9X settings brought over (research/z9x_stock_decompiled): the HDMI settings of the input
+     on screen (quick panel Picture page), volume leveling (Sound page), power-on music and "Open at power-on"
+     (Projector settings, source.BootSource). English base; translations: gsi/apps/i18n/langs/<locale>.txt
+     @projector/strings_stock.xml. -->
+<resources>
+    <string name="hdmi_range">Color range</string>
+    <string name="hdmi_range_full">Full</string>
+    <string name="hdmi_range_limited">Limited</string>
+    <string name="hdmi_mode">HDMI mode</string>
+    <string name="hdmi_mode_compat">Compatible (HDMI 1.4)</string>
+    <string name="hdmi_mode_enhanced">Enhanced (HDMI 2.0)</string>
+    <string name="hdmi_mode_note">The source reconnects. If the picture disappears, choose Compatible.</string>
+    <string name="sound_volume_leveling">Volume leveling</string>
+    <string name="sec_power_on">Power on</string>
+    <string name="tg_power_on_music">Sound at power-on</string>
+    <string name="boot_source">Open at power-on</string>
+    <string name="boot_source_home">Home screen</string>
+    <!-- Keystone page: Zoom and shift (panel.ZoomShiftPanel) and Picture rotation (panel.RotatePanel) -->
+    <string name="zs_title">Zoom and shift</string>
+    <string name="zs_unavailable">Zoom and shift is not available now</string>
+    <string name="zs_mode_size">Size</string>
+    <string name="zs_mode_shift">Position</string>
+    <string name="zs_hint_size">Right: bigger · Left: smaller · OK: move the picture · Back: done</string>
+    <string name="zs_hint_shift">Arrows: move the picture · OK: size · Back: done</string>
+    <string name="zs_hint_shift_only">Arrows: move the picture · Back: done</string>
+    <string name="zs_edge">The picture is at the edge</string>
+    <string name="zs_refused">The projector did not move the picture</string>
+    <string name="rot_title">Picture rotation</string>
+    <string name="rot_unavailable">Picture rotation is not available now</string>
+    <string name="rot_hint">Right / Left: rotate · OK: back to the start · Back: done</string>
+    <string name="rot_limit">This is the largest angle</string>
+    <string name="rot_refused">The projector did not rotate the picture</string>
+    <!-- Projector settings: the user guide (guide.GuideDialog) -->
+    <string name="guide_title">User guide</string>
+    <string name="guide_scan">Scan the code with a phone to open the guide:</string>
+</resources>

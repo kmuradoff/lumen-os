@@ -54,6 +54,12 @@
     <string name="usb_installing">Instalando: %1$d%%</string>
     <string name="usb_done">%1$s foi instalado</string>
     <string name="usb_failed">%1$s não foi instalado: %2$s</string>
+    <string name="files_title">Arquivos</string>
+    <string name="files_none">Insira um pendrive: os vídeos, músicas e fotos dele aparecerão aqui.</string>
+    <string name="files_empty">Não há vídeos, músicas, fotos nem apps nesta pasta.</string>
+    <string name="files_more">Não mostrados: mais %1$d</string>
+    <string name="files_open_failed">Não é possível abrir %1$s</string>
+    <string name="files_play_failed">Este arquivo não pode ser reproduzido no projetor.</string>
     <string name="inputs_connected">Dispositivos conectados</string>
     <string name="inputs_cast">Transmitir para este projetor</string>
     <string name="input_connected">Conectado</string>

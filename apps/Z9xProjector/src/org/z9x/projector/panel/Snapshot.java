@@ -17,7 +17,8 @@ import org.z9x.projector.hal.GmpfClient;
  *   62 sound mode, 43/26 sound enhancement (+ 60 via AudioPathReporter), 151 eye protection, 289/291 fit/obstacle, 553 power-on
  *   keystone, 586 real-time keystone, 588 AF after moving, 303 AF at power-on, 173 put mode,
  *   579 auto flip;
- *   IGmpf2 51 Boost, 287 AI contrast, 321 super resolution, 311 ALLM auto switch, 90 smart AF.
+ *   IGmpf2 51 Boost, 287 AI contrast, 321 super resolution, 311 ALLM auto switch, 90 smart AF,
+ *   283 original frame rate (Lumen OS 1.0.4, the motion smoothing rule; ProPicture reads its own pages).
  * Deliberately NOT read (FEATURE_SPEC / research verdicts): IGmpf2 55 getGameModeProp (struct
  * UNVERIFIED: the panel shows the last game mode it set), IGmpf 157 getOutputTimingInfo (Ultra
  * 120 Hz: last value set), IGmpf 662 getHdmiInfo, 623 Dolby Vision (unreachable on this SKU).
@@ -28,6 +29,11 @@ final class Snapshot {
     Integer source, hdr, pictureMode, lamp, colorTemp, memc, fmt3d, gameOption, aspect, soundEffect,
             soundProcess, putMode;
     final Integer[] pq = new Integer[4];   // GmpfClient.PqItem order: BRIGHTNESS, CONTRAST, SATURATION, SHARPNESS
+    /** Lumen OS 1.0.4: IGmpf2 283 original frame rate (stock blocks motion smoothing while it is on). */
+    Boolean nativeFps;
+    /** Lumen OS 1.0.4: IGmpf 41 volume leveling, 632 eARC; 634 HDMI colour range, 661 EDID (shown on HDMI only). */
+    Boolean volumeBalance, earc;
+    Integer hdmiRange, edid;
     Boolean boost, aiContrast, superRes, is3dTo2d, allm, dtsOn, eye, curtain, obstacle, powerOnAk,
             moveAk, moveAf, powerOnAf, smartAf, autoReverse;
     /** org.z9x.tvinput: an HDMI TIF session is open (TifHdmiState.read; null = unknown). Not a HAL read. */
@@ -90,12 +96,17 @@ final class Snapshot {
             return m == null ? null : m.wire;
         });
         s.autoReverse = opt("579", g::getAutoReverse);
+        s.volumeBalance = opt("41", g::getVolumeBalance);
+        s.earc = opt("632", g::getEarc);
+        s.hdmiRange = opt("634", g::getHdmiRange);
+        s.edid = opt("661", g::getEdidVersion);
 
         // IGmpf2 connects lazily; if the first read fails the interface is not there: skip the rest.
         s.boost = opt("g2 51", g2::isBoost);
         if (s.boost != null) {
             s.aiContrast = opt("g2 287", g2::getAiContrast);
             s.superRes = opt("g2 321", g2::getSuperResolution);
+            s.nativeFps = opt("g2 283", g2::getNativeFrameRate);
             s.allm = opt("g2 311", g2::getAllmAutoSwitch);
             s.smartAf = opt("g2 90", g2::getSmartAutofocus);
         }

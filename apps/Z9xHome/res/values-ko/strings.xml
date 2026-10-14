@@ -54,6 +54,12 @@
     <string name="usb_installing">설치 중: %1$d%%</string>
     <string name="usb_done">%1$s 설치됨</string>
     <string name="usb_failed">%1$s 설치 실패: %2$s</string>
+    <string name="files_title">파일</string>
+    <string name="files_none">USB 메모리를 꽂으세요. 동영상, 음악, 사진이 여기에 표시됩니다.</string>
+    <string name="files_empty">이 폴더에는 동영상, 음악, 사진, 앱이 없습니다.</string>
+    <string name="files_more">표시되지 않은 항목: %1$d개 더</string>
+    <string name="files_open_failed">%1$s 파일을 열 수 없습니다</string>
+    <string name="files_play_failed">이 파일은 프로젝터에서 재생할 수 없습니다.</string>
     <string name="inputs_connected">연결된 기기</string>
     <string name="inputs_cast">이 프로젝터로 전송</string>
     <string name="input_connected">연결됨</string>

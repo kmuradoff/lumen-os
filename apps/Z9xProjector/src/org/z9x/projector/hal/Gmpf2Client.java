@@ -13,9 +13,12 @@
  * no generic transact, fixed/range-checked arguments only.
  *
  * NOT here on purpose: 76 cleanAllCalibrationData (factory), 236/237 radar, 303 enableAiPq (stub on
- * Z9X, FS 0.2), 203-206 pan-tilt / auto projection, 199 getScreenRotationInfo /
- * 281/282 multi-point WB / 324/325 HSY colour model (struct layouts or value ranges UNVERIFIED),
- * 207 setScreenRotation (angle range UNVERIFIED), 279 getExtDecInfo (string query, not needed).
+ * Z9X, FS 0.2), 203-206 pan-tilt / auto projection, 279 getExtDecInfo (string query, not needed).
+ * Lumen OS 1.0.4 added 194 / 199 / 207 for the picture rotation screen (stock RotateWind), with a check of the
+ * rotation struct before any move.
+ * Lumen OS 1.0.4 added 281/282 multi-point white balance and 324/325 HSY colour correction for the
+ * professional picture settings, with the stock app's values (research/z9x_stock_decompiled) and a
+ * read-back check of the struct before anything is written (see those methods).
  * Removed in v6.1 review: 300 getVRREnableState / 301 setVRRModeEnable (state values UNVERIFIED,
  * no UI offers VRR); add back only after a device test fixes the values.
  * Methods without a reviewed caller are parked (not compiled) at the end of the class, and the
@@ -46,10 +49,15 @@ public final class Gmpf2Client extends HidlCaller {
     private static final int GET_POWER_ON_AF_USE_DISTANCE = 90;// ()        -> bool
     private static final int SET_POWER_ON_AF_USE_DISTANCE = 91;// (bool)    -> bool
     private static final int NOTIFY_AUTOKST = 192;             // (i32)     -> bool
+    private static final int SET_PUSH_PULL_SCREEN_STATE = 194; // (i32)     -> bool  [1.0.4 zoom / shift / rotation screens]
+    private static final int GET_SCREEN_ROTATION_INFO = 199;   // ()        -> cb(bool, ScreenRotationInfo_st 16 bytes)
     private static final int SET_PUSH_PULL_SCREEN = 201;       // (bool)    -> bool
+    private static final int SET_SCREEN_ROTATION = 207;        // (i32 dir, float deg) -> bool  [NOT IGmpf 207]
     private static final int GET_HDR_DY_TONE_MAPPING = 269;    // (i32)     -> i32
     private static final int TOGGLE_HDR_DY_TONE_MAPPING = 270; // (i32,i32) -> bool
     private static final int RESET_PICTURE_TO_DEFAULT = 278;   // (i32,i32,i32) -> bool
+    private static final int GET_ONE_OF_MULTI_POINT_WB = 281;  // (i32 segment) -> cb(bool, stOneOfMultiPointWB 16 bytes)
+    private static final int SET_ONE_OF_MULTI_POINT_WB = 282;  // (i32 segment, stOneOfMultiPointWB) -> bool
     private static final int TOGGLE_AUTO_MODE = 280;           // (i32,bool) -> bool
     private static final int GET_FD_BOOST = 283;               // (i32)     -> i32
     private static final int TOGGLE_FD_BOOST = 284;            // (i32,i32) -> bool
@@ -63,6 +71,8 @@ public final class Gmpf2Client extends HidlCaller {
     private static final int GET_AISR_TYPE = 321;              // ()        -> i32
     private static final int SET_AISR_TYPE = 322;              // (i32)     -> bool
     private static final int SET_HSY_PICTURE_MODE = 323;       // (i32,bool) -> bool
+    private static final int GET_HSY_COLOR_MODEL = 324;        // (i32,i32) -> cb(bool, int8[7])
+    private static final int SET_HSY_COLOR_MODEL = 325;        // (i32,i32,int8[7]) -> bool
     private static final int GET_TV_GAMMA_LEVEL = 326;         // (i32)     -> i32
     private static final int SET_TV_GAMMA_LEVEL = 327;         // (i32,i32) -> bool
     private static final int GET_TV_DYNAMIC_CONTRAST = 328;    // (i32)     -> bool
@@ -195,6 +205,43 @@ public final class Gmpf2Client extends HidlCaller {
         return call(SET_KST_PREPARE, q, RET_BOOL);
     }
 
+    /**
+     * Lumen OS 1.0.4: 194 setPushPullScreenState(1) while a zoom / shift / rotation screen is open, (0) when it
+     * closes, as stock ZoomMoveWind / RotateWind (GmSystemManager.setPushPullScreenState). TSV W=writeInt32 R=readBool.
+     */
+    public boolean setAdjustScreenOpen(boolean open) throws RemoteException { need(); return callI32RetBool(SET_PUSH_PULL_SCREEN_STATE, open ? 1 : 0); }
+
+    /**
+     * Lumen OS 1.0.4: 199 getScreenRotationInfo() -> {minAng, maxAng, curAng, startAng} in degrees (stock
+     * ScreenRotationInfo_st, 4 floats). Wire: Status, bool, readBuffer(16). Fails unless the reply is
+     * plausible (bool true, -45 <= min < 0 < max <= 45, min <= cur <= max): nothing rotates on a misread.
+     */
+    public float[] getScreenRotation() throws RemoteException {
+        need();
+        return call(GET_SCREEN_ROTATION_INFO, request(), r -> {
+            if (!r.readBool()) throw new IllegalStateException("199 returned false");
+            android.os.HwBlob b = r.readBuffer(16);
+            float min = b.getFloat(0), max = b.getFloat(4), cur = b.getFloat(8), start = b.getFloat(12);
+            if (!(min >= -45f && min < 0f && max > 0f && max <= 45f && cur >= min - 0.01f && cur <= max + 0.01f)) {
+                throw new IllegalStateException("199 struct " + min + "," + max + "," + cur + "," + start);
+            }
+            return new float[] {min, max, cur, start};
+        });
+    }
+
+    /**
+     * Lumen OS 1.0.4: 207 setScreenRotation(5 clockwise | 6 counter-clockwise, degrees > 0, relative), as stock
+     * RotateWind (one 0.5 degree step per key). TSV W=writeInt32,writeFloat R=readBool.
+     */
+    public boolean rotateScreen(boolean clockwise, float degrees) throws RemoteException {
+        if (!(degrees > 0f && degrees <= 10f)) throw new IllegalArgumentException("rotation step " + degrees);
+        need();
+        HwParcel q = request();
+        q.writeInt32(clockwise ? 5 : 6);
+        q.writeFloat(degrees);
+        return call(SET_SCREEN_ROTATION, q, RET_BOOL);
+    }
+
     /** 201 setPushPullScreenOnOff(FALSE) only, when switching to ceiling mount (FS 2.9). TSV W=writeBool R=readBool. */
     public boolean disablePushPullScreenForCeiling() throws RemoteException { need(); return callBoolRetBool(SET_PUSH_PULL_SCREEN, false); }
 
@@ -216,6 +263,140 @@ public final class Gmpf2Client extends HidlCaller {
 
 
 
+
+    // ------------------------------------------------------------------ Lumen OS 1.0.4: professional picture settings
+    // Stock image mode 3.0 "专业设置" (PictureViewModel / GmDisplayManager, research/z9x_stock_decompiled): window 0,
+    // values as the stock app sends them, every setter followed by a read-back in the panel. Caller: panel.ProPicture.
+
+    /** 326 getTvGammaLevel(0) -> 0..8 (gamma 1.8..2.6) or 10..17 (curves). TSV W=writeInt32 R=readInt32. */
+    public int getGamma() throws RemoteException { need(); return callI32RetI32(GET_TV_GAMMA_LEVEL, WINDOW_MAIN); }
+    /** 327 setTvGammaLevel(0, g), g per {@link #isValidGamma}. TSV W=writeInt32,writeInt32 R=readBool. */
+    public boolean setGamma(int g) throws RemoteException {
+        if (!isValidGamma(g)) throw new IllegalArgumentException("gamma " + g);
+        need();
+        return callI32I32RetBool(SET_TV_GAMMA_LEVEL, WINDOW_MAIN, g);
+    }
+
+    /** 269 GetHDRDyToneMappingStatus(0) == 1. Shown only while HDR10 plays (stock). TSV W=writeInt32 R=readInt32. */
+    public boolean getHdrDynamicToneMapping() throws RemoteException { need(); return callI32RetI32(GET_HDR_DY_TONE_MAPPING, WINDOW_MAIN) == 1; }
+    /** 270 ToggleHDRDyToneMapping(0, 0|1). TSV W=writeInt32,writeInt32 R=readBool. */
+    public boolean setHdrDynamicToneMapping(boolean on) throws RemoteException { need(); return callI32I32RetBool(TOGGLE_HDR_DY_TONE_MAPPING, WINDOW_MAIN, on ? 1 : 0); }
+
+    /** 283 getFDBoostStatus(0) == 1 ("original frame rate"). TSV W=writeInt32 R=readInt32. */
+    public boolean getNativeFrameRate() throws RemoteException { need(); return callI32RetI32(GET_FD_BOOST, WINDOW_MAIN) == 1; }
+    /**
+     * 284 toggleFDBoost(0, 0|1). Stock turns Ultra 120 Hz off with it (161 setOutputTiming(6)) and refuses
+     * motion smoothing while it is on; the panel does both. TSV W=writeInt32,writeInt32 R=readBool.
+     */
+    public boolean setNativeFrameRate(boolean on) throws RemoteException { need(); return callI32I32RetBool(TOGGLE_FD_BOOST, WINDOW_MAIN, on ? 1 : 0); }
+
+    /** 29 getDynamicBlackType() == 1 ("dynamic black enhancement"). TSV R=readInt32. */
+    public boolean getDynamicBlack() throws RemoteException { need(); return callRetI32(GET_DYNAMIC_BLACK_TYPE) == 1; }
+    /** 31 setDynamicBlackType(0|1). TSV W=writeInt32 R=readBool. */
+    public boolean setDynamicBlack(boolean on) throws RemoteException { need(); return callI32RetBool(SET_DYNAMIC_BLACK_TYPE, on ? 1 : 0); }
+
+    /** 328 getTvDynamicContrastEnable(0). TSV W=writeInt32 R=readBool. */
+    public boolean getDynamicContrast() throws RemoteException { need(); return callI32RetBool(GET_TV_DYNAMIC_CONTRAST, WINDOW_MAIN); }
+    /** 329 setTvDynamicContrastEnable(0, bool). TSV W=writeInt32,writeBool R=readBool. */
+    public boolean setDynamicContrast(boolean on) throws RemoteException { need(); return callI32BoolRetBool(SET_TV_DYNAMIC_CONTRAST, WINDOW_MAIN, on); }
+
+    /** 330 getHsyPictureModeEnable(0) ("colour optimisation"). TSV W=writeInt32 R=readBool. */
+    public boolean getColorOptimization() throws RemoteException { need(); return callI32RetBool(GET_HSY_PICTURE_MODE, WINDOW_MAIN); }
+    /** 323 setHsyPictureModeEnable(0, bool). TSV W=writeInt32,writeBool R=readBool. */
+    public boolean setColorOptimization(boolean on) throws RemoteException { need(); return callI32BoolRetBool(SET_HSY_PICTURE_MODE, WINDOW_MAIN, on); }
+
+    /** HSY colour correction: what one 7-colour array holds (stock ColorCorrection: 0 hue, 1 saturation, 2 lightness). */
+    public enum HsyType {
+        HUE(0), SATURATION(1), LIGHTNESS(2);
+        final int wire;
+        HsyType(int v) { wire = v; }
+    }
+    /** Colours of the HSY arrays, in array order (stock ColorCorrection): red, green, blue, cyan, magenta, yellow, skin. */
+    public static final int HSY_COLORS = 7;
+
+    /**
+     * 324 getHsyColorModel(0, type) -> the 7 values (0..100, 50 = unchanged) of red, green, blue, cyan,
+     * magenta, yellow, skin. Wire: Status, bool, then the hidl_array<int8,7> as a 7-byte buffer (the proxy's
+     * callback reads it so). A false or a value outside 0..100 fails the call: the panel then hides colour
+     * correction rather than write over values it cannot read. TSV W=writeInt32,writeInt32 (cb).
+     */
+    public int[] getHsyColorModel(HsyType t) throws RemoteException {
+        need();
+        HwParcel q = request();
+        q.writeInt32(WINDOW_MAIN);
+        q.writeInt32(t.wire);
+        return call(GET_HSY_COLOR_MODEL, q, r -> {
+            if (!r.readBool()) throw new IllegalStateException("324 returned false");
+            android.os.HwBlob b = r.readBuffer(HSY_COLORS);
+            int[] v = new int[HSY_COLORS];
+            for (int i = 0; i < HSY_COLORS; i++) {
+                v[i] = b.getInt8(i);
+                if (v[i] < 0 || v[i] > 100) throw new IllegalStateException("324 value " + v[i] + " at " + i);
+            }
+            return v;
+        });
+    }
+
+    /**
+     * 325 setHsyColorModel(0, type, 7 values 0..100): the whole array, as stock (one changed colour, the
+     * other six as read). TSV W=writeInt32,writeInt32,writeBuffer R=readBool.
+     */
+    public boolean setHsyColorModel(HsyType t, int[] values) throws RemoteException {
+        if (values == null || values.length != HSY_COLORS) throw new IllegalArgumentException("hsy array");
+        android.os.HwBlob b = new android.os.HwBlob(HSY_COLORS);
+        for (int i = 0; i < HSY_COLORS; i++) b.putInt8(i, (byte) checkRange("hsy value", values[i], 0, 100));
+        need();
+        HwParcel q = request();
+        q.writeInt32(WINDOW_MAIN);
+        q.writeInt32(t.wire);
+        q.writeBuffer(b);
+        return call(SET_HSY_COLOR_MODEL, q, RET_BOOL);
+    }
+
+    /** The 11 points of multi-point white balance (stock image_segmentation): 5, 10, 20 ... 100 (% of white). */
+    public static final int[] WB_POINTS = {5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+
+    private static boolean isWbPoint(int p) {
+        for (int x : WB_POINTS) if (x == p) return true;
+        return false;
+    }
+
+    /**
+     * 281 getOneOfMultiPointWB(point) -> {red, green, blue} 0..100. Struct stOneOfMultiPointWB = 4 x int32
+     * {per_gain, red, green, blue} (XGIMI's AIDL twin; the HIDL order is checked here, not assumed): the reply
+     * must carry per_gain == point and three values 0..100, else the call fails and the panel hides 11-point
+     * white balance. Wire: Status, bool, readBuffer(16).
+     */
+    public int[] getMultiPointWb(int point) throws RemoteException {
+        if (!isWbPoint(point)) throw new IllegalArgumentException("wb point " + point);
+        need();
+        HwParcel q = request();
+        q.writeInt32(point);
+        return call(GET_ONE_OF_MULTI_POINT_WB, q, r -> {
+            if (!r.readBool()) throw new IllegalStateException("281 returned false");
+            android.os.HwBlob b = r.readBuffer(16);
+            int pg = b.getInt32(0), red = b.getInt32(4), green = b.getInt32(8), blue = b.getInt32(12);
+            if (pg != point || red < 0 || red > 100 || green < 0 || green > 100 || blue < 0 || blue > 100) {
+                throw new IllegalStateException("281 struct " + pg + "," + red + "," + green + "," + blue + " for " + point);
+            }
+            return new int[] {red, green, blue};
+        });
+    }
+
+    /** 282 setOneOfMultiPointWB(point, {point, red, green, blue}), as stock. TSV W=writeInt32,writeBuffer R=readBool. */
+    public boolean setMultiPointWb(int point, int red, int green, int blue) throws RemoteException {
+        if (!isWbPoint(point)) throw new IllegalArgumentException("wb point " + point);
+        android.os.HwBlob b = new android.os.HwBlob(16);
+        b.putInt32(0, point);
+        b.putInt32(4, checkRange("wb red", red, 0, 100));
+        b.putInt32(8, checkRange("wb green", green, 0, 100));
+        b.putInt32(12, checkRange("wb blue", blue, 0, 100));
+        need();
+        HwParcel q = request();
+        q.writeInt32(point);
+        q.writeBuffer(b);
+        return call(SET_ONE_OF_MULTI_POINT_WB, q, RET_BOOL);
+    }
 
     /** 278 ResetPictureToDefault(one of three stock triples). TSV W=writeInt32 x3 R=readBool. */
     public boolean resetPicture(PictureReset r) throws RemoteException {
@@ -245,48 +426,8 @@ public final class Gmpf2Client extends HidlCaller {
     // /** 46 doKeystoneRatio(3) only: ratio reset (FS 2.5 reset step 5). TSV W=writeInt32 R=readBool. */
     // public boolean resetKeystoneRatio() throws RemoteException { need(); return callI32RetBool(DO_KEYSTONE_RATIO, 3); }
     //
-    // /** 269 GetHDRDyToneMappingStatus(0). TSV W=writeInt32 R=readInt32. */
-    // public boolean getHdrDynamicToneMapping() throws RemoteException { need(); return callI32RetI32(GET_HDR_DY_TONE_MAPPING, WINDOW_MAIN) == 1; }
-    //
-    // /** 270 ToggleHDRDyToneMapping(0, 0|1). TSV W=writeInt32,writeInt32 R=readBool. */
-    // public boolean setHdrDynamicToneMapping(boolean on) throws RemoteException { need(); return callI32I32RetBool(TOGGLE_HDR_DY_TONE_MAPPING, WINDOW_MAIN, on ? 1 : 0); }
-    //
-    // /** 283 getFDBoostStatus(0) ("native frame rate"). TSV W=writeInt32 R=readInt32. */
-    // public boolean getNativeFrameRate() throws RemoteException { need(); return callI32RetI32(GET_FD_BOOST, WINDOW_MAIN) == 1; }
-    //
-    // /** 284 toggleFDBoost(0, 0|1). TSV W=writeInt32,writeInt32 R=readBool. */
-    // public boolean setNativeFrameRate(boolean on) throws RemoteException { need(); return callI32I32RetBool(TOGGLE_FD_BOOST, WINDOW_MAIN, on ? 1 : 0); }
-    //
-    // /** 29 getDynamicBlackType() -> 0/1. TSV R=readInt32. */
-    // public boolean getDynamicBlack() throws RemoteException { need(); return callRetI32(GET_DYNAMIC_BLACK_TYPE) == 1; }
-    //
-    // /** 31 setDynamicBlackType(0|1). TSV W=writeInt32 R=readBool. */
-    // public boolean setDynamicBlack(boolean on) throws RemoteException { need(); return callI32RetBool(SET_DYNAMIC_BLACK_TYPE, on ? 1 : 0); }
-    //
-    // /** 328 getTvDynamicContrastEnable(0). TSV W=writeInt32 R=readBool. */
-    // public boolean getDynamicContrast() throws RemoteException { need(); return callI32RetBool(GET_TV_DYNAMIC_CONTRAST, WINDOW_MAIN); }
-    //
-    // /** 329 setTvDynamicContrastEnable(0, bool). TSV W=writeInt32,writeBool R=readBool. */
-    // public boolean setDynamicContrast(boolean on) throws RemoteException { need(); return callI32BoolRetBool(SET_TV_DYNAMIC_CONTRAST, WINDOW_MAIN, on); }
-    //
-    // /** 330 getHsyPictureModeEnable(0) ("colour optimisation"). TSV W=writeInt32 R=readBool. */
-    // public boolean getColorOptimization() throws RemoteException { need(); return callI32RetBool(GET_HSY_PICTURE_MODE, WINDOW_MAIN); }
-    //
-    // /** 323 setHsyPictureModeEnable(0, bool). TSV W=writeInt32,writeBool R=readBool. */
-    // public boolean setColorOptimization(boolean on) throws RemoteException { need(); return callI32BoolRetBool(SET_HSY_PICTURE_MODE, WINDOW_MAIN, on); }
-    //
-    // /** 280 toggleAutoMode(0, bool): HDR Vivid auto switch, only while HDR Vivid plays (FS 3.4). TSV W=writeInt32,writeBool R=readBool. */
-    // public boolean setHdrVividAutoSwitch(boolean on) throws RemoteException { need(); return callI32BoolRetBool(TOGGLE_AUTO_MODE, WINDOW_MAIN, on); }
-    //
-    // /** 326 getTvGammaLevel(0). TSV W=writeInt32 R=readInt32. */
-    // public int getGamma() throws RemoteException { need(); return callI32RetI32(GET_TV_GAMMA_LEVEL, WINDOW_MAIN); }
-    //
-    // /** 327 setTvGammaLevel(0, g), g per {@link #isValidGamma}. TSV W=writeInt32,writeInt32 R=readBool. */
-    // public boolean setGamma(int g) throws RemoteException {
-    //     if (!isValidGamma(g)) throw new IllegalArgumentException("gamma " + g);
-    //     need();
-    //     return callI32I32RetBool(SET_TV_GAMMA_LEVEL, WINDOW_MAIN, g);
-    // }
+    // (269/270, 283/284, 29/31, 328/329, 330/323, 326/327: un-parked in Lumen OS 1.0.4 for the professional
+    // picture settings, see that section.)
     //
     // /** 289 getCustomized3DLut() -> path (reply Status + hidl_string). TSV W= (cb hidl_string). */
     // public String get3dLut() throws RemoteException { need(); return call(GET_CUSTOMIZED_3D_LUT, request(), HwParcel::readString); }

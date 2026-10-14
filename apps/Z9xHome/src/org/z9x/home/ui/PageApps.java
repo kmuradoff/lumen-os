@@ -107,6 +107,11 @@ public class PageApps extends ViewGroup implements Page {
         usb.intent = "usb";
         usb.icon = R.drawable.ic_usb;
         all.add(usb);
+        // 1.0.4: Files (the USB sticks' videos, music and photos, in place of XGIMI's file manager)
+        Card files = new Card(Card.MORE_APPS, "files", getContext().getString(R.string.files_title));
+        files.intent = "files";
+        files.icon = R.drawable.ic_folder;
+        all.add(files);
         sync(mFav, mFavCards);
         sync(mAll, all);
         mFavTitle.setVisibility(mFav.isEmpty() ? GONE : VISIBLE);

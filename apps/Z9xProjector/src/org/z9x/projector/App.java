@@ -70,6 +70,9 @@ public final class App extends Application {
         try { EyeGuard.install(this); } catch (Throwable t) { Log.e(TAG, "EyeGuard.install", t); }
         // ===== Lumen OS 1.0.2: optical zoom, close a session a dead process left open (connect hook) =====
         try { org.z9x.projector.panel.OpticalZoomPanel.install(this); } catch (Throwable t) { Log.e(TAG, "OpticalZoomPanel.install", t); }
+        // Lumen OS 1.0.4: zoom / shift and rotation screens close a session a dead process left open
+        try { org.z9x.projector.panel.ZoomShiftPanel.install(this); } catch (Throwable t) { Log.e(TAG, "ZoomShiftPanel.install", t); }
+        try { org.z9x.projector.panel.RotatePanel.install(this); } catch (Throwable t) { Log.e(TAG, "RotatePanel.install", t); }
         // ===== Lumen OS 1.0.2 module "3d": the stock 3D modes on the quick panel's Picture page =====
         try { org.z9x.projector.display.ThreeD.install(this); } catch (Throwable t) { Log.e(TAG, "ThreeD.install", t); }
         // ===== v6.2 module "screensaver": lamp dim/restore guard (marker recovery, SCREEN_OFF restore) =====
@@ -158,6 +161,7 @@ public final class App extends Application {
                     try { org.z9x.projector.audio.AiSoundEngine.onScreenOn(); } catch (Throwable t) { Log.w(TAG, "AiSoundEngine.onScreenOn: " + t); }
                     try { org.z9x.projector.audio.VendorSoundWatch.onScreenOn(); } catch (Throwable t) { Log.w(TAG, "VendorSoundWatch.onScreenOn: " + t); }
                     try { org.z9x.projector.source.HdmiSource.onScreenOn(); } catch (Throwable t) { Log.w(TAG, "HdmiSource.onScreenOn: " + t); }
+                    try { org.z9x.projector.source.BootSource.onPowerOn(c, "screen on"); } catch (Throwable t) { Log.w(TAG, "BootSource: " + t); }
                 }
             }
         };

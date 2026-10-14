@@ -54,6 +54,12 @@
     <string name="usb_installing">Installazione: %1$d%%</string>
     <string name="usb_done">%1$s è installata</string>
     <string name="usb_failed">%1$s non è stata installata: %2$s</string>
+    <string name="files_title">File</string>
+    <string name="files_none">Inserisci una chiavetta USB: qui compariranno i suoi video, la musica e le foto.</string>
+    <string name="files_empty">Nessun video, brano, foto o app in questa cartella.</string>
+    <string name="files_more">Non mostrati: altri %1$d</string>
+    <string name="files_open_failed">Impossibile aprire %1$s</string>
+    <string name="files_play_failed">Questo file non può essere riprodotto sul proiettore.</string>
     <string name="inputs_connected">Dispositivi collegati</string>
     <string name="inputs_cast">Trasmetti a questo proiettore</string>
     <string name="input_connected">Collegato</string>

@@ -1,5 +1,35 @@
 # Z9xProjector, next (Lumen OS 1.0.4, not built yet)
 
+Stock Z9X settings brought over (owner 2026-10-14: "what stock has and we do not: do it"; inventory
+docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock settings app). Device test pending.
+- **Professional picture settings** (`panel/ProPicture`, new; Picture page > Professional settings, stock image mode
+  3.0): 2-point white balance (IGmpf 672..683 setColorTemp*Gain/Offset(0, 0..100)), 11-point white balance (IGmpf2
+  281/282, struct {level, r, g, b} checked on read), colour space (IGmpf 111/112: native, BT.2020, Adobe RGB, DCI-P3,
+  Rec.709), colour optimisation (IGmpf2 330/323), 7-colour correction (IGmpf2 324/325, 7-byte arrays per hue /
+  saturation / lightness, read-modify-write), gamma curve and value (IGmpf2 326/327: BT.1886 / HLG / ST.2084 by the
+  signal, or 1.8..2.6), HDR dynamic tone mapping (IGmpf2 269/270, HDR10 only), local contrast (IGmpf 651/655), dynamic
+  contrast (IGmpf2 328/329), dynamic black (IGmpf2 29/31), original frame rate (IGmpf2 283/284; turns Ultra 120 Hz
+  off with 161(6) and blocks motion smoothing, as stock), noise reduction (IGmpf 670/671), reset (IGmpf2 278(0,0,2)).
+  A row whose getter fails is hidden, never shown disabled.
+- **HDMI settings of the input on screen** (Picture page, HDMI only): colour range (IGmpf 634/635: auto, full,
+  limited) and HDMI mode (IGmpf 660/661: 0 = 1.4 Compatible, 1 = 2.0 Enhanced, or 3 when the projector reads 3; the
+  stock wire values, not the UI index our Play 6 notes had).
+- **Sound**: volume leveling switch (IGmpf 41/42; SoundProfiles no longer turns it off when the user turned it on),
+  eARC (IGmpf 632/633, shown only where 632 answers).
+- **Zoom and shift** (`panel/ZoomShiftPanel`, new; Keystone page): the stock zoom_and_move in its digital form, no
+  motor: size by IGmpf 118 setDigitalZoomStep inside the 117 digital range (session 121/120 and IGmpf2 18(true|false,2)
+  as stock), position by IGmpf 141 translationKst(dir, true) then (dir, false); real-time keystone paused with 573;
+  IGmpf2 194 while open; 158(0) after a change. Every size step checks that 116's optical position did not move.
+- **Picture rotation** (`panel/RotatePanel`, new; Keystone page): the stock RotateWind: IGmpf2 199 (4 floats, checked),
+  207(5 | 6, 0.5 degrees) per key, OK back to the opening angle; 194, 573 and 158 as above.
+- **Power on** (Projector settings): power-on music (IGmpf 420/419, the vendor's own sound; stored in its settings
+  store, not the MBOOT environment) and "Open at power-on" (`source/BootSource`, new: home screen, HDMI 1 or HDMI 2,
+  opened through tvinput after a cold start, a wake or the end of the lamp standby; an HDMI picture already on wins).
+- **User guide** (`guide/GuideDialog`, new; Projector settings): a QR code to docs/guide (ru / en).
+- Not brought over, with the reason: power on with mains (IGmpf 543 rewrites the MBOOT environment in flash, kept
+  banned), Total Surround / Total Immersion (XGIMI Sound speaker only), manual audio output (XGIMI's own
+  AudioSystem.setForceUse configs), boot animation switch (a prop nothing on Lumen reads).
+
 - Manual optical zoom removed from the quick panel (Keystone page), owner 2026-10-14. Test on 1.0.3 with logs
   (docs/z9x/OPEN_zoom_103.md): every 119 moves the lens about 80 motor steps and the picture changes each time,
   but XGIMI's position index (116) counts 13 coarse positions and lags 2 or 3 presses; worse, stepping back from

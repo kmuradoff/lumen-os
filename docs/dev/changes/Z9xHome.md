@@ -1,3 +1,15 @@
+# Lumen Home, next (Lumen OS 1.0.4, not built yet)
+
+- **Files** (`usb/UsbFilesActivity`, `UsbFiles`, `UsbFilesProvider`, `PhotoActivity`, `PlayerActivity`, new), in
+  place of XGIMI's file manager: the USB sticks' folders in the Lumen side panel (one stick: its folders at once).
+  Folders, video, music, photos and .apk files are listed (hidden and other files are not), up to 400 rows per
+  folder. A video or a song opens in the user's app for its type (Кино, VLC ...) through a read-only, non-exported
+  content provider with a one-off grant; with no such app, in the built-in VideoView player (OK pause, Left / Right
+  10 s, 30 s held; a song is followed by the next of the folder). Photos: full screen, scaled while decoding, EXIF
+  upright, Left / Right through the folder. An .apk opens Install from USB. Entry points: an Apps page card and a
+  LEANBACK_LAUNCHER alias (.FilesLauncher, own banner), both kept in classic-launcher mode. Icons folder / music /
+  movie added to tools/gen_icons.py. Strings in 17 languages. Device test pending.
+
 # Lumen Home 1.0.3 (2026-10-13): release build
 
 Author kmuradoff. versionCode 104 / versionName 1.0.3 in the manifest (was 103 / 1.0.2); nothing else changed for

@@ -97,7 +97,7 @@ final class QuickPanelController {
     private static final long SLIDER_GUARD_MS = 800;
 
     private static final String KEY_GAME_MODE = QuickPanel.KEY_GAME_MODE;   // 0 off, 1 on, 2 auto (last set)
-    private static final String KEY_ULTRA_120 = "ultra_120";        // last value set (157 not readable)
+    static final String KEY_ULTRA_120 = "ultra_120";                // last value set (157 not readable); also ProPicture
     /** v6.2: section key of the tile focused last (restored at the next open). */
     private static final String KEY_LAST_TILE = "last_tile";
 
@@ -163,6 +163,13 @@ final class QuickPanelController {
     private final SliderRow[] pq = new SliderRow[PQ_ORDER.length];
     private ChoiceRow colorTemp, memc;
     private ToggleRow aiContrast, superRes;
+    private ProPicture pro;
+    // Lumen OS 1.0.4: HDMI settings of the input on screen (Picture page, HDMI only), sound extras
+    private HeaderRow hdmiHeader;
+    private ChoiceRow hdmiRange, hdmiMode;
+    private ToggleRow volumeLevel, earc;
+    /** The "Enhanced" EDID value this projector uses (1 = HDMI 2.0, or 3 once 661 has read 3). */
+    private static final String KEY_EDID_ENHANCED = "edid_enhanced";
 
     // Boost two-press state
     private boolean boostOn;
@@ -493,6 +500,15 @@ final class QuickPanelController {
         // and says exactly why it refuses (a stale 647 read used to block it silently on Android).
         p.add(new NavRow(app, s(R.string.panel_manual_keystone), safe("manual keystone",
                 () -> openManualKeystone(QuickPanel.SECTION_KEYSTONE))));
+        // Lumen OS 1.0.4: the stock zoom_and_move without the motor (digital size + shift) and picture rotation
+        p.add(new NavRow(app, s(R.string.zs_title), safe("zoom shift", () -> {
+            if (snap != null && snap.isTopSpeedGame()) { Notify.show(app, s(R.string.panel_kst_game_mode)); return; }
+            ZoomShiftPanel.open(app, () -> show(QuickPanel.SECTION_KEYSTONE));     // replaces the quick panel
+        })));
+        p.add(new NavRow(app, s(R.string.rot_title), safe("rotation", () -> {
+            if (snap != null && snap.isTopSpeedGame()) { Notify.show(app, s(R.string.panel_kst_game_mode)); return; }
+            RotatePanel.open(app, () -> show(QuickPanel.SECTION_KEYSTONE));        // replaces the quick panel
+        })));
         // Lumen OS 1.0.4: no manual optical zoom row any more (owner, 2026-10-14). XGIMI's zoom controller loses
         // the lens position on this firmware: stepping back from the small end, its reference sensor fires near
         // motor step 1870 and it resets its counter to 0 (log docs/z9x/OPEN_zoom_103.md), after which it drives
@@ -572,6 +588,11 @@ final class QuickPanelController {
                 labels(app, R.string.panel_off, R.string.panel_low, R.string.panel_medium, R.string.panel_high),
                 (row, i) -> safe("memc", () -> {
                     if (snap == null || snap.memc == null || i < 0 || i >= MEMC_ORDER.length) { refresh(); return; }
+                    if (Boolean.TRUE.equals(snap.nativeFps)) {            // stock: original frame rate blocks MEMC
+                        Notify.show(app, s(R.string.panel_memc), s(R.string.pro_memc_blocked));
+                        refresh();
+                        return;
+                    }
                     final GmpfClient.MemcLevel l = MEMC_ORDER[i];
                     change("669 memc " + l, (g, g2) -> g.setMemcLevel(l));
                 }).run()));
@@ -584,10 +605,46 @@ final class QuickPanelController {
                         change("IGmpf2 322 super resolution " + wanted, (g, g2) -> g2.setSuperResolution(wanted))).run()));
         ultra120 = p.add(new ToggleRow(app, s(R.string.panel_ultra120),
                 (row, wanted) -> safe("ultra 120", () -> onUltra120(row, wanted)).run()));
+        // Lumen OS 1.0.4: the stock "Professional settings" (ProPicture: white balance, colour, gamma, contrast,
+        // original frame rate, noise reduction), its own pages
+        pro = new ProPicture(app, prefs, new ProPicture.Host() {
+            @Override public void push(Page pg) { QuickPanelController.this.push(pg); }
+            @Override public void confirm(int titleRes, CharSequence msg, int okRes, Runnable onOk) {
+                QuickPanelController.this.confirm(titleRes, msg, okRes, onOk);
+            }
+        });
+        p.add(new NavRow(app, s(R.string.pro_title), safe("pro page", () -> push(pro.page))));
         p.add(new NavRow(app, s(R.string.panel_picture_reset), safe("picture reset", () ->
                 confirm(R.string.panel_picture_reset, s(R.string.panel_picture_reset_msg), R.string.panel_reset,
                         () -> change("IGmpf2 278 reset basic",
                                 (g, g2) -> g2.resetPicture(Gmpf2Client.PictureReset.BASIC)))))).setChevron(false);
+        // Lumen OS 1.0.4: the stock HDMI settings of the input on screen (SignalRepository), shown on HDMI only
+        hdmiHeader = p.add(new HeaderRow(app, "HDMI"));
+        final GmpfClient.HdmiRange[] ranges = GmpfClient.HdmiRange.values();
+        hdmiRange = p.add(new ChoiceRow(app, s(R.string.hdmi_range),
+                labels(app, R.string.panel_auto, R.string.hdmi_range_full, R.string.hdmi_range_limited),
+                (row, i) -> safe("hdmi range", () -> {
+                    if (i < 0 || i >= ranges.length) return;
+                    final GmpfClient.HdmiRange r = ranges[i];
+                    change("635 hdmi range " + r, (g, g2) -> {
+                        if (!hdmiNow(g, "635")) return;
+                        if (!g.setHdmiRange(r)) throw new IllegalStateException("635 returned false");
+                    });
+                }).run()));
+        hdmiRange.setCommitDelay(CHOICE_COMMIT_MS);
+        hdmiMode = p.add(new ChoiceRow(app, s(R.string.hdmi_mode),
+                labels(app, R.string.hdmi_mode_compat, R.string.hdmi_mode_enhanced),
+                (row, i) -> safe("hdmi mode", () -> {
+                    if (i < 0 || i > 1) return;
+                    final int wire = i == 0 ? GmpfClient.EDID_14 : prefs.getInt(KEY_EDID_ENHANCED, GmpfClient.EDID_20);
+                    final CharSequence title = row.getTitle();
+                    change("660 edid " + wire, (g, g2) -> {
+                        if (!hdmiNow(g, "660")) return;
+                        if (!g.setEdidVersion(wire)) throw new IllegalStateException("660 returned false");
+                        Notify.show(app, title, s(R.string.hdmi_mode_note));
+                    });
+                }).run()));
+        hdmiMode.setCommitDelay(CHOICE_COMMIT_MS);
     }
 
     // ================================================================== sound page (FEATURE_SPEC 4, v6.3 profiles)
@@ -651,6 +708,20 @@ final class QuickPanelController {
             panel.push(eqPage);
         })));
         buildEqPage();
+        // Lumen OS 1.0.4: the stock "Volume balance" (IGmpf 42) as a switch; sound profiles keep the choice
+        volumeLevel = p.add(new ToggleRow(app, s(R.string.sound_volume_leveling), (row, w) -> safe("42", () -> {
+            prefs.edit().putBoolean(SoundProfiles.KEY_VOLUME_LEVELING, w).apply();
+            change("42 volume leveling " + w, (g, g2) -> {
+                boolean ok = g.setVolumeBalance(w);
+                SoundEq.afterVendorCall(g, "42(" + w + ")");          // the PEQ of AMP mode, as after 27
+                if (!ok) throw new IllegalStateException("42 returned false");
+            });
+        }).run()));
+        // Lumen OS 1.0.4: the stock eARC mode (Auto = on, Off), only where 632 answers
+        earc = p.add(new ToggleRow(app, "eARC", (row, w) -> safe("633", () ->
+                change("633 eARC " + w, (g, g2) -> {
+                    if (!g.setEarc(w)) throw new IllegalStateException("633 returned false");
+                })).run()));
     }
 
     // ================================================================== equalizer page (v6.4, not in stock)
@@ -1410,6 +1481,24 @@ final class QuickPanelController {
         boolean sdr = ok && sn.hdr != null && sn.hdr == GmpfClient.HDR_SDR;
         setToggle(aiContrast, ok ? sn.aiContrast : null, sdr);   // AI contrast: SDR only (FS 3.5)
         setToggle(superRes, ok ? sn.superRes : null, true);
+        // Lumen OS 1.0.4 HDMI settings: only while HDMI is on screen (they apply to that input)
+        boolean onHdmi = ok && sn.hdmiConfirmed();
+        if (ok && sn.edid != null && (sn.edid == GmpfClient.EDID_20 || sn.edid == GmpfClient.EDID_21)
+                && prefs.getInt(KEY_EDID_ENHANCED, -1) != sn.edid) {
+            prefs.edit().putInt(KEY_EDID_ENHANCED, sn.edid).apply();     // this projector's "Enhanced" value
+        }
+        boolean showRange = onHdmi && sn.hdmiRange != null && sn.hdmiRange >= 0 && sn.hdmiRange <= 2;
+        boolean showEdid = onHdmi && sn.edid != null;
+        hdmiHeader.setVisibility(showRange || showEdid ? View.VISIBLE : View.GONE);
+        hdmiRange.setSelected(showRange ? sn.hdmiRange : -1);
+        hdmiRange.setVisibility(showRange ? View.VISIBLE : View.GONE);
+        // stock: Enhanced for 1 (2.0) and 3 (2.1-style), every other read shows Compatible
+        hdmiMode.setSelected(showEdid ? (sn.edid == GmpfClient.EDID_20 || sn.edid == GmpfClient.EDID_21 ? 1 : 0) : -1);
+        hdmiMode.setVisibility(showEdid ? View.VISIBLE : View.GONE);
+        volumeLevel.setChecked(ok ? sn.volumeBalance : null);
+        volumeLevel.setVisibility(ok && sn.volumeBalance != null ? View.VISIBLE : View.GONE);
+        earc.setChecked(ok ? sn.earc : null);
+        earc.setVisibility(ok && sn.earc != null ? View.VISIBLE : View.GONE);
 
         // ---- tile values (top level): the same read-back, one short line each
         tileValue(QuickPanel.SECTION_LAMP, !ok ? null : boostOn ? s(R.string.panel_boost)

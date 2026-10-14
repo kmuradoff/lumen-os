@@ -41,7 +41,7 @@ public final class SettingsActivity extends Activity {
     private final Map<HalController.Toggle, TextView> toggleValues = new EnumMap<>(HalController.Toggle.class);
     private final Map<HalController.Toggle, View> toggleRows = new EnumMap<>(HalController.Toggle.class);
     private final Map<HalController.Toggle, Boolean> toggleState = new EnumMap<>(HalController.Toggle.class);
-    private TextView slot3Value, slot4Value, launcherValue;
+    private TextView slot3Value, slot4Value, launcherValue, bootSourceValue;
     private LinearLayout diagBox;
     private boolean resumed;
     private final Runnable onHalState = () -> { if (resumed) { refreshToggles(); refreshDiagnostics(); } };
@@ -139,6 +139,11 @@ public final class SettingsActivity extends Activity {
         toggle(HalController.Toggle.CURTAIN_FIT, R.string.tg_curtain);
         toggle(HalController.Toggle.OBSTACLE, R.string.tg_obstacle);
 
+        // Lumen OS 1.0.4: the stock power on/off settings (power-on music, boot source)
+        header(R.string.sec_power_on);
+        toggle(HalController.Toggle.POWER_ON_MUSIC, R.string.tg_power_on_music);
+        bootSourceValue = valueRow(R.string.boot_source, v -> pickBootSource());
+
         // Lumen OS 1.0.1: interface resolution 4K / 1080p (display.UiResolution), only while the image allows it
         if (org.z9x.projector.display.UiResolution.enabled()) {
             header(R.string.uires_section);
@@ -156,6 +161,9 @@ public final class SettingsActivity extends Activity {
         if (org.z9x.projector.home.LauncherSwitcher.choiceAvailable(this)) {
             launcherValue = valueRow(R.string.launcher_row, v -> pickLauncher());
         }
+
+        // Lumen OS 1.0.4: the user guide (in place of XGIMI's manual app): a QR code to the online guide
+        action(R.string.guide_title, false, v -> org.z9x.projector.guide.GuideDialog.show(this));
 
         header(R.string.sec_diag);
         // Lumen OS 1.0.1: problem reports, only while the image has a report server (ro.z9x.report.url)
@@ -336,6 +344,7 @@ public final class SettingsActivity extends Activity {
         slot3Value.setText(slotText(3));
         slot4Value.setText(slotText(4));
         refreshLauncher();
+        refreshBootSource();
     }
 
     // ------------------------------------------------------------------ home screen (Lumen OS 1.0)
@@ -364,6 +373,29 @@ public final class SettingsActivity extends Activity {
                     launcherValue.setText("…");
                     org.z9x.projector.home.LauncherSwitcher.apply(this, modes[which], true, "projector settings",
                             (ok, holder, err) -> { if (!isFinishing() && !isDestroyed()) refreshLauncher(); });
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    // ------------------------------------------------------------------ open at power-on (Lumen OS 1.0.4)
+    private CharSequence[] bootSourceItems() {
+        return new CharSequence[]{getString(R.string.boot_source_home), getString(R.string.source_hdmi, 1),
+                getString(R.string.source_hdmi, 2)};
+    }
+
+    private void refreshBootSource() {
+        if (bootSourceValue != null) bootSourceValue.setText(bootSourceItems()[org.z9x.projector.source.BootSource.get(this)]);
+    }
+
+    private void pickBootSource() {
+        int cur = org.z9x.projector.source.BootSource.get(this);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.boot_source)
+                .setSingleChoiceItems(bootSourceItems(), cur, (d, which) -> {
+                    d.dismiss();
+                    org.z9x.projector.source.BootSource.set(this, which);
+                    refreshBootSource();
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();

@@ -54,6 +54,12 @@
     <string name="usb_installing">Установка: %1$d%%</string>
     <string name="usb_done">%1$s установлено</string>
     <string name="usb_failed">%1$s не установлено: %2$s</string>
+    <string name="files_title">Файлы</string>
+    <string name="files_none">Вставьте флешку: здесь появятся её видео, музыка и фото.</string>
+    <string name="files_empty">В этой папке нет видео, музыки, фото и приложений.</string>
+    <string name="files_more">Не показано: ещё %1$d</string>
+    <string name="files_open_failed">Не удаётся открыть %1$s</string>
+    <string name="files_play_failed">Этот файл нельзя воспроизвести на проекторе.</string>
     <string name="inputs_connected">Подключённые устройства</string>
     <string name="inputs_cast">Трансляция на проектор</string>
     <string name="input_connected">Подключено</string>
