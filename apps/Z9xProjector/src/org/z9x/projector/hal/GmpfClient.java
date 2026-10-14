@@ -83,6 +83,7 @@ public final class GmpfClient extends HidlCaller {
     private static final int SET_OPTICAL_ZOOM_STEP = 119;          // (i32)   -> i32
     private static final int ZOOM_FINISH = 120;                    // (i32)   -> i32
     private static final int ZOOM_START = 121;                     // (i32)   -> i32
+    private static final int ZOOM_CONTROL = 153;                   // (i32 mode, i32 steps) -> i32
     private static final int TRANSLATION_KST = 141;                // (i32,bool) -> i32
     // AK overlay ack
     private static final int UI_AK_DISPLAY = 146;                  // (i32)   -> void
@@ -871,7 +872,17 @@ public final class GmpfClient extends HidlCaller {
     // Each 119 call is ONE bounded move (zoomUnitStep 16 x 10 = 160 motor steps, ~0.4 s at 400 pps) toward
     // the target, refused (-1) outside [0, opticalMax]; the vendor stops at its limits and the left end
     // sensor, and stores the position (MTK env) after every stop. Index 0 = the biggest picture. NEVER the
-    // other zoom codes (153 zoomControl, 297 controlZoomMotor, 283, 457, IGmpf2 14): large / factory moves.
+    // other zoom codes (297 controlZoomMotor, 283, 457, IGmpf2 14): large / factory moves. 153 zoomControl only
+    // in its stock mode 5 (zoomHome below, Lumen OS 1.0.4).
+
+    /**
+     * 153 zoomControl(5, 10) -> i32 (Lumen OS 1.0.4): the lens walks home to the biggest picture, past the
+     * reference sensor into its end zone, exactly as stock's zoom page MENU reset and "restore default picture"
+     * (KeyStoneManager.zoomControl(5, 10)) and as auto keystone's zoomReset; afterwards 119 moves are half
+     * steps until the vendor's counter is resynced (OpticalZoomPanel). Only this mode of 153 is used. Inside a
+     * 121 session. TSV W=writeInt32,writeInt32 R=readInt32.
+     */
+    public int zoomHome() throws RemoteException { return callI32I32RetI32(ZOOM_CONTROL, 5, 10); }
 
     /** 121 zoomStart(0) -> i32: opens the session (the vendor also takes the motor position here). TSV W=writeInt32 R=readInt32. */
     public int zoomSessionStart() throws RemoteException { return callI32RetI32(ZOOM_START, 0); }
