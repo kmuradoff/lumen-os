@@ -11,7 +11,7 @@
   коррекция цвета (7 цветов), гамма, динамическое отображение HDR, локальный и динамический контраст, усиление
   чёрного, исходная частота кадров, шумоподавление.
 - Настройки HDMI для входа на экране: цветовой диапазон и режим HDMI (совместимый 1.4 или улучшенный 2.0).
-- «Трапеция → Масштаб и сдвиг» (цифровой, без мотора объектива) и «Поворот изображения».
+- «Трапеция → Поворот изображения».
 - «Звук»: выравнивание громкости и eARC.
 - «Проектор → Включение»: мелодия при включении и вход, который открывается при включении (HDMI 1 или HDMI 2).
 - «Файлы»: видео, музыка и фото с флешки, со встроенным плеером и просмотром фото.
@@ -24,9 +24,8 @@
 - Игровой режим, «Скорость отклика»: при смене больше не появляется «Не удалось», когда скорость на самом деле
   сменилась.
 
-- Из быстрой панели убран ручной оптический зум. Встроенная логика XGIMI теряет положение объектива при движении
-  назад и может упирать его в край. Чтобы вписать картинку в экран, используйте «Вписать в экран сейчас» на той же
-  странице: она двигает зум сама и находит положение объектива.
+- Ручной оптический зум остаётся на странице «Трапеция». Сейчас исправляется: шаги, положение объектива и зум
+  после автотрапеции.
 
 ## XGIMI Play 6, бета 1, октябрь 2026
 
@@ -132,7 +131,7 @@ Brought over from XGIMI's stock firmware, what Lumen did not have:
   correction (7 colors), gamma, HDR dynamic tone mapping, local and dynamic contrast, dynamic black enhancement,
   original frame rate, noise reduction.
 - HDMI settings of the input on screen: color range and HDMI mode (Compatible 1.4 or Enhanced 2.0).
-- "Keystone > Zoom and shift" (digital, without the lens motor) and "Picture rotation".
+- "Keystone > Picture rotation".
 - "Sound": volume leveling and eARC.
 - "Projector > Power on": power-on sound and the input to open at power-on (HDMI 1 or HDMI 2).
 - "Files": videos, music and photos from a USB stick, with a built-in player and photo viewer.
@@ -144,9 +143,8 @@ Fixes:
   nothing on HDMI.
 - Game mode, "Response speed": changing it no longer says "Could not" when the speed did change.
 
-- The manual optical zoom is gone from the quick panel. XGIMI's own zoom logic loses the lens position when
-  moving back and can drive the lens against its end. To fit the picture to the screen, use "Fit to screen
-  now" on the same page: it moves the zoom itself and finds the lens position.
+- The manual optical zoom stays on the "Keystone" page. Being fixed now: its steps, the lens position and the
+  zoom after auto keystone.
 
 ## XGIMI Play 6, beta 1, October 2026
 

@@ -16,7 +16,7 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   stock wire values, not the UI index our Play 6 notes had).
 - **Sound**: volume leveling switch (IGmpf 41/42; SoundProfiles no longer turns it off when the user turned it on),
   eARC (IGmpf 632/633, shown only where 632 answers).
-- **Zoom and shift** (`panel/ZoomShiftPanel`, new; Keystone page): the stock zoom_and_move in its digital form, no
+- **Zoom and shift** (`panel/ZoomShiftPanel`, new; NOT shown, owner prefers the optical zoom): the stock zoom_and_move in its digital form, no
   motor: size by IGmpf 118 setDigitalZoomStep inside the 117 digital range (session 121/120 and IGmpf2 18(true|false,2)
   as stock), position by IGmpf 141 translationKst(dir, true) then (dir, false); real-time keystone paused with 573;
   IGmpf2 194 while open; 158(0) after a change. Every size step checks that 116's optical position did not move.
@@ -32,7 +32,9 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   sends nothing. The Z9X HAL applies spk_volume only after a path selection, so per HDMI start: spk_volume first,
   then xgimi_audiopath_switch_start=0 and xgimi_audiopath_switch_end=0 (speaker path; never end without a stored
   value, that would be a silent speaker); then every STREAM_MUSIC volume or mute change sends spk_volume again.
-  HDMI ends: spk_volume=100, so Android's own audio plays as before. Proven by hand on a Z9X with 1.0.3 + Google
+  HDMI ends: spk_volume=100, so Android's own audio plays as before. Speaker only: nothing is sent while the media
+  output is ARC / eARC, Bluetooth, wired or USB (AudioPathReporter's confirmed path, else the connected outputs), so
+  a soundbar keeps the 1.0.3 behaviour; a path change while HDMI is shown starts or stops following. Proven by hand on a Z9X with 1.0.3 + Google
   (2026-10-14: spk_volume=50 about half, 30 quieter, live while the PS5 played); the APK itself not on a device yet.
 - **Game speed** (`QuickPanelController.onGameSpeed`): 648 setGameModeOption answered false for a switch it still
   carried out, and 647 follows a moment later (owner: "Не удалось", yet the page showed the new speed when opened
@@ -42,14 +44,11 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   banned), Total Surround / Total Immersion (XGIMI Sound speaker only), manual audio output (XGIMI's own
   AudioSystem.setForceUse configs), boot animation switch (a prop nothing on Lumen reads).
 
-- Manual optical zoom removed from the quick panel (Keystone page), owner 2026-10-14. Test on 1.0.3 with logs
-  (docs/z9x/OPEN_zoom_103.md): every 119 moves the lens about 80 motor steps and the picture changes each time,
-  but XGIMI's position index (116) counts 13 coarse positions and lags 2 or 3 presses; worse, stepping back from
-  the small end, XGIMI's zoom controller reads its reference sensor near motor step 1870, resets its counter
-  to 0 and from then on believes the lens is at the big end while it is at the small one, so further steps
-  push the lens against the end. Not something the app can correct. "Fit to screen now" (same page) moves
-  the zoom with XGIMI's own logic and finds the position itself. OpticalZoomPanel stays only for its connect
-  hook, which closes a zoom session a dead process left open (120 + 18(false,2)).
+- Manual optical zoom back on the Keystone page (owner, 2026-10-14 evening, after using it on a Z9X: "the optical
+  zoom is what I want, it is more effective"; the digital ZoomShiftPanel row is not shown). The known faults stay
+  until the fix: XGIMI's index (116) counts 13 coarse positions over ~2121 motor steps while each 119 moves ~80, so
+  the number changes only every 2 or 3 presses; stepping back from the small end XGIMI's controller resets its
+  counter near motor step 1870 (docs/z9x/OPEN_zoom_103.md); auto keystone brings the zoom back to the big end.
 
 # Z9xProjector, Lumen OS 1.0.3 build (2026-10-13)
 

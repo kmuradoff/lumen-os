@@ -500,21 +500,16 @@ final class QuickPanelController {
         // and says exactly why it refuses (a stale 647 read used to block it silently on Android).
         p.add(new NavRow(app, s(R.string.panel_manual_keystone), safe("manual keystone",
                 () -> openManualKeystone(QuickPanel.SECTION_KEYSTONE))));
-        // Lumen OS 1.0.4: the stock zoom_and_move without the motor (digital size + shift) and picture rotation
-        p.add(new NavRow(app, s(R.string.zs_title), safe("zoom shift", () -> {
-            if (snap != null && snap.isTopSpeedGame()) { Notify.show(app, s(R.string.panel_kst_game_mode)); return; }
-            ZoomShiftPanel.open(app, () -> show(QuickPanel.SECTION_KEYSTONE));     // replaces the quick panel
-        })));
+        // Lumen OS 1.0.2: the zoom lens (OpticalZoomPanel replaces the panel; BACK comes back here). Back in 1.0.4
+        // (owner, 2026-10-14: the optical zoom is what he wants, the digital ZoomShiftPanel is not shown).
+        p.add(new NavRow(app, s(R.string.panel_optical_zoom), safe("optical zoom",
+                () -> OpticalZoomPanel.open(app, () -> show(QuickPanel.SECTION_KEYSTONE)))));
+        p.add(new TextRow(app, s(R.string.panel_optical_zoom_summary)));
+        // Lumen OS 1.0.4: picture rotation (stock RotateWind)
         p.add(new NavRow(app, s(R.string.rot_title), safe("rotation", () -> {
             if (snap != null && snap.isTopSpeedGame()) { Notify.show(app, s(R.string.panel_kst_game_mode)); return; }
             RotatePanel.open(app, () -> show(QuickPanel.SECTION_KEYSTONE));        // replaces the quick panel
         })));
-        // Lumen OS 1.0.4: no manual optical zoom row any more (owner, 2026-10-14). XGIMI's zoom controller loses
-        // the lens position on this firmware: stepping back from the small end, its reference sensor fires near
-        // motor step 1870 and it resets its counter to 0 (log docs/z9x/OPEN_zoom_103.md), after which it drives
-        // the lens against the end. "Fit to the screen now" above uses the zoom with XGIMI's own logic and finds
-        // the lens position itself. OpticalZoomPanel stays for its connect hook (App.onCreate), which closes a
-        // zoom session a dead process left open.
         p.add(new NavRow(app, s(R.string.panel_reset_keystone), safe("reset keystone", () -> {
             if (snap != null && snap.isTopSpeedGame()) { Notify.show(app, s(R.string.panel_kst_game_mode)); return; }
             confirm(R.string.panel_reset_keystone, s(R.string.panel_reset_keystone_msg), R.string.panel_reset,

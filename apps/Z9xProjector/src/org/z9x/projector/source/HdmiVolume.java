@@ -4,11 +4,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.SystemClock;
 import android.util.Log;
 
 import org.z9x.projector.Ui;
+import org.z9x.projector.audio.AudioPathReporter;
 
 /**
  * Lumen OS 1.0.4: the HDMI volume of the Z9X (the remote's volume keys did nothing to an HDMI source in 1.0.3).
@@ -28,7 +30,13 @@ import org.z9x.projector.Ui;
  * the last one); afterwards every music volume or mute change sends spk_volume again (unchanged values are not
  * sent). When HDMI ends ({@link #stop}): the receiver goes and spk_volume=100 is sent, the full DSP level, so
  * Android's own audio, which keeps its software volume in AudioFlinger, plays as before. While HDMI is shown,
- * Android sounds get both attenuations. Speaker only. Log tag Z9xHdmiVol. Main thread only.
+ * Android sounds get both attenuations. Log tag Z9xHdmiVol. Main thread only.
+ *
+ * Speaker only: the path selection is the speaker's, so it is never sent while the media output is another device
+ * (ARC soundbar, Bluetooth, wired, USB: AudioPathReporter's confirmed path, or before its first report the connected
+ * outputs). Such an output keeps the 1.0.3 behaviour (its own volume). A later confirmed path switches this on or
+ * off while HDMI is shown: speaker again = start with a fresh path selection; another device = stop following,
+ * spk_volume back to 100.
  */
 public final class HdmiVolume {
     private static final String TAG = "Z9xHdmiVol";
@@ -42,6 +50,9 @@ public final class HdmiVolume {
     static final long LOG_GAP_MS = 500;
 
     private static BroadcastReceiver sReceiver;
+    /** HDMI is shown (start called, stop not yet): a confirmed speaker path then starts following. */
+    private static boolean sWanted;
+    private static boolean sPathListener;
     private static int sSent = -1;
     private static long sLastLogAt = -LOG_GAP_MS;
     private static int sUnlogged;
@@ -52,6 +63,12 @@ public final class HdmiVolume {
     /** HDMI is shown: follow the music volume, and make the HAL apply it. Idempotent. Main thread. */
     static void start(Context ctx) {
         final Context app = ctx.getApplicationContext();
+        sWanted = true;
+        listenPath(app);
+        if (!speakerOut(app)) {
+            if (sReceiver != null) pause(app, "output is not the speaker");
+            return;
+        }
         boolean first = sReceiver == null;
         if (first) {
             BroadcastReceiver r = new BroadcastReceiver() {
@@ -76,7 +93,12 @@ public final class HdmiVolume {
 
     /** HDMI ended (or is not shown): stop following, spk_volume back to 100. Main thread. */
     static void stop(Context ctx, String why) {
-        Context app = ctx.getApplicationContext();
+        sWanted = false;
+        pause(ctx.getApplicationContext(), why);
+    }
+
+    /** Stop following (receiver off, spk_volume back to 100); HDMI may still be shown. Main thread. */
+    private static void pause(Context app, String why) {
         if (sReceiver != null) {
             try { app.unregisterReceiver(sReceiver); } catch (Throwable t) { Log.w(TAG, "unregister: " + t); }
             sReceiver = null;
@@ -87,6 +109,44 @@ public final class HdmiVolume {
         send(app, NEUTRAL);
         sLastLogAt = SystemClock.uptimeMillis();
         Log.i(TAG, "spk_volume=" + NEUTRAL + " (" + why + ")");
+    }
+
+    /**
+     * The media output is the projector's speaker: AudioPathReporter's confirmed path 0, or (no path confirmed yet)
+     * no ARC / eARC, Bluetooth, wired or USB output connected.
+     */
+    private static boolean speakerOut(Context app) {
+        int p = AudioPathReporter.confirmedPath();
+        if (p >= 0) return p == 0;
+        AudioManager am = app.getSystemService(AudioManager.class);
+        if (am == null) return false;
+        for (AudioDeviceInfo d : am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+            switch (d.getType()) {
+                case AudioDeviceInfo.TYPE_HDMI_ARC: case AudioDeviceInfo.TYPE_HDMI_EARC:
+                case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP: case AudioDeviceInfo.TYPE_BLE_HEADSET:
+                case AudioDeviceInfo.TYPE_BLE_SPEAKER: case AudioDeviceInfo.TYPE_WIRED_HEADSET:
+                case AudioDeviceInfo.TYPE_WIRED_HEADPHONES: case AudioDeviceInfo.TYPE_USB_DEVICE:
+                case AudioDeviceInfo.TYPE_USB_HEADSET: case AudioDeviceInfo.TYPE_LINE_DIGITAL:
+                    return false;
+                default:
+            }
+        }
+        return true;
+    }
+
+    /** Once per process: a confirmed path change while HDMI is shown starts or stops following. */
+    private static void listenPath(Context app) {
+        if (sPathListener) return;
+        sPathListener = true;
+        AudioPathReporter.addPathListener(path -> Ui.main().post(() -> {
+            if (!sWanted) return;
+            try {
+                if (path == 0) start(app);
+                else if (sReceiver != null) pause(app, "output path " + path);
+            } catch (Throwable t) {
+                Log.w(TAG, "path " + path + ": " + t);
+            }
+        }));
     }
 
     /** STREAM_MUSIC scaled to 0..100, 0 while muted; sent when it changed, the path selected when asked. */
