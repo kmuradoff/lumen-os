@@ -15,7 +15,9 @@
 - «Звук»: выравнивание громкости, eARC и выбор вывода звука (автоматически, динамик проектора, HDMI ARC, Bluetooth,
   наушники, USB). Формат звука для ARC: автоматически, PCM или без обработки.
 - «Проектор → Включение»: мелодия при включении и вход, который открывается при включении (HDMI 1 или HDMI 2).
-- «Файлы»: видео, музыка и фото с флешки, со встроенным плеером и просмотром фото.
+- «Файлы»: встроенный файловый менеджер для памяти проектора и флешек. Видео, музыка и фото открываются во
+  встроенном плеере, .apk ставятся прямо отсюда, а если удерживать OK на файле или папке, их можно скопировать или
+  удалить. Отдельные плитки «Установка с USB» и «Больше приложений» убраны.
 - Руководство пользователя ([docs/guide](docs/guide/ru.md)) и QR-код на него в настройках проектора.
 
 Исправления:
@@ -137,7 +139,9 @@ Brought over from XGIMI's stock firmware, what Lumen did not have:
 - "Sound": volume leveling, eARC and the sound output choice (auto, projector speaker, HDMI ARC, Bluetooth,
   headphones, USB). Audio format for ARC: auto, PCM or passthrough.
 - "Projector > Power on": power-on sound and the input to open at power-on (HDMI 1 or HDMI 2).
-- "Files": videos, music and photos from a USB stick, with a built-in player and photo viewer.
+- "Files": a built-in file manager for the projector's storage and USB sticks. Videos, music and photos open in
+  the built-in player, .apk files install from here, and holding OK on a file or folder copies or deletes it. The
+  separate "Install from USB" and "Get more apps" tiles are gone.
 - A user guide ([docs/guide](docs/guide/en.md)) and a QR code to it in the projector settings.
 
 Fixes:
