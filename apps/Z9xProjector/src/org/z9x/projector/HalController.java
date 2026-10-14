@@ -559,6 +559,14 @@ final class HalController {
             while (events.size() > MAX_EVENTS) events.removeFirst();
         }
         boolean handled = false;
+        // optical zoom: every AK runs XGIMI's zoomReset (106 = AK start, 303 = its walk back failed), and the
+        // AK report (116) says whether it was a screen fit (logs/z9x_zoom_103/live_full3.txt)
+        try {
+            if (type == 106 || type == 303) org.z9x.projector.panel.OpticalZoomPanel.onVendorZoomReset(app, type);
+            else if (type == 116) org.z9x.projector.panel.OpticalZoomPanel.onAkReport(app, value);
+        } catch (Throwable t) {
+            Log.w(TAG, "zoom hook " + type + ": " + t);
+        }
         if (isAkEvent(type)) {
             try {
                 handled = AkOverlay.onFocusEvent(type, value);
