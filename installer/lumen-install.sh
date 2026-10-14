@@ -82,7 +82,10 @@ BOARD=mt9952
 FB_PRODUCT=mt5877
 # v6.15.19 (2025-10-14): same kernel, modules, projector HAL (gmpf) and PM51 firmware as v6.15.58;
 # only hwcomposer, libwhitebalance and XGIMI apps differ (z9x-firmware-dump/v61519, 2026-10-08).
-VENDOR_OK="v6.15.58 v6.15.19"
+# v6.15.62 (2026-03-25, the current firmware of the Z9X 4K flagship variant): same kernel, gmpf, HALs, init,
+# SELinux, VINTF, blobs and PM51 firmware as v6.15.58; libxgimi.so the same size, only rebuilt files differ
+# (compatibility check of a 4PDA user's dumps, 2026-10-13 / 14).
+VENDOR_OK="v6.15.58 v6.15.62 v6.15.19"
 GUIDE_EN="https://github.com/kmuradoff/lumen-os/blob/main/docs/install/en.md"
 GUIDE_RU="https://github.com/kmuradoff/lumen-os/blob/main/docs/install/ru.md"
 GOOGLE_GSI="https://source.android.com/docs/core/tests/vts/gsi#flashing-gsis"
@@ -334,7 +337,7 @@ check_device() {
     || die "$(t "this is not an XGIMI Z9X (model '$code', board '$board'). Nothing was done." "это не XGIMI Z9X (код модели '$code', плата '$board'). Ничего не сделано.")$(other_hint "$code" "$board")"
   case " $VENDOR_OK " in
     *" $vend "*) ;;
-    *) die "$(t "XGIMI firmware $vend is not supported (V6.15.58 or V6.15.19 only). Let the stock system update itself to V6.15.58 (Settings, Wi-Fi), then run the installer again." "прошивка XGIMI $vend не поддерживается (только V6.15.58 или V6.15.19). Дайте стоку обновиться до V6.15.58 (настройки, Wi-Fi) и запустите установщик снова.")" ;;
+    *) die "$(t "XGIMI firmware $vend is not supported (V6.15.58, V6.15.62 or V6.15.19 only). If it is older, let the stock system update itself (Settings, Wi-Fi), then run the installer again. If it is newer, Lumen OS does not support it yet. Nothing was written." "прошивка XGIMI $vend не поддерживается (только V6.15.58, V6.15.62 или V6.15.19). Если она старее, дайте стоку обновиться (настройки, Wi-Fi) и запустите установщик снова. Если новее, Lumen OS её пока не поддерживает. Ничего не записано.")" ;;
   esac
   state_set serial "$SERIAL"; state_set slot "$slot"
   if [ -n "$sys" ]; then local g; g=$(prop ro.z9x.gms); state_set dev_gms "${g:-1}"; else state_set dev_gms stock; fi

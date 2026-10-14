@@ -271,7 +271,7 @@ def main():
         "schema": 1, "device": "z9x", "channel": a.channel, "published_utc": int(time.time()),
         "version": a.version, "version_code": a.version_code, "build_utc": a.build_utc,
         "build_id": a.build_id,
-        "requires": {"vendor_incremental": a.vendor or ["v6.15.58", "v6.15.19"], "min_version_code": a.min_version_code,
+        "requires": {"vendor_incremental": a.vendor or ["v6.15.58", "v6.15.62", "v6.15.19"], "min_version_code": a.min_version_code,
                      "blobs_set": a.blobs_set},
         "changelog": ch, "packages": pk,
     }

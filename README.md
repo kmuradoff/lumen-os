@@ -14,7 +14,7 @@ Android TV 14 for XGIMI projectors, built on LineageOS 21.
 Each projector has its own release files, signed with its own key. The installer refuses an image for
 another projector and any XGIMI firmware it does not know.
 
-- XGIMI Z9X (model code G0082): XGIMI firmware V6.15.58 or V6.15.19. Updates come over Wi-Fi.
+- XGIMI Z9X (model code G0082): XGIMI firmware V6.15.58, V6.15.62 or V6.15.19. Updates come over Wi-Fi.
 - XGIMI Play 6 (model code G0058): XGIMI firmware V1.7.116, no other version. This is a beta: install it
   if you are ready to test and report back. A new version goes on with the installer over the USB cable
   and keeps your data. Updates over Wi-Fi come later.

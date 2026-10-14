@@ -1,7 +1,7 @@
 == exit 1
 == output
 12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
-12:00:00 STOP: XGIMI firmware v6.15.30 is not supported (V6.15.58 or V6.15.19 only). Let the stock system update itself to V6.15.58 (Settings, Wi-Fi), then run the installer again.
+12:00:00 STOP: XGIMI firmware v6.15.30 is not supported (V6.15.58, V6.15.62 or V6.15.19 only). If it is older, let the stock system update itself (Settings, Wi-Fi), then run the installer again. If it is newer, Lumen OS does not support it yet. Nothing was written.
 == adb
 version
 devices

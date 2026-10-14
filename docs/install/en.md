@@ -7,7 +7,7 @@
 > installs differently (over Wi-Fi, with a cable only for the write) and needs its own release files.
 
 This guide covers Lumen OS 1.0.3 without Google on the XGIMI Z9X (model code G0082) with XGIMI
-firmware V6.15.58 or V6.15.19. Lumen OS is Android TV 14, built on LineageOS 21. It replaces only the
+firmware V6.15.58, V6.15.62 or V6.15.19. Lumen OS is Android TV 14, built on LineageOS 21. It replaces only the
 system partition. The XGIMI firmware and calibration are not touched, and focus, keystone and the lamp
 work as on stock.
 
@@ -36,7 +36,7 @@ screensaver all work. You can add Google services yourself, see [Adding Google s
 
 ## What you need
 
-- A Z9X on XGIMI firmware V6.15.58 or V6.15.19.
+- A Z9X on XGIMI firmware V6.15.58, V6.15.62 or V6.15.19.
 - Everything works on stock: picture, autofocus, sound, HDMI. If something is already broken, sort that
   out first, or later you will not know what caused it.
 - A computer with macOS or Linux. There is a Windows 10/11 installer, but it has not been tested yet.
@@ -56,8 +56,8 @@ fastboot, install the [Google USB Driver](https://developer.android.com/studio/r
 
 ## 1. Prepare the projector (10 min)
 
-1. On stock, open Settings > About and look at the firmware version. You need V6.15.58 or V6.15.19.
-   If yours is older, connect Wi-Fi and let stock update itself to V6.15.58. If it is newer, Lumen OS
+1. On stock, open Settings > About and look at the firmware version. You need V6.15.58, V6.15.62 or
+   V6.15.19. If yours is older, connect Wi-Fi and let stock update itself. If it is newer, Lumen OS
    cannot be installed yet: the installer refuses that firmware.
 2. Turn Wi-Fi off and keep it off until the install is done. Stock installs XGIMI updates into the other
    slot on its own, and the installer only knows the two versions above.
@@ -370,7 +370,7 @@ downloaded, Lumen Home shows an "Update ready" badge.
 |---|---|---|
 | check | "exactly one projector must be connected over adb, found 0" | Is USB debugging on, was the projector restarted after that, is the cable in the USB 2.0 port, did you allow the prompt on screen? Nothing was written. |
 | check | "this is not an XGIMI Z9X" | The installer works only with the Z9X (G0082). Nothing was written. |
-| check | "XGIMI firmware … is not supported" | Let stock update to V6.15.58 over Wi-Fi, then run `check` again. Nothing was written. |
+| check | "XGIMI firmware … is not supported" | An older firmware: let stock update itself over Wi-Fi, then run `check` again. A newer one is not supported yet. Nothing was written. |
 | check | "the running slot … still verifies the system partition" | The vbmeta step did not work. Repeat [step 3](#vbmeta). Nothing was written. |
 | check | "checksum mismatch" or "SHA256SUMS is not signed by Lumen OS" | Download the release files again, from GitHub only. Do not install that image. |
 | check | "no SHA256SUMS" or "no SHA256SUMS.sig" | Put both files from the same release next to the image. |
