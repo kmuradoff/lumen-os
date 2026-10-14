@@ -30,4 +30,16 @@
     <string name="rot_refused">Проєктор не повернув картинку</string>
     <string name="guide_title">Посібник користувача</string>
     <string name="guide_scan">Наведіть камеру телефона на код, щоб відкрити посібник:</string>
+    <string name="sound_output">Виведення звуку</string>
+    <string name="sound_output_auto">Автоматично</string>
+    <string name="sound_output_speaker">Динамік проєктора</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Навушники</string>
+    <string name="sound_output_usb">USB-аудіо</string>
+    <string name="sound_format">Формат звуку</string>
+    <string name="sound_format_auto">Автоматично</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">Без обробки</string>
 </resources>

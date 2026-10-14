@@ -113,11 +113,15 @@ public final class HdmiVolume {
 
     /**
      * The media output is the projector's speaker: AudioPathReporter's confirmed path 0, or (no path confirmed yet)
-     * no ARC / eARC, Bluetooth, wired or USB output connected.
+     * the user chose Speaker, or no ARC / eARC, Bluetooth, wired or USB output connected. 1.0.4: Spdif
+     * (TYPE_LINE_DIGITAL) no longer counts: it is an attached port of the Z9X policy, always listed, and the Z9X has no
+     * optical jack, so it made this fallback answer "not the speaker" on every boot.
      */
     private static boolean speakerOut(Context app) {
         int p = AudioPathReporter.confirmedPath();
         if (p >= 0) return p == 0;
+        if (org.z9x.projector.audio.AudioOutputChoice.kind(app)
+                == org.z9x.projector.audio.AudioOutputChoice.Kind.SPEAKER) return true;
         AudioManager am = app.getSystemService(AudioManager.class);
         if (am == null) return false;
         for (AudioDeviceInfo d : am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
@@ -126,7 +130,7 @@ public final class HdmiVolume {
                 case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP: case AudioDeviceInfo.TYPE_BLE_HEADSET:
                 case AudioDeviceInfo.TYPE_BLE_SPEAKER: case AudioDeviceInfo.TYPE_WIRED_HEADSET:
                 case AudioDeviceInfo.TYPE_WIRED_HEADPHONES: case AudioDeviceInfo.TYPE_USB_DEVICE:
-                case AudioDeviceInfo.TYPE_USB_HEADSET: case AudioDeviceInfo.TYPE_LINE_DIGITAL:
+                case AudioDeviceInfo.TYPE_USB_HEADSET:
                     return false;
                 default:
             }

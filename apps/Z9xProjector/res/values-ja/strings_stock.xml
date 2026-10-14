@@ -30,4 +30,16 @@
     <string name="rot_refused">プロジェクターが画面を回転しませんでした</string>
     <string name="guide_title">ユーザーガイド</string>
     <string name="guide_scan">スマートフォンでコードを読み取ってガイドを開いてください:</string>
+    <string name="sound_output">音声出力</string>
+    <string name="sound_output_auto">自動</string>
+    <string name="sound_output_speaker">プロジェクターのスピーカー</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">ヘッドホン</string>
+    <string name="sound_output_usb">USB オーディオ</string>
+    <string name="sound_format">音声フォーマット</string>
+    <string name="sound_format_auto">自動</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">パススルー</string>
 </resources>

@@ -62,6 +62,11 @@ public final class BootReceiver extends BroadcastReceiver {
             Log.e("Z9xProjector", "BootReceiver audio path", t);
         }
         try {
+            org.z9x.projector.audio.AudioOutputChoice.onBootCompleted(ctx);
+        } catch (Throwable t) {
+            Log.e("Z9xProjector", "BootReceiver audio output", t);
+        }
+        try {
             org.z9x.projector.audio.SoundEq.onBootCompleted(ctx);    // v6.4 equalizer after the vendor restore
         } catch (Throwable t) {
             Log.e("Z9xProjector", "BootReceiver equalizer", t);

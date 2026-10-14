@@ -30,4 +30,16 @@
     <string name="rot_refused">لم يدوّر جهاز العرض الصورة</string>
     <string name="guide_title">دليل المستخدم</string>
     <string name="guide_scan">امسح الرمز بهاتفك لفتح الدليل:</string>
+    <string name="sound_output">إخراج الصوت</string>
+    <string name="sound_output_auto">تلقائي</string>
+    <string name="sound_output_speaker">سماعة جهاز العرض</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">سماعات الرأس</string>
+    <string name="sound_output_usb">صوت USB</string>
+    <string name="sound_format">تنسيق الصوت</string>
+    <string name="sound_format_auto">تلقائي</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">تمرير مباشر</string>
 </resources>

@@ -30,4 +30,16 @@
     <string name="rot_refused">Le projecteur n’a pas fait pivoter l’image</string>
     <string name="guide_title">Guide d’utilisation</string>
     <string name="guide_scan">Scannez le code avec un téléphone pour ouvrir le guide :</string>
+    <string name="sound_output">Sortie audio</string>
+    <string name="sound_output_auto">Automatique</string>
+    <string name="sound_output_speaker">Haut-parleur du projecteur</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Casque</string>
+    <string name="sound_output_usb">Audio USB</string>
+    <string name="sound_format">Format audio</string>
+    <string name="sound_format_auto">Automatique</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">Passthrough</string>
 </resources>

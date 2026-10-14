@@ -168,6 +168,9 @@ final class QuickPanelController {
     private HeaderRow hdmiHeader;
     private ChoiceRow hdmiRange, hdmiMode;
     private ToggleRow volumeLevel, earc;
+    // 1.0.4: manual sound output and the digital audio format (stock voice_output / voice_arc_format_auto_sound_v5)
+    private ChoiceRow soundOut, digitalFormat;
+    private java.util.List<org.z9x.projector.audio.AudioOutputChoice.Option> outOptions;
     /** The "Enhanced" EDID value this projector uses (1 = HDMI 2.0, or 3 once 661 has read 3). */
     private static final String KEY_EDID_ENHANCED = "edid_enhanced";
 
@@ -717,6 +720,31 @@ final class QuickPanelController {
                 change("633 eARC " + w, (g, g2) -> {
                     if (!g.setEarc(w)) throw new IllegalStateException("633 returned false");
                 })).run()));
+        // 1.0.4: manual sound output (stock Sound > Sound output). Only connected outputs are listed; the choice is a
+        // preferred device of the media strategy, so AudioPathReporter moves the vendor path (HDMI input sound) too.
+        soundOut = p.add(new ChoiceRow(app, s(R.string.sound_output),
+                labels(app, R.string.sound_output_auto, R.string.sound_output_speaker),
+                (row, i) -> safe("sound output", () -> {
+                    java.util.List<org.z9x.projector.audio.AudioOutputChoice.Option> o = outOptions;
+                    if (o == null || i < 0 || i >= o.size()) { refresh(); return; }
+                    org.z9x.projector.audio.AudioOutputChoice.Option opt = o.get(i);
+                    org.z9x.projector.audio.AudioOutputChoice.choose(app, opt.kind, opt.addr);
+                    Notify.show(app, row.getTitle(), opt.label);
+                }).run()));
+        soundOut.setCommitDelay(CHOICE_COMMIT_MS);
+        // stock "Audio output format" (digital_output_format): only while an ARC / eARC output is connected
+        final CharSequence[] fmtLabels = labels(app, R.string.sound_format_auto, R.string.sound_format_pcm,
+                R.string.sound_format_passthrough);
+        digitalFormat = p.add(new ChoiceRow(app, s(R.string.sound_format), fmtLabels,
+                (row, i) -> safe("digital format", () -> {
+                    org.z9x.projector.audio.AudioOutputChoice.Format[] f =
+                            org.z9x.projector.audio.AudioOutputChoice.Format.values();
+                    if (i < 0 || i >= f.length) { refresh(); return; }
+                    org.z9x.projector.audio.AudioOutputChoice.chooseFormat(app, f[i]);
+                    Notify.show(app, row.getTitle(), fmtLabels[i]);
+                }).run()));
+        digitalFormat.setCommitDelay(CHOICE_COMMIT_MS);
+        digitalFormat.setVisibility(View.GONE);
     }
 
     // ================================================================== equalizer page (v6.4, not in stock)
@@ -1516,6 +1544,15 @@ final class QuickPanelController {
         volumeLevel.setVisibility(ok && sn.volumeBalance != null ? View.VISIBLE : View.GONE);
         earc.setChecked(ok ? sn.earc : null);
         earc.setVisibility(ok && sn.earc != null ? View.VISIBLE : View.GONE);
+        // 1.0.4: sound output rows from AudioManager (no HAL read); Auto and Speaker always exist
+        outOptions = org.z9x.projector.audio.AudioOutputChoice.options(app);
+        CharSequence[] ol = new CharSequence[outOptions.size()];
+        for (int i = 0; i < ol.length; i++) ol[i] = outOptions.get(i).label;
+        soundOut.setOptions(ol);
+        soundOut.setSelected(org.z9x.projector.audio.AudioOutputChoice.selectedIndex(app, outOptions));
+        boolean arcOut = org.z9x.projector.audio.AudioOutputChoice.arcConnected(app);
+        digitalFormat.setSelected(arcOut ? org.z9x.projector.audio.AudioOutputChoice.formatIndex(app) : -1);
+        digitalFormat.setVisibility(arcOut ? View.VISIBLE : View.GONE);
 
         // ---- tile values (top level): the same read-back, one short line each
         tileValue(QuickPanel.SECTION_LAMP, !ok ? null : boostOn ? s(R.string.panel_boost)

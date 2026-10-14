@@ -30,4 +30,16 @@
     <string name="rot_refused">投影仪未旋转画面</string>
     <string name="guide_title">使用指南</string>
     <string name="guide_scan">用手机扫描二维码打开使用指南：</string>
+    <string name="sound_output">声音输出</string>
+    <string name="sound_output_auto">自动</string>
+    <string name="sound_output_speaker">投影仪扬声器</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">蓝牙</string>
+    <string name="sound_output_wired">耳机</string>
+    <string name="sound_output_usb">USB 音频</string>
+    <string name="sound_format">音频格式</string>
+    <string name="sound_format_auto">自动</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">直通</string>
 </resources>

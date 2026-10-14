@@ -30,4 +30,16 @@
     <string name="rot_refused">Il proiettore non ha ruotato l’immagine</string>
     <string name="guide_title">Guida per l’utente</string>
     <string name="guide_scan">Inquadra il codice con un telefono per aprire la guida:</string>
+    <string name="sound_output">Uscita audio</string>
+    <string name="sound_output_auto">Automatica</string>
+    <string name="sound_output_speaker">Altoparlante del proiettore</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Cuffie</string>
+    <string name="sound_output_usb">Audio USB</string>
+    <string name="sound_format">Formato audio</string>
+    <string name="sound_format_auto">Automatico</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">Passthrough</string>
 </resources>
