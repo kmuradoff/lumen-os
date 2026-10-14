@@ -14,6 +14,8 @@
 !keys/public/**/*.pem
 !tools/sign/testcerts/*.x509.pem
 !installer/certs/ota.x509.pem
+# the Play 6 OTA certificate (public; the installer checks the Play 6 SHA256SUMS.sig with it)
+!installer/certs/play6/ota.x509.pem
 !apps/sdk/testkeys/platform.x509.pem
 # the PUBLIC AOSP platform test key (dev builds); check_publish.py lets it through only because its
 # public key is the published AOSP one, never by path
