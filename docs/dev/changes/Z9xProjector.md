@@ -36,10 +36,12 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   output is ARC / eARC, Bluetooth, wired or USB (AudioPathReporter's confirmed path, else the connected outputs), so
   a soundbar keeps the 1.0.3 behaviour; a path change while HDMI is shown starts or stops following. Proven by hand on a Z9X with 1.0.3 + Google
   (2026-10-14: spk_volume=50 about half, 30 quieter, live while the PS5 played); the APK itself not on a device yet.
-- **Game speed** (`QuickPanelController.onGameSpeed`): 648 setGameModeOption answered false for a switch it still
-  carried out, and 647 follows a moment later (owner: "Не удалось", yet the page showed the new speed when opened
-  again; for top speed the 207 guard read the old 647 and refused). Now 648, then 647 polled every 100 ms for up to
-  2 s until it reads the wanted option; only that read decides, and 207 correctKeystoneReset follows only then.
+- **Game speed** (`QuickPanelController.onGameSpeed`): 648 setGameModeOption stores the option at once (true,
+  m_eGameOption and its DB updated) but 647 reads the old option until the picture mode is applied again, ~4.3 s
+  later (owner's log 2026-10-15 02:32:57, "GameOpt=0->1"); the first 1.0.4 fix polled 647 for 2 s and still said
+  "Не удалось". Now 648 true = done, false = done only if 647 reads the option within 6 s; the row shows the chosen
+  speed until 647 agrees (10 s at most); top speed's 207 correctKeystoneReset waits for 647, re-polled every 300 ms
+  on the HAL thread. AkOverlay no longer warns about XGIMI's AK report (event 116, read by OpticalZoomPanel).
 - **Bluetooth headphones** (`audio/BtDspVolume`, new; NOT device-tested): the Z9X HAL plays A2DP itself
   (hw_get_module_by_class("audio", "bluetooth") = vendor audio.bluetooth.default.so, AIDL provider V3) and keeps a
   per-device A2DP volume table that starts at 0; only stock's patched AudioService filled it

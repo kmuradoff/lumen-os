@@ -1230,10 +1230,12 @@ final class QuickPanelController {
 
     /**
      * 648 setGameModeOption; top speed also 207 correctKeystoneReset(0) as stock switchGameModeSpeed.
-     * Lumen OS 1.0.4: the read-back decides, not 648's answer. The vendor answered false for a switch it still
-     * carried out, and 647 follows a moment later (owner, 2026-10-14: "Could not do that", yet the page showed
-     * the new speed when opened again; for top speed the 207 guard read the old 647 and refused). So: 648, then
-     * 647 until it reads the wanted option (at most {@link #GAME_OPTION_WAIT_MS}), then 207 for top speed.
+     * Lumen OS 1.0.4, from the owner's log (2026-10-15 02:32:57): the vendor stores the option at once (648 -> true,
+     * m_eGameOption and its DB updated), but 647 keeps reading the old option until the picture mode is applied again,
+     * ~4.3 s later ("GameOpt=0->1"); 1.0.3 also saw 648 answer false for a switch it carried out. So: 648 true =
+     * done; false = done only if 647 reads the option within GAME_OPTION_WAIT_MS. The row keeps showing the chosen
+     * speed until 647 agrees (pendingSpeed). Top speed: 207 waits, re-polled on the HAL thread without blocking it,
+     * until 647 reads it, because 207's guard reads 647.
      */
     private void onGameSpeed(int i) {
         if (snap == null || snap.gameOption == null || i < 0 || i >= SPEED_ORDER.length) { refresh(); return; }
@@ -1241,17 +1243,24 @@ final class QuickPanelController {
         change("648 game option " + o, (g, g2) -> {
             if (!hdmiNow(g, "648")) return;                  // 207 below would reset the normal picture
             boolean r = g.setGameModeOption(o);
-            GmpfClient.GameModeOption now = waitGameOption(g, o);
+            GmpfClient.GameModeOption now = g.getGameModeOption();
             Log.i(TAG, "648(" + o + ") -> " + r + ", 647 reads " + now);
-            if (now != o) throw new IllegalStateException("648 -> " + r + ", 647 reads " + now);
-            if (o.isTopSpeed()) {
-                g.resetKeystoneForTopSpeedGame();
-                Notify.show(app, s(R.string.panel_speed_top_note));
+            if (!r && now != o) {
+                now = waitGameOption(g, o);
+                Log.i(TAG, "648 false: 647 reads " + now + " after the wait");
+                if (now != o) throw new IllegalStateException("648 -> false, 647 reads " + now);
             }
+            pendingSpeed = o;
+            pendingSpeedUntil = SystemClock.uptimeMillis() + PENDING_SPEED_MS;
+            if (o.isTopSpeed()) topSpeedKeystone(o, SystemClock.uptimeMillis() + PENDING_SPEED_MS);
         });
     }
 
-    private static final long GAME_OPTION_WAIT_MS = 2_000, GAME_OPTION_POLL_MS = 100;
+    private static final long GAME_OPTION_WAIT_MS = 6_000, GAME_OPTION_POLL_MS = 100;
+    /** 647 follows 648 after the picture is applied again (~4.3 s seen); the row shows the choice meanwhile. */
+    private static final long PENDING_SPEED_MS = 10_000;
+    private volatile GmpfClient.GameModeOption pendingSpeed;
+    private volatile long pendingSpeedUntil;
 
     /** HAL thread: 647 until it reads {@code want}, at most GAME_OPTION_WAIT_MS; the last value read (null = failed). */
     private static GmpfClient.GameModeOption waitGameOption(GmpfClient g, GmpfClient.GameModeOption want) {
@@ -1262,6 +1271,22 @@ final class QuickPanelController {
             if (now == want || SystemClock.uptimeMillis() >= end) return now;
             SystemClock.sleep(GAME_OPTION_POLL_MS);
         }
+    }
+
+    /** 207 for top speed once 647 reads it (re-polled every 300 ms on the HAL thread, never blocking it). */
+    private void topSpeedKeystone(GmpfClient.GameModeOption o, long deadline) {
+        Hal.runDelayed((g, g2) -> {
+            GmpfClient.GameModeOption now = g.getGameModeOption();
+            if (now == o) {
+                g.resetKeystoneForTopSpeedGame();
+                Log.i(TAG, "207 after 647 reads " + o);
+                Ui.main().post(() -> Notify.show(app, s(R.string.panel_speed_top_note)));
+            } else if (SystemClock.uptimeMillis() < deadline) {
+                topSpeedKeystone(o, deadline);
+            } else {
+                Log.w(TAG, "207 skipped: 647 still reads " + now + " instead of " + o);
+            }
+        }, 300);
     }
 
     // ================================================================== eye protection
@@ -1452,7 +1477,11 @@ final class QuickPanelController {
         gameMode.setRowEnabled(hdmi && sn.boost != null);
         int sp = -1;
         if (ok && sn.gameOption != null) {
-            for (int i = 0; i < SPEED_ORDER.length; i++) if (SPEED_ORDER[i].wire == sn.gameOption) sp = i;
+            GmpfClient.GameModeOption pend = pendingSpeed;
+            int shown = sn.gameOption;
+            if (pend != null && shown != pend.wire && SystemClock.uptimeMillis() < pendingSpeedUntil) shown = pend.wire;
+            else pendingSpeed = null;                        // 647 agrees (or the wait is over)
+            for (int i = 0; i < SPEED_ORDER.length; i++) if (SPEED_ORDER[i].wire == shown) sp = i;
         }
         setChoice(gameSpeed, sp, ok && sn.gameOption != null, hdmi);
         setChoice(allm, ok && sn.allm != null ? (sn.allm ? 0 : 1) : -1, ok && sn.allm != null, hdmi);
