@@ -17,11 +17,12 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * The files of the USB sticks for Files (Lumen OS 1.0.4, in place of XGIMI's file manager): the mounted,
- * removable volumes (as UsbApks), and per folder its sub-folders and the files Lumen can open: video and
- * music (another app or the built-in player), photos (the built-in viewer) and apps (Install from USB).
- * Other files and hidden ones (".", macOS "._") are not listed. Read through MANAGE_EXTERNAL_STORAGE, granted
- * to the platform-signed Lumen Home by signature.
+ * The files of Files (Lumen OS 1.0.4, in place of XGIMI's file manager): the projector's own storage
+ * (/storage/emulated/0) and the mounted, removable volumes (as UsbApks); per folder its sub-folders and every
+ * file: video and music (another app or the built-in player), photos (the built-in viewer), apps (installed
+ * one by one) and other files (any app that opens the type). Hidden ones (".", macOS "._", "$...") are not
+ * listed. Copy and delete for the long OK menu. Read and written through MANAGE_EXTERNAL_STORAGE, granted to
+ * the platform-signed Lumen Home by signature.
  */
 public final class UsbFiles {
     public static final int DIR = 0, VIDEO = 1, AUDIO = 2, IMAGE = 3, APK = 4, OTHER = 5;
@@ -61,10 +62,11 @@ public final class UsbFiles {
 
     private UsbFiles() {}
 
-    /** A mounted USB stick. */
+    /** A place: a mounted USB stick, or the projector's own storage ({@code internal}). */
     public static final class Stick {
         public File root;
         public String label = "";
+        public boolean internal;
     }
 
     /** One row of a folder. */
@@ -95,6 +97,21 @@ public final class UsbFiles {
             s.label = d == null || d.isEmpty() ? root.getName() : d;
             out.add(s);
         }
+        return out;
+    }
+
+    /** The projector's storage first, then the sticks. Worker thread. */
+    public static List<Stick> places(Context c, String internalLabel) {
+        List<Stick> out = new ArrayList<>();
+        File in = Environment.getExternalStorageDirectory();
+        if (in != null && in.isDirectory()) {
+            Stick s = new Stick();
+            s.root = in;
+            s.label = internalLabel;
+            s.internal = true;
+            out.add(s);
+        }
+        out.addAll(sticks(c));
         return out;
     }
 
@@ -133,7 +150,6 @@ public final class UsbFiles {
             String n = f.getName();
             if (n.startsWith(".") || n.startsWith("$") || "System Volume Information".equals(n)) continue;
             int t = type(f);
-            if (t == OTHER) continue;
             Entry e = new Entry();
             e.file = f;
             e.type = t;
@@ -171,6 +187,90 @@ public final class UsbFiles {
         } catch (IOException ignored) {
         }
         return false;
+    }
+
+    /** True when {@code f} lies on a stick or in the projector's own storage (canonical paths). */
+    public static boolean inPlaces(Context c, File f) {
+        if (onStick(c, f)) return true;
+        try {
+            File in = Environment.getExternalStorageDirectory();
+            if (in == null) return false;
+            String p = f.getCanonicalPath(), r = in.getCanonicalPath();
+            return p.equals(r) || p.startsWith(r + "/");
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /** Progress of a copy: bytes done of total. */
+    public interface Progress { void on(long done, long total); }
+
+    /** Bytes of a file or a whole folder. Worker thread. */
+    public static long bytes(File f) {
+        if (!f.isDirectory()) return f.length();
+        long n = 0;
+        File[] l = f.listFiles();
+        if (l != null) for (File x : l) n += bytes(x);
+        return n;
+    }
+
+    /** A free name in {@code dir}: "name", else "name (2).ext", "name (3).ext" ... */
+    public static File freeName(File dir, String name) {
+        File t = new File(dir, name);
+        if (!t.exists()) return t;
+        int dot = name.lastIndexOf('.');
+        String base = dot > 0 ? name.substring(0, dot) : name, ext = dot > 0 ? name.substring(dot) : "";
+        for (int i = 2; ; i++) {
+            t = new File(dir, base + " (" + i + ")" + ext);
+            if (!t.exists()) return t;
+        }
+    }
+
+    /**
+     * Copies a file or a folder into {@code dir} under a free name. Worker thread. A failed copy removes what
+     * it wrote. Returns the new file.
+     */
+    public static File copy(File src, File dir, Progress p) throws IOException {
+        File dst = freeName(dir, src.getName());
+        long total = Math.max(1, bytes(src));
+        long[] done = {0};
+        try {
+            copyInto(src, dst, total, done, p);
+        } catch (IOException | RuntimeException e) {
+            delete(dst);
+            throw e;
+        }
+        return dst;
+    }
+
+    private static void copyInto(File src, File dst, long total, long[] done, Progress p) throws IOException {
+        if (Thread.currentThread().isInterrupted()) throw new IOException("cancelled");
+        if (src.isDirectory()) {
+            if (!dst.mkdirs() && !dst.isDirectory()) throw new IOException("cannot create " + dst.getName());
+            File[] l = src.listFiles();
+            if (l != null) for (File x : l) copyInto(x, new File(dst, x.getName()), total, done, p);
+            return;
+        }
+        byte[] buf = new byte[1 << 16];
+        try (java.io.InputStream in = new java.io.FileInputStream(src);
+             java.io.FileOutputStream out = new java.io.FileOutputStream(dst)) {
+            for (int n; (n = in.read(buf)) > 0; ) {
+                out.write(buf, 0, n);
+                done[0] += n;
+                if (p != null) p.on(done[0], total);
+                if (Thread.currentThread().isInterrupted()) throw new IOException("cancelled");
+            }
+            out.getFD().sync();
+        }
+    }
+
+    /** Deletes a file or a whole folder. Worker thread. True when nothing is left. */
+    public static boolean delete(File f) {
+        if (f.isDirectory()) {
+            File[] l = f.listFiles();
+            if (l != null) for (File x : l) delete(x);
+        }
+        return f.delete() || !f.exists();
     }
 
     /** 1.2 GB / 734 MB / 88 KB, decimal units like Android's own Files. */

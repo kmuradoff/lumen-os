@@ -95,6 +95,31 @@ public class ContextPanel extends ViewGroup {
         show(p, 0);
     }
 
+    /** The focused item of the current page, or null (Files: the long OK menu). */
+    public ListPanel.Item focusedItem() {
+        int f = mPanel.focus();
+        List<ListPanel.Item> l = mPanel.items();
+        return f >= 0 && f < l.size() ? l.get(f) : null;
+    }
+
+    /** Redraws one item of the current page after its text changed (nothing if it is not shown). */
+    public void refresh(ListPanel.Item it) {
+        mPanel.refresh(it);
+    }
+
+    /** Pages on the stack (1 = only the first page). */
+    public int depth() {
+        return mStack.size();
+    }
+
+    /** Drops the top page like BACK, never closing the panel. */
+    public void pop() {
+        if (mStack.size() <= 1) return;
+        mStack.remove(mStack.size() - 1);
+        Page p = mStack.get(mStack.size() - 1);
+        show(p, p.focus);
+    }
+
     /** Replaces the items of the current page (e.g. after a toggle). */
     public void replace(List<ListPanel.Item> items) {
         if (mStack.isEmpty()) return;

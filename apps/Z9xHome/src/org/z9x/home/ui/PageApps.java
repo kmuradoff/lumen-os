@@ -97,21 +97,9 @@ public class PageApps extends ViewGroup implements Page {
         mFavCards.clear();
         mFavCards.addAll(m.favorites);
         ArrayList<Card> all = new ArrayList<>(m.apps);
-        if (InputSource.installed(getContext(), AppSource.PKG_PLAY)) {
-            Card more = new Card(Card.MORE_APPS, "more_apps", getContext().getString(R.string.apps_get_more));
-            more.pkg = AppSource.PKG_PLAY;
-            all.add(more);
-        }
-        // 1.0.1: Install from USB, in every edition (the only store-free way on Lumen OS without Google)
-        Card usb = new Card(Card.MORE_APPS, "install_usb", getContext().getString(R.string.apps_install_usb));
-        usb.intent = "usb";
-        usb.icon = R.drawable.ic_usb;
-        all.add(usb);
-        // 1.0.4: Files (the USB sticks' videos, music and photos, in place of XGIMI's file manager)
-        Card files = new Card(Card.MORE_APPS, "files", getContext().getString(R.string.files_title));
-        files.intent = "files";
-        files.icon = R.drawable.ic_folder;
-        all.add(files);
+        // 1.0.4 (owner): no "Get more apps" (it only opened Google Play, which is in the list anyway) and no
+        // separate "Install from USB" / "Files" tiles: Files is one entry of the list (its launcher alias) and
+        // installs .apk files itself
         sync(mFav, mFavCards);
         sync(mAll, all);
         mFavTitle.setVisibility(mFav.isEmpty() ? GONE : VISIBLE);

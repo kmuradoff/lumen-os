@@ -16,8 +16,9 @@ import java.util.List;
 /**
  * Read-only access for the app that plays a file of Files (Lumen OS 1.0.4): content://org.z9x.home.usbfiles/
  * f/<path of the file>. Not exported: the player gets a one-off read grant with the VIEW intent
- * (FLAG_GRANT_READ_URI_PERMISSION) for that one file. Serves only files on a mounted USB stick
- * (UsbFiles.onStick, canonical paths) and only for reading; a player needs no storage permission.
+ * (FLAG_GRANT_READ_URI_PERMISSION) for that one file. Serves only files on a mounted USB stick or in the
+ * projector's own storage (UsbFiles.inPlaces, canonical paths) and only for reading; a player needs no storage
+ * permission.
  */
 public class UsbFilesProvider extends ContentProvider {
     public static final String AUTHORITY = "org.z9x.home.usbfiles";
@@ -35,7 +36,7 @@ public class UsbFilesProvider extends ContentProvider {
         for (int i = 1; i < segs.size(); i++) p.append('/').append(segs.get(i));
         File f = new File(p.toString());
         Context c = getContext();
-        if (c == null || !f.isFile() || !UsbFiles.onStick(c, f)) throw new FileNotFoundException(String.valueOf(u));
+        if (c == null || !f.isFile() || !UsbFiles.inPlaces(c, f)) throw new FileNotFoundException(String.valueOf(u));
         return f;
     }
 

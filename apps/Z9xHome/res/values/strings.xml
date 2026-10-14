@@ -72,10 +72,23 @@
     <!-- 1.0.4: Files (usb/UsbFilesActivity, PhotoActivity, PlayerActivity) -->
     <string name="files_title">Files</string>
     <string name="files_none">Insert a USB stick: its videos, music and photos will appear here.</string>
-    <string name="files_empty">No videos, music, photos or apps in this folder.</string>
+    <string name="files_empty">This folder is empty.</string>
     <string name="files_more">Not shown: %1$d more</string>
     <string name="files_open_failed">%1$s can’t be opened</string>
     <string name="files_play_failed">This file can’t be played on the projector.</string>
+    <string name="files_internal">Projector storage</string>
+    <string name="files_hint_menu">Hold OK on a file or folder to copy or delete it</string>
+    <string name="files_menu_open">Open</string>
+    <string name="files_copy_to">Copy to %1$s</string>
+    <string name="files_delete">Delete</string>
+    <string name="files_delete_confirm">Delete %1$s?</string>
+    <string name="files_cancel">Cancel</string>
+    <string name="files_copying">Copying: %1$d%%</string>
+    <string name="files_copied">Copied: %1$s</string>
+    <string name="files_deleted">Deleted: %1$s</string>
+    <string name="files_failed">Could not do it: %1$s</string>
+    <string name="files_no_space">Not enough free space</string>
+    <string name="files_install">Install app</string>
 
     <!-- inputs, cast, projector tiles -->
     <string name="inputs_connected">Connected devices</string>
