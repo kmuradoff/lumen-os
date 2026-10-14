@@ -27,7 +27,7 @@ The gear opens a panel of tiles. Each tile opens its page, Back returns to the t
 the last tile.
 
 - **Focus**: autofocus now, manual focus, autofocus after moving and at power-on, smart autofocus.
-- **Keystone**: auto keystone now, "Fit to screen now", manual keystone by corners, zoom and shift,
+- **Keystone**: auto keystone now, "Fit to screen now", manual keystone by corners, optical zoom,
   picture rotation, reset. Below: real-time keystone, keystone at power-on, fit to screen and obstacle
   avoidance.
 - **Brightness**: levels 1-10. Press Right twice at 10 for Boost.
@@ -46,15 +46,14 @@ the last tile.
 If the picture is bigger than the screen or not straight, you do not have to move the projector:
 
 1. "Keystone > Fit to screen now": the projector finds the screen frame and fits the picture.
-2. "Keystone > Zoom and shift": first the size (Left smaller, Right bigger), then OK and move the picture
-   with the arrows. Back keeps it.
+2. "Keystone > Optical zoom": the lens makes the picture smaller or bigger without losing sharpness.
 3. "Keystone > Picture rotation": Left and Right in 0.5° steps when the picture is slightly tilted. OK
    returns to the angle you started with.
 4. "Keystone > Manual keystone": each corner on its own.
 
-"Reset keystone" puts the whole picture back: keystone, size, position and rotation.
+"Reset keystone" puts the keystone and the rotation back.
 
-Zoom and shift work on the image itself, the lens does not move. A smaller picture has fewer pixels.
+Auto keystone and "Fit to screen" change the zoom again.
 
 ## Professional picture settings
 
