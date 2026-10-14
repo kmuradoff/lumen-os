@@ -201,6 +201,23 @@ public final class OpticalZoomPanel extends Panel {
         try {
             int now = g.getZoomStep()[1];
             if (now < 0 || now > max) throw new IllegalStateException("116 optical " + now);
+            if (dir < 0 && now == 0 && mode == MODE_GOOD) {
+                // after a resync index 0 is ~240 motor steps short of the real widest position (where auto keystone
+                // leaves the lens, owner 2026-10-15): one more "bigger" walks the lens home as stock's MENU reset
+                pending.set(0);
+                long t0 = SystemClock.uptimeMillis();
+                int r = g.zoomHome();
+                int after = g.getZoomStep()[1];
+                Log.i(TAG, "153(5,10) home walk -> " + r + " in " + (SystemClock.uptimeMillis() - t0) + " ms, 116 " + after);
+                mode = MODE_HALF;                           // the vendor's limit flag is set again
+                saveMode(app, mode);
+                lastDir = -1;
+                changedLast = false;
+                half = false;
+                cur = after;
+                ui(() -> { render(); say(R.string.zoom_limit_big); });
+                return;
+            }
             if ((dir < 0 && now == 0) || (dir > 0 && now >= top)) {
                 pending.set(0);
                 cur = now;

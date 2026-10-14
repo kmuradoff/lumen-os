@@ -33,11 +33,14 @@ BANNED = {
         556: "factory white balance", 99: "auto-colour calibration", 101: "auto-colour calibration",
         102: "auto-colour calibration", 229: "power", 233: "power", 241: "power", 422: "power", 543: "power",
         299: "autofocus", 301: "autoFocus", 400: "reset", 421: "reset", 453: "factoryControlMotor",
-        583: "gyroscopeCorrection", 153: "zoomControl (large zoom move)",
+        583: "gyroscopeCorrection",
         297: "controlZoomMotor (large zoom move)", 283: "zoom (factory move)", 457: "zoom (factory move)",
     },
     "Gmpf2Client.java": {14: "zoom (large move)", 76: "cleanAllCalibrationData"},
 }
+# 153 zoomControl: only the stock home walk (mode 5, steps 10: stock's zoom page MENU reset and auto keystone's
+# zoomReset, GmpfClient.zoomHome, Lumen OS 1.0.4); every other mode stays a large / factory move
+ONLY_ARGS = {"GmpfClient.java": {153: ("ZOOM_CONTROL", "5", "10")}}
 CONST = re.compile(r"\bstatic\s+final\s+int\s+(\w+)\s*=\s*(0x[0-9a-fA-F]+|\d+)\s*;")
 CODE_ARG = re.compile(r"\bcall(?:[A-Z]\w*)?\s*\(\s*([A-Za-z_]\w*|0x[0-9a-fA-F]+|\d+)\s*[,)]")
 METHOD = re.compile(r"^\s*(?:public|protected|private)?\s*(?:static\s+)?(?:final\s+)?"
@@ -130,6 +133,11 @@ def main():
                 code = int(arg, 0) if arg[0].isdigit() else consts.get(arg)
                 if code is not None and code in BANNED[f]:
                     banned.append("%s:%d sends %d (%s)" % (f, n + 1, code, BANNED[f][code]))
+                only = ONLY_ARGS.get(f, {}).get(code)
+                if only is not None:
+                    m = re.search(r"\bcall\w*\s*\(\s*" + re.escape(arg) + r"\s*,\s*([^,)]+)\s*,\s*([^,)]+)\s*\)", line)
+                    if not m or (arg, m.group(1).strip(), m.group(2).strip()) != only:
+                        banned.append("%s:%d sends %d with arguments other than %s" % (f, n + 1, code, ", ".join(only[1:])))
     if banned:
         for b in banned:
             print("check_hal_callers: banned code: " + b)

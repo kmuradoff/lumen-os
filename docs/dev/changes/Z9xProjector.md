@@ -70,7 +70,10 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   (up to 2 queued, the 1.0.3 700 ms poll that dropped keys is gone), a resync from index 0 that triggers that reset
   next to home so moves are whole positions again (smallest position unused in that boot), a refused 2nd bigger move
   outside full-step mode, a size bar, and the user's size put back after an auto keystone that is not a screen fit
-  (events 106 / 303 / 116 from HalController).
+  (events 106 / 303 / 116 from HalController). After the owner's test (index 0 after the resync was ~240 motor
+  steps short of where auto keystone leaves the lens): a "bigger" press at index 0 then sends IGmpf 153
+  zoomControl(5, 10) (GmpfClient.zoomHome), stock's own MENU reset = auto keystone's home walk, so the biggest
+  picture matches; check_hal_callers allows 153 only with (5, 10).
 
 # Z9xProjector, Lumen OS 1.0.3 build (2026-10-13)
 
