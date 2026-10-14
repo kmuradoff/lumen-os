@@ -153,6 +153,7 @@ public final class AudioPathReporter {
             });
             if ("1".equals(prop("sys.boot_completed"))) {
                 sBooted = true;                             // persistent process restarted after boot
+                sH.post(() -> BtDspVolume.apply(sApp, "process start"));
                 sH.post(() -> evaluate("process start"));
                 final long now = SystemClock.elapsedRealtime();
                 sH.post(() -> bootCheck(now));
@@ -169,6 +170,7 @@ public final class AudioPathReporter {
         sBooted = true;
         Handler h = sH;
         if (h == null) return;
+        h.post(() -> BtDspVolume.apply(sApp, "boot completed"));
         h.post(() -> evaluate("boot completed"));
         final long now = SystemClock.elapsedRealtime();
         h.post(() -> bootCheck(now));
@@ -207,6 +209,8 @@ public final class AudioPathReporter {
                 Log.i(TAG, why + ": no media output device known, nothing reported");
                 return;
             }
+            // Lumen OS 1.0.4: the HAL's A2DP volume table starts at 0 (silent headphones), see BtDspVolume
+            if (p == GmpfClient.AudioPath.BT_A2DP) BtDspVolume.apply(sApp, why);
             if (p.wire == sTarget) {
                 // Same path: only make sure it is confirmed (e.g. the boot report gave up earlier).
                 if (sConfirmed != p.wire && !sVerifying && !sH.hasCallbacks(COMMIT)) {
