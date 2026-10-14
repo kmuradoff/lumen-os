@@ -776,6 +776,8 @@ public final class StandbyController {
         org.z9x.projector.cec.CecPolicy.onStandbyExit(sApp, why);   // soundbar back on (CEC)
         // Lumen OS 1.0.3: an HDMI source switch held during the standby (source.HdmiSource)
         try { org.z9x.projector.source.HdmiSource.onStandbyEnd(); } catch (Throwable t) { Log.w(TAG, "hdmi source: " + t); }
+        // Lumen OS 1.0.4: "Open at power-on" (the chosen HDMI input, if any)
+        try { org.z9x.projector.source.BootSource.onPowerOn(sApp, "standby exit"); } catch (Throwable t) { Log.w(TAG, "boot source: " + t); }
     }
 
     // =================================================================== screen hooks (PowerPolicy)

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0.4: Picture > Professional settings of the quick panel (panel.ProPicture), the stock Z9X image
+     mode 3.0 professional settings. English base; translations: gsi/apps/i18n/langs/<locale>.txt
+     @projector/strings_pro.xml. -->
+<resources>
+    <string name="pro_title">Professional settings</string>
+    <string name="pro_color">Color</string>
+    <string name="pro_wb">White balance</string>
+    <string name="pro_wb_2">2-point</string>
+    <string name="pro_wb_11">11-point</string>
+    <string name="pro_red_gain">Red gain</string>
+    <string name="pro_green_gain">Green gain</string>
+    <string name="pro_blue_gain">Blue gain</string>
+    <string name="pro_red_offset">Red offset</string>
+    <string name="pro_green_offset">Green offset</string>
+    <string name="pro_blue_offset">Blue offset</string>
+    <string name="pro_wb_point">Level</string>
+    <!-- %1$d = 5, 10, 20 ... 100: a level of the 11-point white balance, in percent of white -->
+    <string name="pro_wb_level">%1$d%%</string>
+    <string name="pro_red">Red</string>
+    <string name="pro_green">Green</string>
+    <string name="pro_blue">Blue</string>
+    <string name="pro_cyan">Cyan</string>
+    <string name="pro_magenta">Magenta</string>
+    <string name="pro_yellow">Yellow</string>
+    <!-- colour correction colour -->
+    <string name="pro_skin">Skin tone</string>
+    <string name="pro_cc">Color correction</string>
+    <string name="pro_cc_color">Color</string>
+    <string name="pro_hue">Hue</string>
+    <!-- colour space option: the projector's own (widest) gamut -->
+    <string name="pro_cs_native">Native</string>
+    <string name="pro_color_space">Color space</string>
+    <string name="pro_color_opt">Color optimization</string>
+    <string name="pro_gamma">Gamma</string>
+    <!-- gamma option: a gamma value 1.8..2.6 instead of the curve of the signal -->
+    <string name="pro_gamma_manual">Manual</string>
+    <string name="pro_gamma_value">Gamma value</string>
+    <string name="pro_hdr_mapping">HDR dynamic tone mapping</string>
+    <string name="pro_local_contrast">Local contrast</string>
+    <string name="pro_dynamic_contrast">Dynamic contrast</string>
+    <string name="pro_dynamic_black">Dynamic black enhancement</string>
+    <string name="pro_motion">Motion</string>
+    <string name="pro_native_fps">Original frame rate</string>
+    <string name="pro_clarity">Clarity</string>
+    <string name="pro_noise">Noise reduction</string>
+    <string name="pro_reset">Reset professional settings</string>
+    <string name="pro_reset_msg">White balance, color, gamma, contrast and noise reduction go back to their defaults. Continue?</string>
+    <!-- shown when motion smoothing is changed while Original frame rate is on (stock rule) -->
+    <string name="pro_memc_blocked">Turn off Original frame rate first (Picture &gt; Professional settings)</string>
+</resources>

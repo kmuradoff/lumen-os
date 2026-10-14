@@ -69,6 +69,13 @@
     <string name="usb_installing">Installing: %1$d%%</string>
     <string name="usb_done">%1$s is installed</string>
     <string name="usb_failed">%1$s was not installed: %2$s</string>
+    <!-- 1.0.4: Files (usb/UsbFilesActivity, PhotoActivity, PlayerActivity) -->
+    <string name="files_title">Files</string>
+    <string name="files_none">Insert a USB stick: its videos, music and photos will appear here.</string>
+    <string name="files_empty">No videos, music, photos or apps in this folder.</string>
+    <string name="files_more">Not shown: %1$d more</string>
+    <string name="files_open_failed">%1$s can’t be opened</string>
+    <string name="files_play_failed">This file can’t be played on the projector.</string>
 
     <!-- inputs, cast, projector tiles -->
     <string name="inputs_connected">Connected devices</string>

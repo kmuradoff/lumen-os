@@ -92,7 +92,8 @@ final class HalController {
     private static final int ST_IDLE = 0, ST_WAIT_BOOT = 1, ST_CONNECT = 2, ST_EARLY = 3,
             ST_WAIT_ANIM = 4, ST_LATE = 5, ST_DONE = 6, ST_OFF = 7;
 
-    enum Toggle { POWER_ON_AF, POWER_ON_AK, MOVE_AF, MOVE_AK, CURTAIN_FIT, OBSTACLE }
+    /** Lumen OS 1.0.4: POWER_ON_MUSIC (IGmpf 420 / 419, the stock power-on music). */
+    enum Toggle { POWER_ON_AF, POWER_ON_AK, MOVE_AF, MOVE_AK, CURTAIN_FIT, OBSTACLE, POWER_ON_MUSIC }
 
     interface ToggleResult {
         /** Main thread. Value null = unknown (not connected / error). */
@@ -769,6 +770,7 @@ final class HalController {
                 case MOVE_AK: return client.getMoveAk();
                 case CURTAIN_FIT: return client.getCurtainFit();
                 case OBSTACLE: return client.getObstacleAvoid();
+                case POWER_ON_MUSIC: return client.getPowerOnMusic();
                 default: return null;
             }
         } catch (Throwable e) {
@@ -788,6 +790,7 @@ final class HalController {
                 break;
             case CURTAIN_FIT: Hal.setCurtainFitCoupled(client, on); break;      // ON also obstacle ON
             case OBSTACLE: Hal.setObstacleAvoidCoupled(client, on); break;      // OFF also fit OFF
+            case POWER_ON_MUSIC: client.setPowerOnMusic(on); break;
             default: break;
         }
     }

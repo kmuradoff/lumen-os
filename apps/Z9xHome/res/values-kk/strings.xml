@@ -54,6 +54,12 @@
     <string name="usb_installing">Орнатылуда: %1$d%%</string>
     <string name="usb_done">%1$s орнатылды</string>
     <string name="usb_failed">%1$s орнатылмады: %2$s</string>
+    <string name="files_title">Файлдар</string>
+    <string name="files_none">USB флешкаңызды салыңыз: оның бейнелері, музыкасы мен фотолары осында шығады.</string>
+    <string name="files_empty">Бұл қалтада бейне, музыка, фото немесе қолданба жоқ.</string>
+    <string name="files_more">Көрсетілмеді: тағы %1$d</string>
+    <string name="files_open_failed">%1$s ашылмады</string>
+    <string name="files_play_failed">Бұл файлды проекторда ойнату мүмкін емес.</string>
     <string name="inputs_connected">Қосылған құрылғылар</string>
     <string name="inputs_cast">Осы проекторға трансляция</string>
     <string name="input_connected">Қосылған</string>

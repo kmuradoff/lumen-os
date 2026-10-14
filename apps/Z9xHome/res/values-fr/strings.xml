@@ -54,6 +54,12 @@
     <string name="usb_installing">Installation : %1$d%%</string>
     <string name="usb_done">%1$s est installé</string>
     <string name="usb_failed">%1$s n’a pas été installé : %2$s</string>
+    <string name="files_title">Fichiers</string>
+    <string name="files_none">Insérez une clé USB : ses vidéos, sa musique et ses photos apparaîtront ici.</string>
+    <string name="files_empty">Aucune vidéo, musique, photo ou application dans ce dossier.</string>
+    <string name="files_more">Non affichés : %1$d de plus</string>
+    <string name="files_open_failed">Impossible d’ouvrir %1$s</string>
+    <string name="files_play_failed">Ce fichier ne peut pas être lu sur le projecteur.</string>
     <string name="inputs_connected">Appareils connectés</string>
     <string name="inputs_cast">Caster sur ce projecteur</string>
     <string name="input_connected">Connecté</string>

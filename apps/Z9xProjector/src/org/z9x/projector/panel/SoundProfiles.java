@@ -50,6 +50,8 @@ import org.z9x.projector.hal.GmpfClient;
  * All HAL work runs on the "z9x-hal" thread; setters on a user action, except the boot check.
  */
 public final class SoundProfiles {
+    /** Lumen OS 1.0.4: the user turned volume leveling on (Sound page); a profile choice then keeps it. */
+    static final String KEY_VOLUME_LEVELING = "volume_leveling";
     private static final String TAG = "Z9xSound";
 
     enum Profile { HARMAN, DTS }
@@ -172,10 +174,13 @@ public final class SoundProfiles {
      * a transport error (the caller shows "Could not do that").
      */
     static Result apply(Context app, GmpfClient g, Profile p) throws Exception {
-        // 41/42: back to the stock default "off" only when it is on.
+        // 41/42: back to the stock default "off" only when it is on and the user did not turn it on
+        // (Lumen OS 1.0.4: the Sound page's Volume leveling switch, KEY_VOLUME_LEVELING).
         Boolean vb = null;
         try { vb = g.getVolumeBalance(); } catch (Throwable t) { Log.w(TAG, "41: " + t); }
-        if (Boolean.TRUE.equals(vb)) {
+        boolean userOn = app != null && app.getSharedPreferences(QuickPanel.PREFS, android.content.Context.MODE_PRIVATE)
+                .getBoolean(KEY_VOLUME_LEVELING, false);
+        if (Boolean.TRUE.equals(vb) && !userOn) {
             boolean r = g.disableVolumeBalance();                                  // 42(false)
             Log.i(TAG, "volume levelling was on: 42(false) -> " + r);
         }

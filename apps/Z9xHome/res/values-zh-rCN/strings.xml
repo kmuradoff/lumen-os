@@ -54,6 +54,12 @@
     <string name="usb_installing">正在安装：%1$d%%</string>
     <string name="usb_done">已安装 %1$s</string>
     <string name="usb_failed">未能安装 %1$s：%2$s</string>
+    <string name="files_title">文件</string>
+    <string name="files_none">请插入 U 盘：其中的视频、音乐和照片会显示在这里。</string>
+    <string name="files_empty">此文件夹中没有视频、音乐、照片或应用。</string>
+    <string name="files_more">另有 %1$d 项未显示</string>
+    <string name="files_open_failed">无法打开 %1$s</string>
+    <string name="files_play_failed">投影仪无法播放此文件。</string>
     <string name="inputs_connected">已连接的设备</string>
     <string name="inputs_cast">投屏到此投影仪</string>
     <string name="input_connected">已连接</string>

@@ -54,6 +54,12 @@
     <string name="usb_installing">インストール中: %1$d%%</string>
     <string name="usb_done">%1$s をインストールしました</string>
     <string name="usb_failed">%1$s をインストールできませんでした: %2$s</string>
+    <string name="files_title">ファイル</string>
+    <string name="files_none">USB メモリーを挿してください。動画、音楽、写真がここに表示されます。</string>
+    <string name="files_empty">このフォルダーには動画、音楽、写真、アプリがありません。</string>
+    <string name="files_more">表示していない項目: あと %1$d 件</string>
+    <string name="files_open_failed">%1$s を開けません</string>
+    <string name="files_play_failed">このファイルはプロジェクターで再生できません。</string>
     <string name="inputs_connected">接続中のデバイス</string>
     <string name="inputs_cast">このプロジェクターにキャスト</string>
     <string name="input_connected">接続済み</string>

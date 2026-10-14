@@ -36,6 +36,12 @@ public final class BootReceiver extends BroadcastReceiver {
             Log.e("Z9xProjector", "BootReceiver boot-dark", t);
         }
         try {
+            // Lumen OS 1.0.4: "Open at power-on" (checks after a few seconds that the projector stayed on)
+            org.z9x.projector.source.BootSource.onPowerOn(ctx, "boot");
+        } catch (Throwable t) {
+            Log.e("Z9xProjector", "BootReceiver boot source", t);
+        }
+        try {
             org.z9x.projector.mem.MemoryGuard.onBoot(ctx, "boot completed");
         } catch (Throwable t) {
             Log.e("Z9xProjector", "BootReceiver memory guard", t);

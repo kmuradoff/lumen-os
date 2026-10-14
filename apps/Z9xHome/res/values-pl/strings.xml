@@ -54,6 +54,12 @@
     <string name="usb_installing">Instalowanie: %1$d%%</string>
     <string name="usb_done">Zainstalowano: %1$s</string>
     <string name="usb_failed">Nie zainstalowano: %1$s (%2$s)</string>
+    <string name="files_title">Pliki</string>
+    <string name="files_none">Włóż pendrive: tutaj pojawią się jego filmy, muzyka i zdjęcia.</string>
+    <string name="files_empty">W tym folderze nie ma filmów, muzyki, zdjęć ani aplikacji.</string>
+    <string name="files_more">Nie pokazano: jeszcze %1$d</string>
+    <string name="files_open_failed">Nie można otworzyć %1$s</string>
+    <string name="files_play_failed">Tego pliku nie można odtworzyć na projektorze.</string>
     <string name="inputs_connected">Podłączone urządzenia</string>
     <string name="inputs_cast">Przesyłaj na ten projektor</string>
     <string name="input_connected">Podłączono</string>
