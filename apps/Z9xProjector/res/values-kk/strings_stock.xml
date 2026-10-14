@@ -30,4 +30,16 @@
     <string name="rot_refused">Проектор суретті бұрмады</string>
     <string name="guide_title">Пайдаланушы нұсқаулығы</string>
     <string name="guide_scan">Нұсқаулықты ашу үшін телефон камерасын кодқа бағыттаңыз:</string>
+    <string name="sound_output">Дыбыс шығысы</string>
+    <string name="sound_output_auto">Автоматты</string>
+    <string name="sound_output_speaker">Проектор динамигі</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Құлаққап</string>
+    <string name="sound_output_usb">USB аудио</string>
+    <string name="sound_format">Дыбыс пішімі</string>
+    <string name="sound_format_auto">Автоматты</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">Өңдеусіз</string>
 </resources>

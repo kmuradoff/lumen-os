@@ -12,7 +12,8 @@
   чёрного, исходная частота кадров, шумоподавление.
 - Настройки HDMI для входа на экране: цветовой диапазон и режим HDMI (совместимый 1.4 или улучшенный 2.0).
 - «Трапеция → Поворот изображения».
-- «Звук»: выравнивание громкости и eARC.
+- «Звук»: выравнивание громкости, eARC и выбор вывода звука (автоматически, динамик проектора, HDMI ARC, Bluetooth,
+  наушники, USB). Формат звука для ARC: автоматически, PCM или без обработки.
 - «Проектор → Включение»: мелодия при включении и вход, который открывается при включении (HDMI 1 или HDMI 2).
 - «Файлы»: видео, музыка и фото с флешки, со встроенным плеером и просмотром фото.
 - Руководство пользователя ([docs/guide](docs/guide/ru.md)) и QR-код на него в настройках проектора.
@@ -133,7 +134,8 @@ Brought over from XGIMI's stock firmware, what Lumen did not have:
   original frame rate, noise reduction.
 - HDMI settings of the input on screen: color range and HDMI mode (Compatible 1.4 or Enhanced 2.0).
 - "Keystone > Picture rotation".
-- "Sound": volume leveling and eARC.
+- "Sound": volume leveling, eARC and the sound output choice (auto, projector speaker, HDMI ARC, Bluetooth,
+  headphones, USB). Audio format for ARC: auto, PCM or passthrough.
 - "Projector > Power on": power-on sound and the input to open at power-on (HDMI 1 or HDMI 2).
 - "Files": videos, music and photos from a USB stick, with a built-in player and photo viewer.
 - A user guide ([docs/guide](docs/guide/en.md)) and a QR code to it in the projector settings.

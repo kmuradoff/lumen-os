@@ -52,6 +52,8 @@ public final class App extends Application {
         }
         // ===== v6.3.1: media output path report to the vendor (IGmpf 59, stock audioserver behaviour) =====
         try { AudioPathReporter.install(this); } catch (Throwable t) { Log.e(TAG, "AudioPathReporter.install", t); }
+        // ===== 1.0.4: manual sound output (stock Sound > Sound output), preferred device for the media strategy =====
+        try { org.z9x.projector.audio.AudioOutputChoice.install(this); } catch (Throwable t) { Log.e(TAG, "AudioOutputChoice.install", t); }
         // ===== v6.4: equalizer re-apply triggers (SoC PEQ, IGmpf 50/51) and AI sound (61(3) + 63 per app) =====
         try { org.z9x.projector.audio.SoundEq.install(this); } catch (Throwable t) { Log.e(TAG, "SoundEq.install", t); }
         try { org.z9x.projector.audio.AiSoundEngine.install(this); } catch (Throwable t) { Log.e(TAG, "AiSoundEngine.install", t); }

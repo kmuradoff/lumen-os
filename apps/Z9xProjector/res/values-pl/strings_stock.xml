@@ -30,4 +30,16 @@
     <string name="rot_refused">Projektor nie obrócił obrazu</string>
     <string name="guide_title">Instrukcja obsługi</string>
     <string name="guide_scan">Zeskanuj kod telefonem, aby otworzyć instrukcję:</string>
+    <string name="sound_output">Wyjście dźwięku</string>
+    <string name="sound_output_auto">Automatycznie</string>
+    <string name="sound_output_speaker">Głośnik projektora</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Słuchawki</string>
+    <string name="sound_output_usb">Dźwięk USB</string>
+    <string name="sound_format">Format dźwięku</string>
+    <string name="sound_format_auto">Automatycznie</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">Bez przetwarzania</string>
 </resources>

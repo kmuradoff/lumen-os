@@ -30,4 +30,16 @@
     <string name="rot_refused">Der Projektor hat das Bild nicht gedreht</string>
     <string name="guide_title">Benutzerhandbuch</string>
     <string name="guide_scan">Scannen Sie den Code mit einem Telefon, um das Handbuch zu öffnen:</string>
+    <string name="sound_output">Tonausgabe</string>
+    <string name="sound_output_auto">Automatisch</string>
+    <string name="sound_output_speaker">Projektorlautsprecher</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Kopfhörer</string>
+    <string name="sound_output_usb">USB-Audio</string>
+    <string name="sound_format">Audioformat</string>
+    <string name="sound_format_auto">Automatisch</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">Durchleitung</string>
 </resources>

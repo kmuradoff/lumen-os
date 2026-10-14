@@ -30,4 +30,16 @@
     <string name="rot_refused">投影機未旋轉畫面</string>
     <string name="guide_title">使用指南</string>
     <string name="guide_scan">用手機掃描 QR 碼開啟使用指南：</string>
+    <string name="sound_output">聲音輸出</string>
+    <string name="sound_output_auto">自動</string>
+    <string name="sound_output_speaker">投影機喇叭</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">藍牙</string>
+    <string name="sound_output_wired">耳機</string>
+    <string name="sound_output_usb">USB 音訊</string>
+    <string name="sound_format">音訊格式</string>
+    <string name="sound_format_auto">自動</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">直通</string>
 </resources>

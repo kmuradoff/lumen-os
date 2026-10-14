@@ -30,4 +30,16 @@
     <string name="rot_refused">프로젝터가 화면을 회전하지 않았습니다</string>
     <string name="guide_title">사용 설명서</string>
     <string name="guide_scan">휴대폰으로 코드를 스캔해 설명서를 여세요:</string>
+    <string name="sound_output">사운드 출력</string>
+    <string name="sound_output_auto">자동</string>
+    <string name="sound_output_speaker">프로젝터 스피커</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">헤드폰</string>
+    <string name="sound_output_usb">USB 오디오</string>
+    <string name="sound_format">오디오 형식</string>
+    <string name="sound_format_auto">자동</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">패스스루</string>
 </resources>

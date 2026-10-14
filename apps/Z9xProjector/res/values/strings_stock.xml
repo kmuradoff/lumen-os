@@ -34,4 +34,17 @@
     <!-- Projector settings: the user guide (guide.GuideDialog) -->
     <string name="guide_title">User guide</string>
     <string name="guide_scan">Scan the code with a phone to open the guide:</string>
+    <!-- 1.0.4 Sound page: manual sound output (audio.AudioOutputChoice) -->
+    <string name="sound_output">Sound output</string>
+    <string name="sound_output_auto">Auto</string>
+    <string name="sound_output_speaker">Projector speaker</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Headphones</string>
+    <string name="sound_output_usb">USB audio</string>
+    <string name="sound_format">Audio format</string>
+    <string name="sound_format_auto">Auto</string>
+    <string name="sound_format_pcm">PCM</string>
+    <string name="sound_format_passthrough">Passthrough</string>
 </resources>

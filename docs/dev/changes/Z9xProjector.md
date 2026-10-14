@@ -49,9 +49,18 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   (software, or AVRCP absolute volume). Moving A2DP to a "bluetooth" policy module was rejected: AudioFlinger would
   still send connect=128 to the primary HAL (two writers on one A2DP session) and XGIMI's sound processing would be
   bypassed.
+- **Sound output** (`audio/AudioOutputChoice`, new; Sound page; NOT device-tested): stock's Sound > Sound output (Auto,
+  speaker, ARC, headphones, Bluetooth, USB) was XGIMI's AudioSystem.setForceUse(FOR_MEDIA, 16 / 17 / 18), values only
+  XGIMI's patched audioserver accepts. Lumen uses AOSP 14's AudioManager.setPreferredDeviceForStrategy(media strategy,
+  device) (MODIFY_AUDIO_ROUTING, held): Auto removes the role, Speaker = the built-in speaker, ARC / eARC, Bluetooth
+  (device name), headphones and USB listed only while connected. The media routing change makes AudioPathReporter move
+  the vendor path (59), so the HDMI input sound follows; nothing new to the vendor. A chosen output that disconnects:
+  role removed (Auto) until it returns, the choice stays (device-protected prefs, applied at process start, boot,
+  device and routing changes). "Audio format" (Auto / PCM / Passthrough = digital_output_format, stock MtkAudio) shown
+  only with ARC / eARC, sent only once chosen. HdmiVolume: Spdif (always listed by the Z9X policy, no jack) no longer
+  counts as "not the speaker", and a chosen Speaker counts as the speaker.
 - Not brought over, with the reason: power on with mains (IGmpf 543 rewrites the MBOOT environment in flash, kept
-  banned), Total Surround / Total Immersion (XGIMI Sound speaker only), manual audio output (XGIMI's own
-  AudioSystem.setForceUse configs), boot animation switch (a prop nothing on Lumen reads).
+  banned), Total Surround / Total Immersion (XGIMI Sound speaker only), boot animation switch (a prop nothing on Lumen reads).
 
 - **Optical zoom fixed and back** on the Keystone page (owner, 2026-10-14 evening: "the optical zoom is what I
   want, it is more effective"; the digital ZoomShiftPanel row is not shown). NOT device-tested. Research in
