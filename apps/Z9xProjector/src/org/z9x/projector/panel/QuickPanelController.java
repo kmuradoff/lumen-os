@@ -1205,18 +1205,40 @@ final class QuickPanelController {
         });
     }
 
-    /** 648 setGameModeOption; top speed also 207 correctKeystoneReset(0) as stock switchGameModeSpeed. */
+    /**
+     * 648 setGameModeOption; top speed also 207 correctKeystoneReset(0) as stock switchGameModeSpeed.
+     * Lumen OS 1.0.4: the read-back decides, not 648's answer. The vendor answered false for a switch it still
+     * carried out, and 647 follows a moment later (owner, 2026-10-14: "Could not do that", yet the page showed
+     * the new speed when opened again; for top speed the 207 guard read the old 647 and refused). So: 648, then
+     * 647 until it reads the wanted option (at most {@link #GAME_OPTION_WAIT_MS}), then 207 for top speed.
+     */
     private void onGameSpeed(int i) {
         if (snap == null || snap.gameOption == null || i < 0 || i >= SPEED_ORDER.length) { refresh(); return; }
         final GmpfClient.GameModeOption o = SPEED_ORDER[i];
         change("648 game option " + o, (g, g2) -> {
             if (!hdmiNow(g, "648")) return;                  // 207 below would reset the normal picture
-            if (!g.setGameModeOption(o)) throw new IllegalStateException("648 returned false");
+            boolean r = g.setGameModeOption(o);
+            GmpfClient.GameModeOption now = waitGameOption(g, o);
+            Log.i(TAG, "648(" + o + ") -> " + r + ", 647 reads " + now);
+            if (now != o) throw new IllegalStateException("648 -> " + r + ", 647 reads " + now);
             if (o.isTopSpeed()) {
                 g.resetKeystoneForTopSpeedGame();
                 Notify.show(app, s(R.string.panel_speed_top_note));
             }
         });
+    }
+
+    private static final long GAME_OPTION_WAIT_MS = 2_000, GAME_OPTION_POLL_MS = 100;
+
+    /** HAL thread: 647 until it reads {@code want}, at most GAME_OPTION_WAIT_MS; the last value read (null = failed). */
+    private static GmpfClient.GameModeOption waitGameOption(GmpfClient g, GmpfClient.GameModeOption want) {
+        long end = SystemClock.uptimeMillis() + GAME_OPTION_WAIT_MS;
+        GmpfClient.GameModeOption now = null;
+        while (true) {
+            try { now = g.getGameModeOption(); } catch (Throwable t) { Log.w(TAG, "647: " + t); }
+            if (now == want || SystemClock.uptimeMillis() >= end) return now;
+            SystemClock.sleep(GAME_OPTION_POLL_MS);
+        }
     }
 
     // ================================================================== eye protection

@@ -17,6 +17,13 @@
 - «Файлы»: видео, музыка и фото с флешки, со встроенным плеером и просмотром фото.
 - Руководство пользователя ([docs/guide](docs/guide/ru.md)) и QR-код на него в настройках проектора.
 
+Исправления:
+
+- Громкость HDMI-источника (приставки, консоли) теперь меняется пультом. В 1.0.3 кнопки громкости на HDMI
+  ничего не делали.
+- Игровой режим, «Скорость отклика»: при смене больше не появляется «Не удалось», когда скорость на самом деле
+  сменилась.
+
 - Из быстрой панели убран ручной оптический зум. Встроенная логика XGIMI теряет положение объектива при движении
   назад и может упирать его в край. Чтобы вписать картинку в экран, используйте «Вписать в экран сейчас» на той же
   странице: она двигает зум сама и находит положение объектива.
@@ -130,6 +137,12 @@ Brought over from XGIMI's stock firmware, what Lumen did not have:
 - "Projector > Power on": power-on sound and the input to open at power-on (HDMI 1 or HDMI 2).
 - "Files": videos, music and photos from a USB stick, with a built-in player and photo viewer.
 - A user guide ([docs/guide](docs/guide/en.md)) and a QR code to it in the projector settings.
+
+Fixes:
+
+- The volume of an HDMI source (set-top box, console) now follows the remote. On 1.0.3 the volume keys did
+  nothing on HDMI.
+- Game mode, "Response speed": changing it no longer says "Could not" when the speed did change.
 
 - The manual optical zoom is gone from the quick panel. XGIMI's own zoom logic loses the lens position when
   moving back and can drive the lens against its end. To fit the picture to the screen, use "Fit to screen

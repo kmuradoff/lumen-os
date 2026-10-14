@@ -26,6 +26,18 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   store, not the MBOOT environment) and "Open at power-on" (`source/BootSource`, new: home screen, HDMI 1 or HDMI 2,
   opened through tvinput after a cold start, a wake or the end of the lamp standby; an HDMI picture already on wins).
 - **User guide** (`guide/GuideDialog`, new; Projector settings): a QR code to docs/guide (ru / en).
+- **HDMI volume** (`source/HdmiVolume`, new; started and stopped by HdmiSource's decision): the remote's volume keys
+  did nothing to an HDMI source on 1.0.3. HDMI sound never passes Android's mixer; stock's patched AudioService sent
+  AudioManager.setParameters("spk_volume=N") (music index scaled to 0..100) on every change and Lumen's framework
+  sends nothing. The Z9X HAL applies spk_volume only after a path selection, so per HDMI start: spk_volume first,
+  then xgimi_audiopath_switch_start=0 and xgimi_audiopath_switch_end=0 (speaker path; never end without a stored
+  value, that would be a silent speaker); then every STREAM_MUSIC volume or mute change sends spk_volume again.
+  HDMI ends: spk_volume=100, so Android's own audio plays as before. Proven by hand on a Z9X with 1.0.3 + Google
+  (2026-10-14: spk_volume=50 about half, 30 quieter, live while the PS5 played); the APK itself not on a device yet.
+- **Game speed** (`QuickPanelController.onGameSpeed`): 648 setGameModeOption answered false for a switch it still
+  carried out, and 647 follows a moment later (owner: "Не удалось", yet the page showed the new speed when opened
+  again; for top speed the 207 guard read the old 647 and refused). Now 648, then 647 polled every 100 ms for up to
+  2 s until it reads the wanted option; only that read decides, and 207 correctKeystoneReset follows only then.
 - Not brought over, with the reason: power on with mains (IGmpf 543 rewrites the MBOOT environment in flash, kept
   banned), Total Surround / Total Immersion (XGIMI Sound speaker only), manual audio output (XGIMI's own
   AudioSystem.setForceUse configs), boot animation switch (a prop nothing on Lumen reads).
