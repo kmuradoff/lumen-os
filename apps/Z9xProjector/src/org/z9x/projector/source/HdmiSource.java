@@ -5,6 +5,7 @@ import android.os.Process;
 import android.util.Log;
 
 import org.z9x.projector.Hal;
+import org.z9x.projector.Ui;
 import org.z9x.projector.hal.GmpfClient;
 import org.z9x.projector.power.StandbyController;
 
@@ -141,6 +142,12 @@ public final class HdmiSource {
             return;
         }
         sHeld = false;                                          // this decision covers a held one
+        // Lumen OS 1.0.4: the remote's volume keys follow an HDMI picture (HdmiVolume), 100 again without one
+        final boolean hdmi = target != GmpfClient.SOURCE_MEDIA;
+        Ui.main().post(() -> {
+            if (hdmi) HdmiVolume.start(app);
+            else HdmiVolume.stop(app, "no HDMI shown, " + why);
+        });
         int now = against696 || sLastSent < 0 ? read696(g) : sLastSent;
         if (now == target) {
             sLastSent = target;
@@ -172,6 +179,7 @@ public final class HdmiSource {
             return;
         }
         send(g, GmpfClient.SOURCE_MEDIA, "self-heal on " + why + ": 696 reads " + cur + ", no HDMI session");
+        Ui.main().post(() -> HdmiVolume.stop(app, "self-heal on " + why));
     }
 
     /** z9x-hal: one 698 call and its Z9xHdmi line. */
