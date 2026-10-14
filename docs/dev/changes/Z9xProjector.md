@@ -53,11 +53,15 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   banned), Total Surround / Total Immersion (XGIMI Sound speaker only), manual audio output (XGIMI's own
   AudioSystem.setForceUse configs), boot animation switch (a prop nothing on Lumen reads).
 
-- Manual optical zoom back on the Keystone page (owner, 2026-10-14 evening, after using it on a Z9X: "the optical
-  zoom is what I want, it is more effective"; the digital ZoomShiftPanel row is not shown). The known faults stay
-  until the fix: XGIMI's index (116) counts 13 coarse positions over ~2121 motor steps while each 119 moves ~80, so
-  the number changes only every 2 or 3 presses; stepping back from the small end XGIMI's controller resets its
-  counter near motor step 1870 (docs/z9x/OPEN_zoom_103.md); auto keystone brings the zoom back to the big end.
+- **Optical zoom fixed and back** on the Keystone page (owner, 2026-10-14 evening: "the optical zoom is what I
+  want, it is more effective"; the digital ZoomShiftPanel row is not shown). NOT device-tested. Research in
+  docs/z9x/OPEN_zoom_103.md: 119 is a relative move of 160 motor steps that blocks until the motor stopped; after any
+  return to the biggest picture XGIMI's limit flag stays set on this unit, moves are then only 80 steps (index every
+  2nd press), and a 2nd bigger move in a row resets XGIMI's counter to 0 wherever the lens is. Now one 119 per press
+  (up to 2 queued, the 1.0.3 700 ms poll that dropped keys is gone), a resync from index 0 that triggers that reset
+  next to home so moves are whole positions again (smallest position unused in that boot), a refused 2nd bigger move
+  outside full-step mode, a size bar, and the user's size put back after an auto keystone that is not a screen fit
+  (events 106 / 303 / 116 from HalController).
 
 # Z9xProjector, Lumen OS 1.0.3 build (2026-10-13)
 

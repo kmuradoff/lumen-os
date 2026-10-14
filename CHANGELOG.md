@@ -24,8 +24,9 @@
 - Игровой режим, «Скорость отклика»: при смене больше не появляется «Не удалось», когда скорость на самом деле
   сменилась.
 
-- Ручной оптический зум остаётся на странице «Трапеция». Сейчас исправляется: шаги, положение объектива и зум
-  после автотрапеции.
+- Ручной оптический зум («Трапеция → Оптический зум»): одно нажатие теперь один шаг, нажатия не теряются,
+  объектив не сбивается со счёта. После автотрапеции зум возвращается к вашему размеру, если проектор не
+  вписывал картинку в экран сам.
 
 ## XGIMI Play 6, бета 1, октябрь 2026
 
@@ -143,8 +144,9 @@ Fixes:
   nothing on HDMI.
 - Game mode, "Response speed": changing it no longer says "Could not" when the speed did change.
 
-- The manual optical zoom stays on the "Keystone" page. Being fixed now: its steps, the lens position and the
-  zoom after auto keystone.
+- Manual optical zoom ("Keystone > Optical zoom"): one press is now one step, presses are not lost, and the lens
+  no longer loses count. After auto keystone the zoom goes back to your size, unless the projector fitted the
+  picture to the screen itself.
 
 ## XGIMI Play 6, beta 1, October 2026
 
