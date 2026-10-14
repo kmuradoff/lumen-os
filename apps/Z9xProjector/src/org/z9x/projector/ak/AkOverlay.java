@@ -261,7 +261,8 @@ public final class AkOverlay {
                         hide("detect unsupported");
                         return true;
                     }
-                    if (type != 118 || !"AK_Tof_Stage_End".equals(value)) {
+                    // 116 = XGIMI's AK report (JSON), read by OpticalZoomPanel.onAkReport: no UI step, nothing to ack
+                    if (type != 116 && (type != 118 || !"AK_Tof_Stage_End".equals(value))) {
                         Log.w(TAG, type + " \"" + value + "\": UI mode not supported (no verified pattern), not acked");
                     }
                     return false;
