@@ -502,9 +502,6 @@ What is different from the Z9X:
   data, then the installer asks Android for its own factory reset, and XGIMI's recovery erases the data,
   as Settings > Reset would.
 - Google services cannot be added on the Play 6 yet.
-- Kinopoisk and other streaming apps work. On the Play 6 we tested, Widevine runs at the software level L3,
-  as on its stock firmware (that unit has no L1 key from the factory), so protected films may play in lower
-  quality. A unit with a factory L1 key should get L1.
 
 <a name="play6-need"></a>
 
@@ -749,7 +746,8 @@ exactly like this:
    touch /Volumes/STICK/factory.txt
    ```
 
-   Ask XGIMI support for the firmware file. We do not host it. You need V1.7.116
+   Firmware V1.7.116 is on XGIMI's own server:
+   [XGIMI_DRAGONHEALTHY_XN03C.bin](https://product-library.static.xgimi.com/firmware/release/MTK9270/dayao/MTK9270_APHRODIT_1.7.116_20251125-162039/XGIMI_DRAGONHEALTHY_XN03C.bin)
    (2 051 543 712 bytes, md5 `55ae66ed7e14a20759ea4b9d5686d591`).
 3. Let the installer check the stick (read only, it never formats anything):
 
