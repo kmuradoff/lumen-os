@@ -1,5 +1,14 @@
 # 1.0.3: system library slot (2026-10-13)
 
+## Lumen OS 1.0.4: network adb survives a reboot (2026-10-15)
+
+- `z9x_adb_net.rc` (system/etc/init, in RCS of tools/lumen_v1.sh): LineageOS TV's "ADB over network" switch only sets
+  the non-persistent service.adb.tcp.port (product init.lineage.atv.rc restarts adbd on 5555 / -1), so every reboot
+  turned it off (owner). The rc mirrors the switch into persist.z9x.adb_net (5555 -> 1, -1 -> 0) and sets the port
+  again at sys.boot_completed when it is 1. Nothing opens unless the user turned the switch on; adbd still needs USB
+  debugging on and the on-screen RSA confirmation (ro.adb.secure=1).
+
+
 - `tools/lumen_v1.sh` SYSLIB (1 | 0; default 1 from VER 1.0.3, 0 before): `overlay/v1/syslib/system/lib/` and
   `system/lib64/libandroid_servers.so`, our rebuild of the base's library (both ABIs, the base has both) from the
   LineageOS 21 source of the base + `lineage/patches/z9x` (`lineage/z9x_lib_build.sh` on the build laptop, output

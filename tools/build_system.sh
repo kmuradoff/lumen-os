@@ -300,7 +300,7 @@ KL=(Vendor_0001_Product_0001 Vendor_000d_Product_3838 Vendor_000d_Product_3839 V
 IDC=(Vendor_000d_Product_3838 Vendor_000d_Product_3839 Vendor_000d_Product_3840 Vendor_000d_Product_3841
      Vendor_000d_Product_3842 Vendor_000d_Product_3843 Vendor_1d5a_Product_c081 Vendor_26e3_Product_af02)
 # init files of ours (overlay/v1) -> system/etc/init; z9x_power*.rc of L-PROJECTOR are added on top
-RCS=(z9x_base.rc z9x_audio.rc z9x_setup.rc z9x_poweroff.rc z9x_nui.rc z9x_bootinfo.rc z9x_speed.rc)
+RCS=(z9x_base.rc z9x_audio.rc z9x_setup.rc z9x_poweroff.rc z9x_nui.rc z9x_bootinfo.rc z9x_speed.rc z9x_adb_net.rc)
 SCRIPTS=(z9x_diag.sh z9x_poweroff.sh z9x_nui.sh z9x_bootinfo.sh)
 # OTA plumbing of L-OTA (tools/ota/image/HANDOFF.md section 1), byte-identical
 OTA_RC=z9x_ota.rc; OTA_SH=z9x_ota.sh; OTA_UV=update_verifier.rc; OTA_PERM=z9x-updater-default-permissions.xml

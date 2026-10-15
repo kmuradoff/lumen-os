@@ -26,6 +26,8 @@
   ничего не делали.
 - Игровой режим, «Скорость отклика»: при смене больше не появляется «Не удалось», когда скорость на самом деле
   сменилась.
+- «Для разработчиков → ADB over network» больше не выключается после перезагрузки, если вы сами его включили.
+  Подключение компьютера по-прежнему нужно подтвердить на экране проектора.
 
 - Ручной оптический зум («Трапеция → Оптический зум»): одно нажатие теперь один шаг, нажатия не теряются,
   объектив не сбивается со счёта. После автотрапеции зум возвращается к вашему размеру, если проектор не
@@ -149,6 +151,8 @@ Fixes:
 - The volume of an HDMI source (set-top box, console) now follows the remote. On 1.0.3 the volume keys did
   nothing on HDMI.
 - Game mode, "Response speed": changing it no longer says "Could not" when the speed did change.
+- "Developer options > ADB over network" stays on after a restart when you turned it on yourself. A computer still
+  has to be allowed on the projector screen.
 
 - Manual optical zoom ("Keystone > Optical zoom"): one press is now one step, presses are not lost, and the lens
   no longer loses count. After auto keystone the zoom goes back to your size, unless the projector fitted the

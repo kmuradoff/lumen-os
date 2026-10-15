@@ -11,6 +11,11 @@
   checked, progress row, cancel, a failed copy removes its partial output) and delete (confirmation page,
   recursive). ContextPanel: focusedItem(), depth(), pop(), refresh(Item). Install from USB stays for search's
   keyboard hint. 13 new strings in all 17 languages, files_empty now "This folder is empty".
+  Device test 2026-10-15 (owner's Z9X, 1.0.4 RC): the projector storage root was titled "0" (the folder name of
+  /storage/emulated/0): a place's root now shows its label; `input keyevent --longpress` (and a remote whose repeat
+  starts at Android's long-press timeout) opened the folder instead of the menu: the menu now opens on
+  KeyEvent.isLongPress() or after ViewConfiguration.getLongPressTimeout(). Verified on the device: storage list,
+  menu Open / Delete (Copy only with a stick present), BACK closes it.
 
 - **Files** (`usb/UsbFilesActivity`, `UsbFiles`, `UsbFilesProvider`, `PhotoActivity`, `PlayerActivity`, new), in
   place of XGIMI's file manager: the USB sticks' folders in the Lumen side panel (one stick: its folders at once).
