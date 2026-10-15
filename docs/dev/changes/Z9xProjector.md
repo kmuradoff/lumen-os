@@ -42,6 +42,10 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   "Не удалось". Now 648 true = done, false = done only if 647 reads the option within 6 s; the row shows the chosen
   speed until 647 agrees (10 s at most); top speed's 207 correctKeystoneReset waits for 647, re-polled every 300 ms
   on the HAL thread. AkOverlay no longer warns about XGIMI's AK report (event 116, read by OpticalZoomPanel).
+  Device test 2026-10-15 03:29 (owner's Z9X, PS5 on HDMI 1): Standard and Standard high frame rate both switch
+  without "Не удалось" (648 -> true, 647 follows ~4 s later), the row shows the choice at once.
+- **ChoiceRow** layout: the value may use what the title does not need (at least 45 % of the row) and is ellipsized
+  inside its arrows; "Game speed  < Standard, high frame rate >" used to run over both arrows (seen on the device).
 - **Bluetooth headphones** (`audio/BtDspVolume`, new; NOT device-tested): the Z9X HAL plays A2DP itself
   (hw_get_module_by_class("audio", "bluetooth") = vendor audio.bluetooth.default.so, AIDL provider V3) and keeps a
   per-device A2DP volume table that starts at 0; only stock's patched AudioService filled it
