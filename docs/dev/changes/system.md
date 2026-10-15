@@ -2,6 +2,10 @@
 
 ## Lumen OS 1.0.4: network adb survives a reboot (2026-10-15)
 
+- `z9x_diag.sh`: keeps 6 boots instead of 3 (the 40 MB guard now drops boot.6 ... boot.2, oldest first). The owner's
+  black screen after an auto keystone (boot #16, 2026-10-15 ~00:40) could not be read: two restarts during the
+  night's tests had already rotated that boot out.
+
 - `z9x_adb_net.rc` (system/etc/init, in RCS of tools/lumen_v1.sh): LineageOS TV's "ADB over network" switch only sets
   the non-persistent service.adb.tcp.port (product init.lineage.atv.rc restarts adbd on 5555 / -1), so every reboot
   turned it off (owner). The rc mirrors the switch into persist.z9x.adb_net (5555 -> 1, -1 -> 0) and sets the port

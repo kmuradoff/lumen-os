@@ -10,8 +10,8 @@
 # z9x_features.rc), never stops/restarts any service and has no effect on behaviour. Vendor files
 # are only read. Files are group "log" readable (adb shell is in AID_LOG): adb pull works without root.
 #
-# Layout: $D/boot.1 = this boot, boot.2 = previous, boot.3 = the one before; $D/history.txt (one line
-# at start and one at end of every boot); $D/bootcount. Cap: 3 boots and 40 MB.
+# Layout: $D/boot.1 = this boot, boot.2 = previous ... boot.6 = the oldest kept; $D/history.txt (one line
+# at start and one at end of every boot); $D/bootcount. Cap: 6 boots and 40 MB (oldest boots go first).
 # HEALTHY (a log marker file only) = sys.boot_completed=1 AND vendor.xgimi.ledOn=true seen (set by
 # gmpf_main, libporting PlatformPanel::setLedOn) AND the gmpf_main pid never changed, held for 90 s
 # after boot_completed. gmpf_main restarts / downtime are logged to events.txt (the vendor DrvWdt
@@ -92,10 +92,9 @@ mkdir -p $D 2>/dev/null
 if ! touch $D/.w 2>/dev/null; then D=$R/dev/z9x_diag; mkdir -p $D; fi
 rm -f $D/.w
 
-# ---- rotate (keep 3 boots) ----
-rm -rf $D/boot.3
-[ -d $D/boot.2 ] && mv $D/boot.2 $D/boot.3
-[ -d $D/boot.1 ] && mv $D/boot.1 $D/boot.2
+# ---- rotate (keep 6 boots; Lumen OS 1.0.4: 3 were too few, two quick restarts pushed out the boot of a problem) ----
+rm -rf $D/boot.6
+for n in 5 4 3 2 1; do [ -d $D/boot.$n ] && mv $D/boot.$n $D/boot.$((n + 1)); done
 B=$D/boot.1
 mkdir -p $B/pstore $B/vendor_err
 n=$(cat $D/bootcount 2>/dev/null)
@@ -459,7 +458,7 @@ while :; do
   # size guard: 40 MB for the whole folder; oldest boots go first
   if [ $((t - lastdu)) -ge 60 ]; then
     lastdu=$t
-    for old in 3 2; do
+    for old in 6 5 4 3 2; do
       kb=$(du -sk $D 2>/dev/null | cut -f1)
       case "$kb" in ''|*[!0-9]*) kb=0 ;; esac
       if [ $kb -gt $MAX_KB ] && [ -d $D/boot.$old ]; then
