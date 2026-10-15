@@ -44,6 +44,11 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
   on the HAL thread. AkOverlay no longer warns about XGIMI's AK report (event 116, read by OpticalZoomPanel).
   Device test 2026-10-15 03:29 (owner's Z9X, PS5 on HDMI 1): Standard and Standard high frame rate both switch
   without "Не удалось" (648 -> true, 647 follows ~4 s later), the row shows the choice at once.
+- **647 lag, central fix** (`GmpfClient`): for 8 s after a 648 that answered true, 647 reads return the option written
+  (the vendor stores it at once, only 647's report lags ~4 s). Device test 2026-10-15 03:46: after a reboot GameProfile
+  first restored the pre-game Standard (648(0)), then its console apply read a stale Standard-HFR from 647, skipped
+  its 648 and left the projector on Standard. After the fix (03:51): restore Standard, snapshot reads Standard, 648
+  Standard-HFR, the vendor ends on Final Opt 1 and the panel shows it. Also used by resetKeystoneForTopSpeedGame's guard.
 - **ChoiceRow** layout: the value may use what the title does not need (at least 45 % of the row) and is ellipsized
   inside its arrows; "Game speed  < Standard, high frame rate >" used to run over both arrows (seen on the device).
 - **Bluetooth headphones** (`audio/BtDspVolume`, new; NOT device-tested): the Z9X HAL plays A2DP itself

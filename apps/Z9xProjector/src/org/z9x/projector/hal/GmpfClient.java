@@ -34,6 +34,7 @@ import android.os.IHwBinder;
 import android.os.IHwInterface;
 import android.os.Process;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.util.Log;
 
@@ -607,7 +608,7 @@ public final class GmpfClient extends HidlCaller {
      * setGameModeOption(2|3) (DS). Refused unless 647 currently reads 2 or 3. TSV W=writeUint8 R=.
      */
     public void resetKeystoneForTopSpeedGame() throws RemoteException {
-        GameModeOption cur = GameModeOption.fromWire(callRetI32(GET_GAME_MODE_OPTION));
+        GameModeOption cur = getGameModeOption();
         if (cur == null || !cur.isTopSpeed()) {
             throw new IllegalStateException("correctKeystoneReset only in top-speed game mode (now " + cur + ")");
         }
@@ -943,14 +944,32 @@ public final class GmpfClient extends HidlCaller {
 
     /** 647 getGameModeOption() -> 0..3 (null otherwise). */
     public GameModeOption getGameModeOption() throws RemoteException {
+        GameModeOption w = sWrittenOpt;
+        if (w != null && SystemClock.uptimeMillis() - sWrittenAt < OPTION_LAG_MS) return w;
         return GameModeOption.fromWire(callRetI32(GET_GAME_MODE_OPTION));
     }
+
+    /**
+     * Lumen OS 1.0.4 (owner's Z9X logs, 2026-10-15): 648 stores the option at once (m_eGameOption and its DB change in
+     * the same call) but 647 keeps reporting the old one until the picture mode is applied again, ~4 s later. Read
+     * right after a write, 647 made the panel say "Не удалось" and made GameProfile skip a needed 648 (a restore to
+     * Standard, then the console profile saw a stale Standard-HFR and left the projector on Standard). So for
+     * OPTION_LAG_MS after a 648 that answered true, 647 reads return the option written. Process-wide.
+     */
+    private static final long OPTION_LAG_MS = 8_000;
+    private static volatile GameModeOption sWrittenOpt;
+    private static volatile long sWrittenAt;
     /**
      * 648 setGameModeOption(0..3). HDMI only. After TOP_SPEED(_HFR) stock also calls 207: use
      * {@link #resetKeystoneForTopSpeedGame()} and treat keystone as disabled. TSV W=writeInt32 R=readBool.
      */
     public boolean setGameModeOption(GameModeOption o) throws RemoteException {
-        return callI32RetBool(SET_GAME_MODE_OPTION, o.wire);
+        boolean r = callI32RetBool(SET_GAME_MODE_OPTION, o.wire);
+        if (r) {
+            sWrittenOpt = o;
+            sWrittenAt = SystemClock.uptimeMillis();
+        }
+        return r;
     }
 
     // ------------------------------------------------------------------ v6.2 game module (BEGIN)
