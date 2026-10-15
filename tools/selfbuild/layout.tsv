@@ -133,6 +133,7 @@ system/etc/z9x-home-default-permissions.xml	overlay/v1/z9x-home-default-permissi
 system/etc/z9x-projector-default-permissions.xml	overlay/v1/z9x-projector-default-permissions.xml
 system/etc/z9x-sysconfig-nogms.xml	overlay/v1/z9x-sysconfig-nogms.xml
 system/etc/z9x-sysconfig.xml	overlay/v1/z9x-sysconfig.xml
+system/etc/z9x_adb_net.rc	overlay/v1/z9x_adb_net.rc
 system/etc/z9x_audio.rc	overlay/v1/z9x_audio.rc
 system/etc/z9x_base.rc	overlay/v1/z9x_base.rc
 system/etc/z9x_bootinfo.rc	overlay/v1/z9x_bootinfo.rc

@@ -43,8 +43,8 @@ import java.util.concurrent.Future;
  */
 public class UsbFilesActivity extends Activity {
     private static final String TAG = "Z9xHomeFiles";
-    /** A held OK this long opens the file's menu instead of opening the file. */
-    private static final long LONG_OK_MS = 600;
+    /** A held OK this long (or a key event Android flags as a long press) opens the menu instead of the file. */
+    private static final long LONG_OK_MS = android.view.ViewConfiguration.getLongPressTimeout();
 
     private final Handler mMain = new Handler(Looper.getMainLooper());
     private final ExecutorService mIo = Executors.newSingleThreadExecutor();
@@ -144,7 +144,7 @@ public class UsbFilesActivity extends Activity {
             if (e.getRepeatCount() == 0) {
                 mOkDown = true;
                 mOkLong = false;
-            } else if (mOkDown && !mOkLong && e.getEventTime() - e.getDownTime() >= LONG_OK_MS) {
+            } else if (mOkDown && !mOkLong && (e.isLongPress() || e.getEventTime() - e.getDownTime() >= LONG_OK_MS)) {
                 mOkLong = true;
                 showMenu((UsbFiles.Entry) it.tag);
             }
@@ -200,7 +200,9 @@ public class UsbFilesActivity extends Activity {
             mMain.post(() -> {
                 if (seq != mSeq || isFinishing() || isDestroyed() || !mPanel.isOpen()) return;
                 mPath.add(dir);
-                mPanel.push(dir.getName(), where(dir), items(l));
+                UsbFiles.Stick place = placeOf(dir);
+                if (place != null) mPanel.push(place.label, getString(R.string.files_title), items(l));   // a place's root (not "0")
+                else mPanel.push(dir.getName(), where(dir), items(l));
             });
         });
     }
@@ -220,6 +222,12 @@ public class UsbFilesActivity extends Activity {
                 mPanel.replace(items(l));
             });
         });
+    }
+
+    /** The place whose root {@code dir} is, or null. */
+    private UsbFiles.Stick placeOf(File dir) {
+        for (UsbFiles.Stick s : mPlaces) if (s.root.getAbsolutePath().equals(dir.getAbsolutePath())) return s;
+        return null;
     }
 
     /** "Stick label / Movies / 2024" for a folder's subtitle. */
