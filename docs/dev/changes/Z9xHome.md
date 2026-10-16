@@ -2,8 +2,8 @@
 
 - **Files is a file manager now; one Files entry** (owner 2026-10-15: "duplicates: Install from USB, Files: keep only
   the file manager; Get more apps is pointless, it only opens Google Play"). The Apps page no longer adds its own
-  "Get more apps", "Install from USB" and "Files" cards (Files stays as its launcher alias in the list, so it was
-  shown twice). UsbFilesActivity: the first page lists the places (the projector's storage /storage/emulated/0,
+  "Get more apps" and "Install from USB" cards; the Files card stays (AppSource hides Lumen Home's own launcher
+  entries, the FilesLauncher alias too, so without the card Files was gone from the page: seen on the device). UsbFilesActivity: the first page lists the places (the projector's storage /storage/emulated/0,
   then the sticks; with no stick a hint row), every file is listed (OTHER opens through ACTION_VIEW + the read-only
   provider, which now serves the projector's storage too: UsbFiles.inPlaces), an .apk installs that one file
   (UsbInstallActivity EXTRA_PATH; title "Install app"), and a long OK (600 ms) on a file or folder opens its menu:
