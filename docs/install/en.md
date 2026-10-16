@@ -6,7 +6,7 @@
 > This guide starts with the XGIMI Z9X. For the XGIMI Play 6 (beta) go to [XGIMI Play 6](#play6): it
 > installs differently (over Wi-Fi, with a cable only for the write) and needs its own release files.
 
-This guide covers Lumen OS 1.0.3 without Google on the XGIMI Z9X (model code G0082) with XGIMI
+This guide covers Lumen OS 1.0.4 without Google on the XGIMI Z9X (model code G0082) with XGIMI
 firmware V6.15.58, V6.15.62 or V6.15.19. Lumen OS is Android TV 14, built on LineageOS 21. It replaces only the
 system partition. The XGIMI firmware and calibration are not touched, and focus, keystone and the lamp
 work as on stock.
@@ -74,8 +74,8 @@ fastboot, install the [Google USB Driver](https://developer.android.com/studio/r
 
 1. Open the [Releases page](https://github.com/kmuradoff/lumen-os/releases) on GitHub. Download only
    from there. We do not check or support copies on forums or file hosts.
-2. From the latest release (now 1.0.3), download four files: `lumen-os-1.0.3-nogms-system.img`,
-   `SHA256SUMS`, `SHA256SUMS.sig` and `lumen-os-1.0.3-installer.zip`.
+2. From the latest release (now 1.0.4), download four files: `lumen-os-1.0.4-nogms-system.img`,
+   `SHA256SUMS`, `SHA256SUMS.sig` and `lumen-os-1.0.4-installer.zip`.
 3. Unpack the installer zip. Put the image and both `SHA256SUMS` files next to `lumen-install.sh`.
    Remove any older `lumen-os-*-system.img` from that folder.
 4. Open a terminal and go to that folder:
@@ -247,7 +247,7 @@ If there is no setup screen after 10 minutes, see [Something went wrong](#proble
 
 ## 8. Optional: verify the install
 
-On the projector, open Settings > Device Preferences > About. It should show Lumen OS 1.0.3.
+On the projector, open Settings > Device Preferences > About. It should show Lumen OS 1.0.4.
 
 To check over USB:
 
@@ -268,11 +268,12 @@ question. Unplug the cable afterwards.
 
 From a USB stick:
 
-1. Copy `.apk` files to a FAT32 or exFAT stick, into its root or a folder named `apks`.
+1. Copy `.apk` files to a FAT32 or exFAT stick.
 2. Plug the stick into the projector.
-3. In Lumen Home, open Apps > Install from USB. A list shows each app's name, icon, version and
-   "New" or "Update".
-4. Choose an app, press OK and confirm the install.
+3. In Lumen Home, open Files, choose the stick and find the `.apk` file. Since 1.0.4 Files also shows the
+   projector's own storage, for example the Download folder.
+4. Press OK on the file: the app's name, icon, version and "New" or "Update" appear. Press OK again and
+   confirm the install.
 
 Only plain `.apk` files work, not `.apks` or `.xapk`. Updates install the same way. Over the cable, with
 USB debugging on, `adb install name.apk` works too.
@@ -386,8 +387,8 @@ downloaded, Lumen Home shows an "Update ready" badge.
 | first start | Restarts in a loop, the computer does not see it | The vbmeta step was most likely not done for this slot. Do the [stock restore](#stock) and start again at step 1. If the projector went to fastboot mode by itself, try [Rescue](#rescue) first. |
 | later | Lumen OS no longer starts | After 3 failed starts in a row the projector goes to fastboot mode. Run [Rescue](#rescue); your data stays. |
 | later | It does not sleep: lamp off, fans running | Unplug the USB cable from the computer. |
-| Install from USB | The list is empty | The `.apk` files must be in the stick's root or in a folder `apks`, on FAT32 or exFAT. Take the stick out and plug it in again. |
-| Install from USB | "was not installed" | The file is damaged, or the app is not for Android TV 14 (arm64). |
+| Files | The stick is not listed | The stick must be FAT32 or exFAT. Take it out and plug it in again. |
+| Installing an `.apk` | "was not installed" | The file is damaged, or the app is not for Android TV 14 (arm64). |
 | an app | Asks for Google Play services | Look for a version without them, or [add Google services](#google). |
 | gapps | "is not the MindTheGapps file this installer accepts" | Download exactly the file named above. Nothing was written. |
 | gapps | "does not accept this file yet" | Update Lumen OS first. Nothing was written. |

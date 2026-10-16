@@ -3,7 +3,9 @@
 Сверху новые версии. Версии 1.0.x выходят для XGIMI Z9X, у XGIMI Play 6 свои записи с пометкой Play 6.
 [English below](#english).
 
-## Следующая версия Z9X (1.0.4, ещё не вышла)
+## 1.0.4, октябрь 2026
+
+Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
 
 Из стоковой прошивки XGIMI перенесено то, чего в Lumen не было:
 
@@ -28,10 +30,14 @@
   сменилась.
 - «Для разработчиков → ADB over network» больше не выключается после перезагрузки, если вы сами его включили.
   Подключение компьютера по-прежнему нужно подтвердить на экране проектора.
-
 - Ручной оптический зум («Трапеция → Оптический зум»): одно нажатие теперь один шаг, нажатия не теряются,
-  объектив не сбивается со счёта. После автотрапеции зум возвращается к вашему размеру, если проектор не
-  вписывал картинку в экран сам.
+  объектив не сбивается со счёта. Ещё одно «больше» на самом большом размере ставит объектив в настоящий
+  максимум, как после автотрапеции. После автотрапеции зум возвращается к вашему размеру, если проектор не
+  вписывал картинку в экран сам. Первое «меньше» после автотрапеции немного качает объектив: так проектор
+  переходит на целые шаги.
+- Bluetooth-наушники: проектор выставляет им громкость так же, как стоковая прошивка. Без этого наушники могли
+  молчать.
+- Длинные значения в быстрой панели больше не налезают на стрелки.
 
 ## XGIMI Play 6, бета 1, октябрь 2026
 
@@ -129,7 +135,9 @@ HDMI, заставка, 3D и оптический зум. На 1.0.2 обнов
 
 Newest first. Versions 1.0.x are for the XGIMI Z9X; the XGIMI Play 6 has its own entries marked Play 6.
 
-## Next Z9X version (1.0.4, not released yet)
+## 1.0.4, October 2026
+
+The update comes over Wi-Fi: Settings > Device Preferences > About > Lumen OS update. Your data stays.
 
 Brought over from XGIMI's stock firmware, what Lumen did not have:
 
@@ -155,8 +163,13 @@ Fixes:
   has to be allowed on the projector screen.
 
 - Manual optical zoom ("Keystone > Optical zoom"): one press is now one step, presses are not lost, and the lens
-  no longer loses count. After auto keystone the zoom goes back to your size, unless the projector fitted the
-  picture to the screen itself.
+  no longer loses count. One more "bigger" at the biggest size puts the lens at its real maximum, as after auto
+  keystone. After auto keystone the zoom goes back to your size, unless the projector fitted the picture to the
+  screen itself. The first "smaller" after auto keystone moves the lens back and forth a little: that is the
+  projector switching to whole steps.
+- Bluetooth headphones: the projector sets their volume the way the stock firmware does. Without it the
+  headphones could stay silent.
+- Long values on the quick panel no longer run over their arrows.
 
 ## XGIMI Play 6, beta 1, October 2026
 

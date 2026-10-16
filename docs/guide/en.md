@@ -86,20 +86,21 @@ Both values belong to the input on screen.
 In "Projector > Power on > Open at power-on" choose HDMI 1 or HDMI 2 to have that input open right after
 power-on. If a device switched the projector on through HDMI-CEC, its own input opens.
 
-## Files from a USB stick
+## Files
 
-"Files" is on the Lumen Home apps page and in the app list of any launcher.
+"Files" is on the Lumen Home apps page and in the app list of any launcher. It shows the projector's
+storage and any USB stick plugged in.
 
 - OK opens a folder, Back goes one level up.
 - Videos and music open in the player you chose (Kino, VLC). Without one, in the built-in player: OK
   pauses, Left and Right jump 10 seconds (30 while held), Back exits.
 - Photos open full screen, Left and Right go through the folder.
-- `.apk` files lead to "Install from USB".
+- An `.apk` file installs as an app: OK, then confirm.
+- Holding OK on a file or folder opens a menu: open, copy to the projector's storage or a stick, delete.
 
 ## Apps
 
-Without Google services, apps come from a USB stick: "Lumen Home > Apps > Install from USB". Put the
-`.apk` files in the root of the stick or in an `apks` folder.
+Without Google services, apps come from a USB stick: "Lumen Home > Files", the stick, the `.apk` file, OK.
 
 ## Sleep and power-on
 
