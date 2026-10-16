@@ -8,7 +8,7 @@ Android TV 14 for XGIMI projectors, built on LineageOS 21.
 
 | Projector | Status | Latest release | Install guide |
 |---|---|---|---|
-| XGIMI Z9X | stable | [Lumen OS 1.0.3](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.3) | [English](docs/install/en.md), [Русский](docs/install/ru.md) |
+| XGIMI Z9X | stable | [Lumen OS 1.0.4](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.4) | [English](docs/install/en.md), [Русский](docs/install/ru.md) |
 | XGIMI Play 6 | beta | [Play 6 beta 1](https://github.com/kmuradoff/lumen-os/releases/tag/play6-beta1) (pre-release) | [English](docs/install/en.md#play6), [Русский](docs/install/ru.md#play6) |
 
 Each projector has its own release files, signed with its own key. The installer refuses an image for
@@ -24,10 +24,12 @@ another projector and any XGIMI firmware it does not know.
 More projectors will come later.
 
 <p>
-<img src="docs/screenshots/01_sky.jpg" width="49%" alt="Lumen Home with the live sky">
-<img src="docs/screenshots/05_proj.jpg" width="49%" alt="Projector settings in Lumen Home">
-<img src="docs/screenshots/04_lang.jpg" width="49%" alt="Language choice in the first setup">
-<img src="docs/screenshots/07_upd.jpg" width="49%" alt="Lumen OS update screen">
+<img src="docs/screenshots/en_01_projector.jpg" width="49%" alt="Projector settings in Lumen Home">
+<img src="docs/screenshots/en_03_pro.jpg" width="49%" alt="Professional picture settings">
+<img src="docs/screenshots/en_04_keystone.jpg" width="49%" alt="Keystone, optical zoom and picture rotation">
+<img src="docs/screenshots/en_05_sound.jpg" width="49%" alt="Sound settings with the sound output choice">
+<img src="docs/screenshots/en_06_files.jpg" width="49%" alt="The Files app">
+<img src="docs/screenshots/en_07_update.jpg" width="49%" alt="Lumen OS update screen">
 </p>
 
 ## What it is
@@ -45,7 +47,7 @@ On the Z9X the interface runs at 1080p.
 - 17 languages. The XGIMI remote pairs in the first setup.
 - Updates over Wi-Fi, signed with the project's key. If a new version fails to start, the projector
   goes back to the previous one.
-- Install from USB: any `.apk` from a USB stick, straight from Lumen Home.
+- Files: the projector's storage and USB sticks, a built-in player, and any `.apk` installs from there.
 - No ads and no Google services running in the background. At most 10 apps are kept cached.
 
 This list is for the Z9X. The Play 6 beta has Lumen Home, its own projector app, the HDMI input and the
@@ -95,8 +97,6 @@ for the [Z9X](docs/install/en.md#stock) and for the [Play 6](docs/install/en.md#
 - On the Z9X, while a USB cable to a computer is connected, the projector does not really sleep. Unplug
   it after the install.
 - HDMI-CEC has not been tested on the Z9X.
-- Z9X, 1.0.3: the optical zoom page always shows the same size number, and after a few steps the
-  picture may stop changing.
 - The built-in keyboard types English; Lumen Home's search has its own keyboard.
 - Once a new version has started, an update cannot be undone over the air.
 - Play 6: no updates over Wi-Fi, no AirPlay receiver and no Google services yet.
