@@ -98,8 +98,12 @@ public class PageApps extends ViewGroup implements Page {
         mFavCards.addAll(m.favorites);
         ArrayList<Card> all = new ArrayList<>(m.apps);
         // 1.0.4 (owner): no "Get more apps" (it only opened Google Play, which is in the list anyway) and no
-        // separate "Install from USB" / "Files" tiles: Files is one entry of the list (its launcher alias) and
-        // installs .apk files itself
+        // separate "Install from USB": Files installs .apk files itself. Files stays as its own card: AppSource hides
+        // Lumen Home's own launcher entries (its FilesLauncher alias too), so the card is its only entry here.
+        Card files = new Card(Card.MORE_APPS, "files", getContext().getString(R.string.files_title));
+        files.intent = "files";
+        files.icon = R.drawable.ic_folder;
+        all.add(files);
         sync(mFav, mFavCards);
         sync(mAll, all);
         mFavTitle.setVisibility(mFav.isEmpty() ? GONE : VISIBLE);
