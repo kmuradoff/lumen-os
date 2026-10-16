@@ -8,7 +8,7 @@ Android TV 14 для проекторов XGIMI на основе LineageOS 21.
 
 | Проектор | Состояние | Последний релиз | Инструкция |
 |---|---|---|---|
-| XGIMI Z9X | стабильная | [Lumen OS 1.0.3](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.3) | [Русский](docs/install/ru.md), [English](docs/install/en.md) |
+| XGIMI Z9X | стабильная | [Lumen OS 1.0.4](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.4) | [Русский](docs/install/ru.md), [English](docs/install/en.md) |
 | XGIMI Play 6 | бета | [Play 6, бета 1](https://github.com/kmuradoff/lumen-os/releases/tag/play6-beta1) (Pre-release) | [Русский](docs/install/ru.md#play6), [English](docs/install/en.md#play6) |
 
 У каждого проектора свои файлы релиза, подписанные своим ключом. Установщик не примет образ для другого
@@ -24,10 +24,12 @@ Android TV 14 для проекторов XGIMI на основе LineageOS 21.
 Другие проекторы добавятся позже.
 
 <p>
-<img src="docs/screenshots/01_sky.jpg" width="49%" alt="Lumen Home с живым небом">
-<img src="docs/screenshots/05_proj.jpg" width="49%" alt="Настройки проектора в Lumen Home">
-<img src="docs/screenshots/04_lang.jpg" width="49%" alt="Выбор языка в первой настройке">
-<img src="docs/screenshots/07_upd.jpg" width="49%" alt="Экран обновления Lumen OS">
+<img src="docs/screenshots/en_01_projector.jpg" width="49%" alt="Настройки проектора в Lumen Home">
+<img src="docs/screenshots/en_03_pro.jpg" width="49%" alt="Профессиональные настройки изображения">
+<img src="docs/screenshots/en_04_keystone.jpg" width="49%" alt="Трапеция, оптический зум и поворот изображения">
+<img src="docs/screenshots/en_05_sound.jpg" width="49%" alt="Настройки звука с выбором вывода">
+<img src="docs/screenshots/en_06_files.jpg" width="49%" alt="Приложение «Файлы»">
+<img src="docs/screenshots/en_07_update.jpg" width="49%" alt="Экран обновления Lumen OS">
 </p>
 
 ## Что это
@@ -46,7 +48,7 @@ Lumen OS заменяет на проекторе только системны�
 - 17 языков, русский в том числе. Пульт XGIMI подключается в первой настройке.
 - Обновления по Wi-Fi, подписанные ключом проекта. Если новая версия не загрузится, проектор вернётся
   к прежней.
-- «Установить с USB»: любой `.apk` с флешки прямо из Lumen Home.
+- «Файлы»: память проектора и флешки, встроенный плеер, установка любого `.apk` прямо оттуда.
 - Нет рекламы и фоновых сервисов Google. В фоне держится не больше 10 приложений.
 
 Этот список для Z9X. В бете для Play 6 есть Lumen Home, своё приложение «Проектор», вход HDMI и первая
@@ -98,8 +100,6 @@ Lumen OS». Обновление ставится во второй слот, с
 - На Z9X, пока кабель USB подключён к компьютеру, проектор не засыпает по-настоящему. После установки
   отключите кабель.
 - HDMI-CEC на Z9X не проверялся.
-- Z9X, 1.0.3: в оптическом зуме число размера не меняется, а после нескольких шагов картинка может
-  перестать меняться.
 - Встроенная клавиатура печатает на английском. У поиска в Lumen Home своя клавиатура с кириллицей.
 - Когда новая версия уже загрузилась, откатить обновление по воздуху нельзя.
 - Play 6: пока нет обновлений по Wi-Fi, приёмника AirPlay и сервисов Google.
