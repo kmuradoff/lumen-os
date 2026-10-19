@@ -6,40 +6,58 @@
  *     -> AAudio data callback: plays the sample whose T matches the presentation time of
  *        the next output frame (AAudioStream_getTimestamp on CLOCK_MONOTONIC, filtered).
  *
- * T = mono(ntp_time_local) + latency + extra, the same rule the video decoder uses, so audio
- * and video stay in sync with each other and with the sender (audio alone adds the
- * debug.z9x.airplay.av_offset_ms calibration, 0 by default).
+ * T = clock(sender time) + latency + extra (+ the debug.z9x.airplay.av_offset_ms
+ * calibration, 0 by default). clock is AvClock (av_clock.cpp): one smoothed sender ->
+ * CLOCK_MONOTONIC offset per session, shared with the video decoder, so audio and video
+ * stay in sync with each other and with the sender and play times never jump per packet.
  *
  * Output timing. The timestamp is sampled every 50 ms. The HAL / DSP chain of this SoC may
  * report its position in coarse steps, and a position that lags only ever makes the
  * presentation time of frame 0 ("epoch" = t - pos / rate) look later, so the sample with the
  * earliest epoch of the last 3.2 s is used; the window restarts after an xrun (an underrun
- * delays everything after it). (Host simulation, position in 64 ms steps: the 1.0.0 reader
- * did ~160 hard skips / silences a minute, this one none.) Until the first timestamp (at most 500 ms after the stream
+ * delays everything after it). Until the first timestamp (at most 500 ms after the stream
  * opens) the callback plays silence instead of aligning on a guess. Corrections: an error
  * above 4 ms starts single-frame drops / repeats, blended with the neighbouring frame, at most
  * 0.5% of the frames (1% beyond 20 ms), until it is below 1 ms; a hard skip or silence only
  * when the error stays above 50 ms for 3 callbacks or exceeds 250 ms, and after an underrun,
  * a flush, a discontinuity or a reopen of the output.
  *
- * Jitter headroom. Each write measures its spare time: T - now - the output lead (how far
- * ahead of real time the data callback reads: AAudio buffer + HAL / DSP latency). When the
- * worst spare of a one-second window is below 30 ms in 2 of the last 8 windows, `extra`
- * (shared with the video decoder, so A/V sync holds) grows so that the worst spare of those
- * 8 windows becomes about 120 ms, at most 300 ms per session; it costs one short gap (the inserted
- * silence), and goes back to 0 when the session ends.
+ * Writer. A packet whose T differs from the continuation of the timeline by up to 40 ms
+ * (kGapSlackNs; 1.0.1: 10 ms, a silence or a cut each time) only moves the timeline (a "soft"
+ * anchor): the reader's drift correction slews to it, without a gap. Lost packets (a gap in
+ * the RTP sequence numbers, a decoder that dropped or failed a packet) and sender gaps above
+ * 40 ms keep their exact time and are concealed: up to 30 ms by repeating the last 11.6 ms
+ * of sound back and forth (continuous at both turns), longer gaps fade that out and continue
+ * with silence; the audio after a concealment is blended in (1.5 ms after a short one, a
+ * 10 ms fade-in after silence). Overlaps above 40 ms are cut, blended the same way.
+ * The reader fades into an underrun (3 ms) and fades back in (10 ms) after any silence, and
+ * blends over a skip (1.5 ms): no hard clicks.
+ *
+ * Extra delay (shared with the video decoder). Sized once per audio session: a session
+ * starts with the extra remembered for its audio type (AAC-ELD mirroring: 60 ms the first
+ * time), the first second of packets measures how early they arrive before their play time,
+ * and with the measured output lead (AAudio buffer + HAL / DSP latency) the extra is set so
+ * that the worst packet of that second still has 70 ms to spare (kSpareTargetNs), within
+ * 0..300 ms; changes below 20 ms are not made. Later it only grows when packets came after
+ * their play deadline in 3 of the last 10 one-second windows, by 20-60 ms, at most every
+ * 20 s (each raise logged); 0 again when the session ends. (1.0.1 started at 0 and raised
+ * the delay mid-stream whenever the spare time was low: an underrun burst at the start, then
+ * +100 ms, each raise a gap.) Resend deadlines: a missing packet is waited for (UxPlay patch
+ * z9x-0011) until its play time less the output lead and 30 ms.
  *
  * AAudio: shared, PERFORMANCE_MODE_NONE (a normal AudioFlinger mixer track: the Harman/DTS
  * chain applies, and AudioFlinger resamples our 44.1 kHz to the 48 kHz mixer, with the larger
  * buffer it uses when it resamples). xruns are counted; each one grows the buffer by a burst
  * while it is below its capacity; 3 within 10 s at full capacity reopen the stream with twice
  * the capacity (at most 250 ms). The decoder threads (UxPlay's RTP thread, the AAC drain
- * thread) run at audio priority; the data callback never allocates or blocks.
+ * thread) run at audio priority; the data callback never allocates, locks or logs.
  *
  * Diagnostics, every 5 s while the output is open and packets arrive (one log line): packets,
  * lost (sequence gaps after the reorder buffer), late (written after their play deadline),
- * worst spare, ring level, output lead, buffer / capacity / burst, xruns, timestamp spread,
- * drift corrections, realigns, underruns with the late audio skipped, and the extra delay.
+ * resends (requested, received, received too late, given up), the mean play lead at arrival
+ * (play time - now), worst spare, ring level, output lead, buffer / capacity / burst, xruns,
+ * timestamp spread, drift corrections, realigns, underruns with the late audio skipped, the
+ * concealed audio and the extra delay. One line per session timing decision and per raise.
  *
  * The output stays open (playing silence) while a session lasts, up to 60 s without data,
  * so the first sound after a pause is not lost to the stream start-up; it closes 2 s after
@@ -75,6 +93,7 @@
 
 #include "ALACBitUtilities.h"
 #include "ALACDecoder.h"
+#include "av_clock.h"
 #include "z9x_common.h"
 
 namespace {
@@ -90,16 +109,32 @@ constexpr int64_t kHardErrNs = 50 * kMs;
 constexpr int kHardPersistCallbacks = 3;
 constexpr int64_t kHugeErrNs = 250 * kMs;
 /* writer */
-constexpr int64_t kGapSlackNs = 10 * kMs;
+constexpr int64_t kSoftAnchorMinNs = 1 * kMs;  /* smaller timing differences are ignored */
+constexpr int64_t kGapSlackNs = 40 * kMs;      /* up to this: soft anchor, slewed by the reader */
 constexpr int64_t kDiscontinuityNs = 750 * kMs;
 constexpr int64_t kSpareWindowNs = 1000 * kMs;
-/* jitter headroom (extra delay for audio and video) */
-constexpr int64_t kSpareLowNs = 30 * kMs;
-constexpr int64_t kSpareTargetNs = 120 * kMs;
-constexpr int64_t kExtraStepMinNs = 20 * kMs;
+/* concealment and fades (frames at 44.1 kHz) */
+constexpr int kPlcPeriodFrames = 512;  /* 11.6 ms of the last sound, played back and forth */
+constexpr int kPlcMaxFrames = 1323;    /* 30 ms; a longer gap fades it out, then silence */
+constexpr int kDeclickFrames = 64;     /* 1.5 ms blend from the last sample into new audio */
+constexpr int kFadeInFrames = 441;     /* 10 ms fade-in after silence */
+constexpr int kDecayFrames = 132;      /* 3 ms fade-out into an underrun */
+/* extra delay (audio and video): session timing */
+constexpr int64_t kSpareTargetNs = 70 * kMs;
 constexpr int64_t kExtraMaxNs = 300 * kMs;
-constexpr int kSpareHistory = 8;     /* one-second windows looked at */
-constexpr int kSpareLowWindows = 2;  /* low ones among them that raise the delay */
+constexpr int64_t kExtraHysteresisNs = 20 * kMs;
+constexpr int64_t kProvisionalEldNs = 60 * kMs;  /* mirroring, before the first measurement */
+constexpr int64_t kAssumedOutLeadNs = 230 * kMs; /* no output lead known (Z9X: 214-218 ms) */
+constexpr int kMeasureMaxWindows = 3;            /* wait this long for the output lead */
+/* extra delay: raise after repeated late packets */
+constexpr int kLateHistory = 10;                 /* one-second windows looked at */
+constexpr int kLateWindows = 3;                  /* late ones among them that raise the delay */
+constexpr int64_t kRaiseIntervalNs = 20000 * kMs;
+constexpr int64_t kRaiseSpareNs = 30 * kMs;
+constexpr int64_t kRaiseMinNs = 20 * kMs;
+constexpr int64_t kRaiseMaxNs = 60 * kMs;
+/* resend deadline: play time - output lead - this (decode + hand-over) */
+constexpr int64_t kResendMarginNs = 30 * kMs;
 /* output */
 constexpr int64_t kIdleCloseNs = 2000 * kMs;          /* after the session ended */
 constexpr int64_t kSessionIdleCloseNs = 60000 * kMs;  /* session open, sender silent */
@@ -123,6 +158,11 @@ inline int64_t nsToFramesRound(int64_t ns) {
     return (ns * kRate + (ns >= 0 ? 1 : -1) * (Z9X_NS_PER_SEC / 2)) / Z9X_NS_PER_SEC;
 }
 inline long long toMs(int64_t ns) { return (long long) (ns / kMs); }
+/* up to a multiple of 10 ms */
+inline int64_t roundUp10Ms(int64_t ns) {
+    const int64_t q = 10 * kMs;
+    return ns <= 0 ? -((-ns) / q * q) : (ns + q - 1) / q * q;
+}
 
 /* single-writer counter, read by the worker */
 inline void bump(std::atomic<uint32_t> &c, uint32_t n = 1) {
@@ -136,40 +176,52 @@ class PcmTimeline {
 public:
     PcmTimeline() : mBuf(new int16_t[(size_t) kRingFrames * kCh]) {}
 
-    /* producer */
-    void write(const int16_t *pcm, int frames, int64_t targetNs) {
+    /* producer: `frames` frames whose first one plays at targetNs. lost: packets are missing
+       just before this one (conceal the gap, keep the timing exact). extraNs: the extra
+       delay included in targetNs (session timing statistics). */
+    void write(const int16_t *pcm, int frames, int64_t targetNs, bool lost, int64_t extraNs) {
         if (frames <= 0) return;
         const int64_t now = z9x_mono_ns();
         if (mReanchor.exchange(false, std::memory_order_acq_rel)) {
             mHaveAnchor = false;
-            mWinSpareMin = INT64_MAX;
+            mRampLeft = 0;
+            mWinSpareMin = mWinRawMin = INT64_MAX;
+            mWinLate = 0;
             mWinStartNs = 0;
         }
-        noteSpare(targetNs - now - mOutLeadNs.load(std::memory_order_relaxed), now);
+        noteSpare(targetNs - now - mOutLeadNs.load(std::memory_order_relaxed), targetNs - extraNs - now, now);
         uint64_t w = mW.load(std::memory_order_relaxed);
+        bool soft = false;
         if (mHaveAnchor) {
             const int64_t expected = mAnchorT + framesToNs((int64_t) (w - mAnchorPos));
             const int64_t gap = targetNs - expected;
             if (gap > kDiscontinuityNs || gap < -kDiscontinuityNs) {
                 mHaveAnchor = false;
-            } else if (gap > kGapSlackNs) {
-                w = put(w, nullptr, (int) nsToFramesRound(gap));  /* sender gap: keep timing exact */
+            } else if (gap > kGapSlackNs || (lost && gap > kSoftAnchorMinNs)) {
+                w = conceal(w, (int) nsToFramesRound(gap));  /* missing audio: keep timing exact */
             } else if (gap < -kGapSlackNs) {
                 const int drop = (int) nsToFramesRound(-gap);  /* overlap: slot already used */
+                /* the audio written next joins with a jump: blend it in */
+                if (mRampLeft == 0) startRamp(w > 0 ? frameAt(w - 1) : nullptr, kDeclickFrames);
                 if (drop >= frames) return;
                 pcm += (size_t) drop * kCh;
                 frames -= drop;
+            } else if (gap > kSoftAnchorMinNs || gap < -kSoftAnchorMinNs) {
+                soft = true;  /* timing moved a little: the reader slews to it */
             }
         }
-        if (!mHaveAnchor) {
+        if (!mHaveAnchor || soft) {
             const uint32_t aw = mAW.load(std::memory_order_relaxed);
-            if (aw - mAR.load(std::memory_order_acquire) < kAnchors) {
-                mAnchors[aw % kAnchors] = {w, targetNs};
+            const bool room = aw - mAR.load(std::memory_order_acquire) < kAnchors;
+            if (room) {
+                mAnchors[aw % kAnchors] = {w, targetNs, soft};
                 mAW.store(aw + 1, std::memory_order_release);
             }
-            mHaveAnchor = true;
-            mAnchorPos = w;
-            mAnchorT = targetNs;
+            if (room || !soft) {  /* a soft move that found no room is retried with the next packet */
+                mHaveAnchor = true;
+                mAnchorPos = w;
+                mAnchorT = targetNs;
+            }
         }
         w = put(w, pcm, frames);
         mLastWriteNs.store(now, std::memory_order_relaxed);
@@ -203,16 +255,24 @@ public:
     void setOutLead(int64_t ns) { mOutLeadNs.store(ns, std::memory_order_relaxed); }
     int64_t outLead() const { return mOutLeadNs.load(std::memory_order_relaxed); }
 
-    /* worker: one spare-time window per second while data flows */
-    uint32_t spareSeq() const { return mPubSeq.load(std::memory_order_acquire); }
-    int64_t spareMin() const { return mPubSpareMin.load(std::memory_order_relaxed); }
+    /* worker: one window per second while data flows. spareMin: worst (T - now - output
+       lead) of its writes; rawMin: worst (T - extra - now), how early the packets came
+       before their play time without the extra delay and without the output lead; late:
+       writes after their deadline (spare < 0). */
+    struct Window { int64_t spareMin, rawMin; uint32_t late; };
+    uint32_t windowSeq() const { return mPubSeq.load(std::memory_order_acquire); }
+    Window window() const {
+        return {mPubSpareMin.load(std::memory_order_relaxed), mPubRawMin.load(std::memory_order_relaxed),
+                mPubLate.load(std::memory_order_relaxed)};
+    }
 
     struct Stats {
-        uint32_t writes, lateWrites;                                 /* producer */
+        uint32_t writes, lateWrites, concealFrames;                  /* producer */
         uint32_t underruns, realigns, lateSkipFrames, drops, repeats;  /* consumer */
     };
     Stats stats() const {
         return {mWrites.load(std::memory_order_relaxed), mLateWrites.load(std::memory_order_relaxed),
+                mConcealFrames.load(std::memory_order_relaxed),
                 mUnderruns.load(std::memory_order_relaxed), mRealigns.load(std::memory_order_relaxed),
                 mLateSkipFrames.load(std::memory_order_relaxed), mDrops.load(std::memory_order_relaxed),
                 mRepeats.load(std::memory_order_relaxed)};
@@ -220,7 +280,8 @@ public:
 
     /* consumer: fill `frames` frames whose first one is presented at p0 (CLOCK_MONOTONIC).
        Not aligned (start, after an underrun, flush, discontinuity or realign): silence / skip
-       to the exact frame. Aligned: drift corrections and hard realigns as in the header. */
+       to the exact frame. Aligned: drift corrections and hard realigns as in the header.
+       Soft anchors keep the alignment (the drift correction slews to them). */
     void read(int16_t *out, int frames, int64_t p0) {
         uint64_t r = mR.load(std::memory_order_relaxed);
         const uint32_t fseq = mFlushSeq.load(std::memory_order_acquire);
@@ -253,12 +314,12 @@ public:
             while (ar != aw && mAnchors[ar % kAnchors].pos <= r) {
                 mCur = mAnchors[ar % kAnchors];
                 mCurValid = true;
-                mAligned = false;  /* new timeline segment */
+                if (!mCur.soft) mAligned = false;  /* new timeline segment */
                 ar++;
             }
             mAR.store(ar, std::memory_order_release);
             if (r == w) {
-                memset(out + (size_t) done * kCh, 0, (size_t) (frames - done) * kCh * sizeof(int16_t));
+                silence(out, done, frames - done);
                 if (mAligned) {
                     bump(mUnderruns);  /* data not there in time: late packets */
                     mAfterUnderrun = true;
@@ -272,6 +333,7 @@ public:
             if (!mCurValid) {  /* data written before any anchor: play as is */
                 const int n = (int) std::min<int64_t>(frames - done, avail);
                 r = get(r, out + (size_t) done * kCh, n);
+                applyRamp(out + (size_t) done * kCh, n);
                 done += n;
                 continue;
             }
@@ -284,11 +346,14 @@ public:
                     const int64_t skip = std::min<int64_t>(errFrames, avail);
                     r += (uint64_t) skip;
                     if (mAfterUnderrun) bump(mLateSkipFrames, (uint32_t) skip);
+                    if (mReadRampLeft == 0) {  /* blend over the jump */
+                        startReadRamp(done > 0 ? out + (size_t) (done - 1) * kCh : mLastOut, kDeclickFrames);
+                    }
                     continue;
                 }
                 if (errFrames < 0) {  /* early: silence until it is due */
                     const int sil = (int) std::min<int64_t>(-errFrames, frames - done);
-                    memset(out + (size_t) done * kCh, 0, (size_t) sil * kCh * sizeof(int16_t));
+                    silence(out, done, sil);
                     done += sil;
                     continue;
                 }
@@ -342,6 +407,7 @@ public:
             if (mCorrecting && corrections < maxCorr) n = std::min(n, corrSpacing - sinceCorr);
             n = std::max(n, 1);
             r = get(r, out + (size_t) done * kCh, n);
+            applyRamp(out + (size_t) done * kCh, n);
             done += n;
             sinceCorr += n;
         }
@@ -350,19 +416,26 @@ public:
     }
 
 private:
-    struct Anchor { uint64_t pos; int64_t t; };
+    struct Anchor { uint64_t pos; int64_t t; bool soft; };
     static constexpr uint32_t kAnchors = 64;
 
     /* producer: spare-time statistics, published once per window */
-    void noteSpare(int64_t spare, int64_t now) {
+    void noteSpare(int64_t spare, int64_t raw, int64_t now) {
         bump(mWrites);
-        if (spare < 0) bump(mLateWrites);
+        if (spare < 0) {
+            bump(mLateWrites);
+            mWinLate++;
+        }
         if (spare < mWinSpareMin) mWinSpareMin = spare;
+        if (raw < mWinRawMin) mWinRawMin = raw;
         if (mWinStartNs == 0) mWinStartNs = now;
         if (now - mWinStartNs >= kSpareWindowNs) {
             mPubSpareMin.store(mWinSpareMin, std::memory_order_relaxed);
+            mPubRawMin.store(mWinRawMin, std::memory_order_relaxed);
+            mPubLate.store(mWinLate, std::memory_order_relaxed);
             mPubSeq.fetch_add(1, std::memory_order_release);
-            mWinSpareMin = INT64_MAX;
+            mWinSpareMin = mWinRawMin = INT64_MAX;
+            mWinLate = 0;
             mWinStartNs = now;
         }
     }
@@ -370,24 +443,65 @@ private:
     const int16_t *frameAt(uint64_t pos) const {
         return mBuf.get() + (size_t) (pos % kRingFrames) * kCh;
     }
+    int16_t *slot(uint64_t pos) { return mBuf.get() + (size_t) (pos % kRingFrames) * kCh; }
+
+    /* producer: blend the next `len` written frames in from `from` (null = silence) */
+    void startRamp(const int16_t *from, int len) {
+        for (int c = 0; c < kCh; c++) mRampFrom[c] = from ? from[c] : 0;
+        mRampLen = mRampLeft = len;
+    }
+
+    /* producer: `frames` frames of concealment at w (published at once) */
+    uint64_t conceal(uint64_t w, int frames) {
+        const uint64_t r = mR.load(std::memory_order_acquire);
+        const int64_t space = kRingFrames - (int64_t) (w - r);
+        if (frames > space) frames = (int) std::max<int64_t>(space, 0);
+        if (frames <= 0) return w;
+        const int period = (int) std::min<uint64_t>(w, (uint64_t) kPlcPeriodFrames);
+        const int body = std::min(frames, kPlcMaxFrames);
+        const bool fadeOut = frames > kPlcMaxFrames;
+        for (int i = 0; i < frames; i++) {
+            int16_t *dst = slot(w + (uint64_t) i);
+            if (period == 0 || i >= body) {
+                for (int c = 0; c < kCh; c++) dst[c] = 0;
+                continue;
+            }
+            /* the last `period` frames backwards, then forwards, ...: continuous at the turns */
+            const int k = i % (2 * period);
+            const int16_t *src = frameAt(k < period ? w - 1 - (uint64_t) k : w - (uint64_t) period + (uint64_t) (k - period));
+            const float g = fadeOut ? 1.0f - (float) (i + 1) / (float) body : 1.0f;
+            for (int c = 0; c < kCh; c++) dst[c] = (int16_t) ((float) src[c] * g);
+        }
+        if (fadeOut || period == 0) {
+            startRamp(nullptr, kFadeInFrames);
+        } else {
+            startRamp(frameAt(w + (uint64_t) frames - 1), kDeclickFrames);
+        }
+        bump(mConcealFrames, (uint32_t) frames);
+        w += (uint64_t) frames;
+        mW.store(w, std::memory_order_release);
+        return w;
+    }
 
     uint64_t put(uint64_t w, const int16_t *src, int frames) {
         const uint64_t r = mR.load(std::memory_order_acquire);
         const int64_t space = kRingFrames - (int64_t) (w - r);
         if (frames > space) frames = (int) std::max<int64_t>(space, 0);  /* overflow: drop tail */
+        const uint64_t start = w;
         int left = frames;
         while (left > 0) {
             const int idx = (int) (w % kRingFrames);
             const int n = std::min(left, kRingFrames - idx);
-            int16_t *dst = mBuf.get() + (size_t) idx * kCh;
-            if (src) {
-                memcpy(dst, src, (size_t) n * kCh * sizeof(int16_t));
-                src += (size_t) n * kCh;
-            } else {
-                memset(dst, 0, (size_t) n * kCh * sizeof(int16_t));
-            }
+            memcpy(mBuf.get() + (size_t) idx * kCh, src, (size_t) n * kCh * sizeof(int16_t));
+            src += (size_t) n * kCh;
             w += (uint64_t) n;
             left -= n;
+        }
+        /* blend in (still unpublished, so the consumer never sees the unblended frames) */
+        for (int i = 0; i < frames && mRampLeft > 0; i++, mRampLeft--) {
+            const float a = (float) (mRampLen - mRampLeft + 1) / (float) mRampLen;
+            int16_t *d = slot(start + (uint64_t) i);
+            for (int c = 0; c < kCh; c++) d[c] = (int16_t) ((float) mRampFrom[c] * (1.0f - a) + (float) d[c] * a);
         }
         mW.store(w, std::memory_order_release);
         return w;
@@ -406,6 +520,37 @@ private:
         return r;
     }
 
+    /* consumer: `n` frames of silence at out[done], faded out from the last output frame;
+       the audio after it fades in */
+    void silence(int16_t *out, int done, int n) {
+        if (n <= 0) return;
+        int16_t from[kCh];
+        memcpy(from, done > 0 ? out + (size_t) (done - 1) * kCh : mLastOut, sizeof(from));
+        int16_t *o = out + (size_t) done * kCh;
+        for (int i = 0; i < n; i++) {
+            const float g = i < kDecayFrames ? 1.0f - (float) (i + 1) / (float) kDecayFrames : 0.0f;
+            for (int c = 0; c < kCh; c++) o[(size_t) i * kCh + c] = (int16_t) ((float) from[c] * g);
+        }
+        mReadRampFrom[0] = mReadRampFrom[1] = 0;
+        mReadRampLen = mReadRampLeft = kFadeInFrames;
+    }
+
+    void startReadRamp(const int16_t *from, int len) {
+        for (int c = 0; c < kCh; c++) mReadRampFrom[c] = from[c];
+        mReadRampLen = mReadRampLeft = len;
+    }
+
+    /* consumer: blend freshly read frames in after a silence or a jump */
+    void applyRamp(int16_t *o, int n) {
+        for (int i = 0; i < n && mReadRampLeft > 0; i++, mReadRampLeft--) {
+            const float a = (float) (mReadRampLen - mReadRampLeft + 1) / (float) mReadRampLen;
+            for (int c = 0; c < kCh; c++) {
+                o[(size_t) i * kCh + c] =
+                    (int16_t) ((float) mReadRampFrom[c] * (1.0f - a) + (float) o[(size_t) i * kCh + c] * a);
+            }
+        }
+    }
+
     std::unique_ptr<int16_t[]> mBuf;
     std::atomic<uint64_t> mW{0}, mR{0};
     Anchor mAnchors[kAnchors] = {};
@@ -416,16 +561,20 @@ private:
     std::atomic<bool> mRealignReq{false};
     std::atomic<int64_t> mLastWriteNs{0};
     std::atomic<int64_t> mOutLeadNs{0};
-    std::atomic<int64_t> mPubSpareMin{INT64_MAX};
+    std::atomic<int64_t> mPubSpareMin{INT64_MAX}, mPubRawMin{INT64_MAX};
+    std::atomic<uint32_t> mPubLate{0};
     std::atomic<uint32_t> mPubSeq{0};
-    std::atomic<uint32_t> mWrites{0}, mLateWrites{0};
+    std::atomic<uint32_t> mWrites{0}, mLateWrites{0}, mConcealFrames{0};
     std::atomic<uint32_t> mUnderruns{0}, mRealigns{0}, mLateSkipFrames{0}, mDrops{0}, mRepeats{0};
     /* producer only */
     bool mHaveAnchor = false;
     uint64_t mAnchorPos = 0;
     int64_t mAnchorT = 0;
-    int64_t mWinSpareMin = INT64_MAX;
+    int64_t mWinSpareMin = INT64_MAX, mWinRawMin = INT64_MAX;
+    uint32_t mWinLate = 0;
     int64_t mWinStartNs = 0;
+    int16_t mRampFrom[kCh] = {};
+    int mRampLen = 1, mRampLeft = 0;
     /* consumer only */
     Anchor mCur = {};
     bool mCurValid = false;
@@ -435,6 +584,8 @@ private:
     int mOverCallbacks = 0;
     int16_t mLastOut[kCh] = {};
     uint32_t mSeenFlushSeq = 0;
+    int16_t mReadRampFrom[kCh] = {};
+    int mReadRampLen = 1, mReadRampLeft = 0;
 };
 
 /* ------------------------------------------------------------------------------------ */
@@ -443,9 +594,13 @@ private:
 class Decoder {
 public:
     virtual ~Decoder() = default;
-    virtual void decode(const uint8_t *data, int len, int64_t targetNs) = 0;
+    /* lost: packets are missing before this one; extraNs: the extra delay in targetNs */
+    virtual void decode(const uint8_t *data, int len, int64_t targetNs, bool lost, int64_t extraNs) = 0;
     /* the decoder hit a fatal error and must be recreated */
     virtual bool failed() const { return false; }
+
+protected:
+    bool mPendingLoss = false;  /* a packet was not decoded: the next one follows a gap */
 };
 
 /* 24-byte ALACSpecificConfig (big-endian), from jqssun buildAlacMagicCookie */
@@ -473,7 +628,7 @@ public:
         mPcm.resize((size_t) mSpf * kCh);
         return true;
     }
-    void decode(const uint8_t *data, int len, int64_t targetNs) override {
+    void decode(const uint8_t *data, int len, int64_t targetNs, bool lost, int64_t extraNs) override {
         /* The reference decoder only checks the input end between elements; give it a
            zero-padded copy large enough for a whole uncompressed ("escape") frame. */
         const size_t pad = (size_t) mSpf * kCh * 4 + 64;
@@ -486,9 +641,11 @@ public:
         if (mDec.Decode(&bits, (uint8_t *) mPcm.data(), (uint32_t) mSpf, kCh, &outFrames) != 0 ||
             outFrames > (uint32_t) mSpf) {
             if (++mErrors % 100 == 1) Z9X_LOGW("audio: ALAC decode error (%u so far)", mErrors);
+            mPendingLoss = true;
             return;
         }
-        mTl.write(mPcm.data(), (int) outFrames, targetNs);
+        mTl.write(mPcm.data(), (int) outFrames, targetNs, lost || mPendingLoss, extraNs);
+        mPendingLoss = false;
     }
 
 private:
@@ -502,7 +659,7 @@ private:
 
 class AacDecoder : public Decoder {
 public:
-    AacDecoder(PcmTimeline &tl) : mTl(tl) {}
+    explicit AacDecoder(PcmTimeline &tl) : mTl(tl) {}
     ~AacDecoder() override {
         if (mDrain.joinable()) {
             mRun.store(false);
@@ -559,10 +716,11 @@ public:
         return true;
     }
 
-    void decode(const uint8_t *data, int len, int64_t targetNs) override {
+    void decode(const uint8_t *data, int len, int64_t targetNs, bool lost, int64_t extraNs) override {
         if (mFailed.load(std::memory_order_relaxed)) return;
         ssize_t idx = AMediaCodec_dequeueInputBuffer(mCodec, 5000);
         if (idx < 0) {
+            mPendingLoss = true;
             if (idx != AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
                 fail("dequeueInputBuffer", idx);
                 return;
@@ -574,7 +732,13 @@ public:
         uint8_t *buf = AMediaCodec_getInputBuffer(mCodec, (size_t) idx, &cap);
         const size_t n = buf ? std::min((size_t) len, cap) : 0;
         if (n) memcpy(buf, data, n);
-        media_status_t st = AMediaCodec_queueInputBuffer(mCodec, (size_t) idx, 0, n, (uint64_t) (targetNs / 1000), 0);
+        const int64_t ptsUs = targetNs / 1000;
+        /* side information for the drain thread, matched by timestamp (SPSC) */
+        const uint32_t w = mMetaW.load(std::memory_order_relaxed);
+        mMeta[w % kMeta] = {ptsUs, lost || mPendingLoss, extraNs};
+        mMetaW.store(w + 1, std::memory_order_release);
+        mPendingLoss = false;
+        media_status_t st = AMediaCodec_queueInputBuffer(mCodec, (size_t) idx, 0, n, (uint64_t) ptsUs, 0);
         if (st != AMEDIA_OK) fail("queueInputBuffer", st);
     }
 
@@ -620,14 +784,34 @@ private:
                     for (int i = 0; i < frames; i++) stereo[2 * i] = stereo[2 * i + 1] = pcm[i];
                     pcm = stereo.data();
                 }
-                mTl.write(pcm, frames, (int64_t) info.presentationTimeUs * 1000);
+                /* the packet's side information (inputs the codec dropped are skipped) */
+                bool lost = false;
+                int64_t extra = 0;
+                const uint32_t mw = mMetaW.load(std::memory_order_acquire);
+                if (mw - mMetaR > kMeta) mMetaR = mw - kMeta;  /* overwritten: never matched */
+                for (uint32_t r = mMetaR; r != mw; r++) {
+                    const Meta &m = mMeta[r % kMeta];
+                    if (m.ptsUs == info.presentationTimeUs) {
+                        lost = m.lost;
+                        extra = m.extraNs;
+                        mMetaR = r + 1;
+                        break;
+                    }
+                }
+                mTl.write(pcm, frames, (int64_t) info.presentationTimeUs * 1000, lost, extra);
             }
             AMediaCodec_releaseOutputBuffer(mCodec, (size_t) idx, false);
         }
     }
 
+    struct Meta { int64_t ptsUs; bool lost; int64_t extraNs; };
+    static constexpr uint32_t kMeta = 64;
+
     PcmTimeline &mTl;
     AMediaCodec *mCodec = nullptr;
+    Meta mMeta[kMeta] = {};
+    std::atomic<uint32_t> mMetaW{0};
+    uint32_t mMetaR = 0;  /* drain thread */
     std::thread mDrain;
     std::atomic<bool> mRun{false};
     std::atomic<bool> mFailed{false};
@@ -641,9 +825,11 @@ private:
 
 class AudioEngineImpl {
 public:
-    AudioEngineImpl(int64_t latencyNs, int64_t offsetNs, std::atomic<int64_t> *extraNs)
-        : mLatencyNs(latencyNs), mOffsetNs(offsetNs), mExtra(extraNs ? extraNs : &mOwnExtra) {
-        clearSpareHistory();
+    AudioEngineImpl(int64_t latencyNs, int64_t offsetNs, std::atomic<int64_t> *extraNs, AvClock *clock)
+        : mLatencyNs(latencyNs), mOffsetNs(offsetNs), mExtra(extraNs ? extraNs : &mOwnExtra), mClock(clock) {
+        for (auto &r : mRemembered) r.store(0);
+        mRemembered[ctIndex(CT_AAC_ELD)].store(kProvisionalEldNs);
+        clearLateHistory();
         mWorker = std::thread(&AudioEngineImpl::workerLoop, this);
     }
 
@@ -667,14 +853,29 @@ public:
         if (i >= 0 && spf > 0 && spf <= 4096) mWantSpf[i] = spf;
         mClosed = false;  /* a new audio SETUP: accept packets again */
         mHaveSeq = false;
+        if (i >= 0) {
+            mSessionCt.store(ct);
+            /* a new session starts with the extra remembered for its type; a new SETUP
+               within a running session keeps the current one; both are measured again */
+            if (!mSession.load()) mExtra->store(mRemembered[i].load());
+            mSizeReq.store(true);
+        }
     }
 
-    void decode(const uint8_t *data, int len, int ct, uint64_t ntpLocalNs, uint16_t seqnum) {
+    void expectSession(int ct) {
+        const int i = ctIndex(ct);
+        if (i < 0 || mSession.load()) return;
+        mExtra->store(mRemembered[i].load());
+    }
+
+    void decode(const uint8_t *data, int len, int ct, uint64_t ntpLocalNs, uint64_t ntpRemoteNs, uint16_t seqnum) {
         if (!data || len <= 0) return;
         const int64_t now = z9x_mono_ns();
-        const int64_t delay = mLatencyNs + mOffsetNs + mExtra->load(std::memory_order_relaxed);
-        int64_t target = ntpLocalNs ? z9x_mono_from_uxplay(ntpLocalNs) + delay : now + delay;
-        if (target - now > 3 * Z9X_NS_PER_SEC) target = now + delay;
+        const int64_t extra = mExtra->load(std::memory_order_relaxed);
+        int64_t ts = mClock ? mClock->toMono(ntpRemoteNs, ntpLocalNs) : 0;
+        if (ts && ts + mLatencyNs - now > 3 * Z9X_NS_PER_SEC) ts = 0;  /* sender clock not usable */
+        const bool synced = ts != 0;
+        const int64_t target = (synced ? ts : now) + mLatencyNs + mOffsetNs + extra;
         {
             std::lock_guard<std::mutex> lk(mDecMu);
             /* after stop(), packets of the ended session that are still in flight (UxPlay
@@ -683,7 +884,7 @@ public:
             if (mClosed) return;
             const int i = ctIndex(ct);
             if (i < 0) return;
-            countPacket(seqnum);
+            const uint32_t lost = countPacket(seqnum);
             const int spf = mWantSpf[i];
             if (mDecoder && mDecoder->failed()) {
                 mDecoder.reset();
@@ -699,12 +900,36 @@ public:
                 mDecoder = makeDecoder(ct, spf);
                 mRetryAtNs = mDecoder ? 0 : now + Z9X_NS_PER_SEC;
             }
-            if (mDecoder) mDecoder->decode(data, len, target);
+            if (mDecoder) mDecoder->decode(data, len, target, lost > 0, extra);
         }
+        if (mClock) mClock->noteAudio(synced ? ts : 0, target, now);
+        mLeadSum.fetch_add(target - now, std::memory_order_relaxed);
+        mLeadN.fetch_add(1, std::memory_order_relaxed);
         mSession.store(true, std::memory_order_relaxed);
         if (!mStreamOpen.load(std::memory_order_relaxed)) {
             mCv.notify_all();  /* worker opens the output */
         }
+    }
+
+    uint64_t resendDeadline(uint64_t ntpLocalNs, uint64_t ntpRemoteNs) {
+        if (!mClock) return 0;
+        const int64_t ts = mClock->toMono(ntpRemoteNs, ntpLocalNs, false);
+        if (!ts) return 0;
+        const int64_t now = z9x_mono_ns();
+        int64_t lead = mTl.outLead();
+        if (lead <= 0) lead = mLastOutLeadNs.load(std::memory_order_relaxed);
+        if (lead <= 0) lead = kAssumedOutLeadNs;
+        const int64_t deadline = ts + mLatencyNs + mOffsetNs + mExtra->load(std::memory_order_relaxed) - lead -
+                                 kResendMarginNs;
+        if (deadline - now > 3 * Z9X_NS_PER_SEC) return 0;  /* not plausible: fixed wait */
+        return deadline > 0 ? (uint64_t) deadline : 1;
+    }
+
+    void resendStats(unsigned requested, unsigned received, unsigned late, unsigned givenUp) {
+        bump(mResendReq, requested);
+        bump(mResendGot, received);
+        bump(mResendLate, late);
+        bump(mResendGaveUp, givenUp);
     }
 
     void flush() {
@@ -724,9 +949,8 @@ public:
             mHaveSeq = false;
         }
         mSession.store(false);
-        /* the added headroom belongs to this session; the worker also clears its history
-           (and resets it again if it raised it meanwhile) */
-        mHeadroomReset.store(true);
+        /* the extra delay belongs to this session (the worker forgets its timing state) */
+        mSessionReset.store(true);
         const int64_t extra = mExtra->exchange(0);
         if (extra > 0) Z9X_LOGI("audio: session ended, extra delay %lld ms -> 0", toMs(extra));
         mTl.requestFlush();
@@ -764,16 +988,22 @@ private:
         }
     }
 
-    /* mDecMu: packets in / lost (sequence gaps left by the reorder buffer) */
-    void countPacket(uint16_t seq) {
+    /* mDecMu: packets in / lost (sequence gaps left by the reorder buffer); returns the
+       number of packets missing just before this one */
+    uint32_t countPacket(uint16_t seq) {
+        uint32_t lost = 0;
         if (mHaveSeq) {
             const uint16_t gap = (uint16_t) (seq - (uint16_t) (mLastSeq + 1));
-            if (gap >= 0x8000) return;  /* older than the last one: ignore */
-            if (gap > 0 && gap < 1000) bump(mPktLost, gap);
+            if (gap >= 0x8000) return 0;  /* older than the last one: ignore */
+            if (gap > 0 && gap < 1000) {
+                bump(mPktLost, gap);
+                lost = gap;
+            }
         }
         mHaveSeq = true;
         mLastSeq = seq;
         bump(mPktIn);
+        return lost;
     }
 
     std::unique_ptr<Decoder> makeDecoder(int ct, int spf) {
@@ -995,53 +1225,110 @@ private:
         mBufferFrames.store(AAudioStream_getBufferSizeInFrames(mStream));
     }
 
-    /* worker: raise the shared extra delay when packets keep arriving close to their play
-       time (one spare-time window per second, see the header) */
-    void clearSpareHistory() {
-        for (int64_t &s : mSpareHist) s = INT64_MAX;
+
+    /* ---- extra delay: session timing (worker) ---- */
+
+    void clearLateHistory() {
+        for (int64_t &s : mLateHist) s = INT64_MAX;
     }
 
-    void adaptHeadroom() {
-        const uint32_t seq = mTl.spareSeq();
-        if (mHeadroomReset.exchange(false)) {
-            clearSpareHistory();
-            mExtraCapLogged = false;
-            mSpareSeqSeen = seq;
-            mExtra->store(0);
-            return;
+    /* A/V play time summary for the logs: audio at sender time + this, video likewise */
+    int64_t videoPlusNs(int64_t extra) const {
+        return mLatencyNs + extra + (mClock ? mClock->videoCorrectionNs() : 0);
+    }
+
+    void sessionTiming(int64_t now) {
+        if (mSessionReset.exchange(false)) {
+            mPhase = Phase::kIdle;
+            clearLateHistory();
+            mLateCapLogged = false;
         }
-        if (seq == mSpareSeqSeen) return;
-        mSpareSeqSeen = seq;
-        const int64_t spare = mTl.spareMin();
-        mStatSpareMinNs = std::min(mStatSpareMinNs, spare);
-        if (!mStream) return;  /* the output lead is only known while the output runs */
-        /* the raise is sized by the worst low window still in the history, never by an older
-           one (a single glitch long ago would otherwise push the delay straight to the cap) */
-        mSpareHist[mSpareHistPos] = spare;
-        mSpareHistPos = (mSpareHistPos + 1) % kSpareHistory;
-        int low = 0;
+        if (mSizeReq.exchange(false)) {
+            mPhase = Phase::kMeasuring;
+            mMeasureRawMin = INT64_MAX;
+            mMeasureWindows = 0;
+            mMeasureStartExtra = mExtra->load();
+            clearLateHistory();
+            mLateCapLogged = false;
+            mWinSeqSeen = mTl.windowSeq();  /* windows from now on */
+        }
+        if (mStream && mFallbackCallbacks.load(std::memory_order_relaxed) == 0) {
+            const int64_t lead = mTl.outLead();
+            if (lead > 0) mLastOutLeadNs.store(lead, std::memory_order_relaxed);
+        }
+        const uint32_t seq = mTl.windowSeq();
+        if (seq == mWinSeqSeen) return;
+        mWinSeqSeen = seq;
+        const PcmTimeline::Window win = mTl.window();
+        mStatSpareMinNs = std::min(mStatSpareMinNs, win.spareMin);
+        if (mPhase == Phase::kMeasuring) {
+            measureWindow(win, now);
+        } else if (mPhase == Phase::kSized) {
+            watchLate(win, now);
+        }
+    }
+
+    /* the first second(s) of a session: size the extra delay once */
+    void measureWindow(const PcmTimeline::Window &win, int64_t now) {
+        mMeasureRawMin = std::min(mMeasureRawMin, win.rawMin);
+        mMeasureWindows++;
+        int64_t lead = mStream ? mTl.outLead() : 0;
+        bool estimated = false;
+        if (lead <= 0) {
+            if (mMeasureWindows < kMeasureMaxWindows) return;  /* the output is still starting */
+            lead = mLastOutLeadNs.load(std::memory_order_relaxed);
+            if (lead <= 0) lead = kAssumedOutLeadNs;
+            estimated = true;
+        }
+        const int64_t spareAt0 = mMeasureRawMin - lead;  /* worst spare without extra delay */
+        const int64_t want = std::clamp(roundUp10Ms(kSpareTargetNs - spareAt0), (int64_t) 0, kExtraMaxNs);
+        const int64_t cur = mExtra->load();
+        const int64_t next = std::abs(want - cur) >= kExtraHysteresisNs ? want : cur;
+        if (next != cur) mExtra->store(next);
+        const int i = ctIndex(mSessionCt.load());
+        if (i >= 0) mRemembered[i].store(next);
+        mPhase = Phase::kSized;
+        mLastChangeNs = now;
+        Z9X_LOGI("audio: session timing: packets arrive >= %lld ms before their play time at latency %lld ms, "
+                 "output lead %lld ms%s -> extra %lld ms (started with %lld ms); sound at sender time + %lld ms, "
+                 "picture + %lld ms (released %lld ms early for the display)",
+                 toMs(mMeasureRawMin), toMs(mLatencyNs), toMs(lead), estimated ? " (estimated)" : "", toMs(next),
+                 toMs(mMeasureStartExtra), toMs(mLatencyNs + next + mOffsetNs), toMs(videoPlusNs(next)),
+                 toMs(mClock ? mClock->displayDelayNs() : 0));
+    }
+
+    /* after sizing: raise only when packets keep coming after their play deadline */
+    void watchLate(const PcmTimeline::Window &win, int64_t now) {
+        mLateHist[mLateHistPos] = win.late > 0 ? win.spareMin : INT64_MAX;
+        mLateHistPos = (mLateHistPos + 1) % kLateHistory;
+        int late = 0;
         int64_t worst = INT64_MAX;
-        for (const int64_t s : mSpareHist) {
-            if (s >= kSpareLowNs) continue;
-            low++;
+        for (const int64_t s : mLateHist) {
+            if (s == INT64_MAX) continue;
+            late++;
             worst = std::min(worst, s);
         }
-        if (low < kSpareLowWindows) return;
-        const int64_t extra = mExtra->load();
-        if (extra >= kExtraMaxNs) {
-            if (!mExtraCapLogged) {
-                mExtraCapLogged = true;
-                Z9X_LOGW("audio: packets still arrive %lld ms before their play time with the "
-                         "maximum extra delay (%lld ms)", toMs(worst), toMs(extra));
+        if (late < kLateWindows || now - mLastChangeNs < kRaiseIntervalNs) return;
+        const int64_t cur = mExtra->load();
+        if (cur >= kExtraMaxNs) {
+            if (!mLateCapLogged) {
+                mLateCapLogged = true;
+                Z9X_LOGW("audio: packets still come after their play deadline (worst %lld ms late) with the "
+                         "maximum extra delay (%lld ms)", toMs(-worst), toMs(cur));
             }
             return;
         }
-        int64_t step = (kSpareTargetNs - worst + 10 * kMs - 1) / (10 * kMs) * (10 * kMs);
-        step = std::min(std::max(step, kExtraStepMinNs), kExtraMaxNs - extra);
-        mExtra->store(extra + step);
-        Z9X_LOGW("audio: packets arrive only %lld ms before their play time; audio and video "
-                 "delay +%lld ms (extra %lld ms)", toMs(worst), toMs(step), toMs(extra + step));
-        clearSpareHistory();
+        const int64_t step = std::clamp(roundUp10Ms(kRaiseSpareNs - worst), kRaiseMinNs, kRaiseMaxNs);
+        const int64_t next = std::min(cur + step, kExtraMaxNs);
+        mExtra->store(next);
+        const int i = ctIndex(mSessionCt.load());
+        if (i >= 0) mRemembered[i].store(next);
+        mLastChangeNs = now;
+        clearLateHistory();
+        Z9X_LOGW("audio: packets came after their play deadline in %d of the last %d s (worst %lld ms late); "
+                 "extra %lld -> %lld ms (raised at most every %lld s); sound at sender time + %lld ms, picture + %lld ms",
+                 late, kLateHistory, toMs(-worst), toMs(cur), toMs(next), toMs(kRaiseIntervalNs) / 1000,
+                 toMs(mLatencyNs + next + mOffsetNs), toMs(videoPlusNs(next)));
     }
 
     /* worker, stream open: one line every kStatsPeriodNs while packets arrive */
@@ -1049,13 +1336,19 @@ private:
         const PcmTimeline::Stats s = mTl.stats();
         const uint32_t pkts = mPktIn.load(std::memory_order_relaxed);
         const uint32_t lost = mPktLost.load(std::memory_order_relaxed);
+        const uint32_t rq = mResendReq.load(std::memory_order_relaxed), rg = mResendGot.load(std::memory_order_relaxed),
+                       rl = mResendLate.load(std::memory_order_relaxed), ru = mResendGaveUp.load(std::memory_order_relaxed);
+        const int64_t leadSum = mLeadSum.exchange(0, std::memory_order_relaxed);
+        const int64_t leadN = mLeadN.exchange(0, std::memory_order_relaxed);
         if (mStatsNs != 0 && (pkts != mBase.pkts || mXrunTotal != mBase.xruns || s.underruns != mBase.s.underruns)) {
             const uint32_t fb = mFallbackCallbacks.load(std::memory_order_relaxed);
-            Z9X_LOGI("audio %llds: %u pkts, %u lost, %u late; spare min %lld ms; ring %lld ms; out lead %lld ms, "
+            Z9X_LOGI("audio %llds: %u pkts, %u lost, %u late; resend req %u got %u late %u gave up %u; "
+                     "play lead at arrival avg %lld ms; spare min %lld ms; ring %lld ms; out lead %lld ms, "
                      "buffer %d/%d, burst %d, xruns %u; ts spread %lld ms%s; drift corr -%u +%u, realign %u, "
-                     "underruns %u (%lld ms late audio skipped); extra %lld ms",
+                     "underruns %u (%lld ms late audio skipped), concealed %lld ms; extra %lld ms",
                      (long long) ((now - mStatsNs) / Z9X_NS_PER_SEC), pkts - mBase.pkts, lost - mBase.lost,
-                     s.lateWrites - mBase.s.lateWrites,
+                     s.lateWrites - mBase.s.lateWrites, rq - mBase.rq, rg - mBase.rg, rl - mBase.rl, ru - mBase.ru,
+                     leadN ? toMs(leadSum / leadN) : -1LL,
                      mStatSpareMinNs == INT64_MAX ? -1LL : toMs(mStatSpareMinNs),
                      toMs(framesToNs(mTl.bufferedFrames())), toMs(mTl.outLead()),
                      AAudioStream_getBufferSizeInFrames(mStream), AAudioStream_getBufferCapacityInFrames(mStream),
@@ -1063,12 +1356,16 @@ private:
                      toMs(mTsSpreadMaxNs), fb ? " (no timestamp: fallback)" : "",
                      s.drops - mBase.s.drops, s.repeats - mBase.s.repeats, s.realigns - mBase.s.realigns,
                      s.underruns - mBase.s.underruns, toMs(framesToNs(s.lateSkipFrames - mBase.s.lateSkipFrames)),
-                     toMs(mExtra->load()));
+                     toMs(framesToNs(s.concealFrames - mBase.s.concealFrames)), toMs(mExtra->load()));
         }
         mBase.s = s;
         mBase.pkts = pkts;
         mBase.lost = lost;
         mBase.xruns = mXrunTotal;
+        mBase.rq = rq;
+        mBase.rg = rg;
+        mBase.rl = rl;
+        mBase.ru = ru;
         mStatsNs = now;
         mStatSpareMinNs = INT64_MAX;
         mTsSpreadMaxNs = 0;
@@ -1093,7 +1390,7 @@ private:
                 closeStream();  /* idle: the ring is already empty */
             }
             if (mStream) pollOutput(now);
-            adaptHeadroom();
+            sessionTiming(now);
             if (mStream && (mStatsNs == 0 || now - mStatsNs >= kStatsPeriodNs)) logStats(now);
             lk.lock();
         }
@@ -1103,6 +1400,7 @@ private:
     const int64_t mOffsetNs;
     std::atomic<int64_t> mOwnExtra{0};  /* when the caller passes none */
     std::atomic<int64_t> *const mExtra;
+    AvClock *const mClock;
     PcmTimeline mTl;
 
     std::mutex mDecMu;  /* decoder use vs. teardown */
@@ -1115,7 +1413,16 @@ private:
     bool mHaveSeq = false;  /* mDecMu */
     uint16_t mLastSeq = 0;  /* mDecMu */
     std::atomic<uint32_t> mPktIn{0}, mPktLost{0};
+    std::atomic<uint32_t> mResendReq{0}, mResendGot{0}, mResendLate{0}, mResendGaveUp{0};
+    std::atomic<int64_t> mLeadSum{0}, mLeadN{0};
     std::atomic<bool> mSession{false};  /* data since the last stop() */
+
+    /* session timing: requests (any thread) and remembered extra per audio type */
+    std::atomic<int> mSessionCt{-1};
+    std::atomic<bool> mSizeReq{false};
+    std::atomic<bool> mSessionReset{false};
+    std::atomic<int64_t> mRemembered[3];
+    std::atomic<int64_t> mLastOutLeadNs{0};
 
     std::mutex mMu;
     std::condition_variable mCv;
@@ -1135,16 +1442,21 @@ private:
     int mTsCount = 0;
     int64_t mTsLastPos = -1;
     int64_t mTsSpreadMaxNs = 0;
-    uint32_t mSpareSeqSeen = 0;
-    int64_t mSpareHist[kSpareHistory];  /* worst spare per window, INT64_MAX = none */
-    int mSpareHistPos = 0;
-    bool mExtraCapLogged = false;
+    enum class Phase { kIdle, kMeasuring, kSized };
+    Phase mPhase = Phase::kIdle;
+    uint32_t mWinSeqSeen = 0;
+    int64_t mMeasureRawMin = INT64_MAX;
+    int mMeasureWindows = 0;
+    int64_t mMeasureStartExtra = 0;
+    int64_t mLastChangeNs = 0;
+    int64_t mLateHist[kLateHistory];  /* worst spare of a window with late writes, INT64_MAX = none */
+    int mLateHistPos = 0;
+    bool mLateCapLogged = false;
     int64_t mStatsNs = 0;
     int64_t mStatSpareMinNs = INT64_MAX;
-    struct { PcmTimeline::Stats s; uint32_t pkts, lost, xruns; } mBase = {};
+    struct { PcmTimeline::Stats s; uint32_t pkts, lost, xruns, rq, rg, rl, ru; } mBase = {};
     std::atomic<bool> mStreamOpen{false};
     std::atomic<bool> mDisconnected{false};
-    std::atomic<bool> mHeadroomReset{false};
 
     /* callback state (mOpenedNs: written before the stream starts) */
     int64_t mOpenedNs = 0;
@@ -1160,12 +1472,19 @@ private:
     std::atomic<bool> mMuted{false};
 };
 
-AudioEngine::AudioEngine(int64_t latencyNs, int64_t audioOffsetNs, std::atomic<int64_t> *extraNs)
-    : mImpl(new AudioEngineImpl(latencyNs, audioOffsetNs, extraNs)) {}
+AudioEngine::AudioEngine(int64_t latencyNs, int64_t audioOffsetNs, std::atomic<int64_t> *extraNs, AvClock *clock)
+    : mImpl(new AudioEngineImpl(latencyNs, audioOffsetNs, extraNs, clock)) {}
 AudioEngine::~AudioEngine() = default;
 void AudioEngine::setFormat(int ct, int spf) { mImpl->setFormat(ct, spf); }
-void AudioEngine::decode(const uint8_t *d, int len, int ct, uint64_t ntp, uint16_t seq) {
-    mImpl->decode(d, len, ct, ntp, seq);
+void AudioEngine::expectSession(int ct) { mImpl->expectSession(ct); }
+void AudioEngine::decode(const uint8_t *d, int len, int ct, uint64_t ntpLocal, uint64_t ntpRemote, uint16_t seq) {
+    mImpl->decode(d, len, ct, ntpLocal, ntpRemote, seq);
+}
+uint64_t AudioEngine::resendDeadline(uint64_t ntpLocal, uint64_t ntpRemote) {
+    return mImpl->resendDeadline(ntpLocal, ntpRemote);
+}
+void AudioEngine::resendStats(unsigned requested, unsigned received, unsigned late, unsigned givenUp) {
+    mImpl->resendStats(requested, received, late, givenUp);
 }
 void AudioEngine::flush() { mImpl->flush(); }
 void AudioEngine::stop() { mImpl->stop(); }

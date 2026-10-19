@@ -124,3 +124,72 @@ native libraries are untouched.
 ## Lumen OS 1.0.2 and 1.0.3: unchanged
 - The 1.0.1 APK stays, byte for byte (ffeee5e0..., 1.0.1 / 102, pinned in overlay/apps_v1/PINS.sha256): the
   current sources and native libraries rebuild to it exactly (2026-10-13).
+
+## 1.0.2 (in work), AirPlay A/V sync, delay and dropouts (2026-10-20)
+Owner report from the Z9X (mirroring a Mac over Wi-Fi, 1080p, AAC-ELD): "the sound comes first and the
+picture shows what was said about one second later", "huge delay", "the sound breaks up". Logcat of that
+session: at the start "packets arrive only 28 ms before their play time; audio and video delay +100 ms"
+and "underruns 6 (206 ms late audio skipped)"; then spare min 125-129 ms, out lead 214-218 ms (buffer
+4430/4430, burst 2215, perf 10), ts spread 1-2 ms, xruns 0, but windows with "266 pkts, 195 lost" and
+"370 pkts, 91 lost" (loss bursts); video c2.mtk.avc.decoder low-latency=1, 0 late, decode latency 6-10 ms.
+The audio packets' timestamps were within ~10 ms of their arrival (spare 28 ms + out lead 214 ms at
+latency 250 ms), so the second of picture delay is on the video side; the logs had no video lead to show
+where (now logged, see below).
+
+Changes (jni/glue, new UxPlay patch, rebuilt native library):
+- av_clock.cpp (new): one sender -> CLOCK_MONOTONIC offset per session, shared by audio and video,
+  slewed at most 1 ms per second towards the measured value (a step above 100 ms is taken at once and
+  logged); the realtime -> monotonic part read bracketed. 1.0.1 converted every packet on its own (two
+  clock reads a preemption could split, every step of UxPlay's NTP estimate), so play times jittered.
+- Video timestamp correction (av_clock.cpp): every second the mean (sender timestamp - arrival) of video
+  and audio are compared; when the video's is more than 150 ms later than the audio's (or than its
+  arrival, while no audio flows), the picture's play time moves earlier by the difference (the sound is
+  never delayed for it, the total delay only goes down); two evaluations must agree within 50 ms, smaller
+  changes are ignored; back to 0 when the session ends. Logged: "A/V: video timestamps N ms after arrival,
+  audio timestamps N ms: video play time correction N -> N ms". A sender whose audio lies ahead of its
+  video (iPhone: 0.17 s of sender latency in the AAC-ELD sync packets) is left alone.
+- Video display delay: frames are released debug.z9x.airplay.video_delay_ms earlier (0..300, default 30:
+  SurfaceFlinger + HWC about one 60 Hz frame, the scaler / DLP formatter about one more); extra,
+  correction and display delay are applied when a frame leaves the FIFO, so a change also moves queued
+  frames. The "created" line shows the value in use.
+- A/V leads in the video 5 s line: play time - now at arrival (video and audio), video at release, and
+  sender timestamp - arrival (video and audio), with the correction, display delay and extra in use.
+- Extra delay (audio_engine.cpp) sized once per audio session: it starts with the value remembered for
+  the audio type (AAC-ELD: 60 ms the first time, also applied when mirroring starts so the picture does
+  not move when the sound begins); the first second of packets gives the worst (play time - extra -
+  arrival), and with the measured output lead the extra is set so that it leaves 70 ms to spare (0..300,
+  changes below 20 ms not made, one log line "session timing ... sound at sender time + N ms, picture + N
+  ms"). Mid-session it only grows when packets came after their deadline in 3 of the last 10 one-second
+  windows, by 20-60 ms, at most every 20 s (logged). For the owner's session this gives about +50 ms
+  instead of +100 ms (total 300 ms instead of 350 ms) and no start-up underruns.
+- Audio timeline: a timing difference up to 40 ms (1.0.1: 10 ms, each a silence or a cut) moves the
+  timeline softly; the reader's drift correction slews to it. Lost packets (sequence gaps, a decoder that
+  dropped or failed a packet: flagged through to the writer, through the AAC codec by timestamp) and sender
+  gaps above 40 ms keep their exact time and are concealed: up to 30 ms by playing the last 11.6 ms back
+  and forth (continuous at the turns), longer gaps fade that out into silence; the next audio is blended
+  in (1.5 ms, or a 10 ms fade-in after silence). The reader fades into an underrun (3 ms), fades back in
+  (10 ms) and blends over skips (1.5 ms). Host simulation (sine, 2215-frame callbacks): steady stream,
+  +20 / -30 ms timing moves, +-60 ms jumps, 1 / 3 / 40 lost packets and a 550 ms Wi-Fi stall all play with
+  no sample step above the sine's own, 0 realigns; the moves are slewed (838 repeats / 1279 drops).
+- UxPlay patch z9x-0011-audio-resend-deadline: a missing audio packet is awaited until its deadline from
+  the player (play time - output lead - 30 ms; about 1.7 s for ALAC, tens of ms for mirroring AAC-ELD)
+  instead of a fixed 100 ms (kept only when no deadline is known); every gap in the reorder buffer is
+  asked for at once, again every 50 ms while missing (upstream: only the first gap, again on every
+  packet); the buffer is also served after a resent packet and on the 5 ms select timeout. Host-tested
+  (requests once per gap, resend in time, give-up at the deadline, late resend, fixed-wait fallback).
+- 5 s audio line: "resend req N got N late N gave up N", "play lead at arrival avg N ms" and "concealed
+  N ms" added.
+- NOTICE / assets/licenses/NOTICE.txt list z9x-0011; jni/BUILDINFO.txt rewritten by build_native.sh.
+- Test build for the owner's Z9X: VERSION_CODE=102 (the system copy's, so the next release replaces it)
+  VERSION_NAME=1.0.2-test1, signed with the image's platform key, installed as an update over the system
+  app (adb install -r); not pinned in overlay/apps_v1/PINS.sha256 (integration).
+
+To check on the device (adb logcat -s Z9xAirPlay UxPlay), mirroring from the Mac with a clip that has
+speech, 5 minutes:
+- "A/V: video timestamps ... correction 0 -> -N ms" once near the start (if the video timestamps really run
+  late), then lip sync looks right; if not, the video 5 s lines tell which lead is off ("play time - now:
+  video N ms at arrival ... audio N ms at arrival" should be within a few tens of ms of each other).
+- "audio: session timing: ... -> extra N ms" once per audio session, no "packets came after their play
+  deadline" lines on a good Wi-Fi; audio 5 s lines with underruns 0 and realign 0 outside loss bursts.
+- Loss bursts: "resend req/got/late/gave up" show whether the Mac answers resends; the breaks should be
+  soft (fades) rather than clicks.

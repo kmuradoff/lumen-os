@@ -6,10 +6,19 @@
  *   UxPlay mirror thread --pushFrame--> FIFO --worker--> AMediaCodec --output thread-->
  *   releaseOutputBufferAtTime(T) on the attached ANativeWindow.
  *
- * - T = mono(ntp_time_local) + latency + extra (the audio engine's added headroom, see
- *   audio_engine.cpp; 0 unless audio packets arrive too late). Compressed frames wait in the FIFO until
- *   T - (decode latency + margin), so only a few decoded frames are ever in flight (the MTK
- *   decoder has no low-latency mode and a small output pool).
+ * - T = clock(sender time) + latency + extra + correction - display delay. clock is AvClock
+ *   (av_clock.cpp: the smoothed sender -> CLOCK_MONOTONIC offset shared with the audio
+ *   engine); extra is the audio engine's session delay (audio_engine.cpp); correction (<= 0)
+ *   moves the picture earlier when the sender's video timestamps run later than its audio
+ *   timestamps (owner, mirroring from a Mac: the picture came about 1 s after the sound);
+ *   display delay (debug.z9x.airplay.video_delay_ms, default 30 ms) releases each frame that
+ *   much earlier for the projector's display chain (SurfaceFlinger + HWC about one frame,
+ *   the scaler / DLP formatter about one more). extra, correction and display delay are
+ *   applied when a frame leaves the FIFO, so a change also moves the frames already queued.
+ *   Compressed frames wait in the FIFO until T - (decode latency + margin), so only a few
+ *   decoded frames are ever in flight (small output pool). Every 5 s: frames, late ones,
+ *   decode latency, and the A/V leads: play time minus now at arrival (video, audio) and at
+ *   release (video), and sender timestamp minus arrival (video, audio).
  * - c2.mtk.{avc,hevc}.decoder report adaptive-playback=0: the codec is recreated whenever a
  *   keyframe brings a different SPS (or VPS), e.g. on iPhone rotation, or on H.264<->H.265.
  * - AirPlay senders send SPS/PPS + IDR only at the start and on a format change (UxPlay
@@ -43,6 +52,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include "av_clock.h"
 #include "z9x_common.h"
 
 namespace {
@@ -86,8 +96,9 @@ void imageSinkCallback(void *, AImageReader *reader) {
 
 }  // namespace
 
-VideoDecoder::VideoDecoder(EventFn fn, void *ctx, int64_t latencyNs, const std::atomic<int64_t> *extraNs)
-    : mEventFn(fn), mEventCtx(ctx), mLatencyNs(latencyNs), mExtraNs(extraNs) {
+VideoDecoder::VideoDecoder(EventFn fn, void *ctx, int64_t latencyNs, const std::atomic<int64_t> *extraNs,
+                           AvClock *clock)
+    : mEventFn(fn), mEventCtx(ctx), mLatencyNs(latencyNs), mExtraNs(extraNs), mClock(clock) {
     mWorker = std::thread(&VideoDecoder::workerLoop, this);
 }
 
@@ -139,17 +150,24 @@ void VideoDecoder::setReportedSize(int width, int height) {
     mReportedH = height;
 }
 
-void VideoDecoder::pushFrame(const uint8_t *data, size_t len, bool h265, uint64_t ntpLocalNs) {
+/* extra delay + timestamp correction - display delay: added to a frame's base time when it
+   leaves the FIFO */
+int64_t VideoDecoder::playAdjustNs() const {
+    return (mExtraNs ? mExtraNs->load(std::memory_order_relaxed) : 0) +
+           (mClock ? mClock->videoCorrectionNs() - mClock->displayDelayNs() : 0);
+}
+
+void VideoDecoder::pushFrame(const uint8_t *data, size_t len, bool h265, uint64_t ntpLocalNs, uint64_t ntpRemoteNs) {
     if (!data || len < 5) return;
     const int64_t now = z9x_mono_ns();
-    /* + the audio engine's extra delay, so the picture stays in sync when audio needs more */
-    const int64_t delay = mLatencyNs + (mExtraNs ? mExtraNs->load(std::memory_order_relaxed) : 0);
-    int64_t target = ntpLocalNs ? z9x_mono_from_uxplay(ntpLocalNs) + delay : now + delay;
-    if (target - now > kBogusFutureNs) target = now + delay;  /* sender clock not usable */
+    int64_t ts = mClock ? mClock->toMono(ntpRemoteNs, ntpLocalNs) : 0;
+    if (ts && ts + mLatencyNs - now > kBogusFutureNs) ts = 0;  /* sender clock not usable */
+    const int64_t base = (ts ? ts : now) + mLatencyNs;
+    if (mClock) mClock->noteVideo(ts, base + playAdjustNs(), now);
 
     Frame f;
     f.data.assign(data, data + len);
-    f.targetNs = target;
+    f.targetNs = base;  /* + playAdjustNs() when it leaves the FIFO */
     f.h265 = h265;
     {
         std::lock_guard<std::mutex> lk(mMu);
@@ -234,12 +252,14 @@ void VideoDecoder::workerLoop() {
         if (!mQueue.empty()) {
             const int64_t lead = std::clamp(mDecodeLatencyNs.load(std::memory_order_relaxed) + 15 * kMs,
                                             kLeadMinNs, kLeadMaxNs);
-            const int64_t feedAt = mQueue.front().targetNs - lead;
+            const int64_t adjust = playAdjustNs();
+            const int64_t feedAt = mQueue.front().targetNs + adjust - lead;
             const int64_t now = z9x_mono_ns();
             if (feedAt <= now || !mCodec) {  /* without a codec, feed at once to create it */
                 Frame f = std::move(mQueue.front());
                 mQueue.pop_front();
                 mQueueBytes -= f.data.size();
+                f.targetNs += adjust;  /* the play time from here on (codec, GOP cache) */
                 lk.unlock();
                 feed(f);
                 lk.lock();
@@ -705,18 +725,30 @@ void VideoDecoder::outputLoop() {
             if (now - target > kLateRenderNs) mLate++;
             AMediaCodec_releaseOutputBuffer(mCodec, (size_t) idx, true);
         }
+        mReleaseLeadSum += target - now;
         mRendered++;
         if (mToDisplay.load(std::memory_order_relaxed) && !mFirstFrameSent.exchange(true)) {
             if (mEventFn) mEventFn(mEventCtx, Z9X_EV_FIRST_FRAME, 0, 0);
         }
         if (now - mStatsNs > 5000 * kMs) {
             if (mStatsNs) {
-                Z9X_LOGI("video: %u frames in 5 s, %u late, decode latency %.1f ms", mRendered, mLate,
-                         mDecodeLatencyNs.load() / 1e6);
+                const AvClock::Window w = mClock ? mClock->takeWindow() : AvClock::Window{};
+                const auto ms = [](int64_t ns) { return (long long) (ns / kMs); };
+                Z9X_LOGI("video: %u frames in 5 s, %u late, decode latency %.1f ms; play time - now: video %lld ms "
+                         "at arrival, %lld ms at release, audio %lld ms at arrival; sender timestamp - arrival: "
+                         "video %lld ms, audio %lld ms; video correction %lld ms, display delay %lld ms, extra %lld ms",
+                         mRendered, mLate, mDecodeLatencyNs.load() / 1e6, w.videoN ? ms(w.videoPlayLead) : -1LL,
+                         mRendered ? ms(mReleaseLeadSum / mRendered) : -1LL, w.audioN ? ms(w.audioPlayLead) : -1LL,
+                         w.videoTsN ? ms(w.videoTsLead) : -1LL, w.audioTsN ? ms(w.audioTsLead) : -1LL,
+                         mClock ? ms(mClock->videoCorrectionNs()) : 0LL, mClock ? ms(mClock->displayDelayNs()) : 0LL,
+                         mExtraNs ? ms(mExtraNs->load()) : 0LL);
+            } else if (mClock) {
+                mClock->takeWindow();  /* start the first window with this one */
             }
             mStatsNs = now;
             mRendered = 0;
             mLate = 0;
+            mReleaseLeadSum = 0;
         }
     }
 }

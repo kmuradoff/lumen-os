@@ -112,6 +112,17 @@ int audioOffsetMs() {
     return ms < -100 ? -100 : ms > 200 ? 200 : ms;
 }
 
+/* debug.z9x.airplay.video_delay_ms: how long the projector takes from our release of a
+   decoded frame to light (ms, 0..300, default 30: SurfaceFlinger + HWC about one 60 Hz frame,
+   the scaler / DLP formatter about one more); video frames are released that much earlier.
+   Read when the receiver is created. */
+int videoDelayMs() {
+    char v[PROP_VALUE_MAX] = {0};
+    if (__system_property_get("debug.z9x.airplay.video_delay_ms", v) <= 0) return 30;
+    const int ms = atoi(v);
+    return ms < 0 ? 0 : ms > 300 ? 300 : ms;
+}
+
 /* Standard UTF-8 of a Java string. GetStringUTFChars gives modified UTF-8 (a code point
    above U+FFFF becomes two 3-byte surrogates), which is not valid UTF-8 for the sender. */
 std::string utf8(JNIEnv *env, jstring js) {
@@ -218,6 +229,8 @@ jlong nCreate(JNIEnv *env, jclass, jobject cb, jbyteArray hwAddr, jstring name, 
     srv->latencyNs = (int64_t) latencyMs * 1000000LL;
     const int avOffsetMs = audioOffsetMs();
     srv->audioOffsetNs = (int64_t) avOffsetMs * 1000000LL;
+    const int videoDelay = videoDelayMs();
+    srv->videoDelayNs = (int64_t) videoDelay * 1000000LL;
     if (width <= 0 || height <= 0) {
         width = hevc4k ? 3840 : 1920;
         height = hevc4k ? 2160 : 1080;
@@ -230,8 +243,9 @@ jlong nCreate(JNIEnv *env, jclass, jobject cb, jbyteArray hwAddr, jstring name, 
     srv->langSystem = systemLanguages();
 
     /* pipelines exist before any callback can fire */
-    srv->video.reset(new VideoDecoder(videoEvent, srv, srv->latencyNs, &srv->extraDelayNs));
-    srv->audio.reset(new AudioEngine(srv->latencyNs, srv->audioOffsetNs, &srv->extraDelayNs));
+    srv->clock.reset(new AvClock(srv->videoDelayNs));
+    srv->video.reset(new VideoDecoder(videoEvent, srv, srv->latencyNs, &srv->extraDelayNs, srv->clock.get()));
+    srv->audio.reset(new AudioEngine(srv->latencyNs, srv->audioOffsetNs, &srv->extraDelayNs, srv->clock.get()));
 
     z9x_callbacks_fill(srv, &srv->cbs);
     ntp_global_init();
@@ -284,9 +298,10 @@ jlong nCreate(JNIEnv *env, jclass, jobject cb, jbyteArray hwAddr, jstring name, 
     dnssd_set_airplay_features(srv->dnssd, 4, videoUrl ? 1 : 0);  /* VideoHTTPLiveStreams */
     dnssd_set_airplay_features(srv->dnssd, 9, 1);                 /* Audio */
 
-    Z9X_LOGI("created '%s' id %s pin=%d hevc4k=%d videoUrl=%d %dx%d@%d latency %d ms av offset %d ms langs %s",
+    Z9X_LOGI("created '%s' id %s pin=%d hevc4k=%d videoUrl=%d %dx%d@%d latency %d ms av offset %d ms "
+             "video display delay %d ms langs %s",
              srv->name.c_str(), deviceId, srv->pinMode, (int) hevc4k, (int) videoUrl, width, height,
-             fps, latencyMs, avOffsetMs, srv->langSystem.c_str());
+             fps, latencyMs, avOffsetMs, videoDelay, srv->langSystem.c_str());
     return (jlong) reinterpret_cast<intptr_t>(srv);
 }
 
@@ -351,6 +366,7 @@ void nDisconnectAll(JNIEnv *, jclass, jlong h) {
     raop_remove_known_connections(srv->raop);
     if (srv->video) srv->video->endSession();
     if (srv->audio) srv->audio->stop();
+    if (srv->clock) srv->clock->endSession();
 }
 
 void nSetOutputMuted(JNIEnv *, jclass, jlong h, jboolean muted) {
@@ -378,6 +394,7 @@ void nStop(JNIEnv *, jclass, jlong h) {
     raop_stop_httpd(srv->raop);
     if (srv->video) srv->video->endSession();
     if (srv->audio) srv->audio->stop();
+    if (srv->clock) srv->clock->endSession();
     srv->connections = 0;
     Z9X_LOGI("AirPlay receiver stopped");
 }

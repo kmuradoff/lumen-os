@@ -94,7 +94,8 @@ LOCAL_SRC_FILES := \
     $(GLUE)/raop_callbacks.cpp \
     $(GLUE)/dnssd_nsd.c \
     $(GLUE)/video_decoder.cpp \
-    $(GLUE)/audio_engine.cpp
+    $(GLUE)/audio_engine.cpp \
+    $(GLUE)/av_clock.cpp
 LOCAL_C_INCLUDES := $(GLUE)
 LOCAL_CFLAGS := -Wall -Wextra -Wno-unused-parameter -DPLIST_210 -DPLIST_230
 LOCAL_CONLYFLAGS := -std=gnu11

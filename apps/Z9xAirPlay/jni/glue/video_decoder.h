@@ -19,14 +19,18 @@
 #include <thread>
 #include <vector>
 
+class AvClock;
+
 class VideoDecoder {
 public:
     /* Receives Z9X_EV_* events (VIDEO_SIZE, FIRST_FRAME); called from decoder threads. */
     using EventFn = void (*)(void *ctx, int what, int a, int b);
 
-    /* extraNs (may be null): added to latencyNs per frame; owned by the caller and must
-       outlive the decoder */
-    VideoDecoder(EventFn fn, void *ctx, int64_t latencyNs, const std::atomic<int64_t> *extraNs);
+    /* extraNs (may be null): added to latencyNs per frame; clock (may be null): sender time
+       -> CLOCK_MONOTONIC, video correction, display delay. Both owned by the caller and must
+       outlive the decoder. */
+    VideoDecoder(EventFn fn, void *ctx, int64_t latencyNs, const std::atomic<int64_t> *extraNs,
+                 AvClock *clock);
     ~VideoDecoder();
 
     /* Attach (win != null) or detach (null) the display. Takes over one reference of win.
@@ -38,8 +42,9 @@ public:
     void setReportedSize(int width, int height);
 
     /* One access unit from the UxPlay mirror thread (Annex-B, SPS/PPS(/VPS) before IDRs).
-       ntpLocalNs = video_decode_struct.ntp_time_local (CLOCK_REALTIME domain, 0 = unknown). */
-    void pushFrame(const uint8_t *data, size_t len, bool h265, uint64_t ntpLocalNs);
+       ntpLocalNs / ntpRemoteNs = video_decode_struct.ntp_time_local (CLOCK_REALTIME domain,
+       0 = unknown) / ntp_time_remote (sender clock). */
+    void pushFrame(const uint8_t *data, size_t len, bool h265, uint64_t ntpLocalNs, uint64_t ntpRemoteNs);
 
     /* Mirroring ended: drop queued frames and release the codec (display stays attached). */
     void endSession();
@@ -47,7 +52,8 @@ public:
 private:
     struct Frame {
         std::vector<uint8_t> data;
-        int64_t targetNs = 0;   /* CLOCK_MONOTONIC presentation time */
+        int64_t targetNs = 0;   /* CLOCK_MONOTONIC: sender time + latency in the FIFO, the
+                                   presentation time once it left the FIFO */
         bool h265 = false;
     };
     struct NalInfo {
@@ -62,6 +68,7 @@ private:
     enum class Replay { kDone, kNothing, kAborted };
 
     void workerLoop();
+    int64_t playAdjustNs() const;
     void updateInterruptLocked();
     void feed(Frame &f);
     void cacheGop(Frame &f, bool key);
@@ -83,6 +90,7 @@ private:
     void *mEventCtx;
     const int64_t mLatencyNs;
     const std::atomic<int64_t> *mExtraNs;
+    AvClock *const mClock;
 
     /* shared state (mMu) */
     std::mutex mMu;
@@ -135,6 +143,7 @@ private:
     std::atomic<uint32_t> mProbeW{0};
     uint32_t mProbeR = 0;
     uint32_t mLate = 0, mRendered = 0;
+    int64_t mReleaseLeadSum = 0;
     int64_t mStatsNs = 0;
 };
 
