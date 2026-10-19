@@ -291,8 +291,9 @@ You can install another keyboard from a stick. For now the mic button opens sear
 ## Adding Google services
 
 We are not allowed to redistribute Google's apps, so you download the file yourself and the installer
-adds it with one command. You get Google Play, Google Play services, Chromecast built-in, Google voice search
-and text-to-speech, TalkBack and the remote in the Google TV phone app. It takes about 5 minutes and
+adds it with one command. You get Google Play, Google Play services, Google voice search and text-to-speech,
+TalkBack and the remote in the Google TV phone app. Chromecast built-in does not work, see
+[Chromecast](#chromecast) below. It takes about 5 minutes and
 **erases all data**, like the install.
 
 1. Download MindTheGapps for Android 14 TV (223 MB). It must be exactly this file, the installer
@@ -311,8 +312,8 @@ and text-to-speech, TalkBack and the remote in the Google TV phone app. It takes
 4. Type `ERASE`. The installer creates the partition `z9x_gapps` (512 MB), copies the Google apps from
    the file into it, checks each one, wipes the data and restarts the projector.
 
-To keep your data, add `--keep-data` and type `WRITE` instead of `ERASE`. But then Chromecast and the
-phone remote may not work properly until a factory reset.
+To keep your data, add `--keep-data` and type `WRITE` instead of `ERASE`. But then the phone remote may
+not work properly until a factory reset.
 
 The setup now has a Google sign-in step. Usually the sign-in just works. If Google refuses it, or Play
 says the device is not certified, register the projector:
@@ -342,6 +343,23 @@ twice in a row with Google services, the next start goes without them and they s
 and turn them back on: `bash lumen-install.sh gapps`.
 
 <a name="updates"></a>
+
+## Chromecast
+
+Chromecast built-in does not work on Lumen OS, with or without the Google services. Google gives the Cast
+device certificate only to models it has certified, and the XGIMI Z9X never had Chromecast (the Chinese
+firmware did not either): Google's server answers 403 to the projector's certificate request. Phones and
+Chrome then see the projector but cannot cast to it ("Available for specific video sites"). Lumen OS
+therefore switches Google's Cast receiver off once after the Google services are added; you can turn it
+back on in Settings > Apps if you want to try yourself.
+
+What works instead:
+- AirPlay from an iPhone, iPad or Mac: Control Center > Screen Mirroring > the projector, or the AirPlay
+  button in a video app.
+- DLNA ("send to TV", from the next Lumen Play version): Lumen Play shows up as a TV in BubbleUPnP, Web Video Cast, VLC, Windows "Cast to
+  device", many torrent clients and browser extensions.
+- YouTube without Cast: in YouTube on the projector open Settings > Link with TV code, then in YouTube on
+  the phone Settings > Watch on TV > Enter TV code. After that the phone's cast button finds the projector.
 
 ## Updates
 

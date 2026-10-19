@@ -91,8 +91,8 @@ public final class App extends Application {
         try { org.z9x.projector.setup.SetupEvents.install(this); } catch (Throwable t) { Log.e(TAG, "SetupEvents.install", t); }
         // ===== Lumen OS 1.0.1: interface resolution (quick panel row, "Keep this resolution?" after a change) =====
         try { org.z9x.projector.display.UiResolution.install(this); } catch (Throwable t) { Log.e(TAG, "UiResolution.install", t); }
-        // ===== Lumen OS 1.0.5: Google's Cast receiver never frozen (with the Google add-on) =====
-        try { org.z9x.projector.sys.CastKeeper.install(this); } catch (Throwable t) { Log.e(TAG, "CastKeeper.install", t); }
+        // ===== Lumen OS 1.0.5: Google's Cast receiver off once (no Cast certificate for uncertified devices) =====
+        try { org.z9x.projector.sys.CastOff.install(this); } catch (Throwable t) { Log.e(TAG, "CastOff.install", t); }
         try { registerUnlockReceiver(); } catch (Throwable t) { Log.e(TAG, "unlock receiver", t); }
         try {
             registerScreenReceiver(hal);
