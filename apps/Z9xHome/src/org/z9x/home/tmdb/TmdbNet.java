@@ -33,7 +33,8 @@ import javax.net.ssl.SSLSocket;
  * Connections to TMDB (api.themoviedb.org, image.tmdb.org) where the network's DNS hides them (Lumen OS
  * 1.0.5; in Russia both resolve to 127.0.0.1 while the real addresses answer). The system DNS is asked
  * first; when its answer is empty or not a public address ({@link #publicAddress}), DNS over HTTPS is
- * asked (Cloudflare, then Google, their JSON APIs), the address kept for {@link #TTL_MS}. The request
+ * asked ({@link #DOH}: Google with a client subnet, then Cloudflare; their JSON APIs; an answer of
+ * loopback, 0.0.0.0 or a private address counts as none), the address kept for {@link #TTL_MS}. The request
  * then goes to that address with the real host name everywhere it matters: TLS SNI, the certificate
  * check (the platform's trust store in the handshake, then its hostname verifier against the real
  * host) and the Host header. A plain HTTP/1.1 GET over that TLS socket, not HttpsURLConnection: Android's
@@ -47,8 +48,21 @@ public final class TmdbNet {
     public static final String API_HOST = "api.themoviedb.org", IMAGE_HOST = "image.tmdb.org";
     static final long TTL_MS = 3 * 3600_000L, FAIL_MS = 10 * 60_000L;
     private static final int TIMEOUT_MS = 6000;
-    private static final String[] DOH = {
-            "https://cloudflare-dns.com/dns-query?type=A&name=", "https://dns.google/resolve?type=A&name="};
+    /**
+     * DNS over HTTPS, in this order. In Russia TMDB's own name servers answer 127.0.0.1 to Russian
+     * resolvers, so plain DoH gets the same (seen on the Z9X, 2026-10-20); Google with a client subnet
+     * outside Russia (193.0.0.0/24, RIPE's own block) gets the real addresses. Cloudflare (no client
+     * subnet) for networks where that fails. Only public A records count (a CNAME chain is followed by the
+     * answer itself: its A records are read, the CNAMEs skipped).
+     */
+    static final String[] DOH = {
+            "https://dns.google/resolve?type=A&edns_client_subnet=193.0.0.0/24&name=",
+            "https://cloudflare-dns.com/dns-query?type=A&name="};
+
+    /** The DoH servers in the order they are asked (tests). */
+    public static List<String> dohOrder() {
+        return java.util.Arrays.asList(DOH);
+    }
 
     /** host -> {address ("" = the system DNS is fine, null = none found), expiry}. */
     private static final HashMap<String, Object[]> sHosts = new HashMap<>();

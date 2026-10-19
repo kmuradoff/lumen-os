@@ -59,8 +59,11 @@ Author kmuradoff. versionCode 106 / versionName 1.0.5 in the manifest (was 105 /
   Великолепный век tv 2011, Прошлой ночью в Нью-Йорке movie 2010, Breaking Bad tv 2008 (original title),
   Gran Turismo / Гран Туризмо movie 2023, Harry Potter and the Prisoner of Azkaban movie 2004.
 - **TMDB where the DNS hides it** (`tmdb/TmdbNet`): in Russia api.themoviedb.org and image.tmdb.org resolve to
-  127.0.0.1. The system DNS answer is used only when every address is public; else DNS over HTTPS
-  (Cloudflare, then Google, JSON), the address kept 3 hours (a failure 10 minutes). The request then goes to
+  127.0.0.1, and so do Cloudflare's and Google's DoH (TMDB's own name servers answer 127.0.0.1 to Russian
+  resolvers; seen on the Z9X). The system DNS answer is used only when every address is public; else DNS
+  over HTTPS: Google with a client subnet outside Russia (edns_client_subnet=193.0.0.0/24; image.tmdb.org
+  is a CNAME chain, its A record is taken), then Cloudflare; loopback, 0.0.0.0 or private answers count as
+  none. The address is kept 3 hours (a failure 10 minutes). The request then goes to
   that address with the real host as TLS SNI, through the platform's trust store and hostname verifier,
   and as the Host header: a small HTTP/1.1 GET (Content-Length, chunked, or to the end; size capped) over an
   SSLSocket, because Android's HttpsURLConnection resets the TLS host name to the URL's host (an address:
