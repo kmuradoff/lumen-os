@@ -235,6 +235,7 @@ public final class TvpSource {
             if (!k.live) k.left = res.getString(R.string.meta_left, duration(res, dur - pos));
         }
         if (k.title.isEmpty() && !episode.isEmpty()) k.title = episode;
+        k.episodic = (season != null && !season.isEmpty()) || (ep != null && !ep.isEmpty());
         k.meta = meta(res, season, ep, episode.equals(k.title) ? "" : episode, dur, k.live, release);
         k.color = placeholder(k.title + k.pkg);
         return k;

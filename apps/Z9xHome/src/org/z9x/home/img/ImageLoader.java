@@ -557,6 +557,12 @@ public final class ImageLoader {
         // cleartext is blocked by network_security_config (only ip-api.com may use it): upgrade http art
         String cur = url.regionMatches(true, 0, "http://", 0, 7) ? "https://" + url.substring(7) : url;
         for (int hop = 0; hop < 4; hop++) {
+            // TMDB's image host (1.0.5): through tmdb/TmdbNet, which reaches it where the network's DNS hides it
+            if (org.z9x.home.tmdb.TmdbNet.routed(new URL(cur).getHost())) {
+                org.z9x.home.tmdb.TmdbNet.Response r = org.z9x.home.tmdb.TmdbNet.fetch(cur, "image/webp,image/*;q=0.9", MAX_DOWNLOAD);
+                if (r.code != 200) Log.w(App.TAG, "img http " + r.code + " " + shortUri(cur));
+                return r.code == 200 ? r.body : null;
+            }
             HttpURLConnection c = (HttpURLConnection) new URL(cur).openConnection();
             try {
                 c.setConnectTimeout(TIMEOUT_MS);

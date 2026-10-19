@@ -357,7 +357,7 @@ public final class Ranker {
     }
 
     /** Lower case, "ё" as "е", letters and digits only: "Великолепный век!" and "великолепный  век" match. */
-    static String normTitle(String s) {
+    public static String normTitle(String s) {
         if (s == null) return "";
         StringBuilder b = new StringBuilder(s.length());
         String l = s.toLowerCase(Locale.ROOT);

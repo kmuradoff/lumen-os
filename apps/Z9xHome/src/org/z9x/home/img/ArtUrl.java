@@ -45,9 +45,24 @@ public final class ArtUrl {
         return s != null && s[0] * 5 < s[1] * 4;
     }
 
-    /** The URL for the full-screen backdrop: a Yandex image at {@link #BACKDROP_SIZE}; others unchanged. */
+    /** TMDB's own image server (key art looked up for Continue watching, tmdb/TmdbArt). */
+    public static final String TMDB_IMG = "https://image.tmdb.org/t/p/";
+
+    /**
+     * The URL for the full-screen backdrop: a Yandex image at {@link #BACKDROP_SIZE}; TMDB key art at
+     * w1280 (the card has w780); others unchanged.
+     */
     public static String backdrop(String uri) {
+        if (isKeyArt(uri)) {
+            int s = uri.indexOf('/', TMDB_IMG.length());
+            return s < 0 ? uri : TMDB_IMG + "w1280" + uri.substring(s);
+        }
         return isYandexSized(uri) ? withSize(uri, BACKDROP_SIZE) : uri;
+    }
+
+    /** Key art from TMDB's image server: the backdrop shows it alone (not the episode still kept as other art). */
+    public static boolean isKeyArt(String uri) {
+        return uri != null && uri.startsWith(TMDB_IMG);
     }
 
     /** A landscape card picture for a Yandex portrait URL, or null when there is none to ask for. */

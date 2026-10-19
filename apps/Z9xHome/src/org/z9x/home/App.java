@@ -86,6 +86,18 @@ public final class App extends Application {
         return mRepo;
     }
 
+    /** TMDB key art for Continue watching, or null when this build carries no TMDB key (tmdb/TmdbArt). */
+    public synchronized org.z9x.home.tmdb.TmdbArt tmdb() {
+        if (!mTmdbChecked) {
+            mTmdbChecked = true;
+            mTmdb = org.z9x.home.tmdb.TmdbArt.create(this);
+        }
+        return mTmdb;
+    }
+
+    private org.z9x.home.tmdb.TmdbArt mTmdb;
+    private boolean mTmdbChecked;
+
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);

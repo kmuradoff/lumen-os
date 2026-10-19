@@ -38,6 +38,9 @@
 #   VERSION_CODE VERSION_NAME   used only if the manifest has none (aapt2 never overrides)
 #   BUILD_DIR     default APP_DIR/build (wiped at start)
 #   MIN_SDK TARGET_SDK  default 34 / 34
+#   TMDB_KEY_FILE optional (Lumen Home): a file with a TMDB v3 API key. Its first word is written to
+#                 $BUILD_DIR/secret-assets/tmdb_key and packed as the APK asset tmdb_key; it never goes
+#                 into the source tree and is never printed. Unset: no key, the feature is off.
 set -eu
 
 die() { echo "build_apk: $*" >&2; exit 1; }
@@ -122,6 +125,14 @@ fi
 rm -rf "$B"
 mkdir -p "$B" "$(dirname "$OUT")"
 
+if [ -n "${TMDB_KEY_FILE:-}" ]; then
+  [ -r "$TMDB_KEY_FILE" ] || die "TMDB_KEY_FILE is not readable"
+  mkdir -p "$B/secret-assets"
+  (umask 077; awk 'NR == 1 { printf "%s", $1 }' "$TMDB_KEY_FILE" > "$B/secret-assets/tmdb_key")
+  [ -s "$B/secret-assets/tmdb_key" ] || die "TMDB_KEY_FILE is empty"
+  log "TMDB key packed as asset tmdb_key (value not shown)"
+fi
+
 # 1) resources
 FLAT=
 if [ -d "$APP/res" ] && [ -n "$(find "$APP/res" -type f | head -n 1)" ]; then
@@ -146,6 +157,7 @@ set -- link -o "$B/base.apk" -I "$AJ" --manifest "$APP/AndroidManifest.xml" \
   --version-code "${VERSION_CODE:-1}" --version-name "${VERSION_NAME:-1.0}"
 [ -n "$STUB" ] && set -- "$@" -I "$STUB"
 [ -d "$APP/assets" ] && set -- "$@" -A "$APP/assets"
+[ -d "$B/secret-assets" ] && set -- "$@" -A "$B/secret-assets"
 [ $HAS_CODE = 1 ] && set -- "$@" --java "$B/gen"
 [ -n "$FLAT" ] && set -- "$@" "$FLAT"
 "$BUILD_TOOLS/aapt2" "$@"

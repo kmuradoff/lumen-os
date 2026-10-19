@@ -428,6 +428,8 @@ public class CustomizeActivity extends Activity {
         l.add(ListPanel.Item.info(0, getString(R.string.about_content)));
         l.add(ListPanel.Item.info(0, getString(R.string.weather_attribution)));
         l.add(ListPanel.Item.info(0, getString(R.string.about_geo)));
+        // TMDB's terms (1.0.5): its notice wherever its data is used; only builds with a TMDB key use it
+        if (mApp.tmdb() != null) l.add(ListPanel.Item.info(0, getString(R.string.tmdb_attribution)));
         HomeModel m = model();
         if (!m.tvpMode.isEmpty()) l.add(ListPanel.Item.info(0, "TvProvider: " + m.tvpMode));
         mPanel.push(getString(R.string.cz_about), null, l);

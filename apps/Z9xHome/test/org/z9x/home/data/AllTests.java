@@ -12,6 +12,7 @@ public final class AllTests {
         GfxTest.run();
         CecNamesTest.run();
         HomeV2Test.run();
+        TmdbTest.run();
         System.out.println("tests passed=" + T.passed + " failed=" + T.failed);
         System.exit(T.failed == 0 ? 0 : 1);
     }
