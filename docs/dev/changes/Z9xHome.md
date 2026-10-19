@@ -48,7 +48,10 @@ Author kmuradoff. versionCode 106 / versionName 1.0.5 in the manifest (was 105 /
   The calm Home (D_Calm) is unchanged.
 - **TMDB key art for Continue watching** (owner, 2026-10-20: Kinopoisk's cards carry a random episode still,
   "Кухня" showed a frame; TMDB approved). `tmdb/TmdbArt` looks each Continue watching title up once on TMDB
-  (/3/search/multi in the system language, then en-US) and shows its backdrop_path: w780 on the card,
+  (/3/search/multi in the system language, then the title's own language when its script says so, Cyrillic:
+  ru-RU or uk-UA, then en-US; on the Z9X's English UI "Великолепный век" and "Прошлой ночью в Нью-Йорке"
+  were found only in Russian, the cache key carries a version so those early misses are dropped) and shows
+  its backdrop_path: w780 on the card,
   w1280 as the full-screen backdrop (`ArtUrl.backdrop`; the backdrop then shows the key art alone, the
   episode still stays as the card's other art). `tmdb/TmdbMatch` (pure Java): the query without file-name
   parts ("Breaking Bad S01 E01 BDRip 1080p" -> "Breaking Bad", the year kept as a hint), a result needs key
@@ -69,7 +72,12 @@ Author kmuradoff. versionCode 106 / versionName 1.0.5 in the manifest (was 105 /
   SSLSocket, because Android's HttpsURLConnection resets the TLS host name to the URL's host (an address:
   no SNI) after the socket factory. No proxy, no mirror. ImageLoader fetches image.tmdb.org through it.
   Checked from the Mac against the DoH address: search 200 with the right backdrop, image 200, a wrong
-  host name refused in the handshake.
+  host name refused in the handshake. A non-200 answer is logged with the address and the Server header.
+  Device test 2026-10-20 (owner's Z9X, English UI): system DNS 127.0.0.1 for both hosts, DoH ok; Кухня tv
+  2012, Великолепный век tv 2011, Прошлой ночью в Нью-Йорке movie 2010, Breaking Bad tv 2008, Gran Turismo
+  movie 2023, Harry Potter movie 2004; every Continue watching card and the backdrop show the key art.
+  One run got HTTP 403 from the image CDN for two pictures (not reproduced with curl on the projector or
+  in the next run; the new log line will say from where if it comes back).
 - **The TMDB key is not in the sources**: `apps/build_apk.sh` packs the first word of `TMDB_KEY_FILE` as the
   asset tmdb_key in the build directory (secret-assets, never the source tree, never printed). Builds
   without it have the feature off (TmdbArt.create returns null). About (Customize) shows TMDB's notice

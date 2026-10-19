@@ -27,7 +27,8 @@ import java.util.Map;
 /**
  * Key art for Continue watching (Lumen OS 1.0.5, approved by the owner): Kinopoisk gives these cards a
  * random episode still and the Kino player none, so the series or movie is looked up on TMDB
- * (/3/search/multi in the system language, then in English; {@link TmdbMatch} picks the result) and its
+ * (/3/search/multi in the system language, the title's own and English, {@link TmdbMatch#languages};
+ * {@link TmdbMatch} picks the result) and its
  * backdrop_path shown: w780 on the card, w1280 as the full-screen backdrop (ArtUrl). The previous art
  * stays until TMDB's arrives (then a refresh: the card and the backdrop crossfade); the old art is kept
  * as the card's other art. Each title is looked up once: results on disk for 30 days, misses for a day,
@@ -85,7 +86,8 @@ public final class TmdbArt {
 
     static String cacheKey(Card k) {
         boolean ep = k.episodic || TmdbMatch.episodic(k.title);
-        return Ranker.normTitle(TmdbMatch.query(k.title)) + "|" + (ep ? "tv" : "any") + "|" + lang();
+        // "2|": 1.0.5's first lookups searched only the system language and English (misses kept a day)
+        return "2|" + Ranker.normTitle(TmdbMatch.query(k.title)) + "|" + (ep ? "tv" : "any") + "|" + lang();
     }
 
     private static String lang() {
@@ -145,8 +147,11 @@ public final class TmdbArt {
         boolean failed = false;
         try {
             String q = TmdbMatch.query(title);
-            TmdbMatch.Result r = search(q, title, episodic, lang());
-            if (r == null && !lang().startsWith("en")) r = search(q, title, episodic, "en-US");
+            TmdbMatch.Result r = null;
+            for (String l : TmdbMatch.languages(title, lang())) {
+                r = search(q, title, episodic, l);
+                if (r != null) break;
+            }
             path = r != null ? r.backdrop : "";
             Log.i(App.TAG, "tmdb \"" + q + "\" -> " + (r == null ? "none" : r.type + " " + r.year + " " + r.backdrop));
         } catch (Throwable t) {
