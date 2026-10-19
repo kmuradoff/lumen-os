@@ -115,4 +115,39 @@ public final class TmdbMatch {
         }
         return best;
     }
+
+    /**
+     * The languages to search in, each once: the system's, then the one the title is written in when its
+     * script says so (Cyrillic: Russian, Ukrainian with і ї є ґ), then English. TMDB matches titles in
+     * the asked language and the original one, so a Russian title on an English UI ("Великолепный век":
+     * "Magnificent Century" / "Muhteşem Yüzyıl") is only found in Russian (seen on the Z9X).
+     */
+    public static java.util.List<String> languages(String title, String system) {
+        java.util.ArrayList<String> out = new java.util.ArrayList<>(3);
+        if (system != null && !system.isEmpty()) out.add(system);
+        String script = scriptLanguage(title);
+        if (script != null && !sameLanguage(out, script)) out.add(script);
+        if (!sameLanguage(out, "en-US")) out.add("en-US");
+        return out;
+    }
+
+    private static boolean sameLanguage(java.util.List<String> l, String tag) {
+        String lang = tag.split("-")[0];
+        for (String t : l) if (t.split("-")[0].equalsIgnoreCase(lang)) return true;
+        return false;
+    }
+
+    /** "ru-RU" / "uk-UA" for a Cyrillic title, else null. */
+    static String scriptLanguage(String title) {
+        if (title == null) return null;
+        boolean cyr = false, uk = false;
+        for (int i = 0; i < title.length(); i++) {
+            char c = title.charAt(i);
+            if (Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CYRILLIC) {
+                cyr = true;
+                if ("іїєґІЇЄҐ".indexOf(c) >= 0) uk = true;
+            }
+        }
+        return !cyr ? null : uk ? "uk-UA" : "ru-RU";
+    }
 }

@@ -75,6 +75,7 @@ public final class TmdbNet {
     public static final class Response {
         public int code;
         public String location;
+        public String server;   // the Server header (diagnostics)
         public byte[] body;
     }
 
@@ -88,8 +89,12 @@ public final class TmdbNet {
         if ("https".equalsIgnoreCase(u.getProtocol()) && routed(host)) {
             String ip = address(host);
             if (ip == null) throw new IOException("no address for " + host);
-            if (!ip.isEmpty()) return direct(host.toLowerCase(Locale.ROOT), ip, u.getPort() > 0 ? u.getPort() : 443,
-                    u.getFile().isEmpty() ? "/" : u.getFile(), accept, max);
+            if (!ip.isEmpty()) {
+                Response r = direct(host.toLowerCase(Locale.ROOT), ip, u.getPort() > 0 ? u.getPort() : 443,
+                        u.getFile().isEmpty() ? "/" : u.getFile(), accept, max);
+                if (r.code != 200) Log.w(App.TAG, "tmdb http " + r.code + " " + host + " via " + ip + (r.server != null ? " " + r.server : ""));
+                return r;
+            }
         }
         HttpURLConnection c = (HttpURLConnection) u.openConnection();
         try {
@@ -172,6 +177,8 @@ public final class TmdbNet {
                 chunked = v.toLowerCase(Locale.ROOT).contains("chunked");
             } else if (name.equals("location")) {
                 r.location = v;
+            } else if (name.equals("server")) {
+                r.server = v;
             }
         }
         if (r.code != 200) return r;
@@ -245,6 +252,7 @@ public final class TmdbNet {
         String ip = null;
         if (systemUsable(sys)) {
             ip = "";
+            Log.i(App.TAG, "tmdb dns " + host + ": system");
         } else {
             for (String doh : DOH) {
                 ip = viaDoh(doh, host);

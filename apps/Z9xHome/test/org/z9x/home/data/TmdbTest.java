@@ -35,6 +35,13 @@ final class TmdbTest {
         T.eq(TmdbMatch.year("1917"), 0, "no year hint from the title itself");
         T.ok(TmdbMatch.episodic("Breaking Bad S01 E01") && !TmdbMatch.episodic("Кухня"), "episode mark");
 
+        // ---- languages: a Russian title on an English UI is searched in Russian too (seen on the Z9X)
+        T.eq(TmdbMatch.languages("Великолепный век", "en-US"), Arrays.asList("en-US", "ru-RU"), "en UI, Russian title");
+        T.eq(TmdbMatch.languages("Кухня", "ru-RU"), Arrays.asList("ru-RU", "en-US"), "ru UI");
+        T.eq(TmdbMatch.languages("Breaking Bad", "de-DE"), Arrays.asList("de-DE", "en-US"), "Latin title");
+        T.eq(TmdbMatch.languages("Слуга народу. Їжак", "en-US"), Arrays.asList("en-US", "uk-UA"), "Ukrainian letters");
+        T.eq(TmdbMatch.languages("Кухня", ""), Arrays.asList("ru-RU", "en-US"), "no system language");
+
         // ---- picking the result
         List<TmdbMatch.Result> kitchen = Arrays.asList(
                 r("movie", "Кухня в Париже", "Кухня в Париже", "/paris.jpg", 8, 2014),
