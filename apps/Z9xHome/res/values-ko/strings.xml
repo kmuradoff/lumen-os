@@ -35,6 +35,9 @@
     <string name="hero_more">자세히</string>
     <string name="hero_kind_next">다음 에피소드</string>
     <string name="hero_kind_watchlist">보고 싶은 목록</string>
+    <string name="hint_hold_ok">OK 길게 누르기</string>
+    <string name="hero_kind_recommendation">추천</string>
+    <string name="row_recommendations">추천</string>
     <string name="feature_cast_title">휴대전화에서 전송</string>
     <string name="feature_cast_desc">Chromecast built-in 및 AirPlay: 휴대전화, 태블릿, 노트북에서 동영상, 음악, 화면을 보낼 수 있습니다.</string>
     <string name="feature_picture_title">완벽한 화면</string>

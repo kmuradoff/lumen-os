@@ -1,41 +1,47 @@
 package org.z9x.home.ui;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
-import android.graphics.Outline;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
 
 import org.z9x.home.App;
 import org.z9x.home.data.Card;
+import org.z9x.home.img.ArtUrl;
 import org.z9x.home.img.HeroArt;
 import org.z9x.home.img.ImageLoader;
 
+import java.util.Objects;
+
 /**
- * The hero's art behind the whole Home (D_Home), between the living sky and the pages. 1.0.1 follow-up
- * (owner report): the layout follows the art's real pixels, never the declared aspect ({@link HeroArt}).
- * Of the program's poster art and thumbnail the larger is used. Big 16:9-ish art (at most 1.25x
- * enlarged) fills the backdrop, cropped from the top; anything else gets the 1.0.0 poster layout: a
- * blurred, darkened copy full-bleed and the art itself as a crisp framed card at no more than its own
- * pixels (16:9, square or 2:3; at 2K and 4K up to 1.25x, {@link UiScale#cardEnlarge}), on the end side
- * above the scrims. All of it in real pixels of the UI mode: the 16:9 card box is 640x360 at 1080p,
- * 853x480 at 2K, 1280x720 at 4K, and full-bleed art must cover the real screen (masters stop at
- * 2560x1440, so at 4K every hero is a card). The optional silent trailer plays full-bleed under the
- * scrims (the card steps aside while it plays). The D scrims (start side 94 % -> 0 at 76 %, bottom 620
- * px) and the header scrim ({@link Scrims#HEAD_ALPHA} to y 140, eased out by y 340: the whole header
- * reads on white art; the sky draws the same one when the stage is empty) are dithered. Without art the
- * stage is empty and the sky shows through. Art changes crossfade over 700 ms; {@link #covering()} tells
- * the activity when the sky is fully hidden (it then pauses the sky). Weak GPUs ({@link Gfx#LITE} only):
- * the stage keeps a GPU layer while trailers are off, and transparent full-bleed art gets the ground
- * colour under it (the window then has no background).
+ * Home's full-screen backdrop (Lumen OS 1.0.5, the owner's mockup design/home_v2), between the living
+ * sky and the pages: the art of the focused card fills the whole screen, under the scrims. It replaces
+ * 1.0.1's stage (art full-bleed only when it was large, else a blurred copy and the art as a small
+ * framed card). Two stacked layers: new art fades in over the old one in 1.2 s (to or from no art, the
+ * sky, in 0.7 s); a crossfade that starts while another runs completes that one at once. The art is the
+ * program's poster art or its other art (thumbnail), whichever {@link HeroArt#backdrop} prefers by real
+ * pixels: landscape art at least 768 px wide is shown sharp, cropped to the screen's shape from the top
+ * and decoded once at no more than the screen's pixels (ImageLoader.loadHero, a HARDWARE bitmap); other
+ * art (posters, small thumbnails) as its blurred copy. Kinopoisk art is asked at 1920x1080
+ * ({@link ArtUrl#backdrop}). Slow motion ("Ken Burns", {@link Gfx#BACKDROP_FPS}): the visible layer
+ * scales 1.02 -> 1.12 and pans 2.5 % / 1.5 % over 22 s and back, eased, through the views' scale and
+ * translation only (the RenderNode properties: nothing is redrawn or decoded per frame), at most 30
+ * frames per second by default; still on weak GPUs (lite) and while it is hidden, paused or a trailer
+ * plays. The optional silent trailer plays full-bleed over the art. Scrims, back to front: start side
+ * ({@link Scrims#SIDE_ALPHA}), bottom ({@link Scrims#BOTTOM_ALPHA}) and the header's ({@link Scrims},
+ * the same as the sky's, at {@link Scrims#headOverArt} while fading to or from no art), dithered.
+ * A program without art (or whose art cannot be had in 4 s) gets a soft glow of its colour ({@link Tint});
+ * with no program focused yet the stage is empty and the sky shows through. {@link #covering()} tells the activity when
+ * the sky is fully hidden (it then pauses the sky). Weak GPUs ({@link Gfx#LITE}): the stage keeps a GPU
+ * layer while trailers are off.
  */
 public class Stage extends ViewGroup {
     public interface Listener {
@@ -43,80 +49,111 @@ public class Stage extends ViewGroup {
         void onStageCovering(boolean covering);
     }
 
-    // the framed card, design px: end edge 220 from the screen edge, centred in the band from y 170 to the
-    // art bottom (1.0.0's poster: 340x510 at y 170)
-    private static final int CARD_END = 220, CARD_TOP = 170, WIDE_W = 640, SQUARE = 420, POSTER_H = 510;
-    private static final int ART_BOTTOM = 680;
+    private static final long FADE_MS = 1200, EMPTY_FADE_MS = 700;
+    private static final long LOAD_TIMEOUT_MS = 4000;
+    /** One way of the motion; it then runs back (CSS "alternate"). */
+    private static final long MOTION_MS = 22000;
+    private static final float SCALE_FROM = 1.02f, SCALE_TO = 1.12f, PAN_X = 0.025f, PAN_Y = 0.015f;
     private static final float BLUR_ALPHA = 0.8f; // the blurred copy over the ground: darkened by a fifth
+
     private final ImageLoader mImages;
-    private final Paint mBmp = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
-    private final Paint mScrim = new Paint(Paint.DITHER_FLAG);
-    private final Rect mSrc = new Rect();
-    private final RectF mDst = new RectF();
-    private final View mCardView;
+    private final Art[] mArt = new Art[2];
+    private int mFront;
     private final Trailer mTrailer;
+    private final ScrimView mScrims;
+    private ValueAnimator mScrimAnim;
     private Listener mListener;
-    private LinearGradient mStart, mBottom, mTop;
-    private static final Layer EMPTY = new Layer(); // never mutated
-    private Layer mCur = EMPTY, mPrev = EMPTY;
-    private long mFade;
-    private float mScrimA;
     private Card mCard;
-    private ImageLoader.Request mReq, mCardReq, mProbe0, mProbe1;
+    private String mShownUri;
+    private ImageLoader.Request mReq, mProbe0, mProbe1;
     private boolean mCovering;
-    private int mArtBottom;
+    private String mWaitId;
+    // motion: a clock that only runs while the motion runs, so pausing and resuming never jumps
+    private final long mFrameMs;
+    private boolean mMotionAllowed, mTrailerPlaying, mMotionRunning;
+    private long mClock, mLastStep;
+    private final Runnable mStep = this::step;
 
-    /** One art state: a full-bleed backdrop, or a blurred copy plus the framed card. */
-    private static final class Layer {
-        Bitmap back;
-        Bitmap card;      // decoded at the card's size, or the art's own pixels when it has fewer
-        int cw, ch;       // the card's size on screen (real px)
+    /** One layer: a bitmap drawn over the whole view (the views' scale and translation move it). */
+    private static final class Art extends View {
+        private final Paint mPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        private final RectF mDst = new RectF();
+        Bitmap bmp;
         boolean blurred;
+        boolean leaving; // fading out to the sky
+        boolean moving;  // takes part in the slow motion (not the tint of a program without art)
+        long t0;
 
-        boolean empty() {
-            return back == null;
+        Art(Context c) {
+            super(c);
+            setVisibility(GONE);
+        }
+
+        void set(Bitmap b, boolean blur) {
+            bmp = b;
+            blurred = blur;
+            leaving = false;
+            invalidate();
+        }
+
+        void clear() {
+            animate().cancel();
+            bmp = null;
+            leaving = false;
+            setVisibility(GONE);
+            setAlpha(1f);
+            still();
+        }
+
+        void still() {
+            setScaleX(1f);
+            setScaleY(1f);
+            setTranslationX(0f);
+            setTranslationY(0f);
+        }
+
+        boolean shown() {
+            return bmp != null && getVisibility() == VISIBLE;
+        }
+
+        @Override
+        public boolean hasOverlappingRendering() {
+            // one bitmap: its alpha needs no offscreen buffer while it fades; the ground under it does
+            return bmp != null && (blurred || bmp.hasAlpha());
+        }
+
+        @Override
+        protected void onDraw(Canvas c) {
+            Bitmap b = bmp;
+            if (b == null) return;
+            if (blurred || b.hasAlpha()) c.drawColor(Theme.BG);
+            mPaint.setAlpha(blurred ? Math.round(255 * BLUR_ALPHA) : 255);
+            mDst.set(0, 0, getWidth(), getHeight());
+            c.drawBitmap(b, null, mDst, mPaint);
         }
     }
 
     public Stage(Context c, ImageLoader il) {
         super(c);
         mImages = il;
-        mArtBottom = Theme.px(ART_BOTTOM);
-        setWillNotDraw(false);
-        setClipChildren(false);
-        // weak GPUs (Gfx): art, three scrims and the framed card as one texture (dropped while trailers are allowed)
+        setClipChildren(true);
+        int fps = Gfx.BACKDROP_FPS;
+        // a step a little before each 1/fps: the next vsync after it keeps the rate (30 fps on a 60 Hz display)
+        mFrameMs = fps <= 0 ? 0 : Math.max(1, 1000 / fps - 8);
+        // weak GPUs (Gfx): art, trailer and scrims as one texture (dropped while trailers are allowed)
         if (Gfx.LITE) setLayerType(LAYER_TYPE_HARDWARE, null);
+        for (int i = 0; i < 2; i++) {
+            mArt[i] = new Art(c);
+            addView(mArt[i]);
+        }
         mTrailer = new Trailer(c);
-        mTrailer.setOnPlaying(this::onTrailerPlaying);
-        addView(mTrailer.view());
-        final Paint frame = new Paint(Paint.ANTI_ALIAS_FLAG);
-        frame.setStyle(Paint.Style.STROKE);
-        frame.setStrokeWidth(Theme.pxf(2));
-        frame.setColor(Theme.alpha(Theme.TEXT1, 0.14f));
-        final RectF fr = new RectF();
-        mCardView = new View(c) {
-            @Override
-            protected void onDraw(Canvas cv) {
-                Bitmap b = mCur.card;
-                if (b == null) return;
-                // the view is the card's size: the bitmap 1:1, or enlarged up to 1.25x (2K / 4K, small art)
-                mDst.set(0, 0, getWidth(), getHeight());
-                cv.drawBitmap(b, null, mDst, mBmp);
-                float sw = frame.getStrokeWidth();
-                fr.set(sw / 2, sw / 2, getWidth() - sw / 2, getHeight() - sw / 2);
-                cv.drawRoundRect(fr, Theme.pxf(20) - sw / 2, Theme.pxf(20) - sw / 2, frame);
-            }
-        };
-        mCardView.setOutlineProvider(new ViewOutlineProvider() {
-            @Override
-            public void getOutline(View v, Outline o) {
-                o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), Theme.pxf(20));
-            }
+        mTrailer.setOnPlaying(p -> {
+            mTrailerPlaying = p;
+            updateMotion();
         });
-        mCardView.setClipToOutline(true);
-        mCardView.setElevation(Theme.pxf(24));
-        mCardView.setVisibility(GONE);
-        addView(mCardView);
+        addView(mTrailer.view());
+        mScrims = new ScrimView(c);
+        addView(mScrims);
     }
 
     public void setListener(Listener l) {
@@ -127,20 +164,11 @@ public class Stage extends ViewGroup {
         return mCard;
     }
 
-    /**
-     * Lowest y of the framed card (real px): the first row's top minus a gap, so the card never reaches
-     * the row (PageForYou moves the row up when its cards are tall).
-     */
-    public void setArtBottom(int px) {
-        if (px == mArtBottom) return;
-        mArtBottom = px;
-        placeCard();
-    }
-
     /** Shows the art of {@code k} (null or art-less = empty stage: the sky shows). */
     public void show(Card k, boolean animate) {
-        if (k != null && mCard != null && k.id.equals(mCard.id) && java.util.Objects.equals(k.image, mCard.image)
-                && java.util.Objects.equals(k.image2, mCard.image2) && !mCur.empty()) {
+        String[] uris = candidates(k);
+        if (k != null && mCard != null && k.id.equals(mCard.id) && Objects.equals(k.image, mCard.image)
+                && Objects.equals(k.image2, mCard.image2) && mArt[mFront].shown()) {
             mCard = k;
             return;
         }
@@ -148,12 +176,11 @@ public class Stage extends ViewGroup {
         cancelRequests();
         mTrailer.stop();
         removeCallbacks(mLoadTimeout);
-        String[] uris = candidates(k);
         if (uris.length == 0) {
-            crossfade(EMPTY, animate);
+            fallback(k, animate);
             return;
         }
-        // the real size of each candidate decides the layout; known sizes decide at once
+        // the real size of each candidate decides sharp or blurred; known sizes decide at once
         final int[] sizes = new int[uris.length * 2];
         boolean known = true;
         for (int i = 0; i < uris.length; i++) {
@@ -187,164 +214,174 @@ public class Stage extends ViewGroup {
         }
     }
 
-    /** The program's art and its other art (thumbnail next to poster art), each once. */
+    /** The program's art and its other art (thumbnail next to poster art), as the backdrop asks them, each once. */
     private static String[] candidates(Card k) {
         if (k == null) return new String[0];
-        boolean a = k.image != null && !k.image.isEmpty();
-        boolean b = k.image2 != null && !k.image2.isEmpty() && !k.image2.equals(k.image);
-        if (a && b) return new String[]{k.image, k.image2};
-        if (a) return new String[]{k.image};
-        if (b) return new String[]{k.image2};
+        String a = k.image != null && !k.image.isEmpty() ? ArtUrl.backdrop(k.image) : null;
+        String b = k.image2 != null && !k.image2.isEmpty() ? ArtUrl.backdrop(k.image2) : null;
+        if (a != null && b != null && !b.equals(a)) return new String[]{a, b};
+        if (a != null) return new String[]{a};
+        if (b != null) return new String[]{b};
         return new String[0];
     }
 
     private void apply(Card k, String[] uris, int[] sizes, boolean animate) {
         int sw = getWidth() > 0 ? getWidth() : getResources().getDisplayMetrics().widthPixels;
         int sh = getHeight() > 0 ? getHeight() : getResources().getDisplayMetrics().heightPixels;
-        // the card boxes in real px, never taller than the band between y 170 and the art bottom
-        int band = Math.max(Theme.px(160), mArtBottom - Theme.px(CARD_TOP));
-        HeroArt.Plan p = HeroArt.choose(sizes, sw, sh, Math.min(Theme.px(WIDE_W), band * 16 / 9), Math.min(Theme.px(SQUARE), band),
-                Math.min(Theme.px(POSTER_H), band), UiScale.cardEnlarge(Theme.scale()));
+        HeroArt.Plan p = HeroArt.backdrop(sizes, sw, sh);
         if (p.mode == HeroArt.NONE) {
-            Log.i(App.TAG, "hero art none id=" + k.id);
-            crossfade(EMPTY, animate); // nothing could be fetched: the sky
+            Log.i(App.TAG, "backdrop none id=" + k.id);
+            fallback(k, animate); // nothing could be fetched: the tint, or the sky
             return;
         }
         final String uri = uris[p.index];
         final String id = k.id;
+        final boolean blur = p.mode == HeroArt.BLUR;
         StringBuilder sz = new StringBuilder();
         for (int i = 0; i + 1 < sizes.length; i += 2) sz.append(i == 0 ? "" : ",").append(sizes[i]).append('x').append(sizes[i + 1]);
-        Log.i(App.TAG, "hero art id=" + id + " src=" + sz + " ui=" + sw + "x" + sh + " -> " + p);
-        if (p.mode == HeroArt.FILL) {
-            Bitmap b = mImages.peekHero(uri, p.w, p.h);
-            if (b != null) {
-                Layer l = new Layer();
-                l.back = b;
-                crossfade(l, animate);
-                mTrailer.arm(k);
-                return;
-            }
-            expectSoon(id);
-            mReq = mImages.loadHero(uri, p.w, p.h, k.pkg, (bmp, col) -> {
-                if (!isCard(id)) return;
-                Layer l = new Layer();
-                l.back = bmp;
-                crossfade(l, true);
-                mTrailer.arm(mCard);
-            });
+        Log.i(App.TAG, "backdrop id=" + id + " src=" + sz + " ui=" + sw + "x" + sh + " -> " + p);
+        if (uri.equals(mShownUri) && mArt[mFront].shown()) {
+            // the same picture (another card of the same title): it stays, moving on
+            removeCallbacks(mLoadTimeout);
+            mTrailer.arm(k);
             return;
         }
-        // the framed card: the blurred copy behind, the sharp card pops in when it arrives
-        final Layer l = new Layer();
-        l.blurred = true;
-        l.cw = p.w;
-        l.ch = p.h;
-        l.back = mImages.peekBlur(uri);
-        l.card = mImages.peekHero(uri, p.w, p.h);
-        // as 1.0.0: no trailer next to a poster; landscape art may have one (the card steps aside)
-        final boolean trailer = p.shape != HeroArt.POSTER;
-        if (l.back != null) {
-            crossfade(l, animate);
-            if (trailer) mTrailer.arm(k);
-        } else {
-            expectSoon(id);
-            mReq = mImages.loadBlur(uri, k.pkg, (b, col) -> {
-                if (!isCard(id)) return;
-                l.back = b;
-                crossfade(l, true);
-                if (trailer) mTrailer.arm(mCard);
-            });
+        Bitmap b = blur ? mImages.peekBlur(uri) : mImages.peekHero(uri, sw, sh);
+        if (b != null) {
+            crossfade(b, blur, uri, animate);
+            mTrailer.arm(k);
+            return;
         }
-        if (l.card == null) mCardReq = mImages.loadHero(uri, p.w, p.h, k.pkg, (b, col) -> {
-            if (!isCard(id)) return;
-            l.card = b;
-            if (mCur == l) showCard(true);
-        });
+        expectSoon(id);
+        ImageLoader.Callback cb = (bmp, col) -> {
+            if (!isCard(id) || bmp == null) return;
+            crossfade(bmp, blur, uri, true);
+            mTrailer.arm(mCard);
+        };
+        mReq = blur ? mImages.loadBlur(uri, k.pkg, cb) : mImages.loadHero(uri, sw, sh, k.pkg, cb);
     }
 
     private void cancelRequests() {
         if (mReq != null) mReq.cancel();
-        if (mCardReq != null) mCardReq.cancel();
         if (mProbe0 != null) mProbe0.cancel();
         if (mProbe1 != null) mProbe1.cancel();
-        mReq = mCardReq = mProbe0 = mProbe1 = null;
+        mReq = mProbe0 = mProbe1 = null;
     }
 
-    /** If the art of {@code id} has not arrived in 2.5 s (offline, failed), fade to the sky. */
+    /** If the art of {@code id} has not arrived in 4 s (offline, failed), fade to the sky. */
     private void expectSoon(String id) {
         removeCallbacks(mLoadTimeout);
         mWaitId = id;
-        postDelayed(mLoadTimeout, 2500);
+        postDelayed(mLoadTimeout, LOAD_TIMEOUT_MS);
     }
 
-    private String mWaitId;
     // crossfade() cancels it: if it runs, nothing new was shown for this card
     private final Runnable mLoadTimeout = () -> {
-        if (isCard(mWaitId) && !mCur.empty()) crossfade(EMPTY, true);
+        if (isCard(mWaitId) && mArt[mFront].shown()) fallback(mCard, true);
     };
 
-    private boolean isCard(String id) {
-        return mCard != null && mCard.id.equals(id);
-    }
-
-    private void crossfade(Layer to, boolean animate) {
-        if (to == mCur) return;
-        removeCallbacks(mLoadTimeout);
-        mPrev = mCur;
-        mCur = to;
-        mFade = animate && Theme.animations() && !(mPrev.empty() && to.empty()) ? android.os.SystemClock.uptimeMillis() : 0;
-        if (mFade == 0) mPrev = EMPTY;
-        showCard(animate);
-        // art -> art stays opaque all the way; to or from nothing the sky shows through the fade
-        setCovering(mCovering && !mPrev.empty() && !to.empty());
-        invalidate();
-        if (mFade == 0) setCovering(!to.empty());
-    }
-
-    private void showCard(boolean animate) {
-        Bitmap p = mCur.card;
-        mCardView.animate().cancel();
-        mCardView.setVisibility(p != null ? VISIBLE : GONE);
-        if (p == null) return;
-        placeCard();
-        mCardView.invalidate();
-        if (animate && Theme.animations()) {
-            mCardView.setAlpha(0f);
-            mCardView.animate().alpha(1f).setDuration(Theme.STAGE_MS).start();
-        } else {
-            mCardView.setAlpha(1f);
-        }
-    }
+    private static final String TINT = "tint:";
 
     /**
-     * Sizes and places the card view at the card's size (whole pixels: the bitmap is drawn 1:1 when it
-     * has them). Called outside layout passes too: laying out one child does not lay out the window.
+     * No art for {@code k}: a program gets the soft glow of its colour ({@link Tint}, never a flat block),
+     * anything else the sky.
      */
-    private void placeCard() {
-        Layer l = mCur;
-        if (l.card == null || getWidth() == 0) return;
-        int cw = l.cw, ch = l.ch;
-        int w = getWidth();
-        int top = Theme.px(CARD_TOP);
-        int y = top + Math.max(0, (mArtBottom - top - ch) / 2);
-        int x = Theme.rtl(this) ? Theme.px(CARD_END) : w - Theme.px(CARD_END) - cw;
-        if (mCardView.getWidth() != cw || mCardView.getHeight() != ch) {
-            mCardView.measure(MeasureSpec.makeMeasureSpec(cw, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(ch, MeasureSpec.EXACTLY));
+    private void fallback(Card k, boolean animate) {
+        if (k == null || k.kind != Card.PROGRAM) {
+            crossfade(null, false, null, animate);
+            return;
         }
-        mCardView.layout(x, y, x + cw, y + ch);
+        int color = k.color != 0 ? k.color : Theme.SURFACE;
+        String key = TINT + Integer.toHexString(color);
+        if (key.equals(mShownUri) && mArt[mFront].shown()) return;
+        crossfade(Tint.backdrop(color, Theme.BG), false, key, animate);
     }
 
-    /** The trailer plays full-bleed: the card steps aside meanwhile and comes back when it stops. */
-    private void onTrailerPlaying(boolean playing) {
-        if (mCardView.getVisibility() != VISIBLE) return;
-        mCardView.animate().cancel();
-        mCardView.animate().alpha(playing ? 0f : 1f).setDuration(playing ? 600 : Theme.STAGE_MS).start();
+    private boolean isCard(String id) {
+        return mCard != null && id != null && mCard.id.equals(id);
+    }
+
+    /** New art over the old (b != null), or the old faded out to the sky (b == null). */
+    private void crossfade(Bitmap b, boolean blurred, String uri, boolean animate) {
+        removeCallbacks(mLoadTimeout);
+        boolean anim = animate && Theme.animations();
+        final Art from = mArt[mFront];
+        final Art back = mArt[1 - mFront];
+        // a crossfade still running: it completes now (the art fading in is shown fully); art fading out
+        // to the sky stays where it is and the new art fades in over it
+        from.animate().cancel();
+        if (from.shown() && !from.leaving) from.setAlpha(1f);
+        boolean fromArt = from.shown();
+        if (b == null) {
+            mShownUri = null;
+            back.clear();
+            setCovering(false);
+            fadeScrims(0f, anim);
+            if (!fromArt) {
+                from.clear();
+            } else if (anim) {
+                from.leaving = true;
+                from.animate().alpha(0f).setDuration(EMPTY_FADE_MS).setInterpolator(Theme.EMPHASIZED).withEndAction(() -> {
+                    from.clear();
+                    updateMotion();
+                }).start();
+            } else {
+                from.clear();
+            }
+            updateMotion();
+            return;
+        }
+        // the new art goes on the back layer, which is then drawn on top (dispatchDraw)
+        final Art to = back;
+        to.clear();
+        to.set(b, blurred);
+        to.moving = uri == null || !uri.startsWith(TINT);
+        to.t0 = mClock;
+        mFront = 1 - mFront;
+        mShownUri = uri;
+        // art -> art stays opaque all the way; from nothing the sky shows through the fade
+        setCovering(mCovering && fromArt);
+        fadeScrims(1f, anim);
+        Runnable done = () -> {
+            if (mArt[mFront] != to) return;
+            if (from != to) from.clear();
+            setCovering(true);
+            updateMotion();
+        };
+        to.setVisibility(VISIBLE);
+        if (anim) {
+            to.setAlpha(0f);
+            to.animate().alpha(1f).setDuration(fromArt ? FADE_MS : EMPTY_FADE_MS).setInterpolator(Theme.EMPHASIZED)
+                    .withEndAction(done).start();
+        } else {
+            to.setAlpha(1f);
+            done.run();
+        }
+        if (mMotionRunning && to.moving) motion(to);
+        updateMotion();
+    }
+
+    /** The scrims with the art: 1 over art, 0 over the sky (it has its own). */
+    private void fadeScrims(float to, boolean anim) {
+        if (mScrimAnim != null) mScrimAnim.cancel();
+        mScrimAnim = null;
+        if (mScrims.art == to) return;
+        if (!anim) {
+            mScrims.setArt(to);
+            return;
+        }
+        ValueAnimator va = ValueAnimator.ofFloat(mScrims.art, to);
+        va.setDuration(EMPTY_FADE_MS);
+        va.setInterpolator(Theme.EMPHASIZED);
+        va.addUpdateListener(a -> mScrims.setArt((Float) a.getAnimatedValue()));
+        mScrimAnim = va;
+        va.start();
     }
 
     private void setCovering(boolean c) {
         if (c == mCovering) return;
         mCovering = c;
-        // may change during onDraw (end of a fade): tell the activity outside the draw pass
+        // may change during an animation callback: tell the activity outside it
         removeCallbacks(mNotify);
         post(mNotify);
     }
@@ -357,6 +394,55 @@ public class Stage extends ViewGroup {
     public boolean covering() {
         return mCovering && getAlpha() >= 1f && getVisibility() == VISIBLE;
     }
+
+    // ------------------------------------------------------------------ motion
+
+    /**
+     * The activity allows the motion while the stage can be seen: Home resumed, its tab shown, the
+     * projector awake. It also needs art, no trailer playing, animations on and a rate above 0.
+     */
+    public void setMotionAllowed(boolean on) {
+        mMotionAllowed = on;
+        updateMotion();
+    }
+
+    private void updateMotion() {
+        boolean art = (mArt[0].shown() && mArt[0].moving) || (mArt[1].shown() && mArt[1].moving);
+        boolean on = mFrameMs > 0 && mMotionAllowed && !mTrailerPlaying && art && getVisibility() == VISIBLE
+                && Theme.animations();
+        if (on == mMotionRunning) return;
+        mMotionRunning = on;
+        removeCallbacks(mStep);
+        if (on) {
+            mLastStep = SystemClock.uptimeMillis();
+            postOnAnimation(mStep);
+        }
+    }
+
+    private void step() {
+        if (!mMotionRunning) return;
+        long now = SystemClock.uptimeMillis();
+        mClock += Math.min(100, Math.max(0, now - mLastStep));
+        mLastStep = now;
+        for (Art a : mArt) if (a.shown() && a.moving) motion(a);
+        postOnAnimationDelayed(mStep, mFrameMs);
+    }
+
+    /** Scale and pan of a layer at the motion clock: eased there and back, never past the art's edge. */
+    private void motion(Art a) {
+        long t = Math.max(0, mClock - a.t0) % (2 * MOTION_MS);
+        float f = t <= MOTION_MS ? t / (float) MOTION_MS : (2 * MOTION_MS - t) / (float) MOTION_MS;
+        float e = (float) (1 - Math.cos(Math.PI * f)) / 2f;
+        float s = SCALE_FROM + (SCALE_TO - SCALE_FROM) * e;
+        // the pan never shows an edge: at scale s the art reaches (s - 1) / 2 past each side, at least 1 % + 5 % x e
+        float dir = Theme.rtl(this) ? 1f : -1f;
+        a.setScaleX(s);
+        a.setScaleY(s);
+        a.setTranslationX(dir * PAN_X * getWidth() * e);
+        a.setTranslationY(-PAN_Y * getHeight() * e);
+    }
+
+    // ------------------------------------------------------------------ trailer, lifecycle
 
     public void setTrailersEnabled(boolean on) {
         mTrailer.setEnabled(on);
@@ -373,12 +459,14 @@ public class Stage extends ViewGroup {
     /** Drop bitmaps (Home stopped / low memory); {@link #reload()} brings them back from the caches. */
     public void release() {
         cancelRequests();
+        removeCallbacks(mLoadTimeout);
         mTrailer.stop();
-        mCur = EMPTY;
-        mPrev = EMPTY;
-        mCardView.setVisibility(GONE);
+        mArt[0].clear();
+        mArt[1].clear();
+        mShownUri = null;
+        fadeScrims(0f, false);
         setCovering(false);
-        invalidate();
+        updateMotion();
     }
 
     public void reload() {
@@ -388,102 +476,93 @@ public class Stage extends ViewGroup {
     }
 
     @Override
+    protected void onVisibilityChanged(View changed, int visibility) {
+        super.onVisibilityChanged(changed, visibility);
+        if (mArt != null && mArt[1] != null) updateMotion();
+    }
+
+    @Override
     protected void onMeasure(int wms, int hms) {
         int w = MeasureSpec.getSize(wms), h = MeasureSpec.getSize(hms);
-        mTrailer.view().measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY));
-        boolean card = mCur.card != null;
-        int cw = card ? mCur.cw : 1, ch = card ? mCur.ch : 1;
-        mCardView.measure(MeasureSpec.makeMeasureSpec(cw, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(ch, MeasureSpec.EXACTLY));
+        int ws = MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), hs = MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY);
+        for (int i = 0; i < getChildCount(); i++) getChildAt(i).measure(ws, hs);
         setMeasuredDimension(w, h);
     }
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        mTrailer.view().layout(0, 0, r - l, b - t);
-        if (mCur.card != null) placeCard();
-        else mCardView.layout(0, 0, mCardView.getMeasuredWidth(), mCardView.getMeasuredHeight());
+        for (int i = 0; i < getChildCount(); i++) getChildAt(i).layout(0, 0, r - l, b - t);
     }
 
-    @Override
-    protected void onSizeChanged(int w, int h, int ow, int oh) {
-        int g = Theme.BG & 0x00FFFFFF;
-        boolean rtl = Theme.rtl(this);
-        // D_Home: linear-gradient(90deg, .94 0%, .8 27%, .22 57%, 0 76%); bottom 620 px: ground 44% -> 0
-        int[] cols = new int[Scrims.SIDE_ALPHA.length];
-        for (int i = 0; i < cols.length; i++) cols[i] = Theme.alpha(Theme.BG, Scrims.SIDE_ALPHA[i]);
-        mStart = rtl ? new LinearGradient(w, 0, 0, 0, cols, Scrims.SIDE_POS, Shader.TileMode.CLAMP)
-                : new LinearGradient(0, 0, w, 0, cols, Scrims.SIDE_POS, Shader.TileMode.CLAMP);
-        float top = h - Theme.pxf(620);
-        mBottom = new LinearGradient(0, h, 0, top, new int[]{g | 0xFF000000, g | 0xFF000000, g},
-                new float[]{0f, 0.44f, 1f}, Shader.TileMode.CLAMP);
-        // the header scrim: even behind the header, then eased out (the whole header reads over white art)
-        int[] head = new int[Scrims.HEAD_A.length];
-        for (int i = 0; i < head.length; i++) head[i] = Theme.alpha(Theme.BG, Scrims.HEAD_A[i]);
-        mTop = new LinearGradient(0, 0, 0, Theme.pxf(Scrims.HEAD_END), head, Scrims.HEAD_POS, Shader.TileMode.CLAMP);
-        if (mCur.card != null) post(this::placeCard);
-    }
-
-    @Override
-    protected void onDraw(Canvas c) {
-        float t = 1f;
-        if (mFade > 0) {
-            t = Math.min(1f, (android.os.SystemClock.uptimeMillis() - mFade) / (float) Theme.STAGE_MS);
-            t = Theme.EMPHASIZED.getInterpolation(t);
-            if (t < 1f) postInvalidateOnAnimation();
-            else {
-                mFade = 0;
-                mPrev = EMPTY;
-                setCovering(!mCur.empty());
-            }
-        }
-        boolean any = !mCur.empty() || (!mPrev.empty() && t < 1f);
-        // the scrims fade with the art, so the sky's own (lighter) scrims never jump
-        mScrimA = Math.min(1f, (mCur.empty() ? 0f : t) + (mPrev.empty() || t >= 1f ? 0f : 1f - t));
-        if (!any) return;
-        int w = getWidth(), h = getHeight();
-        // art -> art: the new one fades in over the old; art -> nothing: the old one fades out
-        if (t < 1f) layer(c, mPrev, mCur.empty() ? 1f - t : 1f, w, h);
-        layer(c, mCur, t, w, h);
-    }
-
-    private void layer(Canvas c, Layer l, float a, int w, int h) {
-        if (l.empty() || a <= 0f) return;
-        mSrc.set(0, 0, l.back.getWidth(), l.back.getHeight());
-        mDst.set(0, 0, w, h);
-        mBmp.setAlpha((int) (255 * a * (l.blurred ? BLUR_ALPHA : 1f)));
-        if (l.blurred) c.drawColor(Theme.alpha(Theme.BG, a));
-        // weak GPUs (Gfx): no window background shows through transparent art any more, the ground does
-        else if (Gfx.LITE && l.back.hasAlpha()) c.drawColor(Theme.alpha(Theme.BG, a));
-        c.drawBitmap(l.back, mSrc, mDst, mBmp);
-        mBmp.setAlpha(255);
-    }
-
-    /**
-     * Back to front: the backdrop (onDraw), the trailer, the scrims, then the framed card above them
-     * (a dimmed card would not look sharp), with its elevation shadow.
-     */
+    /** Back to front: the old art, the new art (fading in over it), the trailer, the scrims. */
     @Override
     protected void dispatchDraw(Canvas c) {
         long when = getDrawingTime();
+        Art front = mArt[mFront], back = mArt[1 - mFront];
+        if (back.getVisibility() == VISIBLE) drawChild(c, back, when);
+        if (front.getVisibility() == VISIBLE) drawChild(c, front, when);
         View tv = mTrailer.view();
         if (tv.getVisibility() == VISIBLE) drawChild(c, tv, when);
-        if (!(mCur.empty() && mPrev.empty()) && mStart != null && mScrimA > 0f) {
-            int w = getWidth(), h = getHeight();
-            mScrim.setAlpha(Math.round(255 * mScrimA));
-            mScrim.setShader(mStart);
-            c.drawRect(0, 0, w, h, mScrim);
-            mScrim.setShader(mBottom);
-            c.drawRect(0, h - Theme.pxf(620), w, h, mScrim);
-            // the header's: over the sky's own (the same), so a fade to or from no art never lightens it
-            mScrim.setAlpha(Math.round(255 * Scrims.headOverArt(mScrimA)));
-            mScrim.setShader(mTop);
-            c.drawRect(0, 0, w, Theme.pxf(Scrims.HEAD_END), mScrim);
-            mScrim.setShader(null);
+        drawChild(c, mScrims, when);
+    }
+
+    /** The three scrims, at the share of art on screen ({@link #art}: 0 = only the sky, 1 = art). */
+    private static final class ScrimView extends View {
+        private final Paint mPaint = new Paint(Paint.DITHER_FLAG);
+        private LinearGradient mStart, mBottom, mTop;
+        float art;
+
+        ScrimView(Context c) {
+            super(c);
         }
-        if (mCardView.getVisibility() == VISIBLE) {
-            c.enableZ(); // the card's elevation shadow, as ViewGroup.dispatchDraw does for its children
-            drawChild(c, mCardView, when);
-            c.disableZ();
+
+        void setArt(float a) {
+            if (a == art) return;
+            art = a;
+            invalidate();
+        }
+
+        @Override
+        public boolean hasOverlappingRendering() {
+            return false; // drawn with its own alpha, never through an offscreen buffer
+        }
+
+        @Override
+        protected void onSizeChanged(int w, int h, int ow, int oh) {
+            boolean rtl = Theme.rtl(this);
+            int[] side = new int[Scrims.SIDE_ALPHA.length];
+            for (int i = 0; i < side.length; i++) side[i] = Theme.alpha(Theme.BG, Scrims.SIDE_ALPHA[i]);
+            mStart = rtl ? new LinearGradient(w, 0, 0, 0, side, Scrims.SIDE_POS, Shader.TileMode.CLAMP)
+                    : new LinearGradient(0, 0, w, 0, side, Scrims.SIDE_POS, Shader.TileMode.CLAMP);
+            int n = Scrims.BOTTOM_ALPHA.length;
+            float reach = Scrims.BOTTOM_POS[n - 1];
+            int[] bottom = new int[n];
+            float[] pos = new float[n];
+            for (int i = 0; i < n; i++) {
+                bottom[i] = Theme.alpha(Theme.BG, Scrims.BOTTOM_ALPHA[i]);
+                pos[i] = Scrims.BOTTOM_POS[i] / reach;
+            }
+            mBottom = new LinearGradient(0, h, 0, h - h * reach, bottom, pos, Shader.TileMode.CLAMP);
+            // the header scrim: even behind the header, then eased out (the whole header reads over white art)
+            int[] head = new int[Scrims.HEAD_A.length];
+            for (int i = 0; i < head.length; i++) head[i] = Theme.alpha(Theme.BG, Scrims.HEAD_A[i]);
+            mTop = new LinearGradient(0, 0, 0, Theme.pxf(Scrims.HEAD_END), head, Scrims.HEAD_POS, Shader.TileMode.CLAMP);
+        }
+
+        @Override
+        protected void onDraw(Canvas c) {
+            if (art <= 0f || mStart == null) return;
+            int w = getWidth(), h = getHeight();
+            mPaint.setAlpha(Math.round(255 * art));
+            mPaint.setShader(mStart);
+            c.drawRect(0, 0, w, h, mPaint);
+            mPaint.setShader(mBottom);
+            c.drawRect(0, h - h * Scrims.BOTTOM_POS[Scrims.BOTTOM_POS.length - 1], w, h, mPaint);
+            // the header's: over the sky's own (the same), so a fade to or from no art never lightens it
+            mPaint.setAlpha(Math.round(255 * Scrims.headOverArt(art)));
+            mPaint.setShader(mTop);
+            c.drawRect(0, 0, w, Theme.pxf(Scrims.HEAD_END), mPaint);
+            mPaint.setShader(null);
         }
     }
 }

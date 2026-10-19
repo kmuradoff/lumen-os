@@ -15,18 +15,25 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * "Home" of direction D. With something to continue (Watch Next) or app preview programs it is
- * D_Home: the hero over the stage art, "Continue watching" at y 740 (D_Home: 790), then the apps and the
- * app channels. With nothing started, or with "Continue watching on Home" hidden, it is D_Calm: the big
- * clock, date and weather over the living sky and the apps shelf at y 752. Then the "Customize Home"
- * pill. Vertical scrolling only translates one track view: below the first row the focused row's
- * heading is kept at y 132 (browse mode) and the hero / calm block fades out. Focus in "Continue
- * watching" moves the hero (after a 250 ms dwell). TV safe area (1.0.1 follow-up): the first row moves
- * up if its focused card would come closer than 54 px to the bottom edge, and rows (and the pill) that
- * the screen edge would cut are faded out until they scroll in.
+ * "Home". With something to continue (Watch Next) or app preview programs it is the Lumen OS 1.0.5 Home
+ * (the owner's mockups design/home_v2, tpl2 the approved variant): the focused card's art fills the
+ * screen behind everything ({@link Stage}), the info block on the start side ({@link HeroView})
+ * describes the focused card, and the rows sit below it: "For you" (Continue watching, then the
+ * recommendations of every app, Ranker.forYou), the apps, then inputs and projector tiles when shown. The focused row stays on
+ * one line (the row line: at most y 740, higher when a row's focused card would come closer than 54 px
+ * to the bottom edge, so the same line for every row); vertical moves only translate the track, rows
+ * above the focused one fade out (they would overlap the info block), rows below show while they fit
+ * the TV safe band. When the focus moves the info block fades out, and 350 ms after it settles it shows
+ * the newly focused program and its art crossfades in behind. Apps, inputs and tiles have no info: the
+ * block stays out and the last art stays. With nothing started, or with "Continue watching on Home"
+ * hidden, it is D_Calm as before: the big clock, date and weather over the living sky and the apps
+ * shelf at y 752; below the first row the focused row's heading is kept at y 132 (browse mode) and the
+ * calm block fades out. Then the "Customize Home" pill. TV safe area (1.0.1 follow-up): rows (and the
+ * pill) that the screen edge would cut are faded out until they scroll in.
  */
 public class PageForYou extends ViewGroup implements Page {
-    private static final long HERO_FOLLOW_MS = 250;
+    /** The info block and the art follow the focus once it rests this long (the owner's mockup: 350 ms). */
+    private static final long INFO_DWELL_MS = 350;
     private final Page.Host mHost;
     private final Track mTrack;
     private final HeroView mHero;
@@ -34,17 +41,17 @@ public class PageForYou extends ViewGroup implements Page {
     private final ArrayList<RowView> mRows = new ArrayList<>();
     private final HashMap<String, RowView> mById = new HashMap<>();
     private final PillButton mCustomize;
-    private int mSection = 0;       // 0 = hero buttons / calm weather line, 1..n = rows, n+1 = customize
+    private int mSection = 1;       // 0 = calm weather line, 1..n = rows, n+1 = customize
     private boolean mActive;
     private boolean mBrowse;
     private boolean mShown = true;
     private boolean mHasHero;
     private boolean mBound;
+    private RowView mFollowRow;
     private Card mFollow;
-    private final Runnable mFollowHero = this::followHero;
+    private final Runnable mFollowInfo = this::followInfo;
     private int mScreenH;
-    private int mRowY;            // the first row's top (real px), see firstRowY()
-    private int mHeroBottom = -1; // last value told to the host
+    private int mRowY;            // the row line (real px), see rowLine()
     private float mTrackY;        // the track's target translation
     private boolean mPillInBand = true;
 
@@ -52,12 +59,13 @@ public class PageForYou extends ViewGroup implements Page {
         super(c);
         mHost = host;
         setClipChildren(false);
+        // the info block under the track: the rows draw over it
+        mHero = new HeroView(c, host);
+        mHero.setVisibility(GONE);
+        addView(mHero);
         mTrack = new Track(c);
         addView(mTrack);
         // until the first model arrives Home is calm: the clock needs no data
-        mHero = new HeroView(c, host);
-        mHero.setVisibility(GONE);
-        mTrack.addView(mHero);
         mCalm = new CalmView(c);
         mTrack.addView(mCalm);
         mCustomize = new PillButton(c, 64, 26, PillButton.STYLE_FILLED).icon(R.drawable.ic_edit)
@@ -78,7 +86,7 @@ public class PageForYou extends ViewGroup implements Page {
         return mCalm;
     }
 
-    /** D_Home (true) or D_Calm (false). */
+    /** The backdrop Home (true) or D_Calm (false). */
     public boolean heroMode() {
         return mHasHero;
     }
@@ -92,10 +100,7 @@ public class PageForYou extends ViewGroup implements Page {
         mBound = true;
         boolean onCustomize = !firstBind && mSection == mRows.size() + 1;
         boolean onTop = !firstBind && mSection == 0;
-        HashMap<Long, String> channels = new HashMap<>();
-        for (Row r : m.allRows) if (r.type == Row.CHANNEL) channels.put(r.channelId, r.title);
         boolean hero = !m.hero.isEmpty();
-        if (hero) mHero.setSlides(m.hero, channels);
         boolean modeChanged = setMode(hero, firstBind);
         ArrayList<RowView> next = new ArrayList<>();
         HashMap<String, RowView> nextById = new HashMap<>();
@@ -105,6 +110,8 @@ public class PageForYou extends ViewGroup implements Page {
             RowView rv = mById.get(r.id);
             if (rv == null) {
                 rv = new RowView(getContext(), mHost);
+                // the info block shows the focused program's title: no caption under its card
+                rv.setProgramCaptions(false);
                 mTrack.addView(rv, mTrack.indexOfChild(mCustomize));
             }
             rv.setRow(r, idx < 3);
@@ -119,55 +126,48 @@ public class PageForYou extends ViewGroup implements Page {
                 mTrack.removeView(old);
             }
         }
-        // keep track children in model order so drawing order matches (hero and calm come first)
+        // keep track children in model order so drawing order matches (the calm block comes first)
         for (int i = 0; i < next.size(); i++) {
             RowView rv = next.get(i);
-            if (mTrack.indexOfChild(rv) != i + 2) {
+            if (mTrack.indexOfChild(rv) != i + 1) {
                 mTrack.removeView(rv);
-                mTrack.addView(rv, i + 2);
+                mTrack.addView(rv, i + 1);
             }
         }
         mRows.clear();
         mRows.addAll(next);
         mById.clear();
         mById.putAll(nextById);
-        Card followed = mHero.transientCard();
-        if (followed != null) {
-            Card now = null;
-            RowView wn = mById.get(Row.ID_WATCH_NEXT);
-            if (wn != null) for (Card c : wn.row().cards) if (c.id.equals(followed.id)) now = c;
-            if (now == null) mHero.dropTransient();
-            else if (!now.sameContent(followed)) {
-                mHero.dropTransient();
-                mHero.showCard(now, false);
-            }
-        }
         int s;
-        // D_Home: "Continue"; D_Calm: the first app (also when the layout just switched under the user)
-        if (firstBind || modeChanged) s = mHasHero ? 0 : 1;
+        // the first row: "Continue watching" (or the first channel), D_Calm the first app (also when the
+        // layout just switched under the user)
+        if (firstBind || modeChanged) s = 1;
         else if (onCustomize) s = mRows.size() + 1;
         else if (onTop) s = 0;
         else if (focusedRow != null && mById.containsKey(focusedRow)) s = mRows.indexOf(mById.get(focusedRow)) + 1;
         else s = Math.min(mSection, mRows.size() + 1);
         mTrack.requestLayout();
         final int fs = s;
+        final boolean now = firstBind || modeChanged;
         mTrack.post(() -> {
             setSection(fs, false, true);
             updateNear();
+            refreshInfo(now);
         });
     }
 
-    /** Returns true if the layout changed between D_Home and D_Calm. */
+    /** Returns true if the layout changed between the backdrop Home and D_Calm. */
     private boolean setMode(boolean hero, boolean first) {
         boolean changed = hero != mHasHero || first;
         mHasHero = hero;
         mHero.setVisibility(hero ? VISIBLE : GONE);
         mCalm.setVisibility(hero ? GONE : VISIBLE);
         if (changed) {
-            View in = hero ? mHero : mCalm;
-            if (Theme.animations() && mShown && !first) {
-                in.setAlpha(0f);
-                in.animate().alpha(mBrowse ? 0f : 1f).setDuration(Theme.HERO_FADE_MS).start();
+            removeCallbacks(mFollowInfo);
+            mHero.clear();
+            if (!hero && Theme.animations() && mShown && !first) {
+                mCalm.setAlpha(0f);
+                mCalm.animate().alpha(mBrowse ? 0f : 1f).setDuration(Theme.HERO_FADE_MS).start();
             }
             mHost.onHomeMode(hero);
         }
@@ -182,24 +182,23 @@ public class PageForYou extends ViewGroup implements Page {
     // ------------------------------------------------------------------ focus
 
     private int minSection() {
-        return mHasHero || mCalm.hasWeather() ? 0 : 1;
+        return !mHasHero && mCalm.hasWeather() ? 0 : 1;
     }
 
-    /** DOWN from the header: the first thing below it (hero buttons, else the weather line, else the apps). */
+    /** DOWN from the header: the first row (D_Calm: the weather line when there is one). */
     @Override
     public void focusIn() {
         mActive = true;
         setSection(minSection(), true, true);
     }
 
-    /** HOME pressed on Home: back to the top; D_Home focuses "Continue", D_Calm the first app. */
+    /** HOME pressed on Home: back to the top; the first card of the first row. */
     public void focusHome() {
         mActive = true;
-        removeCallbacks(mFollowHero);
-        if (mHasHero) mHero.dropTransient();
         RowView r = mRows.isEmpty() ? null : mRows.get(0);
         if (r != null) r.focusIndex(0);
         setSection(mHasHero || r == null ? minSection() : 1, true, true);
+        refreshInfo(false);
     }
 
     @Override
@@ -221,15 +220,15 @@ public class PageForYou extends ViewGroup implements Page {
         applyFocus();
         applyScroll(animate);
         updateNear();
+        // the pill has no info: the block goes, the last art stays
+        if (mHasHero && s == max) {
+            removeCallbacks(mFollowInfo);
+            mHero.fadeOut(animate);
+        }
     }
 
     private void applyFocus() {
-        mHero.focusOut();
-        mCalm.setWeatherFocused(false);
-        if (mActive && mSection == 0) {
-            if (mHasHero) mHero.focusIn();
-            else mCalm.setWeatherFocused(true);
-        }
+        mCalm.setWeatherFocused(mActive && mSection == 0 && !mHasHero);
         for (int i = 0; i < mRows.size(); i++) mRows.get(i).setActive(mActive && mSection == i + 1);
         mCustomize.setFocusState(mActive && mSection == mRows.size() + 1, true);
     }
@@ -241,10 +240,26 @@ public class PageForYou extends ViewGroup implements Page {
     }
 
     private void applyScroll(boolean animate) {
+        mTrack.animate().cancel();
+        if (mHasHero) {
+            // the focused row (or the pill's heading space) on the row line, whatever row it is
+            float y = mSection >= 1 ? -(sectionTop(mSection) - mRowY) : 0;
+            if (mBrowse) {
+                mBrowse = false;
+                mHost.onBrowseMode(false);
+            }
+            mTrackY = y;
+            if (animate) {
+                mTrack.animate().translationY(y).setDuration(Theme.PAGE_SCROLL_MS).setInterpolator(Theme.EMPHASIZED).start();
+            } else {
+                mTrack.setTranslationY(y);
+            }
+            applyBand(animate);
+            return;
+        }
         boolean browse = mSection >= 2;
         float y = browse ? -(sectionTop(mSection) - Theme.px(Theme.FOCUS_LINE_Y)) : 0;
-        View top = mHasHero ? mHero : mCalm;
-        mTrack.animate().cancel();
+        View top = mCalm;
         top.animate().cancel();
         // half-speed parallax while it leaves; it fades out completely so it never sits under a row
         float topY = -y * 0.5f;
@@ -271,15 +286,18 @@ public class PageForYou extends ViewGroup implements Page {
 
     /**
      * Only what lies fully inside the TV safe band at the target scroll is shown: a row from its heading
-     * to its focused card's ring and caption, the pill with its focus scale. At the top that is the first
-     * row alone; in browse mode the focused row and what fits below it.
+     * to its focused card's ring and caption, the pill with its focus scale. On the backdrop Home rows
+     * above the focused one are out too (the info block is there); D_Calm at the top: the first row
+     * alone; in browse mode the focused row and what fits below it.
      */
     private void applyBand(boolean animate) {
         if (mScreenH <= 0) return;
         int top = Theme.px(Theme.SAFE), bottom = mScreenH - top;
-        for (RowView r : mRows) {
+        for (int i = 0; i < mRows.size(); i++) {
+            RowView r = mRows.get(i);
             float y = r.getTop() + mTrackY;
-            r.setInBand(y >= top && y + r.focusExtent() <= bottom, animate);
+            boolean above = mHasHero && i + 1 < mSection;
+            r.setInBand(!above && y >= top && y + r.focusExtent() <= bottom, animate);
         }
         float py = mCustomize.getTop() + mTrackY;
         boolean in = py >= top && py + mCustomize.getHeight() * 1.04f <= bottom;
@@ -303,17 +321,73 @@ public class PageForYou extends ViewGroup implements Page {
         }
     }
 
-    /** From the activity's RowView.Host: a "Continue watching" card moves the hero after a dwell. */
+    // ------------------------------------------------------------------ the info block and the art
+
+    /**
+     * From the activity's RowView.Host: the focus moved in a row (or to another row). The info block
+     * fades out now; the newly focused program follows after the dwell.
+     */
     public void rowFocused(RowView row, Card k) {
-        removeCallbacks(mFollowHero);
-        if (!mHasHero || row == null || row.row() == null || row.row().type != Row.WATCH_NEXT || k == null) return;
+        removeCallbacks(mFollowInfo);
+        if (!mHasHero || row == null || row.row() == null) return;
+        Card cur = mHero.current();
+        if (k != null && k.kind == Card.PROGRAM && mHero.shown() && cur != null && cur.id.equals(k.id)) return;
+        mHero.fadeOut(true);
+        mFollowRow = row;
         mFollow = k;
-        postDelayed(mFollowHero, Theme.animations() ? HERO_FOLLOW_MS : 0);
+        postDelayed(mFollowInfo, Theme.animations() ? INFO_DWELL_MS : 0);
     }
 
-    private void followHero() {
-        if (mFollow != null && mHasHero) mHero.showCard(mFollow, true);
+    private void followInfo() {
+        Card k = mFollow;
+        RowView row = mFollowRow;
+        if (!mHasHero || k == null || row == null || row != currentRow() || k != row.focusedCard()) return;
+        if (k.kind != Card.PROGRAM) return; // apps, inputs, tiles: no info, the last art stays
+        mHero.show(k, rowTitle(row), true);
+        mHost.onHeroShown(k);
     }
+
+    /**
+     * After a bind or HOME: the info block about the focused card, at once ({@code now}: the first frame,
+     * a mode switch) or after the dwell; a refreshed card (progress, art) is re-shown in place.
+     */
+    private void refreshInfo(boolean now) {
+        if (!mHasHero) return;
+        RowView row = currentRow();
+        Card k = row != null ? row.focusedCard() : null;
+        if (k == null || k.kind != Card.PROGRAM) {
+            removeCallbacks(mFollowInfo);
+            if (mHero.shown()) mHero.fadeOut(true);
+            return;
+        }
+        Card cur = mHero.current();
+        if (mHero.shown() && cur != null && cur.id.equals(k.id)) {
+            if (!cur.sameContent(k)) {
+                mHero.show(k, rowTitle(row), false);
+                mHost.onHeroShown(k);
+            }
+            return;
+        }
+        if (now) {
+            removeCallbacks(mFollowInfo);
+            mHero.show(k, rowTitle(row), false);
+            mHost.onHeroShown(k);
+            return;
+        }
+        rowFocused(row, k);
+    }
+
+    /**
+     * The eyebrow's first word for a card that is not a started program (those show their kind,
+     * "Continue"): "Recommendation" in "For you", else the channel's title.
+     */
+    private String rowTitle(RowView row) {
+        Row r = row.row();
+        if (r == null || r.type == Row.WATCH_NEXT) return null;
+        return r.type == Row.FOR_YOU ? getContext().getString(R.string.hero_kind_recommendation) : r.title;
+    }
+
+    // ------------------------------------------------------------------ keys
 
     @Override
     public boolean onKey(int keyCode, KeyEvent e) {
@@ -336,13 +410,11 @@ public class PageForYou extends ViewGroup implements Page {
                 return true;
             case KeyEvent.KEYCODE_DPAD_LEFT:
             case KeyEvent.KEYCODE_DPAD_RIGHT:
-                if (mSection == 0) return !mHasHero || mHero.onKey(keyCode, e);
                 if (row != null) row.onKey(keyCode, e);
                 return true;
             default:
                 if (isOk(keyCode)) {
                     if (mSection == 0) {
-                        if (mHasHero) return mHero.onKey(keyCode, e);
                         mHost.onWeatherAction();
                         return true;
                     }
@@ -369,13 +441,14 @@ public class PageForYou extends ViewGroup implements Page {
                 || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_BUTTON_A;
     }
 
+    /** Long OK / MENU: a program's details ("More info", the info block's hint), else the card's menu. */
     @Override
     public void onMenu() {
         RowView row = currentRow();
-        if (row != null && row.focusedCard() != null) mHost.onCardMenu(row.focusedCard(), row);
-        else if (mSection == 0 && mHasHero && mHero.current() != null && mHero.current().kind == Card.PROGRAM) {
-            mHost.onCardMenu(mHero.current(), null);
-        }
+        Card k = row != null ? row.focusedCard() : null;
+        if (k == null) return;
+        if (k.kind == Card.PROGRAM) mHost.onHeroAction(k, false);
+        else mHost.onCardMenu(k, row);
     }
 
     @Override
@@ -389,10 +462,6 @@ public class PageForYou extends ViewGroup implements Page {
             setSection(1, true, false);
             return true;
         }
-        if (mSection == 1 && mHasHero) {
-            setSection(0, true, false);
-            return true;
-        }
         return false;
     }
 
@@ -400,17 +469,9 @@ public class PageForYou extends ViewGroup implements Page {
         return mSection <= minSection() || (!mHasHero && mSection == 1);
     }
 
-    public boolean inTopMode() {
-        return !mBrowse;
-    }
-
-    public boolean heroFocused() {
-        return mActive && mSection == 0 && mHasHero;
-    }
-
     @Override
     public void scrollToTop(boolean animate) {
-        setSection(mHasHero ? 0 : 1, animate, true);
+        setSection(1, animate, true);
     }
 
     @Override
@@ -446,22 +507,29 @@ public class PageForYou extends ViewGroup implements Page {
         int w = MeasureSpec.getSize(wms), h = MeasureSpec.getSize(hms);
         mScreenH = h;
         mTrack.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        mHero.setRowY(mRowY);
+        mHero.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(h, MeasureSpec.AT_MOST));
         setMeasuredDimension(w, h);
     }
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        mHero.layout(0, 0, r - l, mHero.getMeasuredHeight());
         mTrack.layout(0, 0, r - l, mTrack.getMeasuredHeight());
     }
 
     /**
-     * The first row's top: D's 740 (hero) / 752 (calm), higher when its focused card (scale, ring,
-     * caption) would come closer than 54 px to the bottom edge (a row of tall posters first in the
-     * user's row order). Rows must be measured.
+     * The row line: the top of the focused row on the backdrop Home, of the first row on D_Calm. At most
+     * 740 (backdrop) / 752 (calm), higher when a focused card (scale, ring) would come closer than 54 px
+     * to the bottom edge: on the backdrop Home for every row (one line for all, a row of tall posters
+     * moves it for every row), on D_Calm for the first row. Rows must be measured.
      */
-    private int firstRowY() {
+    private int rowLine() {
         int y = Theme.px(mHasHero ? Theme.FIRST_ROW_Y : Theme.FIRST_ROW_Y_CALM);
-        if (!mRows.isEmpty() && mScreenH > 0) y = Math.min(y, mScreenH - Theme.px(Theme.SAFE) - mRows.get(0).focusExtent());
+        if (mScreenH <= 0 || mRows.isEmpty()) return y;
+        int bottom = mScreenH - Theme.px(Theme.SAFE);
+        if (mHasHero) for (RowView r : mRows) y = Math.min(y, bottom - r.focusExtent());
+        else y = Math.min(y, bottom - mRows.get(0).focusExtent());
         return y;
     }
 
@@ -477,10 +545,8 @@ public class PageForYou extends ViewGroup implements Page {
             int exact = MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY);
             int un = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
             for (RowView r : mRows) r.measure(exact, un);
-            mRowY = firstRowY();
-            mHero.setRowY(mRowY);
+            mRowY = rowLine();
             mCalm.setRowY(mRowY);
-            mHero.measure(exact, un);
             mCalm.measure(exact, un);
             int y = mRowY;
             for (RowView r : mRows) y += r.getMeasuredHeight();
@@ -492,7 +558,6 @@ public class PageForYou extends ViewGroup implements Page {
         @Override
         protected void onLayout(boolean changed, int l, int t, int r, int b) {
             int w = r - l;
-            mHero.layout(0, 0, w, mHero.getMeasuredHeight());
             mCalm.layout(0, 0, w, mCalm.getMeasuredHeight());
             int y = mRowY;
             for (RowView rv : mRows) {
@@ -505,12 +570,6 @@ public class PageForYou extends ViewGroup implements Page {
             mCustomize.layout(x, y, x + cw, y + mCustomize.getMeasuredHeight());
             // the rows' places are known now (a bind may have scrolled before this layout)
             applyBand(false);
-            // the hero's art card ends 60 px above the first row (Stage)
-            final int hb = mRowY - Theme.px(60);
-            if (hb != mHeroBottom) {
-                mHeroBottom = hb;
-                post(() -> mHost.onHeroBottom(hb));
-            }
         }
     }
 }

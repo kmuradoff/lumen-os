@@ -623,6 +623,9 @@ input_on=Увімкнено
 input_asleep=Спить
 input_no_signal=Немає сигналу
 input_wake_hint=Натисніть OK, щоб увімкнути
+hint_hold_ok=Утримувати OK
+hero_kind_recommendation=Рекомендація
+row_recommendations=Рекомендації
 @updater/strings.xml
 app_name=Оновлення Lumen OS
 settings_title=Оновлення Lumen OS

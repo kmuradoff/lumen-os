@@ -35,6 +35,9 @@
     <string name="hero_more">Подробнее</string>
     <string name="hero_kind_next">Следующая серия</string>
     <string name="hero_kind_watchlist">Буду смотреть</string>
+    <string name="hint_hold_ok">Удерживать OK</string>
+    <string name="hero_kind_recommendation">Рекомендация</string>
+    <string name="row_recommendations">Рекомендации</string>
     <string name="feature_cast_title">Трансляция с телефона</string>
     <string name="feature_cast_desc">Chromecast built-in и AirPlay: видео, музыка и экран с телефона, планшета или ноутбука.</string>
     <string name="feature_picture_title">Идеальная картинка</string>

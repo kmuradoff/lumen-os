@@ -79,8 +79,9 @@ public final class HeaderContrastTest {
         T.ok(fadeOk && Scrims.headOverArt(0f) == 0f && Scrims.headOverArt(1f) == 1f,
                 String.format(java.util.Locale.ROOT, "tabs over white art fading to or from the sky >= 4.5:1 (lowest %.2f:1)", fadeMin));
         check("focused button / clock", onFocus, focus);
-        // over the stage the start side also gets D_Home's side scrim: only darker
-        T.ok(Math.abs(Scrims.sideAlpha(0.27f) - 0.8f) < 1e-4 && Scrims.sideAlpha(0.9f) == 0f, "side scrim stops");
+        // over the stage the start side also gets the backdrop's side scrim: only darker
+        T.ok(Math.abs(Scrims.sideAlpha(0.28f) - 0.82f) < 1e-4 && Scrims.sideAlpha(0.9f) == 0f, "side scrim stops");
+        T.ok(Scrims.BOTTOM_ALPHA[0] == 1f && Scrims.BOTTOM_POS.length == Scrims.BOTTOM_ALPHA.length, "bottom scrim stops");
     }
 
     /** The lightest backdrop between real rows y0..y1 (the scrim is weakest at the bottom row). */

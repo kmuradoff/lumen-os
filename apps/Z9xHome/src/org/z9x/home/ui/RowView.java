@@ -47,6 +47,7 @@ public class RowView extends ViewGroup {
     private final Runnable mLoadVisible = this::loadVisible;
     private boolean mShowTitle = true;
     private boolean mInBand = true;
+    private boolean mProgramCaptions = true;
 
     public RowView(Context c, Host host) {
         super(c);
@@ -85,6 +86,14 @@ public class RowView extends ViewGroup {
         mTitle.setVisibility(show ? VISIBLE : GONE);
     }
 
+    /**
+     * Captions (title and meta) under a focused program card; off on Home (1.0.5), where the info block
+     * above the rows describes the focused program. Set before the row is bound.
+     */
+    public void setProgramCaptions(boolean on) {
+        mProgramCaptions = on;
+    }
+
     /** Height of this row in real px: title, gap, cards, caption space. */
     public int rowHeight() {
         return (mShowTitle ? Theme.px(Theme.ROW_TITLE_H + Theme.ROW_TITLE_GAP) : 0) + mCh + captionSpace();
@@ -92,7 +101,9 @@ public class RowView extends ViewGroup {
 
     /** Space under the cards: caption lines, or less for rows whose cards carry their own text. */
     private int captionSpace() {
-        if (mRow != null && mRow.type == Row.WATCH_NEXT) return Theme.px(64);
+        if (mRow != null && (mRow.type == Row.WATCH_NEXT || mRow.type == Row.FOR_YOU || (!mProgramCaptions && sizeKind(mRow) == Card.PROGRAM))) {
+            return Theme.px(64);
+        }
         if (sizeKind(mRow) == Card.APP) return Theme.px(84);
         return Theme.px(Theme.ROW_CAPTION_H);
     }
@@ -106,7 +117,7 @@ public class RowView extends ViewGroup {
         int grow = Math.round(mCh * (Theme.FOCUS_SCALE - 1f) / 2f);
         int bottom = cardTop() + mCh + grow + (int) Math.ceil(Theme.ring() * Theme.FOCUS_SCALE);
         int kind = sizeKind(mRow);
-        if (mRow != null && mRow.type != Row.WATCH_NEXT && (kind == Card.APP || kind == Card.PROGRAM)) {
+        if (mRow != null && mRow.type != Row.WATCH_NEXT && mRow.type != Row.FOR_YOU && (kind == Card.APP || (kind == Card.PROGRAM && mProgramCaptions))) {
             int capY = cardTop() + mCh + grow + Math.round(Theme.ring()) + Theme.px(12); // as onLayout
             bottom = capY + mCapTitle.getMeasuredHeight() + (kind == Card.PROGRAM ? Theme.px(4) + mCapMeta.getMeasuredHeight() : 0);
         }
@@ -143,15 +154,6 @@ public class RowView extends ViewGroup {
         mCw = Theme.px(Theme.cardW(kind, r.aspect));
         mCh = Theme.px(Theme.cardH(kind, r.aspect));
         mGap = Theme.px(Theme.cardGap(kind));
-        CharSequence t = r.title;
-        if (!r.sub.isEmpty()) {
-            SpannableStringBuilder sb = new SpannableStringBuilder(r.title);
-            int s = sb.length();
-            sb.append("  ·  ").append(r.sub);
-            sb.setSpan(new ForegroundColorSpan(Theme.TEXT3), s, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            t = sb;
-        }
-        mTitle.setText(t);
         int nf = 0;
         if (focusedId != null) {
             for (int i = 0; i < r.cards.size(); i++) {
@@ -165,6 +167,7 @@ public class RowView extends ViewGroup {
             }
         }
         mFocus = Math.max(0, Math.min(nf, r.cards.size() - 1));
+        applyTitle();
         if (sizeChanged && mBuilt) {
             for (CardView v : mCards) v.dropArt();
             mTrack.removeAllViews();
@@ -173,6 +176,31 @@ public class RowView extends ViewGroup {
         }
         if (build || mBuilt || mNear) buildCards();
         if (sizeChanged) requestLayout();
+    }
+
+    /**
+     * The heading: the row's title and its sub (the app) in the third text colour. "For you" (1.0.5)
+     * names what is focused: Continue watching on a started program, else Recommendations with the
+     * apps they come from.
+     */
+    private void applyTitle() {
+        Row r = mRow;
+        if (r == null) return;
+        String title = r.title, sub = r.sub;
+        Card k = focusedCard();
+        if (r.type == Row.FOR_YOU && !r.title2.isEmpty() && k != null && k.table != Card.T_WATCH_NEXT) {
+            title = r.title2;
+            sub = r.sub2;
+        }
+        CharSequence t = title;
+        if (!sub.isEmpty()) {
+            SpannableStringBuilder sb = new SpannableStringBuilder(title);
+            int s = sb.length();
+            sb.append("  ·  ").append(sub);
+            sb.setSpan(new ForegroundColorSpan(Theme.TEXT3), s, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            t = sb;
+        }
+        if (!TextUtils.equals(t.toString(), mTitle.getText().toString())) mTitle.setText(t);
     }
 
     private static int sizeKind(Row r) {
@@ -311,6 +339,7 @@ public class RowView extends ViewGroup {
     private void moveTo(int to, boolean repeat) {
         int from = mFocus;
         mFocus = to;
+        applyTitle();
         if (!mBuilt) buildCards();
         long now = android.os.SystemClock.uptimeMillis();
         boolean fast = repeat || now - mLastRepeat < 120;
@@ -361,7 +390,8 @@ public class RowView extends ViewGroup {
 
     private void showCaption(boolean animate) {
         Card k = focusedCard();
-        if (k == null || !(k.kind == Card.PROGRAM || k.kind == Card.APP) || k.table == Card.T_WATCH_NEXT) {
+        if (k == null || !(k.kind == Card.PROGRAM || k.kind == Card.APP) || k.table == Card.T_WATCH_NEXT
+                || (k.kind == Card.PROGRAM && !mProgramCaptions)) {
             hideCaption();
             return;
         }

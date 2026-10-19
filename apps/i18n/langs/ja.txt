@@ -617,6 +617,9 @@ input_on=オン
 input_asleep=スリープ中
 input_no_signal=信号なし
 input_wake_hint=OK を押すと起動します
+hint_hold_ok=OK を長押し
+hero_kind_recommendation=おすすめ
+row_recommendations=おすすめ
 @updater/strings.xml
 app_name=Lumen OS アップデート
 settings_title=Lumen OS アップデート

@@ -35,6 +35,9 @@
     <string name="hero_more">详细信息</string>
     <string name="hero_kind_next">下一集</string>
     <string name="hero_kind_watchlist">待看清单</string>
+    <string name="hint_hold_ok">长按 OK</string>
+    <string name="hero_kind_recommendation">推荐</string>
+    <string name="row_recommendations">推荐</string>
     <string name="feature_cast_title">从手机投屏</string>
     <string name="feature_cast_desc">Chromecast built-in 和 AirPlay：从手机、平板或笔记本电脑发送视频、音乐和屏幕。</string>
     <string name="feature_picture_title">完美画面</string>

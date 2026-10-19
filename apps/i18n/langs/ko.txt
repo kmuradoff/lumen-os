@@ -617,6 +617,9 @@ input_on=켜짐
 input_asleep=절전 중
 input_no_signal=신호 없음
 input_wake_hint=OK를 눌러 켜기
+hint_hold_ok=OK 길게 누르기
+hero_kind_recommendation=추천
+row_recommendations=추천
 @updater/strings.xml
 app_name=Lumen OS 업데이트
 settings_title=Lumen OS 업데이트

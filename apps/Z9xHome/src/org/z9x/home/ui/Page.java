@@ -21,14 +21,11 @@ public interface Page {
 
         void onCustomize();
 
-        /** Home switched between D_Home (hero over the stage art) and D_Calm (big clock over the sky). */
+        /** Home switched between the backdrop Home (art behind the info block) and D_Calm (big clock over the sky). */
         void onHomeMode(boolean hero);
 
         /** OK on the calm Home's weather line: the forecast. */
         void onWeatherAction();
-
-        /** Lowest y (real px) the hero's art card may reach: the first row moved up for tall cards. */
-        void onHeroBottom(int px);
     }
 
     View view();

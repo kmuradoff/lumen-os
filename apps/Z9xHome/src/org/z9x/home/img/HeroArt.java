@@ -22,7 +22,7 @@ package org.z9x.home.img;
 public final class HeroArt {
     private HeroArt() {}
 
-    public static final int NONE = 0, FILL = 1, CARD = 2;
+    public static final int NONE = 0, FILL = 1, CARD = 2, BLUR = 3;
     public static final int WIDE = 0, SQUARE = 1, POSTER = 2;
     /** The most a picture shown as sharp may be enlarged. */
     public static final float MAX_UPSCALE = 1.25f;
@@ -43,6 +43,7 @@ public final class HeroArt {
 
         @Override
         public String toString() {
+            if (mode == BLUR) return "blur #" + index;
             return mode == NONE ? "none" : (mode == FILL ? "fill" : "card" + (shape == WIDE ? "16:9" : shape == SQUARE ? "1:1" : "2:3"))
                     + " " + w + "x" + h + " #" + index;
         }
@@ -128,4 +129,36 @@ public final class HeroArt {
         }
         return p;
     }
+
+    /**
+     * Lumen OS 1.0.5 backdrop (no framed card any more): the whole screen shows the focused card's art.
+     * Landscape art (wider than 1.25:1) at least {@link #BACKDROP_MIN_W} px wide (in any UI mode) is shown
+     * sharp, cropped to the screen's shape from the top and enlarged by the GPU (Kinopoisk's 800x450 is
+     * 2.4x at 1080p, soft under the scrims as the owner's mockup); of two such the larger source. Anything
+     * else (a poster, a small thumbnail: a 300x450 TMDB poster would be enlarged 6x) becomes the blurred
+     * copy, a soft wash of its colours; of two the larger. Sizes as {@link #choose}; NONE when none is known.
+     */
+    public static Plan backdrop(int[] sizes, int screenW, int screenH) {
+        Plan best = new Plan();
+        long bestArea = -1;
+        for (int i = 0; i + 1 < sizes.length; i += 2) {
+            int w = sizes[i], h = sizes[i + 1];
+            if (w <= 0 || h <= 0) continue;
+            boolean sharp = w >= h * WIDE_MIN_RATIO && w >= BACKDROP_MIN_W;
+            long area = (long) w * h;
+            boolean better = best.mode == NONE || (sharp && best.mode != FILL) || (sharp == (best.mode == FILL) && area > bestArea);
+            if (better) {
+                best = new Plan();
+                best.mode = sharp ? FILL : BLUR;
+                best.index = i / 2;
+                best.w = sharp ? screenW : w;
+                best.h = sharp ? screenH : h;
+                bestArea = area;
+            }
+        }
+        return best;
+    }
+
+    /** Sharp backdrop art is at least this wide (real px of the art; 40 % of a 1080p screen). */
+    public static final int BACKDROP_MIN_W = 768;
 }

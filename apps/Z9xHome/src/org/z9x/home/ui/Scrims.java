@@ -75,9 +75,18 @@ public final class Scrims {
         return a / (1f - HEAD_ALPHA + HEAD_ALPHA * a);
     }
 
-    /** D_Home start-side scrim: linear-gradient(90deg, .94 0%, .8 27%, .22 57%, 0 76%). */
-    public static final float[] SIDE_ALPHA = {0.94f, 0.8f, 0.22f, 0f};
-    public static final float[] SIDE_POS = {0f, 0.27f, 0.57f, 0.76f};
+    /**
+     * Start-side scrim over the backdrop art (1.0.5 mockup home_v2; D_Home was .94 / .8 / .22 / 0 at 0 /
+     * 27 / 57 / 76 %): linear-gradient(90deg, .96 0%, .82 28%, .25 58%, 0 75%).
+     */
+    public static final float[] SIDE_ALPHA = {0.96f, 0.82f, 0.25f, 0f};
+    public static final float[] SIDE_POS = {0f, 0.28f, 0.58f, 0.75f};
+    /**
+     * Bottom scrim over the backdrop art (1.0.5 mockup): linear-gradient(0deg, 1 0%, .92 30%, .35 52%,
+     * 0 66%), positions as fractions of the screen height from the bottom edge: the rows sit on ground.
+     */
+    public static final float[] BOTTOM_ALPHA = {1f, 0.92f, 0.35f, 0f};
+    public static final float[] BOTTOM_POS = {0f, 0.30f, 0.52f, 0.66f};
 
     /** Start-side scrim alpha at a fraction of the width from the start edge. */
     public static float sideAlpha(float frac) {

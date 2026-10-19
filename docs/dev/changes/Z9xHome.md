@@ -1,4 +1,64 @@
-# Lumen Home, next (Lumen OS 1.0.4, not built yet)
+# Lumen Home, next (Lumen OS 1.0.5)
+
+Author kmuradoff. versionCode 106 / versionName 1.0.5 in the manifest (was 105 / 1.0.4).
+
+- **Home redesigned after the owner's mockups** (design/home_v2: tpl.html, then tpl2.html, the approved
+  variant; owner on tpl.html's stacked rows: "сложновато"). The focused card's art fills the whole screen
+  and the info block on the start side always describes the focused card; the rotating hero carousel, its
+  buttons and page dots are gone (no item shows twice on the page). Customize: the "Change slides
+  automatically" switch is gone with the slides; the HERO_AUTO pref stays unused.
+- **Two rows** (`data/Ranker.forYou`, `Row.FOR_YOU`): "For you" (Continue watching of every app, newest
+  first, with the progress bar; then the recommendations of every shown channel taken app by app in turn,
+  each title once, landscape art only, at most 24) and the apps. Its heading follows the focus: "Continue
+  watching" on a started program, "Recommendations · Кинопоиск · LAMPA" on a recommendation (`Row.title2`,
+  `sub2`; snapshot VERSION 4). Continue watching hidden in Customize (Rows): the row starts with the
+  recommendations; a hidden channel feeds none; "Continue watching on Home" off still gives the calm Home.
+  Inputs and projector tiles are rows only when the user shows them in Customize (Customize now records
+  that in shown_rows). A saved order keeps For you in Continue watching's place. `Input.forYou = false`
+  keeps the 1.0.4 rows (one per channel, now before the apps), tested, not used.
+- **No repeats**: a title in Continue watching is not recommended again (normalised title: lower case,
+  "ё" as "е", letters and digits only; or the same package and content id), only while that row is shown.
+- **Better art** (`img/ArtUrl`, new): Kinopoisk URLs (avatars.mds.yandex.net and *.svc.cdn.yandex.net,
+  /get-ott/, ending in a size such as /640x360) are asked at /1920x1080 for the backdrop: the server returns
+  its best picture up to that size, cropped to that shape. Not /orig as first planned: measured 2026-10-19,
+  orig is up to a 3840x2160 JPEG of 7 to 10 MB (near the loader's 12 MB cap, heavy for a weak CPU), while
+  /1920x1080 is 0.1 to 0.75 MB; an 800x450 original stays 800x450 either way. A Continue watching card with
+  portrait art (Kinopoisk's /460x690, or a declared 2:3) gets the landscape art of the same title from its
+  app's channel, else for Kinopoisk the same picture as /800x450 (`Ranker.landscapeArt`, the portrait art
+  kept as image2). TMDB art unchanged.
+- `ui/Stage` rewritten: two full-screen layers, the new art fades in over the old in 1.2 s (0.7 s to or from
+  the sky) 350 ms after the focus rests; landscape art at least 768 px wide is sharp (decoded once at no more
+  than the screen's pixels, top crop), other art its blurred copy (`HeroArt.backdrop`). Slow motion: scale
+  1.02 to 1.12 and a 2.5 % / 1.5 % pan over 22 s and back, eased, through the layer's scale and translation
+  only (nothing redrawn or decoded per frame), at most 30 frames a second, on only while Home is resumed,
+  its tab shown, the projector awake and no trailer plays. Switch `ro.lumen.home.backdrop_fps` (`ui/Gfx`):
+  unset = 30, and 0 (still) where `lite` is set, so the Play 6 image keeps still art without a new property.
+  Scrims as the mockup (`Scrims`: side .96 / .82 / .25 / 0 at 0 / 28 / 58 / 75 %, bottom 1 / .92 / .35 / 0 at
+  0 / 30 / 52 / 66 % of the height, the tested header scrim unchanged). The silent trailer (preview_video_uri,
+  off by default) still plays over the art 3 s after it shows. The 1.0.1 framed card is gone.
+- `ui/HeroView` is now the info block: eyebrow ("CONTINUE · КИНОПОИСК", the kind in the accent, or
+  "RECOMMENDATION · LAMPA"), the title in Prata 92 px (two lines at most, soft shadow), season / episode with
+  the progress bar and the time left, the description in three lines at most, and the hint [OK] Continue /
+  Watch, [Hold OK] More info. It ends 44 px above the row line and grows upwards (fewer description lines,
+  then no hint, when it would reach the header). It fades out on every focus move and back in for the
+  focused program after 350 ms; apps and tiles have none (the last art stays).
+- `ui/PageForYou`: the focused row stays on one line (at most y 740, higher when a row's focused card would
+  leave the TV safe area), rows above it fade out, the track only translates. Hold OK (MENU) on a program
+  opens its details ("More info"). No program captions under the cards on Home (`RowView.setProgramCaptions`).
+  The calm Home (D_Calm) is unchanged.
+- **Programs without art** (the Kino player's Continue watching cards): the card is a diagonal wash of its
+  colour with the title on it, the backdrop a soft glow of the same colour (`ui/Tint`, new), never a flat
+  block and no motion.
+- Strings (17 locales, `tools/i18n_home_h.py`, lane home-h, merged into apps/i18n/langs): hint_hold_ok,
+  hero_kind_recommendation, row_recommendations.
+- Tests: `test/.../HomeV2Test` (For you, repeats, landscape art, ArtUrl, backdrop plan, motion switch);
+  RankerTest (1.0.5 order), HeaderContrastTest (new side scrim stops). tools/run_tests.sh: all pass.
+- Device test 2026-10-20 (owner's Z9X, first build of this section): Continue watching cards with Kinopoisk
+  landscape art, the Kino player's art-less cards tinted, the backdrop following the focus, the For you
+  heading switching to "Recommendations · Кинопоиск · LAMPA", the Apps row without info. No crash in logcat.
+  The final build (inputs hidden by default, order alias) was not installed: the owner was watching.
+
+# Lumen Home 1.0.4 (built and released 2026-10-16)
 
 - **Files is a file manager now; one Files entry** (owner 2026-10-15: "duplicates: Install from USB, Files: keep only
   the file manager; Get more apps is pointless, it only opens Google Play"). The Apps page no longer adds its own

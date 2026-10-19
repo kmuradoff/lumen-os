@@ -1,0 +1,6 @@
+# Lumen Home (1.0.5 Home: info block and For you): NEW strings for the merge into
+# langs/pt.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+hint_hold_ok=Manter OK
+hero_kind_recommendation=Recomendação
+row_recommendations=Recomendações

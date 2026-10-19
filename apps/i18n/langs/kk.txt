@@ -619,6 +619,9 @@ input_on=Қосулы
 input_asleep=Ұйқы режимінде
 input_no_signal=Сигнал жоқ
 input_wake_hint=Қосу үшін OK басыңыз
+hint_hold_ok=OK басып тұру
+hero_kind_recommendation=Ұсыныс
+row_recommendations=Ұсыныстар
 @updater/strings.xml
 app_name=Lumen OS жаңартуы
 settings_title=Lumen OS жаңартуы

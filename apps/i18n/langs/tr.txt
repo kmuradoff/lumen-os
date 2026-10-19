@@ -619,6 +619,9 @@ input_on=Açık
 input_asleep=Uyku modunda
 input_no_signal=Sinyal yok
 input_wake_hint=Açmak için OK’e basın
+hint_hold_ok=OK’e basılı tut
+hero_kind_recommendation=Öneri
+row_recommendations=Öneriler
 @updater/strings.xml
 app_name=Lumen OS güncellemesi
 settings_title=Lumen OS güncellemesi

@@ -619,6 +619,9 @@ input_on=Eingeschaltet
 input_asleep=Im Ruhemodus
 input_no_signal=Kein Signal
 input_wake_hint=Zum Einschalten OK drücken
+hint_hold_ok=OK gedrückt halten
+hero_kind_recommendation=Empfehlung
+row_recommendations=Empfehlungen
 @updater/strings.xml
 app_name=Lumen OS-Update
 settings_title=Lumen OS-Update

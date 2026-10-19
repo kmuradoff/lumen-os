@@ -92,7 +92,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host, HomeRepository.Listener, Stage.Listener {
     private static final int TAB_HOME = 0, TAB_APPS = 1, TAB_PROJECTOR = 2;
-    private static final long HERO_ADVANCE_MS = 9000;
     private static final long LONG_PRESS_MS = 500;
     /** Weak GPUs (Gfx.SKY_YIELD): the sky's motion comes back this long after the last key or transition. */
     private static final long SKY_YIELD_MS = 1500;
@@ -143,7 +142,6 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             onLongOk();
         }
     };
-    private final Runnable mHeroTick = this::heroTick;
 
     // ------------------------------------------------------------------ lifecycle
 
@@ -268,7 +266,6 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         mSky.setScene(SkySettings.scene(this));
         mMediaPlaying = mediaPlaying();
         updateSky();
-        scheduleHero();
     }
 
     @Override
@@ -276,7 +273,6 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         super.onPause();
         if (mSafeMode) return;
         mResumed = false;
-        mMain.removeCallbacks(mHeroTick);
         mStage.pauseTrailer();
         updateSky();
     }
@@ -413,7 +409,6 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         mModel = m;
         for (Page p : mPages) p.bind(m);
         mStage.setTrailersEnabled(mApp.prefs().trailers());
-        if (!m.fromSnapshot) scheduleHero();
     }
 
     private void pollFullyDrawn(int n) {
@@ -514,7 +509,6 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
                 Log.i(App.TAG, "standby=" + mStandby);
                 if (mStandby) mStage.pauseTrailer();
                 updateSky();
-                scheduleHero();
             }
         };
         registerReceiver(mStandbyRx, new IntentFilter(ProjectorBridge.ACTION_STANDBY_CHANGED), ProjectorBridge.PERM_STANDBY,
@@ -550,7 +544,6 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             }
             if (key.equals(Prefs.K_VOICE_FAIL_UNTIL) || key.equals(Prefs.K_RECENT_SEARCH) || key.equals(Prefs.K_KNOWN_PKGS)
                     || key.equals(Prefs.K_INIT_DONE) || key.equals(Prefs.K_HERO_AUTO)) {
-                if (key.equals(Prefs.K_HERO_AUTO)) scheduleHero();
                 return;
             }
             mApp.repo().refresh("prefs", 100);
@@ -758,6 +751,8 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         mSky.setVisibility(covered ? View.INVISIBLE : View.VISIBLE);
         mSky.setPaused(!mResumed || mStandby || mMediaPlaying || covered);
         mSky.setStill(mTab != TAB_HOME);
+        // the backdrop's slow motion: only while it can be seen
+        mStage.setMotionAllowed(mResumed && !mStandby && stageWanted());
     }
 
     /**
@@ -829,28 +824,6 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         updateSky();
     }
 
-    // ------------------------------------------------------------------ hero auto-advance
-
-    private void scheduleHero() {
-        mMain.removeCallbacks(mHeroTick);
-        if (mResumed) mMain.postDelayed(mHeroTick, HERO_ADVANCE_MS);
-    }
-
-    private void heroTick() {
-        if (!mResumed) return;
-        long idle = SystemClock.uptimeMillis() - mLastKey;
-        // only while the hero itself (or the header) has focus: in "Continue watching" the hero follows focus
-        boolean ok = mTab == TAB_HOME && mForYou.heroMode() && mForYou.inTopMode() && (mForYou.heroFocused() || mZoneTop)
-                && !mPanel.isOpen() && !mStandby && mApp.prefs().heroAuto() && mForYou.hero().count() > 1;
-        if (ok && idle >= HERO_ADVANCE_MS) {
-            Log.i(App.TAG, "hero advance");
-            mForYou.hero().next(true);
-            mMain.postDelayed(mHeroTick, HERO_ADVANCE_MS);
-        } else {
-            mMain.postDelayed(mHeroTick, Math.max(1000, HERO_ADVANCE_MS - idle));
-        }
-    }
-
     // ------------------------------------------------------------------ tabs and focus zones
 
     private Page page() {
@@ -895,7 +868,6 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         // the big calm clock lives on the Home page: every other tab keeps the header clock
         applyHeaderClock();
         applyStage(animate);
-        scheduleHero();
     }
 
     private void enterPage() {
@@ -1057,7 +1029,6 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         mBar.setBrowse(browse);
         applyHeaderClock();
         applyStage(true);
-        scheduleHero();
     }
 
     @Override
@@ -1074,11 +1045,6 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     @Override
     public void onWeatherAction() {
         openWeather();
-    }
-
-    @Override
-    public void onHeroBottom(int px) {
-        mStage.setArtBottom(px);
     }
 
     @Override

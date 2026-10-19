@@ -621,6 +621,9 @@ input_on=Allumé
 input_asleep=En veille
 input_no_signal=Aucun signal
 input_wake_hint=Appuyez sur OK pour l’allumer
+hint_hold_ok=Maintenir OK
+hero_kind_recommendation=Recommandation
+row_recommendations=Recommandations
 @updater/strings.xml
 app_name=Mise à jour Lumen OS
 settings_title=Mise à jour Lumen OS

@@ -35,6 +35,9 @@
     <string name="hero_more">詳細</string>
     <string name="hero_kind_next">次のエピソード</string>
     <string name="hero_kind_watchlist">ウォッチリスト</string>
+    <string name="hint_hold_ok">OK を長押し</string>
+    <string name="hero_kind_recommendation">おすすめ</string>
+    <string name="row_recommendations">おすすめ</string>
     <string name="feature_cast_title">スマホからキャスト</string>
     <string name="feature_cast_desc">Chromecast built-in と AirPlay：スマホ、タブレット、ノートパソコンから動画、音楽、画面を送信できます。</string>
     <string name="feature_picture_title">完璧な映像</string>
