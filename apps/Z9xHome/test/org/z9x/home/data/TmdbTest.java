@@ -91,6 +91,15 @@ final class TmdbTest {
                 + "{\"name\":\"x.cloudfront.net\",\"type\":1,\"TTL\":60,\"data\":\"127.0.0.1\"}]}";
         T.eq(TmdbNet.parseDoh(cf), Collections.singletonList("18.244.102.3"), "DoH: A records, public only, CNAME skipped");
         T.eq(TmdbNet.parseDoh("{\"Status\":3}"), Collections.emptyList(), "DoH: no answer");
+        // Russia: TMDB's own name servers answer 127.0.0.1, Google with a client subnet the real chain
+        T.eq(TmdbNet.parseDoh("{\"Status\":0,\"Answer\":[{\"name\":\"api.themoviedb.org.\",\"type\":1,\"TTL\":60,"
+                + "\"data\":\"127.0.0.1\"}]}"), Collections.emptyList(), "DoH answering 127.0.0.1: none");
+        T.eq(TmdbNet.parseDoh("{\"Status\":0,\"Answer\":[{\"name\":\"image.tmdb.org.\",\"type\":5,\"TTL\":300,"
+                + "\"data\":\"image.tmdb.org.cdn.cloudflare.net.\"},{\"name\":\"a.example.\",\"type\":5,\"TTL\":300,"
+                + "\"data\":\"b.example.\"},{\"name\":\"b.example.\",\"type\":1,\"TTL\":30,\"data\":\"185.93.2.245\"}]}"),
+                Collections.singletonList("185.93.2.245"), "DoH: a CNAME chain ending in an A record");
+        T.ok(TmdbNet.dohOrder().get(0).startsWith("https://dns.google/resolve?") && TmdbNet.dohOrder().get(0).contains("edns_client_subnet=193.0.0.0/24")
+                && TmdbNet.dohOrder().get(1).startsWith("https://cloudflare-dns.com/"), "DoH order: Google with a client subnet, then Cloudflare");
         T.ok(TmdbNet.routed("image.tmdb.org") && TmdbNet.routed("API.themoviedb.org") && !TmdbNet.routed("imagetmdb.com"),
                 "only TMDB's own hosts are routed");
 
