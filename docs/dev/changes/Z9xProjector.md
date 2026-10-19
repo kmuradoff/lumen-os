@@ -1,4 +1,13 @@
-# Z9xProjector, next (Lumen OS 1.0.4, not built yet)
+# Z9xProjector, next (Lumen OS 1.0.5)
+
+- **Google Cast found again** (`sys/CastKeeper`, new; only with the Google add-on): Android 14 cached and then froze
+  Google's receiver (com.google.android.apps.mediashell, a plain started service), so it stopped answering mDNS
+  (no _googlecast._tcp, phones did not list the projector) and port 8009 filled with connections nobody accepted.
+  The persistent app now binds CastReceiverService (action com.google.cast.action.BIND, BIND_AUTO_CREATE |
+  BIND_NOT_FOREGROUND) and rebinds on package changes. Checked on the owner's Z9X: procState 4, no am_freeze,
+  _googlecast._tcp advertised, 8009 accepts.
+
+# Z9xProjector, Lumen OS 1.0.4
 
 Stock Z9X settings brought over (owner 2026-10-14: "what stock has and we do not: do it"; inventory
 docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock settings app). Device test pending.
