@@ -50,16 +50,9 @@ static inline int64_t z9x_clock_ns(clockid_t id) {
 
 static inline int64_t z9x_mono_ns(void) { return z9x_clock_ns(CLOCK_MONOTONIC); }
 
-/*
- * UxPlay stamps media with ntp_time_local = CLOCK_REALTIME ns (raop_ntp_get_local_time()).
- * MediaCodec / AAudio schedule on CLOCK_MONOTONIC. Convert per use, so a wall-clock step
- * only shifts the stream once instead of drifting a cached offset.
- */
-static inline int64_t z9x_mono_from_uxplay(uint64_t realtime_ns) {
-    int64_t rt = z9x_clock_ns(CLOCK_REALTIME);
-    int64_t mono = z9x_clock_ns(CLOCK_MONOTONIC);
-    return (int64_t) realtime_ns - rt + mono;
-}
+/* UxPlay stamps media with ntp_time_local = CLOCK_REALTIME ns (raop_ntp_get_local_time());
+   MediaCodec / AAudio schedule on CLOCK_MONOTONIC. The conversion is AvClock (av_clock.cpp):
+   one smoothed offset per session, shared by audio and video. */
 
 /* Nice value of ANDROID_PRIORITY_AUDIO (system/thread_defs.h), the priority AudioTrack gives
    its own callback thread inside the app process (init sets RLIMIT_NICE 40 for everyone). */

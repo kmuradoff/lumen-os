@@ -98,6 +98,7 @@ void conn_destroy(void *cls) {
         srv->lastFeedbackNs.store(0);  /* sender gone: watchdog disarmed */
         if (srv->video) srv->video->endSession();
         if (srv->audio) srv->audio->stop();
+        if (srv->clock) srv->clock->endSession();
     }
     z9x_post_event(srv, Z9X_EV_CONN_DESTROY, n, 0);
 }
@@ -108,6 +109,7 @@ void conn_reset(void *cls, int reason) {
     srv->lastFeedbackNs.store(0);
     if (srv->video) srv->video->endSession();
     if (srv->audio) srv->audio->stop();
+    if (srv->clock) srv->clock->endSession();
     z9x_post_event(srv, Z9X_EV_CONN_RESET, reason, 0);
 }
 
@@ -135,6 +137,7 @@ void watchdogLoop(Z9xServer *srv) {
                  (long long) (silent / Z9X_NS_PER_SEC));
         if (srv->video) srv->video->endSession();
         if (srv->audio) srv->audio->stop();
+        if (srv->clock) srv->clock->endSession();
         /* Java answers with disconnectAll (raop_remove_known_connections) on its ctl thread */
         z9x_post_event(srv, Z9X_EV_CONN_RESET, Z9X_RESET_NO_FEEDBACK, 0);
         lk.lock();
@@ -148,7 +151,8 @@ void video_process(void *cls, raop_ntp_t *, video_decode_struct *data) {
     if (!srv->video || !data->data || data->data_len <= 0) return;
     /* raop_rtp_mirror marks undecryptable / malformed packets by setting byte 0 to 1 */
     if (data->data[0]) return;
-    srv->video->pushFrame(data->data, (size_t) data->data_len, data->is_h265, data->ntp_time_local);
+    srv->video->pushFrame(data->data, (size_t) data->data_len, data->is_h265, data->ntp_time_local,
+                          data->ntp_time_remote);
 }
 
 void video_pause(void *) { Z9X_LOGI("video paused by sender"); }
@@ -166,6 +170,11 @@ void mirror_video_running(void *cls, bool running) {
     Z9xServer *srv = S(cls);
     Z9X_LOGI("mirroring %s", running ? "started" : "stopped");
     if (!running && srv->video) srv->video->endSession();
+    /* a new mirror session may come with other timestamps; its sound is AAC-ELD: the extra
+       delay remembered for it applies from the first frame (the picture does not move when
+       the sound starts) */
+    if (srv->clock && !running) srv->clock->endSession();
+    if (running && srv->audio) srv->audio->expectSession(8);
     z9x_post_event(srv, running ? Z9X_EV_MIRROR_ON : Z9X_EV_MIRROR_OFF, 0, 0);
 }
 
@@ -186,6 +195,7 @@ void video_reset(void *cls, reset_type_t type) {
     case RESET_TYPE_NOHOLD:  /* a new sender took over */
         if (srv->video) srv->video->endSession();
         if (srv->audio) srv->audio->stop();
+        if (srv->clock) srv->clock->endSession();
         /* the previous sender's "AirPlay video" ends too (its connections are gone); no
            "finished" sentinel, which the new sender's /playback-info would read */
         javaVideoStop(srv);
@@ -224,7 +234,20 @@ void audio_process(void *cls, raop_ntp_t *, audio_decode_struct *data) {
         z9x_set_thread_priority(Z9X_PRIORITY_AUDIO, "RTP audio");
     }
     if (!srv->audio || !data->data || data->data_len <= 0) return;
-    srv->audio->decode(data->data, data->data_len, (int) data->ct, data->ntp_time_local, data->seqnum);
+    srv->audio->decode(data->data, data->data_len, (int) data->ct, data->ntp_time_local, data->ntp_time_remote,
+                       data->seqnum);
+}
+
+/* RTP audio thread (patch z9x-0011): how long the reorder buffer may wait for a resend */
+uint64_t audio_resend_deadline(void *cls, uint64_t ntpLocal, uint64_t ntpRemote) {
+    Z9xServer *srv = S(cls);
+    return srv->audio ? srv->audio->resendDeadline(ntpLocal, ntpRemote) : 0;
+}
+
+void audio_resend_stats(void *cls, unsigned int requested, unsigned int received, unsigned int late,
+                        unsigned int givenUp) {
+    Z9xServer *srv = S(cls);
+    if (srv->audio) srv->audio->resendStats(requested, received, late, givenUp);
 }
 
 void audio_flush(void *cls) {
@@ -559,6 +582,8 @@ void z9x_callbacks_fill(Z9xServer *srv, raop_callbacks_t *cbs) {
     cbs->audio_remote_control_id = audio_remote_control_id;
     cbs->audio_set_progress = audio_set_progress;
     cbs->audio_get_format = audio_get_format;
+    cbs->audio_resend_deadline = audio_resend_deadline;
+    cbs->audio_resend_stats = audio_resend_stats;
     cbs->video_report_size = video_report_size;
     cbs->mirror_video_running = mirror_video_running;
     cbs->report_client_request = nullptr;  /* admit every sender (PIN mode gates access) */
