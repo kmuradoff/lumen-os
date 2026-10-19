@@ -1,11 +1,12 @@
 # Z9xProjector, next (Lumen OS 1.0.5)
 
-- **Google Cast found again** (`sys/CastKeeper`, new; only with the Google add-on): Android 14 cached and then froze
-  Google's receiver (com.google.android.apps.mediashell, a plain started service), so it stopped answering mDNS
-  (no _googlecast._tcp, phones did not list the projector) and port 8009 filled with connections nobody accepted.
-  The persistent app now binds CastReceiverService (action com.google.cast.action.BIND, BIND_AUTO_CREATE |
-  BIND_NOT_FOREGROUND) and rebinds on package changes. Checked on the owner's Z9X: procState 4, no am_freeze,
-  _googlecast._tcp advertised, 8009 accepts.
+- **Google Cast receiver switched off** (`sys/CastOff`, new; only with the Google add-on). Keeping it uncached
+  (the earlier CastKeeper) made the projector visible again, but Google refuses the Cast device certificate on
+  uncertified hardware: certificateprovisioning/v1/devicecertificates/create answers 403 ("Loading Widevine creds
+  for 3P device", "DRM request irreparably failed"), also after registering the GSF ID at google.com/android/uncertified.
+  Senders then list the projector but never cast (Chrome: "Available for specific video sites"; YouTube: not
+  listed). The persistent app now sets com.google.android.apps.mediashell to DISABLED_USER once (prefs marker), so a
+  user who turns it back on keeps it on. Casting on Lumen OS: AirPlay, DLNA in Lumen Play, YouTube "Link with TV code".
 
 # Z9xProjector, Lumen OS 1.0.4
 
