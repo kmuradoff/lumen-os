@@ -61,6 +61,7 @@ public final class Card {
     public int icon;                  // drawable res id (tiles, inputs, casts, features)
     public int state;                 // input: TvInputManager state; cast: 0 ready
     public boolean showing;           // input currently on screen
+    public boolean episodic;          // program: has a season or episode (TMDB lookup hint; not in snapshots)
 
     public Card() {}
 

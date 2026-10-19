@@ -218,7 +218,8 @@ public class Stage extends ViewGroup {
     private static String[] candidates(Card k) {
         if (k == null) return new String[0];
         String a = k.image != null && !k.image.isEmpty() ? ArtUrl.backdrop(k.image) : null;
-        String b = k.image2 != null && !k.image2.isEmpty() ? ArtUrl.backdrop(k.image2) : null;
+        // TMDB key art (1.0.5) alone: the episode still kept as the other art may be larger, but is not wanted
+        String b = k.image2 != null && !k.image2.isEmpty() && !ArtUrl.isKeyArt(k.image) ? ArtUrl.backdrop(k.image2) : null;
         if (a != null && b != null && !b.equals(a)) return new String[]{a, b};
         if (a != null) return new String[]{a};
         if (b != null) return new String[]{b};

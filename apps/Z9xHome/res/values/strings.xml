@@ -225,6 +225,8 @@
     <string name="about_version">Lumen Home %1$s</string>
     <string name="about_content">Rows show only what your installed apps publish. No ads, no tracking.</string>
     <string name="about_geo">Location by IP: ipwho.is, ipapi.co, ip-api.com</string>
+    <!-- TMDB's terms: this exact notice, in English, where the app credits its sources (1.0.5, builds with a TMDB key) -->
+    <string name="tmdb_attribution" translatable="false">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>
 
     <!-- safe mode -->
     <string name="safe_mode_title">Lumen Home had a problem</string>

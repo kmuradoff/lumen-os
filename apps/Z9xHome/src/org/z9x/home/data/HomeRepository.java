@@ -159,6 +159,9 @@ public final class HomeRepository {
         in.shownRows = p.set(Prefs.K_SHOWN_ROWS);
         // "Continue watching on Home" hidden: no TvProvider query at all (no hero, no Watch Next, no channels)
         in.tvp = p.continueOnHome() ? TvpSource.load(c, in.labels) : TvpSource.off();
+        // 1.0.5: TMDB key art for Continue watching (known art now, the rest looked up in the background)
+        org.z9x.home.tmdb.TmdbArt tmdb = mApp.tmdb();
+        if (tmdb != null) tmdb.apply(in.tvp.watchNext);
         in.inputs = InputSource.inputs(c, p.map(Prefs.K_INPUT_LABELS));
         // no cast cards since 1.0.1: their only place was the Inputs tab (gone); the how-to panel in
         // HomeActivity stays without an entry point (in.casts stays empty, nothing probes the packages)

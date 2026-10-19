@@ -46,6 +46,36 @@ Author kmuradoff. versionCode 106 / versionName 1.0.5 in the manifest (was 105 /
   leave the TV safe area), rows above it fade out, the track only translates. Hold OK (MENU) on a program
   opens its details ("More info"). No program captions under the cards on Home (`RowView.setProgramCaptions`).
   The calm Home (D_Calm) is unchanged.
+- **TMDB key art for Continue watching** (owner, 2026-10-20: Kinopoisk's cards carry a random episode still,
+  "Кухня" showed a frame; TMDB approved). `tmdb/TmdbArt` looks each Continue watching title up once on TMDB
+  (/3/search/multi in the system language, then en-US) and shows its backdrop_path: w780 on the card,
+  w1280 as the full-screen backdrop (`ArtUrl.backdrop`; the backdrop then shows the key art alone, the
+  episode still stays as the card's other art). `tmdb/TmdbMatch` (pure Java): the query without file-name
+  parts ("Breaking Bad S01 E01 BDRip 1080p" -> "Breaking Bad", the year kept as a hint), a result needs key
+  art and its title or original title equal to the query (normalised) or containing it; exact before
+  partial, a series for an episode, the year, then TMDB's popularity. Cached in files/tmdb_art.txt: found
+  30 days, not found a day, a failed lookup retried after 10 minutes; one lookup at a time on its own
+  thread, then a refresh (the art crossfades in). Checked on 2026-10-20 against TMDB: Кухня tv 2012,
+  Великолепный век tv 2011, Прошлой ночью в Нью-Йорке movie 2010, Breaking Bad tv 2008 (original title),
+  Gran Turismo / Гран Туризмо movie 2023, Harry Potter and the Prisoner of Azkaban movie 2004.
+- **TMDB where the DNS hides it** (`tmdb/TmdbNet`): in Russia api.themoviedb.org and image.tmdb.org resolve to
+  127.0.0.1. The system DNS answer is used only when every address is public; else DNS over HTTPS
+  (Cloudflare, then Google, JSON), the address kept 3 hours (a failure 10 minutes). The request then goes to
+  that address with the real host as TLS SNI, through the platform's trust store and hostname verifier,
+  and as the Host header: a small HTTP/1.1 GET (Content-Length, chunked, or to the end; size capped) over an
+  SSLSocket, because Android's HttpsURLConnection resets the TLS host name to the URL's host (an address:
+  no SNI) after the socket factory. No proxy, no mirror. ImageLoader fetches image.tmdb.org through it.
+  Checked from the Mac against the DoH address: search 200 with the right backdrop, image 200, a wrong
+  host name refused in the handshake.
+- **The TMDB key is not in the sources**: `apps/build_apk.sh` packs the first word of `TMDB_KEY_FILE` as the
+  asset tmdb_key in the build directory (secret-assets, never the source tree, never printed). Builds
+  without it have the feature off (TmdbArt.create returns null). About (Customize) shows TMDB's notice
+  "This product uses the TMDB API but is not endorsed or certified by TMDB." when the build has the key
+  (tmdb_attribution, English only, translatable="false"). Note: the key can be read out of an APK that
+  carries it, as with any client-side key.
+- Tests: `test/.../TmdbTest` (query and year from titles, picking the result with the three verified
+  titles, the DNS decision for loopback / 0.0.0.0 / private / IPv6, DoH JSON parsing, the HTTP/1.1 answer
+  parser, key format, w1280 backdrop).
 - **Programs without art** (the Kino player's Continue watching cards): the card is a diagonal wash of its
   colour with the title on it, the backdrop a soft glow of the same colour (`ui/Tint`, new), never a flat
   block and no motion.
