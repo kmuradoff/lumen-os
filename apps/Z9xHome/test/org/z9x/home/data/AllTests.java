@@ -11,6 +11,7 @@ public final class AllTests {
         ResolutionTest.run();
         GfxTest.run();
         CecNamesTest.run();
+        HomeV2Test.run();
         System.out.println("tests passed=" + T.passed + " failed=" + T.failed);
         System.exit(T.failed == 0 ? 0 : 1);
     }

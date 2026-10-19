@@ -66,6 +66,7 @@ public class CardView extends View {
     private CharSequence[] mTitleLines = new CharSequence[0];
     private Drawable mIcon;
     private LinearGradient mScrim;
+    private android.graphics.Shader mTint; // a program without art (1.0.5): its colour as a wash, not a flat block
     private float mRadius;
     private Bitmap mGlowMask;
     private final int mGlowB;
@@ -116,6 +117,7 @@ public class CardView extends View {
         int top = mContinue ? 0x00080706 : Theme.BG & 0x00FFFFFF;
         int bottom = mContinue ? 0xE0080706 : (Theme.BG & 0x00FFFFFF) | 0xB3000000;
         mScrim = new LinearGradient(0, h - scrimH, 0, h, top, bottom, Shader.TileMode.CLAMP);
+        mTint = k.kind == Card.PROGRAM ? Tint.card(k.color != 0 ? k.color : Theme.SURFACE, w, h, Theme.rtl(this)) : null;
         if (mFocused || mGlowMask != null) mGlowMask = Glow.mask(w, h, mRadius, mGlowB);
         layoutText();
         String extra = k.meta.isEmpty() ? k.left : (k.left.isEmpty() ? k.meta : k.meta + ", " + k.left);
@@ -364,6 +366,11 @@ public class CardView extends View {
     }
 
     private void drawArtCard(Canvas c, Card k, int w, int h) {
+        if (mArt == null && mTint != null) {
+            mFill.setShader(mTint);
+            c.drawRect(0, 0, w, h, mFill);
+            mFill.setShader(null);
+        }
         if (mArt != null) {
             int alpha = 255;
             if (mArtShownAt > 0) {

@@ -621,6 +621,9 @@ input_on=Ligado
 input_asleep=Em repouso
 input_no_signal=Sem sinal
 input_wake_hint=Pressione OK para ligar
+hint_hold_ok=Manter OK
+hero_kind_recommendation=Recomendação
+row_recommendations=Recomendações
 @updater/strings.xml
 app_name=Atualização do Lumen OS
 settings_title=Atualização do Lumen OS

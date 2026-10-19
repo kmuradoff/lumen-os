@@ -35,6 +35,9 @@
     <string name="hero_more">Mehr Infos</string>
     <string name="hero_kind_next">Nächste Folge</string>
     <string name="hero_kind_watchlist">Merkliste</string>
+    <string name="hint_hold_ok">OK gedrückt halten</string>
+    <string name="hero_kind_recommendation">Empfehlung</string>
+    <string name="row_recommendations">Empfehlungen</string>
     <string name="feature_cast_title">Vom Smartphone streamen</string>
     <string name="feature_cast_desc">Chromecast built-in und AirPlay: Videos, Musik und deinen Bildschirm vom Smartphone, Tablet oder Laptop senden.</string>
     <string name="feature_picture_title">Perfektes Bild</string>

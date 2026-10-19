@@ -32,6 +32,7 @@ public final class RankerTest {
 
     public static void run() {
         Ranker.Input in = new Ranker.Input();
+        in.forYou = false; // the per-channel rows (1.0.4); HomeV2Test covers "For you"
         in.now = 1_000_000_000_000L;
         in.apps.addAll(Arrays.asList(app("com.yt", "YouTube"), app("ru.kp", "Кинопоиск"), app("org.z9x.home", "Lumen Home"),
                 app("com.spot", "Spotify"), app("com.vending", "Play Store")));
@@ -63,8 +64,9 @@ public final class RankerTest {
         T.eq(m.hiddenApps.size(), 1, "hidden list");
         // auto favourites: used apps by recency (kp, spot), then defaults (yt, vending)
         T.eq(ids(m.favorites), "ru.kp,com.spot,com.yt,com.vending", "auto favourites");
-        // rows (D): wn, apps, kp channel (used more recently) before yt channel, no hidden/system/uninstalled rows
-        T.eq(rowIds(m), "wn,apps,ch:3,ch:1,customize", "row order");
+        // rows (1.0.5 order): wn, kp channel (used more recently) before yt channel, then the apps; no
+        // hidden/system/uninstalled rows
+        T.eq(rowIds(m), "wn,ch:3,ch:1,apps,customize", "row order");
         T.ok(m.allRows.stream().anyMatch(r -> r.id.equals("ch:2") && r.hidden), "non-default channel listed as hidden");
         // hero: WN continue first, then round robin over channel rows, skipping art-less items
         T.eq(m.hero.get(0).id, "wn:1", "hero starts with continue watching");

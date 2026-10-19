@@ -35,6 +35,9 @@
     <string name="hero_more">Daha fazla bilgi</string>
     <string name="hero_kind_next">Sonraki bölüm</string>
     <string name="hero_kind_watchlist">İzleme listesi</string>
+    <string name="hint_hold_ok">OK’e basılı tut</string>
+    <string name="hero_kind_recommendation">Öneri</string>
+    <string name="row_recommendations">Öneriler</string>
     <string name="feature_cast_title">Telefonunuzdan yayınlayın</string>
     <string name="feature_cast_desc">Chromecast built-in ve AirPlay: telefon, tablet veya dizüstü bilgisayardan video, müzik ve ekranınızı gönderin.</string>
     <string name="feature_picture_title">Mükemmel görüntü</string>

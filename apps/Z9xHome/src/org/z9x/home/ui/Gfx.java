@@ -20,6 +20,9 @@ import org.z9x.home.Props;
  *   after the last of them.</li>
  *   <li>{@code ro.lumen.home.lite}: 1 = no starting-window background behind the sky and the search
  *   backdrop, the capped sky and the hero stage cached in GPU layers, layers for full-screen fades.</li>
+ *   <li>{@code ro.lumen.home.backdrop_fps} (1.0.5): the slow motion of Home's full-screen backdrop art
+ *   (Stage). Unset: {@link #BACKDROP_FPS_DEFAULT} frames per second, and still (0) when {@code lite} is
+ *   set (the Play 6). 0: still art (the crossfades stay). N: at most N frames per second (1..60).</li>
  * </ul>
  * Any of the three sky switches also moves the sky's particles on its own run clock (it advances only
  * while sky frames run, so stopping and resuming never makes them jump).
@@ -38,6 +41,20 @@ public final class Gfx {
     public static final float SKY_SCALE = scale(Props.fnum("sky_scale", 0f));
     /** The sky yields to the UI (keys, transitions, another window focused). */
     public static final boolean SKY_YIELD = Props.num("sky_yield", 0) > 0;
+
+    /**
+     * The backdrop's motion: the art moves about 5 px a second, under half a pixel per frame even at 10
+     * fps, so a cap far below the display's rate does not show as steps and redraws the screen less often.
+     */
+    public static final int BACKDROP_FPS_DEFAULT = 30;
+    /** Frames per second of the backdrop's slow motion; 0 = still art. */
+    public static final int BACKDROP_FPS = backdropFps(Props.num("backdrop_fps", -1), LITE);
+
+    /** The backdrop's motion rate: unset (negative) = the default, still on weak GPUs; else 0..60. */
+    public static int backdropFps(int prop, boolean lite) {
+        if (prop < 0) return lite ? 0 : BACKDROP_FPS_DEFAULT;
+        return Math.min(60, prop);
+    }
 
     /** A sky scale in (0, 1], else 0 (off). */
     public static float scale(float s) {

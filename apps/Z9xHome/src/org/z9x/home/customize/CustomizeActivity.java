@@ -121,6 +121,8 @@ public class CustomizeActivity extends Activity {
             mApp.io().post(() -> TvpSource.setChannelBrowsable(this, ch, shown));
         } else {
             mPrefs.toggleInSet(Prefs.K_HIDDEN_ROWS, r.id, !shown);
+            // 1.0.5: inputs and projector tiles are hidden on Home unless shown here
+            mPrefs.toggleInSet(Prefs.K_SHOWN_ROWS, r.id, shown);
         }
     }
 
@@ -381,9 +383,7 @@ public class CustomizeActivity extends Activity {
 
     private void openSpotlight() {
         ArrayList<ListPanel.Item> l = new ArrayList<>();
-        ListPanel.Item auto = ListPanel.Item.action(0, getString(R.string.cz_hero_auto), null).kind(ListPanel.TOGGLE).on(mPrefs.heroAuto());
-        auto.action = () -> mPrefs.putBool(Prefs.K_HERO_AUTO, auto.on);
-        l.add(auto);
+        // 1.0.5: no slides any more (the backdrop follows the focused card), so no "change slides" switch
         ListPanel.Item tr = ListPanel.Item.action(0, getString(R.string.cz_trailers), null).kind(ListPanel.TOGGLE)
                 .on(mPrefs.trailers()).value(getString(R.string.cz_trailers_sub));
         tr.action = () -> mPrefs.putBool(Prefs.K_TRAILERS, tr.on);

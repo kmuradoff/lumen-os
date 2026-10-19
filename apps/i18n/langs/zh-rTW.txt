@@ -617,6 +617,9 @@ input_on=已開啟
 input_asleep=休眠中
 input_no_signal=無訊號
 input_wake_hint=按 OK 鍵喚醒
+hint_hold_ok=長按 OK
+hero_kind_recommendation=推薦
+row_recommendations=推薦
 @updater/strings.xml
 app_name=Lumen OS 更新
 settings_title=Lumen OS 更新

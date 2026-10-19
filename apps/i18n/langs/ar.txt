@@ -629,6 +629,9 @@ input_on=قيد التشغيل
 input_asleep=في وضع السكون
 input_no_signal=لا توجد إشارة
 input_wake_hint=اضغط OK للتشغيل
+hint_hold_ok=اضغط مع الاستمرار على OK
+hero_kind_recommendation=توصية
+row_recommendations=توصيات
 @updater/strings.xml
 app_name=تحديث Lumen OS
 settings_title=تحديث Lumen OS

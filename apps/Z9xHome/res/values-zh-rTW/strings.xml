@@ -35,6 +35,9 @@
     <string name="hero_more">詳細資訊</string>
     <string name="hero_kind_next">下一集</string>
     <string name="hero_kind_watchlist">待看清單</string>
+    <string name="hint_hold_ok">長按 OK</string>
+    <string name="hero_kind_recommendation">推薦</string>
+    <string name="row_recommendations">推薦</string>
     <string name="feature_cast_title">從手機投放</string>
     <string name="feature_cast_desc">Chromecast built-in 和 AirPlay：從手機、平板或筆電傳送影片、音樂和螢幕畫面。</string>
     <string name="feature_picture_title">完美畫面</string>

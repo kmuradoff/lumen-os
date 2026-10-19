@@ -621,6 +621,9 @@ input_on=Acceso
 input_asleep=In riposo
 input_no_signal=Nessun segnale
 input_wake_hint=Premi OK per accenderlo
+hint_hold_ok=Tieni premuto OK
+hero_kind_recommendation=Consigliato
+row_recommendations=Consigliati
 @updater/strings.xml
 app_name=Aggiornamento Lumen OS
 settings_title=Aggiornamento Lumen OS

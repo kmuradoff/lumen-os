@@ -623,6 +623,9 @@ input_on=Włączone
 input_asleep=Uśpione
 input_no_signal=Brak sygnału
 input_wake_hint=Naciśnij OK, aby włączyć
+hint_hold_ok=Przytrzymaj OK
+hero_kind_recommendation=Polecane
+row_recommendations=Polecane
 @updater/strings.xml
 app_name=Aktualizacja Lumen OS
 settings_title=Aktualizacja Lumen OS

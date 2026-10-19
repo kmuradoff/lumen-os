@@ -35,6 +35,9 @@
     <string name="hero_more">Plus d’infos</string>
     <string name="hero_kind_next">Épisode suivant</string>
     <string name="hero_kind_watchlist">À regarder</string>
+    <string name="hint_hold_ok">Maintenir OK</string>
+    <string name="hero_kind_recommendation">Recommandation</string>
+    <string name="row_recommendations">Recommandations</string>
     <string name="feature_cast_title">Diffusez depuis votre téléphone</string>
     <string name="feature_cast_desc">Chromecast built-in et AirPlay : envoyez vidéos, musique et votre écran depuis un téléphone, une tablette ou un ordinateur.</string>
     <string name="feature_picture_title">Image parfaite</string>

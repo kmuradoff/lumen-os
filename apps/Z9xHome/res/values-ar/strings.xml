@@ -35,6 +35,9 @@
     <string name="hero_more">مزيد من المعلومات</string>
     <string name="hero_kind_next">الحلقة التالية</string>
     <string name="hero_kind_watchlist">قائمة المشاهدة</string>
+    <string name="hint_hold_ok">اضغط مع الاستمرار على OK</string>
+    <string name="hero_kind_recommendation">توصية</string>
+    <string name="row_recommendations">توصيات</string>
     <string name="feature_cast_title">البث من هاتفك</string>
     <string name="feature_cast_desc">Chromecast built-in وAirPlay: أرسل الفيديو والموسيقى وشاشتك من هاتف أو جهاز لوحي أو حاسوب محمول.</string>
     <string name="feature_picture_title">صورة مثالية</string>

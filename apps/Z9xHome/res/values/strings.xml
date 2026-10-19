@@ -48,6 +48,11 @@
     <string name="hero_more">More info</string>
     <string name="hero_kind_next">Next episode</string>
     <string name="hero_kind_watchlist">Watchlist</string>
+    <!-- Lumen OS 1.0.5 Home: the info block's hint (a key cap: holding OK opens the details), the eyebrow of a
+         recommendation, the For you row's heading while a recommendation is focused -->
+    <string name="hint_hold_ok">Hold OK</string>
+    <string name="hero_kind_recommendation">Recommendation</string>
+    <string name="row_recommendations">Recommendations</string>
     <string name="feature_cast_title">Cast from your phone</string>
     <string name="feature_cast_desc">Chromecast built-in and AirPlay: send videos, music and your screen from a phone, tablet or laptop.</string>
     <string name="feature_picture_title">Perfect picture</string>

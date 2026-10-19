@@ -165,6 +165,7 @@ public final class HomeRepository {
         in.tiles = InputSource.tiles(c);
         in.tYourApps = c.getString(R.string.tab_apps); // D_Calm: the shelf is simply "Apps"
         in.tContinue = c.getString(R.string.row_continue);
+        in.tRecommendations = c.getString(R.string.row_recommendations);
         in.tInputs = c.getString(R.string.row_inputs);
         in.tProjector = c.getString(R.string.row_projector);
         in.tCustomize = c.getString(R.string.customize_home);
