@@ -403,7 +403,19 @@ public final class Battery {
             next = pollMs();
             sConfirmed = false;
         }
-        if (t == TOKEN.get() && sScreenOn) schedule(next);
+        if (sScreenOn) continueChain(t, next);
+    }
+
+    /**
+     * p6-hal: the next read of chain {@code t}, but only if no newer chain started meanwhile. The check and the
+     * new token are one compare-and-set: a SCREEN_ON (main thread) between them can no longer be replaced by
+     * this chain's slower read, and a SCREEN_OFF after it still stops the read (poll checks sScreenOn).
+     */
+    private static void continueChain(int t, long delayMs) {
+        if (sApp == null || !Hal.isGateOpen()) return;
+        if (!TOKEN.compareAndSet(t, t + 1)) return;              // a newer chain runs
+        final int nt = t + 1;
+        Hal.runDelayed((g, g2) -> poll(nt, g, g2), delayMs);
     }
 
     /** p6-hal. Never throws; a failed getter leaves its field unknown. */

@@ -18,8 +18,8 @@ import org.z9x.projector.Hal;
  *   adb shell am broadcast -a org.z9x.projector.action.TEST_POWER_EVENT -p org.z9x.projector \
  *       --ei type 1 --es value LowPowerPoweroff
  *
- * Exported, guarded by android.permission.DUMP in the manifest (the adb shell and the system hold it, no
- * app can), and inert unless this is a Play 6 test build (ro.lumen.version play6-t...) with the start gate
+ * Exported, guarded by android.permission.DUMP in the manifest (signature|privileged|development: the adb
+ * shell, the system and privileged apps allow-listed for it hold it, an ordinary installed app cannot), and inert unless this is a Play 6 test build (ro.lumen.version play6-t...) with the start gate
  * open. Main thread; the reads of the event path run on p6-hal through the Hal facade, nothing is written.
  */
 public final class BatteryTestReceiver extends BroadcastReceiver {
