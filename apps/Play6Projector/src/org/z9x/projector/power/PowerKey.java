@@ -28,8 +28,8 @@ import org.z9x.projector.ui.OverlayHost;
  *    stock "Screen off". The t12 short press (Android sleep = the vendor's STR, lamp still on) came back
  *    only as a cold boot; with the lamp switched off first (195), STR suspends and resumes cleanly (owner's
  *    test B19b on t16, 2026-10-13: suspend_stats success 1, fail 0, no reboot). So from t17 the short press
- *    is STR (lamp off with 195, then PowerManager.goToSleep with no doze, as stock) unless
- *    persist.lumen.p6.str is 0 (the kill switch back to the lamp-only standby), a USB host is on the cable
+ *    is STR (lamp off with 195, then PowerManager.goToSleep with no doze, as stock) when persist.lumen.p6.str
+ *    is 1 (default 0 since beta 2: STR came back as a cold boot again on 2026-10-20), no USB host is on the cable
  *    or an update is being installed. No IGmpf 241, no PM sysfs, no rc file, no vendor property;
  *  - SCREEN_ON: the light does not simply follow the display: Lamp.awaitOn polls IGmpf 196 (as stock
  *    xgimiWakeUp), sends 195(true) only if the vendor did not relight it, and the curtain reveals when 196
@@ -422,13 +422,16 @@ public final class PowerKey {
         }
 
         /**
-         * Why STR may not run now, or null when it may: the kill switch {@value #PROP_STR} is 0 (default 1),
+         * Why STR may not run now, or null when it may: the switch {@value #PROP_STR} is not 1 (default 0),
          * a USB host is on the cable (sticky USB_STATE "connected"; on the Z9X a host on the cable reset the
          * chip after the suspend), or an update is being installed (update_engine running; the Play 6 has
          * none today). Neutral reads only: a property, a sticky broadcast. Any thread.
          */
         static String strBlocker(Context app) {
-            if (SystemProperties.getInt(PROP_STR, 1) == 0) return PROP_STR + " is 0";
+            // beta 2 (2026-10-21): off by default. On the owner's unit STR came back as a cold boot again
+            // (sys.boot.reason "reboot" with the clock unset) after a sleep from the quick panel; the lamp-only
+            // standby keeps the session and wakes in under 1 s. setprop persist.lumen.p6.str 1 turns STR on.
+            if (SystemProperties.getInt(PROP_STR, 0) != 1) return PROP_STR + " is not 1";
             if (app == null) return "not started";
             try {
                 Intent i = app.registerReceiver(null, new IntentFilter(ACTION_USB_STATE), Context.RECEIVER_EXPORTED);
