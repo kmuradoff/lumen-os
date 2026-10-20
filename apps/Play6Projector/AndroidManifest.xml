@@ -314,8 +314,8 @@
         </receiver>
 
         <!-- Battery test hook (plan 3.3, device tests C5 to C7): a vendor power event (type, value) from
-             adb shell am broadcast. DUMP = signature|privileged|development: the shell holds it, no app
-             can. The receiver itself does nothing outside a Play 6 test build (ro.lumen.version play6-t). -->
+             adb shell am broadcast. DUMP = signature|privileged|development: the shell, the system and
+             allow-listed privileged apps hold it, an ordinary installed app cannot. The receiver itself does nothing outside a Play 6 test build (ro.lumen.version play6-t). -->
         <receiver
             android:name=".battery.BatteryTestReceiver"
             android:directBootAware="false"
