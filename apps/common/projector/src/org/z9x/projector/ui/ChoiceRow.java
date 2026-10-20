@@ -2,6 +2,7 @@ package org.z9x.projector.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.text.TextUtils;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -53,13 +54,23 @@ public class ChoiceRow extends Row {
 
     public ChoiceRow setCommitDelay(long ms) { commitDelay = Math.max(0, ms); return this; }
 
+    /** Running line for a value that does not fit between the arrows (Marquee). */
+    private final Marquee valueMarquee = new Marquee();
+
     private CharSequence label() { return index >= 0 ? options[index] : "—"; }
 
+    /**
+     * The value takes what the title does not need (at least 45 % of the row), so a short title leaves room for a long
+     * value ("Game speed  < Standard, high frame rate >", which used to run over its arrows); a value that still does
+     * not fit is ellipsized in drawRight.
+     */
     @Override
     protected float rightWidth() {
+        float arrows = 2 * (chevronWidth(getContext()) + arrowGap);
         float max = valuePaint.measureText("—");
         for (CharSequence o : options) max = Math.max(max, valuePaint.measureText(o, 0, o.length()));
-        return Math.min(max, getWidth() * 0.45f) + 2 * (chevronWidth(getContext()) + arrowGap);
+        float free = getWidth() - 2.5f * padH - titleWidth() - arrows;
+        return Math.min(max, Math.max(getWidth() * 0.45f, free)) + arrows;
     }
 
     @Override
@@ -69,10 +80,17 @@ public class ChoiceRow extends Row {
         float left = right - rw;
         drawChevronLeft(c, left, cy, focused, index <= 0);
         drawChevronRight(c, right, cy, focused, index < 0 || index >= options.length - 1);
-        CharSequence t = label();
+        float room = Math.max(0, rw - 2 * (cw + arrowGap));
+        CharSequence full = label();
+        float base = cy - (valuePaint.descent() + valuePaint.ascent()) / 2f;
+        if (focused && !isMirroredNow() && valuePaint.measureText(full, 0, full.length()) > room) {
+            valueMarquee.draw(this, c, full, left + cw + arrowGap, room, base, valuePaint);
+            return;
+        }
+        valueMarquee.reset();
+        CharSequence t = TextUtils.ellipsize(full, valuePaint, room, TextUtils.TruncateAt.END);
         float w = valuePaint.measureText(t, 0, t.length());
         float mid = left + rw / 2f;
-        float base = cy - (valuePaint.descent() + valuePaint.ascent()) / 2f;
         drawTextAt(c, t, mid - w / 2f, base, valuePaint);
     }
 

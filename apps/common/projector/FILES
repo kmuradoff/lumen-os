@@ -181,6 +181,7 @@ src/org/z9x/projector/ui/OverlayHost.java
 src/org/z9x/projector/ui/Panel.java
 src/org/z9x/projector/ui/Page.java
 src/org/z9x/projector/ui/PagedPanel.java
+src/org/z9x/projector/ui/Marquee.java
 src/org/z9x/projector/ui/Row.java
 src/org/z9x/projector/ui/CheckRow.java
 src/org/z9x/projector/ui/ChoiceRow.java

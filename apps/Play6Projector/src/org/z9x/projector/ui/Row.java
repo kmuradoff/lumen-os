@@ -91,6 +91,9 @@ public abstract class Row extends View {
     /** Width (real px) reserved at the right for the value part. */
     protected abstract float rightWidth();
 
+    /** Width of the full title (a right part may use what the title does not need). */
+    protected float titleWidth() { return titlePaint.measureText(title, 0, title.length()); }
+
     /** Draws the value part; {@code right} is the inner right edge, {@code cy} the title baseline centre. */
     protected abstract void drawRight(Canvas c, float right, float cy, boolean focused);
 
