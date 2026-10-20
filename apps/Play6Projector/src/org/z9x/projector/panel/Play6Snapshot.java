@@ -30,7 +30,7 @@ final class Play6Snapshot {
 
     /** Parts (bit flags) of a read. */
     static final int ROOT = 1, FOCUS = 1 << 1, KEYSTONE = 1 << 2, LAMP = 1 << 3, PICTURE = 1 << 4, SOUND = 1 << 5,
-            PROJECTION = 1 << 6, GAME = 1 << 7, EYE = 1 << 8;
+            PROJECTION = 1 << 6, GAME = 1 << 7, EYE = 1 << 8, AMBIENT = 1 << 9;
 
     /** The parts this snapshot holds values for. */
     int parts;
@@ -54,6 +54,15 @@ final class Play6Snapshot {
     int[] hdmiInfo;
     /** The IGmpf2 identity guard was open at the read. */
     boolean gmpf2;
+    // KEYSTONE, P3 item 21: the replies of the adjustment cards parse as expected (parse probes, no value is
+    // used; null = not read or not delivered, false = delivered but unexpected: the row stays hidden)
+    /** IGmpf 117 + 116 (digital zoom and shift). */
+    Boolean zoomOk;
+    /** IGmpf2 130 (picture rotation). */
+    Boolean rotationOk;
+    // ROOT | AMBIENT, P3 item 21
+    /** IGmpf2 71 getIsAutoAtmoSphereLight: the stock gate of the ambient light settings (tile and page). */
+    Boolean ambientOk;
 
     /** 666 values 10..17: the AI scene sub-modes (research battery_sound_features.md 3.3). */
     private static final int AI_SCENE_FIRST = 10, AI_SCENE_LAST = 17;
@@ -107,11 +116,62 @@ final class Play6Snapshot {
             s.aspect = opt("664", g::getAspectRatio);
             s.hdmiInfo = opt("662", g::getHdmiInfo);
         }
+        if (any(parts, KEYSTONE) && s.gmpf2) {
+            s.zoomOk = probeZoom(g);
+            s.rotationOk = probeRotation(g2);
+        }
         if (s.gmpf2) {
             if (any(parts, ROOT | FOCUS)) s.smartAf = opt("g2 63", g2::getSmartAutofocus);
+            if (any(parts, ROOT | AMBIENT)) s.ambientOk = opt("g2 71", g2::getAmbientLightSupported);
             if (any(parts, ROOT | GAME) && hdmiSource) s.gameProp = opt("g2 33", g2::getGameModeProp);
         }
         return s;
+    }
+
+    /**
+     * IGmpf 117 and 116 parse as the stock structs (16 and 8 bytes) and 117's numbers are sane: true. A delivered
+     * reply that does not parse: false (logged with the reason, the row hidden for this process); not delivered or
+     * a card is open: null. Getters only (stock reads them inside its zoom session; the values are read again
+     * there). Skipped once found unsupported.
+     */
+    private static Boolean probeZoom(Play6Gmpf g) {
+        if (Play6ZoomShiftPanel.isUnsupported()) return false;
+        if (Play6AdjustSession.anyOpen()) return null;
+        try {
+            int[] range = g.getZoomStepRange();
+            int[] step = g.getZoomStep();
+            Log.i(TAG, "probe 117 raw " + java.util.Arrays.toString(range) + ", 116 raw " + java.util.Arrays.toString(step));
+            for (int i = 1; i < range.length; i++) {
+                if (range[i] < Play6Gmpf.ZOOM_STEP_MIN || range[i] > Play6Gmpf.ZOOM_STEP_MAX) {
+                    Play6ZoomShiftPanel.markUnsupported("117 value " + range[i] + " outside the sanity bound");
+                    return false;
+                }
+            }
+            return true;
+        } catch (Play6Gmpf.ReplyException e) {
+            Play6ZoomShiftPanel.markUnsupported("probe: " + e.getMessage());
+            return false;
+        } catch (Throwable t) {
+            Log.d(TAG, "probe zoom: " + t);
+            return null;
+        }
+    }
+
+    /** IGmpf2 130 parses and is plausible (Play6Gmpf2.getScreenRotation checks it): true; as probeZoom otherwise. */
+    private static Boolean probeRotation(Play6Gmpf2 g2) {
+        if (Play6RotatePanel.isUnsupported()) return false;
+        if (Play6AdjustSession.anyOpen()) return null;
+        try {
+            float[] r = g2.getScreenRotation();
+            Log.i(TAG, "probe 130 -> " + java.util.Arrays.toString(r));
+            return true;
+        } catch (Play6Gmpf2.ReplyException | Play6Gmpf2.AbsentException e) {
+            Play6RotatePanel.markUnsupported("probe: " + e.getMessage());
+            return false;
+        } catch (Throwable t) {
+            Log.d(TAG, "probe rotation: " + t);
+            return null;
+        }
     }
 
     private static boolean any(int parts, int mask) {
@@ -148,6 +208,7 @@ final class Play6Snapshot {
         if (any(p, ROOT | SOUND)) soundEffect = n.soundEffect;
         if (any(p, ROOT | EYE)) eye = n.eye;
         if (any(p, ROOT | KEYSTONE)) { powerOnAk = n.powerOnAk; moveAk = n.moveAk; }
+        if (any(p, KEYSTONE)) { zoomOk = n.zoomOk; rotationOk = n.rotationOk; }
         if (any(p, ROOT | PROJECTION)) { putMode = n.putMode; autoReverse = n.autoReverse; }
         if (any(p, PICTURE)) {
             memc = n.memc;
@@ -156,6 +217,7 @@ final class Play6Snapshot {
         if (any(p, GAME)) { aspect = n.aspect; hdmiInfo = n.hdmiInfo; }
         if (any(p, ROOT | GAME)) gameProp = n.gameProp;
         if (any(p, ROOT | FOCUS)) smartAf = n.smartAf;
+        if (any(p, ROOT | AMBIENT)) ambientOk = n.ambientOk;
     }
 
     /** HDMI confirmed by 696 (the one HDMI port) or by an open org.z9x.tvinput HDMI session (info line). */

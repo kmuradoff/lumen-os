@@ -65,4 +65,54 @@
     <string name="kst_reason_hal">The projector did not answer</string>
     <string name="kst_reason_not_applied">The projector did not apply the corner</string>
     <string name="kst_saved">Keystone saved</string>
+    <!-- P3 item 21: zoom and shift, picture rotation cards (the texts of the Z9X strings_kst.xml / strings_stock.xml
+         rows with the same names, same wording; panel/Play6ZoomShiftPanel, panel/Play6RotatePanel) -->
+    <string name="zoom_wait">Preparing…</string>
+    <string name="zoom_position">Size %1$d of %2$d</string>
+    <string name="zoom_limit_big">This is the biggest picture</string>
+    <string name="zoom_limit_small">This is the smallest picture</string>
+    <string name="zs_title">Zoom and shift</string>
+    <string name="zs_unavailable">Zoom and shift is not available now</string>
+    <string name="zs_mode_size">Size</string>
+    <string name="zs_mode_shift">Position</string>
+    <string name="zs_hint_size">Right: bigger · Left: smaller · OK: move the picture · Back: done</string>
+    <string name="zs_hint_shift">Arrows: move the picture · OK: size · Back: done</string>
+    <string name="zs_hint_shift_only">Arrows: move the picture · Back: done</string>
+    <string name="zs_edge">The picture is at the edge</string>
+    <string name="zs_refused">The projector did not move the picture</string>
+    <string name="rot_title">Picture rotation</string>
+    <string name="rot_unavailable">Picture rotation is not available now</string>
+    <string name="rot_hint">Right / Left: rotate · OK: back to the start · Back: done</string>
+    <string name="rot_limit">This is the largest angle</string>
+    <string name="rot_refused">The projector did not rotate the picture</string>
+    <!-- P3 item 21: ambient light (ambient/AmbientLight, quick panel Ambient light page; stock colors and effects) -->
+    <string name="p6_amb_title">Ambient light</string>
+    <string name="p6_amb_on">Turn on ambient light</string>
+    <string name="p6_amb_color">Light color</string>
+    <string name="p6_amb_c_orange">Orange</string>
+    <string name="p6_amb_c_blue">Blue</string>
+    <string name="p6_amb_c_yellow">Yellow</string>
+    <string name="p6_amb_c_green">Green</string>
+    <string name="p6_amb_c_pink">Pink</string>
+    <string name="p6_amb_c_purple">Purple</string>
+    <string name="p6_amb_c_colorful">Colorful</string>
+    <string name="p6_amb_effect">Light effect</string>
+    <string name="p6_amb_e_standard">Standard</string>
+    <string name="p6_amb_e_always">Always on</string>
+    <string name="p6_amb_e_rhythm">Rhythm</string>
+    <string name="p6_amb_level">Brightness</string>
+    <string name="p6_amb_level_same">As set</string>
+    <string name="p6_amb_desc">The projector fills the wall with soft colored light, also as a night light. Up / Down: color · Left / Right: previous / next track · OK: play / pause · Back: exit.</string>
+    <!-- P3 item 21: Bluetooth speaker mode (speaker/SpeakerMode, quick panel Bluetooth speaker page) -->
+    <string name="p6_spk_title">Bluetooth speaker</string>
+    <string name="p6_spk_on">Turn on speaker mode</string>
+    <string name="p6_spk_light">Light</string>
+    <string name="p6_spk_light_ambient">Ambient light</string>
+    <string name="p6_spk_desc">The picture turns off and the projector plays music from your phone over Bluetooth. Bluetooth headphones cannot be used while speaker mode is on.</string>
+    <string name="p6_spk_starting">Starting speaker mode…</string>
+    <string name="p6_spk_pair">On your phone, open Bluetooth and connect to %1$s</string>
+    <string name="p6_spk_connected">Connected: %1$s</string>
+    <string name="p6_spk_keys">OK: play / pause · Left / Right: previous / next track · Volume keys: volume · Back: leave speaker mode</string>
+    <string name="p6_spk_ending">Leaving speaker mode…</string>
+    <string name="p6_spk_failed">Speaker mode could not start. Bluetooth headphones work as before.</string>
 </resources>

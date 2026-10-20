@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Quick panel tile icon "ambient light" (Play 6, P3 item 21). Own line drawing: 24-unit viewport,
+     2-unit round strokes, white; QuickPanel tiles tint it at runtime. No XGIMI assets. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M12,3.5 C15.6,3.5 18,6.1 18,9.3 C18,11.5 16.8,13 15.5,14.2 C14.9,14.8 14.5,15.5 14.5,16.3 V17 H9.5 V16.3 C9.5,15.5 9.1,14.8 8.5,14.2 C7.2,13 6,11.5 6,9.3 C6,6.1 8.4,3.5 12,3.5 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M9.5,20.5 H14.5"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

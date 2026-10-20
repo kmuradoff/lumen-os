@@ -17,7 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * All HAL I/O goes through Hal.query on the p6-hal thread, and only while the start gate is open (before
  * it nothing is sent and the result is null). Results come back on the MAIN thread. Every off / on starts
- * a new generation; the polling of an older one stops. Log tag P6Lamp.
+ * a new generation; the polling of an older one stops. Log tag P6Lamp. Callers: power/StandbyController (the
+ * lamp-only standby) and speaker/SpeakerMode (the light off of the Bluetooth speaker mode, P3 item 21; it never
+ * runs together with the standby: entering the standby closes the speaker mode's window first).
  *  - {@link #off}: 196, then 195(false) when it does not read off, then 196 again; tried again 1 s apart
  *    up to {@value #OFF_TRIES} times while the lamp does not read off.
  *  - {@link #on}: 195(true) at once, then 196 every {@value #POLL_MS} ms for up to {@value #ON_WAIT_MS} ms,
@@ -28,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *    still reads off after {@value #AWAIT_SEND_MS} ms is 195(true) sent, and polling goes on to
  *    {@value #AWAIT_MAX_MS} ms.
  */
-final class Lamp {
+public final class Lamp {
     private static final String TAG = "P6Lamp";
     static final long POLL_MS = 250;
     static final long ON_WAIT_MS = 3_000;
@@ -39,7 +41,7 @@ final class Lamp {
     static final long OFF_RETRY_MS = 1_000;
 
     /** Result on the MAIN thread: the last 196 read (true on, false off), null when unknown. */
-    interface Done {
+    public interface Done {
         void done(Boolean on);
     }
 
@@ -48,7 +50,7 @@ final class Lamp {
     private Lamp() {}
 
     /** Lamp off (lamp-only standby, before STR). Main thread. */
-    static void off(String why, Done done) {
+    public static void off(String why, Done done) {
         final int gen = GEN.incrementAndGet();
         offTry(gen, why, 1, done);
     }
@@ -80,7 +82,7 @@ final class Lamp {
     }
 
     /** Lamp on at once (lamp-only standby exit). Main thread. */
-    static void on(String why, Done done) {
+    public static void on(String why, Done done) {
         final int gen = GEN.incrementAndGet();
         poll(gen, why, SystemClock.uptimeMillis(), true, ON_RESEND_MS, ON_WAIT_MS, done);
     }

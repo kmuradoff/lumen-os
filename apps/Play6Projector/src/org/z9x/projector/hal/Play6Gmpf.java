@@ -88,6 +88,13 @@ public final class Play6Gmpf extends HidlCaller {
     private static final int CORRECT_KEYSTONE_FULL_POINT = 185;      // tsv:correctKeystoneFullPiont W=KstPoint R=i32
     private static final int GET_CORRECT_KEYSTONE_FULL_POINT = 186;  // tsv:getCorrectKeystoneFullPiont W=u8 R=cb KstPoint
     private static final int AUTO_KST = 326;                         // tsv:autoKst W= R=i8
+    // digital zoom and shift (stock ZoomDisplacementWind, non-GMPF2 path; P3 item 21)
+    private static final int GET_CURRENT_ZOOM_STEP2 = 116;           // tsv:getCurrentZoomStep2 W= R=cb(i32, st_ZoomStep)
+    private static final int GET_ZOOM_STEP_RANGE = 117;              // tsv:getZoomStepRange W= R=cb(i32, st_ZoomStepRange)
+    private static final int SET_DIGITAL_ZOOM_STEP = 118;            // tsv:setDigitalZoomStep W=i32 R=i32
+    private static final int ZOOM_FINISH = 120;                      // tsv:zoomFinish W=i32 R=i32
+    private static final int ZOOM_START = 121;                       // tsv:zoomStart W=i32 R=i32
+    private static final int TRANSLATION_KST = 141;                  // tsv:translationKst W=i32,bool R=i32
     private static final int GET_SYSTEM_UI_STATE = 390;              // tsv:getSystemUIState W= R=i32
     private static final int SAVE_POWER_ON_AK_FLAG = 552;            // tsv:savePowerOnAKFlag W=bool R=
     private static final int GET_POWER_ON_AK_FLAG = 553;             // tsv:getPowerOnAKFlag W= R=bool
@@ -188,6 +195,18 @@ public final class Play6Gmpf extends HidlCaller {
     private static final int AREA_ORIGIN = 0;                 // value 659 left / top
     private static final int AREA_WIDTH = 1920;               // value 659 width (the Play 6 panel)
     private static final int AREA_HEIGHT = 1080;              // value 659 height
+    // digital zoom and shift (stock KeyStoneManager / ZoomDisplacementWind, v1.7.116)
+    private static final int ZOOM_RESERVED = 0;               // value 121 zoomStart(0) / 120 zoomFinish(0), as stock
+    private static final int ZOOM_STEP_RANGE_SIZE = 16;       // value st_ZoomStepRange: 4 x i32 (stock rp.ZoomStepRange)
+    private static final int ZOOM_STEP_SIZE = 8;              // value st_ZoomStep: 2 x i32 (stock rp.ZoomStep)
+    /** Sanity bounds of a digital zoom step (the stock dial has tens of steps). */
+    public static final int ZOOM_STEP_MIN = -200;             // value
+    public static final int ZOOM_STEP_MAX = 200;              // value
+    /** 141 translationKst directions (stock ZoomDisplacementWind.onKey: DPAD up 1, down 2, left 3, right 4). */
+    public static final int SHIFT_UP = 1;                     // value
+    public static final int SHIFT_DOWN = 2;                   // value
+    public static final int SHIFT_LEFT = 3;                   // value
+    public static final int SHIFT_RIGHT = 4;                  // value
 
     /** HwBinder.getService(IGmpf, "default", retry=false) + linkToDeath (the Hal facade's own instance). Never throws. */
     public boolean connect(IHwBinder.DeathRecipient death, long cookie) {
@@ -498,6 +517,67 @@ public final class Play6Gmpf extends HidlCaller {
      * on the user's own switch action; the vendor's automatic eco (IGmpf2 48 setAutoEcoMode) stays banned.
      */
     public void setEcoState(boolean on) throws RemoteException { callBool(SET_ECO_STATE, on); }
+
+    // ------------------------------------------------- digital zoom and shift (P3 item 21)
+    // Stock Play 6 (non-GMPF2, research B 4.1 zoom_and_displacement): ZoomDisplacementWind sends IGmpf2 125(1)
+    // and 573(2,false) on open, 121 zoomStart(0), reads 117 / 116 (JNI getCurrentZoomStep(ZoomStep) is the HAL
+    // getCurrentZoomStep2), a size step is 118 with the neighbour of the 116 digital read (KeyStoneManager
+    // setScreenResolutions: 4 = +1 smaller, 0 = -1 bigger), a shift step is 141(dir, true) then 141(dir, false)
+    // when the check answered 0; on close 120 zoomFinish(0), 158(0) (never here: owner decision O4), 125(0),
+    // 573(2,true). Struct layouts as the Z9X client and the stock Parcelables; UNVERIFIED on the Play 6:
+    // readBuffer fails on any other size (our call only), the caller validates the values.
+    // Caller: panel/Play6ZoomShiftPanel (the size and shift card) and panel/Play6Snapshot (parse probe only).
+
+    /** 121 zoomStart(0) -> i32: opens the zoom session (stock initZoom). */
+    public int zoomSessionStart() throws RemoteException { return callI32RetI32(ZOOM_START, ZOOM_RESERVED); }
+
+    /** 120 zoomFinish(0) -> i32: closes the session; always after 121, also on errors (stock hideKstWind). */
+    public int zoomSessionFinish() throws RemoteException { return callI32RetI32(ZOOM_FINISH, ZOOM_RESERVED); }
+
+    /**
+     * 117 getZoomStepRange() -> {ret, opticalMin, opticalMax, digitalMin, digitalMax}: reply Status, i32,
+     * st_ZoomStepRange (16 bytes: zoomInOpticalMinNum, zoomOutOpticalMaxNum, zoomInDigtalMinNum,
+     * zoomOutDigtalMaxNum, the order of stock rp.ZoomStepRange). Layout UNVERIFIED on the Play 6.
+     */
+    public int[] getZoomStepRange() throws RemoteException {
+        return call(GET_ZOOM_STEP_RANGE, request(), r -> {
+            int ret = r.readInt32();
+            HwBlob b = r.readBuffer(ZOOM_STEP_RANGE_SIZE);
+            return new int[] {ret, b.getInt32(0), b.getInt32(4), b.getInt32(8), b.getInt32(12)};
+        });
+    }
+
+    /**
+     * 116 getCurrentZoomStep2() -> {ret, optical, digital}: reply Status, i32, st_ZoomStep (8 bytes:
+     * zoomOpticalstep, zoomDigtalstep, stock rp.ZoomStep). Layout UNVERIFIED on the Play 6.
+     */
+    public int[] getZoomStep() throws RemoteException {
+        return call(GET_CURRENT_ZOOM_STEP2, request(), r -> {
+            int ret = r.readInt32();
+            HwBlob b = r.readBuffer(ZOOM_STEP_SIZE);
+            return new int[] {ret, b.getInt32(0), b.getInt32(4)};
+        });
+    }
+
+    /**
+     * 118 setDigitalZoomStep(step) -> i32. Callers send only the neighbour of a fresh 116 digital read inside
+     * the 117 digital range (+1 smaller, -1 bigger, stock setScreenResolutions 4 / 0), inside a 121 session.
+     */
+    public int setDigitalZoomStep(int step) throws RemoteException {
+        return callI32RetI32(SET_DIGITAL_ZOOM_STEP, checkRange("digital zoom step", step, ZOOM_STEP_MIN, ZOOM_STEP_MAX));
+    }
+
+    /**
+     * 141 translationKst(dir, onlyCheck) -> 0 possible / -1 at the edge. As stock: (dir, true) first and
+     * (dir, false) only when that answered 0; the step size is the vendor's. A software move of the picture
+     * inside the panel (no motor). W=i32,bool R=i32 (no HidlCaller helper for it, so the parcel is built here).
+     */
+    public int shiftPicture(int dir, boolean onlyCheck) throws RemoteException {
+        HwParcel q = request();
+        q.writeInt32(checkSet("shift direction", dir, SHIFT_UP, SHIFT_DOWN, SHIFT_LEFT, SHIFT_RIGHT));
+        q.writeBool(onlyCheck);
+        return call(TRANSLATION_KST, q, RET_I32);
+    }
 
     // ------------------------------------------------------------- private helpers
     private void callPidBinder(int code, int pid, IHwBinder cb) throws RemoteException {

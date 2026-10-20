@@ -1,0 +1,357 @@
+package org.z9x.projector.panel;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.drawable.GradientDrawable;
+import android.os.SystemClock;
+import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import org.z9x.projector.Hal;
+import org.z9x.projector.R;
+import org.z9x.projector.Ui;
+import org.z9x.projector.ak.AkOverlay;
+import org.z9x.projector.hal.Play6Gmpf;
+import org.z9x.projector.hal.Play6Gmpf2;
+import org.z9x.projector.ui.Notify;
+import org.z9x.projector.ui.OverlayHost;
+import org.z9x.projector.ui.Panel;
+import org.z9x.projector.ui.Theme;
+
+/**
+ * Play 6 "Zoom and shift" (P3 item 21; stock Settings > Picture correction > zoom_and_displacement, the
+ * ZoomDisplacementWind of the non-GMPF2 platform, research B 4.1): the picture is made smaller and moved inside
+ * the projected area by the keystone engine (digital only: G0058 zoom.ini ZoomControlEn = 0, no zoom motor), so
+ * it can be fitted to the screen frame without moving the projector. Ideas from Z9xProjector
+ * panel/ZoomShiftPanel.java (Lumen OS 1.0.4); the Play 6 calls and numbers are the stock Play 6 ones.
+ *
+ * A full-screen grid with a white edge shows the picture's edge.
+ *   Size (first): LEFT / DOWN smaller, RIGHT / UP bigger (also VOLUME DOWN / UP, the stock keys).
+ *   OK switches to Shift: the arrows move the picture. BACK: done.
+ * Sequence (Play6AdjustSession for the bracket): IGmpf2 125(1) -> 586 / 573(2,false) -> 121 zoomStart(0) -> 117
+ * and 116 read, the raw replies logged. The digital range is used only when it parses as expected
+ * (min < max, at most 200 steps, the 116 digital step inside it); otherwise the card offers shift only, and
+ * with no usable reply at all it closes with "not available" and the quick panel row is hidden for this process
+ * ({@link #isUnsupported}). A size step: a fresh 116 read, the neighbour (+1 smaller, -1 bigger, stock
+ * setScreenResolutions 4 / 0) inside the range, 118, 116 again; the optical step must not move (there is no
+ * optical zoom on the G0058; a moved value closes the card). A shift step: 141(dir, true), and 141(dir, false)
+ * only when the check answered 0 (stock onKey). Close: 120 zoomFinish(0), 573(2,true), 125(0); no 158 (O4).
+ * Log tag P6ZoomShift.
+ */
+public final class Play6ZoomShiftPanel extends Panel {
+    static final String TAG = "P6ZoomShift";
+
+    private static final long MIN_STEP_GAP_MS = 150;
+    private static final long AUTO_HIDE_MS = 60_000;
+    private static final long ENTER_WATCHDOG_MS = 6_000;
+    private static final int WAIT = 0, READY = 1, FAILED = 2;
+
+    private static volatile Play6ZoomShiftPanel sOpen;
+    /** The 117 / 116 replies did not parse in this process: the row stays hidden (owner rule, no disabled rows). */
+    private static volatile boolean sUnsupported;
+
+    private final Context app;
+    private final Runnable onBackExit;
+    private volatile int state = WAIT;
+    private volatile boolean inFlight, closed, backExit, shiftMode, active;
+    private volatile long lastStepAt;
+    /** Digital range and position (HAL thread writes); optical position at open (must not change). */
+    private volatile int lo, hi, cur, optical;
+    private volatile boolean digital;
+    private TextView mode, value, hint, status;
+
+    private Play6ZoomShiftPanel(Context app, Runnable onBackExit) {
+        this.app = app;
+        this.onBackExit = onBackExit;
+    }
+
+    static boolean isOpen() { return sOpen != null; }
+
+    /** The zoom replies were found unusable in this process (row hidden). */
+    static boolean isUnsupported() { return sUnsupported; }
+
+    static void markUnsupported(String why) {
+        if (!sUnsupported) Log.w(TAG, "zoom and shift hidden for this process: " + why);
+        sUnsupported = true;
+    }
+
+    /** Main thread. {@code onBackExit} (may be null) runs after a BACK exit, e.g. to show the quick panel again. */
+    static void open(Context ctx, Runnable onBackExit) {
+        final Context app = ctx.getApplicationContext();
+        if (!Hal.isReady() || !Hal.hasGmpf2()) { refuse(app, "HAL not ready or IGmpf2 guard closed", R.string.zs_unavailable); return; }
+        if (Hal.isKeystoneRunning() || AkOverlay.isActive()) { refuse(app, "auto keystone running", R.string.kst_reason_ak_busy); return; }
+        if (Play6AdjustSession.anyOpen()) { Log.i(TAG, "another adjustment card is open"); return; }
+        final Play6ZoomShiftPanel p = new Play6ZoomShiftPanel(app, onBackExit);
+        if (!OverlayHost.get(app).show(p)) { refuse(app, "overlay window could not be added", R.string.zs_unavailable); return; }
+        sOpen = p;
+        if (!Hal.run((g, g2) -> p.enter(g, g2))) {
+            p.fail("not queued");
+            return;
+        }
+        Ui.main().postDelayed(() -> {
+            if (sOpen == p && p.state == WAIT && p.isShowing()) p.fail("enter did not run within " + ENTER_WATCHDOG_MS + " ms");
+        }, ENTER_WATCHDOG_MS);
+    }
+
+    private static void refuse(Context app, String log, int res) {
+        Log.w(TAG, "refused: " + log);
+        Notify.show(app, res);
+    }
+
+    // =================================================================== HAL thread
+    private void enter(Play6Gmpf g, Play6Gmpf2 g2) {
+        if (closed) { Log.i(TAG, "enter skipped: the card is already closed"); return; }
+        try {
+            if (!Play6AdjustSession.pushPullOn(app, g2, "zoom enter")) {
+                ui(() -> fail("IGmpf2 125(1) not delivered"));
+                return;
+            }
+            active = true;
+            Play6AdjustSession.pauseRealtime(app, g, "zoom enter");
+            Play6AdjustSession.zoomStart(app, g, "zoom enter");
+            int[] range = g.getZoomStepRange();                      // 117
+            int[] step = g.getZoomStep();                            // 116
+            Log.i(TAG, "117 raw: ret " + range[0] + " optical " + range[1] + ".." + range[2] + " digital " + range[3]
+                    + ".." + range[4] + "; 116 raw: ret " + step[0] + " optical " + step[1] + " digital " + step[2]);
+            optical = step[1];
+            int a = range[3], b = range[4];
+            lo = Math.min(a, b);
+            hi = Math.max(a, b);
+            cur = step[2];
+            digital = hi > lo && hi - lo <= Play6Gmpf.ZOOM_STEP_MAX && lo >= Play6Gmpf.ZOOM_STEP_MIN
+                    && hi <= Play6Gmpf.ZOOM_STEP_MAX && cur >= lo && cur <= hi;
+            if (!digital) {
+                Log.w(TAG, "digital zoom range not usable (" + lo + ".." + hi + ", now " + cur + "): shift only");
+                shiftMode = true;
+            }
+            state = READY;
+            ui(this::render);
+            if (closed) exitNow(g, g2, "closed during enter");
+        } catch (Throwable t) {
+            Log.w(TAG, "enter failed: " + t);
+            if (t instanceof Play6Gmpf.ReplyException) markUnsupported("117 / 116 reply: " + t.getMessage());
+            exitNow(g, g2, "enter failed");
+            ui(() -> fail("enter"));
+        }
+    }
+
+    private void exitNow(Play6Gmpf g, Play6Gmpf2 g2, String who) {
+        if (!active) return;
+        active = false;
+        if (!Play6AdjustSession.close(app, g, g2, who)) Log.w(TAG, who + ": close incomplete, left to the connect hook");
+    }
+
+    private void sizeStep(Play6Gmpf g, boolean smaller) {
+        try {
+            if (state != READY || closed || !digital) return;
+            int[] now = g.getZoomStep();                             // fresh 116
+            if (now[1] != optical) throw new IllegalStateException("optical step moved: " + optical + " -> " + now[1]);
+            int target = smaller ? now[2] + 1 : now[2] - 1;
+            if (target < lo || target > hi) {
+                cur = now[2];
+                ui(() -> { render(); say(smaller ? R.string.zoom_limit_small : R.string.zoom_limit_big); });
+                return;
+            }
+            int r = g.setDigitalZoomStep(target);                    // 118
+            int[] after = g.getZoomStep();                           // 116 read-back
+            cur = after[2];
+            Log.i(TAG, "118(" + target + ") -> " + r + ", now digital " + after[2] + " optical " + after[1]);
+            if (after[1] != optical) throw new IllegalStateException("optical step moved: " + optical + " -> " + after[1]);
+            ui(this::render);
+        } catch (Throwable t) {
+            Log.w(TAG, "size step failed: " + t);
+            ui(() -> fail("size step"));
+        } finally {
+            lastStepAt = SystemClock.uptimeMillis();
+            inFlight = false;
+        }
+    }
+
+    private void shiftStep(Play6Gmpf g, int dir) {
+        try {
+            if (state != READY || closed) return;
+            int check = g.shiftPicture(dir, true);                   // 141(dir, true)
+            int r = check == 0 ? g.shiftPicture(dir, false) : check; // 141(dir, false)
+            Log.i(TAG, "141(" + dir + ") check " + check + " -> " + r);
+            ui(() -> { if (check != 0) say(R.string.zs_edge); else if (status != null) status.setText(""); });
+        } catch (Throwable t) {
+            Log.w(TAG, "shift step failed: " + t);
+            ui(() -> say(R.string.zs_refused));
+        } finally {
+            lastStepAt = SystemClock.uptimeMillis();
+            inFlight = false;
+        }
+    }
+
+    // =================================================================== keys and window (main thread)
+    @Override
+    protected long autoHideMs() { return AUTO_HIDE_MS; }
+
+    @Override
+    protected boolean onKeyEvent(KeyEvent ev) {
+        int code = ev.getKeyCode();
+        if (code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER) {
+            if (ev.getAction() == KeyEvent.ACTION_UP && state == READY && digital) {
+                shiftMode = !shiftMode;
+                render();
+            }
+            return true;
+        }
+        boolean vol = code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN;
+        boolean up = code == KeyEvent.KEYCODE_DPAD_UP, down = code == KeyEvent.KEYCODE_DPAD_DOWN;
+        boolean left = code == KeyEvent.KEYCODE_DPAD_LEFT, right = code == KeyEvent.KEYCODE_DPAD_RIGHT;
+        if (!up && !down && !left && !right && !vol) return false;
+        if (ev.getAction() != KeyEvent.ACTION_DOWN || state != READY || inFlight
+                || SystemClock.uptimeMillis() - lastStepAt < MIN_STEP_GAP_MS) return true;
+        boolean queued;
+        if (vol || !shiftMode) {
+            if (!digital) return true;
+            final boolean smaller = left || down || code == KeyEvent.KEYCODE_VOLUME_DOWN;
+            inFlight = true;
+            queued = Hal.run((g, g2) -> sizeStep(g, smaller));
+        } else {
+            final int d = up ? Play6Gmpf.SHIFT_UP : down ? Play6Gmpf.SHIFT_DOWN
+                    : left ? Play6Gmpf.SHIFT_LEFT : Play6Gmpf.SHIFT_RIGHT;
+            inFlight = true;
+            queued = Hal.run((g, g2) -> shiftStep(g, d));
+        }
+        if (!queued) inFlight = false;
+        return true;
+    }
+
+    @Override
+    protected boolean onBack() {
+        backExit = true;
+        return false;
+    }
+
+    @Override
+    protected void onDismissed() {
+        closed = true;
+        if (sOpen == this) sOpen = null;
+        if (!Hal.run((g, g2) -> exitNow(g, g2, "zoom close"))) Log.w(TAG, "close not queued: left to the connect hook");
+        if (backExit && onBackExit != null) Ui.main().post(onBackExit);
+    }
+
+    private void fail(String why) {
+        Log.w(TAG, "unavailable: " + why);
+        state = FAILED;
+        Notify.show(app, R.string.zs_unavailable);
+        dismiss();
+    }
+
+    @Override
+    protected WindowManager.LayoutParams onCreateLayoutParams(Context c) {
+        return EdgeGrid.fullscreen(c, TAG);
+    }
+
+    @Override
+    protected View onCreateView(Context c) {
+        FrameLayout root = new FrameLayout(c);
+        root.addView(new EdgeGrid(c), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        LinearLayout card = EdgeGrid.card(c);
+        card.addView(EdgeGrid.text(c, c.getString(R.string.zs_title), 40, Theme.TEXT));
+        mode = EdgeGrid.text(c, "", 34, Theme.TEXT);
+        card.addView(mode);
+        value = EdgeGrid.text(c, c.getString(R.string.zoom_wait), 52, Theme.TEXT);
+        card.addView(value);
+        hint = EdgeGrid.text(c, "", 28, Theme.TEXT_DIM);
+        card.addView(hint);
+        status = EdgeGrid.text(c, "", 28, Theme.TEXT_DIM);
+        card.addView(status);
+        root.addView(card, new FrameLayout.LayoutParams(Theme.px(c, 900), ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER));
+        return root;
+    }
+
+    /** Size N of M: M = the full picture, 1 = the smallest (the digital step grows as the picture shrinks). */
+    private void render() {
+        if (value == null || state != READY) return;
+        mode.setText(app.getString(shiftMode ? R.string.zs_mode_shift : R.string.zs_mode_size));
+        value.setText(shiftMode ? "" : app.getString(R.string.zoom_position, hi - cur + 1, hi - lo + 1));
+        value.setVisibility(shiftMode ? View.GONE : View.VISIBLE);
+        hint.setText(app.getString(shiftMode ? (digital ? R.string.zs_hint_shift : R.string.zs_hint_shift_only)
+                : R.string.zs_hint_size));
+        status.setText("");
+    }
+
+    private void say(int res) {
+        if (status != null) status.setText(app.getString(res));
+    }
+
+    private static void ui(Runnable r) { Ui.main().post(r); }
+
+    /** Grey grid with a white line on the outermost pixels (the picture edge), and the shared card pieces. */
+    static final class EdgeGrid extends View {
+        private static final int BG = 0xFF8A8A8A, LINE = 0xFFE6E6E6;
+        private final Paint line = new Paint(), edge = new Paint();
+
+        EdgeGrid(Context c) {
+            super(c);
+            line.setColor(LINE);
+            edge.setColor(0xFFFFFFFF);
+        }
+
+        private float px(float design) { return Math.max(1f, Math.round(Theme.pxf(getContext(), design))); }
+
+        @Override
+        protected void onDraw(Canvas c) {
+            float w = getWidth(), h = getHeight(), cell = px(120), t = px(2), e = px(6);
+            c.drawColor(BG);
+            for (float x = cell; x < w - 1; x += cell) c.drawRect(x - t / 2, 0, x + t / 2, h, line);
+            for (float y = cell; y < h - 1; y += cell) c.drawRect(0, y - t / 2, w, y + t / 2, line);
+            c.drawRect(0, 0, w, e, edge);
+            c.drawRect(0, h - e, w, h, edge);
+            c.drawRect(0, 0, e, h, edge);
+            c.drawRect(w - e, 0, w, h, edge);
+        }
+
+        static WindowManager.LayoutParams fullscreen(Context c, String tag) {
+            WindowManager.LayoutParams lp = OverlayHost.fullscreenParams(true);
+            try {
+                android.graphics.Point real = new android.graphics.Point();
+                c.getSystemService(WindowManager.class).getDefaultDisplay().getRealSize(real);
+                if (real.x > 0 && real.y > 0) { lp.width = real.x; lp.height = real.y; }
+            } catch (Throwable t) {
+                Log.w(tag, "real display size: " + t);
+            }
+            lp.x = 0;
+            lp.y = 0;
+            lp.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+            return lp;
+        }
+
+        static LinearLayout card(Context c) {
+            LinearLayout card = new LinearLayout(c);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setGravity(Gravity.CENTER_HORIZONTAL);
+            int pad = Theme.px(c, 36);
+            card.setPadding(pad, pad, pad, pad);
+            GradientDrawable bg = new GradientDrawable();
+            bg.setColor(Theme.PANEL_BG);
+            bg.setCornerRadius(Theme.px(c, 24));
+            card.setBackground(bg);
+            return card;
+        }
+
+        static TextView text(Context c, CharSequence s, float size, int color) {
+            TextView t = new TextView(c);
+            t.setText(s);
+            t.setTextColor(color);
+            t.setTextSize(TypedValue.COMPLEX_UNIT_PX, Theme.pxf(c, size));
+            t.setGravity(Gravity.CENTER);
+            t.setPadding(0, Theme.px(c, 6), 0, Theme.px(c, 6));
+            return t;
+        }
+    }
+}

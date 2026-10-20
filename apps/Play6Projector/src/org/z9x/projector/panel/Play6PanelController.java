@@ -116,6 +116,10 @@ final class Play6PanelController {
     private static final int[] ASPECT_ORDER_NO_ORIGINAL = {Play6Gmpf.ASPECT_AUTO, Play6Gmpf.ASPECT_16_9,
             Play6Gmpf.ASPECT_4_3};
     private static final int PROJ_AUTO = 0, PROJ_TABLE = 1, PROJ_CEILING = 2;
+    /** P3 item 21: the Ambient light page (ambient/AmbientLight) and its tile, shown while IGmpf2 71 reads true. */
+    static final String SECTION_AMBIENT = "ambient";
+    /** P3 item 21: the Bluetooth speaker page (speaker/SpeakerMode), shown while the image supports the A2DP sink role. */
+    static final String SECTION_SPEAKER = "speaker";
 
     private final Context app;
     private final SharedPreferences prefs;
@@ -138,7 +142,7 @@ final class Play6PanelController {
     // section rows (null until their page is built)
     private ToggleRow smartAf, rtKst, powerOnKst, eco, eye;
     private TextRow smartAfDesc, picGameHint, gameHint;
-    private NavRow manualKst;
+    private NavRow manualKst, zoomShift, rotation;
     private SliderRow lamp;
     private final SliderRow[] pq = new SliderRow[4];
     private ChoiceRow pictureMode, memc, soundMode, gameMode, aspect, launcherRow;
@@ -146,6 +150,7 @@ final class Play6PanelController {
     /** The aspect row's options right now (ASPECT_ORDER or ASPECT_ORDER_NO_ORIGINAL). */
     private int[] aspectOrder = ASPECT_ORDER_NO_ORIGINAL;
     private CheckRow pAuto, pTable, pCeiling;
+    private ChoiceRow ambColor, ambEffect, ambLevel, spkLight;
     private ToggleRow pRear;
 
     Play6PanelController(Context app) {
@@ -291,6 +296,8 @@ final class Play6PanelController {
             case QuickPanel.SECTION_GAME: p = buildGamePage(); break;
             case QuickPanel.SECTION_EYE: p = Device.hasEyeProtection() ? buildEyePage() : null; break;
             case QuickPanel.SECTION_GENERAL: p = buildSettingsPage(); break;
+            case SECTION_AMBIENT: p = buildAmbientPage(); break;
+            case SECTION_SPEAKER: p = org.z9x.projector.speaker.SpeakerMode.supported() ? buildSpeakerPage() : null; break;
             default: p = null; break;
         }
         if (p == null) return null;
@@ -328,6 +335,8 @@ final class Play6PanelController {
             case QuickPanel.SECTION_PROJECTION_MODE: return Play6Snapshot.PROJECTION;
             case QuickPanel.SECTION_GAME: return Play6Snapshot.GAME;
             case QuickPanel.SECTION_EYE: return Play6Snapshot.EYE;
+            case SECTION_AMBIENT: return Play6Snapshot.AMBIENT;
+            case SECTION_SPEAKER: return Play6Snapshot.AMBIENT;          // the Light row offers the ambient light
             default: return 0;
         }
     }
@@ -476,6 +485,10 @@ final class Play6PanelController {
         addTile(QuickPanel.SECTION_INPUT, R.drawable.ic_tile_input, R.string.panel_tile_input, false);
         addTile(QuickPanel.SECTION_PROJECTION_MODE, R.drawable.ic_tile_projection, R.string.panel_tile_projection, false);
         addTile(QuickPanel.SECTION_GAME, R.drawable.ic_tile_game, R.string.panel_tile_game, false);
+        addTile(SECTION_SPEAKER, R.drawable.ic_tile_speaker, R.string.p6_spk_title, false);
+        grid.tile(SECTION_SPEAKER).setVisibility(View.GONE);          // only with the image's A2DP sink role (apply)
+        addTile(SECTION_AMBIENT, R.drawable.ic_tile_ambient, R.string.p6_amb_title, false);
+        grid.tile(SECTION_AMBIENT).setVisibility(View.GONE);          // until IGmpf2 71 reads true (apply)
         if (Device.hasEyeProtection()) {
             addTile(QuickPanel.SECTION_EYE, R.drawable.ic_tile_eye, R.string.panel_tile_eye, false);
         }
@@ -506,6 +519,13 @@ final class Play6PanelController {
         // ManualKeystonePanel checks everything on p6-hal and says exactly why it refuses
         manualKst = p.add(new NavRow(app, s(R.string.panel_manual_keystone), safe("manual keystone",
                 () -> ManualKeystonePanel.open(app, () -> QuickPanel.show(app, QuickPanel.SECTION_KEYSTONE)))));
+        // P3 item 21 (stock Picture correction): shown only when their replies parse (Play6Snapshot probes)
+        zoomShift = p.add(new NavRow(app, s(R.string.zs_title), safe("zoom and shift",
+                () -> Play6ZoomShiftPanel.open(app, () -> QuickPanel.show(app, QuickPanel.SECTION_KEYSTONE)))));
+        zoomShift.setVisibility(View.GONE);
+        rotation = p.add(new NavRow(app, s(R.string.rot_title), safe("picture rotation",
+                () -> Play6RotatePanel.open(app, () -> QuickPanel.show(app, QuickPanel.SECTION_KEYSTONE)))));
+        rotation.setVisibility(View.GONE);
         p.add(new HeaderRow(app, s(R.string.panel_image_correction_settings)));
         rtKst = p.add(new ToggleRow(app, s(R.string.panel_rt_keystone), (row, w) -> safe("585", () ->
                 change("585 real-time keystone " + w, Play6Snapshot.KEYSTONE, (g, g2) -> g.setMoveAk(w))).run()));
@@ -843,6 +863,51 @@ final class Play6PanelController {
         return p;
     }
 
+    // ================================================================== ambient light page (P3 item 21)
+    /**
+     * Stock "ambient speaker settings" of the G0058 (SystemUI AmbientLightSettingActivity): light color and effect,
+     * kept in Settings.Global ambient_light_data as stock does; the light itself is ambient/AmbientLight (drawn by
+     * the projector: the stand has no LED of its own). Brightness: the projector brightness while the light shows
+     * (never higher than the current one), for the night light use. No HAL write from this page.
+     */
+    private Page buildAmbientPage() {
+        Page p = newPage(SECTION_AMBIENT, R.string.p6_amb_title);
+        p.add(new NavRow(app, s(R.string.p6_amb_on), () -> closeThen(() -> org.z9x.projector.ambient.AmbientLight.open(app))).setChevron(false));
+        ambColor = p.add(new ChoiceRow(app, s(R.string.p6_amb_color), labels(app, R.string.p6_amb_c_orange,
+                R.string.p6_amb_c_blue, R.string.p6_amb_c_yellow, R.string.p6_amb_c_green, R.string.p6_amb_c_pink,
+                R.string.p6_amb_c_purple, R.string.p6_amb_c_colorful),
+                (row, i) -> safe("ambient color", () -> org.z9x.projector.ambient.AmbientLight.setColor(app, i)).run()));
+        ambEffect = p.add(new ChoiceRow(app, s(R.string.p6_amb_effect), labels(app, R.string.p6_amb_e_standard,
+                R.string.p6_amb_e_always, R.string.p6_amb_e_rhythm),
+                (row, i) -> safe("ambient effect", () -> org.z9x.projector.ambient.AmbientLight.setMode(app, i)).run()));
+        CharSequence[] levels = new CharSequence[11];
+        levels[0] = s(R.string.p6_amb_level_same);
+        for (int i = 1; i <= 10; i++) levels[i] = Integer.toString(i);
+        ambLevel = p.add(new ChoiceRow(app, s(R.string.p6_amb_level), levels,
+                (row, i) -> safe("ambient level", () -> org.z9x.projector.ambient.AmbientLight.setLevel(app, i)).run()));
+        ambLevel.setCommitDelay(CHOICE_COMMIT_MS);
+        p.add(new TextRow(app, s(R.string.p6_amb_desc)));
+        return p;
+    }
+
+    // ================================================================== Bluetooth speaker page (P3 item 21)
+    /**
+     * The speaker mode (speaker/SpeakerMode): the picture off, the projector an A2DP sink for a phone. The Light row
+     * (Off / Ambient light) exists only while the ambient light is offered (IGmpf2 71); otherwise the light is off.
+     */
+    private Page buildSpeakerPage() {
+        Page p = newPage(SECTION_SPEAKER, R.string.p6_spk_title);
+        p.add(new NavRow(app, s(R.string.p6_spk_on), () -> {
+            if (setupDone("speaker mode")) closeThen(() -> org.z9x.projector.speaker.SpeakerMode.open(app));
+        }).setChevron(false));
+        spkLight = p.add(new ChoiceRow(app, s(R.string.p6_spk_light), labels(app, R.string.panel_off,
+                R.string.p6_spk_light_ambient),
+                (row, i) -> safe("speaker light", () -> org.z9x.projector.speaker.SpeakerMode.setLight(app, i)).run()));
+        spkLight.setVisibility(View.GONE);                               // with the ambient light only (apply)
+        p.add(new TextRow(app, s(R.string.p6_spk_desc)));
+        return p;
+    }
+
     // ================================================================== all settings page
     private Page buildSettingsPage() {
         Page p = newPage(QuickPanel.SECTION_GENERAL, R.string.panel_all_settings);
@@ -935,6 +1000,8 @@ final class Play6PanelController {
         visible(smartAfDesc, g2);
         setToggle(smartAf, ok ? sn.smartAf : null, true);
         visible(manualKst, g2);
+        visible(zoomShift, g2 && Boolean.TRUE.equals(sn.zoomOk) && !Play6ZoomShiftPanel.isUnsupported());
+        visible(rotation, g2 && Boolean.TRUE.equals(sn.rotationOk) && !Play6RotatePanel.isUnsupported());
         setToggle(rtKst, ok ? sn.moveAk : null, true);
         setToggle(powerOnKst, ok ? sn.powerOnAk : null, true);
 
@@ -1009,6 +1076,29 @@ final class Play6PanelController {
             }
             int as = ok ? aspectIndex(order, sn.aspect) : -1;
             setChoice(aspect, as, as >= 0, hdmi);
+        }
+
+        // ---- ambient light (P3 item 21): tile and page only while IGmpf2 71 reads true (stock gate)
+        boolean amb = g2 && Boolean.TRUE.equals(sn.ambientOk);
+        Tile ambTile = grid.tile(SECTION_AMBIENT);
+        if (ambTile != null && (ambTile.getVisibility() == View.VISIBLE) != amb) {
+            ambTile.setVisibility(amb ? View.VISIBLE : View.GONE);
+            grid.requestLayout();
+        }
+        Tile spkTile = grid.tile(SECTION_SPEAKER);
+        boolean spk = ok && org.z9x.projector.speaker.SpeakerMode.supported();
+        if (spkTile != null && (spkTile.getVisibility() == View.VISIBLE) != spk) {
+            spkTile.setVisibility(spk ? View.VISIBLE : View.GONE);
+            grid.requestLayout();
+        }
+        if (spkLight != null) {
+            visible(spkLight, amb);
+            spkLight.setSelected(amb ? org.z9x.projector.speaker.SpeakerMode.light(app) : 0);
+        }
+        if (ambColor != null) {
+            ambColor.setSelected(org.z9x.projector.ambient.AmbientLight.colorIndex(app));
+            ambEffect.setSelected(org.z9x.projector.ambient.AmbientLight.modeIndex(app));
+            ambLevel.setSelected(org.z9x.projector.ambient.AmbientLight.level(app));
         }
 
         // ---- eye protection: only built with the NUI reader (Device.hasEyeProtection)

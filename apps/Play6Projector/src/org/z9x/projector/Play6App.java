@@ -167,6 +167,12 @@ public final class Play6App {
         step("Probe", () -> Probe.install(app));
         // connected hook (no HAL call here): settles what a manual keystone session still owes the vendor
         step("ManualKeystonePanel.install", () -> ManualKeystonePanel.install(app));
+        // connected hook (no HAL call here): settles what a zoom / rotation card session still owes (P3 item 21)
+        step("Play6AdjustSession.install", () -> org.z9x.projector.panel.Play6AdjustSession.install(app));
+        // connected hook (no HAL call here): a lowered ambient-light brightness left by a dead process (P3 item 21)
+        step("AmbientLight.install", () -> org.z9x.projector.ambient.AmbientLight.install(app));
+        // connected hook (no HAL call here) + a speaker Bluetooth role left set goes back to normal (P3 item 21)
+        step("SpeakerMode.install", () -> org.z9x.projector.speaker.SpeakerMode.install(app));
         // connected hook, power event hook, screen hooks (no HAL call here): the battery, plan 3.2
         step("Battery.install", () -> Battery.install(app));
         // Lumen 1.0.5: Bluetooth headphones get the media route and a non-zero vendor A2DP volume (no HAL call)

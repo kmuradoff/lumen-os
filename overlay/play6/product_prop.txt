@@ -80,6 +80,14 @@ ro.lumen.home.cec_names=1
 #exp4 bluetooth.profile.pan.panu.enabled=false
 #exp4 bluetooth.profile.hid.device.enabled=false
 #exp4 bluetooth.profile.mcp.server.enabled=false
+# EXP-6 (P3 item 21, test builds only, never part of --exp alone: --exp=6 names it): both A2DP roles at once, as
+# stock Android 11 ran them (A2DP source for headphones and A2DP sink for the speaker mode together, no Bluetooth
+# restart when the speaker mode starts or ends). Android 14 runs both only with the src_sink_coexist switch of its
+# native stack (libbluetooth_jni.so), a path not tested on this device: test it after the role switch works
+# (docs/play6/TASKS.md, test S step 11). With it the projector app sees both roles and switches nothing (speaker/BtRole).
+#exp6 bluetooth.profile.a2dp.sink.enabled=true
+#exp6 bluetooth.profile.avrcp.controller.enabled=true
+#exp6 bluetooth.a2dp.src_sink_coexist.enabled=true
 # EXP-5 (D item 6, test builds only until D 8 shows THRASHING or LOW_SWAP kills of wanted apps): lmkd at
 # the Z9X values (overlay/v1/product_prop_v1.txt) = the lmkd defaults for low-RAM devices. Without it the
 # vendor's 15 / 20 stay. All 5 kills on t10 were LOW_MEM with swap 100 % free, which neither line touches.

@@ -62,10 +62,13 @@ public final class Play6Gmpf2 extends HidlCaller {
     private static final int GET_COPOWER_DEVICE_TYPE = 52;           // tsv:getCopowerDeviceType Z9X 74 W= R=i32
     private static final int GET_POWER_ON_AF_USE_DISTANCE = 63;      // tsv:getPowerOnAFUseDistance Z9X 90 W= R=bool
     private static final int SET_POWER_ON_AF_USE_DISTANCE = 64;      // tsv:setPowerOnAFUseDistance Z9X 91 W=bool R=bool
+    private static final int GET_IS_AUTO_ATMOSPHERE_LIGHT = 71;      // tsv:getIsAutoAtmoSphereLight Z9X 140 W= R=bool
     private static final int GET_CONVEX_LENS_TYPE = 75;              // tsv:getConvexLensType Z9X 144 W= R=i32
     private static final int GET_STAND_VERTICAL_ANGLE = 81;          // tsv:getStandVerticalAngle Z9X 150 W= R=float
     private static final int IS_CONVEX_LENS_IN = 84;                 // tsv:isConvexLensIn Z9X 153 W= R=bool
     private static final int SET_PUSH_PULL_SCREEN_STATE = 125;       // tsv:setPushPullScreenState Z9X 194 W=i32 R=bool
+    private static final int GET_SCREEN_ROTATION_INFO = 130;         // tsv:getScreenRotationInfo Z9X 199 W= R=cb(bool, 16 bytes)
+    private static final int SET_SCREEN_ROTATION = 138;              // tsv:setScreenRotation Z9X 207 W=i32,float R=bool
     private static final int GET_ALLM_STATUS = 212;                  // tsv:getAllmStatus Z9X 310 W=i32 R=bool
     private static final int GET_ALLM_ENABLE_STATE = 213;            // tsv:getAllmEnableState Z9X 311 W= R=bool
     private static final int GET_TV_GAMMA_LEVEL = 228;               // tsv:getTvGammaLevel Z9X 326 W=i32 R=i32
@@ -75,6 +78,9 @@ public final class Play6Gmpf2 extends HidlCaller {
     private static final int HDMI_SOURCE_1 = 1;               // value EN_INPUT_SOURCE_HDMI1 (the one Play 6 port)
     private static final int GAME_STATE_ON = 0;               // value setGameModeState: 0 on
     private static final int GAME_STATE_OFF = 1;              // value setGameModeState: 1 off
+    private static final int ROTATE_CLOCKWISE = 5;            // value setScreenRotation: stock RotateWind RIGHT
+    private static final int ROTATE_COUNTER_CLOCKWISE = 6;    // value setScreenRotation: stock RotateWind LEFT
+    private static final int ROTATION_INFO_SIZE = 16;         // value ScreenRotationInfo_st: 4 x float
 
     /** Guard state of the current connection. */
     private enum Identity { UNKNOWN, OPEN, CLOSED }
@@ -177,10 +183,13 @@ public final class Play6Gmpf2 extends HidlCaller {
             case GET_COPOWER_DEVICE_TYPE: return 51;
             case GET_POWER_ON_AF_USE_DISTANCE: return 62;
             case SET_POWER_ON_AF_USE_DISTANCE: return 63;
+            case GET_IS_AUTO_ATMOSPHERE_LIGHT: return 70;
             case GET_CONVEX_LENS_TYPE: return 74;
             case GET_STAND_VERTICAL_ANGLE: return 80;
             case IS_CONVEX_LENS_IN: return 83;
             case SET_PUSH_PULL_SCREEN_STATE: return 124;
+            case GET_SCREEN_ROTATION_INFO: return 129;
+            case SET_SCREEN_ROTATION: return 137;
             case GET_ALLM_STATUS: return 207;
             case GET_ALLM_ENABLE_STATE: return 208;
             case GET_TV_GAMMA_LEVEL: return 223;
@@ -297,6 +306,13 @@ public final class Play6Gmpf2 extends HidlCaller {
         return call(c(GET_STAND_VERTICAL_ANGLE), request(), r -> r.readFloat());
     }
 
+    /**
+     * 71 getIsAutoAtmoSphereLight(): the stock gate of the ambient (atmosphere) light settings entry (newsettings
+     * LightFactory: the "lighting_ambient_settings" cell exists only while it reads true). Read only; the light
+     * itself is drawn by the projector (ambient/AmbientLight), no atmosphere setter is ever sent (TASKS.md).
+     */
+    public boolean getAmbientLightSupported() throws RemoteException { need(); return callRetBool(c(GET_IS_AUTO_ATMOSPHERE_LIGHT)); }
+
     /** 84 isConvexLensIn(): starry sky lens attached. */
     public boolean isConvexLensIn() throws RemoteException { need(); return callRetBool(c(IS_CONVEX_LENS_IN)); }
 
@@ -342,6 +358,48 @@ public final class Play6Gmpf2 extends HidlCaller {
     public boolean setPushPullScreen(boolean on) throws RemoteException {
         need();
         return callI32RetBool(c(SET_PUSH_PULL_SCREEN_STATE), on ? 1 : 0);
+    }
+
+    // ----------------------------------------------------------- picture rotation (P3 item 21)
+    // Stock Play 6 RotateWind (picture_screen_rotation): 125(1), 573(2,false) while real-time keystone is on,
+    // getScreenRotationInfo -> {minAng, maxAng, curAng, startAng} (stock rp.ScreenRotationInfo), per key
+    // setScreenRotation(5 clockwise | 6 counter-clockwise, step 0.5 = user_manu_screen_rotation_step default,
+    // G0058 sets none) inside [min, max], the menu "reset" sends the session's sum back the other way; on
+    // close 158(0) (never here: O4), 125(0), 573(2,true). Caller: panel/Play6RotatePanel, panel/Play6Snapshot
+    // (parse probe only).
+
+    /** Largest relative rotation one 138 may carry (degrees; a session undo is at most max - min). */
+    public static float checkRotationStep(String what, float degrees) {
+        if (!(degrees > 0f && degrees <= 45f)) throw new IllegalArgumentException(what + " " + degrees + " not in (0, 45]");
+        return degrees;
+    }
+
+    /**
+     * 130 getScreenRotationInfo() -> {minAng, maxAng, curAng, startAng} in degrees. Wire as Z9X 199: Status,
+     * bool, readBuffer(16) (4 floats). Fails (ReplyException with the raw values) unless the reply is plausible:
+     * bool true, -45 <= min < 0 < max <= 45, min <= cur <= max. Nothing rotates on a misread.
+     */
+    public float[] getScreenRotation() throws RemoteException {
+        need();
+        return call(c(GET_SCREEN_ROTATION_INFO), request(), r -> {
+            boolean ok = r.readBool();
+            HwBlob b = r.readBuffer(ROTATION_INFO_SIZE);
+            float min = b.getFloat(0), max = b.getFloat(4), cur = b.getFloat(8), start = b.getFloat(12);
+            if (!ok || !(min >= -45f && min < 0f && max > 0f && max <= 45f && cur >= min - 0.01f && cur <= max + 0.01f)) {
+                throw new IllegalStateException("130 raw ok=" + ok + " min=" + min + " max=" + max + " cur=" + cur
+                        + " start=" + start);
+            }
+            return new float[] {min, max, cur, start};
+        });
+    }
+
+    /** 138 setScreenRotation(5 clockwise | 6 counter-clockwise, degrees > 0, relative), as stock RotateWind. */
+    public boolean rotateScreen(boolean clockwise, float degrees) throws RemoteException {
+        need();
+        HwParcel q = request();
+        q.writeInt32(clockwise ? ROTATE_CLOCKWISE : ROTATE_COUNTER_CLOCKWISE);
+        q.writeFloat(checkRotationStep("rotation step", degrees));
+        return call(c(SET_SCREEN_ROTATION), q, RET_BOOL);
     }
 
     // ================================================================== PARKED (not compiled)
