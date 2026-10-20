@@ -61,7 +61,7 @@ public final class SettingsActivity extends Activity {
     private final Map<Toggle, TextView> toggleValues = new EnumMap<>(Toggle.class);
     private final Map<Toggle, View> toggleRows = new EnumMap<>(Toggle.class);
     private final Map<Toggle, Boolean> toggleState = new EnumMap<>(Toggle.class);
-    private TextView slot3Value, slot4Value, launcherValue;
+    private TextView slot3Value, slot4Value, launcherValue, bootSourceValue, cecWakeValue;
     private LinearLayout diagBox;
     private int diagGen;
 
@@ -133,6 +133,13 @@ public final class SettingsActivity extends Activity {
         toggle(Toggle.SMART_AF, R.string.panel_smart_af);
         // stock parity 2026-10-21: General > Advanced > Power on / off > boot music (IGmpf 420 / 419)
         toggle(Toggle.BOOT_MUSIC, R.string.tg_power_on_music);
+        // stock parity 2026-10-21: Signal > Boot source (source/BootSource)
+        bootSourceValue = valueRow(R.string.p6_boot_source, v -> pickBootSource());
+        refreshBootSource();
+        // stock parity 2026-10-21: Signal > HDMI device controls the projector (cec/CecPolicy); shown once read
+        cecWakeValue = valueRow(R.string.p6_cec_wake, v -> toggleCecWake());
+        ((View) cecWakeValue.getParent()).setVisibility(View.GONE);
+        refreshCecWake();
 
         // stock parity 2026-10-21: General > About > Device info > temperature (IGmpf 438), read only
         tempRow = valueRow(R.string.p6_temperature, v -> refreshTemperature());
@@ -335,6 +342,47 @@ public final class SettingsActivity extends Activity {
         boolean classic = org.z9x.projector.home.LauncherSwitcher.MODE_CLASSIC.equals(
                 org.z9x.projector.home.LauncherSwitcher.currentMode(this));
         launcherValue.setText(classic ? R.string.launcher_classic : R.string.launcher_lumen);
+    }
+
+    private void refreshCecWake() {
+        new Thread(() -> {
+            final Boolean on = org.z9x.projector.cec.CecPolicy.wakeOn(this);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed() || cecWakeValue == null) return;
+                ((View) cecWakeValue.getParent()).setVisibility(on == null ? View.GONE : View.VISIBLE);
+                if (on != null) cecWakeValue.setText(on ? R.string.panel_on : R.string.panel_off);
+            });
+        }, "p6-cec-read").start();
+    }
+
+    private void toggleCecWake() {
+        cecWakeValue.setText("…");
+        new Thread(() -> {
+            Boolean on = org.z9x.projector.cec.CecPolicy.wakeOn(this);
+            if (on != null && !org.z9x.projector.cec.CecPolicy.setWake(this, !on)) runOnUiThread(() -> Ui.toast(this, R.string.toast_failed));
+            runOnUiThread(this::refreshCecWake);
+        }, "p6-cec-write").start();
+    }
+
+    private void refreshBootSource() {
+        if (bootSourceValue != null) bootSourceValue.setText(bootSourceItems()[org.z9x.projector.source.BootSource.get(this)]);
+    }
+
+    private CharSequence[] bootSourceItems() {
+        return new CharSequence[] {getString(R.string.source_home), getString(R.string.panel_src_hdmi)};
+    }
+
+    private void pickBootSource() {
+        int cur = org.z9x.projector.source.BootSource.get(this);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.p6_boot_source)
+                .setSingleChoiceItems(bootSourceItems(), cur, (d, which) -> {
+                    d.dismiss();
+                    org.z9x.projector.source.BootSource.set(this, which);
+                    refreshBootSource();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     private void pickLauncher() {

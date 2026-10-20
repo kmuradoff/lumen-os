@@ -105,6 +105,12 @@
     <string name="p6_style">Стиль зображення</string>
     <string name="p6_style_movie">Кіно D65</string>
     <string name="p6_pic_reset_msg">Усі налаштування режиму «Користувацький» повернуться до типових. Продовжити?</string>
+    <string name="p6_light_red">Червоний</string>
+    <string name="p6_light_green">Зелений</string>
+    <string name="p6_light_blue">Синій</string>
+    <string name="p6_light_reset">Повернути стандартну яскравість</string>
+    <string name="p6_boot_source">Відкривати під час увімкнення</string>
+    <string name="p6_cec_wake">Вмикатися від HDMI-пристрою</string>
     <string name="hdmi_range">Колірний діапазон</string>
     <string name="hdmi_range_full">Повний</string>
     <string name="hdmi_range_limited">Обмежений</string>

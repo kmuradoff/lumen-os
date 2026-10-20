@@ -383,6 +383,45 @@ public final class SourceOverlay extends Panel {
         }
     }
 
+    /**
+     * "Open at power-on" (BootSource): opens HDMI {@code port} in org.z9x.tvinput's viewer, the same intent as
+     * picking it here, without showing the overlay. False when that port has no input. Main thread. As the Z9X
+     * 1.0.4 SourceOverlay.openPort.
+     */
+    public static boolean openPort(Context c, int port, String reason) {
+        TvInputManager tim = tvInputManager(c);
+        if (tim == null) return false;
+        String inputId = null;
+        try {
+            List<TvInputInfo> all = tim.getTvInputList();
+            if (all != null) {
+                for (TvInputInfo i : all) {
+                    if (i == null || i.getId() == null || !i.getId().startsWith(INPUT_ID_PREFIX)) continue;
+                    if (i.getType() != TvInputInfo.TYPE_HDMI || !i.isPassthroughInput() || i.getParentId() != null) continue;
+                    if (portOf(i.getId()) == port) inputId = i.getId();
+                }
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "openPort " + port + ": " + t);
+        }
+        if (inputId == null) {
+            Log.i(TAG, "openPort " + port + ": no such input");
+            return false;
+        }
+        Intent i = new Intent(Intent.ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput(inputId));
+        i.setComponent(new ComponentName(TVINPUT_PKG, TVINPUT_VIEWER));
+        i.putExtra(EXTRA_REASON, reason);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            c.startActivity(i);
+            Log.i(TAG, "openPort " + port + " (" + reason + ") -> " + inputId);
+            return true;
+        } catch (Throwable t) {
+            Log.w(TAG, "openPort " + port + ": " + t);
+            return false;
+        }
+    }
+
     private void goHome() {
         Context c = ctx;
         Log.i(TAG, "pick Home");

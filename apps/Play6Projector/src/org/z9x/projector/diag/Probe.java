@@ -81,6 +81,8 @@ public final class Probe {
             return p + " raw " + p.raw();
         });
         line("IGmpf 402 getHdmiAutoSwitch", () -> g.getHdmiAutoSwitch());
+        line("IGmpf 632 getEARCEnableState", () -> g.getEarc());
+        line("IGmpf 179 getDlpLumensComponent_RGB_Level", () -> java.util.Arrays.toString(g.getRgbLevels()));
         Log.i(TAG, "---- IGmpf2 (read only, behind the identity guard)");
         line("IGmpf2 33 getGameModeProp", () -> {
             int[] v = g2.getGameModeProp();

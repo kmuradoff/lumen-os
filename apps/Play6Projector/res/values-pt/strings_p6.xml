@@ -105,6 +105,12 @@
     <string name="p6_style">Estilo de imagem</string>
     <string name="p6_style_movie">Cinema D65</string>
     <string name="p6_pic_reset_msg">Todas as configurações do modo de imagem Personalizado voltam ao padrão. Continuar?</string>
+    <string name="p6_light_red">Vermelho</string>
+    <string name="p6_light_green">Verde</string>
+    <string name="p6_light_blue">Azul</string>
+    <string name="p6_light_reset">Repor o brilho predefinido</string>
+    <string name="p6_boot_source">Abrir ao ligar</string>
+    <string name="p6_cec_wake">Ligar com um dispositivo HDMI</string>
     <string name="hdmi_range">Faixa de cores</string>
     <string name="hdmi_range_full">Completa</string>
     <string name="hdmi_range_limited">Limitada</string>

@@ -121,11 +121,15 @@ public final class PowerKey {
             WakeCurtain.onScreenOn();
             // after an STR resume the vendor relights the lamp itself; reveal once 196 says so (unless it
             // stays definitely off: then the curtain's own LAMP_WAIT_MS net reveals)
-            Lamp.awaitOn("screen on", on -> { if (!Boolean.FALSE.equals(on)) WakeCurtain.onLampOn(); });
+            Lamp.awaitOn("screen on", on -> {
+                if (!Boolean.FALSE.equals(on)) WakeCurtain.onLampOn();
+                try { org.z9x.projector.eye.EyeGuard.onLampOn(); } catch (Throwable t) { Log.w(TAG, "eye: " + t); }
+            });
         } catch (Throwable t) {
             Log.w(TAG, "WakeCurtain.onScreenOn: " + t);
         }
         try { SleepTimer.onScreenOn(c); } catch (Throwable t) { Log.w(TAG, "SleepTimer.onScreenOn: " + t); }
+        try { org.z9x.projector.source.BootSource.onPowerOn(c, "screen on"); } catch (Throwable t) { Log.w(TAG, "BootSource: " + t); }
     }
 
     /**
