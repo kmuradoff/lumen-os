@@ -119,6 +119,30 @@ public final class Play6Gmpf extends HidlCaller {
     private static final int SET_BRIGHTNESS = 693;                   // tsv:setBrightness W=i32,i32 R=bool
     private static final int GET_CONTRAST = 694;                     // tsv:getContrast W=i32 R=i32
     private static final int SET_CONTRAST = 695;                     // tsv:setContrast W=i32,i32 R=bool
+    // picture, stock parity (dayao tree, Custom picture mode and all modes; inventory B 4.2)
+    private static final int SET_DLP_LUMENS_MODE = 174;              // tsv:setDlpLumensMode W=u8 R=
+    private static final int GET_DLP_LUMENS_MODE = 175;              // tsv:getDlpLumensMode W= R=u8
+    private static final int GET_HDR_ENABLE = 649;                   // tsv:getHdrEnable W= R=bool
+    private static final int SET_HDR_ENABLE = 650;                   // tsv:setHdrEnable W=bool R=bool
+    private static final int GET_UCD_LEVEL = 651;                    // tsv:getUcdLevel W=i32 R=i32
+    private static final int SET_UCD_LEVEL = 655;                    // tsv:setUcdLevel W=i32,i32 R=bool
+    private static final int RESET_PQ_SETTINGS = 658;                // tsv:resetPqSettings W=i32 R=i32
+    private static final int GET_3DNR = 670;                         // tsv:get3DNR W=i32 R=i32
+    private static final int SET_3DNR = 671;                         // tsv:set3DNR W=i32,i32 R=bool
+    private static final int GET_BLUE_OFFSET = 672;                  // tsv:getColorTempBlueOffset W=i32 R=i32
+    private static final int SET_BLUE_OFFSET = 673;                  // tsv:setColorTempBlueOffset W=i32,i32 R=bool
+    private static final int GET_GREEN_OFFSET = 674;                 // tsv:getColorTempGreenOffset W=i32 R=i32
+    private static final int SET_GREEN_OFFSET = 675;                 // tsv:setColorTempGreenOffset W=i32,i32 R=bool
+    private static final int GET_RED_OFFSET = 676;                   // tsv:getColorTempRedOffset W=i32 R=i32
+    private static final int SET_RED_OFFSET = 677;                   // tsv:setColorTempRedOffset W=i32,i32 R=bool
+    private static final int GET_BLUE_GAIN = 678;                    // tsv:getColorTempBlueGain W=i32 R=i32
+    private static final int SET_BLUE_GAIN = 679;                    // tsv:setColorTempBlueGain W=i32,i32 R=bool
+    private static final int GET_GREEN_GAIN = 680;                   // tsv:getColorTempGreenGain W=i32 R=i32
+    private static final int SET_GREEN_GAIN = 681;                   // tsv:setColorTempGreenGain W=i32,i32 R=bool
+    private static final int GET_RED_GAIN = 682;                     // tsv:getColorTempRedGain W=i32 R=i32
+    private static final int SET_RED_GAIN = 683;                     // tsv:setColorTempRedGain W=i32,i32 R=bool
+    private static final int GET_COLOR_TEMPERATURE = 684;            // tsv:getColorTemperature W=i32 R=i32
+    private static final int SET_COLOR_TEMPERATURE = 685;            // tsv:setColorTemperature W=i32,i32 R=bool
     // input, HDMI, game
     private static final int GET_HDMI_AUTO_SWITCH = 402;             // tsv:getHdmiAutoSwitch W= R=bool
     private static final int GET_GAME_MODE_OPTION = 647;             // tsv:getGameModeOption W= R=i32
@@ -130,6 +154,15 @@ public final class Play6Gmpf extends HidlCaller {
     private static final int SWITCH_INPUT_SOURCE_WITH_CALLING_PID = 698; // tsv:switchInputSourceWithCallingPid W=i32,u32 R=bool
     private static final int GET_SIGNAL_STATUS = 592;                // tsv:getSignalStatus W= R=i32
     private static final int SET_DISPLAY_AREA = 659;                 // tsv:setDisplayArea W=i32,i32,i32,i32 R=bool
+    private static final int GET_HDMI_RANGE = 634;                   // tsv:getHdmiRange W= R=i8
+    private static final int SET_HDMI_RANGE = 635;                   // tsv:setHdmiRange W=i8 R=bool
+    private static final int SET_EDID_VERSION = 660;                 // tsv:setEdidVersion W=i32 R=bool
+    private static final int GET_EDID_VERSION = 661;                 // tsv:getEdidVersion W= R=i32
+    // music player (the ambient speaker's device-closed event, stock XRM MachineStateService) and boot music
+    private static final int CONNECT_MUSIC_PLAYER_MANAGER = 215;     // tsv:connectMusicPlayerManager W=i32,binder R=
+    private static final int SET_MUSIC_PLAYER_LISTENER = 227;        // tsv:setMusicPlayerListener W=i32,binder R=
+    private static final int ENABLE_POWER_ON_MUSIC = 419;            // tsv:enablePowerOnMusic W=bool R=
+    private static final int IS_POWER_ON_MUSIC_ENABLED = 420;        // tsv:isPowerOnMusicEnabled W= R=bool
     // sound
     private static final int SET_SOUND_EFFECT = 61;                  // tsv:setSoundeffect W=u8 R=
     private static final int GET_SOUND_EFFECT = 62;                  // tsv:getSoundeffect W= R=u8
@@ -195,6 +228,16 @@ public final class Play6Gmpf extends HidlCaller {
     private static final int AREA_ORIGIN = 0;                 // value 659 left / top
     private static final int AREA_WIDTH = 1920;               // value 659 width (the Play 6 panel)
     private static final int AREA_HEIGHT = 1080;              // value 659 height
+    // picture style (174 setDlpLumensMode, stock color_style_*: standard 0, Movie D65 16, Office CVIA 12, custom 6)
+    public static final int STYLE_STANDARD = 0;               // value
+    public static final int STYLE_MOVIE_D65 = 16;             // value
+    public static final int STYLE_OFFICE = 12;                // value
+    public static final int STYLE_CUSTOM = 6;                 // value
+    private static final int RESET_CUSTOM_PICTURE = 3;        // value 658: stock PictureViewModel resetPictureMode(3)
+    public static final int HDMI_RANGE_AUTO = 0;              // value 635: 0 auto, 1 full, 2 limited
+    public static final int HDMI_RANGE_LIMITED = 2;           // value
+    public static final int EDID_14 = 1;                      // value 660: 1 HDMI 1.4 (compatible)
+    public static final int EDID_20 = 2;                      // value 660: 2 HDMI 2.0 (enhanced)
     // digital zoom and shift (stock KeyStoneManager / ZoomDisplacementWind, v1.7.116)
     private static final int ZOOM_RESERVED = 0;               // value 121 zoomStart(0) / 120 zoomFinish(0), as stock
     private static final int ZOOM_STEP_RANGE_SIZE = 16;       // value st_ZoomStepRange: 4 x i32 (stock rp.ZoomStepRange)
@@ -577,6 +620,122 @@ public final class Play6Gmpf extends HidlCaller {
         q.writeInt32(checkSet("shift direction", dir, SHIFT_UP, SHIFT_DOWN, SHIFT_LEFT, SHIFT_RIGHT));
         q.writeBool(onlyCheck);
         return call(TRANSLATION_KST, q, RET_I32);
+    }
+
+    // ------------------------------------------- stock parity: picture, HDMI, boot music (2026-10-21)
+    // Stock paths (inventory B 4.2 / 4.4 / 4.7, dayao tree): the picture items of the Custom mode (3DNR, colour
+    // temperature and its gains / offsets, picture style), HDR and local contrast; HDMI colour range and EDID
+    // version; boot music. Each getter is read before its row is shown; each setter is sent on the user's row
+    // action only, with the stock value set. Callers: panel/Play6PanelController, panel/Play6Snapshot,
+    // SettingsActivity (boot music).
+
+    /** 670 get3DNR(0) -> 0 off, 1 weak, 2 medium, 3 strong, 4 auto. */
+    public int getNoiseReduction() throws RemoteException { return callI32RetI32(GET_3DNR, WINDOW_MAIN); }
+
+    /** 671 set3DNR(0, 0..4). Custom picture mode only (the page enforces it). */
+    public boolean setNoiseReduction(int v) throws RemoteException {
+        return callI32I32RetBool(SET_3DNR, WINDOW_MAIN, checkRange("noise reduction", v, 0, 4));
+    }
+
+    /** 684 getColorTemperature(0) -> 0 cool, 1 standard, 2 warm, 3 custom. */
+    public int getColorTemperature() throws RemoteException { return callI32RetI32(GET_COLOR_TEMPERATURE, WINDOW_MAIN); }
+
+    /** 685 setColorTemperature(0, 0..3). Custom picture mode only. */
+    public boolean setColorTemperature(int v) throws RemoteException {
+        return callI32I32RetBool(SET_COLOR_TEMPERATURE, WINDOW_MAIN, checkRange("color temperature", v, 0, 3));
+    }
+
+    /** 682 / 680 / 678 (0): red / green / blue gain 0..100. */
+    public int getRedGain() throws RemoteException { return callI32RetI32(GET_RED_GAIN, WINDOW_MAIN); }
+    public int getGreenGain() throws RemoteException { return callI32RetI32(GET_GREEN_GAIN, WINDOW_MAIN); }
+    public int getBlueGain() throws RemoteException { return callI32RetI32(GET_BLUE_GAIN, WINDOW_MAIN); }
+    /** 676 / 674 / 672 (0): red / green / blue offset 0..100. */
+    public int getRedOffset() throws RemoteException { return callI32RetI32(GET_RED_OFFSET, WINDOW_MAIN); }
+    public int getGreenOffset() throws RemoteException { return callI32RetI32(GET_GREEN_OFFSET, WINDOW_MAIN); }
+    public int getBlueOffset() throws RemoteException { return callI32RetI32(GET_BLUE_OFFSET, WINDOW_MAIN); }
+
+    /** 683 / 681 / 679 (0, 0..100): gains; 677 / 675 / 673 (0, 0..100): offsets. Custom picture mode only. */
+    public boolean setRedGain(int v) throws RemoteException {
+        return callI32I32RetBool(SET_RED_GAIN, WINDOW_MAIN, checkRange("red gain", v, 0, 100));
+    }
+    public boolean setGreenGain(int v) throws RemoteException {
+        return callI32I32RetBool(SET_GREEN_GAIN, WINDOW_MAIN, checkRange("green gain", v, 0, 100));
+    }
+    public boolean setBlueGain(int v) throws RemoteException {
+        return callI32I32RetBool(SET_BLUE_GAIN, WINDOW_MAIN, checkRange("blue gain", v, 0, 100));
+    }
+    public boolean setRedOffset(int v) throws RemoteException {
+        return callI32I32RetBool(SET_RED_OFFSET, WINDOW_MAIN, checkRange("red offset", v, 0, 100));
+    }
+    public boolean setGreenOffset(int v) throws RemoteException {
+        return callI32I32RetBool(SET_GREEN_OFFSET, WINDOW_MAIN, checkRange("green offset", v, 0, 100));
+    }
+    public boolean setBlueOffset(int v) throws RemoteException {
+        return callI32I32RetBool(SET_BLUE_OFFSET, WINDOW_MAIN, checkRange("blue offset", v, 0, 100));
+    }
+
+    /** 649 getHdrEnable(): HDR auto (true) / off. */
+    public boolean getHdrAuto() throws RemoteException { return callRetBool(GET_HDR_ENABLE); }
+
+    /** 650 setHdrEnable(auto). */
+    public boolean setHdrAuto(boolean on) throws RemoteException { return callBoolRetBool(SET_HDR_ENABLE, on); }
+
+    /** 651 getUcdLevel(0) -> local contrast 0 off .. 3 strong. */
+    public int getLocalContrast() throws RemoteException { return callI32RetI32(GET_UCD_LEVEL, WINDOW_MAIN); }
+
+    /** 655 setUcdLevel(0, 0..3). Only in Movie, TV and Custom (the page enforces it, stock dayao tree). */
+    public boolean setLocalContrast(int v) throws RemoteException {
+        return callI32I32RetBool(SET_UCD_LEVEL, WINDOW_MAIN, checkRange("local contrast", v, 0, 3));
+    }
+
+    /** 175 getDlpLumensMode() -> picture style (STYLE_*; other values are shown as nothing selected). */
+    public int getPictureStyle() throws RemoteException { return callRetU8(GET_DLP_LUMENS_MODE); }
+
+    /** 174 setDlpLumensMode(0 / 16 / 12 / 6): picture style, Custom picture mode only (stock color_style_custom_state). */
+    public void setPictureStyle(int s) throws RemoteException {
+        callU8(SET_DLP_LUMENS_MODE, checkSet("picture style", s, STYLE_STANDARD, STYLE_MOVIE_D65, STYLE_OFFICE, STYLE_CUSTOM));
+    }
+
+    /** 658 resetPqSettings(3): stock "Reset" of the Custom picture mode (PictureViewModel.resetPictureMode). */
+    public int resetCustomPicture() throws RemoteException { return callI32RetI32(RESET_PQ_SETTINGS, RESET_CUSTOM_PICTURE); }
+
+    /** 634 getHdmiRange() -> 0 auto, 1 full, 2 limited. */
+    public int getHdmiRange() throws RemoteException { return callRetI8(GET_HDMI_RANGE); }
+
+    /** 635 setHdmiRange(0..2). HDMI source only (the page enforces it). */
+    public boolean setHdmiRange(int r) throws RemoteException {
+        HwParcel q = request();
+        q.writeInt8((byte) checkRange("hdmi range", r, HDMI_RANGE_AUTO, HDMI_RANGE_LIMITED));
+        return call(SET_HDMI_RANGE, q, RET_BOOL);
+    }
+
+    /** 661 getEdidVersion() -> 1 HDMI 1.4, 2 HDMI 2.0. */
+    public int getEdidVersion() throws RemoteException { return callRetI32(GET_EDID_VERSION); }
+
+    /** 660 setEdidVersion(1 / 2): the source re-reads the EDID (the page confirms first, as stock). */
+    public boolean setEdidVersion(int v) throws RemoteException {
+        return callI32RetBool(SET_EDID_VERSION, checkSet("edid version", v, EDID_14, EDID_20));
+    }
+
+    /** 420 isPowerOnMusicEnabled(). */
+    public boolean getBootMusic() throws RemoteException { return callRetBool(IS_POWER_ON_MUSIC_ENABLED); }
+
+    /** 419 enablePowerOnMusic(on): stock General > Advanced > boot music. */
+    public void setBootMusic(boolean on) throws RemoteException { callBool(ENABLE_POWER_ON_MUSIC, on); }
+
+    // ------------------------------------------- music player listener (215 then 227), device closed / opened
+    // As stock com.xgimi.gmpf.api.MusicPlayerManager native_setup: 215 with the pid and an IBase token, then 227
+    // with the pid and the callback; the token here is the same callback object (as 298 / 306 and 235 / 242).
+    // Caller: the Hal facade, once per connection after the start gate (kill switch persist.lumen.p6.music_listener).
+
+    /** 215 connectMusicPlayerManager(myPid, callback). */
+    public void connectMusicPlayer(Play6MusicPlayerCallback cb) throws RemoteException {
+        callPidBinder(CONNECT_MUSIC_PLAYER_MANAGER, Process.myPid(), cb);
+    }
+
+    /** 227 setMusicPlayerListener(myPid, callback). Never null. */
+    public void setMusicPlayerListener(Play6MusicPlayerCallback cb) throws RemoteException {
+        callPidBinder(SET_MUSIC_PLAYER_LISTENER, Process.myPid(), cb);
     }
 
     // ------------------------------------------------------------- private helpers

@@ -54,12 +54,14 @@ public final class AmbientLight extends Panel {
 
     /** Stock Settings.Global key and JSON (SystemUI SystemUtils.setAmbientLight / doubanfm AmbientBean). */
     public static final String GLOBAL_KEY = "ambient_light_data";
-    public static final String[] COLORS = {"orange", "blue", "yellow", "green", "pink", "purple", "colorful"};
+    public static final String[] COLORS = {"orange", "blue", "yellow", "green", "pink", "purple", "colorful", "none"};
     public static final String[] MODES = {"standard", "always", "rhythm"};
     /** Stock doubanfm colors.xml: main and mask (second) colour per colour name, in COLORS order (without colorful). */
     private static final int[] MAIN = {0xFFFC7900, 0xFF006CFF, 0xFFF4DD00, 0xFF20FF00, 0xFFF57EB8, 0xFF7C00FF};
     private static final int[] MASK = {0xFFEEED00, 0xFF20FF3A, 0xFFF07300, 0xFF0C79EB, 0xFFFF597B, 0xFF00DFFF};
     private static final int COLORFUL = 6;
+    /** Stock "none": no light (the picture off, IGmpf 195(false) through power/Lamp, back on at the end). */
+    public static final int NONE = 7;
 
     private static final String PREFS = "p6_ambient";
     /** Projector brightness while the light shows, 1..10; 0 = leave it. */
@@ -86,7 +88,7 @@ public final class AmbientLight extends Panel {
     }
 
     // ================================================================== settings (any thread)
-    /** The stored colour index into COLORS (stock default orange; "none" and unknown read as orange). */
+    /** The stored colour index into COLORS (stock default orange; unknown reads as orange). */
     public static int colorIndex(Context c) { return indexOf(COLORS, read(c, "color"), 0); }
 
     /** The stored effect index into MODES (stock default standard). */
@@ -253,11 +255,18 @@ public final class AmbientLight extends Panel {
         return view;
     }
 
+    /** This window turned the lamp off (colour "None"): Lamp.on owed at the end. */
+    private boolean lampOff;
+
     @Override
     protected void onShown(View root) {
         root.setAlpha(0f);
         root.animate().alpha(1f).setDuration(600).start();
         view.start();
+        if (color == NONE && !org.z9x.projector.power.StandbyController.isActive()) {
+            lampOff = true;
+            org.z9x.projector.power.Lamp.off("ambient none", on -> Log.i(TAG, "none: lamp off -> 196 reads " + on));
+        }
     }
 
     @Override
@@ -271,6 +280,9 @@ public final class AmbientLight extends Panel {
         if (sOpen == this) sOpen = null;
         if (view != null) view.stop();
         Log.i(TAG, "off");
+        if (lampOff && !org.z9x.projector.power.StandbyController.isActive()) {
+            org.z9x.projector.power.Lamp.on("ambient end", on -> Log.i(TAG, "lamp on -> 196 reads " + on));
+        }
         if (prefs(app).getInt(K_RESTORE, 0) != 0 && !Hal.run((g, g2) -> restore(app, g, "off"))) {
             Log.w(TAG, "brightness restore not queued: left to the connect hook");
         }
@@ -279,7 +291,27 @@ public final class AmbientLight extends Panel {
     /** Stock keys: UP / DOWN colour, LEFT / RIGHT / OK media keys 88 / 87 / 85; BACK closes (Panel). */
     @Override
     protected boolean onKeyEvent(KeyEvent ev) {
-        return view != null && view.onKey(ev);
+        boolean used = view != null && view.onKey(ev);
+        if (used && lampOff && view.color() != NONE) {                    // left "None" with UP / DOWN: light again
+            lampOff = false;
+            org.z9x.projector.power.Lamp.on("ambient color", on -> Log.i(TAG, "lamp on -> 196 reads " + on));
+        }
+        return used;
+    }
+
+    /**
+     * RECORD_AUDIO for the Visualizer (stock doubanfm declares it for the same rhythm): granted to ourselves once
+     * with GRANT_RUNTIME_PERMISSIONS (signature, the platform key), as RemoteAutoPair grants its Bluetooth ones.
+     */
+    static void grantRecordAudio(Context app) {
+        String perm = android.Manifest.permission.RECORD_AUDIO;
+        if (app.checkSelfPermission(perm) == android.content.pm.PackageManager.PERMISSION_GRANTED) return;
+        try {
+            app.getPackageManager().grantRuntimePermission(app.getPackageName(), perm, android.os.Process.myUserHandle());
+            Log.i(TAG, "RECORD_AUDIO granted (for the Visualizer)");
+        } catch (Throwable t) {
+            Log.w(TAG, "RECORD_AUDIO not granted: " + t);
+        }
     }
 
     /** Media key to the active media session (the stock 88 / 87 / 85). */
@@ -334,6 +366,55 @@ public final class AmbientLight extends Panel {
             Ui.main().removeCallbacks(tick);
             front.animate().cancel();
             back.animate().cancel();
+            stopVisualizer();
+        }
+
+        // ---- the music rhythm, as stock doubanfm AtmosphereLightViewModel.startVisual: Visualizer on the output
+        // mix (session 0, RECORD_AUDIO and MODIFY_AUDIO_SETTINGS as stock), FFT at 3/4 of the maximum rate, the
+        // magnitudes of bins 2..4 summed (fftDataAnalyze), stock MixRotateLightCell: min(sum / 310, 1) ^ 1.2,
+        // updates at most every 50 ms. Without the permission or a Visualizer the pulse falls back to a fixed beat.
+        private android.media.audiofx.Visualizer visualizer;
+        private volatile float level = -1f;                              // 0..1 from the FFT, -1 = no data
+        private long lastVisual;
+
+        private void startVisualizer() {
+            if (visualizer != null) return;
+            try {
+                grantRecordAudio(app);
+                android.media.audiofx.Visualizer v = new android.media.audiofx.Visualizer(0);
+                v.setEnabled(false);
+                int[] range = android.media.audiofx.Visualizer.getCaptureSizeRange();
+                if (range != null && range.length > 1) v.setCaptureSize(range[1]);
+                v.setDataCaptureListener(new android.media.audiofx.Visualizer.OnDataCaptureListener() {
+                    @Override public void onWaveFormDataCapture(android.media.audiofx.Visualizer vv, byte[] b, int rate) { }
+                    @Override public void onFftDataCapture(android.media.audiofx.Visualizer vv, byte[] fft, int rate) {
+                        level = rhythm(fft);
+                    }
+                }, android.media.audiofx.Visualizer.getMaxCaptureRate() * 3 / 4, false, true);
+                v.setEnabled(true);
+                visualizer = v;
+                Log.i(TAG, "visualizer on (capture " + v.getCaptureSize() + ")");
+            } catch (Throwable t) {
+                Log.w(TAG, "visualizer not available, fixed beat: " + t);
+                visualizer = null;
+            }
+        }
+
+        private void stopVisualizer() {
+            if (visualizer == null) return;
+            try { visualizer.setEnabled(false); visualizer.release(); } catch (Throwable ignored) { }
+            visualizer = null;
+            level = -1f;
+            Log.i(TAG, "visualizer off");
+        }
+
+        /** Stock fftDataAnalyze + bins 2..4 + MixRotateLightCell scaling. */
+        private static float rhythm(byte[] fft) {
+            if (fft == null || fft.length < 12) return -1f;
+            float sum = 0f;
+            for (int bin = 2; bin <= 4; bin++) sum += (float) Math.hypot(fft[2 * bin], fft[2 * bin + 1]);
+            float f = Math.min(1f, sum / 310f);
+            return (float) Math.pow(f, 1.2d);
         }
 
         /** UP / DOWN: next / previous colour (stored as stock does); LEFT / RIGHT / OK: media keys. */
@@ -351,8 +432,9 @@ public final class AmbientLight extends Panel {
             long now = SystemClock.uptimeMillis();
             if (now - lastColorKey < COLOR_KEY_GAP_MS) return true;
             lastColorKey = now;
-            int n = COLORS.length;
-            color = (color + (code == KeyEvent.KEYCODE_DPAD_DOWN ? 1 : n - 1)) % n;
+            int n = COLORS.length - 1;                                  // the lit colours; "None" is chosen in the page
+            int from = color == NONE ? 0 : color;
+            color = (from + (code == KeyEvent.KEYCODE_DPAD_DOWN ? 1 : n - 1)) % n;
             cycle = 0;
             setColor(app, color);
             Log.i(TAG, "color " + COLORS[color]);
@@ -360,7 +442,9 @@ public final class AmbientLight extends Panel {
             return true;
         }
 
-        private int shownColor() { return color == COLORFUL ? cycle : color; }
+        public int color() { return color; }
+
+        private int shownColor() { return color == COLORFUL ? cycle : color == NONE ? -1 : color; }
 
         private boolean isMusic() {
             try { return app.getSystemService(AudioManager.class).isMusicActive(); } catch (Throwable t) { return false; }
@@ -381,6 +465,23 @@ public final class AmbientLight extends Panel {
                 }
             }
             long next = MUSIC_POLL_MS;
+            if (color == NONE) {                                         // no light: nothing animates
+                front.setAlpha(0f);
+                Ui.main().postDelayed(tick, MUSIC_POLL_MS);
+                return;
+            }
+            if (pulse) startVisualizer(); else stopVisualizer();
+            float lv = level;
+            if (pulse && visualizer != null && lv >= 0f) {
+                if (now - lastVisual >= 50) {
+                    lastVisual = now;
+                    front.animate().cancel();
+                    front.setAlpha(PULSE_LOW + (1f - PULSE_LOW) * lv);
+                }
+                Ui.main().postDelayed(tick, 50);
+                phase = 0;
+                return;
+            }
             if (pulse) {
                 final Glow f = front;
                 f.animate().cancel();
@@ -432,7 +533,7 @@ public final class AmbientLight extends Panel {
         }
 
         void set(int i) {
-            idx = Math.max(0, Math.min(MAIN.length - 1, i));
+            idx = i < 0 ? -1 : Math.min(MAIN.length - 1, i);
             shader();
             invalidate();
         }

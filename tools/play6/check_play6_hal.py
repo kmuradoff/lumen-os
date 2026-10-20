@@ -98,7 +98,8 @@ Z9X_CALLER_CHECK = os.path.join(G, "apps/check_hal_callers.py")
 CLIENTS = {"Play6Gmpf.java": "BpHwGmpf", "Play6Gmpf2.java": "BpHwGmpf2"}
 GUARDED = "Play6Gmpf2.java"                            # rule 7: every IGmpf2 send after need()
 IFACE = {"BpHwGmpf": "IGmpf", "BpHwGmpf2": "IGmpf2"}
-HAL_CLASSES = {"HidlCaller", "Play6Gmpf", "Play6Gmpf2", "Play6KstPoint", "Play6FocusCallback", "Play6PowerCallback"}
+HAL_CLASSES = {"HidlCaller", "Play6Gmpf", "Play6Gmpf2", "Play6KstPoint", "Play6FocusCallback", "Play6PowerCallback",
+               "Play6MusicPlayerCallback"}
 FORBIDDEN_FILES = {"GmpfClient.java", "Gmpf2Client.java", "KstPoint.java"}
 HANDSHAKE_CODES = {"GO_TO_BOOT_COMPLETED": (237, "goToBootCompleted"), "SET_SYSTEM_UI_STATE": (391, "setSystemUIState"),
                    "GET_BOOT_ANIM_STATE": (394, "getBootAnimState"), "SET_BOOT_ANIM_STATE": (395, "setBootAnimState")}
@@ -232,6 +233,25 @@ VALUE_RULES = {
     ("BpHwGmpf", 118): dict(name="setDigitalZoomStep", args=[U(-200, 200)]),
     ("BpHwGmpf", 141): dict(name="translationKst", args=[{1, 2, 3, 4}, "bool"]),
     ("BpHwGmpf2", 138): dict(name="setScreenRotation", args=[{5, 6}, "float_checked"]),
+    # stock parity (2026-10-21, inventory B 4.2 / 4.4 / 4.7 and the dayao settings tree): the stock value sets only
+    ("BpHwGmpf", 671): dict(name="set3DNR", args=[{0}, U(0, 4)]),
+    ("BpHwGmpf", 685): dict(name="setColorTemperature", args=[{0}, U(0, 3)]),
+    ("BpHwGmpf", 683): dict(name="setColorTempRedGain", args=[{0}, U(0, 100)]),
+    ("BpHwGmpf", 681): dict(name="setColorTempGreenGain", args=[{0}, U(0, 100)]),
+    ("BpHwGmpf", 679): dict(name="setColorTempBlueGain", args=[{0}, U(0, 100)]),
+    ("BpHwGmpf", 677): dict(name="setColorTempRedOffset", args=[{0}, U(0, 100)]),
+    ("BpHwGmpf", 675): dict(name="setColorTempGreenOffset", args=[{0}, U(0, 100)]),
+    ("BpHwGmpf", 673): dict(name="setColorTempBlueOffset", args=[{0}, U(0, 100)]),
+    ("BpHwGmpf", 650): dict(name="setHdrEnable", args=["bool"]),
+    ("BpHwGmpf", 655): dict(name="setUcdLevel", args=[{0}, U(0, 3)]),
+    ("BpHwGmpf", 174): dict(name="setDlpLumensMode", args=[{0, 16, 12, 6}]),
+    ("BpHwGmpf", 658): dict(name="resetPqSettings", args=[{3}]),
+    ("BpHwGmpf", 635): dict(name="setHdmiRange", args=[{0, 1, 2}]),
+    ("BpHwGmpf", 660): dict(name="setEdidVersion", args=[{1, 2}]),
+    ("BpHwGmpf", 419): dict(name="enablePowerOnMusic", args=["bool"]),
+    ("BpHwGmpf2", 69): dict(name="setSlideFunc", args=[{0, 1}]),
+    ("BpHwGmpf2", 229): dict(name="setTvGammaLevel", args=[{0}, U(0, 8)]),
+    ("BpHwGmpf2", 231): dict(name="setTvDynamicContrastEnable", args=[{0}, "bool"]),
 }
 if O3_KEYSTONE_RESET:
     VALUE_RULES[("BpHwGmpf", 207)] = dict(name="correctKeystoneReset", args=[{0}], method_prefix="resetKeystone")
