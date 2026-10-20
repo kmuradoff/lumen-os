@@ -19,3 +19,5 @@ res/drawable/ic_projector.xml	not referenced by the Z9X code or manifest
 res/drawable/notice_bg.xml	not referenced by the Z9X code or manifest
 res/drawable/ic_tile_manual_keystone.xml	not referenced by the Z9X code or manifest
 res/xml/dream_clock.xml	dreams (P2)
+res/values*/strings_pro.xml	Z9X 1.0.4 professional picture page; the Play 6 picture rows have their own text in strings_p6.xml
+res/values*/strings_stock.xml	Z9X 1.0.4 stock features (HDMI, zoom and shift, rotation, power on, guide); Play 6 rows have their own text in strings_p6.xml
