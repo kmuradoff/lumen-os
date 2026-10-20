@@ -272,6 +272,8 @@ IN=(
   "$G/overlay/play6/play6_perf.rc"
   "$G/overlay/play6/lumen_gapps.rc"
   "$G/overlay/play6/lumen_gapps.sh"
+  "$G/overlay/v1/z9x_nui.rc"
+  "$G/overlay/v1/z9x_nui.sh"
   "$P/compose.sh"
   "$P/dexpreopt_play6.sh"
   "$P/check_privapp.py"

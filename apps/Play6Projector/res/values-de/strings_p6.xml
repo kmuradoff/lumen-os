@@ -105,6 +105,12 @@
     <string name="p6_style">Bildstil</string>
     <string name="p6_style_movie">Film D65</string>
     <string name="p6_pic_reset_msg">Alle Einstellungen des Bildmodus Benutzerdefiniert werden zurückgesetzt. Fortfahren?</string>
+    <string name="p6_light_red">Rot</string>
+    <string name="p6_light_green">Grün</string>
+    <string name="p6_light_blue">Blau</string>
+    <string name="p6_light_reset">Standardhelligkeit wiederherstellen</string>
+    <string name="p6_boot_source">Beim Einschalten öffnen</string>
+    <string name="p6_cec_wake">Mit einem HDMI-Gerät einschalten</string>
     <string name="hdmi_range">Farbbereich</string>
     <string name="hdmi_range_full">Voll</string>
     <string name="hdmi_range_limited">Begrenzt</string>

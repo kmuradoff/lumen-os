@@ -105,6 +105,12 @@
     <string name="p6_style">화면 스타일</string>
     <string name="p6_style_movie">영화 D65</string>
     <string name="p6_pic_reset_msg">사용자 지정 화면 모드의 모든 설정이 기본값으로 돌아갑니다. 계속할까요?</string>
+    <string name="p6_light_red">빨강</string>
+    <string name="p6_light_green">초록</string>
+    <string name="p6_light_blue">파랑</string>
+    <string name="p6_light_reset">기본 밝기로 복원</string>
+    <string name="p6_boot_source">전원 켤 때 열기</string>
+    <string name="p6_cec_wake">HDMI 기기로 전원 켜기</string>
     <string name="hdmi_range">색 범위</string>
     <string name="hdmi_range_full">전체</string>
     <string name="hdmi_range_limited">제한</string>

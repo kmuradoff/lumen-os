@@ -83,7 +83,7 @@ NEED="Play6FrameworkOverlay.apk Play6Projector.apk Z9xHome.apk Z9xTvInput.apk Z9
       z9x-sysconfig-nogms.xml bootanimation.zip product_prop.txt play6_compat.rc play6_base.rc
       Vendor_000d_Product_3841.kl Vendor_3697_Product_0001.kl Vendor_3697_Product_0002.kl
       Vendor_000d_Product_3841.idc base_id.txt base_signed/base_signed.tsv base_export.sh check_privapp.py apkinfo.py
-      lumen_gapps.rc lumen_gapps.sh"
+      lumen_gapps.rc lumen_gapps.sh z9x_nui.rc z9x_nui.sh"
 [ $OTA = 1 ] && NEED="$NEED Play6Updater.apk lumen_recovery.rc lumen_recovery.sh lumen_play6_ota.x509"
 [ $DEXPREOPT = 1 ] && NEED="$NEED dexpreopt_play6.sh lumen_checks.py"
 if has_exp 2 || has_exp 3; then NEED="$NEED play6_perf.rc"; fi
@@ -336,6 +336,14 @@ fi
 #     post-fs-data when the partition exists, nothing otherwise. No Google file is in this image.
 install -m 0644 "$IN/lumen_gapps.rc" "$S/etc/init/lumen_gapps.rc"
 install -m 0755 "$IN/lumen_gapps.sh" "$S/etc/xgimi/lumen_gapps.sh"
+# 3g. the vendor native-UI fifo reader (stock parity 2026-10-21, eye protection): the Z9X files unchanged
+#     (overlay/v1/z9x_nui.rc + .sh). gmpf_main of the Play 6 holds /data/vendor/tmp/retnuififo open and writes
+#     nuififo with a blocking open, exactly as on the Z9X (checked on the owner's Play 6, t22): without a reader
+#     an eye-protection event would hang that HAL thread. The projector app sends 148 / 152 only while
+#     sys.z9x.nui=ready.
+install -m 0644 "$IN/z9x_nui.rc" "$S/etc/init/z9x_nui.rc"
+install -d -m 0755 "$S/etc/xgimi"
+install -m 0755 "$IN/z9x_nui.sh" "$S/etc/xgimi/z9x_nui.sh"
 # 4. Lumen boot animation (the -dark symlink keeps pointing at it)
 install -m 0644 "$IN/bootanimation.zip" "$S/product/media/bootanimation.zip"
 # 5. USB-stick boot logger (test builds only)

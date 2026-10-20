@@ -87,6 +87,10 @@ public final class Play6Gmpf extends HidlCaller {
     private static final int CHECK_TRAPEZOID_COORDINATE = 150;       // tsv:checkTrapezoidCoordinate W=KstPoint R=bool
     private static final int CORRECT_KEYSTONE_FULL_POINT = 185;      // tsv:correctKeystoneFullPiont W=KstPoint R=i32
     private static final int GET_CORRECT_KEYSTONE_FULL_POINT = 186;  // tsv:getCorrectKeystoneFullPiont W=u8 R=cb KstPoint
+    private static final int CORRECT_KEYSTONE_RESET = 207;           // tsv:correctKeystoneReset W=u8 R= (owner O3, 2026-10-21)
+    private static final int SWITCH_KEYSTONE_MODE = 129;             // tsv:switchKeystoneMode W=i32,i32 R=bool (owner O3)
+    private static final int SET_DLP_RGB_LEVEL = 178;                // tsv:setDlpLumensComponent_RGB_Level W=stDisplayRgB R=
+    private static final int GET_DLP_RGB_LEVEL = 179;                // tsv:getDlpLumensComponent_RGB_Level W= R=cb stDisplayRgB
     private static final int AUTO_KST = 326;                         // tsv:autoKst W= R=i8
     // digital zoom and shift (stock ZoomDisplacementWind, non-GMPF2 path; P3 item 21)
     private static final int GET_CURRENT_ZOOM_STEP2 = 116;           // tsv:getCurrentZoomStep2 W= R=cb(i32, st_ZoomStep)
@@ -150,6 +154,8 @@ public final class Play6Gmpf extends HidlCaller {
     private static final int GET_ASPECT_RATIO = 664;                 // tsv:getAspectRatio W= R=i32
     private static final int SET_ASPECT_RATIO = 665;                 // tsv:setAspectRatio W=i32 R=bool
     private static final int GET_HDMI_INFO = 662;                    // tsv:getHdmiInfo W= R=cb stHdmiInfo
+    private static final int GET_EARC_ENABLE_STATE = 632;            // tsv:getEARCEnableState W= R=bool
+    private static final int SET_EARC_ENABLE = 633;                  // tsv:setEARCEnable W=bool R=bool
     private static final int GET_CURRENT_INPUT_SOURCE = 696;         // tsv:getCurrentInputSource W= R=i32
     private static final int SWITCH_INPUT_SOURCE_WITH_CALLING_PID = 698; // tsv:switchInputSourceWithCallingPid W=i32,u32 R=bool
     private static final int GET_SIGNAL_STATUS = 592;                // tsv:getSignalStatus W= R=i32
@@ -175,6 +181,7 @@ public final class Play6Gmpf extends HidlCaller {
     // projection, eye protection
     private static final int GET_HUMAN_DETECT = 151;                 // tsv:getHumanDetectOnOff W= R=bool
     private static final int SET_HUMAN_DETECT = 152;                 // tsv:setHumanDetectOnOff W=bool R=bool
+    private static final int SET_HUMAN_DETECT_SCREEN = 148;          // tsv:setHumanDetectScreenOnOff W=bool R=bool (true only)
     private static final int SET_PROJECTOR_PUT_MODE = 172;           // tsv:setProjectorPutMode W=u8 R=
     private static final int GET_PROJECTOR_PUT_MODE = 173;           // tsv:getProjectorPutMode W= R=u8
     private static final int GET_AUTO_REVERSE = 579;                 // tsv:getAutoReverse W= R=bool
@@ -196,6 +203,13 @@ public final class Play6Gmpf extends HidlCaller {
     private static final int WINDOW_MAIN = 0;                 // value picture calls address window 0 (stock XgimiVideo)
     private static final int KST_MODE_FOUR_POINT = 0;         // value 186 mode 0 = 4 corners (Play6KstPoint)
     private static final int TEMPORARY_SWITCH_AK = 2;         // value KeyStoneManager TEMPORARY_SWITCH_AK
+    private static final int KST_RESET_TYPE = 0;              // value 207 argument of stock V3DisplayManager.setIChipReset()
+    private static final int KST_MODE_SIX = 6;                // value 130 reply after which stock sends 129(0, 0)
+    private static final int KST_SWITCH_DEFAULT = 0;          // value 129 arguments (0, 0) of stock setIChipReset
+    private static final int RGB_LEVEL_SIZE = 4;              // value stDisplayRgB: R, G, B, C (u8 each)
+    private static final int RGB_LEVEL_MIN = 1;               // value stock brightness.json light_r_v4 / light_g / light_b
+    private static final int RGB_LEVEL_MAX = 10;              // value
+    private static final int RGB_LEVEL_C = 0;                 // value C byte, stock BrightnessManager.setRGB sends 0
     public static final int MANUAL_FOCUS_ENTER = 17;          // value stock FocusAdjust: overlay opened
     public static final int MANUAL_FOCUS_STOCK_RIGHT = 0;     // value stock DPAD_RIGHT down
     public static final int MANUAL_FOCUS_STOCK_LEFT = 1;      // value stock DPAD_LEFT down
@@ -326,7 +340,7 @@ public final class Play6Gmpf extends HidlCaller {
     /** 586 getAccTriggerAK(): real-time keystone. */
     public boolean getMoveAk() throws RemoteException { return callRetBool(GET_ACC_TRIGGER_AK); }
 
-    /** 130 getCurrentKeystoneMode(): logged only; 129 switchKeystoneMode is never sent (plan 1.3, O3). */
+    /** 130 getCurrentKeystoneMode(): logged; 129 switchKeystoneMode only from resetKeystone (O3). */
     public int getKeystoneMode() throws RemoteException { return callRetI32(GET_CURRENT_KEYSTONE_MODE); }
 
     /**
@@ -489,6 +503,46 @@ public final class Play6Gmpf extends HidlCaller {
     /** 573 temporarySwitchTrigger(2, enable): pause (false) / resume (true) real-time AK around manual keystone. */
     public boolean setRealtimeAkRunning(boolean enable) throws RemoteException {
         return callI32BoolRetBool(TEMPORARY_SWITCH_TRIGGER, TEMPORARY_SWITCH_AK, enable);
+    }
+
+    /**
+     * Keystone reset, stock V3DisplayManager.setIChipReset() (owner decision O3, 2026-10-21: "as in stock"):
+     * 207 correctKeystoneReset(0), then 130 getCurrentKeystoneMode and 129 switchKeystoneMode(0, 0) only when it
+     * answered 6. Stock also sends 181 correctKeystone(50) here; 181 stays banned (Note A), so it is not sent.
+     * The caller pauses real-time keystone around it (573). Returns the 130 reply.
+     */
+    public int resetKeystone() throws RemoteException {
+        callU8(CORRECT_KEYSTONE_RESET, KST_RESET_TYPE);
+        int mode = callRetI32(GET_CURRENT_KEYSTONE_MODE);
+        if (mode == KST_MODE_SIX) callI32I32RetBool(SWITCH_KEYSTONE_MODE, KST_SWITCH_DEFAULT, KST_SWITCH_DEFAULT);
+        return mode;
+    }
+
+    /**
+     * 179 getDlpLumensComponent_RGB_Level() -> {R, G, B, C}: the light levels of the Custom picture style
+     * (stock BrightnessManager.getLightInfo). Reply via callback: Status + stDisplayRgB (readBuffer 4, u8 each).
+     * Layout from the vendor Parcelable (R, G, B, C bytes); the caller shows the rows only for values 1..10.
+     */
+    public int[] getRgbLevels() throws RemoteException {
+        return call(GET_DLP_RGB_LEVEL, request(), r -> {
+            HwBlob b = r.readBuffer(RGB_LEVEL_SIZE);
+            return new int[] {b.getInt8(0) & 0xff, b.getInt8(1) & 0xff, b.getInt8(2) & 0xff, b.getInt8(3) & 0xff};
+        });
+    }
+
+    /**
+     * 178 setDlpLumensComponent_RGB_Level({R, G, B, 0}), each 1..10: stock BrightnessManager.setLedRed / Green /
+     * Blue send all three with C = 0. Custom picture style only (the page enforces it).
+     */
+    public void setRgbLevels(int red, int green, int blue) throws RemoteException {
+        HwBlob b = new HwBlob(RGB_LEVEL_SIZE);
+        b.putInt8(0, (byte) checkRange("red level", red, RGB_LEVEL_MIN, RGB_LEVEL_MAX));
+        b.putInt8(1, (byte) checkRange("green level", green, RGB_LEVEL_MIN, RGB_LEVEL_MAX));
+        b.putInt8(2, (byte) checkRange("blue level", blue, RGB_LEVEL_MIN, RGB_LEVEL_MAX));
+        b.putInt8(3, (byte) RGB_LEVEL_C);
+        HwParcel q = request();
+        q.writeBuffer(b);
+        call(SET_DLP_RGB_LEVEL, q, RET_VOID);
     }
 
     /** 150 checkTrapezoidCoordinate(KstPoint) -> true when the vendor accepts the corners. W=KstPoint R=bool. */
@@ -718,6 +772,12 @@ public final class Play6Gmpf extends HidlCaller {
     /** 658 resetPqSettings(3): stock "Reset" of the Custom picture mode (PictureViewModel.resetPictureMode). */
     public int resetCustomPicture() throws RemoteException { return callI32RetI32(RESET_PQ_SETTINGS, RESET_CUSTOM_PICTURE); }
 
+    /** 632 getEARCEnableState(): stock eARC mode, true = Auto, false = Off (as the Z9X 1.0.4 row). */
+    public boolean getEarc() throws RemoteException { return callRetBool(GET_EARC_ENABLE_STATE); }
+
+    /** 633 setEARCEnable(on), as stock VoiceRepository.setEarcSound. */
+    public boolean setEarc(boolean on) throws RemoteException { return callBoolRetBool(SET_EARC_ENABLE, on); }
+
     /** 634 getHdmiRange() -> 0 auto, 1 full, 2 limited. */
     public int getHdmiRange() throws RemoteException { return callRetI8(GET_HDMI_RANGE); }
 
@@ -789,16 +849,43 @@ public final class Play6Gmpf extends HidlCaller {
         call(code, q, RET_VOID);
     }
 
-    // ================================================================== PARKED (not compiled)
-    // Written to the rules of check H (Note C), without a reviewed caller outside hal/ yet: re-enable it
-    // together with its caller, then run check H. The eye protection tile and page stay hidden until the
-    // NUI fifo reader exists (plan section 5 step 18; research battery_sound_features.md 6.4).
-    //
-    // /** 152 setHumanDetectOnOff(on), only while the NUI fifo reader is up (plan 1.7, Note C). */
-    // public boolean setEyeProtection(boolean on) throws RemoteException {
-    //     requireNuiReader(SET_HUMAN_DETECT);
-    //     return callBoolRetBool(SET_HUMAN_DETECT, on);
-    // }
-    //
-    // (requireNuiReader: the sys.z9x.nui gate of Z9xProjector GmpfClient, ported with the NUI step 18.)
+    // ------------------------------------------------------------- eye protection (stock parity 2026-10-21)
+    // Caller: eye/EyeGuard and the Eye page. 148 / 152 reach the vendor's nuiCommand, which blocks a HAL thread
+    // (and ours) without a reader of /data/vendor/tmp/nuififo: both are sent only while the image's z9x_nui
+    // service reports sys.z9x.nui=ready (the Z9X files, tools/play6/compose.sh 3g). 114 / 115 stay banned.
+
+    /** The NUI fifo reader (image service z9x_nui) is up. Fails closed. Any thread. */
+    public static boolean nuiReaderReady() {
+        try {
+            return "ready".equals(android.os.SystemProperties.get("sys.z9x.nui", ""));
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** Thrown instead of sending 148 / 152 while {@link #nuiReaderReady()} is false. Nothing was sent. */
+    public static final class NuiNotReadyException extends RemoteException {
+        NuiNotReadyException(String what) {
+            super(what + " not sent: no NUI fifo reader (sys.z9x.nui != ready)");
+        }
+    }
+
+    private static void requireNuiReader(String what) throws NuiNotReadyException {
+        if (!nuiReaderReady()) throw new NuiNotReadyException(what);
+    }
+
+    /** 152 setHumanDetectOnOff(on): the eye protection switch (stock more_eye), only with the reader up. */
+    public boolean setEyeProtection(boolean on) throws RemoteException {
+        requireNuiReader("152");
+        return callBoolRetBool(SET_HUMAN_DETECT, on);
+    }
+
+    /**
+     * 148 setHumanDetectScreenOnOff(true): give the light back after the vendor dimmed it for a person in front
+     * of the lens (stock GmpfClient.restoreEyeProtectionScreen). Never false. Only with the reader up.
+     */
+    public boolean restoreEyeProtectionScreen() throws RemoteException {
+        requireNuiReader("148");
+        return callBoolRetBool(SET_HUMAN_DETECT_SCREEN, true);
+    }
 }

@@ -164,10 +164,16 @@ final class Play6PanelController {
     private TextRow spkDesc, ambDesc;
     // stock parity picture rows (Custom items, local contrast, HDR) and HDMI rows (2026-10-21)
     private ChoiceRow eqRow;
+    private ToggleRow earcRow;
     private ChoiceRow nrRow, ctRow, gammaRow, lcRow, styleRow, hdmiRangeRow, edidRow;
     private final SliderRow[] wbRows = new SliderRow[6];
     private ToggleRow dcRow, hdrRow;
     private NavRow picReset;
+    /** Picture style Custom: R / G / B light levels 1..10 (IGmpf 179 / 178) and stock "Restore default" (176(10)). */
+    private final SliderRow[] rgbRows = new SliderRow[3];
+    private NavRow rgbReset;
+    /** Keystone page: stock "Restore default picture" (207 reset, owner O3). */
+    private NavRow kstReset;
     /** Picture styles in row order (174 values, stock color_style_*). */
     private static final int[] STYLE_ORDER = {Play6Gmpf.STYLE_STANDARD, Play6Gmpf.STYLE_MOVIE_D65, Play6Gmpf.STYLE_OFFICE,
             Play6Gmpf.STYLE_CUSTOM};
@@ -550,6 +556,9 @@ final class Play6PanelController {
         rotation = p.add(new NavRow(app, s(R.string.rot_title), safe("picture rotation",
                 () -> Play6RotatePanel.open(app, () -> QuickPanel.show(app, QuickPanel.SECTION_KEYSTONE)))));
         rotation.setVisibility(View.GONE);
+        kstReset = p.add(new NavRow(app, s(R.string.panel_reset_keystone), () -> confirm(R.string.panel_reset_keystone,
+                s(R.string.panel_reset_keystone_msg), R.string.panel_reset, () -> change("207 keystone reset", Play6Snapshot.KEYSTONE,
+                        (g, g2) -> resetKeystone(g))))).setChevron(false);
         p.add(new HeaderRow(app, s(R.string.panel_image_correction_settings)));
         rtKst = p.add(new ToggleRow(app, s(R.string.panel_rt_keystone), (row, w) -> safe("585", () ->
                 change("585 real-time keystone " + w, Play6Snapshot.KEYSTONE, (g, g2) -> g.setMoveAk(w))).run()));
@@ -695,18 +704,66 @@ final class Play6PanelController {
                     final int st = STYLE_ORDER[i];
                     change("174 picture style " + st, Play6Snapshot.PICTURE | Play6Snapshot.LAMP, (g, g2) -> g.setPictureStyle(st));
                 }).run()));
+        int[] rgbTitles = {R.string.p6_light_red, R.string.p6_light_green, R.string.p6_light_blue};
+        for (int k = 0; k < rgbRows.length; k++) {
+            final int item = k;
+            rgbRows[k] = p.add(new SliderRow(app, s(rgbTitles[k]), 1, 10, new SliderRow.OnSlide() {
+                @Override public void onChanging(SliderRow row, int value) { touch(row); }
+                @Override public void onCommit(SliderRow row, int value) { safe("rgb", () -> onRgb(item, value)).run(); }
+            }));
+        }
+        rgbReset = p.add(new NavRow(app, s(R.string.p6_light_reset), () -> {
+            if (!customStyle()) return;
+            change("176 lamp level 10 (stock light reset)", Play6Snapshot.PICTURE | Play6Snapshot.LAMP, (g, g2) -> g.setLampLevel(10));
+        }).setChevron(false));
         picReset = p.add(new NavRow(app, s(R.string.panel_picture_reset), () -> {
             if (!custom()) return;
             confirm(R.string.panel_picture_reset, s(R.string.p6_pic_reset_msg), R.string.panel_reset,
                     () -> change("658 reset custom picture", Play6Snapshot.PICTURE, (g, g2) -> g.resetCustomPicture()));
         }).setChevron(false));
         for (ChoiceRow r : new ChoiceRow[] {nrRow, ctRow, gammaRow, lcRow, styleRow}) r.setCommitDelay(CHOICE_COMMIT_MS);
-        for (View v : new View[] {nrRow, ctRow, gammaRow, dcRow, lcRow, hdrRow, styleRow, picReset}) v.setVisibility(View.GONE);
+        for (View v : new View[] {nrRow, ctRow, gammaRow, dcRow, lcRow, hdrRow, styleRow, rgbReset, picReset}) v.setVisibility(View.GONE);
         for (SliderRow r : wbRows) r.setVisibility(View.GONE);
+        for (SliderRow r : rgbRows) r.setVisibility(View.GONE);
     }
 
     private boolean custom() {
         return snap.pictureMode != null && snap.pictureMode == Play6Gmpf.PICTURE_CUSTOM;
+    }
+
+    /** Custom picture mode with the Custom picture style: the stock led_custom_mode_id page (R / G / B). */
+    private boolean customStyle() {
+        return custom() && snap.style != null && snap.style == Play6Gmpf.STYLE_CUSTOM && Play6Snapshot.rgbOk(snap.rgb);
+    }
+
+    /**
+     * One light level (0 red, 1 green, 2 blue): as stock BrightnessManager.setLedRed / Green / Blue, the other two
+     * come from a fresh 179 read, then 178 with all three.
+     */
+    private void onRgb(int item, int value) {
+        if (!customStyle() || value < 1 || value > 10) { refresh(Play6Snapshot.PICTURE); return; }
+        change("178 light level " + item + " " + value, Play6Snapshot.PICTURE, (g, g2) -> {
+            int[] cur = g.getRgbLevels();
+            if (!Play6Snapshot.rgbOk(cur)) throw new IllegalStateException("179 reply " + java.util.Arrays.toString(cur));
+            int r = item == 0 ? value : cur[0], gr = item == 1 ? value : cur[1], b = item == 2 ? value : cur[2];
+            g.setRgbLevels(r, gr, b);
+        });
+    }
+
+    /**
+     * p6-hal. Stock KeyStoneManager.resetKeyStone (setIChipReset), real-time keystone paused around it as the
+     * manual keystone card does (573(2,false) / 573(2,true), only when it was on).
+     */
+    private void resetKeystone(Play6Gmpf g) throws android.os.RemoteException {
+        boolean rt = false;
+        try { rt = g.getMoveAk(); } catch (Throwable t) { Log.w(TAG, "keystone reset: 586 " + t); }
+        if (rt) Log.i(TAG, "keystone reset: 573(2,false) -> " + g.setRealtimeAkRunning(false));
+        try {
+            Log.i(TAG, "keystone reset: 207(0), 130 -> " + g.resetKeystone());
+        } finally {
+            if (rt) Log.i(TAG, "keystone reset: 573(2,true) -> " + g.setRealtimeAkRunning(true));
+        }
+        Notify.show(app, s(R.string.panel_reset_keystone_done));
     }
 
     /** RGB gain / offset (0 red gain 683, 1 green 681, 2 blue 679, 3 red offset 677, 4 green 675, 5 blue 673). */
@@ -844,6 +901,12 @@ final class Play6PanelController {
                 }).run()));
         eqRow.setCommitDelay(CHOICE_COMMIT_MS);
         eqRow.setVisibility(View.GONE);
+        // stock parity (dayao voice_earc_sound_v5, Auto / Off), as the Z9X 1.0.4 row: only where 632 answers
+        earcRow = p.add(new ToggleRow(app, "eARC", (row, w) -> safe("633", () ->
+                change("633 eARC " + w, Play6Snapshot.SOUND, (g, g2) -> {
+                    if (!g.setEarc(w)) throw new IllegalStateException("633 returned false");
+                })).run()));
+        earcRow.setVisibility(View.GONE);
         return p;
     }
 
@@ -996,13 +1059,15 @@ final class Play6PanelController {
 
     // ================================================================== eye protection page (plan 1.7)
     /**
-     * Built only when Device.hasEyeProtection() (the NUI fifo reader, plan step 18); until then neither
-     * tile nor page exists. When it turns true, wire the switch to the 152 setter (Play6Gmpf PARKED block).
+     * Built only when Device.hasEyeProtection() (the image's NUI fifo reader is up, stock parity 2026-10-21);
+     * the switch is IGmpf 152 (151 read back), the runtime is eye/EyeGuard.
      */
     private Page buildEyePage() {
         Page p = newPage(QuickPanel.SECTION_EYE, R.string.panel_eye);
-        eye = p.add(new ToggleRow(app, s(R.string.panel_eye),
-                (row, wanted) -> Log.i(TAG, "eye protection " + wanted + ": no 152 setter yet (plan step 18)")));
+        eye = p.add(new ToggleRow(app, s(R.string.panel_eye), (row, wanted) -> safe("152", () ->
+                change("152 eye protection " + wanted, Play6Snapshot.EYE, (g, g2) -> {
+                    if (!g.setEyeProtection(wanted)) throw new IllegalStateException("152 returned false");
+                })).run()));
         p.add(new TextRow(app, s(R.string.panel_eye_desc)));
         return p;
     }
@@ -1263,6 +1328,11 @@ final class Play6PanelController {
             visible(eqRow, eq);
             if (eq) setChoice(eqRow, org.z9x.projector.audio.P6SoundEq.preset(app), true, true);
         }
+        if (earcRow != null) {
+            Boolean ea = ok ? sn.earc : null;
+            visible(earcRow, ea != null);
+            if (ea != null) setToggle(earcRow, ea, true);
+        }
 
         // ---- projection page
         boolean auto = ok && Boolean.TRUE.equals(sn.autoReverse);
@@ -1382,6 +1452,14 @@ final class Play6PanelController {
         styleRow.setSelected(st);
         styleRow.setRowEnabled(st >= 0 || (ok && custom && sn.style != null));
         visible(picReset, ok && custom);
+        boolean rgb = ok && custom && sn.style != null && sn.style == Play6Gmpf.STYLE_CUSTOM && Play6Snapshot.rgbOk(sn.rgb);
+        for (int k = 0; k < rgbRows.length; k++) {
+            Integer v = rgb ? sn.rgb[k] : null;
+            if (!sliderBusy(rgbRows[k])) rgbRows[k].setValue(v);
+            rgbRows[k].setRowEnabled(v != null);
+            visible(rgbRows[k], v != null);
+        }
+        visible(rgbReset, rgb);
     }
 
     /** A choice row shown with its value 0..max, or GONE (unknown value or not offered). */

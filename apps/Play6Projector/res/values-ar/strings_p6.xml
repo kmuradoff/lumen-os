@@ -105,6 +105,12 @@
     <string name="p6_style">نمط الصورة</string>
     <string name="p6_style_movie">فيلم D65</string>
     <string name="p6_pic_reset_msg">ستعود كل إعدادات وضع الصورة المخصص إلى قيمها الافتراضية. هل تريد المتابعة؟</string>
+    <string name="p6_light_red">أحمر</string>
+    <string name="p6_light_green">أخضر</string>
+    <string name="p6_light_blue">أزرق</string>
+    <string name="p6_light_reset">استعادة السطوع الافتراضي</string>
+    <string name="p6_boot_source">الفتح عند التشغيل</string>
+    <string name="p6_cec_wake">التشغيل بواسطة جهاز HDMI</string>
     <string name="hdmi_range">نطاق الألوان</string>
     <string name="hdmi_range_full">كامل</string>
     <string name="hdmi_range_limited">محدود</string>

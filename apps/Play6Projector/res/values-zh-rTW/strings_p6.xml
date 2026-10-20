@@ -105,6 +105,12 @@
     <string name="p6_style">影像風格</string>
     <string name="p6_style_movie">電影D65</string>
     <string name="p6_pic_reset_msg">自訂影像模式的所有設定將恢復預設值。是否繼續？</string>
+    <string name="p6_light_red">紅</string>
+    <string name="p6_light_green">綠</string>
+    <string name="p6_light_blue">藍</string>
+    <string name="p6_light_reset">恢復預設亮度</string>
+    <string name="p6_boot_source">開機時開啟</string>
+    <string name="p6_cec_wake">由 HDMI 裝置開機</string>
     <string name="hdmi_range">色彩範圍</string>
     <string name="hdmi_range_full">完整</string>
     <string name="hdmi_range_limited">限制</string>

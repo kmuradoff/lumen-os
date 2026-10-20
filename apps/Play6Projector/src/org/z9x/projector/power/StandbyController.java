@@ -124,10 +124,12 @@ public final class StandbyController {
     // ================================================================== enter / exit
     /** PowerKey.PowerActions.sleep: the lamp-only standby. The curtain is black already. Main thread. */
     static void enter(Context ctx, String why) {
+        try { org.z9x.projector.cec.CecPolicy.onUserKey(); } catch (Throwable t) { Log.w(TAG, "cec: " + t); }
         final Context app = ctx.getApplicationContext();
         if (sApp == null) sApp = app;
         if (sActive) return;
         sActive = true;
+        try { org.z9x.projector.eye.EyeGuard.onStandbyChanged(true); } catch (Throwable t) { Log.w(TAG, "eye: " + t); }
         sClosing = false;
         sEnteredAt = SystemClock.elapsedRealtime();
         sEnterWhy = why;
@@ -153,6 +155,11 @@ public final class StandbyController {
         broadcast(app, true);
     }
 
+    /** An HDMI device turned the projector on over CEC (cec.CecPolicy, stock parity 2026-10-21). Main thread. */
+    public static void exitForCec(Context ctx, String why) {
+        exit(ctx, why);
+    }
+
     /** The user is back (a key, HOME, another window): lamp on, picture, sound. Main thread. */
     static void exit(Context ctx, String why) {
         if (!sActive) return;
@@ -161,11 +168,14 @@ public final class StandbyController {
         end(app);
         try { WakeCurtain.onStandbyWake(); } catch (Throwable t) { Log.w(TAG, "curtain: " + t); }
         Lamp.on("standby exit", on -> {
+            try { org.z9x.projector.eye.EyeGuard.onLampOn(); } catch (Throwable t) { Log.w(TAG, "eye: " + t); }
             WakeCurtain.onLampOn();                                  // reveal also if 196 stayed unknown
             if (!Boolean.TRUE.equals(on)) Log.w(TAG, "lamp on not confirmed (196 " + on + ")");
         });
         try { SleepTimer.restoreVolumeIfNeeded(app); } catch (Throwable t) { Log.w(TAG, "volume: " + t); }
         try { org.z9x.projector.source.HdmiSource.onStandbyEnd(); } catch (Throwable t) { Log.w(TAG, "hdmi: " + t); }
+        // stock parity 2026-10-21: "Open at power-on" (the HDMI input, if chosen)
+        try { org.z9x.projector.source.BootSource.onPowerOn(app, "standby exit"); } catch (Throwable t) { Log.w(TAG, "boot source: " + t); }
         broadcast(app, false);
     }
 
@@ -300,6 +310,7 @@ public final class StandbyController {
      * consumed. Main thread.
      */
     static boolean onGlobalKey(Context ctx, KeyEvent ev) {
+        try { org.z9x.projector.cec.CecPolicy.onUserKey(); } catch (Throwable t) { Log.w(TAG, "cec: " + t); }
         if (sSwallowDownTime >= 0 && ev.getDownTime() == sSwallowDownTime) {
             if (ev.getAction() == KeyEvent.ACTION_UP) sSwallowDownTime = -1;
             return true;

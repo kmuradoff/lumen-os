@@ -52,14 +52,14 @@ public final class Device {
     }
 
     /**
-     * Eye protection can be offered: false until the NUI fifo reader exists (plan section 5 step 18). The
-     * stock Play 6 supports it (research battery_sound_features.md 4), but IGmpf 152 is sent only with that
-     * reader, and on the Play 6 nothing unsupported is shown, not even disabled: the quick panel builds no
-     * Eye protection tile or page and Lumen Home is told to hide its tile ({@link #unsupportedHomeTiles}).
-     * Turn it true together with the 152 setter (Play6Gmpf PARKED block) and an enabled switch.
+     * Eye protection can be offered: while the image's NUI fifo reader is up (z9x_nui, sys.z9x.nui=ready;
+     * stock parity 2026-10-21). The stock Play 6 supports it (research battery_sound_features.md 4), IGmpf 152
+     * is sent only with that reader, and on the Play 6 nothing unsupported is shown, not even disabled: without
+     * the reader the quick panel builds no Eye protection tile or page and Lumen Home hides its tile
+     * ({@link #unsupportedHomeTiles}).
      */
     public static boolean hasEyeProtection() {
-        return false;
+        return org.z9x.projector.hal.Play6Gmpf.nuiReaderReady();
     }
 
     /** Lumen Home's Projector tab tile of eye protection (apps/Z9xHome data/InputSource.tiles: its intent). */

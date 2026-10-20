@@ -128,6 +128,15 @@
     <string name="p6_style">Picture style</string>
     <string name="p6_style_movie">Movie D65</string>
     <string name="p6_pic_reset_msg">All settings of the Custom picture mode go back to their defaults. Continue?</string>
+    <!-- stock parity 2026-10-21: picture style Custom, light levels (stock picture_light_r/g/b_text, light_reset) -->
+    <string name="p6_light_red">Red</string>
+    <string name="p6_light_green">Green</string>
+    <string name="p6_light_blue">Blue</string>
+    <string name="p6_light_reset">Restore default brightness</string>
+    <!-- stock parity 2026-10-21: Signal > Boot source (source/BootSource) -->
+    <string name="p6_boot_source">Open at power-on</string>
+    <!-- stock parity 2026-10-21: HDMI device controls the projector (the Z9X cec_wake text) -->
+    <string name="p6_cec_wake">Turn on with an HDMI device</string>
     <!-- stock parity: the texts of the Z9X rows with the same names (strings_stock.xml / strings_pro.xml), same wording -->
     <string name="hdmi_range">Color range</string>
     <string name="hdmi_range_full">Full</string>

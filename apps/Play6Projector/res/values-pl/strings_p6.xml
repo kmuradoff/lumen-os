@@ -105,6 +105,12 @@
     <string name="p6_style">Styl obrazu</string>
     <string name="p6_style_movie">Film D65</string>
     <string name="p6_pic_reset_msg">Wszystkie ustawienia trybu obrazu Własny wrócą do domyślnych. Kontynuować?</string>
+    <string name="p6_light_red">Czerwony</string>
+    <string name="p6_light_green">Zielony</string>
+    <string name="p6_light_blue">Niebieski</string>
+    <string name="p6_light_reset">Przywróć domyślną jasność</string>
+    <string name="p6_boot_source">Otwieraj przy włączaniu</string>
+    <string name="p6_cec_wake">Włączaj urządzeniem HDMI</string>
     <string name="hdmi_range">Zakres kolorów</string>
     <string name="hdmi_range_full">Pełny</string>
     <string name="hdmi_range_limited">Ograniczony</string>

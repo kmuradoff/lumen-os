@@ -108,8 +108,9 @@ IBASE_GET_HASH_CHAIN = 0x0f485348
 INTEGRAL = {"int", "long", "short", "byte", "char"}
 NUMERIC = INTEGRAL | {"float", "double", "Integer", "Long", "Short", "Byte", "Float", "Double"}
 
-# Owner decision O3 (keystone reset with IGmpf 207 / 129). False: both stay banned.
-O3_KEYSTONE_RESET = False
+# Owner decision O3 (keystone reset with IGmpf 207 / 129): taken 2026-10-21, "as in stock". Both only with the
+# stock values, 207(0) and 129(0, 0) (VALUE_RULES).
+O3_KEYSTONE_RESET = True
 
 # Note A, by (interface, code, name). code None = the method is absent on the Play 6 (checked too).
 BAN = [
@@ -213,6 +214,8 @@ VALUE_RULES = {
     ("BpHwGmpf", 693): dict(name="setBrightness", args=[{0}, U(0, 100)]),
     ("BpHwGmpf", 695): dict(name="setContrast", args=[{0}, U(0, 100)]),
     ("BpHwGmpf", 186): dict(name="getCorrectKeystoneFullPiont", args=[{0}]),
+    ("BpHwGmpf", 207): dict(name="correctKeystoneReset", args=[{0}]),
+    ("BpHwGmpf", 129): dict(name="switchKeystoneMode", args=[{0}, {0}]),
     ("BpHwGmpf", 587): dict(name="setAngTriggerAF", args=["bool"]),
     ("BpHwGmpf2", 34): dict(name="setGameModeType", args=[{0, 1}]),
     ("BpHwGmpf2", 35): dict(name="setGameModeState", args=[{0, 1}]),

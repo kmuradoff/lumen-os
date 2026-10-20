@@ -11,7 +11,7 @@ res/values*/strings_dream.xml	decided when the dreams are ported (P2)
 res/values*/strings_display.xml	3D and UI resolution are SKIP on the Play 6
 res/values*/strings_report.xml	problem reports are SKIP on the Play 6
 res/values/strings_sys.xml	only sys_placeholder, unused
-res/drawable/ic_eye_mask.xml	not shared until the eye mask port (P2)
+res/drawable/ic_eye_mask.xml	the Play 6 has its own copy since the eye protection port (2026-10-21, forks.tsv)
 res/drawable/brand_icon_projector.xml	single source apps/common/brand (brand/sync.sh), not in FILES
 res/drawable/brand_banner_projector.xml	single source apps/common/brand (brand/sync.sh), not in FILES
 res/drawable/banner.xml	not referenced by the Z9X code or manifest

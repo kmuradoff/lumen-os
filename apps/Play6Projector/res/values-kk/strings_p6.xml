@@ -105,6 +105,12 @@
     <string name="p6_style">Сурет стилі</string>
     <string name="p6_style_movie">Кино D65</string>
     <string name="p6_pic_reset_msg">Пайдаланушы режимінің барлық параметрлері әдепкі мәндерге оралады. Жалғастыру керек пе?</string>
+    <string name="p6_light_red">Қызыл</string>
+    <string name="p6_light_green">Жасыл</string>
+    <string name="p6_light_blue">Көк</string>
+    <string name="p6_light_reset">Әдепкі жарықтықты қайтару</string>
+    <string name="p6_boot_source">Қосылғанда ашу</string>
+    <string name="p6_cec_wake">HDMI құрылғысынан қосылу</string>
     <string name="hdmi_range">Түс ауқымы</string>
     <string name="hdmi_range_full">Толық</string>
     <string name="hdmi_range_limited">Шектеулі</string>

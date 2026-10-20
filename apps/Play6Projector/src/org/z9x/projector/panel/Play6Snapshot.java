@@ -44,6 +44,8 @@ final class Play6Snapshot {
     Boolean tifHdmi;
     // PICTURE
     Integer memc;
+    /** IGmpf 179 {R, G, B, C} light levels, read only with the Custom picture style; see rgbOk. */
+    int[] rgb;
     /** Custom items in row order: brightness 692, contrast 694, saturation 690, sharpness 688. */
     final Integer[] pq = new Integer[4];
     // GAME (t15: read only while HDMI is the current source, 696 == 1)
@@ -75,6 +77,8 @@ final class Play6Snapshot {
     Integer hdmiRange, edid;
     // SOUND: the equalizer can work now (26 AMP, 43 no DTS, 60 speaker; audio/P6SoundEq)
     Boolean eqOk;
+    /** IGmpf 632 eARC mode (stock voice_earc_sound_v5: true = Auto, false = Off); null = not read. */
+    Boolean earc;
     // AMBIENT: IGmpf2 70 slide function (what closing the projector does)
     Integer slideFunc;
     // ROOT | AMBIENT, P3 item 21
@@ -110,6 +114,7 @@ final class Play6Snapshot {
         }
         if (any(parts, ROOT | SOUND)) s.soundEffect = opt("62", g::getSoundEffect);
         if (any(parts, SOUND)) s.eqOk = org.z9x.projector.audio.P6SoundEq.usable(g);
+        if (any(parts, SOUND)) s.earc = opt("632", g::getEarc);
         if (any(parts, ROOT | EYE) && Device.hasEyeProtection()) s.eye = opt("151", g::getEyeProtection);
         if (any(parts, ROOT | KEYSTONE)) {
             s.powerOnAk = opt("553", g::getPowerOnAk);
@@ -128,6 +133,7 @@ final class Play6Snapshot {
                 s.nr = opt("670", g::getNoiseReduction);
                 s.colorTemp = opt("684", g::getColorTemperature);
                 s.style = opt("175", g::getPictureStyle);
+                if (s.style != null && s.style == Play6Gmpf.STYLE_CUSTOM) s.rgb = opt("179", g::getRgbLevels);
                 if (s.colorTemp != null && s.colorTemp == 3) {
                     s.wb[0] = opt("682", g::getRedGain);
                     s.wb[1] = opt("680", g::getGreenGain);
@@ -246,14 +252,14 @@ final class Play6Snapshot {
         if (any(p, ROOT | LAMP)) lamp = n.lamp;
         if (any(p, LAMP)) eco = n.eco;
         if (any(p, ROOT | SOUND)) soundEffect = n.soundEffect;
-        if (any(p, SOUND)) eqOk = n.eqOk;
+        if (any(p, SOUND)) { eqOk = n.eqOk; earc = n.earc; }
         if (any(p, ROOT | EYE)) eye = n.eye;
         if (any(p, ROOT | KEYSTONE)) { powerOnAk = n.powerOnAk; moveAk = n.moveAk; }
         if (any(p, KEYSTONE)) { zoomOk = n.zoomOk; rotationOk = n.rotationOk; }
         if (any(p, ROOT | PROJECTION)) { putMode = n.putMode; autoReverse = n.autoReverse; }
         if (any(p, PICTURE)) {
             nr = n.nr; colorTemp = n.colorTemp; style = n.style; gamma = n.gamma; dynContrast = n.dynContrast;
-            localContrast = n.localContrast; hdrAuto = n.hdrAuto;
+            localContrast = n.localContrast; hdrAuto = n.hdrAuto; rgb = n.rgb;
             System.arraycopy(n.wb, 0, wb, 0, wb.length);
             memc = n.memc;
             System.arraycopy(n.pq, 0, pq, 0, pq.length);
@@ -292,5 +298,10 @@ final class Play6Snapshot {
     /** 666 reads 4: the MStar Game picture mode that game mode sets (plan 1.4). */
     boolean gamePicture() {
         return pictureMode != null && pictureMode == Play6Gmpf.PICTURE_GAME;
+    }
+
+    /** A 179 reply the rows can show: R, G and B each 1..10 (stock brightness.json range). */
+    static boolean rgbOk(int[] v) {
+        return v != null && v.length >= 3 && v[0] >= 1 && v[0] <= 10 && v[1] >= 1 && v[1] <= 10 && v[2] >= 1 && v[2] <= 10;
     }
 }

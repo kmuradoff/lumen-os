@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Eye-protection mask icon (v6.2b, module eye). Own line drawing in the stock mask's grey
+     (#929292 on the #242424 disc EyeGuard draws behind it): almond eye, iris ring, filled pupil
+     and three short lashes. 24-unit viewport, round strokes. No XGIMI assets. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="56dp"
+    android:height="56dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M2.5,13 C5,8.6 8.4,6.8 12,6.8 S19,8.6 21.5,13 C19,17.4 15.6,19.2 12,19.2 S5,17.4 2.5,13 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#FF929292"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M8.8,13 A3.2,3.2 0 1 0 15.2,13 A3.2,3.2 0 1 0 8.8,13 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#FF929292"
+        android:strokeWidth="1.6" />
+    <path
+        android:pathData="M10.6,13 A1.4,1.4 0 1 0 13.4,13 A1.4,1.4 0 1 0 10.6,13 Z"
+        android:fillColor="#FF929292" />
+    <path
+        android:pathData="M12,3.2 L12,4.9 M6.6,4.6 L7.5,6.1 M17.4,4.6 L16.5,6.1"
+        android:fillColor="#00000000"
+        android:strokeColor="#FF929292"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round" />
+</vector>
