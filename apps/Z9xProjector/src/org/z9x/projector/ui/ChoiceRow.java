@@ -54,6 +54,9 @@ public class ChoiceRow extends Row {
 
     public ChoiceRow setCommitDelay(long ms) { commitDelay = Math.max(0, ms); return this; }
 
+    /** Running line for a value that does not fit between the arrows (Marquee). */
+    private final Marquee valueMarquee = new Marquee();
+
     private CharSequence label() { return index >= 0 ? options[index] : "—"; }
 
     /**
@@ -78,10 +81,16 @@ public class ChoiceRow extends Row {
         drawChevronLeft(c, left, cy, focused, index <= 0);
         drawChevronRight(c, right, cy, focused, index < 0 || index >= options.length - 1);
         float room = Math.max(0, rw - 2 * (cw + arrowGap));
-        CharSequence t = TextUtils.ellipsize(label(), valuePaint, room, TextUtils.TruncateAt.END);
+        CharSequence full = label();
+        float base = cy - (valuePaint.descent() + valuePaint.ascent()) / 2f;
+        if (focused && !isMirroredNow() && valuePaint.measureText(full, 0, full.length()) > room) {
+            valueMarquee.draw(this, c, full, left + cw + arrowGap, room, base, valuePaint);
+            return;
+        }
+        valueMarquee.reset();
+        CharSequence t = TextUtils.ellipsize(full, valuePaint, room, TextUtils.TruncateAt.END);
         float w = valuePaint.measureText(t, 0, t.length());
         float mid = left + rw / 2f;
-        float base = cy - (valuePaint.descent() + valuePaint.ascent()) / 2f;
         drawTextAt(c, t, mid - w / 2f, base, valuePaint);
     }
 

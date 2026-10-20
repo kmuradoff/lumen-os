@@ -67,6 +67,8 @@ final class Tile extends View {
 
     // label / value fitted to the current width (recomputed only when text or width change)
     private CharSequence shownLabel, shownValue;
+    /** Running line for a label that does not fit, while the tile has the focus (Marquee). */
+    private final org.z9x.projector.ui.Marquee labelMarquee = new org.z9x.projector.ui.Marquee();
     private float shownLabelSize;
     private float shownValueSize;
     private int fitWidth = -1;
@@ -308,8 +310,13 @@ final class Tile extends View {
         // Fixed positions (icons and labels line up across a row, with or without a value).
         float labelCy = top + is + px(LABEL_GAP) + px(LABEL_MAX) * 0.6f;
         if (shownLabel != null && shownLabel.length() > 0) {
-            float lw = labelPaint.measureText(shownLabel, 0, shownLabel.length());
-            c.drawText(shownLabel, 0, shownLabel.length(), (w - lw) / 2f, centerBaseline(labelPaint, labelCy), labelPaint);
+            if (focusF > 0.5f && !TextUtils.equals(shownLabel, label)) {
+                labelMarquee.draw(this, c, label, pad, w - 2 * pad, centerBaseline(labelPaint, labelCy), labelPaint);
+            } else {
+                labelMarquee.reset();
+                float lw = labelPaint.measureText(shownLabel, 0, shownLabel.length());
+                c.drawText(shownLabel, 0, shownLabel.length(), (w - lw) / 2f, centerBaseline(labelPaint, labelCy), labelPaint);
+            }
         }
         if (shownValue != null && shownValue.length() > 0) {
             float valueCy = labelCy + px(LABEL_MAX) * 0.6f + px(VALUE_GAP)
@@ -344,9 +351,14 @@ final class Tile extends View {
             icon.draw(c);
         }
         if (shownLabel != null && shownLabel.length() > 0) {
-            float lw = labelPaint.measureText(shownLabel, 0, shownLabel.length());
-            float x = rtl ? w - textStart - lw : textStart;
-            c.drawText(shownLabel, 0, shownLabel.length(), x, centerBaseline(labelPaint, cy), labelPaint);
+            if (!rtl && focusF > 0.5f && !TextUtils.equals(shownLabel, label)) {
+                labelMarquee.draw(this, c, label, textStart, fitWidth, centerBaseline(labelPaint, cy), labelPaint);
+            } else {
+                labelMarquee.reset();
+                float lw = labelPaint.measureText(shownLabel, 0, shownLabel.length());
+                float x = rtl ? w - textStart - lw : textStart;
+                c.drawText(shownLabel, 0, shownLabel.length(), x, centerBaseline(labelPaint, cy), labelPaint);
+            }
         }
         if (shownValue != null && shownValue.length() > 0) {
             float vw = valuePaint.measureText(shownValue, 0, shownValue.length());
