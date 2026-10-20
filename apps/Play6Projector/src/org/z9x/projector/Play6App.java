@@ -169,6 +169,8 @@ public final class Play6App {
         step("ManualKeystonePanel.install", () -> ManualKeystonePanel.install(app));
         // connected hook, power event hook, screen hooks (no HAL call here): the battery, plan 3.2
         step("Battery.install", () -> Battery.install(app));
+        // Lumen 1.0.5: Bluetooth headphones get the media route and a non-zero vendor A2DP volume (no HAL call)
+        step("BtAudio.install", () -> org.z9x.projector.audio.BtAudio.install(app));
         // connected hook + SCREEN_ON hook (no HAL call here): IGmpf 698 follows tvinput's HDMI sessions (t14)
         step("HdmiSource.install", () -> org.z9x.projector.source.HdmiSource.install(app));
         // connected hook + focus listener (no HAL call here): the SetupBridge's "hal" / "af" events for Lumen Setup
