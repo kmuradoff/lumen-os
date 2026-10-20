@@ -1,5 +1,11 @@
 # Z9xProjector, next (Lumen OS 1.0.5)
 
+- **Running line for long texts** (`ui/Marquee`, new; owner: "settings items must be a running line, so you can read
+  what is written"): a row title, a choice value between its arrows and a tile label that do not fit scroll while
+  focused (1.2 s still, 40 dp/s to the end, 1.2 s still, back), and keep the ellipsis when not focused. Drawn by the
+  views themselves (postInvalidateOnAnimation only while scrolling); LTR only, RTL keeps the ellipsis. Same change
+  in Play6Projector.
+
 - **Google Cast receiver switched off** (`sys/CastOff`, new; only with the Google add-on). Keeping it uncached
   (the earlier CastKeeper) made the projector visible again, but Google refuses the Cast device certificate on
   uncertified hardware: certificateprovisioning/v1/devicecertificates/create answers 403 ("Loading Widevine creds
