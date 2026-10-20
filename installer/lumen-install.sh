@@ -1525,8 +1525,11 @@ p6_cable_out() {  # after 'fastboot reboot': the projector does not start while 
   local a
   echo
   t "Written. Unplug the A-to-A cable from the projector NOW: the $P_NAME does not start while it is
-connected. If the picture does not come back within a minute, press the power button." "Записано. Сейчас выньте кабель A–A из проектора: пока он подключён, $P_NAME не загружается.
-Если через минуту изображения нет, нажмите кнопку питания."; echo
+connected. Put any USB stick into its USB port instead (it helps the $P_NAME power on; do NOT hold the power
+button, that starts the stock restore). If the picture does not come back within a minute, press the power button
+once." "Записано. Сейчас выньте кабель A–A из проектора: пока он подключён, $P_NAME не загружается.
+Вставьте вместо него в USB-порт любую флешку (с ней $P_NAME включается надёжнее; кнопку питания НЕ держите,
+иначе начнётся откат на сток). Если через минуту изображения нет, нажмите кнопку питания один раз."; echo
   printf '%s ' "$(t "Press Enter when the cable is out." "Когда кабель вынут, нажмите Enter.")"
   read -r a
 }
