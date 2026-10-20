@@ -148,7 +148,14 @@ for n in $REBUILD; do
   vn=$(printf '%s' "$badge" | sed -n "s/.* versionName='\([^']*\)'.*/\1/p")
   if [ -z "$vc" ] || [ -z "$vn" ]; then red "$n: cannot read the version of $pin"; continue; fi
   out=$W/$n.apk
-  if ! BUILD_DIR="$W/$n" VERSION_CODE="$vc" VERSION_NAME="$vn" sh apps/build_apk.sh "apps/$n" "$out" > "$W/$n.log" 2>&1; then
+  # Lumen Home 1.0.5 carries the TMDB key as an asset (build_apk.sh TMDB_KEY_FILE; the key never enters the
+  # tree): a pin with that asset is rebuilt with the same key file, so it can match byte for byte.
+  key=
+  if [ "$n" = Z9xHome ] && unzip -l "$pin" assets/tmdb_key >/dev/null 2>&1; then
+    key=${TMDB_KEY_FILE:-$HOME/.lumen-keys/tmdb.txt}
+    [ -r "$key" ] || { red "$n: the pin carries a TMDB key, but $key is not readable"; continue; }
+  fi
+  if ! BUILD_DIR="$W/$n" VERSION_CODE="$vc" VERSION_NAME="$vn" TMDB_KEY_FILE="$key" sh apps/build_apk.sh "apps/$n" "$out" > "$W/$n.log" 2>&1; then
     red "$n: build failed ($W/$n.log)"; tail -5 "$W/$n.log" | sed 's/^/    /' | tee -a "$LOG"; continue
   fi
   NB=$((NB + 1))

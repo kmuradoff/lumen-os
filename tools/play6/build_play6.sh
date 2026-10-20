@@ -70,7 +70,9 @@ for app in $SRC; do
   vc=$(printf '%s' "$badge" | sed -n "s/.* versionCode='\([^']*\)'.*/\1/p")
   vn=$(printf '%s' "$badge" | sed -n "s/.* versionName='\([^']*\)'.*/\1/p")
   [ -n "$vc" ] && [ -n "$vn" ] || die "cannot read the version of $pin"
-  BUILD_DIR="$OUT/apk/$app" KEY_PK8="$KEY_PK8" KEY_PEM="$KEY_PEM" VERSION_CODE="$vc" VERSION_NAME="$vn" \
+  key=   # Lumen Home: the TMDB key file when the pin carries one (z9x_gate.sh does the same)
+  if [ "$app" = Z9xHome ] && unzip -l "$pin" assets/tmdb_key >/dev/null 2>&1; then key=${TMDB_KEY_FILE:-$HOME/.lumen-keys/tmdb.txt}; fi
+  BUILD_DIR="$OUT/apk/$app" KEY_PK8="$KEY_PK8" KEY_PEM="$KEY_PEM" VERSION_CODE="$vc" VERSION_NAME="$vn" TMDB_KEY_FILE="$key" \
     sh "$G/apps/build_apk.sh" "$G/apps/$app" "$OUT/$app.apk"
 done
 echo "build_play6: OK ($OUT)"
