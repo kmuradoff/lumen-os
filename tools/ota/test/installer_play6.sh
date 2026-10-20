@@ -33,7 +33,9 @@
 # reset that does not start, a stale connection, a reset already done by a cut-off run), verify (clean, data
 # still there, not allowed), rescue (saved serial, typed serial, a projector last seen on stock), the commands
 # the Play 6 does not need, the stick check, status / reset per projector, which download picks the projector
-# (a Z9X download stays the Z9X with a Play 6 install saved), backup over Wi-Fi, Russian texts.
+# (a Z9X download stays the Z9X with a Play 6 install saved), backup over Wi-Fi, Russian texts, and a
+# later flash over super with the Google services add-on lumen_gapps (passes, its space counted; any other
+# extra partition refused). 'gapps' and 'gsf' themselves: tools/ota/test/installer_play6_gapps.sh.
 # Every case: the fastboot log never holds a format, erase, -w, flashing, set_active, oem, boot,
 # snapshot-update, *-logical-partition or a flash of anything but system, and adb never sends the factory
 # reset unless the case expects it.
@@ -969,14 +971,49 @@ grep -q '^devices$' "$FB/fb.log" && fail "waited for the projector although not 
 end
 
 # ------------------------------------------------------------------ the Z9X commands the Play 6 does not need
-for c in blobs vbmeta gsf gapps; do
+for c in blobs vbmeta; do
   begin "not_needed_$c"
   inst '' --ip 192.0.2.50 "$c"
   expect_rc 1
-  case "$c" in gsf|gapps) expect_out "Google services cannot be added on the $NAME yet" ;; *) expect_out "'$c' is not needed on the $NAME" ;; esac
+  expect_out "'$c' is not needed on the $NAME"
   [ ! -s "$FB/adb.log" ] || fail "adb used: $(cat "$FB/adb.log")"
   end
 done
+# gapps and gsf of the Play 6: tools/ota/test/installer_play6_gapps.sh
+
+# ------------------------------------------------------------------ super with the Google services add-on (lumen_gapps)
+gapps_part() {  # size: the add-on partition lumen_gapps in super, as 'gapps' leaves it
+  sed -i.bak '/^all: Done$/d' "$FB/getvar"
+  { printf '(bootloader) is-logical:lumen_gapps:yes\n(bootloader) partition-size:lumen_gapps:0x%X\n' "$1"; echo "all: Done"; } >> "$FB/getvar"
+}
+begin flash_keep_data_with_gapps
+# a later Lumen OS over an install with Google services: the known layout plus lumen_gapps passes, only system is written
+echo lumen > "$FB/mode"; gapps_part 213909504
+inst 'WRITE\n\n\n' --ip 192.0.2.50 --keep-data flash
+expect_rc 0
+expect_cmds "$WRITE_CMDS"
+expect_out "fastboot mode: $NAME $SER"
+end
+
+begin flash_room_counts_gapps
+# super with room for the image only without the add-on: the add-on keeps its space, nothing is written
+echo lumen > "$FB/mode"; gapps_part 213909504
+# super = vendor + 4 MiB reserve + the image (1 MiB) + 100 MiB: enough without the add-on, too small with it
+sed -i.bak "s/^(bootloader) partition-size:super:.*/(bootloader) partition-size:super:0x$(printf '%X' $((0x79608000 + 4194304 + 1048576 + 104857600)))/" "$FB/getvar"
+inst 'WRITE\n\n' --ip 192.0.2.50 --keep-data flash
+expect_rc 1
+expect_cmds "$STOP_CMDS"
+expect_out "the image does not fit into super"
+end
+
+begin fbd_unknown_extra_partition_refused
+echo lumen > "$FB/mode"; gapps_part 213909504
+sed -i.bak 's/is-logical:lumen_gapps:yes/is-logical:other_part:yes/' "$FB/getvar"
+inst 'WRITE\n\n' --ip 192.0.2.50 --keep-data flash
+expect_rc 1
+expect_cmds "$STOP_CMDS"
+expect_out "the partitions in super are not the known ones"
+end
 
 # ------------------------------------------------------------------ the restore stick (read only)
 BIN=$(conf play6 RESTORE_BIN)
@@ -1070,7 +1107,7 @@ end
 
 begin help_lists_play6
 bash "$INST/lumen-install.sh" --help > "$C/out" 2>&1; RC=$?
-expect_rc 0; expect_out "stick DIR"; expect_out "What it writes on the Play 6: 'system', nothing else"
+expect_rc 0; expect_out "stick DIR"; expect_out "What it writes on the Play 6: 'system'; 'gapps' also creates, resizes or deletes"
 end
 
 echo "installer play6: $PASS passed, $FAIL failed"
