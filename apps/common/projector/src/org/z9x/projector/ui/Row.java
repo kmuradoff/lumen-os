@@ -44,6 +44,8 @@ public abstract class Row extends View {
     private boolean rowEnabled = true;
     /** True while onDraw runs with the mirrored canvas (RTL). */
     private boolean mirrored;
+    /** Running line for a title that does not fit, while the row has the focus (Marquee). */
+    private final Marquee titleMarquee = new Marquee();
 
     protected Row(Context c, CharSequence title) {
         super(c);
@@ -88,6 +90,9 @@ public abstract class Row extends View {
 
     /** Width (real px) reserved at the right for the value part. */
     protected abstract float rightWidth();
+
+    /** Width of the full title (a right part may use what the title does not need). */
+    protected float titleWidth() { return titlePaint.measureText(title, 0, title.length()); }
 
     /** Draws the value part; {@code right} is the inner right edge, {@code cy} the title baseline centre. */
     protected abstract void drawRight(Canvas c, float right, float cy, boolean focused);
@@ -151,7 +156,12 @@ public abstract class Row extends View {
         }
         float cy = titleCenterY();
         float base = cy - (titlePaint.descent() + titlePaint.ascent()) / 2f;
-        drawTextAt(c, shownTitle, padH, base, titlePaint);
+        if (focused && !mirrored && titlePaint.measureText(title, 0, title.length()) > avail) {
+            titleMarquee.draw(this, c, title, padH, avail, base, titlePaint);
+        } else {
+            titleMarquee.reset();
+            drawTextAt(c, shownTitle, padH, base, titlePaint);
+        }
         drawRight(c, right, cy, focused);
     }
 
@@ -160,6 +170,9 @@ public abstract class Row extends View {
      * canvas the string is flipped back around its own centre, so it reads normally at the mirrored
      * position. Subclasses must draw text only through this method.
      */
+    /** True while onDraw runs mirrored (RTL): the running line is LTR only. */
+    protected boolean isMirroredNow() { return mirrored; }
+
     protected void drawTextAt(Canvas c, CharSequence text, float x, float base, Paint p) {
         if (text == null || text.length() == 0) return;
         if (!mirrored) {
