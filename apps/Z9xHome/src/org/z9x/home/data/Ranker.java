@@ -32,6 +32,12 @@ public final class Ranker {
     public static final int WN_CONTINUE = 0; // TvContract.WatchNextPrograms.WATCH_NEXT_TYPE_CONTINUE
     /** The recommendations in the "For you" row, at most (the owner's mockup home_v2 tpl2: 24). */
     public static final int FOR_YOU_RECS = 24;
+    /**
+     * App stores whose channels only advertise apps (owner 2026-10-21: "RuStore recommendations are nonsense, remove
+     * them"): hidden by default, like the system promo channels; Customize can still show them.
+     */
+    public static final Set<String> STORE_PKGS = new HashSet<>(java.util.Arrays.asList(
+            "ru.vk.store.tv", "ru.vk.store", "com.android.vending", "com.huawei.appmarket", "com.xiaomi.mipicks"));
 
     public static final class Input {
         public List<Card> apps = new ArrayList<>();          // one card per launcher activity
@@ -113,7 +119,7 @@ public final class Ranker {
             r.channelId = ch.id;
             r.cards.addAll(progs);
             r.aspect = majorityAspect(progs);
-            boolean shownByDefault = !ch.system && (ch.browsable || ch.firstOfPackage);
+            boolean shownByDefault = !ch.system && !STORE_PKGS.contains(ch.pkg) && (ch.browsable || ch.firstOfPackage);
             r.hidden = in.hiddenRows.contains(id) || (!shownByDefault && !in.shownRows.contains(id));
             channelRows.add(r);
         }

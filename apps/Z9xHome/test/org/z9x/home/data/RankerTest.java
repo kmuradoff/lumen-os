@@ -110,6 +110,26 @@ public final class RankerTest {
         Ranker.dropTvp(m);
         T.ok(m.hero.isEmpty() && m.rows.stream().noneMatch(r -> r.type == Row.WATCH_NEXT || r.type == Row.CHANNEL)
                 && m.allRows.stream().noneMatch(r -> r.type == Row.WATCH_NEXT), "dropTvp: calm model");
+        storeChannelHidden();
+    }
+
+    /** 1.0.5 (owner 2026-10-21): an app store's channel only advertises apps: hidden by default, Customize shows it. */
+    static void storeChannelHidden() {
+        Ranker.Input in = new Ranker.Input();
+        in.now = 1_000_000_000_000L;
+        in.apps.addAll(Arrays.asList(app("ru.vk.store.tv", "RuStore"), app("ru.rutube.app.tv", "RUTUBE")));
+        in.tvp.channels.add(ch(1, "ru.vk.store.tv", "Recommended", true, true, false));
+        in.tvp.channels.add(ch(2, "ru.rutube.app.tv", "Рекомендует", true, true, false));
+        in.tvp.programs.put(1L, Arrays.asList(prog("ru.vk.store.tv", 1, "VK Видео Live", "https://s", 1)));
+        in.tvp.programs.put(2L, Arrays.asList(prog("ru.rutube.app.tv", 2, "Выпуск 1", "https://r", 1)));
+        HomeModel m = Ranker.build(in);
+        Row fy = m.rows.stream().filter(r -> r.type == Row.FOR_YOU).findFirst().orElse(null);
+        T.ok(fy != null && fy.cards.size() == 1 && "ru.rutube.app.tv".equals(fy.cards.get(0).pkg), "store channel not in For you");
+        T.ok(m.allRows.stream().anyMatch(r -> r.id.equals("ch:1") && r.hidden), "store channel listed as hidden (Customize)");
+        in.shownRows.add("ch:1");
+        m = Ranker.build(in);
+        fy = m.rows.stream().filter(r -> r.type == Row.FOR_YOU).findFirst().orElse(null);
+        T.ok(fy != null && fy.cards.size() == 2, "store channel shown when the user shows it");
     }
 
     static String ids(java.util.List<Card> l) {
