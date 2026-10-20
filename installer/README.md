@@ -18,6 +18,8 @@ section there ([English](https://github.com/kmuradoff/lumen-os/blob/main/docs/in
 | `lib/blobs_allow.txt` | checksums of the nine MediaTek and XGIMI codec and audio files the `blobs` step accepts (hashes only, no files) |
 | `lib/gapps_allow.txt` | the one MindTheGapps zip the `gapps` step accepts, its official URL, and the files it installs from it (hashes only) |
 | `lib/gapps_fill.sh` | runs on the projector during `gapps` and fills the `z9x_gapps` partition |
+| `lib/play6/gapps_allow.txt` | XGIMI Play 6: the one MindTheGapps zip (32-bit Android 14 TV) its `gapps` step accepts, its official URL, and the files it installs from it (hashes only) |
+| `lib/play6/gapps_fill.sh`, `lib/play6/lumen-gapps.xml` | XGIMI Play 6: runs on the projector during `gapps` and formats and fills the `lumen_gapps` partition; the Lumen settings it adds for the Google apps |
 | `certs/ota.x509.pem` | the Lumen OS certificate that checks `SHA256SUMS.sig` (XGIMI Z9X) |
 | `certs/play6/ota.x509.pem` | the same for the XGIMI Play 6 (in a Play 6 download) |
 
@@ -58,6 +60,10 @@ XGIMI Play 6 (it has no USB debugging: `--ip ADDRESS` is its Wi-Fi address, save
 | `verify` | later, after joining Wi-Fi and turning debugging on again: checks the clean install | only if you agree to a wipe |
 | `rescue` | the projector waits in fastboot mode on the cable: writes the system again, keeps the data (Lumen OS only: a projector this computer last saw on stock is refused) | yes |
 | `stick DIR` | checks a stock-restore USB stick: MBR, one FAT32 partition, the firmware file, an empty `factory.txt` | no (nothing on the computer either) |
+| `gapps --zip FILE` | adds Google services from your own MindTheGapps download: creates `lumen_gapps` in fastboot mode (A-to-A cable), fills it over Wi-Fi, then Android's factory reset (`--keep-data`: no reset) | yes, erases data |
+| `gapps --remove` | removes the Google services you added (fastboot mode, A-to-A cable), with the same factory reset | yes, erases data |
+| `gapps` | shows the state of the Google services you added | no |
+| `gsf` | shows the GSF ID to register at google.com/android/uncertified, when Google services are installed | no |
 | `status`, `reset` | as above; `--device play6 reset` forgets only the Play 6 | no |
 
 Options:

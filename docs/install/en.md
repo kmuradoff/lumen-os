@@ -520,7 +520,8 @@ What is different from the Z9X:
 - The projector's own fastboot mode cannot erase the data. So Lumen OS first starts once on your old
   data, then the installer asks Android for its own factory reset, and XGIMI's recovery erases the data,
   as Settings > Reset would.
-- Google services cannot be added on the Play 6 yet.
+- Lumen OS for the Play 6 comes without Google. You can add Google Play and Google sign-in later from your
+  own download, see [Google services](#play6-google).
 
 <a name="play6-need"></a>
 
@@ -685,6 +686,72 @@ The installer shows the version, whether the data was really erased, whether the
 set up, and the projector app and the audio outputs. Lines with `✓` are fine. Send lines with `!` along
 with your question. Turn debugging off again afterwards if you like.
 
+<a name="play6-google"></a>
+
+### 7. Optional: Google services
+
+We are not allowed to redistribute Google's apps, so you download the file yourself and the installer adds
+it. You get Google Play, Google Play services, the Google sign-in for TVs and the remote in the Google TV
+phone app. Lumen Home stays the home screen. Left out on purpose, to keep the Play 6's 1.4 GB of memory for
+your apps: the Google TV home screen, voice search, Google text-to-speech and TalkBack.
+
+Chromecast built-in is not part of it and cannot be: Google gives the Cast device certificate only to
+devices it has certified, and the Play 6 with Lumen OS is not one of them. The same holds on the Z9X, see
+[Chromecast](#chromecast).
+
+It takes about 20 minutes and **erases all data**, like the install. You need the A-to-A cable again,
+and an installer download that has this step (an older one answers that Google services cannot be added
+yet).
+
+1. Download MindTheGapps for 32-bit Android 14 TV (223 MB). It must be exactly this file, the installer
+   refuses any other (the Z9X file too):
+   [MindTheGapps-14.0.0-arm-ATV-full-20240523_191930.zip](https://github.com/MindTheGapps/14.0.0-arm-ATV/releases/download/MindTheGapps-14.0.0-arm-ATV-20240523_192108/MindTheGapps-14.0.0-arm-ATV-full-20240523_191930.zip).
+   Safari on a Mac sometimes unpacks the zip by itself. If that happens, download it with another browser:
+   you need the `.zip`.
+2. Turn debugging on and look up the address ([step 6](#play6-verify), items 1 to 4).
+3. Run:
+
+   ```
+   bash lumen-install.sh --ip 192.168.x.y gapps --zip ~/Downloads/MindTheGapps-14.0.0-arm-ATV-full-20240523_191930.zip
+   ```
+
+   Windows: `lumen-install.cmd gapps -Zip C:\Users\<you>\Downloads\MindTheGapps-14.0.0-arm-ATV-full-20240523_191930.zip -Ip 192.168.x.y`
+4. Type `ERASE`. Then, as at the install: connect the A-to-A cable when asked, and unplug it when the
+   installer says so. In fastboot mode the installer creates the partition `lumen_gapps` (204 MB). When
+   Lumen OS is back, it copies the file to the projector over Wi-Fi (a few minutes), puts the Google apps
+   into that partition, checks each one, and asks Android for its factory reset.
+5. When the projector shows Lumen OS again, answer `yes` to "Do you see Lumen Home?".
+
+To keep your data, add `--keep-data` and type `WRITE` instead of `ERASE`. But then the phone remote may
+not work properly until a factory reset.
+
+Then join Wi-Fi and sign in: Settings > Accounts > Add account. Usually the sign-in just works. If Google
+refuses it, or Play says the device is not certified, register the projector:
+
+1. Turn debugging on again ([step 6](#play6-verify); the factory reset turned it off).
+2. Get the GSF ID:
+
+   ```
+   bash lumen-install.sh --ip 192.168.x.y gsf
+   ```
+
+3. Register it at [google.com/android/uncertified](https://www.google.com/android/uncertified), wait 10
+   to 30 minutes, then sign in from Settings > Accounts.
+
+Lumen OS updates and factory resets keep the Google services. System, vendor, boot, recovery and the
+calibration do not change; only the `lumen_gapps` partition is added. The stock restore from a stick
+removes it.
+
+`bash lumen-install.sh --ip 192.168.x.y gapps` shows their state. If a run stopped halfway, the
+projector starts without Google services until you run the same `gapps --zip` command again.
+
+To remove Google services, first remove your Google account (Settings > Accounts), then run (this also
+erases data; with `--keep-data` it does not):
+
+```
+bash lumen-install.sh --ip 192.168.x.y gapps --remove
+```
+
 <a name="play6-problems"></a>
 
 ### Something went wrong
@@ -719,6 +786,10 @@ with your question. Turn debugging off again afterwards if you like.
 | verify | "the data was NOT erased" | Answer `yes` to erase it now, or use Settings > Device Preferences > Reset > Factory reset. |
 | rescue | "this computer last saw this projector on XGIMI's stock system" | `rescue` repairs Lumen OS only. To install, run the installer without a command (step 4). Nothing was written. |
 | stick | Lines with `!` | Fix them as the line says, see [Back to stock](#play6-stock). |
+| gapps | "is not the MindTheGapps file this installer accepts" | Download exactly the file named in [Google services](#play6-google), with its original name. The arm64 file of the Z9X does not fit the Play 6. Nothing was written. |
+| gapps | "has no Google services add-on support" | Install a newer Lumen OS for the Play 6 first (`--keep-data flash`, see [step 5](#play6-wifi)). Nothing was written. |
+| gapps | "not enough free space in super" | Nothing was written in super. Report it with the installer output. |
+| gapps | "the Google services were not added" or "the Google services are off" | Run the same `gapps --zip` command again. Until then Lumen OS starts without Google services; your data is still there. |
 | later | The projector does not power on | Unplug the A-to-A cable. Put a USB stick in the port and press the power button. |
 
 The Play 6's progress is kept in `~/.lumen-installer/play6/`. `bash lumen-install.sh status` shows it and
@@ -792,10 +863,12 @@ exactly like this:
 | `system` | replaced by Lumen OS, written in fastboot mode |
 | `userdata`, `cache` | erased once by Android's factory reset, which XGIMI's recovery carries out |
 | `misc` | Android leaves the factory reset command for XGIMI's recovery there, as Settings > Reset does; the installer never writes it |
+| `lumen_gapps` | only with [Google services](#play6-google): created in super in fastboot mode, then formatted and filled on the projector; `gapps --remove` deletes it |
 | vendor, boot, recovery, dtbo, MBOOT, MPOOL, tvconfig, tvservice, cusdata, project_id, tvcertificate, xgimi*, upgrade, calibration | never changed |
 
 The installer never runs `fastboot -w`, `erase`, `format` or `flashing` on the Play 6, and no other
-`flash` than system. Every partition write goes through an allow-list in the script.
+`flash` than system. Besides that it only creates, resizes or deletes the partition `lumen_gapps`, for
+Google services. Every partition write goes through an allow-list in the script.
 
 Lumen OS is licensed under Apache-2.0, the AirPlay receiver under GPL-3.0. No XGIMI, MediaTek or Google
 software is in the release files.

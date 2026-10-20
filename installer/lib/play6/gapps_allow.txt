@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS without Google on the XGIMI Play 6: the Google services add-on ('lumen-install gapps --zip FILE').
+# The user downloads the MindTheGapps zip himself from its official URL (url= below); no Google file is in any
+# Lumen OS image or release. Hashes, sizes and paths only. The installer accepts only a zip whose sha256 has a
+# zip= line here. On the projector (adb root) installer/lib/play6/gapps_fill.sh formats the logical partition
+# lumen_gapps (part= bytes, created in fastboot mode) and copies exactly that zip's files listed below into
+# it, each checked by sha256 and size, plus the sysconfig layer lib/play6/lumen-gapps.xml (its sha256 is
+# sysconfig=) and the file gmsversion. At every start the image's /system/etc/xgimi/lumen_gapps.sh mounts
+# the partition read-only and lays its folders over /system.
+# Made and checked by tools/play6/gapps_allow.py (format and rules in its doc): the lean set of the Play 6
+# (GmsCore, Google Services Framework, Play Store, TV sign-in, TV account picker, Android TV Remote Service,
+# GoogleExtShared and their XML files), the same files as the owner's tested partition. Play 6 only: the
+# Z9X has its own list (installer/lib/gapps_allow.txt). Never remove a published zip= block: a projector
+# keeps its partition across Lumen OS updates.
+#
+# zip=<sha256> <file name> size=<bytes> part=<partition bytes> gmsversion=<value> sysconfig=<sha256> url=<official download URL>
+# <sha256> <size> <path inside lumen_gapps>
+zip=b8d81621106d045cb85bb7e540cb9a09eacd883fa5f1b24a67e7181d687a9623 MindTheGapps-14.0.0-arm-ATV-full-20240523_191930.zip size=223011089 part=213909504 gmsversion=14_202403 sysconfig=e38bcc1eeed3faf747e19da339c36fc99462922f2e401a05fdb3163124c20d96 url=https://github.com/MindTheGapps/14.0.0-arm-ATV/releases/download/MindTheGapps-14.0.0-arm-ATV-20240523_192108/MindTheGapps-14.0.0-arm-ATV-full-20240523_191930.zip
+86e016f7810b43aa8c955303c7fec20f12565c6ac301b2473dfbb82280cc5f81 16861 app/GoogleExtShared/GoogleExtShared.apk
+641eb5aa55a4bc9cf0d8eb6d5faaafe464d85d53be445797655dcd0606992ea7 3511 etc/permissions/privapp-permissions-google-system.xml
+9d3d3af5d8e1dcb6890076fe17f8ba48752b490e9b9aab3a5a3be7fce288b82e 2301 product/etc/default-permissions/default-atv-permissions.xml
+00bff885ac890876070e67555de8d4c36cb97177d36a6efc77f6690e84fd02e8 10899 product/etc/permissions/privapp-permissions-atv-product.xml
+0075ce38e76c6caddb3238b48131bfe37ce0db297e3754b0e023b4a2a4fccd04 45964 product/etc/permissions/privapp-permissions-google-product.xml
+73a160b4ec5ee9fd7ebb3ad8947d37c699302732584a90cc6a03956005cada12 919 product/etc/permissions/split-permissions-google.xml
+ae227b5f58b6517de8d28d12d2eb57ea1c9eb7abeb4ecd5fd6c3f54838d8f1b6 7407 product/etc/sysconfig/google-hiddenapi-package-whitelist.xml
+c074b60ed9d74bdf5f65145a47caf9565417099fbed1bc59c5f4966f126024e2 394 product/etc/sysconfig/google-staged-installer-whitelist.xml
+659451437a7e220d1ad4df682558a968d0780137ec61342aba5f9ed20d8ad332 8150 product/etc/sysconfig/google.xml
+f07b8a0da5f870877c34b2c48cd85e4748360e77a498e3a44df0925e0f8bcc2b 1843 product/etc/sysconfig/google_atv.xml
+bd62544fbc81f47d37ce278b3278589d045943a302a9d98d3bd03afca985bd33 12680 product/overlay/ATVOverlay.apk
+7277927433926d24ba2196cf35320a974fe54482bb1de2ecb67bd671aeccf7a0 3817484 product/priv-app/AtvRemoteService/AtvRemoteService.apk
+57a3ed991c4ece2b2d26ebee92aea855059a8a13c57cd95742cc369bc3848d27 73663218 product/priv-app/PrebuiltGmsCorePano/PrebuiltGmsCorePano.apk
+9a86c6c7f2a1d46c343028bb66ba2dcb3c93cd82c3dfd6da7793817d988b5457 42774621 product/priv-app/SetupWraithPrebuilt/SetupWraithPrebuilt.apk
+585a5872ee329df1c99ca8a6c348254719f5bc1b08714165ddbbf0a865f66bf4 51571224 product/priv-app/Tubesky/Tubesky.apk
+d4dc70e5b8efbb48a7340703118fc861a0d4118d5a305cab6f48d6d52ce2bf16 13061 system_ext/etc/permissions/privapp-permissions-google-system_ext.xml
+12db6d2c530e8ed0c9057d13f0842fd3c923ff2d96c0882f57553a038a467514 5699883 system_ext/priv-app/GoogleServicesFramework/GoogleServicesFramework.apk
