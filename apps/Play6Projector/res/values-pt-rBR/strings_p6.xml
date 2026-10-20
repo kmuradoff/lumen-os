@@ -125,4 +125,12 @@
     <string name="pro_noise">Redução de ruído</string>
     <string name="p6_temperature">Temperatura do projetor</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <string name="p6_tile_night">Luz noturna</string>
+    <string name="p6_night_on">Ligar a luz noturna</string>
+    <string name="p6_night_desc">Uma luz colorida e suave do projetor. OK no bloco a liga e Voltar a desliga. Segure OK ou pressione Menu no bloco para estas configurações.</string>
+    <string name="eq_title">Equalizador</string>
+    <string name="eq_preset_flat">Plano</string>
+    <string name="eq_preset_bass">Graves</string>
+    <string name="eq_preset_voice">Voz</string>
+    <string name="eq_preset_night">Noite</string>
 </resources>

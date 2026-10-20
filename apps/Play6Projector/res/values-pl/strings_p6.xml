@@ -125,4 +125,12 @@
     <string name="pro_noise">Redukcja szumów</string>
     <string name="p6_temperature">Temperatura projektora</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <string name="p6_tile_night">Lampka nocna</string>
+    <string name="p6_night_on">Włącz lampkę nocną</string>
+    <string name="p6_night_desc">Spokojne kolorowe światło z projektora. OK na kafelku je włącza, Wstecz wyłącza. Przytrzymaj OK lub naciśnij Menu na kafelku, aby otworzyć te ustawienia.</string>
+    <string name="eq_title">Korektor</string>
+    <string name="eq_preset_flat">Płaski</string>
+    <string name="eq_preset_bass">Bas</string>
+    <string name="eq_preset_voice">Głos</string>
+    <string name="eq_preset_night">Noc</string>
 </resources>

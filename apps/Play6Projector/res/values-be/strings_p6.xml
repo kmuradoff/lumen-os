@@ -125,4 +125,12 @@
     <string name="pro_noise">Шумапрыглушэнне</string>
     <string name="p6_temperature">Тэмпература праектара</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <string name="p6_tile_night">Начнік</string>
+    <string name="p6_night_on">Уключыць начнік</string>
+    <string name="p6_night_desc">Спакойнае каляровае святло ад праектара. OK на плітцы ўключае яго, «Назад» выключае. Утрымлівайце OK або націсніце «Меню» на плітцы, каб адкрыць гэтыя налады.</string>
+    <string name="eq_title">Эквалайзер</string>
+    <string name="eq_preset_flat">Роўны</string>
+    <string name="eq_preset_bass">Бас</string>
+    <string name="eq_preset_voice">Голас</string>
+    <string name="eq_preset_night">Ноч</string>
 </resources>

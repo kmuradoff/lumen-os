@@ -125,4 +125,12 @@
     <string name="pro_noise">Riduzione rumore</string>
     <string name="p6_temperature">Temperatura del proiettore</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <string name="p6_tile_night">Luce notturna</string>
+    <string name="p6_night_on">Accendi la luce notturna</string>
+    <string name="p6_night_desc">Una luce colorata e tenue dal proiettore. OK sul riquadro la accende, Indietro la spegne. Tieni premuto OK o premi Menu sul riquadro per queste impostazioni.</string>
+    <string name="eq_title">Equalizzatore</string>
+    <string name="eq_preset_flat">Piatto</string>
+    <string name="eq_preset_bass">Bassi</string>
+    <string name="eq_preset_voice">Voce</string>
+    <string name="eq_preset_night">Notte</string>
 </resources>

@@ -125,4 +125,12 @@
     <string name="pro_noise">Gürültü azaltma</string>
     <string name="p6_temperature">Projektör sıcaklığı</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <string name="p6_tile_night">Gece lambası</string>
+    <string name="p6_night_on">Gece lambasını aç</string>
+    <string name="p6_night_desc">Projektörden sakin, renkli bir ışık. Kutucukta OK açar, Geri kapatır. Bu ayarlar için kutucukta OK\'u basılı tutun veya Menü\'ye basın.</string>
+    <string name="eq_title">Ekolayzer</string>
+    <string name="eq_preset_flat">Düz</string>
+    <string name="eq_preset_bass">Bas</string>
+    <string name="eq_preset_voice">Konuşma</string>
+    <string name="eq_preset_night">Gece</string>
 </resources>
