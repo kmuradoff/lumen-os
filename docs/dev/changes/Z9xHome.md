@@ -899,3 +899,10 @@ If Setup uses the ip-api.com fallback it needs the same cleartext domain-config 
 - versionCode 102, versionName 1.0.1 (manifest). overlay/v1/privapp-permissions-z9xhome.xml is now a copy of
   image/privapp-permissions-z9xhome.xml (+ GRANT_RUNTIME_PERMISSIONS, WRITE_SECURE_SETTINGS).
   sha256 992bf34c55ec5400cc1acf8d87030147243b7cda3f607de6327005b75e0b9278 (test key).
+
+## 1.0.5, app store channels hidden (2026-10-21)
+
+Owner: "RuStore recommendations are nonsense, remove them". The channels of app stores (Ranker.STORE_PKGS: RuStore
+TV and phone, Google Play, AppGallery, Mi GetApps) only advertise apps, so they are hidden by default like the
+system promo channels: not in "For you", listed as hidden in Customize, where the user can still show them.
+RankerTest.storeChannelHidden.
