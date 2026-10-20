@@ -125,4 +125,12 @@
     <string name="pro_noise">降噪</string>
     <string name="p6_temperature">投影機溫度</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <string name="p6_tile_night">小夜燈</string>
+    <string name="p6_night_on">開啟小夜燈</string>
+    <string name="p6_night_desc">投影機發出的柔和彩色光。在圖塊上按 OK 開啟，按返回關閉。在圖塊上長按 OK 或按選單鍵可開啟這些設定。</string>
+    <string name="eq_title">等化器</string>
+    <string name="eq_preset_flat">平直</string>
+    <string name="eq_preset_bass">低音</string>
+    <string name="eq_preset_voice">人聲</string>
+    <string name="eq_preset_night">夜間</string>
 </resources>

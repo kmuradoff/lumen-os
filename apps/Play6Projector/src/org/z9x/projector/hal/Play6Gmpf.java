@@ -166,6 +166,12 @@ public final class Play6Gmpf extends HidlCaller {
     // sound
     private static final int SET_SOUND_EFFECT = 61;                  // tsv:setSoundeffect W=u8 R=
     private static final int GET_SOUND_EFFECT = 62;                  // tsv:getSoundeffect W= R=u8
+    // equalizer (owner 2026-10-21, the Z9X SoundEq on the Play 6 SoC PEQ of the built-in speaker path)
+    private static final int GET_SOUND_PROCESS_TYPE = 26;            // tsv:getSoundProcessType W= R=i32
+    private static final int GET_DTS_EFFECTS_ENABLE = 43;            // tsv:getDtsEffectsEnable W= R=bool
+    private static final int SET_PEQ = 50;                           // tsv:SetPEQ W=i32,i32,i32,i32 R=i32
+    private static final int SET_PEQ_ENABLE = 51;                    // tsv:SetPEQEnable W=bool R=i32
+    private static final int GET_AUDIO_OUTPUT = 60;                  // tsv:getAudioOutput W= R=u8
     // projection, eye protection
     private static final int GET_HUMAN_DETECT = 151;                 // tsv:getHumanDetectOnOff W= R=bool
     private static final int SET_HUMAN_DETECT = 152;                 // tsv:setHumanDetectOnOff W=bool R=bool
@@ -221,6 +227,19 @@ public final class Play6Gmpf extends HidlCaller {
     public static final int SOUND_KARAOKE = 4;                // value
     public static final int SOUND_SPORTS = 12;                // value
     public static final int SOUND_STANDARD = 20;              // value
+    // SoC PEQ (libporting PlatformTvCtrl::SetPEQ @0x37530, research 2026-10-21): band 1..13, gain 0.1 dB, fc Hz,
+    // Q 0.1; the vendor accepts gain -180..180; Lumen sends -120..+60 only
+    public static final int PEQ_BANDS = 13;                   // value
+    public static final int PEQ_GAIN_MIN = -120;              // value
+    public static final int PEQ_GAIN_MAX = 60;                // value
+    public static final int PEQ_FC_MIN = 50;                  // value
+    public static final int PEQ_FC_MAX = 20000;               // value
+    public static final int PEQ_Q_MIN = 5;                    // value
+    public static final int PEQ_Q_MAX = 160;                  // value
+    /** 26: process 2 = AMP (the Play 6 default, CustomerEnvTbl sound_process_type 2); 3..5 Dolby / DTS. */
+    public static final int SOUND_PROCESS_AMP = 2;            // value
+    /** 60: output path 0 = the built-in speaker (the path the PEQ sits on). */
+    public static final int AUDIO_OUTPUT_SPEAKER = 0;         // value
 
     /** getCurrentInputSource replies (stock): 0 media / storage, 1 HDMI (the Play 6 has one port, ARC). */
     public static final int SOURCE_MEDIA = 0, SOURCE_HDMI1 = 1;   // value 696 replies, 698 sources
@@ -737,6 +756,29 @@ public final class Play6Gmpf extends HidlCaller {
     public void setMusicPlayerListener(Play6MusicPlayerCallback cb) throws RemoteException {
         callPidBinder(SET_MUSIC_PLAYER_LISTENER, Process.myPid(), cb);
     }
+
+    // ------------------------------------------------------------- equalizer (owner 2026-10-21)
+    // Caller: audio/P6SoundEq only. Read first every time: 26 == 2 (AMP), 43 false (no DTS), 60 == 0 (speaker);
+    // never 27 / 44 (process switch), 45..49 (HPF, DRC, prescale, volume dB).
+
+    /** 26 getSoundProcessType(). */
+    public int getSoundProcess() throws RemoteException { return callRetI32(GET_SOUND_PROCESS_TYPE); }
+
+    /** 43 getDtsEffectsEnable(). */
+    public boolean getDtsEffects() throws RemoteException { return callRetBool(GET_DTS_EFFECTS_ENABLE); }
+
+    /** 60 getAudioOutput() -> the vendor's output path (0 speaker). */
+    public int getAudioOutput() throws RemoteException { return callRetU8(GET_AUDIO_OUTPUT); }
+
+    /** 50 SetPEQ(band 1..13, gain 0.1 dB, fc Hz, Q 0.1) -> 1 ok. */
+    public int setPeqBand(int band, int gainTenthDb, int fcHz, int qTenth) throws RemoteException {
+        return callI32x4RetI32(SET_PEQ, checkRange("peq band", band, 1, PEQ_BANDS),
+                checkRange("peq gain", gainTenthDb, PEQ_GAIN_MIN, PEQ_GAIN_MAX),
+                checkRange("peq fc", fcHz, PEQ_FC_MIN, PEQ_FC_MAX), checkRange("peq q", qTenth, PEQ_Q_MIN, PEQ_Q_MAX));
+    }
+
+    /** 51 SetPEQEnable(on) -> 1 ok. true only after all 13 bands were written. */
+    public int setPeqEnabled(boolean on) throws RemoteException { return callBoolRetI32(SET_PEQ_ENABLE, on); }
 
     // ------------------------------------------------------------- private helpers
     private void callPidBinder(int code, int pid, IHwBinder cb) throws RemoteException {

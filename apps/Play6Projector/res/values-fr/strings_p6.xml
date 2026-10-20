@@ -125,4 +125,12 @@
     <string name="pro_noise">Réduction du bruit</string>
     <string name="p6_temperature">Température du projecteur</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <string name="p6_tile_night">Veilleuse</string>
+    <string name="p6_night_on">Allumer la veilleuse</string>
+    <string name="p6_night_desc">Une lumière colorée et douce du projecteur. OK sur la vignette l\'allume, Retour l\'éteint. Maintenez OK ou appuyez sur Menu sur la vignette pour ces réglages.</string>
+    <string name="eq_title">Égaliseur</string>
+    <string name="eq_preset_flat">Neutre</string>
+    <string name="eq_preset_bass">Basses</string>
+    <string name="eq_preset_voice">Voix</string>
+    <string name="eq_preset_night">Nuit</string>
 </resources>

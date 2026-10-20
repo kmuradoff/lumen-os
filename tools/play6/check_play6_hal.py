@@ -250,6 +250,9 @@ VALUE_RULES = {
     ("BpHwGmpf", 660): dict(name="setEdidVersion", args=[{1, 2}]),
     ("BpHwGmpf", 419): dict(name="enablePowerOnMusic", args=["bool"]),
     ("BpHwGmpf2", 69): dict(name="setSlideFunc", args=[{0, 1}]),
+    # equalizer (owner 2026-10-21): the SoC PEQ of the speaker path, inside Lumen's own limits
+    ("BpHwGmpf", 50): dict(name="SetPEQ", args=[U(1, 13), U(-120, 60), U(50, 20000), U(5, 160)]),
+    ("BpHwGmpf", 51): dict(name="SetPEQEnable", args=["bool"]),
     ("BpHwGmpf2", 229): dict(name="setTvGammaLevel", args=[{0}, U(0, 8)]),
     ("BpHwGmpf2", 231): dict(name="setTvDynamicContrastEnable", args=[{0}, "bool"]),
 }

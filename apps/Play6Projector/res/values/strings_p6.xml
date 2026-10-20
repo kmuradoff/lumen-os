@@ -150,4 +150,14 @@
     <!-- stock parity: Projector settings, the stock Device info temperature (IGmpf 438) -->
     <string name="p6_temperature">Projector temperature</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <!-- owner 2026-10-21: the Night light tile and page -->
+    <string name="p6_tile_night">Night light</string>
+    <string name="p6_night_on">Turn on night light</string>
+    <string name="p6_night_desc">A calm colored light from the projector. OK on the tile turns it on, Back turns it off. Hold OK or press Menu on the tile for these settings.</string>
+    <!-- owner 2026-10-21: the equalizer, the texts of the Z9X rows with the same names -->
+    <string name="eq_title">Equalizer</string>
+    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_bass">Bass</string>
+    <string name="eq_preset_voice">Voice</string>
+    <string name="eq_preset_night">Night</string>
 </resources>

@@ -198,8 +198,15 @@ public final class SpeakerMode extends Panel {
 
     private static final int LID_EVENT_TYPE = 4, LID_CLOSED = 1;
 
+    /** Brightness (IGmpf 177) read when the projector was closed; -1 = none. p6-hal writes, p6-hal reads. */
+    private static volatile int sLidLevel = -1;
+
     private static void onLidClosed(Context app) {
         Log.i(TAG, "projector closed (ambient speaker)");
+        Hal.run((g, g2) -> {
+            try { sLidLevel = g.getLampLevel(); Log.i(TAG, "closed: 177 brightness " + sLidLevel); }
+            catch (Throwable t) { sLidLevel = -1; }
+        });
         if (!org.z9x.projector.KeyReceiver.isSetupComplete(app)) { Log.i(TAG, "setup not complete: ignored"); return; }
         Hal.query((g, g2) -> g2.isIdentityOpen() && g2.isConvexLensIn(), lens -> {
             if (Boolean.TRUE.equals(lens)) { Log.i(TAG, "starry sky lens in: no ambient speaker (as stock)"); return; }
@@ -217,8 +224,34 @@ public final class SpeakerMode extends Panel {
         });
     }
 
+    /**
+     * Device 2026-10-21: after an ambient speaker session the owner found the brightness at 3 (it was 10). Not
+     * written by Lumen (the ambient brightness stays "As set"), so the vendor lowers it while the projector is
+     * closed. Opening: 3 s later, when 177 reads lower than at closing, power saving is off (327) and the adapter
+     * is in (238), the level of the closing is written back (176). On battery the vendor's own lowering stays.
+     */
+    private static void restoreLidLevel() {
+        final int saved = sLidLevel;
+        sLidLevel = -1;
+        if (saved < 1 || saved > 10) return;
+        Hal.runDelayed((g, g2) -> {
+            try {
+                int now = g.getLampLevel();
+                boolean eco = g.getEcoState(), adapter = g.isAdapterPowered();
+                Log.i(TAG, "opened: 177 brightness " + now + " (closed at " + saved + "), eco " + eco + ", adapter " + adapter);
+                if (now >= 1 && now < saved && !eco && adapter) {
+                    g.setLampLevel(saved);
+                    Log.i(TAG, "opened: brightness back to " + saved + " (177 now " + g.getLampLevel() + ")");
+                }
+            } catch (Throwable t) {
+                Log.w(TAG, "opened: brightness: " + t);
+            }
+        }, 3_000);
+    }
+
     private static void onLidOpened(Context app) {
         Log.i(TAG, "projector opened");
+        restoreLidLevel();
         SpeakerMode cur = sActive;
         if (cur != null && cur.lid) cur.dismiss();
         else if (AmbientLight.isOpen() && !supported()) AmbientLight.close();

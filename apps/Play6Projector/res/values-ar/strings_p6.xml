@@ -125,4 +125,12 @@
     <string name="pro_noise">تقليل التشويش</string>
     <string name="p6_temperature">درجة حرارة جهاز العرض</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <string name="p6_tile_night">ضوء ليلي</string>
+    <string name="p6_night_on">تشغيل الضوء الليلي</string>
+    <string name="p6_night_desc">ضوء ملوّن هادئ من جهاز العرض. يشغّله OK على البلاطة ويطفئه زر الرجوع. اضغط مطولاً على OK أو اضغط القائمة على البلاطة لفتح هذه الإعدادات.</string>
+    <string name="eq_title">المعادل الصوتي</string>
+    <string name="eq_preset_flat">مستوٍ</string>
+    <string name="eq_preset_bass">جهير</string>
+    <string name="eq_preset_voice">صوت بشري</string>
+    <string name="eq_preset_night">ليلي</string>
 </resources>

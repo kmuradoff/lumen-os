@@ -122,6 +122,12 @@ final class Play6PanelController {
      * three rows (device test 2026-10-21: a tenth tile pushed "All settings" off the panel).
      */
     static final String SECTION_SPEAKER = "speaker";
+    /**
+     * Owner 2026-10-21: the "Night light" tile. OK turns the ambient light on at once (last colour, the night light's
+     * effect, default "Always on"; ambient/AmbientLight.openNight); MENU or a held OK on the tile opens its page
+     * (colour, effect, brightness). "All settings" became a square tile so that the 11 tiles fit in 4 rows.
+     */
+    static final String SECTION_NIGHT = "night";
 
     private final Context app;
     private final SharedPreferences prefs;
@@ -152,11 +158,12 @@ final class Play6PanelController {
     /** The aspect row's options right now (ASPECT_ORDER or ASPECT_ORDER_NO_ORIGINAL). */
     private int[] aspectOrder = ASPECT_ORDER_NO_ORIGINAL;
     private CheckRow pAuto, pTable, pCeiling;
-    private ChoiceRow ambColor, ambEffect, ambLevel, spkLight, lidRow;
+    private ChoiceRow ambColor, ambEffect, spkLight, lidRow;
     private HeaderRow spkHeader, ambHeader;
-    private NavRow spkOn, ambOn;
+    private NavRow spkOn;
     private TextRow spkDesc, ambDesc;
     // stock parity picture rows (Custom items, local contrast, HDR) and HDMI rows (2026-10-21)
+    private ChoiceRow eqRow;
     private ChoiceRow nrRow, ctRow, gammaRow, lcRow, styleRow, hdmiRangeRow, edidRow;
     private final SliderRow[] wbRows = new SliderRow[6];
     private ToggleRow dcRow, hdrRow;
@@ -280,6 +287,10 @@ final class Play6PanelController {
     private void onTile(String section) {
         if (panel == null || !panel.isShowing()) return;     // closed during the press
         grid.remember(section);
+        if (SECTION_NIGHT.equals(section)) {                 // one press: the night light at once
+            closeThen(() -> org.z9x.projector.ambient.AmbientLight.openNight(app));
+            return;
+        }
         if (QuickPanel.SECTION_INPUT.equals(section)) {
             // replaces the quick panel; BACK there returns to the tile grid (Input tile remembered)
             if (setupDone("input")) SourceOverlay.showFromQuickPanel(app);
@@ -310,6 +321,7 @@ final class Play6PanelController {
             case QuickPanel.SECTION_EYE: p = Device.hasEyeProtection() ? buildEyePage() : null; break;
             case QuickPanel.SECTION_GENERAL: p = buildSettingsPage(); break;
             case SECTION_SPEAKER: p = buildSpeakerLightPage(); break;
+            case SECTION_NIGHT: p = buildNightPage(); break;
             default: p = null; break;
         }
         if (p == null) return null;
@@ -348,6 +360,7 @@ final class Play6PanelController {
             case QuickPanel.SECTION_GAME: return Play6Snapshot.GAME;
             case QuickPanel.SECTION_EYE: return Play6Snapshot.EYE;
             case SECTION_SPEAKER: return Play6Snapshot.AMBIENT;
+            case SECTION_NIGHT: return Play6Snapshot.AMBIENT;
             default: return 0;
         }
     }
@@ -498,10 +511,12 @@ final class Play6PanelController {
         addTile(QuickPanel.SECTION_GAME, R.drawable.ic_tile_game, R.string.panel_tile_game, false);
         addTile(SECTION_SPEAKER, R.drawable.ic_tile_speaker, R.string.p6_tile_speaker, false);
         grid.tile(SECTION_SPEAKER).setVisibility(View.GONE);          // A2DP sink role or ambient light (apply)
+        addTile(SECTION_NIGHT, R.drawable.ic_tile_night, R.string.p6_tile_night, false);
+        grid.tile(SECTION_NIGHT).setVisibility(View.GONE);            // while IGmpf2 71 reads true (apply)
         if (Device.hasEyeProtection()) {
             addTile(QuickPanel.SECTION_EYE, R.drawable.ic_tile_eye, R.string.panel_tile_eye, false);
         }
-        addTile(QuickPanel.SECTION_GENERAL, R.drawable.ic_tile_settings, R.string.panel_all_settings, true);
+        addTile(QuickPanel.SECTION_GENERAL, R.drawable.ic_tile_settings, R.string.panel_all_settings, false);
         p.setInitialFocus(gridRow);
         p.setOnShown(() -> refresh(Play6Snapshot.ROOT));
         return p;
@@ -815,10 +830,20 @@ final class Play6PanelController {
                     final CharSequence title = row.getTitle();
                     change("61 sound " + m, Play6Snapshot.SOUND, (g, g2) -> {
                         g.setSoundEffect(m);                       // 61
+                        org.z9x.projector.audio.P6SoundEq.afterSoundModeChange(app);
                         Notify.show(app, title + ": " + soundLabels[i]);
                     });
                 }).run()));
         soundMode.setCommitDelay(CHOICE_COMMIT_MS);
+        // owner 2026-10-21: the equalizer of the Z9X on the Play 6 speaker (audio/P6SoundEq), only while it can work
+        eqRow = p.add(new ChoiceRow(app, s(R.string.eq_title), labels(app, R.string.eq_preset_flat, R.string.eq_preset_bass,
+                R.string.eq_preset_voice, R.string.eq_preset_night),
+                (row, i) -> safe("eq", () -> {
+                    if (!Boolean.TRUE.equals(snap.eqOk)) { refresh(Play6Snapshot.SOUND); return; }
+                    org.z9x.projector.audio.P6SoundEq.choose(app, i);
+                }).run()));
+        eqRow.setCommitDelay(CHOICE_COMMIT_MS);
+        eqRow.setVisibility(View.GONE);
         return p;
     }
 
@@ -982,6 +1007,78 @@ final class Play6PanelController {
         return p;
     }
 
+    // ================================================================== night light page (owner 2026-10-21)
+    private ChoiceRow nightColor, nightEffect, nightLevel;
+
+    private Page buildNightPage() {
+        Page p = newPage(SECTION_NIGHT, R.string.p6_tile_night);
+        p.add(new NavRow(app, s(R.string.p6_night_on), () -> closeThen(() -> org.z9x.projector.ambient.AmbientLight.openNight(app))).setChevron(false));
+        nightColor = p.add(new ChoiceRow(app, s(R.string.p6_amb_color), labels(app, R.string.p6_amb_c_orange,
+                R.string.p6_amb_c_blue, R.string.p6_amb_c_yellow, R.string.p6_amb_c_green, R.string.p6_amb_c_pink,
+                R.string.p6_amb_c_purple, R.string.p6_amb_c_colorful),
+                (row, i) -> safe("night color", () -> org.z9x.projector.ambient.AmbientLight.setColor(app, i)).run()));
+        nightEffect = p.add(new ChoiceRow(app, s(R.string.p6_amb_effect), labels(app, R.string.p6_amb_e_standard,
+                R.string.p6_amb_e_always, R.string.p6_amb_e_rhythm),
+                (row, i) -> safe("night effect", () -> org.z9x.projector.ambient.AmbientLight.setNightMode(app, i)).run()));
+        CharSequence[] levels = new CharSequence[11];
+        levels[0] = s(R.string.p6_amb_level_same);
+        for (int i = 1; i <= 10; i++) levels[i] = Integer.toString(i);
+        nightLevel = p.add(new ChoiceRow(app, s(R.string.p6_amb_level), levels,
+                (row, i) -> safe("night level", () -> org.z9x.projector.ambient.AmbientLight.setLevel(app, i)).run()));
+        nightLevel.setCommitDelay(CHOICE_COMMIT_MS);
+        p.add(new TextRow(app, s(R.string.p6_night_desc)));
+        return p;
+    }
+
+    /**
+     * QuickPanelView: MENU, or OK held on the focused Night light tile, opens its page instead of the light (the
+     * tile itself turns the light on with a short OK). True = consumed.
+     */
+    private boolean nightLong;
+
+    boolean onPanelKey(KeyEvent ev) {
+        int code = ev.getKeyCode();
+        boolean ok = code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER;
+        if (ok && ev.getAction() == KeyEvent.ACTION_UP && (nightLong || nightDown)) {
+            // also after the page opened: this release belongs to the tile, not to the page's first row
+            boolean shortPress = nightDown && !nightLong;
+            nightLong = false;
+            nightDown = false;
+            if (shortPress && panel != null && panel.currentPage() == root) onTile(SECTION_NIGHT);   // the tile's OK
+            return true;
+        }
+        if (panel == null || panel.currentPage() != root) return false;
+        View f = grid.findFocus();
+        boolean onNight = f instanceof Tile && SECTION_NIGHT.equals(((Tile) f).section);
+        if (!onNight) return false;
+        if (code == KeyEvent.KEYCODE_MENU) {
+            if (ev.getAction() == KeyEvent.ACTION_UP) openNightPage();
+            return true;
+        }
+        if (ok && ev.getAction() == KeyEvent.ACTION_DOWN) {
+            // The tile acts on its first DOWN; for the night tile the press waits for the release (short = the
+            // light) or a hold (long = the page)
+            if (ev.getRepeatCount() == 0) { nightDown = true; return true; }
+            boolean held = (ev.getFlags() & KeyEvent.FLAG_LONG_PRESS) != 0 || ev.getRepeatCount() >= 3;
+            if (!nightLong && held) {                          // held about half a second
+                nightLong = true;
+                openNightPage();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private boolean nightDown;
+
+    private void openNightPage() {
+        Page p = page(SECTION_NIGHT);
+        if (p == null || panel == null) return;
+        grid.settle();
+        p.setInitialFocus(-1);
+        panel.push(p);
+    }
+
     // ================================================================== speaker and ambient light page
     /**
      * The stock ambient speaker on one page (P3 item 21, stock parity 2026-10-21):
@@ -1003,7 +1100,6 @@ final class Play6PanelController {
                 (row, i) -> safe("speaker light", () -> org.z9x.projector.speaker.SpeakerMode.setLight(app, i)).run()));
         spkDesc = p.add(new TextRow(app, s(R.string.p6_spk_desc)));
         ambHeader = p.add(new HeaderRow(app, s(R.string.p6_amb_title)));
-        ambOn = p.add(new NavRow(app, s(R.string.p6_amb_on), () -> closeThen(() -> org.z9x.projector.ambient.AmbientLight.open(app))).setChevron(false));
         ambColor = p.add(new ChoiceRow(app, s(R.string.p6_amb_color), labels(app, R.string.p6_amb_c_orange,
                 R.string.p6_amb_c_blue, R.string.p6_amb_c_yellow, R.string.p6_amb_c_green, R.string.p6_amb_c_pink,
                 R.string.p6_amb_c_purple, R.string.p6_amb_c_colorful, R.string.p6_amb_c_none),
@@ -1011,12 +1107,6 @@ final class Play6PanelController {
         ambEffect = p.add(new ChoiceRow(app, s(R.string.p6_amb_effect), labels(app, R.string.p6_amb_e_standard,
                 R.string.p6_amb_e_always, R.string.p6_amb_e_rhythm),
                 (row, i) -> safe("ambient effect", () -> org.z9x.projector.ambient.AmbientLight.setMode(app, i)).run()));
-        CharSequence[] levels = new CharSequence[11];
-        levels[0] = s(R.string.p6_amb_level_same);
-        for (int i = 1; i <= 10; i++) levels[i] = Integer.toString(i);
-        ambLevel = p.add(new ChoiceRow(app, s(R.string.p6_amb_level), levels,
-                (row, i) -> safe("ambient level", () -> org.z9x.projector.ambient.AmbientLight.setLevel(app, i)).run()));
-        ambLevel.setCommitDelay(CHOICE_COMMIT_MS);
         lidRow = p.add(new ChoiceRow(app, s(R.string.p6_lid), labels(app, R.string.p6_lid_off, R.string.p6_lid_speaker),
                 (row, i) -> safe("lid", () -> {
                     if (snap.slideFunc == null || i < 0 || i > 1) { refresh(Play6Snapshot.AMBIENT); return; }
@@ -1026,7 +1116,7 @@ final class Play6PanelController {
                 }).run()));
         lidRow.setCommitDelay(CHOICE_COMMIT_MS);
         ambDesc = p.add(new TextRow(app, s(R.string.p6_amb_desc)));
-        for (View v : new View[] {spkHeader, spkOn, spkLight, spkDesc, ambHeader, ambOn, ambColor, ambEffect, ambLevel, lidRow, ambDesc}) {
+        for (View v : new View[] {spkHeader, spkOn, spkLight, spkDesc, ambHeader, ambColor, ambEffect, lidRow, ambDesc}) {
             v.setVisibility(View.GONE);
         }
         return p;
@@ -1168,6 +1258,11 @@ final class Play6PanelController {
         // ---- sound
         int sm = ok ? indexOf(SOUND_ORDER, sn.soundEffect) : -1;
         setChoice(soundMode, sm, sm >= 0, true);
+        if (eqRow != null) {
+            boolean eq = ok && Boolean.TRUE.equals(sn.eqOk);
+            visible(eqRow, eq);
+            if (eq) setChoice(eqRow, org.z9x.projector.audio.P6SoundEq.preset(app), true, true);
+        }
 
         // ---- projection page
         boolean auto = ok && Boolean.TRUE.equals(sn.autoReverse);
@@ -1214,6 +1309,16 @@ final class Play6PanelController {
         // A2DP sink role, the ambient rows while IGmpf2 71 reads true, the lid row once IGmpf2 70 was read
         boolean amb = g2 && Boolean.TRUE.equals(sn.ambientOk);
         boolean spk = ok && org.z9x.projector.speaker.SpeakerMode.supported();
+        Tile nightTile = grid.tile(SECTION_NIGHT);
+        if (nightTile != null && (nightTile.getVisibility() == View.VISIBLE) != amb) {
+            nightTile.setVisibility(amb ? View.VISIBLE : View.GONE);
+            grid.requestLayout();
+        }
+        if (nightColor != null) {
+            nightColor.setSelected(org.z9x.projector.ambient.AmbientLight.nightColorIndex(app));
+            nightEffect.setSelected(org.z9x.projector.ambient.AmbientLight.nightModeIndex(app));
+            nightLevel.setSelected(org.z9x.projector.ambient.AmbientLight.level(app));
+        }
         Tile spkTile = grid.tile(SECTION_SPEAKER);
         if (spkTile != null && (spkTile.getVisibility() == View.VISIBLE) != (spk || amb)) {
             spkTile.setVisibility(spk || amb ? View.VISIBLE : View.GONE);
@@ -1223,10 +1328,9 @@ final class Play6PanelController {
             for (View v : new View[] {spkHeader, spkOn, spkDesc}) visible(v, spk);
             visible(spkLight, spk && amb);
             spkLight.setSelected(amb ? org.z9x.projector.speaker.SpeakerMode.light(app) : 0);
-            for (View v : new View[] {ambHeader, ambOn, ambColor, ambEffect, ambLevel, ambDesc}) visible(v, amb);
+            for (View v : new View[] {ambHeader, ambColor, ambEffect, ambDesc}) visible(v, amb);
             ambColor.setSelected(org.z9x.projector.ambient.AmbientLight.colorIndex(app));
             ambEffect.setSelected(org.z9x.projector.ambient.AmbientLight.modeIndex(app));
-            ambLevel.setSelected(org.z9x.projector.ambient.AmbientLight.level(app));
             Integer lid = amb ? sn.slideFunc : null;
             visible(lidRow, lid != null);
             if (lid != null) setChoice(lidRow, lid == 0 ? 0 : 1, true, true);
@@ -1246,6 +1350,10 @@ final class Play6PanelController {
         tileValue(QuickPanel.SECTION_PROJECTION_MODE, ok ? projectionLabel(sn) : null);
         tileValue(QuickPanel.SECTION_GAME, !ok ? null : !hdmi ? s(R.string.panel_tile_hdmi_only)
                 : gm >= 0 && gm <= 2 ? gameModeLabels()[gm] : null);
+        int nc = org.z9x.projector.ambient.AmbientLight.nightColorIndex(app);
+        int[] colorRes = {R.string.p6_amb_c_orange, R.string.p6_amb_c_blue, R.string.p6_amb_c_yellow, R.string.p6_amb_c_green,
+                R.string.p6_amb_c_pink, R.string.p6_amb_c_purple, R.string.p6_amb_c_colorful};
+        tileValue(SECTION_NIGHT, nc >= 0 && nc < colorRes.length ? s(colorRes[nc]) : null);
         tileValue(QuickPanel.SECTION_EYE, ok && sn.eye != null ? s(sn.eye ? R.string.panel_on : R.string.panel_off) : null);
     }
 
@@ -1371,7 +1479,7 @@ final class Play6PanelController {
 
         @Override
         protected boolean onKeyEvent(KeyEvent ev) {
-            return false;
+            try { return ctl.onPanelKey(ev); } catch (Throwable t) { Log.w(TAG, "panel key: " + t); return false; }
         }
 
         @Override

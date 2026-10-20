@@ -125,4 +125,12 @@
     <string name="pro_noise">Шумозаглушення</string>
     <string name="p6_temperature">Температура проєктора</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <string name="p6_tile_night">Нічник</string>
+    <string name="p6_night_on">Увімкнути нічник</string>
+    <string name="p6_night_desc">Спокійне кольорове світло від проєктора. OK на плитці вмикає його, «Назад» вимикає. Утримуйте OK або натисніть «Меню» на плитці, щоб відкрити ці налаштування.</string>
+    <string name="eq_title">Еквалайзер</string>
+    <string name="eq_preset_flat">Рівний</string>
+    <string name="eq_preset_bass">Бас</string>
+    <string name="eq_preset_voice">Голос</string>
+    <string name="eq_preset_night">Ніч</string>
 </resources>

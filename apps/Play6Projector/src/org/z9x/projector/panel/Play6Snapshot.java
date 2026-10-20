@@ -73,6 +73,8 @@ final class Play6Snapshot {
     Boolean hdrAuto;
     // GAME (HDMI only): 634 colour range, 661 EDID version
     Integer hdmiRange, edid;
+    // SOUND: the equalizer can work now (26 AMP, 43 no DTS, 60 speaker; audio/P6SoundEq)
+    Boolean eqOk;
     // AMBIENT: IGmpf2 70 slide function (what closing the projector does)
     Integer slideFunc;
     // ROOT | AMBIENT, P3 item 21
@@ -107,6 +109,7 @@ final class Play6Snapshot {
             Battery.noteEco(s.eco);                     // p6-hal, as Battery's own reads
         }
         if (any(parts, ROOT | SOUND)) s.soundEffect = opt("62", g::getSoundEffect);
+        if (any(parts, SOUND)) s.eqOk = org.z9x.projector.audio.P6SoundEq.usable(g);
         if (any(parts, ROOT | EYE) && Device.hasEyeProtection()) s.eye = opt("151", g::getEyeProtection);
         if (any(parts, ROOT | KEYSTONE)) {
             s.powerOnAk = opt("553", g::getPowerOnAk);
@@ -243,6 +246,7 @@ final class Play6Snapshot {
         if (any(p, ROOT | LAMP)) lamp = n.lamp;
         if (any(p, LAMP)) eco = n.eco;
         if (any(p, ROOT | SOUND)) soundEffect = n.soundEffect;
+        if (any(p, SOUND)) eqOk = n.eqOk;
         if (any(p, ROOT | EYE)) eye = n.eye;
         if (any(p, ROOT | KEYSTONE)) { powerOnAk = n.powerOnAk; moveAk = n.moveAk; }
         if (any(p, KEYSTONE)) { zoomOk = n.zoomOk; rotationOk = n.rotationOk; }

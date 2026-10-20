@@ -153,17 +153,48 @@ public final class AmbientLight extends Panel {
 
     /** Shows the ambient light. Main thread. */
     public static void open(Context ctx) {
+        open(ctx, false);
+    }
+
+    /**
+     * The night light (owner 2026-10-21, quick panel tile "Night light"): the ambient light at once with the last
+     * colour (a lit one: "None" counts as orange), the night light's own effect (default "Always on", a calm light)
+     * and the brightness choice of the ambient light (never brighter). BACK turns it off. Main thread.
+     */
+    public static void openNight(Context ctx) {
+        open(ctx, true);
+    }
+
+    /** The night light's effect index into MODES (default 1 = always on). */
+    public static int nightModeIndex(Context c) {
+        int v = prefs(c).getInt(K_NIGHT_MODE, 1);
+        return v >= 0 && v < MODES.length ? v : 1;
+    }
+
+    public static void setNightMode(Context c, int i) {
+        if (i >= 0 && i < MODES.length) prefs(c).edit().putInt(K_NIGHT_MODE, i).apply();
+    }
+
+    /** The colour of the night light: the last colour, "None" as orange. */
+    public static int nightColorIndex(Context c) {
+        int v = colorIndex(c);
+        return v == NONE ? 0 : v;
+    }
+
+    private static final String K_NIGHT_MODE = "night_effect";
+
+    private static void open(Context ctx, boolean night) {
         Context app = ctx.getApplicationContext();
         if (sOpen != null) return;
         AmbientLight p = new AmbientLight(app);
-        p.color = colorIndex(app);
-        p.mode = modeIndex(app);
+        p.color = night ? nightColorIndex(app) : colorIndex(app);
+        p.mode = night ? nightModeIndex(app) : modeIndex(app);
         if (!OverlayHost.get(app).show(p)) {
             Log.w(TAG, "window could not be added");
             return;
         }
         sOpen = p;
-        Log.i(TAG, "on: color " + COLORS[p.color] + ", effect " + MODES[p.mode] + ", level " + level(app));
+        Log.i(TAG, (night ? "night light " : "") + "on: color " + COLORS[p.color] + ", effect " + MODES[p.mode] + ", level " + level(app));
         final int want = level(app);
         if (want > 0) Hal.run((g, g2) -> dim(app, g, want));
     }

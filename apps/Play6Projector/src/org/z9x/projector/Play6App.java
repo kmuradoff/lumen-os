@@ -176,6 +176,8 @@ public final class Play6App {
         // connected hook (no HAL call here) + a speaker Bluetooth role left set goes back to normal (P3 item 21)
         step("SpeakerMode.install", () -> org.z9x.projector.speaker.SpeakerMode.install(app));
         // stock parity: closing / opening the projector (IGmpf 227 event type 4) starts / ends the ambient speaker
+        // owner 2026-10-21: the equalizer's re-apply triggers (no HAL call here)
+        step("P6SoundEq.install", () -> org.z9x.projector.audio.P6SoundEq.install(app));
         step("SpeakerMode.installLidTrigger", () -> org.z9x.projector.speaker.SpeakerMode.installLidTrigger(app));
         // connected hook, power event hook, screen hooks (no HAL call here): the battery, plan 3.2
         step("Battery.install", () -> Battery.install(app));

@@ -125,4 +125,12 @@
     <string name="pro_noise">노이즈 감소</string>
     <string name="p6_temperature">프로젝터 온도</string>
     <string name="p6_temperature_value">%1$d °C</string>
+    <string name="p6_tile_night">수면등</string>
+    <string name="p6_night_on">수면등 켜기</string>
+    <string name="p6_night_desc">프로젝터의 차분한 색 조명입니다. 타일에서 OK를 누르면 켜지고 뒤로를 누르면 꺼집니다. 이 설정은 타일에서 OK를 길게 누르거나 메뉴를 누르면 열립니다.</string>
+    <string name="eq_title">이퀄라이저</string>
+    <string name="eq_preset_flat">플랫</string>
+    <string name="eq_preset_bass">저음</string>
+    <string name="eq_preset_voice">음성</string>
+    <string name="eq_preset_night">야간</string>
 </resources>
