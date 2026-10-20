@@ -115,4 +115,39 @@
     <string name="p6_spk_keys">OK: play / pause · Left / Right: previous / next track · Volume keys: volume · Back: leave speaker mode</string>
     <string name="p6_spk_ending">Leaving speaker mode…</string>
     <string name="p6_spk_failed">Speaker mode could not start. Bluetooth headphones work as before.</string>
+    <!-- stock parity (2026-10-21): the Speaker tile and page, the lid row, the picture and HDMI rows of the stock dayao tree -->
+    <string name="p6_tile_speaker">Speaker</string>
+    <string name="p6_spk_page">Speaker and ambient light</string>
+    <string name="p6_amb_c_none">None</string>
+    <string name="p6_lid">When closed</string>
+    <string name="p6_lid_off">Shut down</string>
+    <string name="p6_lid_speaker">Ambient speaker</string>
+    <string name="p6_ct_cool">Cool</string>
+    <string name="p6_ct_warm">Warm</string>
+    <string name="p6_hdr">HDR</string>
+    <string name="p6_style">Picture style</string>
+    <string name="p6_style_movie">Movie D65</string>
+    <string name="p6_pic_reset_msg">All settings of the Custom picture mode go back to their defaults. Continue?</string>
+    <!-- stock parity: the texts of the Z9X rows with the same names (strings_stock.xml / strings_pro.xml), same wording -->
+    <string name="hdmi_range">Color range</string>
+    <string name="hdmi_range_full">Full</string>
+    <string name="hdmi_range_limited">Limited</string>
+    <string name="hdmi_mode">HDMI mode</string>
+    <string name="hdmi_mode_compat">Compatible (HDMI 1.4)</string>
+    <string name="hdmi_mode_enhanced">Enhanced (HDMI 2.0)</string>
+    <string name="hdmi_mode_note">The source reconnects. If the picture disappears, choose Compatible.</string>
+    <string name="tg_power_on_music">Sound at power-on</string>
+    <string name="pro_red_gain">Red gain</string>
+    <string name="pro_green_gain">Green gain</string>
+    <string name="pro_blue_gain">Blue gain</string>
+    <string name="pro_red_offset">Red offset</string>
+    <string name="pro_green_offset">Green offset</string>
+    <string name="pro_blue_offset">Blue offset</string>
+    <string name="pro_gamma">Gamma</string>
+    <string name="pro_local_contrast">Local contrast</string>
+    <string name="pro_dynamic_contrast">Dynamic contrast</string>
+    <string name="pro_noise">Noise reduction</string>
+    <!-- stock parity: Projector settings, the stock Device info temperature (IGmpf 438) -->
+    <string name="p6_temperature">Projector temperature</string>
+    <string name="p6_temperature_value">%1$d °C</string>
 </resources>

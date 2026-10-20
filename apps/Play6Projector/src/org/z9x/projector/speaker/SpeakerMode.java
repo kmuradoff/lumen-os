@@ -82,6 +82,8 @@ public final class SpeakerMode extends Panel {
     private final Context app;
     private int state = STARTING;                                        // main thread
     private boolean closed, lampOff, receivers;
+    /** Opened by closing the projector (the stock ambient speaker, IGmpf 227 event type 4 status 1). */
+    private final boolean lid;
     private int prevScanMode = -1;
     private String phone;
     private FrameLayout root;
@@ -91,8 +93,9 @@ public final class SpeakerMode extends Panel {
     private final Runnable applyLight = this::applyLight;
     private final Runnable hidePeek = this::hidePeek;
 
-    private SpeakerMode(Context app) {
+    private SpeakerMode(Context app, boolean lid) {
         this.app = app;
+        this.lid = lid;
     }
 
     // ================================================================== static API
@@ -137,22 +140,118 @@ public final class SpeakerMode extends Panel {
             Log.w(TAG, "connect: the lamp was left off by a speaker mode: on again");
             Lamp.on("speaker recovery", on -> { if (Boolean.TRUE.equals(on)) markLampOff(app, false); });
         }, RECOVER_DELAY_MS));
+        // Stock parity (com.xgimi.bluetoothservice BluetoothReceiver: a phone connecting as A2DP sink starts the
+        // sound mode, setCurrentSoundMode(24)): with both A2DP roles at once (coexist image) a known phone can
+        // connect at any time; then the speaker mode opens with that phone, as stock. BACK ends it as usual.
+        try {
+            app.registerReceiver(new android.content.BroadcastReceiver() {
+                @Override public void onReceive(Context c, Intent i) {
+                    try {
+                        int st = i.getIntExtra(BluetoothProfile.EXTRA_STATE, -1);
+                        BluetoothDevice d = i.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice.class);
+                        if (st != BluetoothProfile.STATE_CONNECTED || d == null || sActive != null) return;
+                        if (!org.z9x.projector.KeyReceiver.isSetupComplete(app) || StandbyController.isActive()) return;
+                        Log.i(TAG, "a phone connected as A2DP source (" + d.getAddress() + "): speaker mode, as stock");
+                        SpeakerMode p = open(app, false, d);
+                        if (p == null) Log.i(TAG, "speaker mode not opened");
+                    } catch (Throwable t) {
+                        Log.w(TAG, "sink connect: " + t);
+                    }
+                }
+            }, new IntentFilter(BluetoothA2dpSink.ACTION_CONNECTION_STATE_CHANGED), null, Ui.main(), Context.RECEIVER_EXPORTED);
+        } catch (Throwable t) {
+            Log.w(TAG, "sink receiver: " + t);
+        }
     }
+
+    /** A phone that connected before the window existed (stock auto start), handed to onRole. */
+    private BluetoothDevice firstPhone;
 
     /** Main thread: starts the speaker mode (quick panel). */
     public static void open(Context ctx) {
+        open(ctx, false, null);
+    }
+
+    /**
+     * The stock ambient speaker (stock parity 2026-10-21): the vendor reports closing the projector as IGmpf 227
+     * event type 4 status 1 (only while IGmpf2 70 says "ambient speaker"; with "shut down" the vendor powers off by
+     * itself) and opening as type 4 with another status (stock XRM MachineStateService; the same event twice is
+     * ignored, as stock). Closed: the speaker mode with the ambient light of the Ambient light settings (stock
+     * doubanfm AtmosphereLightService; colour "None" = the picture off), unless the setup is not finished or the
+     * starry sky lens is in (stock toggleAtmosphereState). Opened: a speaker mode the lid started ends.
+     * No IGmpf 174 / 175 lumens-mode change and no keystone reset on entry (stock does both; the reset would wipe
+     * the user's keystone). Called once from Play6App (connected listener on the main thread).
+     */
+    public static void installLidTrigger(Context ctx) {
+        final Context app = ctx.getApplicationContext();
+        Hal.addMusicPlayerEventListener(new Hal.MusicPlayerEventListener() {
+            private int lastKey = -1, lastStatus = -1;
+            @Override public void onMusicPlayerEvent(int type, int keycode, int status) {
+                if (type != LID_EVENT_TYPE) return;
+                if (keycode == lastKey && status == lastStatus) return;      // stock: the same event twice is ignored
+                lastKey = keycode;
+                lastStatus = status;
+                if (status == LID_CLOSED) onLidClosed(app); else onLidOpened(app);
+            }
+        });
+    }
+
+    private static final int LID_EVENT_TYPE = 4, LID_CLOSED = 1;
+
+    private static void onLidClosed(Context app) {
+        Log.i(TAG, "projector closed (ambient speaker)");
+        if (!org.z9x.projector.KeyReceiver.isSetupComplete(app)) { Log.i(TAG, "setup not complete: ignored"); return; }
+        Hal.query((g, g2) -> g2.isIdentityOpen() && g2.isConvexLensIn(), lens -> {
+            if (Boolean.TRUE.equals(lens)) { Log.i(TAG, "starry sky lens in: no ambient speaker (as stock)"); return; }
+            SpeakerMode cur = sActive;
+            if (cur != null) {
+                cur.lidTookOver();
+                return;
+            }
+            if (!supported()) {
+                Log.i(TAG, "no A2DP sink on this image: the ambient light only");
+                AmbientLight.open(app);
+                return;
+            }
+            open(app, true, null);
+        });
+    }
+
+    private static void onLidOpened(Context app) {
+        Log.i(TAG, "projector opened");
+        SpeakerMode cur = sActive;
+        if (cur != null && cur.lid) cur.dismiss();
+        else if (AmbientLight.isOpen() && !supported()) AmbientLight.close();
+    }
+
+    /** A manual speaker mode is on and the projector was closed: show the ambient light now, as stock. */
+    private void lidTookOver() {
+        Log.i(TAG, "projector closed during speaker mode: light now");
+        Ui.main().removeCallbacks(applyLight);
+        lidLight = true;
+        applyLight();
+    }
+
+    /** The light is applied without waiting for a phone (closed projector). */
+    private boolean lidLight;
+
+    private static SpeakerMode open(Context ctx, boolean lid, BluetoothDevice phone) {
         Context app = ctx.getApplicationContext();
-        if (sActive != null) return;
-        if (!supported()) { Log.w(TAG, "not supported by this image"); return; }
-        if (!Hal.isGateOpen()) { Ui.toast(app, R.string.toast_not_ready); return; }
-        SpeakerMode p = new SpeakerMode(app);
+        if (sActive != null) return null;
+        if (!supported()) { Log.w(TAG, "not supported by this image"); return null; }
+        if (!Hal.isGateOpen()) { Ui.toast(app, R.string.toast_not_ready); return null; }
+        SpeakerMode p = new SpeakerMode(app, lid);
+        p.lidLight = lid;
+        p.firstPhone = phone;
         if (!org.z9x.projector.ui.OverlayHost.get(app).show(p)) {
             Log.w(TAG, "window could not be added");
-            return;
+            return null;
         }
         sActive = p;
-        Log.i(TAG, "start (light while playing: " + (light(app) == LIGHT_AMBIENT ? "ambient" : "off") + ")");
+        Log.i(TAG, "start (" + (lid ? "projector closed: ambient speaker" : "quick panel") + ", light while playing: "
+                + (light(app) == LIGHT_AMBIENT ? "ambient" : "off") + ")");
         BtRole.toSpeaker(app, ok -> Ui.main().post(() -> p.onRole(ok)));
+        return p;
     }
 
     // ================================================================== flow (main thread)
@@ -184,6 +283,8 @@ public final class SpeakerMode extends Panel {
         state = WAITING;
         status.setText(app.getString(R.string.p6_spk_pair, name == null ? "" : name));
         hint.setVisibility(View.VISIBLE);
+        if (lidLight) Ui.main().postDelayed(applyLight, LIGHT_DELAY_MS);
+        if (firstPhone != null) onConnected(firstPhone);
     }
 
     private void onConnected(BluetoothDevice d) {
@@ -201,6 +302,10 @@ public final class SpeakerMode extends Panel {
     private void onDisconnected() {
         if (closed || state != CONNECTED) return;
         Log.i(TAG, "phone disconnected: " + phone);
+        if (lidLight) {                                                  // closed projector: the light stays
+            state = WAITING;
+            return;
+        }
         state = WAITING;
         Ui.main().removeCallbacks(applyLight);
         Ui.main().removeCallbacks(hidePeek);
@@ -213,8 +318,9 @@ public final class SpeakerMode extends Panel {
 
     /** The light while a phone plays: off (lamp) or the ambient light (lamp on). */
     private void applyLight() {
-        if (closed || state != CONNECTED) return;
-        if (light(app) == LIGHT_AMBIENT) {
+        if (closed || (state != CONNECTED && !(lidLight && state == WAITING))) return;
+        boolean ambientLight = lidLight ? AmbientLight.colorIndex(app) != AmbientLight.NONE : light(app) == LIGHT_AMBIENT;
+        if (ambientLight) {
             if (ambient == null) {
                 ambient = new AmbientLight.AmbientView(app, AmbientLight.colorIndex(app), AmbientLight.modeIndex(app));
                 root.addView(ambient, 0, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -259,7 +365,7 @@ public final class SpeakerMode extends Panel {
 
     private void hidePeek() {
         if (closed) return;
-        if (state == CONNECTED) applyLight();
+        if (state == CONNECTED || lidLight) applyLight();
     }
 
     private static String name(BluetoothDevice d) {

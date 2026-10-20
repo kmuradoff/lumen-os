@@ -102,6 +102,10 @@
     <!-- normal -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Stock parity 2026-10-21: the ambient light's music rhythm uses a Visualizer on the output mix (session 0),
+         as stock com.xgimi.doubanfm, which declares RECORD_AUDIO for it; granted to ourselves at first use
+         (ambient/AmbientLight.grantRecordAudio). No AudioRecord is ever opened. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- AudioManager.getDevicesForAttributes (Play6App's one-time speaker volume): QUERY_AUDIO_STATE =
          signature|role. -->
     <uses-permission android:name="android.permission.QUERY_AUDIO_STATE" />

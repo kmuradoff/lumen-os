@@ -62,6 +62,8 @@ public final class Play6Gmpf2 extends HidlCaller {
     private static final int GET_COPOWER_DEVICE_TYPE = 52;           // tsv:getCopowerDeviceType Z9X 74 W= R=i32
     private static final int GET_POWER_ON_AF_USE_DISTANCE = 63;      // tsv:getPowerOnAFUseDistance Z9X 90 W= R=bool
     private static final int SET_POWER_ON_AF_USE_DISTANCE = 64;      // tsv:setPowerOnAFUseDistance Z9X 91 W=bool R=bool
+    private static final int SET_SLIDE_FUNC = 69;                    // tsv:setSlideFunc Z9X 138 W=i8 R=bool
+    private static final int GET_SLIDE_FUNC = 70;                    // tsv:getSlideFunc Z9X 139 W= R=i8
     private static final int GET_IS_AUTO_ATMOSPHERE_LIGHT = 71;      // tsv:getIsAutoAtmoSphereLight Z9X 140 W= R=bool
     private static final int GET_CONVEX_LENS_TYPE = 75;              // tsv:getConvexLensType Z9X 144 W= R=i32
     private static final int GET_STAND_VERTICAL_ANGLE = 81;          // tsv:getStandVerticalAngle Z9X 150 W= R=float
@@ -72,7 +74,9 @@ public final class Play6Gmpf2 extends HidlCaller {
     private static final int GET_ALLM_STATUS = 212;                  // tsv:getAllmStatus Z9X 310 W=i32 R=bool
     private static final int GET_ALLM_ENABLE_STATE = 213;            // tsv:getAllmEnableState Z9X 311 W= R=bool
     private static final int GET_TV_GAMMA_LEVEL = 228;               // tsv:getTvGammaLevel Z9X 326 W=i32 R=i32
+    private static final int SET_TV_GAMMA_LEVEL = 229;               // tsv:setTvGammaLevel Z9X 327 W=i32,i32 R=bool
     private static final int GET_TV_DYNAMIC_CONTRAST = 230;          // tsv:getTvDynamicContrastEnable Z9X 328 W=i32 R=bool
+    private static final int SET_TV_DYNAMIC_CONTRAST = 231;          // tsv:setTvDynamicContrastEnable Z9X 329 W=i32,bool R=bool
 
     private static final int WINDOW_MAIN = 0;                 // value picture calls address window 0
     private static final int HDMI_SOURCE_1 = 1;               // value EN_INPUT_SOURCE_HDMI1 (the one Play 6 port)
@@ -81,6 +85,9 @@ public final class Play6Gmpf2 extends HidlCaller {
     private static final int ROTATE_CLOCKWISE = 5;            // value setScreenRotation: stock RotateWind RIGHT
     private static final int ROTATE_COUNTER_CLOCKWISE = 6;    // value setScreenRotation: stock RotateWind LEFT
     private static final int ROTATION_INFO_SIZE = 16;         // value ScreenRotationInfo_st: 4 x float
+    /** setSlideFunc: 0 SLIDE_FUNC_POWER (closing shuts down), 1 SLIDE_FUNC_SOUND_ATMOSPHERE (ambient speaker). */
+    public static final int SLIDE_POWER = 0;                  // value
+    public static final int SLIDE_AMBIENT_SPEAKER = 1;        // value
 
     /** Guard state of the current connection. */
     private enum Identity { UNKNOWN, OPEN, CLOSED }
@@ -183,6 +190,8 @@ public final class Play6Gmpf2 extends HidlCaller {
             case GET_COPOWER_DEVICE_TYPE: return 51;
             case GET_POWER_ON_AF_USE_DISTANCE: return 62;
             case SET_POWER_ON_AF_USE_DISTANCE: return 63;
+            case SET_SLIDE_FUNC: return 68;
+            case GET_SLIDE_FUNC: return 69;
             case GET_IS_AUTO_ATMOSPHERE_LIGHT: return 70;
             case GET_CONVEX_LENS_TYPE: return 74;
             case GET_STAND_VERTICAL_ANGLE: return 80;
@@ -193,7 +202,9 @@ public final class Play6Gmpf2 extends HidlCaller {
             case GET_ALLM_STATUS: return 207;
             case GET_ALLM_ENABLE_STATE: return 208;
             case GET_TV_GAMMA_LEVEL: return 223;
+            case SET_TV_GAMMA_LEVEL: return 224;
             case GET_TV_DYNAMIC_CONTRAST: return 225;
+            case SET_TV_DYNAMIC_CONTRAST: return 226;
             default: throw new AbsentException("IGmpf2 " + code + " does not exist on vendor " + t.label);
         }
     }
@@ -312,6 +323,35 @@ public final class Play6Gmpf2 extends HidlCaller {
      * itself is drawn by the projector (ambient/AmbientLight), no atmosphere setter is ever sent (TASKS.md).
      */
     public boolean getAmbientLightSupported() throws RemoteException { need(); return callRetBool(c(GET_IS_AUTO_ATMOSPHERE_LIGHT)); }
+
+    /**
+     * 70 getSlideFunc() -> what closing the projector does: 0 shut down, 1 ambient speaker (stock SystemUI
+     * AmbientLightSettingActivity "Close device"; anything but 0 is shown as ambient speaker, as stock).
+     */
+    public int getSlideFunction() throws RemoteException { need(); return callRetI8(c(GET_SLIDE_FUNC)); }
+
+    /** 69 setSlideFunc(0 / 1): the stock "Close device" choice, on the user's row action only. */
+    public boolean setSlideFunction(int f) throws RemoteException {
+        need();
+        HwParcel q = request();
+        q.writeInt8((byte) checkRange("slide function", f, SLIDE_POWER, SLIDE_AMBIENT_SPEAKER));
+        return call(c(SET_SLIDE_FUNC), q, RET_BOOL);
+    }
+
+    /** 229 setTvGammaLevel(0, 0..8) = gamma 1.8 .. 2.6 (stock image_mode_custom_gamma, Custom only). */
+    public boolean setGamma(int index) throws RemoteException {
+        need();
+        return callI32I32RetBool(c(SET_TV_GAMMA_LEVEL), WINDOW_MAIN, checkRange("gamma", index, 0, 8));
+    }
+
+    /** 231 setTvDynamicContrastEnable(0, on) (stock image_mode_custom_dynamic_contrast, Custom only). */
+    public boolean setDynamicContrast(boolean on) throws RemoteException {
+        need();
+        HwParcel q = request();
+        q.writeInt32(WINDOW_MAIN);
+        q.writeBool(on);
+        return call(c(SET_TV_DYNAMIC_CONTRAST), q, RET_BOOL);
+    }
 
     /** 84 isConvexLensIn(): starry sky lens attached. */
     public boolean isConvexLensIn() throws RemoteException { need(); return callRetBool(c(IS_CONVEX_LENS_IN)); }

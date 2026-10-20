@@ -60,6 +60,21 @@ final class Play6Snapshot {
     Boolean zoomOk;
     /** IGmpf2 130 (picture rotation). */
     Boolean rotationOk;
+    // PICTURE, stock parity (2026-10-21): read only in the modes whose stock page has the row
+    /** 670 noise reduction, 684 colour temperature, 175 picture style (Custom only). */
+    Integer nr, colorTemp, style;
+    /** Gains 682 / 680 / 678 and offsets 676 / 674 / 672 (Custom with colour temperature Custom only). */
+    final Integer[] wb = new Integer[6];
+    /** IGmpf2 228 gamma index, 230 dynamic contrast (Custom only, guard open). */
+    Integer gamma;
+    Boolean dynContrast;
+    /** 651 local contrast (Movie, TV, Custom), 649 HDR auto (all modes). */
+    Integer localContrast;
+    Boolean hdrAuto;
+    // GAME (HDMI only): 634 colour range, 661 EDID version
+    Integer hdmiRange, edid;
+    // AMBIENT: IGmpf2 70 slide function (what closing the projector does)
+    Integer slideFunc;
     // ROOT | AMBIENT, P3 item 21
     /** IGmpf2 71 getIsAutoAtmoSphereLight: the stock gate of the ambient light settings (tile and page). */
     Boolean ambientOk;
@@ -104,7 +119,24 @@ final class Play6Snapshot {
         if (any(parts, PICTURE) && s.pictureMode != null) {
             int pm = s.pictureMode;
             if (memcMode(pm)) s.memc = opt("668", g::getMemcLevel);
+            if (memcMode(pm)) s.localContrast = opt("651", g::getLocalContrast);
+            s.hdrAuto = opt("649", g::getHdrAuto);
             if (pm == Play6Gmpf.PICTURE_CUSTOM) {
+                s.nr = opt("670", g::getNoiseReduction);
+                s.colorTemp = opt("684", g::getColorTemperature);
+                s.style = opt("175", g::getPictureStyle);
+                if (s.colorTemp != null && s.colorTemp == 3) {
+                    s.wb[0] = opt("682", g::getRedGain);
+                    s.wb[1] = opt("680", g::getGreenGain);
+                    s.wb[2] = opt("678", g::getBlueGain);
+                    s.wb[3] = opt("676", g::getRedOffset);
+                    s.wb[4] = opt("674", g::getGreenOffset);
+                    s.wb[5] = opt("672", g::getBlueOffset);
+                }
+                if (s.gmpf2) {
+                    s.gamma = opt("g2 228", g2::getGamma);
+                    s.dynContrast = opt("g2 230", g2::getDynamicContrast);
+                }
                 s.pq[0] = opt("692", g::getBrightness);
                 s.pq[1] = opt("694", g::getContrast);
                 s.pq[2] = opt("690", g::getSaturation);
@@ -115,6 +147,8 @@ final class Play6Snapshot {
         if (any(parts, GAME) && hdmiSource) {
             s.aspect = opt("664", g::getAspectRatio);
             s.hdmiInfo = opt("662", g::getHdmiInfo);
+            s.hdmiRange = opt("634", g::getHdmiRange);
+            s.edid = opt("661", g::getEdidVersion);
         }
         if (any(parts, KEYSTONE) && s.gmpf2) {
             s.zoomOk = probeZoom(g);
@@ -123,6 +157,7 @@ final class Play6Snapshot {
         if (s.gmpf2) {
             if (any(parts, ROOT | FOCUS)) s.smartAf = opt("g2 63", g2::getSmartAutofocus);
             if (any(parts, ROOT | AMBIENT)) s.ambientOk = opt("g2 71", g2::getAmbientLightSupported);
+            if (any(parts, AMBIENT)) s.slideFunc = opt("g2 70", g2::getSlideFunction);
             if (any(parts, ROOT | GAME) && hdmiSource) s.gameProp = opt("g2 33", g2::getGameModeProp);
         }
         return s;
@@ -184,7 +219,9 @@ final class Play6Snapshot {
      * device, research 3.3) as AI (10); every other value as read. Choosing AI still sends 667(0, 10).
      */
     static Integer shownPictureMode(Integer pm) {
-        return pm != null && pm >= AI_SCENE_FIRST && pm <= AI_SCENE_LAST ? Play6Gmpf.PICTURE_AI : pm;
+        // Integer.valueOf: a bare int in the ternary would unbox a null pm (NPE seen 2026-10-21 when a page opened
+        // before the first read)
+        return pm != null && pm >= AI_SCENE_FIRST && pm <= AI_SCENE_LAST ? Integer.valueOf(Play6Gmpf.PICTURE_AI) : pm;
     }
 
     /** Motion smoothing (668 / 669) exists only in Movie (1), TV (7) and Custom (3) (stock dayao tree). */
@@ -211,10 +248,14 @@ final class Play6Snapshot {
         if (any(p, KEYSTONE)) { zoomOk = n.zoomOk; rotationOk = n.rotationOk; }
         if (any(p, ROOT | PROJECTION)) { putMode = n.putMode; autoReverse = n.autoReverse; }
         if (any(p, PICTURE)) {
+            nr = n.nr; colorTemp = n.colorTemp; style = n.style; gamma = n.gamma; dynContrast = n.dynContrast;
+            localContrast = n.localContrast; hdrAuto = n.hdrAuto;
+            System.arraycopy(n.wb, 0, wb, 0, wb.length);
             memc = n.memc;
             System.arraycopy(n.pq, 0, pq, 0, pq.length);
         }
-        if (any(p, GAME)) { aspect = n.aspect; hdmiInfo = n.hdmiInfo; }
+        if (any(p, GAME)) { aspect = n.aspect; hdmiInfo = n.hdmiInfo; hdmiRange = n.hdmiRange; edid = n.edid; }
+        if (any(p, AMBIENT)) slideFunc = n.slideFunc;
         if (any(p, ROOT | GAME)) gameProp = n.gameProp;
         if (any(p, ROOT | FOCUS)) smartAf = n.smartAf;
         if (any(p, ROOT | AMBIENT)) ambientOk = n.ambientOk;

@@ -116,9 +116,11 @@ final class Play6PanelController {
     private static final int[] ASPECT_ORDER_NO_ORIGINAL = {Play6Gmpf.ASPECT_AUTO, Play6Gmpf.ASPECT_16_9,
             Play6Gmpf.ASPECT_4_3};
     private static final int PROJ_AUTO = 0, PROJ_TABLE = 1, PROJ_CEILING = 2;
-    /** P3 item 21: the Ambient light page (ambient/AmbientLight) and its tile, shown while IGmpf2 71 reads true. */
-    static final String SECTION_AMBIENT = "ambient";
-    /** P3 item 21: the Bluetooth speaker page (speaker/SpeakerMode), shown while the image supports the A2DP sink role. */
+    /**
+     * P3 item 21 + stock parity: ONE tile "Speaker" for the stock ambient speaker (氛围音箱): the Bluetooth speaker
+     * mode (speaker/SpeakerMode) and the ambient light (ambient/AmbientLight) on one page, so the tile grid keeps
+     * three rows (device test 2026-10-21: a tenth tile pushed "All settings" off the panel).
+     */
     static final String SECTION_SPEAKER = "speaker";
 
     private final Context app;
@@ -150,7 +152,18 @@ final class Play6PanelController {
     /** The aspect row's options right now (ASPECT_ORDER or ASPECT_ORDER_NO_ORIGINAL). */
     private int[] aspectOrder = ASPECT_ORDER_NO_ORIGINAL;
     private CheckRow pAuto, pTable, pCeiling;
-    private ChoiceRow ambColor, ambEffect, ambLevel, spkLight;
+    private ChoiceRow ambColor, ambEffect, ambLevel, spkLight, lidRow;
+    private HeaderRow spkHeader, ambHeader;
+    private NavRow spkOn, ambOn;
+    private TextRow spkDesc, ambDesc;
+    // stock parity picture rows (Custom items, local contrast, HDR) and HDMI rows (2026-10-21)
+    private ChoiceRow nrRow, ctRow, gammaRow, lcRow, styleRow, hdmiRangeRow, edidRow;
+    private final SliderRow[] wbRows = new SliderRow[6];
+    private ToggleRow dcRow, hdrRow;
+    private NavRow picReset;
+    /** Picture styles in row order (174 values, stock color_style_*). */
+    private static final int[] STYLE_ORDER = {Play6Gmpf.STYLE_STANDARD, Play6Gmpf.STYLE_MOVIE_D65, Play6Gmpf.STYLE_OFFICE,
+            Play6Gmpf.STYLE_CUSTOM};
     private ToggleRow pRear;
 
     Play6PanelController(Context app) {
@@ -296,8 +309,7 @@ final class Play6PanelController {
             case QuickPanel.SECTION_GAME: p = buildGamePage(); break;
             case QuickPanel.SECTION_EYE: p = Device.hasEyeProtection() ? buildEyePage() : null; break;
             case QuickPanel.SECTION_GENERAL: p = buildSettingsPage(); break;
-            case SECTION_AMBIENT: p = buildAmbientPage(); break;
-            case SECTION_SPEAKER: p = org.z9x.projector.speaker.SpeakerMode.supported() ? buildSpeakerPage() : null; break;
+            case SECTION_SPEAKER: p = buildSpeakerLightPage(); break;
             default: p = null; break;
         }
         if (p == null) return null;
@@ -335,8 +347,7 @@ final class Play6PanelController {
             case QuickPanel.SECTION_PROJECTION_MODE: return Play6Snapshot.PROJECTION;
             case QuickPanel.SECTION_GAME: return Play6Snapshot.GAME;
             case QuickPanel.SECTION_EYE: return Play6Snapshot.EYE;
-            case SECTION_AMBIENT: return Play6Snapshot.AMBIENT;
-            case SECTION_SPEAKER: return Play6Snapshot.AMBIENT;          // the Light row offers the ambient light
+            case SECTION_SPEAKER: return Play6Snapshot.AMBIENT;
             default: return 0;
         }
     }
@@ -485,10 +496,8 @@ final class Play6PanelController {
         addTile(QuickPanel.SECTION_INPUT, R.drawable.ic_tile_input, R.string.panel_tile_input, false);
         addTile(QuickPanel.SECTION_PROJECTION_MODE, R.drawable.ic_tile_projection, R.string.panel_tile_projection, false);
         addTile(QuickPanel.SECTION_GAME, R.drawable.ic_tile_game, R.string.panel_tile_game, false);
-        addTile(SECTION_SPEAKER, R.drawable.ic_tile_speaker, R.string.p6_spk_title, false);
-        grid.tile(SECTION_SPEAKER).setVisibility(View.GONE);          // only with the image's A2DP sink role (apply)
-        addTile(SECTION_AMBIENT, R.drawable.ic_tile_ambient, R.string.p6_amb_title, false);
-        grid.tile(SECTION_AMBIENT).setVisibility(View.GONE);          // until IGmpf2 71 reads true (apply)
+        addTile(SECTION_SPEAKER, R.drawable.ic_tile_speaker, R.string.p6_tile_speaker, false);
+        grid.tile(SECTION_SPEAKER).setVisibility(View.GONE);          // A2DP sink role or ambient light (apply)
         if (Device.hasEyeProtection()) {
             addTile(QuickPanel.SECTION_EYE, R.drawable.ic_tile_eye, R.string.panel_tile_eye, false);
         }
@@ -618,7 +627,91 @@ final class Play6PanelController {
                 }).run()));
         memc.setCommitDelay(CHOICE_COMMIT_MS);
         memc.setVisibility(View.GONE);                       // only in Movie, TV and Custom (apply)
+        addStockPictureRows(p);
         return p;
+    }
+
+    /**
+     * Stock parity (2026-10-21, dayao tree): Custom = noise reduction, colour temperature with RGB gains / offsets
+     * (Custom temperature), gamma, dynamic contrast, picture style, reset; Movie / TV / Custom = local contrast;
+     * every mode = HDR. A row exists only while its mode has it and its value was read (never disabled).
+     */
+    private void addStockPictureRows(Page p) {
+        nrRow = p.add(new ChoiceRow(app, s(R.string.pro_noise), labels(app, R.string.panel_off, R.string.panel_low,
+                R.string.panel_medium, R.string.panel_high, R.string.panel_auto), (row, i) -> safe("nr", () -> {
+                    if (!custom() || i < 0 || i > 4) { refresh(Play6Snapshot.PICTURE); return; }
+                    change("671 noise reduction " + i, Play6Snapshot.PICTURE, (g, g2) -> g.setNoiseReduction(i));
+                }).run()));
+        ctRow = p.add(new ChoiceRow(app, s(R.string.panel_color_temp), labels(app, R.string.p6_ct_cool,
+                R.string.panel_pm_standard, R.string.p6_ct_warm, R.string.p6_pm_custom), (row, i) -> safe("ct", () -> {
+                    if (!custom() || i < 0 || i > 3) { refresh(Play6Snapshot.PICTURE); return; }
+                    change("685 color temperature " + i, Play6Snapshot.PICTURE, (g, g2) -> g.setColorTemperature(i));
+                }).run()));
+        int[] wbTitles = {R.string.pro_red_gain, R.string.pro_green_gain, R.string.pro_blue_gain, R.string.pro_red_offset,
+                R.string.pro_green_offset, R.string.pro_blue_offset};
+        for (int k = 0; k < wbRows.length; k++) {
+            final int item = k;
+            wbRows[k] = p.add(new SliderRow(app, s(wbTitles[k]), 0, 100, new SliderRow.OnSlide() {
+                @Override public void onChanging(SliderRow row, int value) { touch(row); }
+                @Override public void onCommit(SliderRow row, int value) { safe("wb", () -> onWb(item, value)).run(); }
+            }));
+        }
+        CharSequence[] gammas = new CharSequence[9];
+        for (int k = 0; k < 9; k++) gammas[k] = String.format(java.util.Locale.ROOT, "%.1f", 1.8f + 0.1f * k);
+        gammaRow = p.add(new ChoiceRow(app, s(R.string.pro_gamma), gammas, (row, i) -> safe("gamma", () -> {
+            if (!custom() || i < 0 || i > 8) { refresh(Play6Snapshot.PICTURE); return; }
+            change("IGmpf2 229 gamma " + i, Play6Snapshot.PICTURE, (g, g2) -> g2.setGamma(i));
+        }).run()));
+        dcRow = p.add(new ToggleRow(app, s(R.string.pro_dynamic_contrast), (row, w) -> safe("dc", () -> {
+            if (!custom()) { refresh(Play6Snapshot.PICTURE); return; }
+            change("IGmpf2 231 dynamic contrast " + w, Play6Snapshot.PICTURE, (g, g2) -> g2.setDynamicContrast(w));
+        }).run()));
+        lcRow = p.add(new ChoiceRow(app, s(R.string.pro_local_contrast), labels(app, R.string.panel_off, R.string.panel_low,
+                R.string.panel_medium, R.string.panel_high), (row, i) -> safe("lc", () -> {
+                    Integer pm = Play6Snapshot.shownPictureMode(snap.pictureMode);
+                    if (pm == null || !Play6Snapshot.memcMode(pm) || i < 0 || i > 3) { refresh(Play6Snapshot.PICTURE); return; }
+                    change("655 local contrast " + i, Play6Snapshot.PICTURE, (g, g2) -> g.setLocalContrast(i));
+                }).run()));
+        hdrRow = p.add(new ToggleRow(app, s(R.string.p6_hdr), (row, w) -> safe("hdr", () ->
+                change("650 HDR auto " + w, Play6Snapshot.PICTURE, (g, g2) -> g.setHdrAuto(w))).run()));
+        styleRow = p.add(new ChoiceRow(app, s(R.string.p6_style), labels(app, R.string.panel_pm_standard,
+                R.string.p6_style_movie, R.string.panel_pm_office, R.string.p6_pm_custom), (row, i) -> safe("style", () -> {
+                    if (!custom() || i < 0 || i >= STYLE_ORDER.length) { refresh(Play6Snapshot.PICTURE); return; }
+                    final int st = STYLE_ORDER[i];
+                    change("174 picture style " + st, Play6Snapshot.PICTURE | Play6Snapshot.LAMP, (g, g2) -> g.setPictureStyle(st));
+                }).run()));
+        picReset = p.add(new NavRow(app, s(R.string.panel_picture_reset), () -> {
+            if (!custom()) return;
+            confirm(R.string.panel_picture_reset, s(R.string.p6_pic_reset_msg), R.string.panel_reset,
+                    () -> change("658 reset custom picture", Play6Snapshot.PICTURE, (g, g2) -> g.resetCustomPicture()));
+        }).setChevron(false));
+        for (ChoiceRow r : new ChoiceRow[] {nrRow, ctRow, gammaRow, lcRow, styleRow}) r.setCommitDelay(CHOICE_COMMIT_MS);
+        for (View v : new View[] {nrRow, ctRow, gammaRow, dcRow, lcRow, hdrRow, styleRow, picReset}) v.setVisibility(View.GONE);
+        for (SliderRow r : wbRows) r.setVisibility(View.GONE);
+    }
+
+    private boolean custom() {
+        return snap.pictureMode != null && snap.pictureMode == Play6Gmpf.PICTURE_CUSTOM;
+    }
+
+    /** RGB gain / offset (0 red gain 683, 1 green 681, 2 blue 679, 3 red offset 677, 4 green 675, 5 blue 673). */
+    private void onWb(int item, int value) {
+        if (!custom() || snap.colorTemp == null || snap.colorTemp != 3 || value < 0 || value > 100) {
+            refresh(Play6Snapshot.PICTURE);
+            return;
+        }
+        change("wb " + item + " " + value, Play6Snapshot.PICTURE, (g, g2) -> {
+            boolean r;
+            switch (item) {
+                case 0: r = g.setRedGain(value); break;
+                case 1: r = g.setGreenGain(value); break;
+                case 2: r = g.setBlueGain(value); break;
+                case 3: r = g.setRedOffset(value); break;
+                case 4: r = g.setGreenOffset(value); break;
+                default: r = g.setBlueOffset(value); break;
+            }
+            if (!r) throw new IllegalStateException("white balance item " + item + " returned false");
+        });
     }
 
     /** A Custom item (0 brightness 693, 1 contrast 695, 2 saturation 691, 3 sharpness 689); Custom only. */
@@ -809,7 +902,33 @@ final class Play6PanelController {
                 }).run()));
         aspect.setCommitDelay(CHOICE_COMMIT_MS);
         aspect.setVisibility(View.GONE);                     // only on HDMI (apply)
+        // stock HDMI settings (signal_setting, 2026-10-21): colour range 635 / 634, HDMI mode (EDID) 660 / 661
+        hdmiRangeRow = p.add(new ChoiceRow(app, s(R.string.hdmi_range), labels(app, R.string.panel_auto,
+                R.string.hdmi_range_full, R.string.hdmi_range_limited), (row, i) -> safe("hdmi range", () -> {
+                    if (snap.hdmiRange == null || i < 0 || i > 2) { refresh(Play6Snapshot.GAME); return; }
+                    change("635 hdmi range " + i, Play6Snapshot.GAME, (g, g2) -> {
+                        if (hdmiNow(g, "635") && !g.setHdmiRange(i)) throw new IllegalStateException("635 returned false");
+                    });
+                }).run()));
+        hdmiRangeRow.setCommitDelay(CHOICE_COMMIT_MS);
+        hdmiRangeRow.setVisibility(View.GONE);
+        edidRow = p.add(new ChoiceRow(app, s(R.string.hdmi_mode), labels(app, R.string.hdmi_mode_compat,
+                R.string.hdmi_mode_enhanced), (row, i) -> safe("edid", () -> onEdid(i)).run()));
+        edidRow.setCommitDelay(CHOICE_COMMIT_MS);
+        edidRow.setVisibility(View.GONE);
         return p;
+    }
+
+    /** HDMI mode: stock asks first (the source reconnects); 660(1 compatible / 2 enhanced), HDMI source only. */
+    private void onEdid(int i) {
+        if (snap.edid == null || i < 0 || i > 1) { refresh(Play6Snapshot.GAME); return; }
+        final int v = i == 0 ? Play6Gmpf.EDID_14 : Play6Gmpf.EDID_20;
+        if (v == snap.edid) return;
+        confirm(R.string.hdmi_mode, s(R.string.hdmi_mode_note), R.string.panel_switch,
+                () -> change("660 edid " + v, Play6Snapshot.GAME, (g, g2) -> {
+                    if (hdmiNow(g, "660") && !g.setEdidVersion(v)) throw new IllegalStateException("660 returned false");
+                }));
+        refresh(Play6Snapshot.GAME);                           // a canceled confirm leaves the row on the real value
     }
 
     private CharSequence[] gameModeLabels() {
@@ -863,19 +982,31 @@ final class Play6PanelController {
         return p;
     }
 
-    // ================================================================== ambient light page (P3 item 21)
+    // ================================================================== speaker and ambient light page
     /**
-     * Stock "ambient speaker settings" of the G0058 (SystemUI AmbientLightSettingActivity): light color and effect,
-     * kept in Settings.Global ambient_light_data as stock does; the light itself is ambient/AmbientLight (drawn by
-     * the projector: the stand has no LED of its own). Brightness: the projector brightness while the light shows
-     * (never higher than the current one), for the night light use. No HAL write from this page.
+     * The stock ambient speaker on one page (P3 item 21, stock parity 2026-10-21):
+     *  - Bluetooth speaker (speaker/SpeakerMode, only with the image's A2DP sink role): Turn on, the light while a
+     *    phone plays (Off / Ambient light, only with the ambient light);
+     *  - Ambient light (ambient/AmbientLight, only while IGmpf2 71 reads true, stock's own gate): Turn on, colour
+     *    (stock list incl. None), effect, brightness (night light, never brighter);
+     *  - When the projector is closed: Shut down / Ambient speaker (IGmpf2 69 / 70, stock SystemUI "Close device",
+     *    shown only once 70 was read). Closing it then starts the ambient speaker (IGmpf 227 event, SpeakerMode).
      */
-    private Page buildAmbientPage() {
-        Page p = newPage(SECTION_AMBIENT, R.string.p6_amb_title);
-        p.add(new NavRow(app, s(R.string.p6_amb_on), () -> closeThen(() -> org.z9x.projector.ambient.AmbientLight.open(app))).setChevron(false));
+    private Page buildSpeakerLightPage() {
+        Page p = newPage(SECTION_SPEAKER, R.string.p6_spk_page);
+        spkHeader = p.add(new HeaderRow(app, s(R.string.p6_spk_title)));
+        spkOn = p.add(new NavRow(app, s(R.string.p6_spk_on), () -> {
+            if (setupDone("speaker mode")) closeThen(() -> org.z9x.projector.speaker.SpeakerMode.open(app));
+        }).setChevron(false));
+        spkLight = p.add(new ChoiceRow(app, s(R.string.p6_spk_light), labels(app, R.string.panel_off,
+                R.string.p6_spk_light_ambient),
+                (row, i) -> safe("speaker light", () -> org.z9x.projector.speaker.SpeakerMode.setLight(app, i)).run()));
+        spkDesc = p.add(new TextRow(app, s(R.string.p6_spk_desc)));
+        ambHeader = p.add(new HeaderRow(app, s(R.string.p6_amb_title)));
+        ambOn = p.add(new NavRow(app, s(R.string.p6_amb_on), () -> closeThen(() -> org.z9x.projector.ambient.AmbientLight.open(app))).setChevron(false));
         ambColor = p.add(new ChoiceRow(app, s(R.string.p6_amb_color), labels(app, R.string.p6_amb_c_orange,
                 R.string.p6_amb_c_blue, R.string.p6_amb_c_yellow, R.string.p6_amb_c_green, R.string.p6_amb_c_pink,
-                R.string.p6_amb_c_purple, R.string.p6_amb_c_colorful),
+                R.string.p6_amb_c_purple, R.string.p6_amb_c_colorful, R.string.p6_amb_c_none),
                 (row, i) -> safe("ambient color", () -> org.z9x.projector.ambient.AmbientLight.setColor(app, i)).run()));
         ambEffect = p.add(new ChoiceRow(app, s(R.string.p6_amb_effect), labels(app, R.string.p6_amb_e_standard,
                 R.string.p6_amb_e_always, R.string.p6_amb_e_rhythm),
@@ -886,25 +1017,18 @@ final class Play6PanelController {
         ambLevel = p.add(new ChoiceRow(app, s(R.string.p6_amb_level), levels,
                 (row, i) -> safe("ambient level", () -> org.z9x.projector.ambient.AmbientLight.setLevel(app, i)).run()));
         ambLevel.setCommitDelay(CHOICE_COMMIT_MS);
-        p.add(new TextRow(app, s(R.string.p6_amb_desc)));
-        return p;
-    }
-
-    // ================================================================== Bluetooth speaker page (P3 item 21)
-    /**
-     * The speaker mode (speaker/SpeakerMode): the picture off, the projector an A2DP sink for a phone. The Light row
-     * (Off / Ambient light) exists only while the ambient light is offered (IGmpf2 71); otherwise the light is off.
-     */
-    private Page buildSpeakerPage() {
-        Page p = newPage(SECTION_SPEAKER, R.string.p6_spk_title);
-        p.add(new NavRow(app, s(R.string.p6_spk_on), () -> {
-            if (setupDone("speaker mode")) closeThen(() -> org.z9x.projector.speaker.SpeakerMode.open(app));
-        }).setChevron(false));
-        spkLight = p.add(new ChoiceRow(app, s(R.string.p6_spk_light), labels(app, R.string.panel_off,
-                R.string.p6_spk_light_ambient),
-                (row, i) -> safe("speaker light", () -> org.z9x.projector.speaker.SpeakerMode.setLight(app, i)).run()));
-        spkLight.setVisibility(View.GONE);                               // with the ambient light only (apply)
-        p.add(new TextRow(app, s(R.string.p6_spk_desc)));
+        lidRow = p.add(new ChoiceRow(app, s(R.string.p6_lid), labels(app, R.string.p6_lid_off, R.string.p6_lid_speaker),
+                (row, i) -> safe("lid", () -> {
+                    if (snap.slideFunc == null || i < 0 || i > 1) { refresh(Play6Snapshot.AMBIENT); return; }
+                    change("IGmpf2 69 slide function " + i, Play6Snapshot.AMBIENT, (g, g2) -> {
+                        if (!g2.setSlideFunction(i)) throw new IllegalStateException("IGmpf2 69 returned false");
+                    });
+                }).run()));
+        lidRow.setCommitDelay(CHOICE_COMMIT_MS);
+        ambDesc = p.add(new TextRow(app, s(R.string.p6_amb_desc)));
+        for (View v : new View[] {spkHeader, spkOn, spkLight, spkDesc, ambHeader, ambOn, ambColor, ambEffect, ambLevel, lidRow, ambDesc}) {
+            v.setVisibility(View.GONE);
+        }
         return p;
     }
 
@@ -1038,6 +1162,7 @@ final class Play6PanelController {
             Integer m = ok && memcOk ? sn.memc : null;
             setChoice(memc, m != null ? m : -1, m != null && m >= 0 && m <= 3, true);
             visible(memc, memcOk);
+            applyStockPicture(sn, ok, pm, custom, memcOk, g2);
         }
 
         // ---- sound
@@ -1077,28 +1202,34 @@ final class Play6PanelController {
             int as = ok ? aspectIndex(order, sn.aspect) : -1;
             setChoice(aspect, as, as >= 0, hdmi);
         }
+        if (hdmiRangeRow != null) {
+            choiceIf(hdmiRangeRow, ok && hdmi ? sn.hdmiRange : null, 2);
+            Integer e = ok && hdmi ? sn.edid : null;
+            boolean edidKnown = e != null && (e == Play6Gmpf.EDID_14 || e == Play6Gmpf.EDID_20);
+            visible(edidRow, edidKnown);
+            if (edidKnown) setChoice(edidRow, e == Play6Gmpf.EDID_14 ? 0 : 1, true, true);
+        }
 
-        // ---- ambient light (P3 item 21): tile and page only while IGmpf2 71 reads true (stock gate)
+        // ---- speaker and ambient light (P3 item 21, stock parity): one tile; the speaker rows with the image's
+        // A2DP sink role, the ambient rows while IGmpf2 71 reads true, the lid row once IGmpf2 70 was read
         boolean amb = g2 && Boolean.TRUE.equals(sn.ambientOk);
-        Tile ambTile = grid.tile(SECTION_AMBIENT);
-        if (ambTile != null && (ambTile.getVisibility() == View.VISIBLE) != amb) {
-            ambTile.setVisibility(amb ? View.VISIBLE : View.GONE);
-            grid.requestLayout();
-        }
-        Tile spkTile = grid.tile(SECTION_SPEAKER);
         boolean spk = ok && org.z9x.projector.speaker.SpeakerMode.supported();
-        if (spkTile != null && (spkTile.getVisibility() == View.VISIBLE) != spk) {
-            spkTile.setVisibility(spk ? View.VISIBLE : View.GONE);
+        Tile spkTile = grid.tile(SECTION_SPEAKER);
+        if (spkTile != null && (spkTile.getVisibility() == View.VISIBLE) != (spk || amb)) {
+            spkTile.setVisibility(spk || amb ? View.VISIBLE : View.GONE);
             grid.requestLayout();
         }
-        if (spkLight != null) {
-            visible(spkLight, amb);
+        if (spkOn != null) {
+            for (View v : new View[] {spkHeader, spkOn, spkDesc}) visible(v, spk);
+            visible(spkLight, spk && amb);
             spkLight.setSelected(amb ? org.z9x.projector.speaker.SpeakerMode.light(app) : 0);
-        }
-        if (ambColor != null) {
+            for (View v : new View[] {ambHeader, ambOn, ambColor, ambEffect, ambLevel, ambDesc}) visible(v, amb);
             ambColor.setSelected(org.z9x.projector.ambient.AmbientLight.colorIndex(app));
             ambEffect.setSelected(org.z9x.projector.ambient.AmbientLight.modeIndex(app));
             ambLevel.setSelected(org.z9x.projector.ambient.AmbientLight.level(app));
+            Integer lid = amb ? sn.slideFunc : null;
+            visible(lidRow, lid != null);
+            if (lid != null) setChoice(lidRow, lid == 0 ? 0 : 1, true, true);
         }
 
         // ---- eye protection: only built with the NUI reader (Device.hasEyeProtection)
@@ -1116,6 +1247,40 @@ final class Play6PanelController {
         tileValue(QuickPanel.SECTION_GAME, !ok ? null : !hdmi ? s(R.string.panel_tile_hdmi_only)
                 : gm >= 0 && gm <= 2 ? gameModeLabels()[gm] : null);
         tileValue(QuickPanel.SECTION_EYE, ok && sn.eye != null ? s(sn.eye ? R.string.panel_on : R.string.panel_off) : null);
+    }
+
+    /** The stock parity picture rows: shown only in their modes and only with a value read (owner rule). */
+    private void applyStockPicture(Play6Snapshot sn, boolean ok, Integer pm, boolean custom, boolean memcOk, boolean g2) {
+        if (nrRow == null) return;
+        choiceIf(nrRow, ok && custom ? sn.nr : null, 4);
+        choiceIf(ctRow, ok && custom ? sn.colorTemp : null, 3);
+        boolean ctCustom = ok && custom && sn.colorTemp != null && sn.colorTemp == 3;
+        for (int k = 0; k < wbRows.length; k++) {
+            Integer v = ctCustom ? sn.wb[k] : null;
+            if (!sliderBusy(wbRows[k])) wbRows[k].setValue(v);
+            wbRows[k].setRowEnabled(v != null);
+            visible(wbRows[k], v != null);
+        }
+        choiceIf(gammaRow, ok && custom && g2 ? sn.gamma : null, 8);
+        Boolean dc = ok && custom && g2 ? sn.dynContrast : null;
+        visible(dcRow, dc != null);
+        if (dc != null) setToggle(dcRow, dc, true);
+        choiceIf(lcRow, ok && memcOk ? sn.localContrast : null, 3);
+        Boolean hdr = ok && pm != null ? sn.hdrAuto : null;
+        visible(hdrRow, hdr != null);
+        if (hdr != null) setToggle(hdrRow, hdr, true);
+        int st = ok && custom && sn.style != null ? indexOf(STYLE_ORDER, sn.style) : -1;
+        visible(styleRow, ok && custom && sn.style != null);
+        styleRow.setSelected(st);
+        styleRow.setRowEnabled(st >= 0 || (ok && custom && sn.style != null));
+        visible(picReset, ok && custom);
+    }
+
+    /** A choice row shown with its value 0..max, or GONE (unknown value or not offered). */
+    private static void choiceIf(ChoiceRow r, Integer v, int max) {
+        boolean show = v != null && v >= 0 && v <= max;
+        visible(r, show);
+        if (show) setChoice(r, v, true, true);
     }
 
     private void tileValue(String section, CharSequence v) {

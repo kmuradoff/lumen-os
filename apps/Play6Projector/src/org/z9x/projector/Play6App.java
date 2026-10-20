@@ -75,6 +75,8 @@ public final class Play6App {
     /** Device-protected prefs of the Play 6 one-shot flags (Play6App, power/UiReady17). */
     public static final String PREFS = "p6";
     private static final String K_NAME_DONE = "device_name_init";
+    /** Stock parity 2026-10-21: the stock default device and Bluetooth names were replaced (fixStockNamesOnce). */
+    private static final String K_NAMES_STOCK_DONE = "stock_names_fixed";
     private static final String K_SPEAKER_DONE = "spk_init";
     /** STREAM_MUSIC index the owner listened at on t10 (of 100; plan section 4, C 5.1). */
     private static final int SPEAKER_INIT_INDEX = 8;
@@ -173,6 +175,8 @@ public final class Play6App {
         step("AmbientLight.install", () -> org.z9x.projector.ambient.AmbientLight.install(app));
         // connected hook (no HAL call here) + a speaker Bluetooth role left set goes back to normal (P3 item 21)
         step("SpeakerMode.install", () -> org.z9x.projector.speaker.SpeakerMode.install(app));
+        // stock parity: closing / opening the projector (IGmpf 227 event type 4) starts / ends the ambient speaker
+        step("SpeakerMode.installLidTrigger", () -> org.z9x.projector.speaker.SpeakerMode.installLidTrigger(app));
         // connected hook, power event hook, screen hooks (no HAL call here): the battery, plan 3.2
         step("Battery.install", () -> Battery.install(app));
         // Lumen 1.0.5: Bluetooth headphones get the media route and a non-zero vendor A2DP volume (no HAL call)
@@ -191,6 +195,7 @@ public final class Play6App {
         // flags still 0, Lumen Setup enabled, HOME resolves elsewhere: an interrupted finish, the Setup goes on
         step("setup hand-off", () -> resumeSetupIfNotHome(app));
         step("device name", () -> fixDeviceNameOnce(app));
+        step("stock names", () -> fixStockNamesOnce(app));
         step("speaker volume", () -> fixSpeakerVolumeOnce(app));
         step("SleepTimer.install", () -> SleepTimer.install(app));
         // the Setup's recorded launcher choice (z9x_launcher) when its set_launcher failed; no-op until setup ends
@@ -322,6 +327,53 @@ public final class Play6App {
         }
         p.edit().putBoolean(K_NAME_DONE, true).apply();
     }
+
+    /**
+     * Stock parity 2026-10-21 (device test: device_name "XGIMI TV", Bluetooth name "我的Play 6", both left by the stock
+     * firmware): once per data, a device name that is a stock or base default becomes ro.product.model (stock
+     * system.ini DeviceShowName / BluetoothDeviceName "XGIMI Play 6"), and a Bluetooth name that is a stock default
+     * becomes the device name. A name the owner typed is never touched (only the listed defaults). Nothing of
+     * factory data is read or written: only Settings.Global device_name and BluetoothAdapter.setName. The flag is
+     * set only when both are settled (Bluetooth off: tried again at the next start).
+     */
+    private static void fixStockNamesOnce(Context app) {
+        SharedPreferences p = prefs(app);
+        if (p.getBoolean(K_NAMES_STOCK_DONE, false)) return;
+        ContentResolver cr = app.getContentResolver();
+        String model = SystemProperties.get("ro.product.model", "").trim();
+        if (model.isEmpty() || model.contains("Z9X")) return;
+        String dev = Settings.Global.getString(cr, Settings.Global.DEVICE_NAME);
+        if (dev == null || STOCK_DEVICE_NAMES.contains(dev.trim())) {
+            Settings.Global.putString(cr, Settings.Global.DEVICE_NAME, model);
+            Log.i(TAG, "device_name '" + dev + "' (stock default) -> '" + model + "'");
+            dev = model;
+        }
+        try {
+            android.bluetooth.BluetoothManager bm = app.getSystemService(android.bluetooth.BluetoothManager.class);
+            android.bluetooth.BluetoothAdapter a = bm == null ? null : bm.getAdapter();
+            if (a == null || a.getState() != android.bluetooth.BluetoothAdapter.STATE_ON) {
+                Log.i(TAG, "bluetooth name: adapter not on, next start");
+                return;
+            }
+            String bt = a.getName();
+            if (bt != null && STOCK_BT_NAMES.contains(bt.trim())) {
+                Log.i(TAG, "bluetooth name '" + bt + "' (stock default) -> '" + dev + "': " + a.setName(dev));
+            } else {
+                Log.i(TAG, "bluetooth name kept: '" + bt + "'");
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "bluetooth name: " + t);
+            return;
+        }
+        p.edit().putBoolean(K_NAMES_STOCK_DONE, true).apply();
+    }
+
+    /** Device names of the stock firmware and the base image (never a user's own name). */
+    private static final java.util.Set<String> STOCK_DEVICE_NAMES = new java.util.HashSet<>(java.util.Arrays.asList(
+            "", "XGIMI TV", "AOSP TV on ARM", "INUI_TV"));
+    /** Bluetooth names of the stock firmware (its "my device" default 我的Play 6, INUI_TV, XGIMI TV). */
+    private static final java.util.Set<String> STOCK_BT_NAMES = new java.util.HashSet<>(java.util.Arrays.asList(
+            "我的Play 6", "我的Play6", "INUI_TV", "XGIMI TV", "AOSP TV on ARM"));
 
     /**
      * Once per data, after the audio-jack fix of Play6FrameworkOverlay (plan section 4, C 5.1): t10 routed

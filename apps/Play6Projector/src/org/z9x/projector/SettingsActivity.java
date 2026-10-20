@@ -54,7 +54,7 @@ public final class SettingsActivity extends Activity {
     static final String SECTION_KEYSTONE = "keystone";
 
     /** The automation toggles of the Play 6. */
-    private enum Toggle { POWER_ON_AK, MOVE_AK, SMART_AF }
+    private enum Toggle { POWER_ON_AK, MOVE_AK, SMART_AF, BOOT_MUSIC }
 
     private LinearLayout list;
     private View keystoneAnchor;
@@ -95,6 +95,7 @@ public final class SettingsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         refreshToggles();
+        refreshTemperature();
         refreshSlots();
         refreshDiagnostics();
     }
@@ -130,6 +131,12 @@ public final class SettingsActivity extends Activity {
         toggle(Toggle.POWER_ON_AK, R.string.tg_power_on_ak);
         toggle(Toggle.MOVE_AK, R.string.tg_move_ak);
         toggle(Toggle.SMART_AF, R.string.panel_smart_af);
+        // stock parity 2026-10-21: General > Advanced > Power on / off > boot music (IGmpf 420 / 419)
+        toggle(Toggle.BOOT_MUSIC, R.string.tg_power_on_music);
+
+        // stock parity 2026-10-21: General > About > Device info > temperature (IGmpf 438), read only
+        tempRow = valueRow(R.string.p6_temperature, v -> refreshTemperature());
+        ((View) tempRow.getParent()).setVisibility(View.GONE);         // shown once 438 answered (owner rule)
 
         header(R.string.sec_keys);
         slot3Value = valueRow(R.string.key_slot3, v -> pickApp(3));
@@ -244,6 +251,7 @@ public final class SettingsActivity extends Activity {
                     case POWER_ON_AK: m.put(t, g.getPowerOnAk()); break;          // 553
                     case MOVE_AK: m.put(t, g.getMoveAk()); break;                 // 586
                     case SMART_AF: m.put(t, g2.isIdentityOpen() ? g2.getSmartAutofocus() : null); break;   // IGmpf2 63
+                    case BOOT_MUSIC: m.put(t, g.getBootMusic()); break;           // 420
                     default: break;
                 }
             } catch (Throwable e) {
@@ -258,6 +266,8 @@ public final class SettingsActivity extends Activity {
         if (isFinishing() || isDestroyed()) return;
         View smart = toggleRows.get(Toggle.SMART_AF);
         if (smart != null) smart.setVisibility(Hal.hasGmpf2() ? View.VISIBLE : View.GONE);
+        View music = toggleRows.get(Toggle.BOOT_MUSIC);              // hidden when 420 does not answer (owner rule)
+        if (music != null) music.setVisibility(m != null && m.get(Toggle.BOOT_MUSIC) != null ? View.VISIBLE : View.GONE);
         for (Toggle t : Toggle.values()) {
             Boolean v = m == null ? null : m.get(t);
             toggleState.put(t, v);
@@ -286,6 +296,7 @@ public final class SettingsActivity extends Activity {
                     case POWER_ON_AK: g.setPowerOnAk(on); break;                // 552
                     case MOVE_AK: g.setMoveAk(on); break;                       // 585
                     case SMART_AF: Hal.setSmartAutofocus(g, g2, on); break;     // IGmpf2 64, then 587
+                    case BOOT_MUSIC: g.setBootMusic(on); break;                 // 419
                     default: break;
                 }
                 Log.i(TAG, "toggle " + t + " -> " + on);
@@ -299,6 +310,19 @@ public final class SettingsActivity extends Activity {
     }
 
     // ------------------------------------------------------------------ remote app keys
+    private TextView tempRow;
+
+    /** IGmpf 438 getSystemTemperature() -> °C, as stock Device info; the row stays hidden without an answer. */
+    private void refreshTemperature() {
+        if (tempRow == null) return;
+        Hal.query((g, g2) -> g.getSystemTemperature(), t -> {
+            if (isFinishing() || isDestroyed() || tempRow == null) return;
+            boolean ok = t != null && t > 0 && t < 150;
+            ((View) tempRow.getParent()).setVisibility(ok ? View.VISIBLE : View.GONE);
+            if (ok) tempRow.setText(getString(R.string.p6_temperature_value, t));
+        });
+    }
+
     private void refreshSlots() {
         slot3Value.setText(slotText(3));
         slot4Value.setText(slotText(4));

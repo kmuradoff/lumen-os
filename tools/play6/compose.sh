@@ -17,9 +17,8 @@
 #          early-boot on, before Wi-Fi, and `adb reboot fastboot` leads straight to the next flash. While it
 #          is in device mode the port reads no USB stick (stock keeps it in host mode with mtp).
 # --exp    D's experiments (docs/play6/inventory/D_play6_performance.md 6.1 / 6.2, plan section 4), test
-#          builds only: --exp = EXP-1, 2, 3 and 5; --exp=N[,N...] picks them (N in 1..6; 4, the Bluetooth
-#          profiles, only after the remote and speaker tests; 6, both A2DP roles at once, P3 item 21 test S step 11).
-#          EXP-1, 4, 5, 6: the '#expN ' lines of
+#          builds only: --exp = EXP-1, 2, 3 and 5; --exp=N[,N...] picks them (N in 1..5; 4, the Bluetooth
+#          profiles, only after the remote and speaker tests). EXP-1, 4, 5: the '#expN ' lines of
 #          product_prop.txt; EXP-2, 3: play6_perf.rc -> /system/product/etc/init. ro.lumen.p6.exp names the set.
 # --no-dexpreopt  no build-time AOT of Lumen Home, the projector app and Lumen Setup (they run JIT, as up to t11)
 # --gms    the Google test edition (never a release, never an OTA source or target). This code path is public,
@@ -68,7 +67,7 @@ for a in "$@"; do
 done
 case $V in t[0-9]*) ;; *) die "VARIANT must look like t2, t3, ..." ;; esac
 if [ -n "$EXPS" ]; then
-  echo ",$EXPS," | grep -Eq '^(,[1-6])+,$' || die "--exp=N[,N...] takes experiments 1 to 6, not '$EXPS'"
+  echo ",$EXPS," | grep -Eq '^(,[1-5])+,$' || die "--exp=N[,N...] takes experiments 1 to 5, not '$EXPS'"
 fi
 has_exp() { case ",$EXPS," in *",$1,"*) return 0 ;; esac; return 1; }
 B=/out/target/product/generic

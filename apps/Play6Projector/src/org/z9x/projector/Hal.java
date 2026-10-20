@@ -10,6 +10,7 @@ import org.z9x.projector.ak.AkOverlay;
 import org.z9x.projector.hal.Play6FocusCallback;
 import org.z9x.projector.hal.Play6Gmpf;
 import org.z9x.projector.hal.Play6Gmpf2;
+import org.z9x.projector.hal.Play6MusicPlayerCallback;
 import org.z9x.projector.hal.Play6PowerCallback;
 
 import java.io.FileInputStream;
@@ -68,6 +69,12 @@ public final class Hal {
     private static final long REFUSED_NOTICE_GAP_MS = 2_000;
     private static final int LISTENER_TRIES = 3;
     private static final String POWER_TAG = "P6Power";
+    private static final String MUSIC_TAG = "P6Music";
+    /**
+     * Kill switch of the music-player listener (IGmpf 215 / 227, stock parity 2026-10-21: the ambient speaker's
+     * device-closed event): anything but "0" registers (default 1).
+     */
+    public static final String MUSIC_LISTENER_SWITCH = "persist.lumen.p6.music_listener";
     /** Kill switch of the vendor power listener (235 / 242): "0" = off; read at every IGmpf connect. */
     public static final String POWER_LISTENER_SWITCH = "persist.lumen.p6.power_listener";
 
@@ -94,6 +101,11 @@ public final class Hal {
     }
 
     /** Vendor power events (IPowerCallback.powerEvent), on the MAIN thread in arrival order. Must not block. */
+    /** Vendor music-player events (type 4 = the projector closed (status 1) / opened), on the MAIN thread. */
+    public interface MusicPlayerEventListener {
+        void onMusicPlayerEvent(int type, int keycode, int status);
+    }
+
     public interface PowerEventListener {
         void onPowerEvent(int type, String value);
     }
@@ -103,6 +115,10 @@ public final class Hal {
 
     private static final CopyOnWriteArrayList<FocusEventListener> LISTENERS = new CopyOnWriteArrayList<>();
     private static final CopyOnWriteArrayList<PowerEventListener> POWER_LISTENERS = new CopyOnWriteArrayList<>();
+    private static final CopyOnWriteArrayList<MusicPlayerEventListener> MUSIC_LISTENERS = new CopyOnWriteArrayList<>();
+    private static Play6MusicPlayerCallback sMusicCallback;
+    private static boolean sRegistered215, sRegistered227;
+    private static int sMusicTries;
     private static final CopyOnWriteArrayList<Runnable> CONNECT_LISTENERS = new CopyOnWriteArrayList<>();
     private static final Play6Gmpf GMPF = new Play6Gmpf();
     private static final Play6Gmpf2 GMPF2 = new Play6Gmpf2();
@@ -204,6 +220,9 @@ public final class Hal {
         sPowerListening = false;
         sPowerTries = 0;
         registerPowerListener();
+        sRegistered215 = sRegistered227 = false;
+        sMusicTries = 0;
+        registerMusicListener();
         Context app = sApp;
         if (app != null) {
             try { MotorController.onConnected(app); } catch (Throwable t) { Log.w(TAG, "motor: " + t); }
@@ -298,6 +317,53 @@ public final class Hal {
             if (++sPowerTries < LISTENER_TRIES) worker().postDelayed(() -> retryPowerListener(gen), 1_000);
         }
     }
+
+    /**
+     * p6-hal: 215 connectMusicPlayerManager then 227 setMusicPlayerListener with the same callback, as stock
+     * MusicPlayerManager.native_setup, with the retry rule of the focus listener (a call that reached the HAL is
+     * never sent again). The events only reach {@link #addMusicPlayerEventListener} listeners on the main thread.
+     */
+    private static void registerMusicListener() {
+        if (!sConnected) return;
+        boolean on;
+        try { on = !"0".equals(SystemProperties.get(MUSIC_LISTENER_SWITCH, "1").trim()); } catch (Throwable t) { on = true; }
+        if (!on) {
+            Log.i(MUSIC_TAG, "listener not registered: " + MUSIC_LISTENER_SWITCH + "=0");
+            return;
+        }
+        if (sMusicCallback == null) {
+            sMusicCallback = new Play6MusicPlayerCallback((type, key, status) -> Ui.main().post(() -> {
+                Log.i(MUSIC_TAG, "event type " + type + " keycode " + key + " status " + status);
+                for (MusicPlayerEventListener l : MUSIC_LISTENERS) {
+                    try { l.onMusicPlayerEvent(type, key, status); } catch (Throwable e) { Log.w(MUSIC_TAG, "listener: " + e); }
+                }
+            }));
+        }
+        final long gen = sGeneration;
+        try {
+            if (!sRegistered215) {
+                GMPF.connectMusicPlayer(sMusicCallback);       // 215
+                sRegistered215 = true;
+            }
+            if (!sRegistered227) {
+                GMPF.setMusicPlayerListener(sMusicCallback);   // 227, same callback object
+                sRegistered227 = true;
+            }
+            Log.i(MUSIC_TAG, "listener registered (215, 227)");
+        } catch (Play6Gmpf.ReplyException e) {
+            String code = sRegistered215 ? "227" : "215";
+            if (!sRegistered215) sRegistered215 = true; else sRegistered227 = true;
+            Log.w(MUSIC_TAG, "listener: " + code + " delivered, bad reply (not repeated): " + e.getMessage());
+            if (!sRegistered227) worker().postDelayed(() -> { if (sConnected && gen == sGeneration) registerMusicListener(); }, 1_000);
+        } catch (Throwable t) {
+            Log.w(MUSIC_TAG, "listener failed (" + (sMusicTries + 1) + "/" + LISTENER_TRIES + "): " + t);
+            if (++sMusicTries < LISTENER_TRIES) {
+                worker().postDelayed(() -> { if (sConnected && gen == sGeneration) registerMusicListener(); }, 1_000);
+            }
+        }
+    }
+
+    public static void addMusicPlayerEventListener(MusicPlayerEventListener l) { MUSIC_LISTENERS.addIfAbsent(l); }
 
     /** p6-hal: a delayed power listener retry, only on the connection it was made for. */
     private static void retryPowerListener(long gen) {
