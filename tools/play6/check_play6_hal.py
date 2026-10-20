@@ -187,7 +187,8 @@ HDMI_PATH = r"/source/HdmiSource\.java$"
 PID_EXPRS = ("Process.myPid()", "android.os.Process.myPid()")
 U = lambda lo, hi: set(range(lo, hi + 1))  # noqa: E731
 # Note C, by (class, code): name, one spec per wire argument, and the extra rules.
-#   spec: set of ints | "bool" | "true" | ("read", code) | "pid" (exactly Process.myPid(): our own pid)
+#   spec: set of ints | "bool" | "true" | ("read", code) | "pid" (exactly Process.myPid(): our own pid) |
+#         "float_checked" (a float wire argument written as a check*( call, the bound is the check's)
 VALUE_RULES = {
     ("BpHwGmpf", 300): dict(name="manualFocus", args=[{17, 1, 0, 2}]),
     ("BpHwGmpf", 307): dict(name="sendFocusStatus", args=[{44, 17}],
@@ -222,6 +223,15 @@ VALUE_RULES = {
     ("BpHwGmpf", 698): dict(name="switchInputSourceWithCallingPid", args=[{0, 1}, "pid"],
                             sender_callers=HDMI_PATH),
     ("BpHwGmpf", 659): dict(name="setDisplayArea", args=[{0}, {0}, {1920}, {1080}], sender_callers=HDMI_PATH),
+    # P3 item 21, digital zoom and shift (stock ZoomDisplacementWind): the session calls with 0 only, a digital
+    # step inside the sanity bound (the card sends only the neighbour of a fresh 116 read inside the 117 range),
+    # the four shift directions; picture rotation (stock RotateWind): 5 clockwise / 6 counter-clockwise with a
+    # checked relative angle
+    ("BpHwGmpf", 121): dict(name="zoomStart", args=[{0}]),
+    ("BpHwGmpf", 120): dict(name="zoomFinish", args=[{0}]),
+    ("BpHwGmpf", 118): dict(name="setDigitalZoomStep", args=[U(-200, 200)]),
+    ("BpHwGmpf", 141): dict(name="translationKst", args=[{1, 2, 3, 4}, "bool"]),
+    ("BpHwGmpf2", 138): dict(name="setScreenRotation", args=[{5, 6}, "float_checked"]),
 }
 if O3_KEYSTONE_RESET:
     VALUE_RULES[("BpHwGmpf", 207)] = dict(name="correctKeystoneReset", args=[{0}], method_prefix="resetKeystone")
@@ -555,6 +565,10 @@ def main():
                     kind, val = evaluate(expr, body, cm.start(), pnames, values, codes)
                     tag = "%s %d %s argument %d (%s)" % (IFACE[cls], code, rule["name"], i + 1,
                                                          re.sub(r'"\s*"', '"..."', " ".join(expr.split())))
+                    if spec == "float_checked":           # a float argument: only through a check*( call
+                        if not re.match(r"^(?:\w+\s*\.\s*)?check\w*\s*\(", strip_expr(expr)):
+                            find(where, "%s: must be passed through a check*( call" % tag)
+                        continue
                     if spec == "pid":
                         if " ".join(strip_expr(expr).split()) not in PID_EXPRS:
                             find(where, "%s: must be Process.myPid() (our own pid)" % tag)

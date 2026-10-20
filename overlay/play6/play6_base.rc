@@ -6,7 +6,8 @@
 #    vendor ships and uses /vendor/bin/smart_ak_server.
 #  - ro.audio.flinger_standbytime_ms 30000: tied to the Z9X lamp-off and STR.
 #  - sys.z9x.feat 1: it turns on Z9X-only code paths.
-# A further line comes here only after test A7 shows that it applies to the G0058.
+# A further line comes here only after test A7 shows that it applies to the G0058; the Play 6-only block at the end
+# (the Bluetooth role of the speaker mode, P3 item 21) is not part of the fork.
 #
 # Only init builtins (setprop), no exec, no wait: nothing here can delay early-boot. Bluetooth reads the
 # privacy flag much later, when system_server enables the adapter.
@@ -14,3 +15,22 @@
 #    same remote as the Z9X's) reconnects after a reboot without re-pairing.
 on early-boot
     setprop bluetooth.core.gap.le.privacy.enabled false
+    setprop sys.lumen.p6.bt_roles 1
+
+# ---- Play 6 only, P3 item 21: the Bluetooth A2DP role of the speaker mode (org.z9x.projector speaker/BtRole,
+# docs/play6/TASKS.md "P3 stock features"). The Bluetooth app of Android 14 reads these profile switches when its
+# process starts; a platform app may not write bluetooth.profile.* itself, so the projector app writes
+# sys.lumen.p6.bt_role and init applies the set, then the app restarts Bluetooth. "speaker": the projector is an
+# A2DP sink with an AVRCP controller (a phone plays to it, the remote's media keys reach the phone), no A2DP source
+# (no headphones meanwhile). "normal": the image values again (A2DP source for headphones, as before). The
+# sys.* value is gone after a reboot, so every boot starts with the image values. sys.lumen.p6.bt_roles=1 (above)
+# tells the app that this image has the triggers; without it the speaker mode is hidden.
+on property:sys.lumen.p6.bt_role=speaker
+    setprop bluetooth.profile.a2dp.source.enabled false
+    setprop bluetooth.profile.a2dp.sink.enabled true
+    setprop bluetooth.profile.avrcp.controller.enabled true
+
+on property:sys.lumen.p6.bt_role=normal
+    setprop bluetooth.profile.a2dp.sink.enabled false
+    setprop bluetooth.profile.avrcp.controller.enabled false
+    setprop bluetooth.profile.a2dp.source.enabled true
