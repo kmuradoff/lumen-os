@@ -1213,7 +1213,7 @@ function P6-Room($gv) {  # the image must fit into super next to the other logic
 function P6-Cable-Out {  # after 'fastboot reboot': the projector does not start while the computer's cable is in
   $nm = P6-Name
   Write-Host ""
-  Write-Host (T "Written. Unplug the A-to-A cable from the projector NOW: the $nm does not start while it is connected. If the picture does not come back within a minute, press the power button." "Записано. Сейчас выньте кабель A–A из проектора: пока он подключён, $nm не загружается. Если через минуту изображения нет, нажмите кнопку питания.")
+  Write-Host (T "Written. Unplug the A-to-A cable from the projector NOW: the $nm does not start while it is connected. Put any USB stick into its USB port instead (it helps the $nm power on; do NOT hold the power button, that starts the stock restore). If the picture does not come back within a minute, press the power button once." "Записано. Сейчас выньте кабель A–A из проектора: пока он подключён, $nm не загружается. Вставьте вместо него в USB-порт любую флешку (с ней $nm включается надёжнее; кнопку питания НЕ держите, иначе начнётся откат на сток). Если через минуту изображения нет, нажмите кнопку питания один раз.")
   $null = Read-Host (T "Press Enter when the cable is out" "Когда кабель вынут, нажмите Enter")
 }
 function Play6-Write {  # check, confirmation, cable, fastbootd, write system, restart (resumes in fastbootd)
