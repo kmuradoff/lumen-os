@@ -967,3 +967,34 @@ sound_format=오디오 형식
 sound_format_auto=자동
 sound_format_pcm=PCM
 sound_format_passthrough=패스스루
+
+# Lumen OS 1.0.5: voice assistant (voice/Assistant)
+@common/strings_voice.xml
+voice_listening=듣고 있어요…
+voice_not_heard=잘 못 알아들었어요
+voice_failed=문제가 발생했어요
+voice_no_network=음성 인식 연결이 없어요
+voice_opening=%1$s 여는 중
+voice_searching=“%1$s” 검색 중
+voice_youtube=YouTube에서 “%1$s” 검색 중
+voice_time=지금은 %1$s
+voice_volume=볼륨 %1$d%%
+voice_muted=소리 끔
+voice_unmuted=소리 켬
+voice_paused=일시정지
+voice_playing=재생 중
+voice_next=다음
+voice_previous=이전
+voice_focus=초점 맞추는 중
+voice_keystone=화면 보정 중
+voice_settings=음성 어시스턴트
+voice_language=음성 언어
+voice_lang_system=시스템 언어
+voice_speak=음성으로 대답
+voice_key=Gemini 음성
+voice_key_off=기기 음성
+voice_key_on=Gemini
+voice_key_hint=aistudio.google.com의 Gemini API 키를 붙여 넣으세요. Google에는 대답 텍스트만 전송돼요. 비워 두면 기기 음성.
+voice_key_region=지역에서 Gemini를 사용할 수 없어 기기 음성으로 말해요
+voice_key_quota=오늘의 Gemini 한도에 도달해 기기 음성으로 말해요
+voice_key_bad=Google이 이 키를 받지 않았어요

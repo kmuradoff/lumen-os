@@ -967,3 +967,34 @@ sound_format=音訊格式
 sound_format_auto=自動
 sound_format_pcm=PCM
 sound_format_passthrough=直通
+
+# Lumen OS 1.0.5: voice assistant (voice/Assistant)
+@common/strings_voice.xml
+voice_listening=正在聆聽…
+voice_not_heard=沒聽清楚
+voice_failed=發生問題
+voice_no_network=語音辨識無法連線
+voice_opening=正在開啟 %1$s
+voice_searching=正在搜尋「%1$s」
+voice_youtube=正在 YouTube 搜尋「%1$s」
+voice_time=現在是 %1$s
+voice_volume=音量 %1$d%%
+voice_muted=已靜音
+voice_unmuted=已取消靜音
+voice_paused=已暫停
+voice_playing=正在播放
+voice_next=下一個
+voice_previous=上一個
+voice_focus=正在對焦
+voice_keystone=正在校正畫面
+voice_settings=語音助理
+voice_language=語音語言
+voice_lang_system=系統語言
+voice_speak=語音回覆
+voice_key=Gemini 語音
+voice_key_off=裝置語音
+voice_key_on=Gemini
+voice_key_hint=貼上來自 aistudio.google.com 的 Gemini API 金鑰。只會把回覆文字傳送給 Google。留空則使用裝置語音。
+voice_key_region=你所在的地區無法使用 Gemini，改用裝置語音
+voice_key_quota=今天的 Gemini 額度已用完，改用裝置語音
+voice_key_bad=Google 未接受此金鑰

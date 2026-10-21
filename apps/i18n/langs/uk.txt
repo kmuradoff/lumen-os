@@ -976,3 +976,34 @@ sound_format=Формат звуку
 sound_format_auto=Автоматично
 sound_format_pcm=PCM
 sound_format_passthrough=Без обробки
+
+# Lumen OS 1.0.5: voice assistant (voice/Assistant)
+@common/strings_voice.xml
+voice_listening=Слухаю…
+voice_not_heard=Не розчув
+voice_failed=Щось пішло не так
+voice_no_network=Немає зв’язку для розпізнавання мовлення
+voice_opening=Відкриваю %1$s
+voice_searching=Шукаю «%1$s»
+voice_youtube=Шукаю на YouTube «%1$s»
+voice_time=Зараз %1$s
+voice_volume=Гучність %1$d %%
+voice_muted=Звук вимкнено
+voice_unmuted=Звук увімкнено
+voice_paused=Пауза
+voice_playing=Відтворення
+voice_next=Далі
+voice_previous=Назад
+voice_focus=Фокусую
+voice_keystone=Вирівнюю зображення
+voice_settings=Голосовий асистент
+voice_language=Мова мовлення
+voice_lang_system=Мова системи
+voice_speak=Відповідати голосом
+voice_key=Голос Gemini
+voice_key_off=Голос пристрою
+voice_key_on=Gemini
+voice_key_hint=Вставте ключ Gemini API з сайту aistudio.google.com. До Google надходить лише текст відповіді. Порожнє поле: голос пристрою.
+voice_key_region=Gemini недоступний у вашому регіоні, говорить голос пристрою
+voice_key_quota=Ліміт Gemini на сьогодні вичерпано, говорить голос пристрою
+voice_key_bad=Google не прийняв цей ключ

@@ -970,3 +970,34 @@ sound_format=Ses biçimi
 sound_format_auto=Otomatik
 sound_format_pcm=PCM
 sound_format_passthrough=Doğrudan aktarım
+
+# Lumen OS 1.0.5: voice assistant (voice/Assistant)
+@common/strings_voice.xml
+voice_listening=Dinliyorum…
+voice_not_heard=Anlayamadım
+voice_failed=Bir şeyler ters gitti
+voice_no_network=Konuşma tanıma için bağlantı yok
+voice_opening=%1$s açılıyor
+voice_searching=«%1$s» aranıyor
+voice_youtube=YouTube’da «%1$s» aranıyor
+voice_time=Saat %1$s
+voice_volume=Ses %1$d %%
+voice_muted=Ses kapalı
+voice_unmuted=Ses açık
+voice_paused=Duraklatıldı
+voice_playing=Oynatılıyor
+voice_next=Sonraki
+voice_previous=Önceki
+voice_focus=Odaklanıyor
+voice_keystone=Görüntü düzeltiliyor
+voice_settings=Sesli asistan
+voice_language=Konuşma dili
+voice_lang_system=Sistem dili
+voice_speak=Yanıtları seslendir
+voice_key=Gemini sesi
+voice_key_off=Cihaz sesi
+voice_key_on=Gemini
+voice_key_hint=aistudio.google.com adresinden bir Gemini API anahtarı yapıştırın. Google’a yalnızca yanıt metni gider. Boş: cihaz sesi.
+voice_key_region=Gemini bölgenizde kullanılamıyor, cihaz sesi konuşuyor
+voice_key_quota=Bugünkü Gemini sınırına ulaşıldı, cihaz sesi konuşuyor
+voice_key_bad=Google bu anahtarı kabul etmedi

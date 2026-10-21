@@ -70,6 +70,7 @@ public final class App extends Application {
         try { org.z9x.projector.cec.CecPolicy.install(this); } catch (Throwable t) { Log.e(TAG, "CecPolicy.install", t); }
         try { RemoteAutoPair.install(this); } catch (Throwable t) { Log.e(TAG, "RemoteAutoPair.install", t); }
         try { EyeGuard.install(this); } catch (Throwable t) { Log.e(TAG, "EyeGuard.install", t); }
+        try { org.z9x.projector.voice.Assistant.install(this, new org.z9x.projector.voice.AssistantHost()); } catch (Throwable t) { Log.e(TAG, "Assistant.install", t); }
         // ===== Lumen OS 1.0.2: optical zoom, close a session a dead process left open (connect hook) =====
         try { org.z9x.projector.panel.OpticalZoomPanel.install(this); } catch (Throwable t) { Log.e(TAG, "OpticalZoomPanel.install", t); }
         // Lumen OS 1.0.4: zoom / shift and rotation screens close a session a dead process left open

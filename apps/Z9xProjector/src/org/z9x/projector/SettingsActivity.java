@@ -42,6 +42,7 @@ public final class SettingsActivity extends Activity {
     private final Map<HalController.Toggle, View> toggleRows = new EnumMap<>(HalController.Toggle.class);
     private final Map<HalController.Toggle, Boolean> toggleState = new EnumMap<>(HalController.Toggle.class);
     private TextView slot3Value, slot4Value, launcherValue, bootSourceValue;
+    private TextView voiceLang, voiceSpeak, voiceKey;
     private LinearLayout diagBox;
     private boolean resumed;
     private final Runnable onHalState = () -> { if (resumed) { refreshToggles(); refreshDiagnostics(); } };
@@ -162,6 +163,15 @@ public final class SettingsActivity extends Activity {
             launcherValue = valueRow(R.string.launcher_row, v -> pickLauncher());
         }
 
+        // Lumen OS 1.0.5: the voice assistant (mic key), only where a speech recogniser exists
+        if (org.z9x.projector.voice.Assistant.available(this)) {
+            header(R.string.voice_settings);
+            voiceLang = valueRow(R.string.voice_language, v -> org.z9x.projector.voice.VoiceSettings.pickLanguage(this, this::refreshVoice));
+            voiceSpeak = valueRow(R.string.voice_speak, v -> org.z9x.projector.voice.VoiceSettings.toggleSpeak(this, this::refreshVoice));
+            voiceKey = valueRow(R.string.voice_key, v -> org.z9x.projector.voice.VoiceSettings.editKey(this, this::refreshVoice));
+            refreshVoice();
+        }
+
         // Lumen OS 1.0.4: the user guide (in place of XGIMI's manual app): a QR code to the online guide
         action(R.string.guide_title, false, v -> org.z9x.projector.guide.GuideDialog.show(this));
 
@@ -216,6 +226,13 @@ public final class SettingsActivity extends Activity {
         });
         if (needsHal && !feat) disable(r);
         return r;
+    }
+
+    private void refreshVoice() {
+        if (voiceLang == null) return;
+        voiceLang.setText(org.z9x.projector.voice.VoiceSettings.languageValue(this));
+        voiceSpeak.setText(org.z9x.projector.voice.VoiceSettings.speakValue(this));
+        voiceKey.setText(org.z9x.projector.voice.VoiceSettings.keyValue(this));
     }
 
     private TextView valueRow(int res, View.OnClickListener l) {

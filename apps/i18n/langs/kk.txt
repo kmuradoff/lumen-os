@@ -970,3 +970,34 @@ sound_format=Дыбыс пішімі
 sound_format_auto=Автоматты
 sound_format_pcm=PCM
 sound_format_passthrough=Өңдеусіз
+
+# Lumen OS 1.0.5: voice assistant (voice/Assistant)
+@common/strings_voice.xml
+voice_listening=Тыңдап тұрмын…
+voice_not_heard=Естімедім
+voice_failed=Бірдеңе дұрыс болмады
+voice_no_network=Сөзді тануға байланыс жоқ
+voice_opening=%1$s ашылуда
+voice_searching=«%1$s» ізделуде
+voice_youtube=YouTube-тан «%1$s» ізделуде
+voice_time=Қазір %1$s
+voice_volume=Дыбыс деңгейі %1$d %%
+voice_muted=Дыбыс өшірілді
+voice_unmuted=Дыбыс қосылды
+voice_paused=Үзіліс
+voice_playing=Ойнату
+voice_next=Келесі
+voice_previous=Алдыңғы
+voice_focus=Фокустап жатырмын
+voice_keystone=Суретті түзетіп жатырмын
+voice_settings=Дауыстық көмекші
+voice_language=Сөйлеу тілі
+voice_lang_system=Жүйе тілі
+voice_speak=Дауыспен жауап беру
+voice_key=Gemini дауысы
+voice_key_off=Құрылғы дауысы
+voice_key_on=Gemini
+voice_key_hint=aistudio.google.com сайтынан Gemini API кілтін қойыңыз. Google-ға тек жауап мәтіні жіберіледі. Бос өріс: құрылғы дауысы.
+voice_key_region=Gemini сіздің аймағыңызда қолжетімсіз, құрылғы дауысы сөйлейді
+voice_key_quota=Gemini бүгінгі лимиті бітті, құрылғы дауысы сөйлейді
+voice_key_bad=Google бұл кілтті қабылдамады
