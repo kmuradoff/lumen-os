@@ -984,3 +984,34 @@ sound_format=تنسيق الصوت
 sound_format_auto=تلقائي
 sound_format_pcm=PCM
 sound_format_passthrough=تمرير مباشر
+
+# Lumen OS 1.0.5: voice assistant (voice/Assistant)
+@common/strings_voice.xml
+voice_listening=أستمع…
+voice_not_heard=لم أفهم ذلك
+voice_failed=حدث خطأ ما
+voice_no_network=لا يوجد اتصال للتعرّف على الكلام
+voice_opening=جارٍ فتح %1$s
+voice_searching=جارٍ البحث عن «%1$s»
+voice_youtube=جارٍ البحث في YouTube عن «%1$s»
+voice_time=الساعة الآن %1$s
+voice_volume=مستوى الصوت %1$d%%
+voice_muted=الصوت مكتوم
+voice_unmuted=الصوت مفعّل
+voice_paused=إيقاف مؤقت
+voice_playing=جارٍ التشغيل
+voice_next=التالي
+voice_previous=السابق
+voice_focus=جارٍ ضبط التركيز
+voice_keystone=جارٍ تصحيح الصورة
+voice_settings=المساعد الصوتي
+voice_language=لغة الكلام
+voice_lang_system=لغة النظام
+voice_speak=الرد بالصوت
+voice_key=صوت Gemini
+voice_key_off=صوت الجهاز
+voice_key_on=Gemini
+voice_key_hint=الصق مفتاح Gemini API من aistudio.google.com. لا يُرسل إلى Google إلا نص الرد. اتركه فارغًا لصوت الجهاز.
+voice_key_region=Gemini غير متاح في منطقتك، يتحدث صوت الجهاز
+voice_key_quota=انتهى حد Gemini لليوم، يتحدث صوت الجهاز
+voice_key_bad=لم يقبل Google هذا المفتاح

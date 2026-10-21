@@ -967,3 +967,34 @@ sound_format=音声フォーマット
 sound_format_auto=自動
 sound_format_pcm=PCM
 sound_format_passthrough=パススルー
+
+# Lumen OS 1.0.5: voice assistant (voice/Assistant)
+@common/strings_voice.xml
+voice_listening=聞いています…
+voice_not_heard=聞き取れませんでした
+voice_failed=問題が発生しました
+voice_no_network=音声認識の接続がありません
+voice_opening=%1$s を開いています
+voice_searching=「%1$s」を検索しています
+voice_youtube=YouTube で「%1$s」を検索しています
+voice_time=%1$s です
+voice_volume=音量 %1$d%%
+voice_muted=消音しました
+voice_unmuted=消音を解除しました
+voice_paused=一時停止
+voice_playing=再生中
+voice_next=次へ
+voice_previous=前へ
+voice_focus=フォーカス中
+voice_keystone=画面を補正しています
+voice_settings=音声アシスタント
+voice_language=音声の言語
+voice_lang_system=システムの言語
+voice_speak=音声で応答
+voice_key=Gemini の声
+voice_key_off=端末の声
+voice_key_on=Gemini
+voice_key_hint=aistudio.google.com の Gemini API キーを貼り付けてください。Google に送られるのは応答の文字だけです。空欄なら端末の声。
+voice_key_region=お住まいの地域では Gemini を使えないため、端末の声で話します
+voice_key_quota=今日の Gemini の上限に達したため、端末の声で話します
+voice_key_bad=Google がこのキーを受け付けませんでした

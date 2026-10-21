@@ -221,6 +221,9 @@ public final class KeyReceiver extends BroadcastReceiver {
      * UP of that press: MIC_UP. Never SearchManager.launchAssist (Katniss is gone; the ASSIST role is
      * ours = Recents).
      */
+    /** The current mic press went to the voice assistant (not to Lumen Home search). Main thread. */
+    private static boolean sMicAssistant;
+
     private static void handleMic(Context ctx, Intent intent, KeyEvent ev) {
         int action = ev.getAction();
         if (action == KeyEvent.ACTION_DOWN && ev.getRepeatCount() == 0) {
@@ -244,12 +247,21 @@ public final class KeyReceiver extends BroadcastReceiver {
                 return;
             }
             Log.i(TAG, "mic down t=" + ev.getDownTime());
+            // Lumen OS 1.0.5: the voice assistant (overlay over any app) where a speech recogniser exists; else
+            // Lumen Home's search as before
+            if (org.z9x.projector.voice.Assistant.micDown(ctx)) {
+                sMicAssistant = true;
+                sMicDownTime = ev.getDownTime();
+                return;
+            }
+            sMicAssistant = false;
             if (org.z9x.projector.home.HomeSearch.open(ctx, true, "mic down")) sMicDownTime = ev.getDownTime();
             return;
         }
         if (action == KeyEvent.ACTION_UP && ev.getDownTime() == sMicDownTime) {
             sMicDownTime = -1;
-            org.z9x.projector.home.HomeSearch.micUp(ctx);
+            if (sMicAssistant) org.z9x.projector.voice.Assistant.micUp(ctx);
+            else org.z9x.projector.home.HomeSearch.micUp(ctx);
         }
     }
 

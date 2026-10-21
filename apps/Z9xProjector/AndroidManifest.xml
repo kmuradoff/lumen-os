@@ -157,6 +157,9 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
     <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS" />
+    <!-- Lumen OS 1.0.5: the voice assistant (voice/Assistant) asks the speech recogniser, which needs the caller to
+         hold RECORD_AUDIO; self-granted at the first mic press (GRANT_RUNTIME_PERMISSIONS above) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Lumen OS 1.0: InputDevice.getBluetoothAddress (InputManagerService enforces BLUETOOTH, a normal
          install-time permission): "remote connected" = its HID input device is up (RemoteAutoPair.hidUp). -->
     <uses-permission android:name="android.permission.BLUETOOTH" />

@@ -62,6 +62,7 @@ public final class SettingsActivity extends Activity {
     private final Map<Toggle, View> toggleRows = new EnumMap<>(Toggle.class);
     private final Map<Toggle, Boolean> toggleState = new EnumMap<>(Toggle.class);
     private TextView slot3Value, slot4Value, launcherValue, bootSourceValue, cecWakeValue;
+    private TextView voiceLang, voiceSpeak, voiceKey;
     private LinearLayout diagBox;
     private int diagGen;
 
@@ -157,6 +158,15 @@ public final class SettingsActivity extends Activity {
             launcherValue = valueRow(R.string.launcher_row, v -> pickLauncher());
         }
 
+        // Lumen OS 1.0.5: the voice assistant (mic key), only where a speech recogniser exists
+        if (org.z9x.projector.voice.Assistant.available(this)) {
+            header(R.string.voice_settings);
+            voiceLang = valueRow(R.string.voice_language, v -> org.z9x.projector.voice.VoiceSettings.pickLanguage(this, this::refreshVoice));
+            voiceSpeak = valueRow(R.string.voice_speak, v -> org.z9x.projector.voice.VoiceSettings.toggleSpeak(this, this::refreshVoice));
+            voiceKey = valueRow(R.string.voice_key, v -> org.z9x.projector.voice.VoiceSettings.editKey(this, this::refreshVoice));
+            refreshVoice();
+        }
+
         if (Device.isTestBuild()) {                     // Diagnostics: test builds only
             header(R.string.sec_diag);
             action(R.string.act_refresh, v -> refreshDiagnostics());
@@ -205,6 +215,13 @@ public final class SettingsActivity extends Activity {
             try { l.onClick(v); } catch (Throwable e) { Log.w(TAG, "click: " + e); }
         });
         return r;
+    }
+
+    private void refreshVoice() {
+        if (voiceLang == null) return;
+        voiceLang.setText(org.z9x.projector.voice.VoiceSettings.languageValue(this));
+        voiceSpeak.setText(org.z9x.projector.voice.VoiceSettings.speakValue(this));
+        voiceKey.setText(org.z9x.projector.voice.VoiceSettings.keyValue(this));
     }
 
     private TextView valueRow(int res, View.OnClickListener l) {

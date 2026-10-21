@@ -976,3 +976,34 @@ sound_format=Format dźwięku
 sound_format_auto=Automatycznie
 sound_format_pcm=PCM
 sound_format_passthrough=Bez przetwarzania
+
+# Lumen OS 1.0.5: voice assistant (voice/Assistant)
+@common/strings_voice.xml
+voice_listening=Słucham…
+voice_not_heard=Nie dosłyszałem
+voice_failed=Coś poszło nie tak
+voice_no_network=Brak połączenia do rozpoznawania mowy
+voice_opening=Otwieram %1$s
+voice_searching=Szukam „%1$s”
+voice_youtube=Szukam w YouTube „%1$s”
+voice_time=Jest %1$s
+voice_volume=Głośność %1$d %%
+voice_muted=Dźwięk wyłączony
+voice_unmuted=Dźwięk włączony
+voice_paused=Pauza
+voice_playing=Odtwarzanie
+voice_next=Dalej
+voice_previous=Wstecz
+voice_focus=Ustawiam ostrość
+voice_keystone=Prostuję obraz
+voice_settings=Asystent głosowy
+voice_language=Język mowy
+voice_lang_system=Język systemu
+voice_speak=Odpowiadaj głosem
+voice_key=Głos Gemini
+voice_key_off=Głos urządzenia
+voice_key_on=Gemini
+voice_key_hint=Wklej klucz API Gemini z aistudio.google.com. Do Google trafia tylko tekst odpowiedzi. Puste: głos urządzenia.
+voice_key_region=Gemini nie jest dostępny w Twoim regionie, mówi głos urządzenia
+voice_key_quota=Dzisiejszy limit Gemini wyczerpany, mówi głos urządzenia
+voice_key_bad=Google nie przyjął tego klucza

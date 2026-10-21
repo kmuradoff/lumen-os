@@ -952,3 +952,17 @@ debug property, the dev values, 4K <-> 1080p restarts and the keep question) and
   differs, only in ToggleRow (the sources with this edit taken back rebuild 4434c578… byte for byte).
 - Device check: Projector settings / quick panel, a switch that is OFF: a grey translucent pill with a white knob
   on the left, unfocused and focused.
+
+## 1.0.5, voice assistant (2026-10-21)
+
+Owner: "the mic button records while held; a beautiful on-screen overlay like Apple's, petals, waves; smart".
+Shared code apps/common/projector voice/*: Assistant (hold the mic key: a non-focusable overlay over any app, the
+device's speech recogniser with partial results, listening again while the key is held), WaveView (a turning colour
+ring along the screen edge and four petals of light from the bottom edge, breathing with the voice level; plain
+Canvas, ~30 fps on a weak GPU), Commands + AppMatcher (offline: apps by spoken name, volume, playback, Home, quick
+panel pages, autofocus, keystone, time, YouTube and Lumen Home search; anything else is a Lumen Home search;
+apps/common/projector/test/run_voice_test.sh), Speaker (spoken replies: Gemini's voice with the user's own key,
+only the reply text is sent; else the device's text-to-speech), VoiceSettings (Projector settings > Voice assistant:
+speech language, spoken replies, Gemini voice key). Z9X side: voice/AssistantHost, the mic key in KeyReceiver
+(the old Lumen Home voice search stays where no speech recogniser exists), RECORD_AUDIO (self-granted at the first
+press). Replies are in the speech language.

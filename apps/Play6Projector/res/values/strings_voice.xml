@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen voice assistant (voice/Assistant, owner 2026-10-21), shared by both projector apps -->
+<resources>
+    <string name="voice_listening">Listening…</string>
+    <string name="voice_not_heard">I didn\'t catch that</string>
+    <string name="voice_failed">Something went wrong</string>
+    <string name="voice_no_network">No connection for speech recognition</string>
+    <string name="voice_opening">Opening %1$s</string>
+    <string name="voice_searching">Searching for “%1$s”</string>
+    <string name="voice_youtube">Searching YouTube for “%1$s”</string>
+    <string name="voice_time">It\'s %1$s</string>
+    <string name="voice_volume">Volume %1$d%%</string>
+    <string name="voice_muted">Sound off</string>
+    <string name="voice_unmuted">Sound on</string>
+    <string name="voice_paused">Paused</string>
+    <string name="voice_playing">Playing</string>
+    <string name="voice_next">Next</string>
+    <string name="voice_previous">Previous</string>
+    <string name="voice_focus">Focusing</string>
+    <string name="voice_keystone">Correcting the picture</string>
+    <string name="voice_settings">Voice assistant</string>
+    <string name="voice_language">Speech language</string>
+    <string name="voice_lang_system">System language</string>
+    <string name="voice_speak">Speak replies</string>
+    <string name="voice_key">Gemini voice</string>
+    <string name="voice_key_off">Device voice</string>
+    <string name="voice_key_on">Gemini</string>
+    <string name="voice_key_hint">Paste a Gemini API key from aistudio.google.com. Only the reply text is sent to Google. Leave it empty for the device voice.</string>
+    <string name="voice_key_region">Gemini is not available in your region, the device voice speaks</string>
+    <string name="voice_key_quota">The Gemini limit for today is reached, the device voice speaks</string>
+    <string name="voice_key_bad">Google did not accept this key</string>
+</resources>
