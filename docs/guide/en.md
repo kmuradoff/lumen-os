@@ -2,7 +2,7 @@
 
 English | [Русский](ru.md)
 
-How to use the projector on Lumen OS 1.0.4. How to install the system is in the
+How to use the projector on Lumen OS 1.0.5. How to install the system is in the
 [install guide](../install/en.md).
 
 ## Remote
@@ -13,13 +13,32 @@ How to use the projector on Lumen OS 1.0.4. How to install the system is in the
 | Focus | autofocus | manual focus |
 | Source | choose the input: HDMI 1, HDMI 2 or the home screen | |
 | Keystone (lens), if your remote has it | the Keystone page of the quick panel | |
-| Microphone | Lumen Home search | voice search while held (with Google services) |
+| Microphone | a hint on how to talk | the voice assistant while held (with Google speech recognition) |
 | Four diamonds | all apps | |
 | Ambient | the living-sky screensaver | |
 | App keys (iQIYI, bilibili) | the app you gave them | |
 | Power | sleep: the lamp goes off at once | menu: sleep, restart, power off, sleep timer |
 
 Give the app keys any app in "Projector > Remote keys".
+
+## Voice assistant
+
+Hold the mic button, speak, then let go. A dark capsule with a colour wave comes down from the top, with the words
+the projector heard under it. The projector understands by itself:
+
+- apps: "open YouTube", "launch Kinopoisk";
+- sound: "louder", "quieter", "volume 30", "mute", "unmute";
+- playback: "pause", "play", "next", "previous";
+- the projector: "go home", "focus", "keystone", "sound settings", "brightness", "settings";
+- "what time is it";
+- search: "find Interstellar", "I want to watch The Office", "cats on YouTube".
+
+Anything else is searched in Lumen Home. The projector understands the commands itself and sends them nowhere.
+
+Projector > Voice assistant: the speech language (when its language pack is missing, the assistant offers to
+download it), spoken replies and the Gemini voice. The Gemini voice comes with your own Gemini API key from
+aistudio.google.com; only the reply text goes to Google. Without a key the device voice answers. The assistant needs
+Google speech recognition; without it the button opens Lumen Home search.
 
 ## Quick panel
 
