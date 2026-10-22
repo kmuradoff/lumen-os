@@ -3,6 +3,34 @@
 Сверху новые версии. Версии 1.0.x выходят для XGIMI Z9X, у XGIMI Play 6 свои записи с пометкой Play 6.
 [English below](#english).
 
+## 1.0.5, октябрь 2026
+
+Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
+
+- Голосовой ассистент. Зажмите кнопку микрофона на пульте и говорите: поверх любого приложения сверху опускается
+  тёмная стеклянная капсула с цветной волной, слова появляются по мере речи. Отпустите кнопку, и проектор
+  сам выполнит команду: «открой ютуб», «громче», «громкость 30», «пауза», «на главную», «автофокус», «выровняй
+  картинку», «настройки звука», «который час», «найди Интерстеллар», «котики на ютубе». Остальное ищется в Lumen Home.
+  Время и ответы звучат голосом. Язык речи и голос выбираются в «Проектор → Голосовой ассистент»; если пакета
+  языка нет, ассистент предложит его скачать. Голос Gemini включается
+  вашим ключом Gemini API; в Google уходит только текст ответа, команды разбирает сам проектор. Нужен распознаватель
+  речи Google, в выпуске без Google кнопка по-прежнему открывает поиск.
+- Новый главный экран Lumen Home. Один ряд «Для вас»: сначала то, что вы смотрите, потом рекомендации, без
+  повторов. Фон на весь экран берётся из выбранной карточки и медленно движется. В «Продолжить просмотр» у
+  сериалов теперь постер сериала, а не кадр из серии.
+- Приложение «Кино» стало Lumen Play: главная, ТВ (IPTV-плейлисты с программой передач), торренты с поиском по
+  источникам Jackett и Torznab, файлы. Lumen Play виден телефонам и компьютерам как DLNA-телевизор: видео можно
+  отправить на проектор из приложений с кнопкой «Воспроизвести на устройстве». Lumen Play обновляется сам, отдельно
+  от системы.
+- Рекомендации магазинов приложений (RuStore, Google Play) больше не попадают в «Для вас»: это реклама приложений.
+  Показать их можно в «Настроить главный экран».
+- AirPlay: картинка и звук идут вместе (раньше картинка отставала на секунду), меньше обрывов звука по Wi-Fi.
+- Длинные названия в настройках проектора и быстрой панели бегут строкой, пока на них фокус, и их можно
+  прочитать целиком.
+- Chromecast built-in убран: Google не выдаёт ключи устройства для несертифицированных проекторов, поэтому
+  проектор появлялся в списке, но не подключался. Что использовать вместо него: раздел
+  [«Chromecast»](docs/install/ru.md#chromecast).
+
 ## 1.0.4, октябрь 2026
 
 Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
@@ -134,6 +162,32 @@ HDMI, заставка, 3D и оптический зум. На 1.0.2 обнов
 <a name="english"></a>
 
 Newest first. Versions 1.0.x are for the XGIMI Z9X; the XGIMI Play 6 has its own entries marked Play 6.
+
+## 1.0.5, October 2026
+
+The update comes over Wi-Fi: Settings > Device Preferences > About > Lumen OS update. Your data stays.
+
+- A voice assistant. Hold the remote's mic button and speak: over any app a dark glass capsule with a colour wave
+  comes down from the top and your words appear as you speak. Release the button and the projector does it
+  itself: "open YouTube", "louder", "volume 30", "pause", "go home", "focus", "keystone", "sound settings", "what time
+  is it", "find Interstellar", "cats on YouTube". Anything else is searched in Lumen Home. The time and answers
+  are spoken. The speech language and the voice are in Projector > Voice assistant; when a language pack is
+  missing, the assistant offers to download it. Gemini's voice comes with your own Gemini
+  API key; only the reply text goes to Google, the projector understands the commands itself. It needs Google's
+  speech recognition; in the edition without Google the button still opens search.
+- A new Lumen Home. One "For you" row: what you are watching first, then recommendations, no repeats. The
+  full-screen background comes from the focused card and moves slowly. Series in "Continue watching" now show the
+  series poster, not a frame of the episode.
+- The "Kino" app is now Lumen Play: home, TV (IPTV playlists with a programme guide), torrents with search through
+  Jackett and Torznab sources, files. Phones and computers see Lumen Play as a DLNA TV, so apps with "Play on
+  device" can send video to the projector. Lumen Play updates itself, apart from the system.
+- App store recommendations (RuStore, Google Play) no longer appear in "For you": they only advertise apps. Customize
+  Home can still show them.
+- AirPlay: picture and sound stay together (the picture used to lag a second behind), fewer sound dropouts over
+  Wi-Fi.
+- Long names in the projector settings and the quick panel scroll while focused, so they can be read in full.
+- Chromecast built-in is gone: Google gives no device keys to uncertified projectors, so the projector showed up
+  in the list but never connected. What to use instead: [Chromecast](docs/install/en.md#chromecast).
 
 ## 1.0.4, October 2026
 
