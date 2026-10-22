@@ -19,6 +19,7 @@
     <string name="voice_previous">上一个</string>
     <string name="voice_focus">正在对焦</string>
     <string name="voice_keystone">正在校正画面</string>
+    <string name="voice_downloading">正在下载语音识别所需的语言，请一分钟后再试</string>
     <string name="voice_settings">语音助手</string>
     <string name="voice_language">语音语言</string>
     <string name="voice_lang_system">系统语言</string>

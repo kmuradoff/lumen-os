@@ -39,6 +39,21 @@ public final class Commands {
     public static final String SEC_SOUND = "sound", SEC_PICTURE = "picture", SEC_LAMP = "lamp", SEC_FOCUS = "focus",
             SEC_KEYSTONE = "keystone", SEC_INPUT = "input";
 
+    /**
+     * Cyrillic counts as letters for \\b and \\w: on Android (ICU) that is the default and the flag is refused
+     * ("UNICODE_CHARACTER_CLASS flag not supported", crash on the owner's Z9X 2026-10-22); the JVM tests need it.
+     */
+    private static final int U = unicodeFlag();
+
+    private static int unicodeFlag() {
+        try {
+            Pattern.compile("a", Pattern.UNICODE_CHARACTER_CLASS);
+            return Pattern.UNICODE_CHARACTER_CLASS;
+        } catch (IllegalArgumentException e) {
+            return 0;
+        }
+    }
+
     private Commands() {}
 
     /** Lower case, ё -> е, no punctuation, single spaces, without a leading wake word or "please". */
@@ -54,9 +69,6 @@ public final class Commands {
     private static boolean has(String t, String re) {
         return Pattern.compile(re, U).matcher(t).find();
     }
-
-    /** Cyrillic counts as letters for \\b and \\w. */
-    private static final int U = Pattern.UNICODE_CHARACTER_CLASS;
 
     private static final Pattern YT_AT_END = Pattern.compile(
             "^(?:(?:найди|найти|поищи|покажи|включи|поставь|search|find|play|show)(?: мне)? )?(.+?) (?:на|в|on|in) (?:ютубе|ютуб|youtube|you tube)$", U);

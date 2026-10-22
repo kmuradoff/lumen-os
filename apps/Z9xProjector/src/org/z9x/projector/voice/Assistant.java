@@ -72,6 +72,12 @@ public final class Assistant {
     /** The mic key is still held: silence does not end the turn, the recogniser listens again. */
     private static boolean sHeld;
     private static int sRestarts;
+    private static long sLastStart;
+    /** The speech language has no installed pack (a download was started); cleared by the next language check. */
+    private static boolean sNeedsPack;
+    private static String sCheckedLang;
+    /** The last partial text of the current turn (used when the final result has none). */
+    private static String sLastPartial;
     private static long sDownAt;
     private static FrameLayout sRoot;
     private static WaveView sWave;
@@ -154,8 +160,13 @@ public final class Assistant {
         sWave.setMode(WaveView.LISTEN);
         setText(L(c).getString(R.string.voice_listening), true);
         sDownAt = SystemClock.uptimeMillis();
+        Chime.play(Chime.START);
         sHeld = true;
+        sLastPartial = null;
         sRestarts = 0;
+        sLastStart = 0;
+        ensureRecognizer(c);
+        checkLanguage(c);
         start(c);
         return true;
     }
@@ -163,6 +174,7 @@ public final class Assistant {
     /** Mic key UP: stop listening, the result follows. */
     public static void micUp(Context ctx) {
         sHeld = false;
+        Log.i(TAG, "mic up after " + (SystemClock.uptimeMillis() - sDownAt) + " ms");
         if (sRoot == null) return;
         if (sListening && sRec != null) {
             try { sRec.stopListening(); } catch (Throwable t) { Log.w(TAG, "stop: " + t); }
@@ -172,23 +184,102 @@ public final class Assistant {
         Ui.main().postDelayed(GIVE_UP, 7000);
     }
 
-    private static void start(Context c) {
+    /**
+     * The device recogniser (Google's on-device SODA on these projectors) needs a language pack per language and
+     * answers "no speech" at once without it (seen on the owner's Z9X: ru-RU missing, error 13 then 7). Once per
+     * language and process: ask which packs are installed and start the download of a missing one.
+     */
+    private static void checkLanguage(Context c) {
+        final String tag = language(c).toLanguageTag();
+        if ((tag.equals(sCheckedLang) && !sNeedsPack) || sRec == null) return;
+        sCheckedLang = tag;
         try {
-            if (sRec == null) {
-                ComponentName cn = recognizer(c);
-                sRec = cn != null ? SpeechRecognizer.createSpeechRecognizer(c, cn) : SpeechRecognizer.createSpeechRecognizer(c);
-                sRec.setRecognitionListener(LISTENER);
-            } else {
-                sRec.cancel();
+            Intent i = recognizeIntent(c);
+            sRec.checkRecognitionSupport(i, c.getMainExecutor(), new android.speech.RecognitionSupportCallback() {
+                @Override public void onSupportResult(android.speech.RecognitionSupport r) {
+                    boolean installed = has(r.getInstalledOnDeviceLanguages(), tag);
+                    boolean pending = has(r.getPendingOnDeviceLanguages(), tag);
+                    boolean online = has(r.getOnlineLanguages(), tag);
+                    Log.i(TAG, "language " + tag + ": installed=" + installed + " pending=" + pending + " online=" + online
+                            + " supported=" + has(r.getSupportedOnDeviceLanguages(), tag));
+                    sNeedsPack = !installed && !online;
+                    if (sNeedsPack) download(c, i, pending);
+                }
+
+                @Override public void onError(int e) {
+                    Log.i(TAG, "language check error " + e);
+                }
+            });
+        } catch (Throwable t) {
+            Log.w(TAG, "language check: " + t);
+        }
+    }
+
+    private static boolean has(List<String> l, String tag) {
+        if (l == null) return false;
+        for (String x : l) if (x != null && x.equalsIgnoreCase(tag)) return true;
+        return false;
+    }
+
+    private static void download(Context c, Intent i, boolean pending) {
+        sNeedsPack = true;
+        if (!pending) {
+            // the recogniser's own confirmation screen (Google speech: DOWNLOAD_LANGUAGE); its triggerModelDownload
+            // tries to open the same screen from the background and Android blocks that, so we open it
+            Intent d = new Intent("com.google.recognition.action.DOWNLOAD_LANGUAGE")
+                    .putExtra(RecognizerIntent.EXTRA_LANGUAGE, language(c).toLanguageTag())
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ComponentName cn = recognizer(c);
+            if (cn != null) d.setPackage(cn.getPackageName());
+            try {
+                if (d.resolveActivity(c.getPackageManager()) != null) {
+                    hideNow();
+                    c.startActivity(d);
+                    Log.i(TAG, "language pack screen opened: " + language(c).toLanguageTag());
+                    return;
+                }
+                sRec.triggerModelDownload(i);
+                Log.i(TAG, "language pack download started: " + language(c).toLanguageTag());
+            } catch (Throwable t) {
+                Log.w(TAG, "download: " + t);
             }
-            Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, language(c).toLanguageTag());
-            i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
-            i.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, !sOnline);
-            i.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, c.getPackageName());
-            i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 300);
-            sRec.startListening(i);
+        }
+        reply(L(c).getString(R.string.voice_downloading), false, 3500);
+    }
+
+    private static Intent recognizeIntent(Context c) {
+        Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, language(c).toLanguageTag());
+        i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        i.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, !sOnline);
+        i.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, c.getPackageName());
+        // push-to-talk: the key decides when the turn ends (micUp -> stopListening), not silence. Google's on-device
+        // recogniser closed the mic 0.3 s after opening it with EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS=300 (owner's
+        // Z9X, 2026-10-22), so no minimum length is passed, and silence may last as long as a held key
+        i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 15_000);
+        i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 15_000);
+        i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+        return i;
+    }
+
+    private static void ensureRecognizer(Context c) {
+        if (sRec != null) return;
+        try {
+            ComponentName cn = recognizer(c);
+            sRec = cn != null ? SpeechRecognizer.createSpeechRecognizer(c, cn) : SpeechRecognizer.createSpeechRecognizer(c);
+            sRec.setRecognitionListener(LISTENER);
+        } catch (Throwable t) {
+            Log.w(TAG, "recognizer: " + t);
+        }
+    }
+
+    private static void start(Context c) {
+        sLastStart = SystemClock.uptimeMillis();
+        try {
+            if (sRec == null) ensureRecognizer(c);
+            else sRec.cancel();
+            sRec.startListening(recognizeIntent(c));
             sListening = true;
             Log.i(TAG, "listening (" + language(c).toLanguageTag() + (sOnline ? ", online" : "") + ")");
         } catch (Throwable t) {
@@ -210,14 +301,18 @@ public final class Assistant {
 
         @Override public void onPartialResults(Bundle b) {
             String s = best(b);
-            if (s != null && !s.isEmpty()) setText(s, false);
+            if (s != null && !s.isEmpty()) {
+                sLastPartial = s;
+                setText(s, false);
+            }
         }
 
         @Override public void onResults(Bundle b) {
             sListening = false;
             Ui.main().removeCallbacks(GIVE_UP);
             String s = best(b);
-            Log.i(TAG, "heard \"" + s + "\"");
+            if ((s == null || s.trim().isEmpty()) && sLastPartial != null) s = sLastPartial;   // no final text: the last partial
+            Log.i(TAG, "heard \"" + s + "\"" + (b == null ? "" : " keys " + b.keySet()));
             if (s == null || s.trim().isEmpty()) reply(L(sApp).getString(R.string.voice_not_heard), false, 1800);
             else handle(s);
         }
@@ -225,13 +320,19 @@ public final class Assistant {
         @Override public void onError(int e) {
             sListening = false;
             Log.i(TAG, "error " + e);
-            if ((e == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE || e == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED) && !sOnline) {
-                sOnline = true;                                   // the offline model lacks this language: online
-                if (sRoot != null) start(sApp);
+            if (e == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE || e == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED) {
+                if (!sOnline) {                                   // maybe an online model has it
+                    sOnline = true;
+                    if (sRoot != null) start(sApp);
+                    return;
+                }
+                Ui.main().removeCallbacks(GIVE_UP);
+                download(sApp, recognizeIntent(sApp), false);
                 return;
             }
             if (sHeld && sRoot != null && (e == SpeechRecognizer.ERROR_NO_MATCH || e == SpeechRecognizer.ERROR_SPEECH_TIMEOUT)
-                    && SystemClock.uptimeMillis() - sDownAt < 30_000 && ++sRestarts <= 20) {
+                    && SystemClock.uptimeMillis() - sDownAt < 30_000 && ++sRestarts <= 20
+                    && SystemClock.uptimeMillis() - sLastStart > 1500 && !sNeedsPack) {
                 Ui.main().postDelayed(() -> { if (sHeld && sRoot != null) start(sApp); }, 250);   // still held: listen again
                 return;
             }
@@ -248,14 +349,30 @@ public final class Assistant {
         }
     };
 
+    /**
+     * The best text of a result bundle. Google's on-device recogniser answered with a bundle whose
+     * RESULTS_RECOGNITION was empty while it had found text (owner's Z9X, 2026-10-22): every string list and string
+     * of the bundle is looked at, RESULTS_RECOGNITION first.
+     */
     private static String best(Bundle b) {
-        ArrayList<String> l = b == null ? null : b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-        return l == null || l.isEmpty() ? null : l.get(0);
+        if (b == null) return null;
+        ArrayList<String> l = b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        if (l != null) for (String x : l) if (x != null && !x.trim().isEmpty()) return x;
+        for (String k : b.keySet()) {
+            Object v = b.get(k);
+            if (v instanceof ArrayList) {
+                for (Object x : (ArrayList<?>) v) if (x instanceof String && !((String) x).trim().isEmpty()) return (String) x;
+            } else if (v instanceof String[]) {
+                for (String x : (String[]) v) if (x != null && !x.trim().isEmpty()) return x;
+            }
+        }
+        return null;
     }
 
     // ================================================================== what was said
     static void handle(String said) {
         Context c = sApp;
+        Chime.play(Chime.DONE);
         setText(capital(said), false);
         Commands.Cmd cmd = Commands.parse(said);
         Log.i(TAG, "command " + cmd);
@@ -305,7 +422,7 @@ public final class Assistant {
                 case SECTION: hideNow(); if (sHost != null) sHost.openPanel(c, cmd.arg); break;
                 case AUTOFOCUS: show(L(c).getString(R.string.voice_focus)); if (sHost != null) sHost.autofocus(c); break;
                 case KEYSTONE: show(L(c).getString(R.string.voice_keystone)); if (sHost != null) sHost.keystone(c); break;
-                case TIME: say(L(c).getString(R.string.voice_time, DateFormat.getTimeInstance(DateFormat.SHORT).format(new Date())), loc); break;
+                case TIME: answer(L(c).getString(R.string.voice_time, DateFormat.getTimeInstance(DateFormat.SHORT).format(new Date())), loc); break;
                 case YOUTUBE: youtube(c, cmd.arg, loc); break;
                 case SEARCH: search(c, cmd.arg, loc); break;
                 default: search(c, said, loc); break;
@@ -381,8 +498,18 @@ public final class Assistant {
     }
 
     // ================================================================== overlay
+    /**
+     * A confirmation ("Opening YouTube"): shown; spoken only with the Gemini voice (owner 2026-10-22: the device
+     * voice saying every confirmation sounded like Google Assistant), the action itself already answers.
+     */
     private static void say(String text, Locale loc) {
         reply(text, true, 1400 + 45L * text.length());
+        if (!Speaker.key(sApp).isEmpty()) Speaker.speak(sApp, text, loc);
+    }
+
+    /** An answer the user asked for (the time): shown and spoken with whichever voice there is. */
+    private static void answer(String text, Locale loc) {
+        reply(text, true, 1800 + 45L * text.length());
         Speaker.speak(sApp, text, loc);
     }
 
@@ -393,11 +520,17 @@ public final class Assistant {
     private static void reply(String text, boolean done, long hideAfterMs) {
         if (sRoot == null) return;
         if (sWave != null) sWave.setMode(WaveView.REPLY);
-        if (sHint != null) {
-            sHint.setText(text);
-            sHint.animate().alpha(1f).setDuration(220).start();
+        if (sText != null && sHint != null) {
+            CharSequence heard = sText.getText();
+            boolean said = done && heard != null && heard.length() > 0 && sText.getAlpha() > 0.9f;
+            sHint.setText(said ? heard : "");
+            sHint.animate().alpha(said ? 0.7f : 0f).setDuration(220).start();
+            sText.animate().cancel();
+            sText.setText(text);
+            sText.setAlpha(0.3f);
+            sText.setTranslationY(10 * org.z9x.projector.ui.Theme.scale(sApp));
+            sText.animate().alpha(1f).translationY(0).setDuration(240).start();
         }
-        if (!done && sText != null) sText.animate().alpha(0f).setDuration(200).start();
         hideSoon(hideAfterMs);
     }
 
@@ -444,31 +577,37 @@ public final class Assistant {
         sWave = new WaveView(c, sHost != null && sHost.lowPower());
         root.addView(sWave, new FrameLayout.LayoutParams(-1, -1));
 
+        // the words in a soft glass capsule, what was heard in a small line above it
         sText = new TextView(c);
         sText.setTextColor(Color.WHITE);
-        sText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 52 * s);
-        sText.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
+        sText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 50 * s);
+        sText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        sText.setLetterSpacing(-0.005f);
         sText.setGravity(Gravity.CENTER);
         sText.setMaxLines(2);
         sText.setEllipsize(TextUtils.TruncateAt.START);
-        sText.setShadowLayer(18 * s, 0, 2 * s, 0xCC000000);
-        FrameLayout.LayoutParams tl = new FrameLayout.LayoutParams((int) (1500 * s), -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        tl.bottomMargin = (int) (210 * s);
+        sText.setMaxWidth((int) (1300 * s));
+        sText.setShadowLayer(24 * s, 0, 3 * s, 0xB0000000);
+        FrameLayout.LayoutParams tl = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        tl.bottomMargin = (int) (130 * s);
         root.addView(sText, tl);
 
         sHint = new TextView(c);
-        sHint.setTextColor(0xE6FFFFFF);
-        sHint.setTextSize(TypedValue.COMPLEX_UNIT_PX, 34 * s);
-        sHint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        sHint.setTextColor(0xFFFFFFFF);
+        sHint.setTextSize(TypedValue.COMPLEX_UNIT_PX, 30 * s);
+        sHint.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         sHint.setGravity(Gravity.CENTER);
-        sHint.setMaxLines(2);
-        sHint.setShadowLayer(14 * s, 0, 2 * s, 0xCC000000);
+        sHint.setMaxLines(1);
+        sHint.setEllipsize(TextUtils.TruncateAt.END);
+        sHint.setShadowLayer(12 * s, 0, 2 * s, 0xCC000000);
         sHint.setAlpha(0f);
-        FrameLayout.LayoutParams hl = new FrameLayout.LayoutParams((int) (1500 * s), -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        hl.bottomMargin = (int) (140 * s);
+        FrameLayout.LayoutParams hl = new FrameLayout.LayoutParams((int) (1300 * s), -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        hl.bottomMargin = (int) (215 * s);
         root.addView(sHint, hl);
 
         WindowManager.LayoutParams lp = OverlayHost.fullscreenParams(false);
+        // touchable (a TV has no touch): Android caps untouchable overlays at 80 % opacity, which dulls the light
+        lp.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
         lp.setTitle("LumenAssistant");
         if (!OverlayHost.get(c).addStatic(root, lp)) {
             sWave = null;
@@ -481,8 +620,16 @@ public final class Assistant {
 
     private static void setText(String t, boolean dim) {
         if (sText == null) return;
+        boolean first = sText.getText() == null || sText.getText().length() == 0;
         sText.setText(t);
-        sText.setAlpha(dim ? 0.6f : 1f);
+        sText.animate().cancel();
+        if (first) {
+            sText.setAlpha(0f);
+            sText.setTranslationY(12 * org.z9x.projector.ui.Theme.scale(sApp));
+            sText.animate().alpha(dim ? 0.55f : 1f).translationY(0).setDuration(260).start();
+        } else {
+            sText.setAlpha(dim ? 0.55f : 1f);
+        }
     }
 
     private static String capital(String s) {

@@ -19,6 +19,7 @@
     <string name="voice_previous">Indietro</string>
     <string name="voice_focus">Messa a fuoco</string>
     <string name="voice_keystone">Correggo l’immagine</string>
+    <string name="voice_downloading">Scarico la lingua per il riconoscimento vocale, riprova tra un minuto</string>
     <string name="voice_settings">Assistente vocale</string>
     <string name="voice_language">Lingua della voce</string>
     <string name="voice_lang_system">Lingua di sistema</string>

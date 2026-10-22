@@ -19,6 +19,7 @@
     <string name="voice_previous">Назад</string>
     <string name="voice_focus">Фокусую</string>
     <string name="voice_keystone">Вирівнюю зображення</string>
+    <string name="voice_downloading">Завантажую мову для розпізнавання мовлення, спробуйте за хвилину</string>
     <string name="voice_settings">Голосовий асистент</string>
     <string name="voice_language">Мова мовлення</string>
     <string name="voice_lang_system">Мова системи</string>

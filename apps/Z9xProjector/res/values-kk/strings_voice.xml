@@ -19,6 +19,7 @@
     <string name="voice_previous">Алдыңғы</string>
     <string name="voice_focus">Фокустап жатырмын</string>
     <string name="voice_keystone">Суретті түзетіп жатырмын</string>
+    <string name="voice_downloading">Сөзді тануға арналған тіл жүктелуде, бір минуттан соң қайталаңыз</string>
     <string name="voice_settings">Дауыстық көмекші</string>
     <string name="voice_language">Сөйлеу тілі</string>
     <string name="voice_lang_system">Жүйе тілі</string>

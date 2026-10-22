@@ -19,6 +19,7 @@
     <string name="voice_previous">Önceki</string>
     <string name="voice_focus">Odaklanıyor</string>
     <string name="voice_keystone">Görüntü düzeltiliyor</string>
+    <string name="voice_downloading">Konuşma tanıma için dil indiriliyor, bir dakika sonra tekrar deneyin</string>
     <string name="voice_settings">Sesli asistan</string>
     <string name="voice_language">Konuşma dili</string>
     <string name="voice_lang_system">Sistem dili</string>
