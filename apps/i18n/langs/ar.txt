@@ -1005,6 +1005,7 @@ voice_previous=السابق
 voice_focus=جارٍ ضبط التركيز
 voice_keystone=جارٍ تصحيح الصورة
 voice_downloading=جارٍ تنزيل اللغة للتعرّف على الكلام، حاول مرة أخرى بعد دقيقة
+voice_hold_hint=اضغط مع الاستمرار على زر الميكروفون وتحدّث
 voice_settings=المساعد الصوتي
 voice_language=لغة الكلام
 voice_lang_system=لغة النظام

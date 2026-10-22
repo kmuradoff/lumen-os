@@ -20,6 +20,7 @@
     <string name="voice_focus">Фокусирую</string>
     <string name="voice_keystone">Выравниваю картинку</string>
     <string name="voice_downloading">Скачиваю язык для распознавания речи, попробуйте через минуту</string>
+    <string name="voice_hold_hint">Зажмите кнопку микрофона и говорите</string>
     <string name="voice_settings">Голосовой ассистент</string>
     <string name="voice_language">Язык речи</string>
     <string name="voice_lang_system">Язык системы</string>

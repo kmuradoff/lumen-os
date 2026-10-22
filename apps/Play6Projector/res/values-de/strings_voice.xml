@@ -20,6 +20,7 @@
     <string name="voice_focus">Fokussiere</string>
     <string name="voice_keystone">Bild wird ausgerichtet</string>
     <string name="voice_downloading">Die Sprache für die Spracherkennung wird geladen, versuch es in einer Minute noch einmal</string>
+    <string name="voice_hold_hint">Mikrofontaste gedrückt halten und sprechen</string>
     <string name="voice_settings">Sprachassistent</string>
     <string name="voice_language">Sprache</string>
     <string name="voice_lang_system">Systemsprache</string>

@@ -242,7 +242,7 @@ res/values-zh-rTW/strings_voice.xml
 src/org/z9x/projector/voice/Commands.java
 src/org/z9x/projector/voice/AppMatcher.java
 src/org/z9x/projector/voice/Speaker.java
-src/org/z9x/projector/voice/WaveView.java
+src/org/z9x/projector/voice/OrbView.java
 src/org/z9x/projector/voice/Assistant.java
 src/org/z9x/projector/voice/VoiceSettings.java
 src/org/z9x/projector/voice/Chime.java

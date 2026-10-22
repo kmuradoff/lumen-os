@@ -994,6 +994,7 @@ voice_previous=Anterior
 voice_focus=Enfocando
 voice_keystone=Corrigiendo la imagen
 voice_downloading=Descargando el idioma para el reconocimiento de voz, vuelve a intentarlo en un minuto
+voice_hold_hint=Mantén pulsado el botón del micrófono y habla
 voice_settings=Asistente de voz
 voice_language=Idioma de voz
 voice_lang_system=Idioma del sistema

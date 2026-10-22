@@ -988,6 +988,7 @@ voice_previous=前へ
 voice_focus=フォーカス中
 voice_keystone=画面を補正しています
 voice_downloading=音声認識の言語をダウンロードしています。1 分後にもう一度お試しください
+voice_hold_hint=マイクボタンを押したまま話してください
 voice_settings=音声アシスタント
 voice_language=音声の言語
 voice_lang_system=システムの言語

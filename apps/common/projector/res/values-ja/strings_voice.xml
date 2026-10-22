@@ -20,6 +20,7 @@
     <string name="voice_focus">フォーカス中</string>
     <string name="voice_keystone">画面を補正しています</string>
     <string name="voice_downloading">音声認識の言語をダウンロードしています。1 分後にもう一度お試しください</string>
+    <string name="voice_hold_hint">マイクボタンを押したまま話してください</string>
     <string name="voice_settings">音声アシスタント</string>
     <string name="voice_language">音声の言語</string>
     <string name="voice_lang_system">システムの言語</string>

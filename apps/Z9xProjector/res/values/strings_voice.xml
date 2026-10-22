@@ -19,6 +19,7 @@
     <string name="voice_focus">Focusing</string>
     <string name="voice_keystone">Correcting the picture</string>
     <string name="voice_downloading">Downloading this language for speech recognition, try again in a minute</string>
+    <string name="voice_hold_hint">Hold the mic button and speak</string>
     <string name="voice_settings">Voice assistant</string>
     <string name="voice_language">Speech language</string>
     <string name="voice_lang_system">System language</string>
