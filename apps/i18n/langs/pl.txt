@@ -996,6 +996,7 @@ voice_next=Dalej
 voice_previous=Wstecz
 voice_focus=Ustawiam ostrość
 voice_keystone=Prostuję obraz
+voice_downloading=Pobieram język do rozpoznawania mowy, spróbuj za minutę
 voice_settings=Asystent głosowy
 voice_language=Język mowy
 voice_lang_system=Język systemu

@@ -990,6 +990,7 @@ voice_next=Sonraki
 voice_previous=Önceki
 voice_focus=Odaklanıyor
 voice_keystone=Görüntü düzeltiliyor
+voice_downloading=Konuşma tanıma için dil indiriliyor, bir dakika sonra tekrar deneyin
 voice_settings=Sesli asistan
 voice_language=Konuşma dili
 voice_lang_system=Sistem dili

@@ -993,6 +993,7 @@ voice_next=Avanti
 voice_previous=Indietro
 voice_focus=Messa a fuoco
 voice_keystone=Correggo l’immagine
+voice_downloading=Scarico la lingua per il riconoscimento vocale, riprova tra un minuto
 voice_settings=Assistente vocale
 voice_language=Lingua della voce
 voice_lang_system=Lingua di sistema

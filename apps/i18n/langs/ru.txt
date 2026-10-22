@@ -838,6 +838,7 @@ voice_next=Дальше
 voice_previous=Назад
 voice_focus=Фокусирую
 voice_keystone=Выравниваю картинку
+voice_downloading=Скачиваю язык для распознавания речи, попробуйте через минуту
 voice_settings=Голосовой ассистент
 voice_language=Язык речи
 voice_lang_system=Язык системы

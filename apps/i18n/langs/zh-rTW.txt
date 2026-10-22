@@ -987,6 +987,7 @@ voice_next=下一個
 voice_previous=上一個
 voice_focus=正在對焦
 voice_keystone=正在校正畫面
+voice_downloading=正在下載語音辨識所需的語言，請一分鐘後再試
 voice_settings=語音助理
 voice_language=語音語言
 voice_lang_system=系統語言

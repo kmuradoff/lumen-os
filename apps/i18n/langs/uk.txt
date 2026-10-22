@@ -996,6 +996,7 @@ voice_next=Далі
 voice_previous=Назад
 voice_focus=Фокусую
 voice_keystone=Вирівнюю зображення
+voice_downloading=Завантажую мову для розпізнавання мовлення, спробуйте за хвилину
 voice_settings=Голосовий асистент
 voice_language=Мова мовлення
 voice_lang_system=Мова системи

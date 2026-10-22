@@ -19,6 +19,7 @@
     <string name="voice_previous">Wstecz</string>
     <string name="voice_focus">Ustawiam ostrość</string>
     <string name="voice_keystone">Prostuję obraz</string>
+    <string name="voice_downloading">Pobieram język do rozpoznawania mowy, spróbuj za minutę</string>
     <string name="voice_settings">Asystent głosowy</string>
     <string name="voice_language">Język mowy</string>
     <string name="voice_lang_system">Język systemu</string>

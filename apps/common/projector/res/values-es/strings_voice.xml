@@ -19,6 +19,7 @@
     <string name="voice_previous">Anterior</string>
     <string name="voice_focus">Enfocando</string>
     <string name="voice_keystone">Corrigiendo la imagen</string>
+    <string name="voice_downloading">Descargando el idioma para el reconocimiento de voz, vuelve a intentarlo en un minuto</string>
     <string name="voice_settings">Asistente de voz</string>
     <string name="voice_language">Idioma de voz</string>
     <string name="voice_lang_system">Idioma del sistema</string>

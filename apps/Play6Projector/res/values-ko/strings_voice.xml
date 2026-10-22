@@ -19,6 +19,7 @@
     <string name="voice_previous">이전</string>
     <string name="voice_focus">초점 맞추는 중</string>
     <string name="voice_keystone">화면 보정 중</string>
+    <string name="voice_downloading">음성 인식 언어를 내려받는 중이에요. 1분 후에 다시 시도해 주세요</string>
     <string name="voice_settings">음성 어시스턴트</string>
     <string name="voice_language">음성 언어</string>
     <string name="voice_lang_system">시스템 언어</string>

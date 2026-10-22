@@ -205,12 +205,41 @@ public final class Speaker {
         synchronized (LOCK) {
             if (sTts == null || !sTtsReady) { Log.i(TAG, "no device voice: not said"); return; }
             try {
-                if (locale != null) sTts.setLanguage(locale);
+                if (locale != null) {
+                    sTts.setLanguage(locale);
+                    android.speech.tts.Voice v = bestVoice(locale);
+                    if (v != null) sTts.setVoice(v);
+                }
+                sTts.setSpeechRate(1.0f);
+                sTts.setPitch(1.0f);
                 sTts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "lumen");
             } catch (Throwable t) {
                 Log.w(TAG, "device voice: " + t);
             }
         }
+    }
+
+    /**
+     * The most natural installed voice of the language: the highest quality first, then one that needs no network
+     * (the reply must not wait), then a stable name order so the same voice speaks every time.
+     */
+    private static android.speech.tts.Voice bestVoice(Locale locale) {
+        android.speech.tts.Voice best = null;
+        try {
+            for (android.speech.tts.Voice v : sTts.getVoices()) {
+                if (v.getLocale() == null || !v.getLocale().getLanguage().equals(locale.getLanguage())) continue;
+                if (v.getFeatures() != null && v.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)) continue;
+                if (best == null || score(v) > score(best) || (score(v) == score(best) && v.getName().compareTo(best.getName()) < 0)) best = v;
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "voices: " + t);
+        }
+        if (best != null) Log.i(TAG, "device voice " + best.getName());
+        return best;
+    }
+
+    private static int score(android.speech.tts.Voice v) {
+        return v.getQuality() * 2 + (v.isNetworkConnectionRequired() ? 0 : 1);
     }
 
     private static byte[] readAll(InputStream in) throws java.io.IOException {

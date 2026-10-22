@@ -19,6 +19,7 @@
     <string name="voice_previous">Précédent</string>
     <string name="voice_focus">Mise au point</string>
     <string name="voice_keystone">Correction de l’image</string>
+    <string name="voice_downloading">Téléchargement de la langue pour la reconnaissance vocale, réessayez dans une minute</string>
     <string name="voice_settings">Assistant vocal</string>
     <string name="voice_language">Langue de la voix</string>
     <string name="voice_lang_system">Langue du système</string>

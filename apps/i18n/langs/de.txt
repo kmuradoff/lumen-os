@@ -990,6 +990,7 @@ voice_next=Weiter
 voice_previous=Zurück
 voice_focus=Fokussiere
 voice_keystone=Bild wird ausgerichtet
+voice_downloading=Die Sprache für die Spracherkennung wird geladen, versuch es in einer Minute noch einmal
 voice_settings=Sprachassistent
 voice_language=Sprache
 voice_lang_system=Systemsprache
