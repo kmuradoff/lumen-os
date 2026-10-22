@@ -989,6 +989,7 @@ voice_previous=上一个
 voice_focus=正在对焦
 voice_keystone=正在校正画面
 voice_downloading=正在下载语音识别所需的语言，请一分钟后再试
+voice_hold_hint=按住麦克风键说话
 voice_settings=语音助手
 voice_language=语音语言
 voice_lang_system=系统语言

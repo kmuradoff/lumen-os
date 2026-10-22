@@ -991,6 +991,7 @@ voice_previous=Алдыңғы
 voice_focus=Фокустап жатырмын
 voice_keystone=Суретті түзетіп жатырмын
 voice_downloading=Сөзді тануға арналған тіл жүктелуде, бір минуттан соң қайталаңыз
+voice_hold_hint=Микрофон түймесін басып тұрып сөйлеңіз
 voice_settings=Дауыстық көмекші
 voice_language=Сөйлеу тілі
 voice_lang_system=Жүйе тілі

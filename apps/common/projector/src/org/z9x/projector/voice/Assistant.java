@@ -40,7 +40,7 @@ import java.util.Locale;
 
 /**
  * Lumen voice assistant (1.0.5, owner 2026-10-21: "the mic button records while held; a beautiful on-screen overlay
- * like Apple's, petals, waves; smart"). Hold the remote's mic key: the light (WaveView) rises over whatever is on
+ * like Apple's, petals, waves; smart"). Hold the remote's mic key: the Siri-like glass capsule (OrbView) drops over whatever is on
  * screen, the words appear as they are recognised; release: the projector carries out the command itself
  * (Commands, AppMatcher: apps, volume, playback, Home, settings pages, focus, keystone, time, search, YouTube),
  * shows what it did and says it (Speaker: Gemini's voice with the user's key, else the device voice). Anything it
@@ -71,6 +71,9 @@ public final class Assistant {
     private static boolean sListening, sOnline;
     /** The mic key is still held: silence does not end the turn, the recogniser listens again. */
     private static boolean sHeld;
+    /** The press was a tap: listen until the user stops speaking. */
+    private static boolean sTap;
+    private static final long TAP_MS = 400;
     private static int sRestarts;
     private static long sLastStart;
     /** The speech language has no installed pack (a download was started); cleared by the next language check. */
@@ -80,8 +83,9 @@ public final class Assistant {
     private static String sLastPartial;
     private static long sDownAt;
     private static FrameLayout sRoot;
-    private static WaveView sWave;
-    private static TextView sText, sHint;
+    private static OrbView sWave;
+    /** What was heard (shown small above the answer). */
+    private static String sHeard;
     private static final Runnable HIDE = Assistant::hide;
     private static final Runnable GIVE_UP = () -> {
         Log.i(TAG, "no result in time");
@@ -157,11 +161,13 @@ public final class Assistant {
         Ui.main().removeCallbacks(HIDE);
         Ui.main().removeCallbacks(GIVE_UP);
         show(c);
-        sWave.setMode(WaveView.LISTEN);
+        sWave.setMode(OrbView.LISTEN);
         setText(L(c).getString(R.string.voice_listening), true);
         sDownAt = SystemClock.uptimeMillis();
         Chime.play(Chime.START);
         sHeld = true;
+        sTap = false;
+        sHeard = null;
         sLastPartial = null;
         sRestarts = 0;
         sLastStart = 0;
@@ -174,12 +180,23 @@ public final class Assistant {
     /** Mic key UP: stop listening, the result follows. */
     public static void micUp(Context ctx) {
         sHeld = false;
-        Log.i(TAG, "mic up after " + (SystemClock.uptimeMillis() - sDownAt) + " ms");
+        long held = SystemClock.uptimeMillis() - sDownAt;
+        Log.i(TAG, "mic up after " + held + " ms");
         if (sRoot == null) return;
+        if (held < TAP_MS) {
+            // a tap: nothing could be said in it; tell how to talk (owner 2026-10-22: "say: hold the button")
+            Log.i(TAG, "tap: hint to hold the key");
+            try { if (sRec != null) sRec.cancel(); } catch (Throwable ignored) { }
+            sListening = false;
+            Ui.main().removeCallbacks(GIVE_UP);
+            if (sWave != null) sWave.setReply("", L(sApp).getString(R.string.voice_hold_hint));
+            hideSoon(2400);
+            return;
+        }
         if (sListening && sRec != null) {
             try { sRec.stopListening(); } catch (Throwable t) { Log.w(TAG, "stop: " + t); }
         }
-        if (sWave != null) sWave.setMode(WaveView.THINK);
+        if (sWave != null) sWave.setMode(OrbView.THINK);
         Ui.main().removeCallbacks(GIVE_UP);
         Ui.main().postDelayed(GIVE_UP, 7000);
     }
@@ -257,8 +274,9 @@ public final class Assistant {
         // push-to-talk: the key decides when the turn ends (micUp -> stopListening), not silence. Google's on-device
         // recogniser closed the mic 0.3 s after opening it with EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS=300 (owner's
         // Z9X, 2026-10-22), so no minimum length is passed, and silence may last as long as a held key
-        i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 15_000);
-        i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 15_000);
+        int silence = sTap ? 1_500 : 15_000;      // a tap ends on silence, a held key on release
+        i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, silence);
+        i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, silence);
         i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
         return i;
     }
@@ -519,18 +537,7 @@ public final class Assistant {
 
     private static void reply(String text, boolean done, long hideAfterMs) {
         if (sRoot == null) return;
-        if (sWave != null) sWave.setMode(WaveView.REPLY);
-        if (sText != null && sHint != null) {
-            CharSequence heard = sText.getText();
-            boolean said = done && heard != null && heard.length() > 0 && sText.getAlpha() > 0.9f;
-            sHint.setText(said ? heard : "");
-            sHint.animate().alpha(said ? 0.7f : 0f).setDuration(220).start();
-            sText.animate().cancel();
-            sText.setText(text);
-            sText.setAlpha(0.3f);
-            sText.setTranslationY(10 * org.z9x.projector.ui.Theme.scale(sApp));
-            sText.animate().alpha(1f).translationY(0).setDuration(240).start();
-        }
+        if (sWave != null) sWave.setReply(done && sHeard != null ? sHeard : "", text);
         hideSoon(hideAfterMs);
     }
 
@@ -546,8 +553,6 @@ public final class Assistant {
         if (root == null) return;
         sRoot = null;
         sWave = null;
-        sText = null;
-        sHint = null;
         OverlayHost.get(sApp).removeStatic(root);
     }
 
@@ -559,77 +564,33 @@ public final class Assistant {
             sListening = false;
         }
         final FrameLayout root = sRoot;
-        WaveView w = sWave;
-        if (sText != null) sText.animate().alpha(0f).setDuration(250).start();
-        if (sHint != null) sHint.animate().alpha(0f).setDuration(250).start();
+        OrbView w = sWave;
         if (w != null) w.hide(() -> { if (sRoot == root) hideNow(); });
         else hideNow();
     }
 
     private static void show(Context c) {
-        if (sRoot != null) {
-            if (sText != null) sText.setAlpha(1f);
-            if (sHint != null) sHint.setAlpha(0f);
-            return;
-        }
-        float s = org.z9x.projector.ui.Theme.scale(c);
+        if (sRoot != null) return;
         FrameLayout root = new FrameLayout(c);
-        sWave = new WaveView(c, sHost != null && sHost.lowPower());
+        sWave = new OrbView(c, sHost != null && sHost.lowPower());
         root.addView(sWave, new FrameLayout.LayoutParams(-1, -1));
-
-        // the words in a soft glass capsule, what was heard in a small line above it
-        sText = new TextView(c);
-        sText.setTextColor(Color.WHITE);
-        sText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 50 * s);
-        sText.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        sText.setLetterSpacing(-0.005f);
-        sText.setGravity(Gravity.CENTER);
-        sText.setMaxLines(2);
-        sText.setEllipsize(TextUtils.TruncateAt.START);
-        sText.setMaxWidth((int) (1300 * s));
-        sText.setShadowLayer(24 * s, 0, 3 * s, 0xB0000000);
-        FrameLayout.LayoutParams tl = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        tl.bottomMargin = (int) (130 * s);
-        root.addView(sText, tl);
-
-        sHint = new TextView(c);
-        sHint.setTextColor(0xFFFFFFFF);
-        sHint.setTextSize(TypedValue.COMPLEX_UNIT_PX, 30 * s);
-        sHint.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        sHint.setGravity(Gravity.CENTER);
-        sHint.setMaxLines(1);
-        sHint.setEllipsize(TextUtils.TruncateAt.END);
-        sHint.setShadowLayer(12 * s, 0, 2 * s, 0xCC000000);
-        sHint.setAlpha(0f);
-        FrameLayout.LayoutParams hl = new FrameLayout.LayoutParams((int) (1300 * s), -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        hl.bottomMargin = (int) (215 * s);
-        root.addView(sHint, hl);
-
-        WindowManager.LayoutParams lp = OverlayHost.fullscreenParams(false);
-        // touchable (a TV has no touch): Android caps untouchable overlays at 80 % opacity, which dulls the light
+        // only the top of the screen (the capsule, the words, the answer): a small window is cheap to compose at 4K
+        float sc = org.z9x.projector.ui.Theme.scale(c);
+        WindowManager.LayoutParams lp = OverlayHost.params(false, WindowManager.LayoutParams.MATCH_PARENT,
+                (int) (560 * sc), android.view.Gravity.TOP | android.view.Gravity.CENTER_HORIZONTAL);
+        // touchable (a TV has no touch): Android caps untouchable overlays at 80 % opacity, which dulls the glass
         lp.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
         lp.setTitle("LumenAssistant");
         if (!OverlayHost.get(c).addStatic(root, lp)) {
             sWave = null;
-            sText = null;
-            sHint = null;
             return;
         }
         sRoot = root;
     }
 
     private static void setText(String t, boolean dim) {
-        if (sText == null) return;
-        boolean first = sText.getText() == null || sText.getText().length() == 0;
-        sText.setText(t);
-        sText.animate().cancel();
-        if (first) {
-            sText.setAlpha(0f);
-            sText.setTranslationY(12 * org.z9x.projector.ui.Theme.scale(sApp));
-            sText.animate().alpha(dim ? 0.55f : 1f).translationY(0).setDuration(260).start();
-        } else {
-            sText.setAlpha(dim ? 0.55f : 1f);
-        }
+        if (!dim) sHeard = t;
+        if (sWave != null) sWave.setLive(t, dim);
     }
 
     private static String capital(String s) {
