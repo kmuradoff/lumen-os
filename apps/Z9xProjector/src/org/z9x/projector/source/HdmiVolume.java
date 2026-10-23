@@ -53,7 +53,7 @@ public final class HdmiVolume {
     /** HDMI is shown (start called, stop not yet): a confirmed speaker path then starts following. */
     private static boolean sWanted;
     private static boolean sPathListener;
-    private static int sSent = -1;
+    private static volatile int sSent = -1;
     private static long sLastLogAt = -LOG_GAP_MS;
     private static int sUnlogged;
     private static final Runnable sTrailingLog = HdmiVolume::logTrailing;
@@ -183,6 +183,28 @@ public final class HdmiVolume {
             am.setParameters("xgimi_audiopath_switch_end=" + PATH_SPEAKER);
         } catch (Throwable t) {
             Log.w(TAG, "speaker path: " + t);
+        }
+    }
+
+    /**
+     * Lumen OS 1.0.6: the media output leaves Bluetooth (AudioPathReporter had selected the HAL's A2DP sink with
+     * "xgimi_audiopath_switch_end=3"): select the speaker sink again. switch_end restores the speaker level from the
+     * stored spk_volume, which is 0 from adev_open, so it is stored first when nothing was sent this process (the
+     * neutral 100; while HDMI is followed the value sent last is already there). Main thread.
+     */
+    public static void selectSpeakerSink(Context ctx, String why) {
+        AudioManager am = ctx.getApplicationContext().getSystemService(AudioManager.class);
+        if (am == null) return;
+        if (sSent < 0) send(ctx.getApplicationContext(), NEUTRAL);
+        if (sSent < 0) {
+            Log.w(TAG, "speaker sink not selected (" + why + "): spk_volume not stored");
+            return;
+        }
+        try {
+            am.setParameters("xgimi_audiopath_switch_end=" + PATH_SPEAKER);
+            Log.i(TAG, "speaker sink selected, spk_volume=" + sSent + " (" + why + ")");
+        } catch (Throwable t) {
+            Log.w(TAG, "speaker sink: " + t);
         }
     }
 
