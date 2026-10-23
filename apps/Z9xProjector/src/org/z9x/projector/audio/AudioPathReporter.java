@@ -40,12 +40,17 @@ import java.util.List;
  *  - 59 setAudioOutput(100) right away when the output changes AWAY from a path we already
  *    reported (stock switch start): Msrv mutes every TV path and keeps the current path until 59(P).
  *    Not sent for the first report of a boot (the vendor path is already 100 then).
- *  - NOT the audio HAL parameters. In audio.primary.mt5877 "xgimi_audiopath_switch_start=P" sets the
- *    device's TV volume index to 0 and "xgimi_audiopath_switch_end=P" restores it from the volume
- *    stored by "spk_volume=" (adev+0x5fcc+0x9ec, zeroed at adev_open). Only the XGIMI AudioService
- *    sent spk_volume; our AOSP AudioService never does (v6 RESULT_audio: do not send it), so
- *    switch_end would restore index 0 = a silent speaker. Same for digital_output_format (no
- *    SPDIF/ARC passthrough setting on the GSI). Device-test before ever adding them.
+ *  - The audio HAL parameter "xgimi_audiopath_switch_end=P" only for Bluetooth (Lumen OS 1.0.6). In
+ *    audio.primary.mt5877 it sets the HAL's sink device (adev+0x3e4c, speaker 0x2 from adev_open)
+ *    and restores that device's TV volume index. The A2DP sound is the HAL's loopback thread copying
+ *    the DSP output to the Bluetooth stream, and it writes only while the sink device is A2DP: without
+ *    switch_end=3 a connected speaker stayed silent (log with vendor.mstar.audio.log.level=VERBOSE:
+ *    "utils_ApplyDevicePath: sink device 0x2", no "write ... to a2dp"). The A2DP level comes from
+ *    bluetooth_volume (BtDspVolume, sent first). Leaving Bluetooth sends switch_end=0 through
+ *    HdmiVolume.selectSpeakerSink: the speaker level comes from spk_volume, zeroed at adev_open, so
+ *    it is stored first. Other paths keep the HAL's default speaker sink as before (their stored
+ *    levels are 0, switch_end would silence them). switch_start (sets the level to 0 until the end)
+ *    is not sent. digital_output_format is not sent either (no SPDIF/ARC passthrough setting).
  *  - Never 1 (SPDIF), never 59 on the main thread (Hal.run, "z9x-hal").
  *
  * Idempotent: before 59(P) the vendor state is read; when vender.xgimi.audio.ready == 1 and
@@ -65,8 +70,12 @@ public final class AudioPathReporter {
     /** Set by Msrv SetOutputType on its first real path (reset to 0 by GoToShutdown). */
     static final String PROP_READY = "vender.xgimi.audio.ready";
 
-    /** Stock threadInit: 50 x 20 ms after the last change. */
-    private static final long DEBOUNCE_MS = 1_000L;
+    /**
+     * Stock threadInit waits 50 x 20 ms after the last change; 1.0.6 waits 300 ms (the sound was silent for
+     * the whole wait, 2 s from Bluetooth back to the speaker). Still long enough to merge the burst of
+     * routing callbacks of one switch.
+     */
+    private static final long DEBOUNCE_MS = 300L;
     private static final long VERIFY_DELAY_MS = 1_500L;
     private static final long WAIT_POLL_MS = 1_000L;
     private static final long WAIT_MAX_MS = 5 * 60_000L;
@@ -103,6 +112,8 @@ public final class AudioPathReporter {
     private static volatile boolean sForce;
     /** HAL thread: number of HAL connects seen by this process (the first one is the boot connect). */
     private static int sConnects;
+    /** HAL thread: the audio HAL sink this process selected with switch_end (3 A2DP, 0 speaker), -1 none. */
+    private static int sHalSink = -1;
 
     private static final Runnable COMMIT = AudioPathReporter::commit;
 
@@ -298,6 +309,7 @@ public final class AudioPathReporter {
                 sSent = target;
                 sConfirmed = target;
                 Log.i(TAG, "path " + target + " already set in the vendor (ready=1, 60=" + target + "): not sent");
+                halSink(target);
                 sH.post(() -> { if (gen == sGen) sVerifying = false; });
                 return;
             }
@@ -311,6 +323,7 @@ public final class AudioPathReporter {
             sSwitching = false;
             sForce = false;
             Log.i(TAG, "59(" + target + ") sent");
+            halSink(target);
             sH.postDelayed(() -> verify(gen, target), VERIFY_DELAY_MS);
         }, 0, () -> sH.post(() -> retry(gen, target, "HAL not connected")));
         if (!queued) retry(gen, target, "HAL thread not available");
@@ -333,6 +346,30 @@ public final class AudioPathReporter {
             }
         }, 0, () -> sH.post(() -> retry(gen, target, "HAL not connected")));
         if (!queued) retry(gen, target, "HAL thread not available");
+    }
+
+    /**
+     * HAL thread, after 59(P): the audio HAL's sink device (see the class comment). Bluetooth: switch_end=3
+     * every time (cheap, and the HAL forgets it when the audio server restarts). Away from Bluetooth: the
+     * speaker sink again, on the main thread (HdmiVolume owns spk_volume).
+     */
+    private static void halSink(int target) {
+        try {
+            if (target == GmpfClient.AudioPath.BT_A2DP.wire) {
+                AudioManager am = sApp.getSystemService(AudioManager.class);
+                if (am == null) return;
+                BtDspVolume.apply(sApp, "A2DP sink");
+                am.setParameters("xgimi_audiopath_switch_end=" + target);
+                sHalSink = target;
+                Log.i(TAG, "audio HAL sink: A2DP (switch_end=" + target + ")");
+            } else if (sHalSink == GmpfClient.AudioPath.BT_A2DP.wire) {
+                sHalSink = 0;
+                org.z9x.projector.Ui.main().post(() ->
+                        org.z9x.projector.source.HdmiVolume.selectSpeakerSink(sApp, "left Bluetooth for path " + target));
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "audio HAL sink " + target + ": " + t);
+        }
     }
 
     private static boolean readyForHal() {
