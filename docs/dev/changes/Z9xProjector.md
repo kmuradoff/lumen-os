@@ -1,3 +1,25 @@
+# Z9xProjector, next (Lumen OS 1.0.6)
+
+- **Bluetooth speakers and headphones play** (`audio/AudioPathReporter`, `source/HdmiVolume.selectSpeakerSink`).
+  audio.primary.mt5877 sends A2DP itself: a loopback thread copies the DSP output to the Bluetooth stream, but only
+  while its sink device (adev+0x3e4c) is A2DP, and only "xgimi_audiopath_switch_end=P" sets it (stock's audio policy
+  sent it after IGmpf 59). Lumen sent 59 only, so the sink stayed the speaker (0x2) and a connected speaker was
+  silent (vendor.mstar.audio.log.level=VERBOSE: no "write ... to a2dp", no BT stream start). After 59(3) the app now
+  sends bluetooth_volume=100 and switch_end=3; leaving Bluetooth sends switch_end=0 on the main thread, spk_volume
+  stored first (100 unless HDMI volume already sent one), because switch_end restores the speaker level from it.
+  With the right sink the HAL also subtracts the A2DP latency from the presentation position, so lip sync is right
+  in every app (owner's flash and click test: together). Device-tested 2026-10-23 on the owner's Z9X.
+- **One volume for the projector and a Bluetooth speaker** (`audio/SpdifOff`, new; product prop
+  persist.bluetooth.disableabsvol=false). Two causes, both found with btsnoop on the owner's Z9X and a Yandex Station
+  Street: (1) the vendor build.prop disables AVRCP absolute volume; (2) the vendor policy lists a non-existent "Spdif"
+  as attached, AOSP duplicates media to it, and AudioService.selectOneAudioDevice prefers SPDIF over A2DP for the
+  stream volume, so the keys moved the SPDIF index and never the speaker. The app marks SPDIF as non-default for
+  the media strategy (setDeviceAsNonDefaultForStrategy, MODIFY_AUDIO_ROUTING) at process start and boot. Speakers
+  paired while absolute volume was off must be paired again (BlueZ speakers cache the projector's SDP record and
+  answer SetAbsoluteVolume with REJECTED / invalid parameter). Device-tested 2026-10-24: volume follows both ways.
+- **Faster output switch:** the debounce before 59(P) is 300 ms instead of stock's 1 s (Bluetooth back to the
+  speaker took 3.5 s of silence; the vendor's own switch still takes about a second).
+
 # Z9xProjector, next (Lumen OS 1.0.5)
 
 - **Running line for long texts** (`ui/Marquee`, new; owner: "settings items must be a running line, so you can read

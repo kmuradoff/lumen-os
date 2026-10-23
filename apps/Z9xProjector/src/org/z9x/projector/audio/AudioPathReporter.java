@@ -165,6 +165,7 @@ public final class AudioPathReporter {
             if ("1".equals(prop("sys.boot_completed"))) {
                 sBooted = true;                             // persistent process restarted after boot
                 sH.post(() -> BtDspVolume.apply(sApp, "process start"));
+                sH.post(() -> SpdifOff.apply(sApp, "process start"));
                 sH.post(() -> evaluate("process start"));
                 final long now = SystemClock.elapsedRealtime();
                 sH.post(() -> bootCheck(now));
@@ -182,6 +183,7 @@ public final class AudioPathReporter {
         Handler h = sH;
         if (h == null) return;
         h.post(() -> BtDspVolume.apply(sApp, "boot completed"));
+        h.post(() -> SpdifOff.apply(sApp, "boot completed"));
         h.post(() -> evaluate("boot completed"));
         final long now = SystemClock.elapsedRealtime();
         h.post(() -> bootCheck(now));
