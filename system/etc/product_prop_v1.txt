@@ -36,3 +36,10 @@ persist.sys.usb.config=none
 # report Worker (gsi/cloud/report-worker) turns on the "Send a problem report" row in Projector settings;
 # empty = hidden, nothing collected or sent. A ro.* value cannot change at runtime: a later image sets it.
 ro.z9x.report.url=
+# ---- Bluetooth absolute volume (Lumen OS 1.0.6). The vendor build.prop sets persist.bluetooth.disableabsvol=true,
+# so the projector only scaled its own signal and a speaker kept its own volume. With it on, the remote's volume
+# keys set the speaker's volume and the speaker's knob moves Android's (AVRCP SetAbsoluteVolume / VOLUME_CHANGED),
+# as on a phone. Tested 2026-10-24 with a Yandex Station Street (BlueZ inside): it accepted the volume only after
+# re-pairing, because BlueZ keeps the projector's SDP record from the first pairing (a record without volume
+# category 2 makes it answer REJECTED / invalid parameter). A value saved in /data (developer option) still wins.
+persist.bluetooth.disableabsvol=false
