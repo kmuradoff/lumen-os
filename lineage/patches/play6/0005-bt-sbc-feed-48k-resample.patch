@@ -8,8 +8,8 @@ is fed at 48 kHz and a2dp_sbc_read_feeding resamples it with a new down-sampler 
 up-sampler emits at least one sample per input and cannot lower the rate).
 
 diff -ruN a/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_encoding_hidl.cc b/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_encoding_hidl.cc
---- a/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_encoding_hidl.cc	2026-10-24 13:48:10.576084100 +0300
-+++ b/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_encoding_hidl.cc	2026-10-24 13:48:10.577333792 +0300
+--- a/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_encoding_hidl.cc	2026-10-24 14:14:40.076070797 +0300
++++ b/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_encoding_hidl.cc	2026-10-24 14:14:40.077676407 +0300
 @@ -308,6 +308,11 @@
  
    btav_a2dp_codec_config_t current_codec = a2dp_codec_configs->getCodecConfig();
@@ -22,23 +22,57 @@ diff -ruN a/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_enco
    pcm_config->bitsPerSample = A2dpCodecToHalBitsPerSample(current_codec);
    pcm_config->channelMode = A2dpCodecToHalChannelMode(current_codec);
    return (pcm_config->sampleRate != SampleRate::RATE_UNKNOWN &&
+diff -ruN a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc.cc b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc.cc
+--- a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc.cc	2026-10-24 14:14:40.075070792 +0300
++++ b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc.cc	2026-10-24 14:14:40.077389005 +0300
+@@ -55,6 +55,8 @@
+ } tA2DP_SBC_CIE;
+ 
+ /* SBC Source codec capabilities */
++// Lumen OS (Play 6): AOSP's 44.1 kHz on purpose. Speakers such as the Yandex Station accept 48 kHz SBC and then
++// close the stream; the Play 6 feeds 48 kHz and the encoder resamples (a2dp_sbc_encoder.cc).
+ static const tA2DP_SBC_CIE a2dp_sbc_source_caps = {
+     (A2DP_SBC_IE_SAMP_FREQ_44),                         /* samp_freq */
+     (A2DP_SBC_IE_CH_MD_MONO | A2DP_SBC_IE_CH_MD_JOINT), /* ch_mode */
 diff -ruN a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_encoder.cc b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_encoder.cc
---- a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_encoder.cc	2026-10-24 13:48:10.574111397 +0300
-+++ b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_encoder.cc	2026-10-24 13:48:10.576924724 +0300
-@@ -182,6 +182,10 @@
+--- a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_encoder.cc	2026-10-24 14:14:40.075609837 +0300
++++ b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_encoder.cc	2026-10-24 14:14:40.077554811 +0300
+@@ -113,6 +113,8 @@
+ static void a2dp_sbc_get_num_frame_iteration(uint8_t* num_of_iterations,
+                                              uint8_t* num_of_frames,
+                                              uint64_t timestamp_us);
++// Lumen OS (Play 6): the SBC rate when the feeding runs at 48 kHz for it (a2dp_sbc_encoder_update)
++static uint32_t lumen_sbc_out_rate = 0;
+ static uint16_t adjust_effective_mtu(
+     const tA2DP_ENCODER_INIT_PEER_PARAMS& peer_params);
+ static uint8_t calculate_max_frames_per_packet(void);
+@@ -182,6 +184,11 @@
    // The feeding parameters
    tA2DP_FEEDING_PARAMS* p_feeding_params = &a2dp_sbc_encoder_cb.feeding_params;
    p_feeding_params->sample_rate = A2DP_GetTrackSampleRateSbc(p_codec_info);
 +  // Lumen OS (Play 6): the vendor audio HAL feeds the A2DP stream from its 48 kHz DSP and never resamples, and
 +  // speakers often take SBC at 44.1 kHz only. The stream is then fed at 48 kHz (the HAL PCM config says so too,
 +  // a2dp_encoding_hidl.cc) and a2dp_sbc_read_feeding resamples it to the SBC rate.
++  lumen_sbc_out_rate = p_feeding_params->sample_rate;
 +  if (p_feeding_params->sample_rate == 44100) p_feeding_params->sample_rate = 48000;
    p_feeding_params->bits_per_sample =
        a2dp_codec_config->getAudioBitsPerSample();
    p_feeding_params->channel_count = A2DP_GetTrackChannelCountSbc(p_codec_info);
+@@ -342,8 +349,10 @@
+   memset(&a2dp_sbc_encoder_cb.feeding_state, 0,
+          sizeof(a2dp_sbc_encoder_cb.feeding_state));
+ 
++  // Lumen OS (Play 6): the frame count per tick counts encoder (SBC rate) PCM, also when the feeding is resampled;
++  // with the 48 kHz feeding rate here the encoder pulled about 9 % more than the HAL delivers (underflow, crackle)
+   a2dp_sbc_encoder_cb.feeding_state.bytes_per_tick =
+-      (a2dp_sbc_encoder_cb.feeding_params.sample_rate *
++      ((lumen_sbc_out_rate ? lumen_sbc_out_rate : a2dp_sbc_encoder_cb.feeding_params.sample_rate) *
+        a2dp_sbc_encoder_cb.feeding_params.bits_per_sample / 8 *
+        a2dp_sbc_encoder_cb.feeding_params.channel_count *
+        A2DP_SBC_ENCODER_INTERVAL_MS) /
 diff -ruN a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_up_sample.cc b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_up_sample.cc
---- a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_up_sample.cc	2026-10-24 13:48:10.575518515 +0300
-+++ b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_up_sample.cc	2026-10-24 13:48:10.577624826 +0300
+--- a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_up_sample.cc	2026-10-24 14:14:40.075935303 +0300
++++ b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_up_sample.cc	2026-10-24 14:14:40.077775654 +0300
 @@ -145,6 +145,47 @@
   *                  The number of bytes used in p_src (in *p_ret)
   *
