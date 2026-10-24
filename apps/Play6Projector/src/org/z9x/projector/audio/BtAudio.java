@@ -45,6 +45,8 @@ public final class BtAudio {
     private static final long RESYNC_MS = 800;
     /** Stock's switch: 59(100), then the path once the routing settled (the Z9X waits 300 ms). */
     private static final long SWITCH_MS = 300;
+    private static final long[] BOOT_RESEND_MS = {12_000L, 30_000L};
+    private static final long RESEND_MS = 3_000L;
     private static Context sApp;
 
     private BtAudio() { }
@@ -79,6 +81,20 @@ public final class BtAudio {
                 }
             }
         }, h);
+        // The vendor audio manager ignores 59 until its init thread ends, a few seconds after boot ("Is sleeping/init,
+        // return! ... isInitThreadFinish:0", device log 2026-10-24), and Msrv GoToShutdown resets the path to 100 on
+        // sleep: the path is sent again after boot, after the screen comes on and after a HAL reconnect.
+        for (long d : BOOT_RESEND_MS) h.postDelayed(() -> resend(am, "after boot"), d);
+        Hal.addConnectedListener(() -> h.postDelayed(() -> resend(am, "HAL connected"), RESEND_MS));
+        try {
+            app.registerReceiver(new android.content.BroadcastReceiver() {
+                @Override public void onReceive(Context c, android.content.Intent i) {
+                    h.postDelayed(() -> resend(am, "screen on"), RESEND_MS);
+                }
+            }, new android.content.IntentFilter(android.content.Intent.ACTION_SCREEN_ON), null, h);
+        } catch (Throwable e) {
+            Log.w(TAG, "screen-on receiver: " + e);
+        }
         Log.i(TAG, "armed: A2DP sinks get the media route and bluetooth_volume=" + NEUTRAL);
     }
 
@@ -217,6 +233,13 @@ public final class BtAudio {
         } catch (Throwable t) {
             Log.w(TAG, "A2DP codec 48 kHz: " + t);
         }
+    }
+
+    /** p6-btaudio thread: the path again when it is not the speaker (the vendor's own state then). */
+    private static void resend(AudioManager am, String why) {
+        int want = pathOf(am.getDevicesForAttributes(MEDIA));
+        if (want == Play6Gmpf.AUDIO_PATH_SPEAKER && sPath < 0) return;
+        resync(am, why);
     }
 
     /** p6-btaudio thread: forget what was sent and send the sink of the current media route again. */

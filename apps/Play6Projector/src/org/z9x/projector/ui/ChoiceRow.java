@@ -39,13 +39,8 @@ public class ChoiceRow extends Row {
         return this;
     }
 
-    /**
-     * Sets the shown index without calling the listener (read-back). Ignored while a delayed commit is pending:
-     * a read-back of another row or a page refresh in that window used to put the old vendor value back, and the
-     * commit then sent that old value (the user's change was lost; Play 6 audit 2026-10-24, B1).
-     */
+    /** Sets the shown index without calling the listener (read-back). */
     public ChoiceRow setSelected(int i) {
-        if (isPending()) return this;
         index = (i >= 0 && i < options.length) ? i : -1;
         invalidate();
         return this;
@@ -115,9 +110,6 @@ public class ChoiceRow extends Row {
         changeTo(ni);
         return true;
     }
-
-    /** A change the user made is waiting for its delayed commit. */
-    public boolean isPending() { return h.hasCallbacks(commit); }
 
     /** Runs a pending (delayed) commit now; the row is about to be detached or covered. */
     public void flushPending() {

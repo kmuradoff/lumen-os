@@ -1,16 +1,23 @@
 package org.z9x.home.net;
 
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.util.Arrays;
 
+import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * The hashes SMB2/3 with NTLMv2 needs (Lumen Home network folders). javax.crypto has HMAC-MD5, HMAC-SHA256 and
- * AES/ECB; Android's providers have no MD4 (NTLM's password hash) and no AES-CMAC (SMB 3.0 signing), so those
- * two are written here: MD4 after RFC 1320, AES-CMAC after RFC 4493, and the SP800-108 counter KDF that turns
- * the session key into the SMB 3 signing key. Plain Java: the JVM tests run it on the Mac.
+ * The hashes and ciphers SMB2/3 with NTLMv2 needs (Lumen Home network folders). javax.crypto has HMAC-MD5,
+ * HMAC-SHA256, SHA-512, AES-GCM and the plain AES modes; Android's providers have no MD4 (NTLM's password
+ * hash), no AES-CMAC (SMB 3.0 signing) and no AES-CCM (SMB 3.0 encryption), so those are written here: MD4
+ * after RFC 1320, AES-CMAC after RFC 4493, AES-CCM after NIST SP 800-38C (on AES/CTR and AES/CBC, so the
+ * bulk of a 1 MiB READ goes through the provider's fast AES), and the SP800-108 counter KDF that turns the
+ * session key into the SMB 3 signing and cipher keys. Plain Java: the JVM tests run it on the Mac.
  */
 public final class SmbCrypto {
     private SmbCrypto() {}
@@ -148,19 +155,182 @@ public final class SmbCrypto {
         return out;
     }
 
-    // ------------------------------------------------------------------ SP800-108 KDF (SMB 3.0 / 3.0.2)
+    // ------------------------------------------------------------------ SP800-108 KDF (SMB 3.x keys)
+
+    /** The KDF with L = 128: the signing keys and the AES-128 cipher keys. */
+    public static byte[] kdf(byte[] key, byte[] label, byte[] context) {
+        return kdf(key, label, context, 128);
+    }
 
     /**
-     * SP800-108 counter mode with HMAC-SHA256, one round, L = 128: HMAC(key, i=1 || label || 0x00 || context ||
-     * L), first 16 bytes. Label and context include their own trailing NUL ("SMB2AESCMAC\0", "SmbSign\0").
+     * SP800-108 counter mode with HMAC-SHA256, one round: HMAC(key, i=1 || label || 0x00 || context || L), its
+     * first L / 8 bytes. L is 128, or 256 for the AES-256 ciphers of 3.1.1 (one HMAC-SHA256 round gives 256
+     * bits, so one round is always enough). Label and context include their own trailing NUL ("SMB2AESCMAC\0",
+     * "SmbSign\0"); on 3.1.1 the context is the 64-byte preauth integrity hash.
      */
-    public static byte[] kdf(byte[] key, byte[] label, byte[] context) {
+    public static byte[] kdf(byte[] key, byte[] label, byte[] context, int bits) {
         byte[] i = {0, 0, 0, 1};
         byte[] sep = {0};
-        byte[] l = {0, 0, 0, (byte) 128};
-        byte[] h = hmacSha256(key, i, label, sep, context, l);
-        byte[] out = new byte[16];
-        System.arraycopy(h, 0, out, 0, 16);
-        return out;
+        byte[] l = {0, 0, (byte) (bits >>> 8), (byte) bits};
+        return Arrays.copyOf(hmacSha256(key, i, label, sep, context, l), bits / 8);
+    }
+
+    // ------------------------------------------------------------------ SHA-512 (3.1.1 preauth integrity)
+
+    public static byte[] sha512(byte[]... parts) {
+        try {
+            MessageDigest d = MessageDigest.getInstance("SHA-512");
+            for (byte[] p : parts) d.update(p);
+            return d.digest();
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("SHA-512", e);
+        }
+    }
+
+    // ------------------------------------------------------------------ AES-GCM, AES-CCM, AES-GMAC (SMB 3.x)
+
+    /**
+     * Encryption of an SMB 3 TRANSFORM_HEADER message: AES-GCM (12-byte nonce) or AES-CCM (11-byte nonce in
+     * SMB) with a 16-byte tag, authenticating aad[aadOff, + aadLen). Encrypts in[off, + len) into out at outOff
+     * (a different buffer from in) and writes the tag at tag[tagOff]. A 16-byte key is AES-128, 32 is AES-256.
+     */
+    public static void seal(boolean gcm, byte[] key, byte[] nonce, byte[] aad, int aadOff, int aadLen,
+                            byte[] in, int off, int len, byte[] out, int outOff, byte[] tag, int tagOff) {
+        try {
+            if (gcm) gcm(true, key, nonce, aad, aadOff, aadLen, in, off, len, out, outOff, tag, tagOff);
+            else ccm(true, key, nonce, aad, aadOff, aadLen, in, off, len, out, outOff, tag, tagOff, 16);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException(gcm ? "AES-GCM" : "AES-CCM", e);
+        }
+    }
+
+    /** The reverse of seal: decrypts in[off, + len) into out; false (out then holds junk) when the tag is wrong. */
+    public static boolean open(boolean gcm, byte[] key, byte[] nonce, byte[] aad, int aadOff, int aadLen,
+                               byte[] in, int off, int len, byte[] tag, int tagOff, byte[] out, int outOff) {
+        try {
+            return gcm ? gcm(false, key, nonce, aad, aadOff, aadLen, in, off, len, out, outOff, tag, tagOff)
+                    : ccm(false, key, nonce, aad, aadOff, aadLen, in, off, len, out, outOff, tag, tagOff, 16);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException(gcm ? "AES-GCM" : "AES-CCM", e);
+        }
+    }
+
+    /**
+     * AES-GMAC of msg[off, + len) (GCM with the message as AAD and nothing to encrypt): the 16-byte 3.1.1
+     * signature when the server picked AES-GMAC. The 12-byte nonce is the caller's (MessageId and role bits).
+     */
+    public static byte[] gmac(byte[] key, byte[] nonce, byte[] msg, int off, int len) {
+        try {
+            Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+            c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new GCMParameterSpec(128, nonce));
+            c.updateAAD(msg, off, len);
+            return c.doFinal();
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("AES-GMAC", e);
+        }
+    }
+
+    private static boolean gcm(boolean encrypt, byte[] key, byte[] nonce, byte[] aad, int aadOff, int aadLen,
+                               byte[] in, int off, int len, byte[] out, int outOff, byte[] tag, int tagOff)
+            throws GeneralSecurityException {
+        // a new Cipher each time: GCM refuses a second init with the same key and nonce on one object, and the
+        // lookup is nothing next to the AES work of a READ
+        Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+        c.init(encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"),
+                new GCMParameterSpec(128, nonce));
+        c.updateAAD(aad, aadOff, aadLen);
+        if (encrypt) {
+            byte[] r = c.doFinal(in, off, len);        // ciphertext || tag
+            System.arraycopy(r, 0, out, outOff, len);
+            System.arraycopy(r, len, tag, tagOff, 16);
+            return true;
+        }
+        try {
+            // the tag sits in the header, not after the data: feed it last, so no copy of the data is needed
+            int n = c.update(in, off, len, out, outOff);
+            c.doFinal(tag, tagOff, 16, out, outOff + n);
+            return true;
+        } catch (AEADBadTagException e) {
+            return false;
+        }
+    }
+
+    /**
+     * AES-CCM (NIST SP 800-38C) with a nonce of 7 to 13 bytes and a tag of tagLen bytes (SMB: 11 and 16; the
+     * others are for the NIST examples in the tests). The counter blocks run through AES/CTR and the CBC-MAC
+     * through AES/CBC with a zero IV (its last block is the MAC), so no block-by-block loop in Java.
+     */
+    static boolean ccm(boolean encrypt, byte[] key, byte[] nonce, byte[] aad, int aadOff, int aadLen,
+                       byte[] in, int off, int len, byte[] out, int outOff, byte[] tag, int tagOff, int tagLen)
+            throws GeneralSecurityException {
+        SecretKeySpec k = new SecretKeySpec(key, "AES");
+        int q = 15 - nonce.length;                     // bytes of the length field and of the counter
+        byte[] ctr = new byte[16];
+        ctr[0] = (byte) (q - 1);
+        System.arraycopy(nonce, 0, ctr, 1, nonce.length);
+        Cipher ecb = Cipher.getInstance("AES/ECB/NoPadding");
+        ecb.init(Cipher.ENCRYPT_MODE, k);
+        byte[] s0 = ecb.doFinal(ctr);                  // counter 0 encrypts the tag, 1 onwards the data
+        byte[] mac = null;
+        if (encrypt) mac = cbcMac(k, nonce, tagLen, aad, aadOff, aadLen, in, off, len);
+        if (len > 0) {
+            ctr[15] = 1;
+            Cipher c = Cipher.getInstance("AES/CTR/NoPadding");
+            c.init(Cipher.ENCRYPT_MODE, k, new IvParameterSpec(ctr));
+            c.doFinal(in, off, len, out, outOff);
+        }
+        if (!encrypt) mac = cbcMac(k, nonce, tagLen, aad, aadOff, aadLen, out, outOff, len);
+        for (int i = 0; i < tagLen; i++) mac[i] ^= s0[i];
+        if (encrypt) {
+            System.arraycopy(mac, 0, tag, tagOff, tagLen);
+            return true;
+        }
+        return MessageDigest.isEqual(Arrays.copyOf(mac, tagLen), Arrays.copyOfRange(tag, tagOff, tagOff + tagLen));
+    }
+
+    /** CBC-MAC of CCM: B0, the encoded AAD and the data, each zero-padded to whole blocks. */
+    private static byte[] cbcMac(SecretKeySpec k, byte[] nonce, int tagLen, byte[] aad, int aadOff, int aadLen,
+                                 byte[] p, int off, int len) throws GeneralSecurityException {
+        int q = 15 - nonce.length;
+        int aadHead = aadLen == 0 ? 0 : aadLen < 0xFF00 ? 2 : 6;
+        byte[] head = new byte[16 + (aadHead + aadLen + 15) / 16 * 16];
+        head[0] = (byte) ((aadLen > 0 ? 0x40 : 0) | (tagLen - 2) / 2 << 3 | (q - 1));
+        System.arraycopy(nonce, 0, head, 1, nonce.length);
+        for (int i = 0; i < q; i++) head[15 - i] = (byte) ((long) len >>> (8 * i));
+        if (aadHead == 2) {
+            head[16] = (byte) (aadLen >>> 8);
+            head[17] = (byte) aadLen;
+        } else if (aadHead == 6) {
+            head[16] = (byte) 0xFF;
+            head[17] = (byte) 0xFE;
+            for (int i = 0; i < 4; i++) head[18 + i] = (byte) (aadLen >>> (24 - 8 * i));
+        }
+        if (aadLen > 0) System.arraycopy(aad, aadOff, head, 16 + aadHead, aadLen);
+        Cipher cbc = Cipher.getInstance("AES/CBC/NoPadding");
+        cbc.init(Cipher.ENCRYPT_MODE, k, new IvParameterSpec(new byte[16]));
+        byte[] buf = new byte[CHUNK + 32];
+        byte[] mac = new byte[16];
+        cbcFeed(cbc, head, 0, head.length, buf, mac);
+        int whole = len / 16 * 16;
+        cbcFeed(cbc, p, off, whole, buf, mac);
+        if (len > whole) {
+            byte[] last = new byte[16];
+            System.arraycopy(p, off + whole, last, 0, len - whole);
+            cbcFeed(cbc, last, 0, 16, buf, mac);
+        }
+        int n = cbc.doFinal(buf, 0);                   // nothing is left over with whole blocks, but be sure
+        if (n >= 16) System.arraycopy(buf, n - 16, mac, 0, 16);
+        return mac;
+    }
+
+    private static final int CHUNK = 64 << 10;
+
+    /** Runs whole blocks through the CBC in 64 KiB pieces, keeping the last ciphertext block (the MAC so far). */
+    private static void cbcFeed(Cipher cbc, byte[] in, int off, int len, byte[] buf, byte[] mac)
+            throws GeneralSecurityException {
+        for (int i = 0; i < len; i += CHUNK) {
+            int n = cbc.update(in, off + i, Math.min(CHUNK, len - i), buf, 0);
+            if (n >= 16) System.arraycopy(buf, n - 16, mac, 0, 16);
+        }
     }
 }

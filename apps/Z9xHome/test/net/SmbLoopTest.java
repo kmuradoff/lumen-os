@@ -1,36 +1,77 @@
 package org.z9x.home.net;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import javax.crypto.AEADBadTagException;
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Smb2 against a fake SMB2 server on loopback (FakeServer below, written from MS-SMB2 independently of the
  * client's code paths where it matters: it verifies the NTLMv2 proof with the password, every signature, the
- * MessageId / CreditCharge sequence and the credits granted). Covers 3.0.2 with AES-CMAC signing, 2.0.2 with
- * HMAC-SHA256 signing, STATUS_PENDING before a READ, a share list whose RPC reply needs READs of the pipe
- * after STATUS_BUFFER_OVERFLOW, a wrong password, the null session, a missing share and a closed port.
- * Not a substitute for a real server: both sides share the author's reading of the spec.
+ * MessageId / CreditCharge sequence and the credits granted; on 3.1.1 it keeps its own preauth hash, so a
+ * wrong hash on the client shows as a bad signature or an undecryptable message; its AES-GMAC and AES-GCM go
+ * straight to javax.crypto and its AES-CCM is ccmRef, not SmbCrypto's). Covers 3.0.2 with AES-CMAC signing,
+ * 2.0.2 with HMAC-SHA256 signing, 3.1.1 with AES-CMAC and AES-GMAC signing (and its signed TREE_CONNECT),
+ * encryption of the whole session or of one share with each cipher on 3.1.1 and AES-128-CCM on 3.0 / 3.0.2,
+ * a 2.1 or cipherless server that demands encryption, STATUS_PENDING before a READ, a share list whose RPC
+ * reply needs READs of the pipe after STATUS_BUFFER_OVERFLOW, a wrong password, the null session, a missing
+ * share and a closed port. Not a substitute for a real server: both sides share the author's reading of the
+ * spec.
  */
 final class SmbLoopTest {
     private SmbLoopTest() {}
 
     static int run() throws Exception {
         int errors = 0;
-        errors += scenario(Smb2.D302, true, "user1", "secret", 3_500_000);
-        errors += scenario(Smb2.D202, true, "WORKGROUP\\user1", "secret", 200_000);
-        errors += scenario(Smb2.D210, false, "user1@home", "secret", 70_000);
-        errors += wrongPassword();
-        errors += anonymous();
+        errors += scenario(server(Smb2.D302, true, 3_500_000), "user1", "secret");
+        errors += scenario(server(Smb2.D202, true, 200_000), "WORKGROUP\\user1", "secret");
+        errors += scenario(server(Smb2.D210, false, 70_000), "user1@home", "secret");
+        // 3.1.1: no signing context back (AES-CMAC), AES-GMAC, signing optional (TREE_CONNECT signed anyway)
+        errors += scenario(server(Smb2.D311, true, 1_300_000), "user1", "secret");
+        FakeServer s = server(Smb2.D311, true, 2_200_000);
+        s.signAlg = Smb2.SIGN_AES_GMAC;
+        errors += scenario(s, "user1", "secret");
+        s = server(Smb2.D311, false, 300_000);
+        s.signAlg = Smb2.SIGN_AES_GMAC;
+        errors += scenario(s, "user1", "secret");
+        // encryption: the whole session or one share, each cipher; 3.0.x has AES-128-CCM only
+        int[][] enc = {{Smb2.D311, Smb2.AES128_GCM, 1}, {Smb2.D311, Smb2.AES128_CCM, 0}, {Smb2.D311, Smb2.AES256_GCM, 0},
+                {Smb2.D311, Smb2.AES256_CCM, 1}, {Smb2.D302, Smb2.AES128_CCM, 1}, {Smb2.D300, Smb2.AES128_CCM, 0}};
+        for (int[] e : enc) {
+            s = server(e[0], e[2] == 1, e[1] == Smb2.AES128_GCM ? 2_500_000 : 1_100_000);
+            s.cipher = e[1];
+            if (e[2] == 1) s.encryptSession = true;
+            else s.encryptShare = true;
+            if (e[1] == Smb2.AES128_GCM) s.signAlg = Smb2.SIGN_AES_GMAC;
+            errors += scenario(s, "user1", "secret");
+        }
+        errors += encryptionUnsupported();
+        errors += wrongPassword(Smb2.D302);
+        errors += wrongPassword(Smb2.D311);
+        errors += anonymous(Smb2.D302);
+        errors += anonymous(Smb2.D311);
         errors += missingShare();
         errors += closedPort();
         return errors == 0 ? 0 : -1;
+    }
+
+    static FakeServer server(int dialect, boolean sign, int size) throws IOException {
+        return new FakeServer(dialect, sign, "user1", "secret", data(size));
     }
 
     static byte[] data(int n) {
@@ -39,9 +80,10 @@ final class SmbLoopTest {
         return d;
     }
 
-    static int scenario(int dialect, boolean sign, String login, String pw, int size) throws Exception {
-        String what = String.format("loop %x signing=%b: ", dialect, sign);
-        FakeServer s = new FakeServer(dialect, sign, "user1", "secret", data(size));
+    static int scenario(FakeServer s, String login, String pw) throws Exception {
+        int dialect = s.dialect, size = s.file.length;
+        String what = String.format("loop %x signing=%b alg=%d cipher=%d%s: ", dialect, s.requireSigning, s.signAlg,
+                s.cipher, s.encryptSession ? " session encrypted" : s.encryptShare ? " share encrypted" : "");
         s.start();
         try (Smb2 c = Smb2.connect("127.0.0.1", s.port(), login, pw)) {
             SmbTest.ok(!c.guest(), what + "user session");
@@ -77,11 +119,41 @@ final class SmbLoopTest {
         for (String e : s.errors) SmbTest.ok(false, what + "server: " + e);
         SmbTest.ok(s.pendingSent, what + "STATUS_PENDING interim sent and waited out");
         SmbTest.ok(s.loggedOff, what + "LOGOFF on close");
+        if (s.cipher != 0) SmbTest.ok(s.sealedSeen > 5, what + "encrypted requests " + s.sealedSeen);
+        // (an encrypted session encrypts TREE_CONNECT instead)
+        if (dialect == Smb2.D311 && !s.encryptSession) SmbTest.ok(s.signedTreeConnect, what + "TREE_CONNECT signed");
         return 0;
     }
 
-    static int wrongPassword() throws Exception {
-        FakeServer s = new FakeServer(Smb2.D302, true, "user1", "secret", new byte[1]);
+    /** A server that demands encryption the connection cannot do: SmbException.ENCRYPTION, which the UI explains. */
+    static int encryptionUnsupported() throws Exception {
+        FakeServer s = server(Smb2.D210, false, 1);
+        s.encryptSession = true;
+        s.start();
+        try (Smb2 c = Smb2.connect("127.0.0.1", s.port(), "user1", "secret")) {
+            SmbTest.ok(false, "2.1 session encryption accepted");
+        } catch (SmbException e) {
+            SmbTest.ok(e.kind == SmbException.ENCRYPTION, "2.1 session encryption: " + e);
+        }
+        s.join(3000);
+        // 3.1.1 without a cipher in common, one share encrypted: the session works, that share does not
+        s = server(Smb2.D311, false, 1);
+        s.cipher = 0;
+        s.encryptShare = true;
+        s.start();
+        try (Smb2 c = Smb2.connect("127.0.0.1", s.port(), "user1", "secret")) {
+            SmbTest.ok(c.listShares().size() == 2, "no cipher: IPC$ still works");
+            c.treeConnect("Movies");
+            SmbTest.ok(false, "no cipher: encrypted share accepted");
+        } catch (SmbException e) {
+            SmbTest.ok(e.kind == SmbException.ENCRYPTION, "no cipher: encrypted share: " + e);
+        }
+        s.join(3000);
+        return 0;
+    }
+
+    static int wrongPassword(int dialect) throws Exception {
+        FakeServer s = server(dialect, true, 1);
         s.start();
         try (Smb2 c = Smb2.connect("127.0.0.1", s.port(), "user1", "wrong")) {
             SmbTest.ok(false, "wrong password accepted");
@@ -92,8 +164,8 @@ final class SmbLoopTest {
         return 0;
     }
 
-    static int anonymous() throws Exception {
-        FakeServer s = new FakeServer(Smb2.D302, true, "user1", "secret", data(5000));
+    static int anonymous(int dialect) throws Exception {
+        FakeServer s = server(dialect, true, 5000);
         s.allowNull = true;
         s.start();
         try (Smb2 c = Smb2.connect("127.0.0.1", s.port(), "", "")) {
@@ -107,7 +179,7 @@ final class SmbLoopTest {
             SmbTest.ok(false, "anonymous: " + e);
         }
         s.join(3000);
-        for (String e : s.errors) SmbTest.ok(false, "anonymous server: " + e);
+        for (String e : s.errors) SmbTest.ok(false, "anonymous " + Integer.toHexString(dialect) + " server: " + e);
         return 0;
     }
 
@@ -137,6 +209,56 @@ final class SmbLoopTest {
         return 0;
     }
 
+    // ------------------------------------------------------------------ reference ciphers for the fake server
+
+    /**
+     * AES-CCM with a 16-byte tag written the slow, obvious way (block by block on AES/ECB, after SP 800-38C)
+     * so the fake server does not share SmbCrypto's CTR / CBC shortcut. Encrypt: {ciphertext, tag}; decrypt:
+     * {plaintext, tag} or null when the given tag is wrong.
+     */
+    static byte[][] ccmRef(boolean encrypt, byte[] key, byte[] nonce, byte[] aad, byte[] in, byte[] tag) throws Exception {
+        Cipher e = Cipher.getInstance("AES/ECB/NoPadding");
+        e.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
+        int q = 15 - nonce.length;
+        byte[] out = new byte[in.length];
+        for (int i = 0; 16 * i < in.length; i++) {
+            byte[] s = e.doFinal(counter(nonce, q, i + 1));
+            for (int j = 0; j < 16 && 16 * i + j < in.length; j++) out[16 * i + j] = (byte) (in[16 * i + j] ^ s[j]);
+        }
+        byte[] p = encrypt ? in : out;
+        java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
+        byte[] b0 = counter(nonce, q, p.length);
+        b0[0] = (byte) ((aad.length > 0 ? 0x40 : 0) | 7 << 3 | (q - 1));
+        b.writeBytes(b0);
+        if (aad.length > 0) {
+            b.write(aad.length >> 8);
+            b.write(aad.length & 0xff);
+            b.writeBytes(aad);
+            while (b.size() % 16 != 0) b.write(0);
+        }
+        b.writeBytes(p);
+        while (b.size() % 16 != 0) b.write(0);
+        byte[] all = b.toByteArray();
+        byte[] x = new byte[16];
+        for (int i = 0; i < all.length; i += 16) {
+            for (int j = 0; j < 16; j++) x[j] ^= all[i + j];
+            x = e.doFinal(x);
+        }
+        byte[] s0 = e.doFinal(counter(nonce, q, 0));
+        for (int j = 0; j < 16; j++) x[j] ^= s0[j];
+        if (!encrypt && !Arrays.equals(x, tag)) return null;
+        return new byte[][]{out, x};
+    }
+
+    /** A CCM counter block: flags q - 1, the nonce, i in the last q bytes. */
+    private static byte[] counter(byte[] nonce, int q, long i) {
+        byte[] a = new byte[16];
+        a[0] = (byte) (q - 1);
+        System.arraycopy(nonce, 0, a, 1, nonce.length);
+        for (int j = 0; j < q && j < 8; j++) a[15 - j] = (byte) (i >>> (8 * j));
+        return a;
+    }
+
     // ------------------------------------------------------------------ the fake server
 
     static final class FakeServer extends Thread {
@@ -145,11 +267,20 @@ final class SmbLoopTest {
         final String user, password;
         final byte[] file;
         final List<String> errors = new ArrayList<>();
-        boolean allowNull, pendingSent, loggedOff;
+        boolean allowNull, pendingSent, loggedOff, signedTreeConnect;
+        /** 3.1.1: the cipher it picks (it must be offered), 0 none in common; 3.0.x: AES-128-CCM if not 0 */
+        int cipher;
+        /** 3.1.1: the signing algorithm it answers in a signing context; -1 sends none (AES-CMAC then) */
+        int signAlg = -1;
+        boolean encryptSession, encryptShare;
+        int sealedSeen;
         private final ServerSocket ss;
         private byte[] serverChallenge = SmbTest.unhex("0123456789abcdef");
-        private byte[] signingKey;
-        private boolean signed, nullSession;
+        private byte[] signingKey, c2s, s2c;
+        private boolean signed, nullSession, sessionUp, sealed;
+        private int chosenCipher, chosenSign;
+        private byte[] connHash, sessHash;
+        private final Set<String> nonces = new HashSet<>();
         private long nextId, granted = 1;
         private final long sessionId = 0x0000100000000041L;
         private byte[] pipeOut = new byte[0];
@@ -182,11 +313,139 @@ final class SmbLoopTest {
                     int len = in.readUnsignedByte() << 16 | in.readUnsignedByte() << 8 | in.readUnsignedByte();
                     byte[] m = new byte[len];
                     in.readFully(m);
+                    sealed = m[0] == (byte) 0xFD;
+                    if (sealed) {
+                        sealedSeen++;
+                        m = unseal(m);
+                        if (m == null) return;
+                    }
                     if (!handle(m, out)) return;
                 }
             } catch (IOException e) {
                 if (!(e instanceof java.io.EOFException) && !(e instanceof java.net.SocketException)) errors.add(e.toString());
+            } catch (Exception e) {
+                errors.add(e.toString());
             }
+        }
+
+        private boolean gcm() {
+            return chosenCipher == Smb2.AES128_GCM || chosenCipher == Smb2.AES256_GCM;
+        }
+
+        /** A client's TRANSFORM_HEADER message opened with the client-to-server key; null when it fails. */
+        private byte[] unseal(byte[] t) throws Exception {
+            if (c2s == null) {
+                err("encrypted request without keys");
+                return null;
+            }
+            int nl = gcm() ? 12 : 11;
+            if (t[1] != 'S' || t[2] != 'M' || t[3] != 'B') err("transform protocol id");
+            if (Le.u32(t, 36) != t.length - 52) err("OriginalMessageSize");
+            if (Le.u16(t, 42) != 1) err("transform flags " + Le.u16(t, 42));
+            if (Le.u64(t, 44) != sessionId) err("transform session id");
+            for (int i = 20 + nl; i < 36; i++) if (t[i] != 0) err("nonce padding not zero");
+            byte[] nonce = Arrays.copyOfRange(t, 20, 20 + nl), aad = Arrays.copyOfRange(t, 20, 52);
+            if (!nonces.add(SmbTest.hex(nonce))) err("nonce used twice");
+            byte[] body = Arrays.copyOfRange(t, 52, t.length), tag = Arrays.copyOfRange(t, 4, 20);
+            if (gcm()) {
+                Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+                c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(c2s, "AES"), new GCMParameterSpec(128, nonce));
+                c.updateAAD(aad);
+                try {
+                    return c.doFinal(SmbTest.cat(body, tag));
+                } catch (AEADBadTagException e) {
+                    err("request does not decrypt (GCM)");
+                    return null;
+                }
+            }
+            byte[][] r = ccmRef(false, c2s, nonce, aad, body, tag);
+            if (r == null) err("request does not decrypt (CCM)");
+            return r == null ? null : r[0];
+        }
+
+        private byte[] seal(byte[] m) throws IOException {
+            try {
+                int nl = gcm() ? 12 : 11;
+                byte[] t = new byte[52 + m.length];
+                t[0] = (byte) 0xFD;
+                t[1] = 'S';
+                t[2] = 'M';
+                t[3] = 'B';
+                byte[] nonce = new byte[nl];
+                new SecureRandom().nextBytes(nonce);
+                System.arraycopy(nonce, 0, t, 20, nl);
+                Le.put32(t, 36, m.length);
+                Le.put16(t, 42, 1);
+                Le.put64(t, 44, sessionId);
+                byte[] aad = Arrays.copyOfRange(t, 20, 52);
+                byte[] ct, tag;
+                if (gcm()) {
+                    Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+                    c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(s2c, "AES"), new GCMParameterSpec(128, nonce));
+                    c.updateAAD(aad);
+                    byte[] r = c.doFinal(m);
+                    ct = Arrays.copyOf(r, m.length);
+                    tag = Arrays.copyOfRange(r, m.length, r.length);
+                } else {
+                    byte[][] r = ccmRef(true, s2c, nonce, aad, m, null);
+                    ct = r[0];
+                    tag = r[1];
+                }
+                System.arraycopy(tag, 0, t, 4, 16);
+                System.arraycopy(ct, 0, t, 52, ct.length);
+                return t;
+            } catch (IOException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        }
+
+        private byte[] signature(byte[] copy) throws IOException {
+            if (dialect == Smb2.D311 && chosenSign == Smb2.SIGN_AES_GMAC) {
+                try {
+                    // nonce: MessageId, then role 0 (from the client) and not a CANCEL
+                    byte[] iv = Arrays.copyOf(Arrays.copyOfRange(copy, 24, 32), 12);
+                    Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+                    c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(signingKey, "AES"), new GCMParameterSpec(128, iv));
+                    c.updateAAD(copy);
+                    return c.doFinal();
+                } catch (Exception e) {
+                    throw new IOException(e);
+                }
+            }
+            return dialect >= Smb2.D300 ? SmbCrypto.aesCmac(signingKey, copy, 0, copy.length)
+                    : SmbCrypto.hmacSha256(signingKey, copy);
+        }
+
+        private static byte[] sha512(byte[] a, byte[] b) throws IOException {
+            try {
+                MessageDigest d = MessageDigest.getInstance("SHA-512");
+                d.update(a);
+                d.update(b);
+                return d.digest();
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        }
+
+        private static byte[] ascii(String s) {
+            return s.getBytes(StandardCharsets.US_ASCII);
+        }
+
+        private static List<Integer> ids(byte[] m, int d) {
+            List<Integer> l = new ArrayList<>();
+            for (int i = 0; i < Le.u16(m, d); i++) l.add(Le.u16(m, d + 2 + 2 * i));
+            return l;
+        }
+
+        private static void context(ByteArrayOutputStream o, int type, int... u16) {
+            while (o.size() % 8 != 0) o.write(0);
+            byte[] c = new byte[8 + 2 * u16.length];
+            Le.put16(c, 0, type);
+            Le.put16(c, 2, 2 * u16.length);
+            for (int i = 0; i < u16.length; i++) Le.put16(c, 8 + 2 * i, u16[i]);
+            o.writeBytes(c);
         }
 
         private void err(String e) {
@@ -207,18 +466,23 @@ final class SmbLoopTest {
             granted -= use;
             if (granted < 0) err("client used credits it was not granted (cmd " + cmd + ")");
             boolean isSigned = (Le.u32(m, 16) & Smb2.FLAG_SIGNED) != 0;
-            if (signed && cmd != Smb2.NEGOTIATE && cmd != Smb2.SESSION_SETUP) {
-                if (!isSigned) err("unsigned request " + cmd);
-                else {
-                    byte[] copy = m.clone();
-                    for (int i = 48; i < 64; i++) copy[i] = 0;
-                    byte[] sig = dialect >= Smb2.D300 ? SmbCrypto.aesCmac(signingKey, copy, 0, copy.length)
-                            : SmbCrypto.hmacSha256(signingKey, copy);
-                    if (!Arrays.equals(Arrays.copyOf(sig, 16), Arrays.copyOfRange(m, 48, 64))) err("bad signature on " + cmd);
-                }
-            } else if (!signed && isSigned && cmd > Smb2.SESSION_SETUP) {
-                err("signed without a signing session " + cmd);
+            boolean setup = cmd == Smb2.NEGOTIATE || cmd == Smb2.SESSION_SETUP;
+            // 3.1.1 wants TREE_CONNECT of a user session signed even when signing is optional
+            boolean wantSig = !sealed && !setup && (signed
+                    || dialect == Smb2.D311 && cmd == Smb2.TREE_CONNECT && signingKey != null && !nullSession);
+            if (sealed && isSigned) err("signed and encrypted " + cmd);
+            if (wantSig && !isSigned) err("unsigned request " + cmd);
+            if (!wantSig && isSigned && !setup) err("signed without a signing session " + cmd);
+            if (wantSig && isSigned) {
+                byte[] copy = m.clone();
+                for (int i = 48; i < 64; i++) copy[i] = 0;
+                byte[] sig = signature(copy);
+                if (!Arrays.equals(Arrays.copyOf(sig, 16), Arrays.copyOfRange(m, 48, 64))) err("bad signature on " + cmd);
+                else if (cmd == Smb2.TREE_CONNECT) signedTreeConnect = true;
             }
+            boolean needSeal = sessionUp && !setup && (encryptSession || encryptShare && tree == 5);
+            if (needSeal && !sealed) err("unencrypted request " + cmd);
+            if (!needSeal && sealed) err("encrypted without need " + cmd);
             int grant = Math.min(ask, 8);                 // stingy on purpose: the client must cope
             int B = 64;
             switch (cmd) {
@@ -227,15 +491,70 @@ final class SmbLoopTest {
                     boolean offered = false;
                     for (int i = 0; i < n; i++) offered |= Le.u16(m, B + 36 + 2 * i) == dialect;
                     if (!offered) err("dialect not offered");
-                    byte[] b = new byte[64];
+                    int caps = (int) Le.u32(m, B + 8);
+                    ByteArrayOutputStream cx = new ByteArrayOutputStream();
+                    if (dialect == Smb2.D311) {
+                        // the client's contexts: 8-byte aligned from the header's start, SHA-512 with 32 bytes of salt
+                        int o = (int) Le.u32(m, B + 28), count = Le.u16(m, B + 32);
+                        if (o % 8 != 0 || o < B + 36 + 2 * n) err("context offset " + o);
+                        boolean preauth = false;
+                        List<Integer> ciphers = List.of(), signs = null;
+                        for (int i = 0; i < count; i++) {
+                            while (o % 8 != 0) o++;
+                            int type = Le.u16(m, o), dl = Le.u16(m, o + 2), d = o + 8;
+                            if (d + dl > m.length) {
+                                err("context past the end");
+                                break;
+                            }
+                            if (type == 1) {
+                                int hashes = Le.u16(m, d), saltLen = Le.u16(m, d + 2);
+                                boolean sha512 = false;
+                                for (int h = 0; h < hashes; h++) sha512 |= Le.u16(m, d + 4 + 2 * h) == 1;
+                                preauth = sha512 && saltLen == 32 && dl == 4 + 2 * hashes + saltLen
+                                        && !Arrays.equals(Arrays.copyOfRange(m, d + 4 + 2 * hashes, d + dl), new byte[32]);
+                            } else if (type == 2) {
+                                ciphers = ids(m, d);
+                            } else if (type == 8) {
+                                signs = ids(m, d);
+                            }
+                            o = d + dl;
+                        }
+                        if (o != m.length) err("bytes after the negotiate contexts");
+                        if (!preauth) err("no SHA-512 preauth context with a 32-byte salt");
+                        if (cipher != 0 && !ciphers.contains(cipher)) err("cipher " + cipher + " not offered");
+                        chosenCipher = ciphers.contains(cipher) ? cipher : 0;
+                        if (signAlg >= 0 && (signs == null || !signs.contains(signAlg))) err("signing " + signAlg + " not offered");
+                        chosenSign = signAlg >= 0 ? signAlg : Smb2.SIGN_AES_CMAC;
+                        byte[] salt = new byte[32];
+                        new SecureRandom().nextBytes(salt);
+                        int[] pre = new int[3 + 16];
+                        pre[0] = 1;
+                        pre[1] = 32;
+                        pre[2] = 1;
+                        for (int i = 0; i < 16; i++) pre[3 + i] = Le.u16(salt, 2 * i);
+                        context(cx, 1, pre);
+                        context(cx, 2, 1, chosenCipher);
+                        if (signAlg >= 0) context(cx, 8, 1, signAlg);
+                    } else if (dialect >= Smb2.D300 && cipher != 0) {
+                        if ((caps & Smb2.CAP_ENCRYPTION) == 0) err("no CAP_ENCRYPTION from the client");
+                        chosenCipher = Smb2.AES128_CCM;
+                    }
+                    byte[] b = new byte[64 + cx.size()];
                     Le.put16(b, 0, 65);
                     Le.put16(b, 2, requireSigning ? 3 : 1);
                     Le.put16(b, 4, dialect);
-                    Le.put32(b, 24, dialect == Smb2.D202 ? 0 : Smb2.CAP_LARGE_MTU);
+                    Le.put32(b, 24, (dialect == Smb2.D202 ? 0 : Smb2.CAP_LARGE_MTU)
+                            | (dialect < Smb2.D311 && chosenCipher != 0 ? Smb2.CAP_ENCRYPTION : 0));
                     Le.put32(b, 28, 1 << 20);
                     Le.put32(b, 32, 8 << 20);
                     Le.put32(b, 36, 1 << 20);
-                    reply(out, m, 0, b, grant, 0);
+                    if (dialect == Smb2.D311) {
+                        Le.put16(b, 6, signAlg >= 0 ? 3 : 2);
+                        Le.put32(b, 60, B + 64);
+                        System.arraycopy(cx.toByteArray(), 0, b, 64, cx.size());
+                    }
+                    byte[] resp = reply(out, m, 0, b, grant, 0);
+                    connHash = sha512(sha512(new byte[64], m), resp);
                     return true;
                 }
                 case Smb2.SESSION_SETUP: {
@@ -251,10 +570,12 @@ final class SmbLoopTest {
                         byte[] ch = SmbTest.challenge(serverChallenge, ti, 0xe28a8235);
                         byte[] resp = Spnego.tlv(0xa1, Spnego.tlv(0x30, SmbTest.cat(SmbTest.unhex("a0030a0101"),
                                 Spnego.tlv(0xa1, Spnego.tlv(0x06, Spnego.OID_NTLMSSP)), Spnego.tlv(0xa2, Spnego.tlv(0x04, ch)))));
-                        reply(out, m, SmbException.STATUS_MORE_PROCESSING_REQUIRED, setupBody(resp, 0), grant, 0);
+                        byte[] h = reply(out, m, SmbException.STATUS_MORE_PROCESSING_REQUIRED, setupBody(resp, 0), grant, 0);
+                        if (connHash != null) sessHash = sha512(sha512(connHash, m), h);
                         return true;
                     }
                     if (Le.u64(m, 40) != sessionId) err("session id not echoed");
+                    if (sessHash != null) sessHash = sha512(sessHash, m);     // the final response is not hashed
                     byte[] auth = Spnego.parseResp(tok).token;
                     if (auth == null || Le.u32(auth, 8) != 3) {
                         err("no AUTHENTICATE");
@@ -280,12 +601,23 @@ final class SmbLoopTest {
                         return true;
                     }
                     byte[] sk = SmbCrypto.hmacMd5(key, proof);
-                    if (requireSigning) {
-                        signed = true;
-                        signingKey = dialect >= Smb2.D300 ? SmbCrypto.kdf(sk, "SMB2AESCMAC\0".getBytes(StandardCharsets.US_ASCII),
-                                "SmbSign\0".getBytes(StandardCharsets.US_ASCII)) : sk;
+                    if (dialect == Smb2.D311) {
+                        int bits = chosenCipher == Smb2.AES256_CCM || chosenCipher == Smb2.AES256_GCM ? 256 : 128;
+                        signingKey = SmbCrypto.kdf(sk, ascii("SMBSigningKey\0"), sessHash);
+                        c2s = SmbCrypto.kdf(sk, ascii("SMBC2SCipherKey\0"), sessHash, bits);
+                        s2c = SmbCrypto.kdf(sk, ascii("SMBS2CCipherKey\0"), sessHash, bits);
+                    } else if (dialect >= Smb2.D300) {
+                        signingKey = SmbCrypto.kdf(sk, ascii("SMB2AESCMAC\0"), ascii("SmbSign\0"));
+                        c2s = SmbCrypto.kdf(sk, ascii("SMB2AESCCM\0"), ascii("ServerIn \0"));
+                        s2c = SmbCrypto.kdf(sk, ascii("SMB2AESCCM\0"), ascii("ServerOut\0"));
+                    } else {
+                        signingKey = sk;
                     }
-                    reply(out, m, 0, setupBody(SmbTest.unhex("a1073005a0030a0100"), 0), grant, 0);
+                    if (chosenCipher == 0) c2s = s2c = null;
+                    signed = requireSigning;
+                    sessionUp = true;
+                    int flags = encryptSession ? 0x4 : 0;
+                    reply(out, m, 0, setupBody(SmbTest.unhex("a1073005a0030a0100"), flags), grant, 0);
                     return true;
                 }
                 case Smb2.TREE_CONNECT: {
@@ -295,6 +627,7 @@ final class SmbLoopTest {
                     byte[] b = new byte[16];
                     Le.put16(b, 0, 16);
                     b[2] = (byte) (t == 6 ? 2 : 1);
+                    if (encryptShare && t == 5) Le.put32(b, 4, 0x8000);   // SMB2_SHAREFLAG_ENCRYPT_DATA
                     reply(out, m, t == 0 ? SmbException.STATUS_BAD_NETWORK_NAME : 0, t == 0 ? new byte[9] : b, grant, t);
                     return true;
                 }
@@ -449,7 +782,8 @@ final class SmbLoopTest {
             return ab;
         }
 
-        private void reply(OutputStream out, byte[] req, long status, byte[] body, int grant, int tree) throws IOException {
+        /** Sends a response (encrypted when the request was) and returns it as it was before encryption. */
+        private byte[] reply(OutputStream out, byte[] req, long status, byte[] body, int grant, int tree) throws IOException {
             byte[] h = new byte[64 + body.length];
             System.arraycopy(req, 0, h, 0, 64);
             Le.put32(h, 8, status);
@@ -461,9 +795,11 @@ final class SmbLoopTest {
             for (int i = 48; i < 64; i++) h[i] = 0;
             System.arraycopy(body, 0, h, 64, body.length);
             granted += grant;
-            out.write(new byte[]{0, (byte) (h.length >> 16), (byte) (h.length >> 8), (byte) h.length});
-            out.write(h);
+            byte[] w = sealed ? seal(h) : h;
+            out.write(new byte[]{0, (byte) (w.length >> 16), (byte) (w.length >> 8), (byte) w.length});
+            out.write(w);
             out.flush();
+            return h;
         }
 
         private static int indexOf(byte[] hay, byte[] needle) {

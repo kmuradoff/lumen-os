@@ -45,7 +45,13 @@ public class NetFilesProvider extends ContentProvider {
     public static final String AUTHORITY = "org.z9x.home.netfiles";
     private static final String TAG = "Z9xHomeNet";
     static final int BLOCK = 1 << 20;
-    static final int BLOCKS = 3;
+    /** Blocks kept: the read-ahead plus a few behind (players step back for MKV cues and seeks). */
+    static final int BLOCKS = 12;
+    /**
+     * Blocks read ahead in the background after every read (8 MiB, about 10 s of a 6 Mbit/s film): a slow or lossy
+     * Wi-Fi then delays the prefetch, not the player (owner 2026-10-24: "we watch films, buffer it").
+     */
+    static final int AHEAD = 8;
 
     public static Uri uri(String serverId, String share, String path, long size) {
         Uri.Builder b = new Uri.Builder().scheme("content").authority(AUTHORITY).appendPath("s")
@@ -125,12 +131,18 @@ public class NetFilesProvider extends ContentProvider {
         private long mSize;
         private Smb2 mConn;
         private Smb2.Handle mFile;
-        private final LinkedHashMap<Long, byte[]> mBlocks = new LinkedHashMap<Long, byte[]>(8, 0.75f, true) {
+        /** Guarded by itself. */
+        private final LinkedHashMap<Long, byte[]> mBlocks = new LinkedHashMap<Long, byte[]>(16, 0.75f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<Long, byte[]> e) {
                 return size() > BLOCKS;
             }
         };
+        /** Blocks being read ahead (guarded by mBlocks). */
+        private final Map<Long, java.util.concurrent.Future<byte[]>> mAhead = new java.util.HashMap<>();
+        private final java.util.concurrent.ExecutorService mPrefetch =
+                java.util.concurrent.Executors.newSingleThreadExecutor(r -> new Thread(r, "net-ahead"));
+        private volatile boolean mReleased;
 
         Reader(NetServers.Server s, String share, String path, long size, HandlerThread t) {
             mServer = s;
@@ -140,7 +152,7 @@ public class NetFilesProvider extends ContentProvider {
             mThread = t;
         }
 
-        private void open() throws IOException {
+        private synchronized void open() throws IOException {
             if (mFile != null && mConn != null && !mConn.isClosed()) return;
             drop();
             Smb2 c = Smb2.connect(mServer.host, mServer.port, mServer.login, mServer.password);
@@ -156,7 +168,7 @@ public class NetFilesProvider extends ContentProvider {
             }
         }
 
-        private void drop() {
+        private synchronized void drop() {
             if (mConn != null) mConn.close();
             mConn = null;
             mFile = null;
@@ -191,6 +203,7 @@ public class NetFilesProvider extends ContentProvider {
                         if (in + n >= b.length) break;
                     }
                 }
+                ahead((offset + Math.max(0, done - 1)) / BLOCK);
                 return done;
             } catch (IOException e) {
                 Log.w(TAG, "read " + mPath + " @" + offset + ": " + e);
@@ -198,10 +211,49 @@ public class NetFilesProvider extends ContentProvider {
             }
         }
 
-        /** Block {@code index} (shorter at the end of the file), read on a miss; one reconnect on a failure. */
+        /** Queues the next AHEAD blocks after {@code index} that are neither cached nor already queued. */
+        private void ahead(long index) {
+            if (mReleased || mSize <= 0) return;
+            long last = (mSize - 1) / BLOCK;
+            synchronized (mBlocks) {
+                for (long i = index + 1; i <= Math.min(last, index + AHEAD); i++) {
+                    if (mBlocks.containsKey(i) || mAhead.containsKey(i)) continue;
+                    final long k = i;
+                    mAhead.put(k, mPrefetch.submit(() -> {
+                        byte[] b = load(k);
+                        synchronized (mBlocks) {
+                            mBlocks.put(k, b);
+                            mAhead.remove(k);
+                        }
+                        return b;
+                    }));
+                }
+            }
+        }
+
+        /** Block {@code index} (shorter at the end of the file): cached, being read ahead, or read now. */
         private byte[] block(long index) throws IOException {
-            byte[] b = mBlocks.get(index);
-            if (b != null) return b;
+            java.util.concurrent.Future<byte[]> f;
+            synchronized (mBlocks) {
+                byte[] b = mBlocks.get(index);
+                if (b != null) return b;
+                f = mAhead.get(index);
+            }
+            if (f != null) {
+                try {
+                    return f.get();
+                } catch (Exception e) {
+                    synchronized (mBlocks) { mAhead.remove(index); }   // read it here instead
+                }
+            }
+            byte[] b = load(index);
+            synchronized (mBlocks) { mBlocks.put(index, b); }
+            return b;
+        }
+
+        /** One block from the server; one reconnect on a failure. Smb2 calls are serialized by the connection. */
+        private synchronized byte[] load(long index) throws IOException {
+            byte[] b;
             try {
                 b = fetch(index);
             } catch (SmbException e) {
@@ -212,11 +264,10 @@ public class NetFilesProvider extends ContentProvider {
                 drop();                                        // the server closed the connection: once more
                 b = fetch(index);
             }
-            mBlocks.put(index, b);
             return b;
         }
 
-        private byte[] fetch(long index) throws IOException {
+        private synchronized byte[] fetch(long index) throws IOException {
             open();
             byte[] buf = new byte[BLOCK];
             long base = index * BLOCK;
@@ -234,6 +285,8 @@ public class NetFilesProvider extends ContentProvider {
 
         @Override
         public void onRelease() {
+            mReleased = true;
+            mPrefetch.shutdownNow();
             Smb2 c = mConn;
             Smb2.Handle f = mFile;
             if (c != null && f != null && !c.isClosed()) {

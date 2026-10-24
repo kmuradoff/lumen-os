@@ -80,6 +80,8 @@ public final class AudioOutputChoice {
                 }
             }
             sH.post(() -> apply("process start"));
+            // the Play 6 boot receiver is frozen (check_handshake): the boot-time re-apply is timed instead
+            sH.postDelayed(() -> apply("after boot"), 30_000L);
             Log.i(TAG, "installed, choice " + kind(sApp));
         } catch (Throwable t) {
             Log.e(TAG, "install", t);

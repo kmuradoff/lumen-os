@@ -163,7 +163,8 @@ final class Play6PanelController {
     private NavRow spkOn;
     private TextRow spkDesc, ambDesc;
     // stock parity picture rows (Custom items, local contrast, HDR) and HDMI rows (2026-10-21)
-    private ChoiceRow eqRow, soundOut;
+    private ChoiceRow eqRow;
+    private P6ChoiceRow soundOut;
     private java.util.List<org.z9x.projector.audio.AudioOutputChoice.Option> outOptions;
     private ToggleRow earcRow;
     private ChoiceRow nrRow, ctRow, gammaRow, lcRow, styleRow, hdmiRangeRow, edidRow;
@@ -571,7 +572,7 @@ final class Play6PanelController {
     // ================================================================== brightness page (plan 1.4)
     private Page buildLampPage() {
         Page p = newPage(QuickPanel.SECTION_LAMP, R.string.panel_lamp);
-        lamp = p.add(new SliderRow(app, s(R.string.panel_lamp), 1, 10, new SliderRow.OnSlide() {
+        lamp = p.add(new P6SliderRow(app, s(R.string.panel_lamp), 1, 10, new SliderRow.OnSlide() {
             @Override public void onChanging(SliderRow row, int value) { touch(row); }
             @Override public void onCommit(SliderRow row, int value) {
                 safe("lamp", () -> {
@@ -620,7 +621,7 @@ final class Play6PanelController {
     // ================================================================== picture page (plan 1.4)
     private Page buildPicturePage() {
         Page p = newPage(QuickPanel.SECTION_PICTURE, R.string.panel_sec_picture);
-        pictureMode = p.add(new ChoiceRow(app, s(R.string.panel_picture_mode), pmLabels(),
+        pictureMode = p.add(new P6ChoiceRow(app, s(R.string.panel_picture_mode), pmLabels(),
                 (row, i) -> safe("picture mode", () -> onPictureModeChosen(i)).run()));
         pictureMode.setCommitDelay(PICTURE_MODE_COMMIT_MS);
         pictureMode.setOnOpen(safe("picture mode list", this::openPictureModeList));
@@ -630,7 +631,7 @@ final class Play6PanelController {
                 R.string.panel_pq_sharpness};
         for (int i = 0; i < pq.length; i++) {
             final int item = i;
-            pq[i] = p.add(new SliderRow(app, s(titles[i]), 0, 100, new SliderRow.OnSlide() {
+            pq[i] = p.add(new P6SliderRow(app, s(titles[i]), 0, 100, new SliderRow.OnSlide() {
                 @Override public void onChanging(SliderRow row, int value) { touch(row); }
                 @Override public void onCommit(SliderRow row, int value) {
                     safe("pq", () -> onPq(item, value)).run();
@@ -638,7 +639,7 @@ final class Play6PanelController {
             }));
             pq[i].setVisibility(View.GONE);                  // only in Custom (apply)
         }
-        memc = p.add(new ChoiceRow(app, s(R.string.panel_memc),
+        memc = p.add(new P6ChoiceRow(app, s(R.string.panel_memc),
                 labels(app, R.string.panel_off, R.string.panel_low, R.string.panel_medium, R.string.panel_high),
                 (row, i) -> safe("memc", () -> {
                     Integer pm = snap.pictureMode;
@@ -662,12 +663,12 @@ final class Play6PanelController {
      * AI / Movie / Sport / TV / Custom / Office = HDR. A row exists only while its mode has it and its value was read (never disabled).
      */
     private void addStockPictureRows(Page p) {
-        nrRow = p.add(new ChoiceRow(app, s(R.string.pro_noise), labels(app, R.string.panel_off, R.string.panel_low,
+        nrRow = p.add(new P6ChoiceRow(app, s(R.string.pro_noise), labels(app, R.string.panel_off, R.string.panel_low,
                 R.string.panel_medium, R.string.panel_high, R.string.panel_auto), (row, i) -> safe("nr", () -> {
                     if (!custom() || i < 0 || i > 4) { refresh(Play6Snapshot.PICTURE); return; }
                     change("671 noise reduction " + i, Play6Snapshot.PICTURE, (g, g2) -> g.setNoiseReduction(i));
                 }).run()));
-        ctRow = p.add(new ChoiceRow(app, s(R.string.panel_color_temp), labels(app, R.string.p6_ct_cool,
+        ctRow = p.add(new P6ChoiceRow(app, s(R.string.panel_color_temp), labels(app, R.string.p6_ct_cool,
                 R.string.panel_pm_standard, R.string.p6_ct_warm, R.string.p6_pm_custom), (row, i) -> safe("ct", () -> {
                     if (!custom() || i < 0 || i > 3) { refresh(Play6Snapshot.PICTURE); return; }
                     change("685 color temperature " + i, Play6Snapshot.PICTURE, (g, g2) -> g.setColorTemperature(i));
@@ -676,14 +677,14 @@ final class Play6PanelController {
                 R.string.pro_green_offset, R.string.pro_blue_offset};
         for (int k = 0; k < wbRows.length; k++) {
             final int item = k;
-            wbRows[k] = p.add(new SliderRow(app, s(wbTitles[k]), 0, 100, new SliderRow.OnSlide() {
+            wbRows[k] = p.add(new P6SliderRow(app, s(wbTitles[k]), 0, 100, new SliderRow.OnSlide() {
                 @Override public void onChanging(SliderRow row, int value) { touch(row); }
                 @Override public void onCommit(SliderRow row, int value) { safe("wb", () -> onWb(item, value)).run(); }
             }));
         }
         CharSequence[] gammas = new CharSequence[9];
         for (int k = 0; k < 9; k++) gammas[k] = String.format(java.util.Locale.ROOT, "%.1f", 1.8f + 0.1f * k);
-        gammaRow = p.add(new ChoiceRow(app, s(R.string.pro_gamma), gammas, (row, i) -> safe("gamma", () -> {
+        gammaRow = p.add(new P6ChoiceRow(app, s(R.string.pro_gamma), gammas, (row, i) -> safe("gamma", () -> {
             if (!custom() || i < 0 || i > 8) { refresh(Play6Snapshot.PICTURE); return; }
             change("IGmpf2 229 gamma " + i, Play6Snapshot.PICTURE, (g, g2) -> g2.setGamma(i));
         }).run()));
@@ -691,7 +692,7 @@ final class Play6PanelController {
             if (!custom()) { refresh(Play6Snapshot.PICTURE); return; }
             change("IGmpf2 231 dynamic contrast " + w, Play6Snapshot.PICTURE, (g, g2) -> g2.setDynamicContrast(w));
         }).run()));
-        lcRow = p.add(new ChoiceRow(app, s(R.string.pro_local_contrast), labels(app, R.string.panel_off, R.string.panel_low,
+        lcRow = p.add(new P6ChoiceRow(app, s(R.string.pro_local_contrast), labels(app, R.string.panel_off, R.string.panel_low,
                 R.string.panel_medium, R.string.panel_high), (row, i) -> safe("lc", () -> {
                     Integer pm = Play6Snapshot.shownPictureMode(snap.pictureMode);
                     if (pm == null || !Play6Snapshot.memcMode(pm) || i < 0 || i > 3) { refresh(Play6Snapshot.PICTURE); return; }
@@ -707,7 +708,7 @@ final class Play6PanelController {
                     }
                     g.setHdrAuto(w);
                 })).run()));
-        styleRow = p.add(new ChoiceRow(app, s(R.string.p6_style), labels(app, R.string.panel_pm_standard,
+        styleRow = p.add(new P6ChoiceRow(app, s(R.string.p6_style), labels(app, R.string.panel_pm_standard,
                 R.string.p6_style_movie, R.string.panel_pm_office, R.string.p6_pm_custom), (row, i) -> safe("style", () -> {
                     if (!custom() || i < 0 || i >= STYLE_ORDER.length) { refresh(Play6Snapshot.PICTURE); return; }
                     final int st = STYLE_ORDER[i];
@@ -716,7 +717,7 @@ final class Play6PanelController {
         int[] rgbTitles = {R.string.p6_light_red, R.string.p6_light_green, R.string.p6_light_blue};
         for (int k = 0; k < rgbRows.length; k++) {
             final int item = k;
-            rgbRows[k] = p.add(new SliderRow(app, s(rgbTitles[k]), 1, 10, new SliderRow.OnSlide() {
+            rgbRows[k] = p.add(new P6SliderRow(app, s(rgbTitles[k]), 1, 10, new SliderRow.OnSlide() {
                 @Override public void onChanging(SliderRow row, int value) { touch(row); }
                 @Override public void onCommit(SliderRow row, int value) { safe("rgb", () -> onRgb(item, value)).run(); }
             }));
@@ -883,7 +884,7 @@ final class Play6PanelController {
     private Page buildSoundPage() {
         Page p = newPage(QuickPanel.SECTION_SOUND, R.string.panel_sec_sound);
         final CharSequence[] soundLabels = soundLabels();
-        soundMode = p.add(new ChoiceRow(app, s(R.string.panel_sound_mode), soundLabels,
+        soundMode = p.add(new P6ChoiceRow(app, s(R.string.panel_sound_mode), soundLabels,
                 (row, i) -> safe("sound mode", () -> {
                     if (snap.soundEffect == null || i < 0 || i >= SOUND_ORDER.length) { refresh(Play6Snapshot.SOUND); return; }
                     final int m = SOUND_ORDER[i];
@@ -896,7 +897,7 @@ final class Play6PanelController {
                 }).run()));
         soundMode.setCommitDelay(CHOICE_COMMIT_MS);
         // Lumen 1.0.6 (owner 2026-10-24, as on the Z9X): manual sound output, only connected outputs are listed
-        soundOut = p.add(new ChoiceRow(app, s(R.string.sound_output),
+        soundOut = (P6ChoiceRow) p.add(new P6ChoiceRow(app, s(R.string.sound_output),
                 labels(app, R.string.sound_output_auto, R.string.sound_output_speaker),
                 (row, i) -> safe("sound output", () -> {
                     java.util.List<org.z9x.projector.audio.AudioOutputChoice.Option> o = outOptions;
@@ -907,7 +908,7 @@ final class Play6PanelController {
                 }).run()));
         soundOut.setCommitDelay(CHOICE_COMMIT_MS);
         // owner 2026-10-21: the equalizer of the Z9X on the Play 6 speaker (audio/P6SoundEq), only while it can work
-        eqRow = p.add(new ChoiceRow(app, s(R.string.eq_title), labels(app, R.string.eq_preset_flat, R.string.eq_preset_bass,
+        eqRow = p.add(new P6ChoiceRow(app, s(R.string.eq_title), labels(app, R.string.eq_preset_flat, R.string.eq_preset_bass,
                 R.string.eq_preset_voice, R.string.eq_preset_night),
                 (row, i) -> safe("eq", () -> {
                     if (!Boolean.TRUE.equals(snap.eqOk)) { refresh(Play6Snapshot.SOUND); return; }
@@ -993,11 +994,11 @@ final class Play6PanelController {
         Page p = newPage(QuickPanel.SECTION_GAME, R.string.panel_sec_game);
         gameHint = p.add(new TextRow(app, s(R.string.panel_game_hdmi_only)));
         gameHint.setVisibility(View.GONE);
-        gameMode = p.add(new ChoiceRow(app, s(R.string.panel_game_mode), gameModeLabels(),
+        gameMode = p.add(new P6ChoiceRow(app, s(R.string.panel_game_mode), gameModeLabels(),
                 (row, i) -> safe("game mode", () -> onGameMode(i)).run()));
         gameMode.setCommitDelay(CHOICE_COMMIT_MS);
         gameMode.setVisibility(View.GONE);                   // only on HDMI (apply)
-        aspect = p.add(new ChoiceRow(app, s(R.string.panel_aspect), aspectLabels(aspectOrder),
+        aspect = p.add(new P6ChoiceRow(app, s(R.string.panel_aspect), aspectLabels(aspectOrder),
                 (row, i) -> safe("aspect", () -> {
                     final int[] order = aspectOrder;
                     if (snap.aspect == null || i < 0 || i >= order.length) { refresh(Play6Snapshot.GAME); return; }
@@ -1009,7 +1010,7 @@ final class Play6PanelController {
         aspect.setCommitDelay(CHOICE_COMMIT_MS);
         aspect.setVisibility(View.GONE);                     // only on HDMI (apply)
         // stock HDMI settings (signal_setting, 2026-10-21): colour range 635 / 634, HDMI mode (EDID) 660 / 661
-        hdmiRangeRow = p.add(new ChoiceRow(app, s(R.string.hdmi_range), labels(app, R.string.panel_auto,
+        hdmiRangeRow = p.add(new P6ChoiceRow(app, s(R.string.hdmi_range), labels(app, R.string.panel_auto,
                 R.string.hdmi_range_full, R.string.hdmi_range_limited), (row, i) -> safe("hdmi range", () -> {
                     if (snap.hdmiRange == null || i < 0 || i > 2) { refresh(Play6Snapshot.GAME); return; }
                     change("635 hdmi range " + i, Play6Snapshot.GAME, (g, g2) -> {
@@ -1018,7 +1019,7 @@ final class Play6PanelController {
                 }).run()));
         hdmiRangeRow.setCommitDelay(CHOICE_COMMIT_MS);
         hdmiRangeRow.setVisibility(View.GONE);
-        edidRow = p.add(new ChoiceRow(app, s(R.string.hdmi_mode), labels(app, R.string.hdmi_mode_compat,
+        edidRow = p.add(new P6ChoiceRow(app, s(R.string.hdmi_mode), labels(app, R.string.hdmi_mode_compat,
                 R.string.hdmi_mode_enhanced), (row, i) -> safe("edid", () -> onEdid(i)).run()));
         edidRow.setCommitDelay(CHOICE_COMMIT_MS);
         edidRow.setVisibility(View.GONE);
@@ -1096,17 +1097,17 @@ final class Play6PanelController {
     private Page buildNightPage() {
         Page p = newPage(SECTION_NIGHT, R.string.p6_tile_night);
         p.add(new NavRow(app, s(R.string.p6_night_on), () -> closeThen(() -> org.z9x.projector.ambient.AmbientLight.openNight(app))).setChevron(false));
-        nightColor = p.add(new ChoiceRow(app, s(R.string.p6_amb_color), labels(app, R.string.p6_amb_c_orange,
+        nightColor = p.add(new P6ChoiceRow(app, s(R.string.p6_amb_color), labels(app, R.string.p6_amb_c_orange,
                 R.string.p6_amb_c_blue, R.string.p6_amb_c_yellow, R.string.p6_amb_c_green, R.string.p6_amb_c_pink,
                 R.string.p6_amb_c_purple, R.string.p6_amb_c_colorful),
                 (row, i) -> safe("night color", () -> org.z9x.projector.ambient.AmbientLight.setColor(app, i)).run()));
-        nightEffect = p.add(new ChoiceRow(app, s(R.string.p6_amb_effect), labels(app, R.string.p6_amb_e_standard,
+        nightEffect = p.add(new P6ChoiceRow(app, s(R.string.p6_amb_effect), labels(app, R.string.p6_amb_e_standard,
                 R.string.p6_amb_e_always, R.string.p6_amb_e_rhythm),
                 (row, i) -> safe("night effect", () -> org.z9x.projector.ambient.AmbientLight.setNightMode(app, i)).run()));
         CharSequence[] levels = new CharSequence[11];
         levels[0] = s(R.string.p6_amb_level_same);
         for (int i = 1; i <= 10; i++) levels[i] = Integer.toString(i);
-        nightLevel = p.add(new ChoiceRow(app, s(R.string.p6_amb_level), levels,
+        nightLevel = p.add(new P6ChoiceRow(app, s(R.string.p6_amb_level), levels,
                 (row, i) -> safe("night level", () -> org.z9x.projector.ambient.AmbientLight.setLevel(app, i)).run()));
         nightLevel.setCommitDelay(CHOICE_COMMIT_MS);
         p.add(new TextRow(app, s(R.string.p6_night_desc)));
@@ -1178,19 +1179,19 @@ final class Play6PanelController {
         spkOn = p.add(new NavRow(app, s(R.string.p6_spk_on), () -> {
             if (setupDone("speaker mode")) closeThen(() -> org.z9x.projector.speaker.SpeakerMode.open(app));
         }).setChevron(false));
-        spkLight = p.add(new ChoiceRow(app, s(R.string.p6_spk_light), labels(app, R.string.panel_off,
+        spkLight = p.add(new P6ChoiceRow(app, s(R.string.p6_spk_light), labels(app, R.string.panel_off,
                 R.string.p6_spk_light_ambient),
                 (row, i) -> safe("speaker light", () -> org.z9x.projector.speaker.SpeakerMode.setLight(app, i)).run()));
         spkDesc = p.add(new TextRow(app, s(R.string.p6_spk_desc)));
         ambHeader = p.add(new HeaderRow(app, s(R.string.p6_amb_title)));
-        ambColor = p.add(new ChoiceRow(app, s(R.string.p6_amb_color), labels(app, R.string.p6_amb_c_orange,
+        ambColor = p.add(new P6ChoiceRow(app, s(R.string.p6_amb_color), labels(app, R.string.p6_amb_c_orange,
                 R.string.p6_amb_c_blue, R.string.p6_amb_c_yellow, R.string.p6_amb_c_green, R.string.p6_amb_c_pink,
                 R.string.p6_amb_c_purple, R.string.p6_amb_c_colorful, R.string.p6_amb_c_none),
                 (row, i) -> safe("ambient color", () -> org.z9x.projector.ambient.AmbientLight.setColor(app, i)).run()));
-        ambEffect = p.add(new ChoiceRow(app, s(R.string.p6_amb_effect), labels(app, R.string.p6_amb_e_standard,
+        ambEffect = p.add(new P6ChoiceRow(app, s(R.string.p6_amb_effect), labels(app, R.string.p6_amb_e_standard,
                 R.string.p6_amb_e_always, R.string.p6_amb_e_rhythm),
                 (row, i) -> safe("ambient effect", () -> org.z9x.projector.ambient.AmbientLight.setMode(app, i)).run()));
-        lidRow = p.add(new ChoiceRow(app, s(R.string.p6_lid), labels(app, R.string.p6_lid_off, R.string.p6_lid_speaker),
+        lidRow = p.add(new P6ChoiceRow(app, s(R.string.p6_lid), labels(app, R.string.p6_lid_off, R.string.p6_lid_speaker),
                 (row, i) -> safe("lid", () -> {
                     if (snap.slideFunc == null || i < 0 || i > 1) { refresh(Play6Snapshot.AMBIENT); return; }
                     change("IGmpf2 69 slide function " + i, Play6Snapshot.AMBIENT, (g, g2) -> {
@@ -1219,7 +1220,7 @@ final class Play6PanelController {
             if (setupDone("recent apps")) closeThen(() -> org.z9x.projector.recents.RecentsActivity.open(app));
         }));
         if (org.z9x.projector.home.LauncherSwitcher.choiceAvailable(app)) {
-            launcherRow = p.add(new ChoiceRow(app, s(R.string.launcher_row), labels(app,
+            launcherRow = p.add(new P6ChoiceRow(app, s(R.string.launcher_row), labels(app,
                     R.string.launcher_lumen, R.string.launcher_classic),
                     (row, i) -> safe("home screen", () -> onLauncherChoice(i)).run()));
         }
