@@ -2,6 +2,7 @@ package org.z9x.home.usb;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -18,6 +19,7 @@ import android.widget.TextView;
 import android.widget.VideoView;
 
 import org.z9x.home.R;
+import org.z9x.home.net.NetFilesProvider;
 import org.z9x.home.ui.Theme;
 
 import java.io.File;
@@ -33,6 +35,8 @@ import java.util.concurrent.Executors;
  * projector's decoders play (H.264, HEVC, VP9, AV1, AAC, AC-3 / E-AC-3 ... in MP4, MKV, TS, WebM).
  * OK / play-pause: pause or play, LEFT / RIGHT: 10 s back / forward (30 s while held), UP / DOWN: the time
  * bar, BACK: back to Files. A song is followed by the next song of the same folder.
+ * 1.0.6: also a file of a network folder, as the intent's data (a NetFilesProvider content:// URI, played
+ * through its seekable descriptor); a network song is not followed by the next one.
  */
 public class PlayerActivity extends Activity {
     static final String EXTRA_PATH = "path";
@@ -48,6 +52,7 @@ public class PlayerActivity extends Activity {
     private TextView mTitle, mTime;
     private ProgressBar mProgress;
     private File mFile;
+    private Uri mUri;
     private boolean mAudio, mFailed;
     private final Runnable mHideBar = () -> {
         if (mVideo != null && mVideo.isPlaying() && !mAudio) mBar.animate().alpha(0f).setDuration(250).start();
@@ -93,9 +98,10 @@ public class PlayerActivity extends Activity {
         root.addView(mBar, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
         setContentView(root);
 
+        Uri data = getIntent().getData();
         String path = getIntent().getStringExtra(EXTRA_PATH);
         File f = path == null ? null : new File(path);
-        if (f == null || !UsbFiles.onStick(this, f)) {
+        if (data != null ? !NetFilesProvider.isOurs(data) : f == null || !UsbFiles.onStick(this, f)) {
             finish();
             return;
         }
@@ -104,7 +110,7 @@ public class PlayerActivity extends Activity {
             showBar();
         });
         mVideo.setOnErrorListener((mp, what, extra) -> {
-            Log.w(TAG, "player " + mFile + ": error " + what + " / " + extra);
+            Log.w(TAG, "player " + (mFile != null ? mFile : mUri) + ": error " + what + " / " + extra);
             mFailed = true;
             mTime.setText(getString(R.string.files_play_failed));
             mBar.animate().cancel();
@@ -112,10 +118,26 @@ public class PlayerActivity extends Activity {
             return true;
         });
         mVideo.setOnCompletionListener(mp -> {
-            if (mAudio) nextSong();
+            if (mAudio && mFile != null) nextSong();
             else finish();
         });
-        play(f);
+        if (data != null) play(data);
+        else play(f);
+    }
+
+    /** A network file: its name is the URI's last segment. */
+    private void play(Uri u) {
+        mUri = u;
+        mFile = null;
+        mFailed = false;
+        String name = NetFilesProvider.name(u);
+        mAudio = UsbFiles.type(name) == UsbFiles.AUDIO;
+        mMusic.setVisibility(mAudio ? View.VISIBLE : View.GONE);
+        mTitle.setText(name);
+        mTime.setText("");
+        mProgress.setProgress(0);
+        mVideo.setVideoURI(u);
+        showBar();
     }
 
     private void play(File f) {

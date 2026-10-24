@@ -189,6 +189,13 @@
             android:authorities="org.z9x.home.usbfiles"
             android:exported="false"
             android:grantUriPermissions="true" />
+        <!-- 1.0.6: a file of a network folder (net/NetFilesProvider: SMB reads behind a seekable proxy descriptor),
+             for the player of Files the same way: read only, one-off grant with the VIEW intent -->
+        <provider
+            android:name=".net.NetFilesProvider"
+            android:authorities="org.z9x.home.netfiles"
+            android:exported="false"
+            android:grantUriPermissions="true" />
         <!-- its PackageInstaller session status (our own explicit PendingIntent only) -->
         <receiver android:name=".usb.UsbInstallReceiver" android:exported="false">
             <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
