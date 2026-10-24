@@ -518,13 +518,37 @@ public final class ManualKeystonePanel extends Panel {
         }
         if (same(p, applied)) return;
         try {
-            if (checkedApply(g, p, since, false)) return;
+            if (checkedApply(g, p, since, false)) {
+                if (active && applied == p) resyncAfterMove(g, p, seq);
+                return;
+            }
             Ui.main().post(this::noteLimit);
         } catch (Throwable t) {
             Log.w(TAG, "apply: " + t);
             Notify.show(app, app.getString(R.string.kst_refused), app.getString(R.string.kst_reason_hal));
         }
         undoTo(applied.copy(), seq);
+    }
+
+    /**
+     * HAL thread, after a 185 the vendor took: 186 again, as stock does before every key (KeyStoneWind 298-300,
+     * KeyStoneManager 393-401: each step starts from what the vendor really holds). When the vendor holds other
+     * corners than we sent (it clamped or re-based the warp), they become {@link #applied} and the card's targets,
+     * unless the user moved again meanwhile; nothing learned for 150 survives that (audit 2026-10-24, A1).
+     */
+    private void resyncAfterMove(Play6Gmpf g, Play6KstPoint sent, int seq) {
+        Play6KstPoint back;
+        try {
+            back = g.getKeystonePoints();                                // 186
+        } catch (Throwable t) {
+            Log.w(TAG, "186 after 185: " + t);
+            return;
+        }
+        if (back == null || near(back, sent)) return;
+        Log.i(TAG, "186 after 185 " + sent + " -> " + back + ": the vendor holds other corners, taken");
+        applied = back;
+        okBase = null;
+        undoTo(back.copy(), seq);
     }
 
     /**

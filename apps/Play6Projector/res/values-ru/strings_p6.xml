@@ -58,6 +58,9 @@
     <string name="zs_hint_size">Вправо: больше · Влево: меньше · OK: сдвиг картинки · Назад: готово</string>
     <string name="zs_hint_shift">Стрелки: сдвиг картинки · OK: размер · Назад: готово</string>
     <string name="zs_hint_shift_only">Стрелки: сдвиг картинки · Назад: готово</string>
+    <string name="zs_hint_stock">Стрелки: сдвинуть картинку · Громкость + / −: размер · Меню: сброс · Назад: готово</string>
+    <string name="zs_menu_reset">Сброс</string>
+    <string name="zs_reset_done">Сброс: полная картинка по центру</string>
     <string name="zs_edge">Картинка у края</string>
     <string name="zs_refused">Проектор не сдвинул картинку</string>
     <string name="rot_title">Поворот изображения</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">Холодная</string>
     <string name="p6_ct_warm">Тёплая</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDR недоступен в режиме HDMI 1.4. Сначала выберите HDMI 2.0 в настройках HDMI.</string>
     <string name="p6_style">Стиль изображения</string>
     <string name="p6_style_movie">Кино D65</string>
     <string name="p6_pic_reset_msg">Все настройки режима «Пользовательский» вернутся к заводским. Продолжить?</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">Бас</string>
     <string name="eq_preset_voice">Голос</string>
     <string name="eq_preset_night">Ночь</string>
+    <string name="sound_output">Вывод звука</string>
+    <string name="sound_output_auto">Автоматически</string>
+    <string name="sound_output_speaker">Динамик проектора</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Наушники</string>
+    <string name="sound_output_usb">USB-аудио</string>
 </resources>

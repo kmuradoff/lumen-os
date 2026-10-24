@@ -139,6 +139,17 @@ public final class Play6AdjustSession {
         }
     }
 
+    /**
+     * HAL thread. 120 zoomFinish(0) then 121 zoomStart(0): a fresh zoom session (stock initZoom(stepChange = true)).
+     * The zoom card runs it after a move: the vendor re-bases 116 to 0 on a move but keeps the 117 range of the
+     * session start, so the last steps back to the full picture were refused (2026-10-24, device test); a fresh
+     * session answers the true range.
+     */
+    static void zoomRestart(Context app, Play6Gmpf g, String who) throws Exception {
+        if (flag(app, KEY_ZOOM) && !zoomFinish(app, g, who)) throw new IllegalStateException("120 not delivered");
+        zoomStart(app, g, who);
+    }
+
     // ------------------------------------------------------------------ close
     /** HAL thread. Settles everything the markers say is owed, in stock order. True = nothing left. */
     static boolean close(Context app, Play6Gmpf g, Play6Gmpf2 g2, String who) {

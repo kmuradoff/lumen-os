@@ -58,6 +58,9 @@
     <string name="zs_hint_size">Sağ: büyüt · Sol: küçült · OK: görüntüyü kaydır · Geri: bitti</string>
     <string name="zs_hint_shift">Oklar: görüntüyü kaydır · OK: boyut · Geri: bitti</string>
     <string name="zs_hint_shift_only">Oklar: görüntüyü kaydır · Geri: bitti</string>
+    <string name="zs_hint_stock">Oklar: görüntüyü taşı · Ses + / −: boyut · Menü: sıfırla · Geri: bitti</string>
+    <string name="zs_menu_reset">Sıfırla</string>
+    <string name="zs_reset_done">Sıfırlandı: tam görüntü, ortada</string>
     <string name="zs_edge">Görüntü kenarda</string>
     <string name="zs_refused">Projektör görüntüyü kaydırmadı</string>
     <string name="rot_title">Görüntü döndürme</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">Soğuk</string>
     <string name="p6_ct_warm">Sıcak</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDR, HDMI 1.4 modunda kullanılamaz. Önce HDMI ayarlarından HDMI 2.0’ı seçin.</string>
     <string name="p6_style">Görüntü stili</string>
     <string name="p6_style_movie">Sinema D65</string>
     <string name="p6_pic_reset_msg">Özel görüntü modunun tüm ayarları varsayılana döner. Devam edilsin mi?</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">Bas</string>
     <string name="eq_preset_voice">Konuşma</string>
     <string name="eq_preset_night">Gece</string>
+    <string name="sound_output">Ses çıkışı</string>
+    <string name="sound_output_auto">Otomatik</string>
+    <string name="sound_output_speaker">Projektör hoparlörü</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Kulaklık</string>
+    <string name="sound_output_usb">USB ses</string>
 </resources>

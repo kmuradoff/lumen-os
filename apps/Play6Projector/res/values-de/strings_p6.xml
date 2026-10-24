@@ -58,6 +58,9 @@
     <string name="zs_hint_size">Rechts: größer · Links: kleiner · OK: Bild verschieben · Zurück: fertig</string>
     <string name="zs_hint_shift">Pfeile: Bild verschieben · OK: Größe · Zurück: fertig</string>
     <string name="zs_hint_shift_only">Pfeile: Bild verschieben · Zurück: fertig</string>
+    <string name="zs_hint_stock">Pfeile: Bild verschieben · Lautstärke + / −: Größe · Menü: zurücksetzen · Zurück: fertig</string>
+    <string name="zs_menu_reset">Zurücksetzen</string>
+    <string name="zs_reset_done">Zurückgesetzt: volles Bild in der Mitte</string>
     <string name="zs_edge">Das Bild ist am Rand</string>
     <string name="zs_refused">Der Projektor hat das Bild nicht verschoben</string>
     <string name="rot_title">Bilddrehung</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">Kalt</string>
     <string name="p6_ct_warm">Warm</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDR ist im Modus HDMI 1.4 nicht verfügbar. Wählen Sie zuerst HDMI 2.0 in den HDMI-Einstellungen.</string>
     <string name="p6_style">Bildstil</string>
     <string name="p6_style_movie">Film D65</string>
     <string name="p6_pic_reset_msg">Alle Einstellungen des Bildmodus Benutzerdefiniert werden zurückgesetzt. Fortfahren?</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">Bass</string>
     <string name="eq_preset_voice">Sprache</string>
     <string name="eq_preset_night">Nacht</string>
+    <string name="sound_output">Tonausgabe</string>
+    <string name="sound_output_auto">Automatisch</string>
+    <string name="sound_output_speaker">Projektorlautsprecher</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Kopfhörer</string>
+    <string name="sound_output_usb">USB-Audio</string>
 </resources>

@@ -58,6 +58,9 @@
     <string name="zs_hint_size">Оңға: үлкенірек · Солға: кішірек · OK: суретті жылжыту · Артқа: дайын</string>
     <string name="zs_hint_shift">Көрсеткілер: суретті жылжыту · OK: өлшем · Артқа: дайын</string>
     <string name="zs_hint_shift_only">Көрсеткілер: суретті жылжыту · Артқа: дайын</string>
+    <string name="zs_hint_stock">Көрсеткілер: суретті жылжыту · Дыбыс + / −: өлшем · Мәзір: қалпына келтіру · Артқа: дайын</string>
+    <string name="zs_menu_reset">Қалпына келтіру</string>
+    <string name="zs_reset_done">Қалпына келтірілді: толық сурет ортада</string>
     <string name="zs_edge">Сурет шетте тұр</string>
     <string name="zs_refused">Проектор суретті жылжытпады</string>
     <string name="rot_title">Суретті бұру</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">Суық</string>
     <string name="p6_ct_warm">Жылы</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDMI 1.4 режимінде HDR қолжетімсіз. Алдымен HDMI параметрлерінде HDMI 2.0 таңдаңыз.</string>
     <string name="p6_style">Сурет стилі</string>
     <string name="p6_style_movie">Кино D65</string>
     <string name="p6_pic_reset_msg">Пайдаланушы режимінің барлық параметрлері әдепкі мәндерге оралады. Жалғастыру керек пе?</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">Бас</string>
     <string name="eq_preset_voice">Дауыс</string>
     <string name="eq_preset_night">Түн</string>
+    <string name="sound_output">Дыбыс шығысы</string>
+    <string name="sound_output_auto">Автоматты</string>
+    <string name="sound_output_speaker">Проектор динамигі</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Құлаққап</string>
+    <string name="sound_output_usb">USB аудио</string>
 </resources>

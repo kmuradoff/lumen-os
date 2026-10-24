@@ -58,6 +58,9 @@
     <string name="zs_hint_size">يمين: أكبر · يسار: أصغر · موافق: تحريك الصورة · رجوع: تم</string>
     <string name="zs_hint_shift">الأسهم: تحريك الصورة · موافق: الحجم · رجوع: تم</string>
     <string name="zs_hint_shift_only">الأسهم: تحريك الصورة · رجوع: تم</string>
+    <string name="zs_hint_stock">الأسهم: تحريك الصورة · الصوت + / −: الحجم · القائمة: إعادة الضبط · رجوع: تم</string>
+    <string name="zs_menu_reset">إعادة الضبط</string>
+    <string name="zs_reset_done">تمت إعادة الضبط: الصورة كاملة في المنتصف</string>
     <string name="zs_edge">الصورة عند الحافة</string>
     <string name="zs_refused">لم يحرّك جهاز العرض الصورة</string>
     <string name="rot_title">تدوير الصورة</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">بارد</string>
     <string name="p6_ct_warm">دافئ</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDR غير متاح في وضع HDMI 1.4. اختر HDMI 2.0 أولاً في إعدادات HDMI.</string>
     <string name="p6_style">نمط الصورة</string>
     <string name="p6_style_movie">فيلم D65</string>
     <string name="p6_pic_reset_msg">ستعود كل إعدادات وضع الصورة المخصص إلى قيمها الافتراضية. هل تريد المتابعة؟</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">جهير</string>
     <string name="eq_preset_voice">صوت بشري</string>
     <string name="eq_preset_night">ليلي</string>
+    <string name="sound_output">إخراج الصوت</string>
+    <string name="sound_output_auto">تلقائي</string>
+    <string name="sound_output_speaker">سماعة جهاز العرض</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">سماعات الرأس</string>
+    <string name="sound_output_usb">صوت USB</string>
 </resources>
