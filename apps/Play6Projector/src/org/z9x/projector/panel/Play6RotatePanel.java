@@ -42,7 +42,7 @@ public final class Play6RotatePanel extends Panel {
     static final String TAG = "P6Rotate";
 
     private static final float STEP = 0.5f;
-    private static final long MIN_STEP_GAP_MS = 150;
+    private static final long RESYNC_MS = 1_500;
     private static final long AUTO_HIDE_MS = 60_000;
     private static final long ENTER_WATCHDOG_MS = 6_000;
     private static final int WAIT = 0, READY = 1, FAILED = 2;
@@ -55,8 +55,12 @@ public final class Play6RotatePanel extends Panel {
     private final Runnable onBackExit;
     private volatile int state = WAIT;
     private volatile boolean inFlight, closed, backExit, active;
-    private volatile long lastStepAt;
     private volatile float min, max, cur, opened;
+    /** Main thread adds, HAL thread takes (under the lock): degrees still to send, positive = clockwise. */
+    private final Object lock = new Object();
+    private float pending;
+    private boolean undo;
+    private int gen;
     private TextView value, status;
 
     private Play6RotatePanel(Context app, Runnable onBackExit) {
@@ -67,6 +71,21 @@ public final class Play6RotatePanel extends Panel {
     static boolean isOpen() { return sOpen != null; }
 
     static boolean isUnsupported() { return sUnsupported; }
+
+    /** A 130 parsed on this projector before (any process): the quick panel shows the row without a probe. */
+    static boolean knownSupported(Context c) {
+        try {
+            return !sUnsupported && c.getSharedPreferences("p6rot", Context.MODE_PRIVATE).getBoolean("ok", false);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    static void markSupported(Context c) {
+        try {
+            c.getSharedPreferences("p6rot", Context.MODE_PRIVATE).edit().putBoolean("ok", true).apply();
+        } catch (Throwable ignored) { }
+    }
 
     static void markUnsupported(String why) {
         if (!sUnsupported) Log.w(TAG, "picture rotation hidden for this process: " + why);
@@ -111,6 +130,7 @@ public final class Play6RotatePanel extends Panel {
             max = r[1];
             cur = opened = r[2];
             Log.i(TAG, "130 -> min " + r[0] + " max " + r[1] + " cur " + r[2] + " start " + r[3]);
+            markSupported(app);
             state = READY;
             ui(this::render);
             if (closed) exitNow(g, g2, "closed during enter");
@@ -130,39 +150,46 @@ public final class Play6RotatePanel extends Panel {
         if (!Play6AdjustSession.close(app, g, g2, who)) Log.w(TAG, who + ": close incomplete, left to the connect hook");
     }
 
-    /** One step towards {@code clockwise}, or (null, undo) back to the opening angle. */
-    private void step(Play6Gmpf2 g2, Boolean clockwise) {
+    /** HAL thread: sends what the keys queued, as few 138s as possible, then lets the main thread re-read later. */
+    private void drain(Play6Gmpf2 g2) {
         try {
-            if (state != READY || closed) return;
-            float now = g2.getScreenRotation()[2];                   // fresh 130
-            boolean cw;
-            float deg;
-            if (clockwise == null) {
-                float diff = opened - now;
-                if (Math.abs(diff) < 0.05f) return;
-                cw = diff > 0;
-                deg = Math.min(Math.abs(diff), 45f);              // Play6Gmpf2.checkRotationStep bound
-            } else {
-                cw = clockwise;
-                deg = STEP;
-                float target = cw ? now + STEP : now - STEP;
-                if (target > max + 0.01f || target < min - 0.01f) {
-                    cur = now;
-                    ui(() -> { render(); say(R.string.rot_limit); });
-                    return;
+            while (state == READY && !closed) {
+                float deg;
+                synchronized (lock) {
+                    if (undo) { pending = opened - cur; undo = false; }
+                    deg = pending;
+                    pending = 0;
                 }
+                if (Math.abs(deg) < 0.05f) break;
+                boolean cw = deg > 0;
+                float abs = Math.min(Math.abs(deg), 45f);               // Play6Gmpf2.checkRotationStep bound
+                boolean ok = g2.rotateScreen(cw, abs);                   // IGmpf2 138
+                if (ok) cur = Math.max(min, Math.min(max, cur + (cw ? abs : -abs)));
+                Log.i(TAG, "138(" + (cw ? 5 : 6) + ", " + abs + ") -> " + ok + ", now " + cur);
+                ui(() -> { render(); if (!ok) say(R.string.rot_refused); });
             }
-            boolean ok = g2.rotateScreen(cw, deg);                   // IGmpf2 138
-            cur = g2.getScreenRotation()[2];                         // read-back
-            Log.i(TAG, "138(" + (cw ? 5 : 6) + ", " + deg + ") -> " + ok + ", now " + cur);
-            ui(() -> { render(); if (!ok) say(R.string.rot_refused); });
         } catch (Throwable t) {
             Log.w(TAG, "step failed: " + t);
             ui(() -> say(R.string.rot_refused));
         } finally {
-            lastStepAt = SystemClock.uptimeMillis();
             inFlight = false;
+            final int g = ++gen;
+            Ui.main().postDelayed(() -> resync(g), RESYNC_MS);
         }
+    }
+
+    /** Main thread, 1.5 s after the last 138: one 130 read, unless more steps came meanwhile. */
+    private void resync(int g) {
+        if (g != gen || inFlight || closed || state != READY) return;
+        Hal.run((gm, g2) -> {
+            if (g != gen || inFlight || closed) return;
+            try {
+                cur = g2.getScreenRotation()[2];
+                ui(this::render);
+            } catch (Throwable t) {
+                Log.d(TAG, "re-read: " + t);
+            }
+        });
     }
 
     // =================================================================== keys and window (main thread)
@@ -176,11 +203,36 @@ public final class Play6RotatePanel extends Panel {
         boolean left = code == KeyEvent.KEYCODE_DPAD_LEFT, right = code == KeyEvent.KEYCODE_DPAD_RIGHT;
         if (!ok && !left && !right) return code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN;
         if (ev.getAction() != KeyEvent.ACTION_DOWN || ev.getRepeatCount() > 0 && ok) return true;
-        if (state != READY || inFlight || SystemClock.uptimeMillis() - lastStepAt < MIN_STEP_GAP_MS) return true;
-        inFlight = true;
-        final Boolean cw = ok ? null : (Boolean) right;
-        if (!Hal.run((g, g2) -> step(g2, cw))) inFlight = false;
+        if (state != READY) return true;
+        synchronized (lock) {
+            if (ok) {
+                undo = true;
+                pending = 0;
+            } else {
+                float target = cur + pending + (right ? STEP : -STEP);
+                if (target > max + 0.01f || target < min - 0.01f) {
+                    say(R.string.rot_limit);
+                    return true;
+                }
+                pending += right ? STEP : -STEP;
+            }
+        }
+        showTarget();
+        if (!inFlight) {
+            inFlight = true;
+            if (!Hal.run((g, g2) -> drain(g2))) inFlight = false;
+        }
         return true;
+    }
+
+    /** The angle the queued steps lead to, shown at once (the projector catches up). */
+    private void showTarget() {
+        if (value == null) return;
+        float t;
+        synchronized (lock) { t = undo ? opened : cur + pending; }
+        float a = Math.round(t * 10f) / 10f;
+        value.setText(String.format(Locale.getDefault(), "%+.1f°", a == 0f ? 0f : a));
+        status.setText("");
     }
 
     @Override

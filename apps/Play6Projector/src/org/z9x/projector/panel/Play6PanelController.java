@@ -1280,7 +1280,8 @@ final class Play6PanelController {
         setToggle(smartAf, ok ? sn.smartAf : null, true);
         visible(manualKst, g2);
         visible(zoomShift, g2 && Boolean.TRUE.equals(sn.zoomOk) && !Play6ZoomShiftPanel.isUnsupported());
-        visible(rotation, g2 && Boolean.TRUE.equals(sn.rotationOk) && !Play6RotatePanel.isUnsupported());
+        visible(rotation, g2 && (Boolean.TRUE.equals(sn.rotationOk) || sn.rotationOk == null
+                && Play6RotatePanel.knownSupported(app)) && !Play6RotatePanel.isUnsupported());
         setToggle(rtKst, ok ? sn.moveAk : null, true);
         setToggle(powerOnKst, ok ? sn.powerOnAk : null, true);
 
