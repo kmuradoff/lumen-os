@@ -319,6 +319,16 @@ public final class AmbientLight extends Panel {
         }
     }
 
+    /** BACK closes the light, except while the projector is closed (owner 2026-10-24): then only opening it does. */
+    @Override
+    protected boolean onBack() {
+        if (org.z9x.projector.speaker.SpeakerMode.isLidClosed()) {
+            Log.i(TAG, "BACK ignored: the projector is closed");
+            return true;
+        }
+        return false;
+    }
+
     /** Stock keys: UP / DOWN colour, LEFT / RIGHT / OK media keys 88 / 87 / 85; BACK closes (Panel). */
     @Override
     protected boolean onKeyEvent(KeyEvent ev) {

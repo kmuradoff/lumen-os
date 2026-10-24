@@ -201,7 +201,14 @@ public final class SpeakerMode extends Panel {
     /** Brightness (IGmpf 177) read when the projector was closed; -1 = none. p6-hal writes, p6-hal reads. */
     private static volatile int sLidLevel = -1;
 
+    /** The projector is closed (lid event type 4 status 1, until the next "opened"). */
+    private static volatile boolean sLidClosed;
+
+    /** The projector is closed now: BACK does not turn the light off (owner 2026-10-24). */
+    public static boolean isLidClosed() { return sLidClosed; }
+
     private static void onLidClosed(Context app) {
+        sLidClosed = true;
         Log.i(TAG, "projector closed (ambient speaker)");
         Hal.run((g, g2) -> {
             try { sLidLevel = g.getLampLevel(); Log.i(TAG, "closed: 177 brightness " + sLidLevel); }
@@ -250,6 +257,7 @@ public final class SpeakerMode extends Panel {
     }
 
     private static void onLidOpened(Context app) {
+        sLidClosed = false;
         Log.i(TAG, "projector opened");
         restoreLidLevel();
         SpeakerMode cur = sActive;
@@ -510,7 +518,7 @@ public final class SpeakerMode extends Panel {
             case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
                 return false;                                            // the system: volume, the phone's session
             case KeyEvent.KEYCODE_BACK:
-                return false;                                            // Panel: BACK ends the mode
+                return false;                                            // Panel: BACK ends the mode (onBack)
             default:
                 break;
         }
@@ -525,6 +533,20 @@ public final class SpeakerMode extends Panel {
         }
         if (ev.getAction() == KeyEvent.ACTION_DOWN && (lampOff || card.getVisibility() != View.VISIBLE)) peek();
         return true;
+    }
+
+    /**
+     * BACK ends the mode, except while the projector is closed: then only opening it ends the light (owner
+     * 2026-10-24: "while it is closed I must not be able to turn the light off, only change its modes").
+     */
+    @Override
+    protected boolean onBack() {
+        if (sLidClosed) {
+            Log.i(TAG, "BACK ignored: the projector is closed");
+            if (lampOff || card.getVisibility() != View.VISIBLE) peek();
+            return true;
+        }
+        return false;
     }
 
     @Override

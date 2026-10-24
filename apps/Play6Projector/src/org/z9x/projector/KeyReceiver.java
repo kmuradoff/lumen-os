@@ -162,6 +162,9 @@ public final class KeyReceiver extends BroadcastReceiver {
     private static void handleGear(Context ctx, Intent intent, KeyEvent ev) {
         if (intent.getBooleanExtra(EXTRA_BEGAN_FROM_NON_INTERACTIVE, false)) return;
         int action = ev.getAction();
+        // the zoom and shift card: the gear is the remote's menu key there (stock ZoomDisplacementWind MENU = the side
+        // menu with Reset; owner 2026-10-24: "menu throws me into the quick panel instead of the reset")
+        if (org.z9x.projector.panel.Play6ZoomShiftPanel.onMenuKey(ev)) return;
         if (action == KeyEvent.ACTION_DOWN) {
             if (ev.getRepeatCount() == 0) {
                 sGearLongFired = false;

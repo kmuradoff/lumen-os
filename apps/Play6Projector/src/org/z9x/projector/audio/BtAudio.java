@@ -1,6 +1,9 @@
 package org.z9x.projector.audio;
 
 import android.content.Context;
+
+import org.z9x.projector.Hal;
+import org.z9x.projector.hal.Play6Gmpf;
 import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
@@ -29,7 +32,8 @@ import java.lang.reflect.Method;
  *    setParameters("xgimi_audiopath_switch_end=P") sets that sink (adev_set_parameters 0x21c96: sink = the
  *    Android device of path P, P 3 = A2DP, 0 = speaker; leaving A2DP suspends it; no volume change, unlike the
  *    Z9X). Stock's audio policy sent it; Lumen never did, so a connected speaker stayed silent on the Z9X.
- *    When media routes to A2DP we send switch_end=3 (after bluetooth_volume), when it leaves A2DP switch_end=0.
+ *    When media routes to A2DP we send switch_end=3 and then bluetooth_volume (the HAL drops a volume sent while its
+ *    sink is not A2DP), when it leaves A2DP switch_end=0.
  */
 public final class BtAudio {
     private static final String TAG = "P6BtAudio";
@@ -39,6 +43,9 @@ public final class BtAudio {
     private static final int NEUTRAL = 100;
     /** After an A2DP sink appears: AudioService has routed media by then. */
     private static final long RESYNC_MS = 800;
+    /** Stock's switch: 59(100), then the path once the routing settled (the Z9X waits 300 ms). */
+    private static final long SWITCH_MS = 300;
+    private static Context sApp;
 
     private BtAudio() { }
 
@@ -46,9 +53,11 @@ public final class BtAudio {
         final Context app = ctx.getApplicationContext();
         final AudioManager am = app.getSystemService(AudioManager.class);
         if (am == null) return;
+        sApp = app;
         HandlerThread t = new HandlerThread("p6-btaudio");
         t.start();
         final Handler h = new Handler(t.getLooper());
+        sH = h;
         h.post(() -> volume(am, "start"));
         try {
             am.addOnDevicesForAttributesChangedListener(MEDIA, h::post, (attrs, devices) -> sink(am, devices));
@@ -93,23 +102,120 @@ public final class BtAudio {
     /** p6-btaudio thread: the sink we selected with switch_end, -1 none this process, -2 send again (resync). */
     private static int sSink = -1;
 
-    /** Media routing changed: the HAL's sink follows it (A2DP or the speaker). p6-btaudio thread. */
-    private static void sink(AudioManager am, java.util.List<android.media.AudioDeviceAttributes> devices) {
-        boolean a2dp = false;
-        if (devices != null) {
-            for (android.media.AudioDeviceAttributes d : devices) {
-                if (d.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP) a2dp = true;
+    /** p6-btaudio thread: the vendor path we reported with 59 (-1: none this process, the boot state 100 stays). */
+    private static int sPath = -1;
+    private static Handler sH;
+
+    /** The vendor path (59) of the media route: the Z9X AudioPathReporter / stock threadInit mapping. */
+    private static int pathOf(java.util.List<android.media.AudioDeviceAttributes> devices) {
+        if (devices == null) return Play6Gmpf.AUDIO_PATH_SPEAKER;
+        for (android.media.AudioDeviceAttributes d : devices) {
+            switch (d.getType()) {
+                case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP: return Play6Gmpf.AUDIO_PATH_A2DP;
+                case AudioDeviceInfo.TYPE_HDMI_ARC:
+                case AudioDeviceInfo.TYPE_HDMI_EARC: return Play6Gmpf.AUDIO_PATH_ARC;
+                case AudioDeviceInfo.TYPE_WIRED_HEADPHONES:
+                case AudioDeviceInfo.TYPE_WIRED_HEADSET: return Play6Gmpf.AUDIO_PATH_WIRED;
+                case AudioDeviceInfo.TYPE_USB_DEVICE:
+                case AudioDeviceInfo.TYPE_USB_HEADSET: return Play6Gmpf.AUDIO_PATH_USB;
+                default: break;
             }
         }
+        return Play6Gmpf.AUDIO_PATH_SPEAKER;
+    }
+
+    /**
+     * Media routing changed: the vendor follows it, as stock's audio policy did (Lumen 1.0.6, device test 2026-10-24:
+     * with only the HAL sink switched the Play 6 speaker kept playing at full level next to the Bluetooth speaker).
+     *  1. IGmpf 59 setAudioOutput: 100 first when the path changes (stock switch start: Msrv mutes every TV path), 300 ms,
+     *     then the path (Msrv SetOutputType: mutes the amp for A2DP / ARC / headphones / USB, unmutes it for the speaker).
+     *     Nothing is sent while the route stays on the speaker since boot (the vendor keeps its boot state, as in 1.0.5).
+     *  2. The audio HAL sink: xgimi_audiopath_switch_end=3 for A2DP, then bluetooth_volume (the HAL drops a volume sent
+     *     while its sink is not A2DP); leaving A2DP switch_end=0.
+     * p6-btaudio thread.
+     */
+    private static void sink(AudioManager am, java.util.List<android.media.AudioDeviceAttributes> devices) {
+        final int want = pathOf(devices);
+        final boolean a2dp = want == Play6Gmpf.AUDIO_PATH_A2DP;
+        if (want == sPath) return;
+        if (sPath < 0 && sSink == -1 && want == Play6Gmpf.AUDIO_PATH_SPEAKER) return;   // boot state, nothing to undo
+        final int from = sPath;
+        sPath = want;
+        Log.i(TAG, "media path " + from + " -> " + want);
+        Hal.run((g, g2) -> {
+            try {
+                g.setAudioOutput(Play6Gmpf.AUDIO_PATH_SWITCHING);                  // 59(100)
+                android.os.SystemClock.sleep(SWITCH_MS);
+                g.setAudioOutput(want);                                             // 59(P)
+                Log.i(TAG, "59(" + want + ") sent, 60 reads " + g.getAudioOutput());
+            } catch (Throwable t) {
+                Log.w(TAG, "59(" + want + "): " + t);
+            }
+            Handler h = sH;
+            if (h != null) h.post(() -> halSink(am, a2dp));
+        });
+    }
+
+    /** p6-btaudio thread, after 59: the HAL sink (switch_end) and the A2DP DSP volume. */
+    private static void halSink(AudioManager am, boolean a2dp) {
         int want = a2dp ? PATH_A2DP : PATH_SPEAKER;
-        if (want == sSink || (!a2dp && sSink == -1)) return;   // the speaker is the HAL's default: nothing to undo
+        if (!a2dp && sSink != PATH_A2DP && sSink != -2) { sSink = want; return; }   // never on A2DP: nothing to undo
         try {
-            if (a2dp) volume(am, "A2DP sink");
             am.setParameters("xgimi_audiopath_switch_end=" + want);
+            // after the switch: the mt5889 HAL takes bluetooth_volume only while its sink is A2DP ("doesn't set acap
+            // volume! current sink device is not a2dp device") and, unlike the Z9X's, does not restore it on the
+            // switch, so a volume sent first left the A2DP DSP at 0 (device log 2026-10-24)
+            if (a2dp) volume(am, "A2DP sink, after the switch");
             sSink = want;
             Log.i(TAG, "audio HAL sink: " + (a2dp ? "A2DP" : "speaker") + " (switch_end=" + want + ")");
         } catch (Throwable e) {
             Log.w(TAG, "switch_end=" + want + ": " + e);
+        }
+        if (a2dp) codec48k();
+    }
+
+    /**
+     * The A2DP stream at 48 kHz: the mt5889 HAL's loopback writes its 48 kHz DSP output into the Bluetooth stream, and
+     * with Android's default SBC 44.1 kHz the speaker played it slow and low (owner 2026-10-24: "slow motion, another
+     * pitch"). SBC sinks must support 48 kHz; a codec preference the sink cannot take is ignored by the stack.
+     */
+    private static void codec48k() {
+        try {
+            android.bluetooth.BluetoothManager bm = sApp.getSystemService(android.bluetooth.BluetoothManager.class);
+            android.bluetooth.BluetoothAdapter ad = bm == null ? null : bm.getAdapter();
+            if (ad == null) return;
+            ad.getProfileProxy(sApp, new android.bluetooth.BluetoothProfile.ServiceListener() {
+                @Override public void onServiceConnected(int profile, android.bluetooth.BluetoothProfile proxy) {
+                    try {
+                        android.bluetooth.BluetoothA2dp a2dp = (android.bluetooth.BluetoothA2dp) proxy;
+                        for (android.bluetooth.BluetoothDevice d : a2dp.getConnectedDevices()) {
+                            android.bluetooth.BluetoothCodecStatus st = a2dp.getCodecStatus(d);
+                            android.bluetooth.BluetoothCodecConfig cur = st == null ? null : st.getCodecConfig();
+                            if (cur != null && cur.getSampleRate() == android.bluetooth.BluetoothCodecConfig.SAMPLE_RATE_48000) {
+                                Log.i(TAG, "A2DP codec already 48 kHz: " + cur);
+                                continue;
+                            }
+                            android.bluetooth.BluetoothCodecConfig want = new android.bluetooth.BluetoothCodecConfig.Builder()
+                                    .setCodecType(cur != null ? cur.getCodecType()
+                                            : android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC)
+                                    .setCodecPriority(android.bluetooth.BluetoothCodecConfig.CODEC_PRIORITY_HIGHEST)
+                                    .setSampleRate(android.bluetooth.BluetoothCodecConfig.SAMPLE_RATE_48000)
+                                    .setBitsPerSample(android.bluetooth.BluetoothCodecConfig.BITS_PER_SAMPLE_16)
+                                    .setChannelMode(android.bluetooth.BluetoothCodecConfig.CHANNEL_MODE_STEREO)
+                                    .build();
+                            a2dp.setCodecConfigPreference(d, want);
+                            Log.i(TAG, "A2DP codec: was " + cur + ", asked 48 kHz");
+                        }
+                    } catch (Throwable t) {
+                        Log.w(TAG, "A2DP codec 48 kHz: " + t);
+                    } finally {
+                        ad.closeProfileProxy(android.bluetooth.BluetoothProfile.A2DP, proxy);
+                    }
+                }
+                @Override public void onServiceDisconnected(int profile) { }
+            }, android.bluetooth.BluetoothProfile.A2DP);
+        } catch (Throwable t) {
+            Log.w(TAG, "A2DP codec 48 kHz: " + t);
         }
     }
 
@@ -117,6 +223,7 @@ public final class BtAudio {
     private static void resync(AudioManager am, String why) {
         Log.i(TAG, "sink again (" + why + ")");
         sSink = -2;                                            // neither path: the next sink() always sends
+        sPath = -2;
         sink(am, am.getDevicesForAttributes(MEDIA));
     }
 
