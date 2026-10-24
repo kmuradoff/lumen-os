@@ -112,6 +112,19 @@ public final class Play6ZoomShiftPanel extends Panel {
 
     static boolean isOpen() { return sOpen != null; }
 
+    /**
+     * KeyReceiver, main thread: the remote's gear key while the card is open works as stock's MENU (the gear is a
+     * global key, so the card's window never sees it). True = taken (the quick panel does not open).
+     */
+    public static boolean onMenuKey(KeyEvent ev) {
+        Play6ZoomShiftPanel p = sOpen;
+        if (p == null || !p.isShowing()) return false;
+        if (ev.getAction() == KeyEvent.ACTION_UP && !ev.isCanceled() && p.state == READY) {
+            p.showMenu(p.menu.getVisibility() != View.VISIBLE);
+        }
+        return true;
+    }
+
     /** The zoom replies were found unusable in this process (row hidden). */
     static boolean isUnsupported() { return sUnsupported; }
 

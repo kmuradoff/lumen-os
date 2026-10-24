@@ -177,6 +177,7 @@ public final class Play6Gmpf extends HidlCaller {
     private static final int GET_DTS_EFFECTS_ENABLE = 43;            // tsv:getDtsEffectsEnable W= R=bool
     private static final int SET_PEQ = 50;                           // tsv:SetPEQ W=i32,i32,i32,i32 R=i32
     private static final int SET_PEQ_ENABLE = 51;                    // tsv:SetPEQEnable W=bool R=i32
+    private static final int SET_AUDIO_OUTPUT = 59;                  // tsv:setAudioOutput W=u8 R=
     private static final int GET_AUDIO_OUTPUT = 60;                  // tsv:getAudioOutput W= R=u8
     // projection, eye protection
     private static final int GET_HUMAN_DETECT = 151;                 // tsv:getHumanDetectOnOff W= R=bool
@@ -256,6 +257,13 @@ public final class Play6Gmpf extends HidlCaller {
     public static final int AUDIO_OUTPUT_SPEAKER = 0;         // value
 
     /** getCurrentInputSource replies (stock): 0 media / storage, 1 HDMI (the Play 6 has one port, ARC). */
+    // 59 setAudioOutput paths (EN_XGIMI_AUDIO_PATH, the Z9X GmpfClient.AudioPath set): never 1 (SPDIF) or 7..13
+    public static final int AUDIO_PATH_SPEAKER = 0;           // value
+    public static final int AUDIO_PATH_ARC = 2;               // value
+    public static final int AUDIO_PATH_A2DP = 3;              // value
+    public static final int AUDIO_PATH_WIRED = 4;             // value
+    public static final int AUDIO_PATH_USB = 6;               // value
+    public static final int AUDIO_PATH_SWITCHING = 100;       // value
     public static final int SOURCE_MEDIA = 0, SOURCE_HDMI1 = 1;   // value 696 replies, 698 sources
     // the full 1920 x 1080 panel for 659 (stock player signalIn, full window; HDMI fallback only)
     private static final int AREA_ORIGIN = 0;                 // value 659 left / top
@@ -826,6 +834,17 @@ public final class Play6Gmpf extends HidlCaller {
 
     /** 43 getDtsEffectsEnable(). */
     public boolean getDtsEffects() throws RemoteException { return callRetBool(GET_DTS_EFFECTS_ENABLE); }
+
+    /**
+     * Lumen 1.0.6: 59 setAudioOutput(u8 path), the stock audioserver's report of the media output (libxgimiaudiopolicy
+     * setXgimiPath; the Z9X sends it since v6.3.1). Msrv SetOutputType mutes / unmutes the amp per path: without it
+     * the Play 6 speaker kept playing at full level next to a Bluetooth speaker (device test 2026-10-24).
+     * 100 = switching (every TV path muted until the next path). Caller: audio.BtAudio only (HAL thread).
+     */
+    public void setAudioOutput(int path) throws RemoteException {
+        callU8(SET_AUDIO_OUTPUT, checkSet("audio path", path, AUDIO_PATH_SPEAKER, AUDIO_PATH_ARC, AUDIO_PATH_A2DP,
+                AUDIO_PATH_WIRED, AUDIO_PATH_USB, AUDIO_PATH_SWITCHING));
+    }
 
     /** 60 getAudioOutput() -> the vendor's output path (0 speaker). */
     public int getAudioOutput() throws RemoteException { return callRetU8(GET_AUDIO_OUTPUT); }
