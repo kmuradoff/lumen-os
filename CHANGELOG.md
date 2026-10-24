@@ -3,6 +3,45 @@
 Сверху новые версии. Версии 1.0.x выходят для XGIMI Z9X, у XGIMI Play 6 свои записи с пометкой Play 6.
 [English below](#english).
 
+## 1.0.6, октябрь 2026
+
+Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
+
+- Bluetooth-колонки и наушники: звук идёт в колонку (раньше подключённая колонка могла молчать), а при
+  переключении обратно на проектор звук возвращается сразу.
+- Громкость синхронизируется с колонкой в обе стороны: кнопки пульта меняют громкость самой колонки, а её
+  кнопки меняют громкость на проекторе. Колонку, подключённую до обновления, может понадобиться удалить из
+  списка Bluetooth и подключить заново.
+- Lumen Home, «Файлы → Сетевые папки»: общие папки компьютера или NAS (Windows, Mac, Linux, Synology и другие)
+  по адресу, логину и паролю. Видео, музыка и фото открываются прямо с сервера, файл подкачивается заранее,
+  чтобы фильм не ждал сеть. SMB 2 и 3, включая шифрование.
+- Lumen Play 1.1 (обновляется сам, отдельно от системы): Dolby Vision как в Kodi, продолжение сериалов с
+  следующей серии, пауза с кнопок Bluetooth-колонки, быстрее торренты, плеер не зависает после сна и при
+  отключении колонки.
+
+## XGIMI Play 6, 1.0.6, октябрь 2026
+
+Ставится тем же установщиком, `--keep-data flash` сохраняет данные. Первая версия Play 6 после беты 1.
+
+- Всё, что есть в стоковых настройках Play 6, теперь есть и в Lumen, кроме того, что работает только через
+  облако XGIMI. Список по пунктам: [docs/play6/TASKS.md](docs/play6/TASKS.md).
+- Зум и сдвиг картинки как на стоке: стрелки двигают, кнопки громкости меняют размер, шестерёнка открывает
+  «Сброс» (полная картинка по центру). После сдвига картинку снова можно увеличить до полного размера.
+- Поворот изображения без задержек, шумоподавление, гамма, динамический и локальный контраст, цветовая
+  температура с усилением R, G и B, сброс трапеции как на стоке.
+- Bluetooth-колонки и наушники: звук идёт ровно и с нужной скоростью, динамик проектора при этом молчит,
+  громкость синхронизируется с колонкой. «Звук → Вывод звука»: динамик проектора или Bluetooth.
+- «Колонка и свет»: один режим, как у XGIMI. Проектор светится цветом, а телефон может играть на нём музыку
+  по Bluetooth. Кнопка-ярлык на пульте включает режим, повторное нажатие меняет цвет. Пока проектор закрыт,
+  «Назад» свет не выключает.
+- Магнитные линзы (луна, мечта, рябь, закат): поставьте линзу, и проектор покажет её картинки и видео с музыкой
+  из стоковой прошивки. Влево и вправо листают, вверх и вниз меняют яркость.
+- Сетевые папки в «Файлах», как на Z9X.
+- Эквалайзер и пресеты звука, как на стоке. Новый Lumen Home и бегущая строка для длинных названий.
+- Голосовой ассистент, как на Z9X (нужен распознаватель речи Google).
+- Переключатели в «Установка неизвестных приложений» и похожих экранах настроек теперь двигаются.
+- Кнопка питания гасит только лампу. Глубокий сон выключен: выход из него на Play 6 был холодным стартом.
+
 ## 1.0.5, октябрь 2026
 
 Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
@@ -162,6 +201,44 @@ HDMI, заставка, 3D и оптический зум. На 1.0.2 обнов
 <a name="english"></a>
 
 Newest first. Versions 1.0.x are for the XGIMI Z9X; the XGIMI Play 6 has its own entries marked Play 6.
+
+## 1.0.6, October 2026
+
+The update arrives over Wi-Fi: Settings > About > Lumen OS update. Your data stays.
+
+- Bluetooth speakers and headphones: the sound goes to the speaker (a connected speaker could stay silent before),
+  and switching back to the projector brings the sound back at once.
+- The volume follows the speaker both ways: the remote changes the speaker's own volume and the speaker's buttons
+  change it on the projector. A speaker paired before the update may need to be removed and paired again.
+- Lumen Home, Files > Network folders: shared folders of a computer or a NAS (Windows, Mac, Linux, Synology and
+  others) by address, login and password. Videos, music and photos open straight from the server, the file is
+  read ahead so a film does not wait for the network. SMB 2 and 3, encryption included.
+- Lumen Play 1.1 (updates itself, apart from the system): Dolby Vision as in Kodi, series continue with the next
+  episode, pause from the Bluetooth speaker's buttons, faster torrents, no freeze after sleep or when the speaker
+  disconnects.
+
+## XGIMI Play 6, 1.0.6, October 2026
+
+Installs with the same installer; `--keep-data flash` keeps your data. The first Play 6 version after beta 1.
+
+- Everything in the Play 6 stock settings is now in Lumen too, except what only works through XGIMI's cloud.
+  The item-by-item list: [docs/play6/TASKS.md](docs/play6/TASKS.md).
+- Zoom and shift as on stock: the arrows move, the volume keys change the size, the gear opens Reset (the full
+  picture in the centre). After a move the picture grows back to full size.
+- Picture rotation without lag, noise reduction, gamma, dynamic and local contrast, colour temperature with R, G
+  and B gain, keystone reset as on stock.
+- Bluetooth speakers and headphones: smooth sound at the right speed, the projector speaker stays silent, the
+  volume follows the speaker. Sound > Sound output: the projector speaker or Bluetooth.
+- Ambient speaker: one mode, as on XGIMI. The projector glows in colour and a phone can play music to it over
+  Bluetooth. The remote's shortcut key starts it, pressing again changes the colour. While the projector is
+  closed, Back does not turn the light off.
+- Magnetic lenses (lunar, dreamscape, ripple, sunset): put a lens on and the projector shows its pictures and
+  videos with music from the stock firmware. Left and right change the item, up and down the brightness.
+- Network folders in Files, as on the Z9X.
+- Equalizer and sound presets, as on stock. The new Lumen Home and scrolling long names.
+- The voice assistant, as on the Z9X (needs Google's speech recognizer).
+- The switches of Install unknown apps and similar settings screens now move.
+- The power button turns off only the lamp. Deep sleep is off: waking from it was a cold start on the Play 6.
 
 ## 1.0.5, October 2026
 

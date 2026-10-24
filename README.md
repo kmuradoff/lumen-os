@@ -8,16 +8,15 @@ Android TV 14 for XGIMI projectors, built on LineageOS 21.
 
 | Projector | Status | Latest release | Install guide |
 |---|---|---|---|
-| XGIMI Z9X | stable | [Lumen OS 1.0.5](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.5) | [English](docs/install/en.md), [Русский](docs/install/ru.md) |
-| XGIMI Play 6 | beta | [Play 6 beta 1](https://github.com/kmuradoff/lumen-os/releases/tag/play6-beta1) (pre-release) | [English](docs/install/en.md#play6), [Русский](docs/install/ru.md#play6) |
+| XGIMI Z9X | stable | [Lumen OS 1.0.6](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.6) | [English](docs/install/en.md), [Русский](docs/install/ru.md) |
+| XGIMI Play 6 | stable | [Lumen OS 1.0.6 for the Play 6](https://github.com/kmuradoff/lumen-os/releases/tag/play6-1.0.6) | [English](docs/install/en.md#play6), [Русский](docs/install/ru.md#play6) |
 
 Each projector has its own release files, signed with its own key. The installer refuses an image for
 another projector and any XGIMI firmware it does not know.
 
 - XGIMI Z9X (model code G0082): XGIMI firmware V6.15.58, V6.15.62 or V6.15.19. Updates come over Wi-Fi.
-- XGIMI Play 6 (model code G0058): XGIMI firmware V1.7.116, no other version. This is a beta: install it
-  if you are ready to test and report back. A new version goes on with the installer over the USB cable
-  and keeps your data. Updates over Wi-Fi come later.
+- XGIMI Play 6 (model code G0058): XGIMI firmware V1.7.116, no other version. A new version goes on with
+  the installer over the USB cable and keeps your data. Updates over Wi-Fi come later.
 - XGIMI Play 6: Google services are not in the image and cannot be added yet. As on the Z9X, they are
   planned as an add-on that you make from your own MindTheGapps download.
 
@@ -50,8 +49,9 @@ On the Z9X the interface runs at 1080p.
 - Files: the projector's storage and USB sticks, a built-in player, and any `.apk` installs from there.
 - No ads and no Google services running in the background. At most 10 apps are kept cached.
 
-This list is for the Z9X. The Play 6 beta has Lumen Home, its own projector app, the HDMI input and the
-first setup, but no AirPlay receiver, no updates over Wi-Fi and no Google services yet.
+This list is for the Z9X. The Play 6 has Lumen Home, its own projector app with every stock setting, the HDMI
+input, the voice assistant and the first setup, but no AirPlay receiver, no updates over Wi-Fi and no Google
+services yet.
 
 Nothing about you is collected. The system goes online only for the time zone and city (ip-api.com over
 plain HTTP, ipapi.co or ipwho.is), the weather (Open-Meteo) and updates (GitHub).
@@ -74,8 +74,7 @@ computer over Wi-Fi and needs the cable only for the write itself.
 - [Инструкция по установке](docs/install/ru.md), для Play 6 [свой раздел](docs/install/ru.md#play6)
 
 Download only from this repository's [Releases](https://github.com/kmuradoff/lumen-os/releases). The
-release marked Latest is for the Z9X. The Play 6 release has a tag that starts with `play6-` and is
-marked Pre-release. Every release has `SHA256SUMS` and `SHA256SUMS.sig`; the installer checks both and
+release marked Latest is for the Z9X. The Play 6 release has a tag that starts with `play6-`. Every release has `SHA256SUMS` and `SHA256SUMS.sig`; the installer checks both and
 refuses anything else. Copies on forums and file hosts are not ours.
 
 ## Updates and going back
