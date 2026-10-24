@@ -1,0 +1,101 @@
+Lumen OS: A2DP SBC fed at 48 kHz and resampled to 44.1 kHz (Play 6 base only).
+
+The XGIMI Play 6 audio HAL (audio.primary.mt5889) plays A2DP itself: a loopback copies its 48 kHz DSP output into
+the Bluetooth stream and never resamples, while speakers often take SBC at 44.1 kHz only (the owner's Yandex
+Station closes a 48 kHz SBC stream right after it starts). The music played about 8 % slow and skipped ahead every
+few seconds (owner 2026-10-24). Now SBC at 44.1 kHz reports a 48 kHz PCM stream to the audio HAL, the SBC encoder
+is fed at 48 kHz and a2dp_sbc_read_feeding resamples it with a new down-sampler (linear interpolation; the AOSP
+up-sampler emits at least one sample per input and cannot lower the rate).
+
+diff -ruN a/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_encoding_hidl.cc b/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_encoding_hidl.cc
+--- a/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_encoding_hidl.cc	2026-10-24 13:48:10.576084100 +0300
++++ b/packages/modules/Bluetooth/system/audio_hal_interface/hidl/a2dp_encoding_hidl.cc	2026-10-24 13:48:10.577333792 +0300
+@@ -308,6 +308,11 @@
+ 
+   btav_a2dp_codec_config_t current_codec = a2dp_codec_configs->getCodecConfig();
+   pcm_config->sampleRate = A2dpCodecToHalSampleRate(current_codec);
++  // Lumen OS (Play 6): SBC at 44.1 kHz is fed at 48 kHz (see a2dp_sbc_encoder_update)
++  if (current_codec.codec_type == BTAV_A2DP_CODEC_INDEX_SOURCE_SBC &&
++      pcm_config->sampleRate == SampleRate::RATE_44100) {
++    pcm_config->sampleRate = SampleRate::RATE_48000;
++  }
+   pcm_config->bitsPerSample = A2dpCodecToHalBitsPerSample(current_codec);
+   pcm_config->channelMode = A2dpCodecToHalChannelMode(current_codec);
+   return (pcm_config->sampleRate != SampleRate::RATE_UNKNOWN &&
+diff -ruN a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_encoder.cc b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_encoder.cc
+--- a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_encoder.cc	2026-10-24 13:48:10.574111397 +0300
++++ b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_encoder.cc	2026-10-24 13:48:10.576924724 +0300
+@@ -182,6 +182,10 @@
+   // The feeding parameters
+   tA2DP_FEEDING_PARAMS* p_feeding_params = &a2dp_sbc_encoder_cb.feeding_params;
+   p_feeding_params->sample_rate = A2DP_GetTrackSampleRateSbc(p_codec_info);
++  // Lumen OS (Play 6): the vendor audio HAL feeds the A2DP stream from its 48 kHz DSP and never resamples, and
++  // speakers often take SBC at 44.1 kHz only. The stream is then fed at 48 kHz (the HAL PCM config says so too,
++  // a2dp_encoding_hidl.cc) and a2dp_sbc_read_feeding resamples it to the SBC rate.
++  if (p_feeding_params->sample_rate == 44100) p_feeding_params->sample_rate = 48000;
+   p_feeding_params->bits_per_sample =
+       a2dp_codec_config->getAudioBitsPerSample();
+   p_feeding_params->channel_count = A2DP_GetTrackChannelCountSbc(p_codec_info);
+diff -ruN a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_up_sample.cc b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_up_sample.cc
+--- a/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_up_sample.cc	2026-10-24 13:48:10.575518515 +0300
++++ b/packages/modules/Bluetooth/system/stack/a2dp/a2dp_sbc_up_sample.cc	2026-10-24 13:48:10.577624826 +0300
+@@ -145,6 +145,47 @@
+  *                  The number of bytes used in p_src (in *p_ret)
+  *
+  ******************************************************************************/
++/*
++ * Lumen OS (Play 6): down-sampling, 16 bit stereo (48 kHz feeding to 44.1 kHz SBC), linear interpolation. The
++ * up-sampler below emits at least one output per input sample, so it cannot lower the rate. The state lives here,
++ * not in a2dp_sbc_ups_cb: a2dp_sbc_read_feeding initialises the up-sampler before every read.
++ */
++static int lumen_down_sample_16s(const int16_t* src, int16_t* dst, uint32_t src_samples,
++                                 uint32_t dst_samples, uint32_t src_sps, uint32_t dst_sps,
++                                 uint32_t* p_ret) {
++  static int16_t prev_l = 0, prev_r = 0;
++  static double pos = 1.0;  // next output, in input samples: 0 = prev, k = src[k - 1]
++  static uint32_t last_src = 0, last_dst = 0;
++  if (last_src != src_sps || last_dst != dst_sps) {
++    last_src = src_sps;
++    last_dst = dst_sps;
++    prev_l = prev_r = 0;
++    pos = 1.0;
++  }
++  const double step = (double)src_sps / (double)dst_sps;
++  uint32_t out = 0;
++  while (out < dst_samples) {
++    uint32_t i = (uint32_t)pos;
++    if (i >= src_samples) break;
++    double f = pos - i;
++    int32_t al = i == 0 ? prev_l : src[2 * (i - 1)];
++    int32_t ar = i == 0 ? prev_r : src[2 * (i - 1) + 1];
++    int32_t bl = src[2 * i], br = src[2 * i + 1];
++    dst[2 * out] = (int16_t)(al + (int32_t)((bl - al) * f));
++    dst[2 * out + 1] = (int16_t)(ar + (int32_t)((br - ar) * f));
++    out++;
++    pos += step;
++  }
++  if (src_samples > 0) {
++    prev_l = src[2 * (src_samples - 1)];
++    prev_r = src[2 * (src_samples - 1) + 1];
++    pos -= src_samples;
++    if (pos < 0) pos = 0;
++  }
++  *p_ret = src_samples * 4;
++  return out * 4;
++}
++
+ int a2dp_sbc_up_sample_16s(void* p_src, void* p_dst, uint32_t src_samples,
+                            uint32_t dst_samples, uint32_t* p_ret) {
+   int16_t* p_src_tmp = (int16_t*)p_src;
+@@ -154,6 +195,11 @@
+   uint32_t src_sps = a2dp_sbc_ups_cb.src_sps;
+   uint32_t dst_sps = a2dp_sbc_ups_cb.dst_sps;
+ 
++  if (src_sps > dst_sps) {
++    return lumen_down_sample_16s(p_src_tmp, p_dst_tmp, src_samples, dst_samples, src_sps,
++                                 dst_sps, p_ret);
++  }
++
+   while (a2dp_sbc_ups_cb.cur_pos > 0 && dst_samples) {
+     *p_dst_tmp++ = *p_worker1;
+     *p_dst_tmp++ = *p_worker2;

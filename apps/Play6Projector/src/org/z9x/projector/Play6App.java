@@ -179,6 +179,8 @@ public final class Play6App {
         // owner 2026-10-21: the equalizer's re-apply triggers (no HAL call here)
         step("P6SoundEq.install", () -> org.z9x.projector.audio.P6SoundEq.install(app));
         step("SpeakerMode.installLidTrigger", () -> org.z9x.projector.speaker.SpeakerMode.installLidTrigger(app));
+        // connected hook + screen hooks (no HAL call here): the magnetic lens mode, IGmpf2 84 / 75 polled while lit
+        step("LensWatcher.install", () -> org.z9x.projector.lens.LensWatcher.install(app));
         // connected hook, power event hook, screen hooks (no HAL call here): the battery, plan 3.2
         step("Battery.install", () -> Battery.install(app));
         // Lumen 1.0.5: Bluetooth headphones get the media route and a non-zero vendor A2DP volume (no HAL call)

@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK: تشغيل / إيقاف مؤقت · يسار / يمين: المقطع السابق / التالي · أزرار الصوت: مستوى الصوت · رجوع: الخروج من وضع مكبّر الصوت</string>
     <string name="p6_spk_ending">جارٍ الخروج من وضع مكبّر الصوت…</string>
     <string name="p6_spk_failed">تعذّر تشغيل وضع مكبّر الصوت. تعمل سماعات Bluetooth كما كانت.</string>
-    <string name="p6_tile_speaker">مكبّر الصوت</string>
-    <string name="p6_spk_page">مكبّر الصوت والإضاءة المحيطة</string>
+    <string name="p6_tile_speaker">مكبر الصوت المحيطي</string>
+    <string name="p6_spk_page">مكبر الصوت المحيطي</string>
+    <string name="p6_ambsp_on">تشغيل</string>
+    <string name="p6_amb_desc_one">تنطفئ الصورة ويتوهج جهاز العرض بضوء ملون هادئ، ويمكن لهاتفك تشغيل الموسيقى عليه عبر Bluetooth ‏(«XGIMI Play 6»). أعلى / أسفل: اللون · يسار / يمين: المقطع · OK: تشغيل / إيقاف مؤقت · رجوع: خروج. اضغط مطولاً على OK في البلاطة لهذه الإعدادات.</string>
     <string name="p6_amb_c_none">لا شيء</string>
     <string name="p6_lid">عند الإغلاق</string>
     <string name="p6_lid_off">إيقاف التشغيل</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">سماعات الرأس</string>
     <string name="sound_output_usb">صوت USB</string>
+    <string name="p6_lens_lunar">القمر</string>
+    <string name="p6_lens_dreamscape">عالم الأحلام</string>
+    <string name="p6_lens_ripple">تموّج</string>
+    <string name="p6_lens_sunset">الغروب</string>
+    <string name="p6_lens_other">مرشح إبداعي</string>
+    <string name="p6_lens_hint">يسار / يمين: الصورة · أعلى / أسفل: السطوع · رجوع: خروج</string>
+    <string name="p6_lens_missing">صور هذه العدسة غير متوفرة.</string>
 </resources>

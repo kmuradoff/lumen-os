@@ -151,6 +151,7 @@ public final class SpeakerMode extends Panel {
                         BluetoothDevice d = i.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice.class);
                         if (st != BluetoothProfile.STATE_CONNECTED || d == null || sActive != null) return;
                         if (!org.z9x.projector.KeyReceiver.isSetupComplete(app) || StandbyController.isActive()) return;
+                        if (org.z9x.projector.lens.LensMode.isActive()) { Log.i(TAG, "lens mode on: no speaker mode"); return; }
                         Log.i(TAG, "a phone connected as A2DP source (" + d.getAddress() + "): speaker mode, as stock");
                         SpeakerMode p = open(app, false, d);
                         if (p == null) Log.i(TAG, "speaker mode not opened");
@@ -173,6 +174,35 @@ public final class SpeakerMode extends Panel {
     }
 
     /**
+     * Main thread, Lumen 1.0.6: the one "Ambient speaker" mode of the quick panel tile, as stock (stock has no night
+     * light of its own: its ambient speaker is the coloured light plus the Bluetooth speaker, research 2026-10-24).
+     * The light at once, as when the projector is closed, and a phone can connect as to a speaker; colour "None" =
+     * the picture off. Without the image's A2DP sink role: the light alone.
+     */
+    /**
+     * Main thread, the remote's shortcut key (stock "ambient light switch", the Play 6 default): the mode is on with its
+     * light: the next colour (as UP in the mode); otherwise the ambient speaker starts.
+     */
+    /** The remote's shortcut key (overlay/play6/keylayout: scancode 184 sent as TV_SATELLITE_SERVICE). */
+    public static boolean isShortcutKey(android.view.KeyEvent ev) { return ev != null && ev.getScanCode() == 184; }
+
+    public static void shortcutKey(Context ctx) {
+        SpeakerMode cur = sActive;
+        if (cur != null && cur.ambient != null) { cur.ambient.nextColor(); return; }
+        if (AmbientLight.isOpen()) { AmbientLight.nextColorShown(); return; }
+        if (cur != null) return;                                     // speaker mode without its light: leave it
+        openAmbient(ctx);
+    }
+
+    public static void openAmbient(Context ctx) {
+        Context app = ctx.getApplicationContext();
+        if (sActive != null || AmbientLight.isOpen()) return;
+        if (org.z9x.projector.lens.LensWatcher.isLensIn()) { Log.i(TAG, "a lens is in: no ambient speaker (stock)"); return; }
+        if (!supported()) { AmbientLight.open(app); return; }
+        open(app, true, null);
+    }
+
+    /**
      * The stock ambient speaker (stock parity 2026-10-21): the vendor reports closing the projector as IGmpf 227
      * event type 4 status 1 (only while IGmpf2 70 says "ambient speaker"; with "shut down" the vendor powers off by
      * itself) and opening as type 4 with another status (stock XRM MachineStateService; the same event twice is
@@ -192,6 +222,12 @@ public final class SpeakerMode extends Panel {
                 lastKey = keycode;
                 lastStatus = status;
                 if (status == LID_CLOSED) onLidClosed(app); else onLidOpened(app);
+            }
+        });
+        // a lens taken off while the projector is closed: the ambient speaker again, as stock
+        org.z9x.projector.lens.LensMode.addOnLensRemoved(() -> {
+            if (sLidClosed && sActive == null && !AmbientLight.isOpen() && org.z9x.projector.KeyReceiver.isSetupComplete(app)) {
+                if (supported()) open(app, true, null); else AmbientLight.open(app);
             }
         });
     }
@@ -367,6 +403,7 @@ public final class SpeakerMode extends Panel {
                 root.addView(ambient, 0, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT));
                 ambient.start();
+                AmbientLight.holdLevel(app, true);                       // the ambient brightness choice
                 Log.i(TAG, "ambient light on");
             }
             card.setVisibility(View.GONE);
@@ -386,6 +423,7 @@ public final class SpeakerMode extends Panel {
             ambient.stop();
             root.removeView(ambient);
             ambient = null;
+            AmbientLight.holdLevel(app, false);
         }
         if (!lampOff) return;
         lampOff = false;
@@ -559,7 +597,7 @@ public final class SpeakerMode extends Panel {
             try { app.unregisterReceiver(bt); } catch (Throwable ignored) { }
             receivers = false;
         }
-        if (ambient != null) ambient.stop();
+        if (ambient != null) { ambient.stop(); AmbientLight.holdLevel(app, false); }
         if (lampOff && !StandbyController.isActive()) {
             lampOff = false;
             Lamp.on("speaker end", on -> {

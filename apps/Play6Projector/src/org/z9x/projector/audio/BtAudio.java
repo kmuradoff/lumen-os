@@ -187,53 +187,11 @@ public final class BtAudio {
         } catch (Throwable e) {
             Log.w(TAG, "switch_end=" + want + ": " + e);
         }
-        if (a2dp) codec48k();
     }
 
-    /**
-     * The A2DP stream at 48 kHz: the mt5889 HAL's loopback writes its 48 kHz DSP output into the Bluetooth stream, and
-     * with Android's default SBC 44.1 kHz the speaker played it slow and low (owner 2026-10-24: "slow motion, another
-     * pitch"). SBC sinks must support 48 kHz; a codec preference the sink cannot take is ignored by the stack.
-     */
-    private static void codec48k() {
-        try {
-            android.bluetooth.BluetoothManager bm = sApp.getSystemService(android.bluetooth.BluetoothManager.class);
-            android.bluetooth.BluetoothAdapter ad = bm == null ? null : bm.getAdapter();
-            if (ad == null) return;
-            ad.getProfileProxy(sApp, new android.bluetooth.BluetoothProfile.ServiceListener() {
-                @Override public void onServiceConnected(int profile, android.bluetooth.BluetoothProfile proxy) {
-                    try {
-                        android.bluetooth.BluetoothA2dp a2dp = (android.bluetooth.BluetoothA2dp) proxy;
-                        for (android.bluetooth.BluetoothDevice d : a2dp.getConnectedDevices()) {
-                            android.bluetooth.BluetoothCodecStatus st = a2dp.getCodecStatus(d);
-                            android.bluetooth.BluetoothCodecConfig cur = st == null ? null : st.getCodecConfig();
-                            if (cur != null && cur.getSampleRate() == android.bluetooth.BluetoothCodecConfig.SAMPLE_RATE_48000) {
-                                Log.i(TAG, "A2DP codec already 48 kHz: " + cur);
-                                continue;
-                            }
-                            android.bluetooth.BluetoothCodecConfig want = new android.bluetooth.BluetoothCodecConfig.Builder()
-                                    .setCodecType(cur != null ? cur.getCodecType()
-                                            : android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC)
-                                    .setCodecPriority(android.bluetooth.BluetoothCodecConfig.CODEC_PRIORITY_HIGHEST)
-                                    .setSampleRate(android.bluetooth.BluetoothCodecConfig.SAMPLE_RATE_48000)
-                                    .setBitsPerSample(android.bluetooth.BluetoothCodecConfig.BITS_PER_SAMPLE_16)
-                                    .setChannelMode(android.bluetooth.BluetoothCodecConfig.CHANNEL_MODE_STEREO)
-                                    .build();
-                            a2dp.setCodecConfigPreference(d, want);
-                            Log.i(TAG, "A2DP codec: was " + cur + ", asked 48 kHz");
-                        }
-                    } catch (Throwable t) {
-                        Log.w(TAG, "A2DP codec 48 kHz: " + t);
-                    } finally {
-                        ad.closeProfileProxy(android.bluetooth.BluetoothProfile.A2DP, proxy);
-                    }
-                }
-                @Override public void onServiceDisconnected(int profile) { }
-            }, android.bluetooth.BluetoothProfile.A2DP);
-        } catch (Throwable t) {
-            Log.w(TAG, "A2DP codec 48 kHz: " + t);
-        }
-    }
+    // Lumen 1.0.6: no codec preference from here any more. Asking SBC for 48 kHz made the Yandex Station renegotiate
+    // and close the stream; the Play 6 base feeds SBC at 48 kHz and resamples to 44.1 kHz itself (lineage patch
+    // 0005), so the speaker keeps its own choice.
 
     /** p6-btaudio thread: the path again when it is not the speaker (the vendor's own state then). */
     private static void resend(AudioManager am, String why) {

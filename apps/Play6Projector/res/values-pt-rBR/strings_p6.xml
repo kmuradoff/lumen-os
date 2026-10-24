@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK: reproduzir / pausar · Esquerda / Direita: faixa anterior / seguinte · Teclas de volume: volume · Voltar: sair do modo alto-falante</string>
     <string name="p6_spk_ending">Saindo do modo alto-falante…</string>
     <string name="p6_spk_failed">Não foi possível ligar o modo alto-falante. Os fones Bluetooth funcionam como antes.</string>
-    <string name="p6_tile_speaker">Alto-falante</string>
-    <string name="p6_spk_page">Alto-falante e luz ambiente</string>
+    <string name="p6_tile_speaker">Coluna ambiente</string>
+    <string name="p6_spk_page">Coluna ambiente</string>
+    <string name="p6_ambsp_on">Ligar</string>
+    <string name="p6_amb_desc_one">A imagem apaga-se e o projetor brilha com uma luz colorida suave; o telemóvel pode tocar música nele por Bluetooth («XGIMI Play 6»). Cima / baixo: cor · Esquerda / direita: faixa · OK: reproduzir / pausa · Voltar: sair. Mantenha OK no mosaico para estas definições.</string>
     <string name="p6_amb_c_none">Nenhuma</string>
     <string name="p6_lid">Ao fechar</string>
     <string name="p6_lid_off">Desligar</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">Fones de ouvido</string>
     <string name="sound_output_usb">Áudio USB</string>
+    <string name="p6_lens_lunar">Lua</string>
+    <string name="p6_lens_dreamscape">Sonho</string>
+    <string name="p6_lens_ripple">Ondulação</string>
+    <string name="p6_lens_sunset">Pôr do sol</string>
+    <string name="p6_lens_other">Filtro criativo</string>
+    <string name="p6_lens_hint">Esquerda / Direita: imagem · Cima / Baixo: brilho · Voltar: sair</string>
+    <string name="p6_lens_missing">As imagens desta lente não estão disponíveis.</string>
 </resources>

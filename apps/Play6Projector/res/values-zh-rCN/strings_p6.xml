@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK：播放 / 暂停 · 左 / 右：上一首 / 下一首 · 音量键：音量 · 返回：退出音箱模式</string>
     <string name="p6_spk_ending">正在退出音箱模式…</string>
     <string name="p6_spk_failed">无法开启音箱模式。蓝牙耳机照常可用。</string>
-    <string name="p6_tile_speaker">音箱</string>
-    <string name="p6_spk_page">音箱与氛围灯</string>
+    <string name="p6_tile_speaker">氛围音箱</string>
+    <string name="p6_spk_page">氛围音箱</string>
+    <string name="p6_ambsp_on">开启</string>
+    <string name="p6_amb_desc_one">画面熄灭，投影仪发出柔和的彩色灯光，手机可通过蓝牙在其上播放音乐（“XGIMI Play 6”）。上 / 下：颜色 · 左 / 右：曲目 · OK：播放 / 暂停 · 返回：退出。在磁贴上长按 OK 打开这些设置。</string>
     <string name="p6_amb_c_none">无</string>
     <string name="p6_lid">闭合时</string>
     <string name="p6_lid_off">关机</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">蓝牙</string>
     <string name="sound_output_wired">耳机</string>
     <string name="sound_output_usb">USB 音频</string>
+    <string name="p6_lens_lunar">月相</string>
+    <string name="p6_lens_dreamscape">柔光</string>
+    <string name="p6_lens_ripple">流光</string>
+    <string name="p6_lens_sunset">日落</string>
+    <string name="p6_lens_other">创意滤镜</string>
+    <string name="p6_lens_hint">左 / 右：画面 · 上 / 下：亮度 · 返回：退出</string>
+    <string name="p6_lens_missing">无法读取此镜头的画面。</string>
 </resources>

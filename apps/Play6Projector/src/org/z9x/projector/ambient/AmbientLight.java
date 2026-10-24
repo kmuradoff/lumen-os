@@ -199,6 +199,12 @@ public final class AmbientLight extends Panel {
         if (want > 0) Hal.run((g, g2) -> dim(app, g, want));
     }
 
+    /** The light window is shown: its next colour (the remote's shortcut key). Main thread. */
+    public static void nextColorShown() {
+        AmbientLight p = sOpen;
+        if (p != null && p.view != null) p.view.nextColor();
+    }
+
     /** Closes the ambient light if it is shown (the speaker mode, a HOME press). Main thread. */
     public static void close() {
         AmbientLight p = sOpen;
@@ -213,8 +219,27 @@ public final class AmbientLight extends Panel {
         final Context app = ctx.getApplicationContext();
         Hal.addConnectedListener(() -> {
             if (prefs(app).getInt(K_RESTORE, 0) == 0) return;
-            Hal.runDelayed((g, g2) -> { if (sOpen == null) restore(app, g, "connect"); }, RECOVER_DELAY_MS);
+            Hal.runDelayed((g, g2) -> { if (sOpen == null && !sHeldBySpeaker) restore(app, g, "connect"); }, RECOVER_DELAY_MS);
         });
+    }
+
+    /** The speaker mode shows its own ambient light and holds the brightness choice (main thread writes). */
+    private static volatile boolean sHeldBySpeaker;
+
+    /**
+     * Lumen 1.0.6, one "Ambient speaker" mode (stock parity, owner 2026-10-24): the speaker mode's ambient light uses
+     * the same brightness choice as this window. On: 176 to the chosen level when lower (marker first, as here); off:
+     * the level back when this window is not open either.
+     */
+    public static void holdLevel(Context ctx, boolean on) {
+        final Context app = ctx.getApplicationContext();
+        sHeldBySpeaker = on;
+        if (on) {
+            final int want = level(app);
+            if (want > 0) Hal.run((g, g2) -> dim(app, g, want));
+        } else if (sOpen == null && prefs(app).getInt(K_RESTORE, 0) != 0) {
+            Hal.run((g, g2) -> restore(app, g, "speaker light off"));
+        }
     }
 
     /** p6-hal: 177, then 176(want) only when want is lower; marker first. */
@@ -228,7 +253,7 @@ public final class AmbientLight extends Panel {
             prefs(app).edit().putInt(K_RESTORE, cur * 100 + want).commit();
             g.setLampLevel(want);                                        // 176
             Log.i(TAG, "brightness: 176(" + want + ") (was " + cur + "), 177 now " + g.getLampLevel());
-            if (sOpen == null) restore(app, g, "closed meanwhile");      // closed before this task ran
+            if (sOpen == null && !sHeldBySpeaker) restore(app, g, "closed meanwhile");   // closed before this ran
         } catch (Throwable t) {
             Log.w(TAG, "brightness: " + t);
         }
@@ -481,6 +506,12 @@ public final class AmbientLight extends Panel {
             Log.i(TAG, "color " + COLORS[color]);
             crossfade(shownColor());
             return true;
+        }
+
+        /** The remote's shortcut key: the next lit colour, as DOWN. */
+        public void nextColor() {
+            long t = SystemClock.uptimeMillis();
+            onKey(new KeyEvent(t, t, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_DOWN, 0));
         }
 
         public int color() { return color; }

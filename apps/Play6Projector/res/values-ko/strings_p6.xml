@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK: 재생 / 일시정지 · 왼쪽 / 오른쪽: 이전 / 다음 곡 · 볼륨 버튼: 볼륨 · 뒤로: 스피커 모드 종료</string>
     <string name="p6_spk_ending">스피커 모드를 종료하는 중…</string>
     <string name="p6_spk_failed">스피커 모드를 시작할 수 없습니다. 블루투스 헤드폰은 이전처럼 작동합니다.</string>
-    <string name="p6_tile_speaker">스피커</string>
-    <string name="p6_spk_page">스피커와 무드등</string>
+    <string name="p6_tile_speaker">앰비언트 스피커</string>
+    <string name="p6_spk_page">앰비언트 스피커</string>
+    <string name="p6_ambsp_on">켜기</string>
+    <string name="p6_amb_desc_one">화면이 꺼지고 프로젝터가 부드러운 색의 빛으로 빛나며, 휴대폰에서 Bluetooth로 음악을 재생할 수 있습니다(“XGIMI Play 6”). 위 / 아래: 색상 · 왼쪽 / 오른쪽: 트랙 · OK: 재생 / 일시정지 · 뒤로: 종료. 이 설정은 타일에서 OK를 길게 누르세요.</string>
     <string name="p6_amb_c_none">없음</string>
     <string name="p6_lid">닫을 때</string>
     <string name="p6_lid_off">전원 끄기</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">헤드폰</string>
     <string name="sound_output_usb">USB 오디오</string>
+    <string name="p6_lens_lunar">달</string>
+    <string name="p6_lens_dreamscape">꿈결</string>
+    <string name="p6_lens_ripple">물결</string>
+    <string name="p6_lens_sunset">일몰</string>
+    <string name="p6_lens_other">크리에이티브 필터</string>
+    <string name="p6_lens_hint">왼쪽 / 오른쪽: 사진 · 위 / 아래: 밝기 · 뒤로: 종료</string>
+    <string name="p6_lens_missing">이 렌즈의 이미지를 사용할 수 없습니다.</string>
 </resources>

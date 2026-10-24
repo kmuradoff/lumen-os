@@ -279,6 +279,8 @@ install -m 0644 "$IN/Vendor_000d_Product_3841.idc" "$S/product/usr/idc/Vendor_00
 # 1a. vendor compatibility (bind mounts at boot, vendor untouched): overlay/play6/play6_compat.rc
 install -m 0644 "$IN/play6_compat.rc" "$S/etc/init/play6_compat.rc"
 install -d -m 0755 "$S/etc/empty_dir"
+#     mount point of the stock starmirror folder for the magnetic lens mode (play6_compat.rc 2); stays empty here
+install -d -m 0755 "$S/etc/lumen_lens"
 #     always-on settings (BLE privacy off for the remote): overlay/play6/play6_base.rc
 install -m 0644 "$IN/play6_base.rc" "$S/etc/init/play6_base.rc"
 # 1. hide XGIMI's vendor apps, the Lumen framework values, the remote key map (framework config RRO)

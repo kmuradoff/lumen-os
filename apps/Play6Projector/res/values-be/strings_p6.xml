@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK: паўза / прайграванне · Улева / Управа: папярэдні / наступны трэк · Кнопкі гучнасці: гучнасць · Назад: выйсці з рэжыму калонкі</string>
     <string name="p6_spk_ending">Выхад з рэжыму калонкі…</string>
     <string name="p6_spk_failed">Не ўдалося ўключыць рэжым калонкі. Bluetooth-навушнікі працуюць як раней.</string>
-    <string name="p6_tile_speaker">Калонка</string>
-    <string name="p6_spk_page">Калонка і падсвятленне</string>
+    <string name="p6_tile_speaker">Калонка і святло</string>
+    <string name="p6_spk_page">Калонка і святло</string>
+    <string name="p6_ambsp_on">Уключыць</string>
+    <string name="p6_amb_desc_one">Выява гасне, праектар свеціцца мяккім каляровым святлом, а тэлефон можа граць на ім музыку праз Bluetooth («XGIMI Play 6»). Уверх / уніз: колер · Улева / управа: трэк · OK: паўза · Назад: выхад. Утрымлівайце OK на плітцы, каб адкрыць гэтыя налады.</string>
     <string name="p6_amb_c_none">Няма</string>
     <string name="p6_lid">Пры закрыцці</string>
     <string name="p6_lid_off">Выключыць</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">Навушнікі</string>
     <string name="sound_output_usb">USB-аўдыя</string>
+    <string name="p6_lens_lunar">Месяц</string>
+    <string name="p6_lens_dreamscape">Мары</string>
+    <string name="p6_lens_ripple">Рабізна</string>
+    <string name="p6_lens_sunset">Захад сонца</string>
+    <string name="p6_lens_other">Творчы фільтр</string>
+    <string name="p6_lens_hint">Улева / Управа: карцінка · Уверх / Уніз: яркасць · Назад: выхад</string>
+    <string name="p6_lens_missing">Карцінкі для гэтай лінзы недаступныя.</string>
 </resources>

@@ -5,6 +5,12 @@
 #    /vendor/priv-app (com.xgimi.appdb, com.xgimiui.api) and /vendor/app. A framework signed with another
 #    key aborts in PackageManager ("Signature mismatch on system package ... for shared user", t6 USB log),
 #    before any overlay can hide them, so both folders are hidden before the package scan.
+# 2) The magnetic lens mode of org.z9x.projector (lens/LensContent) reads the lens pictures and music straight from
+#    the stock app that ships them, /vendor/priv-app/release_838_starmirror. Before the hide, that one folder is
+#    bound onto the image's empty folder /system/etc/lumen_lens: the same vendor files (vendor_app_file, read only),
+#    nothing copied, and no folder the package manager scans. A vendor without it: the mount fails, the hide still
+#    runs (init goes on), the lens mode says its pictures are not available.
 on post-fs-data
+    mount none /vendor/priv-app/release_838_starmirror /system/etc/lumen_lens bind
     mount none /system/etc/empty_dir /vendor/app bind
     mount none /system/etc/empty_dir /vendor/priv-app bind

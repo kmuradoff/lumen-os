@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK: reproducir / pausa · Izquierda / Derecha: pista anterior / siguiente · Teclas de volumen: volumen · Atrás: salir del modo altavoz</string>
     <string name="p6_spk_ending">Saliendo del modo altavoz…</string>
     <string name="p6_spk_failed">No se pudo activar el modo altavoz. Los auriculares Bluetooth funcionan como antes.</string>
-    <string name="p6_tile_speaker">Altavoz</string>
-    <string name="p6_spk_page">Altavoz y luz ambiental</string>
+    <string name="p6_tile_speaker">Altavoz ambiental</string>
+    <string name="p6_spk_page">Altavoz ambiental</string>
+    <string name="p6_ambsp_on">Activar</string>
+    <string name="p6_amb_desc_one">La imagen se apaga y el proyector brilla con una luz de color suave; tu teléfono puede reproducir música en él por Bluetooth («XGIMI Play 6»). Arriba / abajo: color · Izquierda / derecha: pista · OK: reproducir / pausa · Atrás: salir. Mantén OK en el mosaico para estos ajustes.</string>
     <string name="p6_amb_c_none">Ninguno</string>
     <string name="p6_lid">Al cerrar</string>
     <string name="p6_lid_off">Apagar</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">Auriculares</string>
     <string name="sound_output_usb">Audio USB</string>
+    <string name="p6_lens_lunar">Luna</string>
+    <string name="p6_lens_dreamscape">Ensueño</string>
+    <string name="p6_lens_ripple">Ondas</string>
+    <string name="p6_lens_sunset">Atardecer</string>
+    <string name="p6_lens_other">Filtro creativo</string>
+    <string name="p6_lens_hint">Izquierda / Derecha: imagen · Arriba / Abajo: brillo · Atrás: salir</string>
+    <string name="p6_lens_missing">Las imágenes de esta lente no están disponibles.</string>
 </resources>
