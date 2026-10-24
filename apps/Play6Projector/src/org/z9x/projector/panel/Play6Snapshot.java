@@ -202,12 +202,17 @@ final class Play6Snapshot {
     }
 
     /** IGmpf2 130 parses and is plausible (Play6Gmpf2.getScreenRotation checks it): true; as probeZoom otherwise. */
+    /** A 130 parsed in this process: no further probe (each 130 reads the vendor's ToF sensor, about 0.8 s). */
+    private static volatile boolean sRotationProbed;
+
     private static Boolean probeRotation(Play6Gmpf2 g2) {
         if (Play6RotatePanel.isUnsupported()) return false;
+        if (sRotationProbed) return true;
         if (Play6AdjustSession.anyOpen()) return null;
         try {
             float[] r = g2.getScreenRotation();
             Log.i(TAG, "probe 130 -> " + java.util.Arrays.toString(r));
+            sRotationProbed = true;
             return true;
         } catch (Play6Gmpf2.ReplyException | Play6Gmpf2.AbsentException e) {
             Play6RotatePanel.markUnsupported("probe: " + e.getMessage());
