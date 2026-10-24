@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The TvSettings resources the overlay references. Values do not matter: the overlay only
+     stores references, and their ids come from ../ids.txt. -->
+<resources>
+    <style name="LeanbackPreference" />
+    <item type="id" name="switchWidget" />
+    <string name="v7_preference_on">On</string>
+    <string name="v7_preference_off">Off</string>
+</resources>

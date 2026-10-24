@@ -250,6 +250,7 @@ fi
 # ---- 6. rule S1 on everything that is staged
 IN=(
   "$G/build/play6/Play6FrameworkOverlay.apk"
+  "$G/build/play6/Play6TvSettingsOverlay.apk"
   "$G/build/play6/Play6Projector.apk"
   "$G/build/play6/signed/Z9xHome.apk"
   "$G/build/play6/signed/Z9xTvInput.apk"

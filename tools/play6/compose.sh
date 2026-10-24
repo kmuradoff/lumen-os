@@ -77,7 +77,7 @@ T=/work/$TAG
 S=$T/system
 IMG=$T/system_play6_$TAG.img
 export PATH=/out/host/linux-x86/bin:$PATH PYTHONDONTWRITEBYTECODE=1
-NEED="Play6FrameworkOverlay.apk Play6Projector.apk Z9xHome.apk Z9xTvInput.apk Z9xLineagePlatformOverlay.apk Z9xSetup.apk
+NEED="Play6FrameworkOverlay.apk Play6TvSettingsOverlay.apk Play6Projector.apk Z9xHome.apk Z9xTvInput.apk Z9xLineagePlatformOverlay.apk Z9xSetup.apk
       privapp-permissions-z9xhome.xml privapp-permissions-z9xsetup.xml z9x-home-default-permissions.xml
       z9x-projector-default-permissions.xml
       z9x-sysconfig-nogms.xml bootanimation.zip product_prop.txt play6_compat.rc play6_base.rc
@@ -285,6 +285,8 @@ install -d -m 0755 "$S/etc/lumen_lens"
 install -m 0644 "$IN/play6_base.rc" "$S/etc/init/play6_base.rc"
 # 1. hide XGIMI's vendor apps, the Lumen framework values, the remote key map (framework config RRO)
 install -m 0644 "$IN/Play6FrameworkOverlay.apk" "$S/product/overlay/Play6FrameworkOverlay.apk"
+# 1b. TvSettings: the Z9X switch fix (apps/Play6TvSettingsOverlay, static RRO; Install unknown apps and others)
+install -m 0644 "$IN/Play6TvSettingsOverlay.apk" "$S/product/overlay/Play6TvSettingsOverlay.apk"
 # 2. Play 6 projector app (org.z9x.projector): boot handshake with the vendor HAL (persistent,
 #    platform-signed, /system/app) and the default runtime permissions of its remote pairing
 install -d -m 0755 "$S/app/Play6Projector"

@@ -1,0 +1,31 @@
+Lumen OS: A2DP source codecs other than SBC disabled (Play 6 base only).
+
+The Play 6 audio HAL feeds A2DP at 48 kHz and never resamples; patch 0005 resamples in the SBC encoder only. AAC
+(AirPods and most brand headphones), aptX and LDAC would play slow and skip on 44.1 kHz devices, so the source
+offers SBC alone (priority -1 = disabled, the Bluetooth app's own switch).
+
+diff -ruN a/packages/modules/Bluetooth/android/app/res/values/config.xml b/packages/modules/Bluetooth/android/app/res/values/config.xml
+--- a/packages/modules/Bluetooth/android/app/res/values/config.xml	2026-10-24 14:32:07.213090627 +0300
++++ b/packages/modules/Bluetooth/android/app/res/values/config.xml	2026-10-24 14:32:07.214970510 +0300
+@@ -130,13 +130,15 @@
+          Value 0 is reserved and should not be used here. Enabled codecs
+          should have priorities in the interval [1, 999999], and each priority
+          value should be unique. -->
++    <!-- Lumen OS (Play 6): SBC only. The Play 6 audio HAL feeds A2DP at 48 kHz without resampling; only the SBC
++         encoder resamples (lineage patch 0005), so the other codecs are disabled (-1) for the source. -->
+     <integer name="a2dp_source_codec_priority_sbc">1001</integer>
+-    <integer name="a2dp_source_codec_priority_aac">2001</integer>
+-    <integer name="a2dp_source_codec_priority_aptx">3001</integer>
+-    <integer name="a2dp_source_codec_priority_aptx_hd">4001</integer>
+-    <integer name="a2dp_source_codec_priority_ldac">5001</integer>
+-    <integer name="a2dp_source_codec_priority_lc3">6001</integer>
+-    <integer name="a2dp_source_codec_priority_opus">7001</integer>
++    <integer name="a2dp_source_codec_priority_aac">-1</integer>
++    <integer name="a2dp_source_codec_priority_aptx">-1</integer>
++    <integer name="a2dp_source_codec_priority_aptx_hd">-1</integer>
++    <integer name="a2dp_source_codec_priority_ldac">-1</integer>
++    <integer name="a2dp_source_codec_priority_lc3">-1</integer>
++    <integer name="a2dp_source_codec_priority_opus">-1</integer>
+ 
+     <!-- For enabling the AVRCP Target Cover Artowrk feature-->
+     <bool name="avrcp_target_enable_cover_art">true</bool>
