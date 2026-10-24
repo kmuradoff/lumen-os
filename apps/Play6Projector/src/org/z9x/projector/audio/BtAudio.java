@@ -37,6 +37,8 @@ public final class BtAudio {
     private static final int FORCE_NO_BT_A2DP = 10;
     private static final int[] A2DP_DEVICES = {0x80, 0x100, 0x200};
     private static final int NEUTRAL = 100;
+    /** After an A2DP sink appears: AudioService has routed media by then. */
+    private static final long RESYNC_MS = 800;
 
     private BtAudio() { }
 
@@ -59,6 +61,10 @@ public final class BtAudio {
                 for (AudioDeviceInfo d : added) {
                     if (d.isSink() && d.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP) {
                         h.post(() -> { route(); volume(am, "A2DP sink " + d.getProductName()); });
+                        // a speaker that comes back: the HAL dropped its A2DP sink when it left, while the media
+                        // route may read [A2DP] before and after (no routing callback), so the sink is sent again
+                        // (owner 2026-10-24: Station connected, the sound on the projector speaker at full volume)
+                        h.postDelayed(() -> resync(am, "A2DP sink added"), RESYNC_MS);
                         return;
                     }
                 }
@@ -84,7 +90,7 @@ public final class BtAudio {
             .setUsage(android.media.AudioAttributes.USAGE_MEDIA).build();
     private static final int PATH_SPEAKER = 0;
     private static final int PATH_A2DP = 3;
-    /** p6-btaudio thread: the sink we selected with switch_end, -1 none this process. */
+    /** p6-btaudio thread: the sink we selected with switch_end, -1 none this process, -2 send again (resync). */
     private static int sSink = -1;
 
     /** Media routing changed: the HAL's sink follows it (A2DP or the speaker). p6-btaudio thread. */
@@ -96,7 +102,7 @@ public final class BtAudio {
             }
         }
         int want = a2dp ? PATH_A2DP : PATH_SPEAKER;
-        if (want == sSink || (!a2dp && sSink < 0)) return;     // the speaker is the HAL's default: nothing to undo
+        if (want == sSink || (!a2dp && sSink == -1)) return;   // the speaker is the HAL's default: nothing to undo
         try {
             if (a2dp) volume(am, "A2DP sink");
             am.setParameters("xgimi_audiopath_switch_end=" + want);
@@ -105,6 +111,13 @@ public final class BtAudio {
         } catch (Throwable e) {
             Log.w(TAG, "switch_end=" + want + ": " + e);
         }
+    }
+
+    /** p6-btaudio thread: forget what was sent and send the sink of the current media route again. */
+    private static void resync(AudioManager am, String why) {
+        Log.i(TAG, "sink again (" + why + ")");
+        sSink = -2;                                            // neither path: the next sink() always sends
+        sink(am, am.getDevicesForAttributes(MEDIA));
     }
 
     /** A2DP sink up but media still forced off Bluetooth: ask AudioService to allow A2DP again. */

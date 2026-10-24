@@ -35,8 +35,8 @@
 
   Permissions: the Z9X projector set (protection levels checked in the Lineage 21 source, see
   apps/Z9xProjector/AndroidManifest.xml) minus the problem-report ones (INTERNET, READ_LOGS, DUMP,
-  ACCESS_WIFI_STATE) and the AI-sound ones (MODIFY_AUDIO_ROUTING, MEDIA_CONTENT_CONTROL,
-  QUERY_ALL_PACKAGES). A platform-signed APK gets every "signature" permission also from /system/app.
+  ACCESS_WIFI_STATE) and the AI-sound ones (MEDIA_CONTENT_CONTROL, QUERY_ALL_PACKAGES); MODIFY_AUDIO_ROUTING
+  came back in 1.0.6 for the sound output choice. A platform-signed APK gets every "signature" permission also from /system/app.
   The two "dangerous" Bluetooth ones are pre-granted by /system/product/etc/default-permissions/
   z9x-projector.xml (the Z9X file, package org.z9x.projector) and self-granted at runtime as a fallback.
 -->
@@ -109,6 +109,11 @@
     <!-- AudioManager.getDevicesForAttributes (Play6App's one-time speaker volume): QUERY_AUDIO_STATE =
          signature|role. -->
     <uses-permission android:name="android.permission.QUERY_AUDIO_STATE" />
+    <!-- Lumen 1.0.6, Sound > Sound output (audio/AudioOutputChoice): AudioManager.setPreferredDeviceForStrategy and
+         removePreferredDeviceForStrategy need MODIFY_AUDIO_ROUTING (signature|privileged|role; the platform signature
+         grants it from /system/app). Without it every choice was refused (SecurityException, device test
+         2026-10-24). -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_ROUTING" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
