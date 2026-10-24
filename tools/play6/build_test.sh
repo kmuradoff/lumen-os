@@ -263,7 +263,7 @@ IN=(
   "$G/overlay/v1/z9x-sysconfig-nogms.xml"
   "$G/overlay/v1/bootanimation.zip"
   "$G/overlay/v1/idc/Vendor_000d_Product_3841.idc"
-  "$G/overlay/v1/keylayout/Vendor_000d_Product_3841.kl"
+  "$G/overlay/play6/keylayout/Vendor_000d_Product_3841.kl"
   "$G/overlay/v1/keylayout/Vendor_3697_Product_0001.kl"
   "$G/overlay/v1/keylayout/Vendor_3697_Product_0002.kl"
   "$G/overlay/play6/product_prop.txt"

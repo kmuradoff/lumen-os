@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK: oynat / duraklat · Sol / Sağ: önceki / sonraki parça · Ses tuşları: ses düzeyi · Geri: hoparlör modundan çık</string>
     <string name="p6_spk_ending">Hoparlör modundan çıkılıyor…</string>
     <string name="p6_spk_failed">Hoparlör modu açılamadı. Bluetooth kulaklıklar eskisi gibi çalışır.</string>
-    <string name="p6_tile_speaker">Hoparlör</string>
-    <string name="p6_spk_page">Hoparlör ve ortam ışığı</string>
+    <string name="p6_tile_speaker">Ortam hoparlörü</string>
+    <string name="p6_spk_page">Ortam hoparlörü</string>
+    <string name="p6_ambsp_on">Aç</string>
+    <string name="p6_amb_desc_one">Görüntü kapanır ve projektör yumuşak renkli bir ışıkla parlar; telefonunuz Bluetooth ile müzik çalabilir (“XGIMI Play 6”). Yukarı / aşağı: renk · Sol / sağ: parça · OK: oynat / duraklat · Geri: çıkış. Bu ayarlar için kutucukta OK’yi basılı tutun.</string>
     <string name="p6_amb_c_none">Yok</string>
     <string name="p6_lid">Kapatınca</string>
     <string name="p6_lid_off">Kapat</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">Kulaklık</string>
     <string name="sound_output_usb">USB ses</string>
+    <string name="p6_lens_lunar">Ay</string>
+    <string name="p6_lens_dreamscape">Düş Dünyası</string>
+    <string name="p6_lens_ripple">Dalgacık</string>
+    <string name="p6_lens_sunset">Gün Batımı</string>
+    <string name="p6_lens_other">Yaratıcı filtre</string>
+    <string name="p6_lens_hint">Sol / Sağ: görüntü · Yukarı / Aşağı: parlaklık · Geri: çıkış</string>
+    <string name="p6_lens_missing">Bu lensin görüntüleri kullanılamıyor.</string>
 </resources>

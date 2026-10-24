@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK：再生 / 一時停止 · 左 / 右：前 / 次の曲 · 音量ボタン：音量 · 戻る：スピーカーモードを終了</string>
     <string name="p6_spk_ending">スピーカーモードを終了しています…</string>
     <string name="p6_spk_failed">スピーカーモードを開始できませんでした。Bluetooth ヘッドホンはこれまでどおり使えます。</string>
-    <string name="p6_tile_speaker">スピーカー</string>
-    <string name="p6_spk_page">スピーカーとアンビエントライト</string>
+    <string name="p6_tile_speaker">アンビエントスピーカー</string>
+    <string name="p6_spk_page">アンビエントスピーカー</string>
+    <string name="p6_ambsp_on">オンにする</string>
+    <string name="p6_amb_desc_one">画面が消え、プロジェクターがやわらかな色の光で灯ります。スマートフォンから Bluetooth で音楽を再生できます（「XGIMI Play 6」）。上 / 下: 色 · 左 / 右: 曲 · OK: 再生 / 一時停止 · 戻る: 終了。タイルで OK を長押しするとこの設定が開きます。</string>
     <string name="p6_amb_c_none">なし</string>
     <string name="p6_lid">閉じたとき</string>
     <string name="p6_lid_off">電源を切る</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">ヘッドホン</string>
     <string name="sound_output_usb">USB オーディオ</string>
+    <string name="p6_lens_lunar">月相</string>
+    <string name="p6_lens_dreamscape">夢幻</string>
+    <string name="p6_lens_ripple">波紋</string>
+    <string name="p6_lens_sunset">夕焼け</string>
+    <string name="p6_lens_other">クリエイティブフィルター</string>
+    <string name="p6_lens_hint">左 / 右：画像 · 上 / 下：明るさ · 戻る：終了</string>
+    <string name="p6_lens_missing">このレンズの画像は利用できません。</string>
 </resources>

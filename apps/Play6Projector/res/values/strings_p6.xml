@@ -119,8 +119,10 @@
     <string name="p6_spk_ending">Leaving speaker mode…</string>
     <string name="p6_spk_failed">Speaker mode could not start. Bluetooth headphones work as before.</string>
     <!-- stock parity (2026-10-21): the Speaker tile and page, the lid row, the picture and HDMI rows of the stock dayao tree -->
-    <string name="p6_tile_speaker">Speaker</string>
-    <string name="p6_spk_page">Speaker and ambient light</string>
+    <string name="p6_tile_speaker">Ambient speaker</string>
+    <string name="p6_spk_page">Ambient speaker</string>
+    <string name="p6_ambsp_on">Turn on</string>
+    <string name="p6_amb_desc_one">The picture turns off and the projector glows with soft colored light; your phone can play music to it over Bluetooth (\"XGIMI Play 6\"). Up / Down: color · Left / Right: track · OK: play / pause · Back: exit. Hold OK on the tile for these settings.</string>
     <string name="p6_amb_c_none">None</string>
     <string name="p6_lid">When closed</string>
     <string name="p6_lid_off">Shut down</string>
@@ -183,4 +185,15 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">Headphones</string>
     <string name="sound_output_usb">USB audio</string>
+
+    <!-- the magnetic lens mode (lens/LensMode; stock com.xgimi.starmirror "Creative optical filter"): the lens names
+         of the stock covers (Lunar, Dreamscape, Ripple, Sunset Filter), another lens id, the key hint, and the card
+         when the stock lens pictures cannot be read -->
+    <string name="p6_lens_lunar">Lunar</string>
+    <string name="p6_lens_dreamscape">Dreamscape</string>
+    <string name="p6_lens_ripple">Ripple</string>
+    <string name="p6_lens_sunset">Sunset</string>
+    <string name="p6_lens_other">Creative filter</string>
+    <string name="p6_lens_hint">Left / Right: picture · Up / Down: brightness · Back: exit</string>
+    <string name="p6_lens_missing">The pictures for this lens are not available.</string>
 </resources>

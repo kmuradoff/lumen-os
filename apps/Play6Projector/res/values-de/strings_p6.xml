@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK: Wiedergabe / Pause · Links / Rechts: vorheriger / nächster Titel · Lautstärketasten: Lautstärke · Zurück: Lautsprechermodus beenden</string>
     <string name="p6_spk_ending">Lautsprechermodus wird beendet …</string>
     <string name="p6_spk_failed">Der Lautsprechermodus konnte nicht starten. Bluetooth-Kopfhörer funktionieren wie bisher.</string>
-    <string name="p6_tile_speaker">Lautsprecher</string>
-    <string name="p6_spk_page">Lautsprecher und Ambientelicht</string>
+    <string name="p6_tile_speaker">Ambient-Lautsprecher</string>
+    <string name="p6_spk_page">Ambient-Lautsprecher</string>
+    <string name="p6_ambsp_on">Einschalten</string>
+    <string name="p6_amb_desc_one">Das Bild geht aus und der Projektor leuchtet in sanftem farbigem Licht; Ihr Telefon kann über Bluetooth Musik darauf abspielen („XGIMI Play 6“). Auf / Ab: Farbe · Links / Rechts: Titel · OK: Wiedergabe / Pause · Zurück: Ende. OK auf der Kachel gedrückt halten für diese Einstellungen.</string>
     <string name="p6_amb_c_none">Keine</string>
     <string name="p6_lid">Beim Schließen</string>
     <string name="p6_lid_off">Ausschalten</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">Kopfhörer</string>
     <string name="sound_output_usb">USB-Audio</string>
+    <string name="p6_lens_lunar">Mond</string>
+    <string name="p6_lens_dreamscape">Traumwelt</string>
+    <string name="p6_lens_ripple">Wellen</string>
+    <string name="p6_lens_sunset">Sonnenuntergang</string>
+    <string name="p6_lens_other">Kreativfilter</string>
+    <string name="p6_lens_hint">Links / Rechts: Bild · Oben / Unten: Helligkeit · Zurück: beenden</string>
+    <string name="p6_lens_missing">Die Bilder für diese Linse sind nicht verfügbar.</string>
 </resources>

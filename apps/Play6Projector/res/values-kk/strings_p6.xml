@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK: кідірту / ойнату · Солға / Оңға: алдыңғы / келесі трек · Дыбыс түймелері: дыбыс деңгейі · Артқа: динамик режимінен шығу</string>
     <string name="p6_spk_ending">Динамик режимінен шығу…</string>
     <string name="p6_spk_failed">Динамик режимін қосу мүмкін болмады. Bluetooth құлаққаптары бұрынғыдай жұмыс істейді.</string>
-    <string name="p6_tile_speaker">Динамик</string>
-    <string name="p6_spk_page">Динамик және фондық жарық</string>
+    <string name="p6_tile_speaker">Колонка және жарық</string>
+    <string name="p6_spk_page">Колонка және жарық</string>
+    <string name="p6_ambsp_on">Қосу</string>
+    <string name="p6_amb_desc_one">Сурет сөнеді, проектор жұмсақ түсті жарықпен жанады, ал телефон оған Bluetooth арқылы музыка ойната алады («XGIMI Play 6»). Жоғары / төмен: түс · Солға / оңға: трек · OK: кідірту · Артқа: шығу. Осы баптауларды ашу үшін тақтада OK батырмасын басып тұрыңыз.</string>
     <string name="p6_amb_c_none">Жоқ</string>
     <string name="p6_lid">Жапқанда</string>
     <string name="p6_lid_off">Өшіру</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">Құлаққап</string>
     <string name="sound_output_usb">USB аудио</string>
+    <string name="p6_lens_lunar">Ай</string>
+    <string name="p6_lens_dreamscape">Арман</string>
+    <string name="p6_lens_ripple">Толқын</string>
+    <string name="p6_lens_sunset">Күн батуы</string>
+    <string name="p6_lens_other">Шығармашылық сүзгі</string>
+    <string name="p6_lens_hint">Солға / Оңға: сурет · Жоғары / Төмен: жарықтық · Артқа: шығу</string>
+    <string name="p6_lens_missing">Бұл линзаның суреттері қолжетімсіз.</string>
 </resources>

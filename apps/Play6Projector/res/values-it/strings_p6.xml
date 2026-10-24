@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK: riproduci / pausa · Sinistra / Destra: brano precedente / successivo · Tasti volume: volume · Indietro: esci dalla modalità altoparlante</string>
     <string name="p6_spk_ending">Uscita dalla modalità altoparlante…</string>
     <string name="p6_spk_failed">Impossibile attivare la modalità altoparlante. Le cuffie Bluetooth funzionano come prima.</string>
-    <string name="p6_tile_speaker">Altoparlante</string>
-    <string name="p6_spk_page">Altoparlante e luce d\'ambiente</string>
+    <string name="p6_tile_speaker">Altoparlante ambient</string>
+    <string name="p6_spk_page">Altoparlante ambient</string>
+    <string name="p6_ambsp_on">Attiva</string>
+    <string name="p6_amb_desc_one">L’immagine si spegne e il proiettore emette una luce colorata soffusa; il telefono può riprodurvi musica via Bluetooth («XGIMI Play 6»). Su / giù: colore · Sinistra / destra: brano · OK: riproduci / pausa · Indietro: esci. Tieni premuto OK sul riquadro per queste impostazioni.</string>
     <string name="p6_amb_c_none">Nessuno</string>
     <string name="p6_lid">Alla chiusura</string>
     <string name="p6_lid_off">Spegni</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">Cuffie</string>
     <string name="sound_output_usb">Audio USB</string>
+    <string name="p6_lens_lunar">Luna</string>
+    <string name="p6_lens_dreamscape">Sogno</string>
+    <string name="p6_lens_ripple">Increspature</string>
+    <string name="p6_lens_sunset">Tramonto</string>
+    <string name="p6_lens_other">Filtro creativo</string>
+    <string name="p6_lens_hint">Sinistra / Destra: immagine · Su / Giù: luminosità · Indietro: esci</string>
+    <string name="p6_lens_missing">Le immagini per questa lente non sono disponibili.</string>
 </resources>

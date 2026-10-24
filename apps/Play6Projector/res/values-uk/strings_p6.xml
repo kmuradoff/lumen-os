@@ -96,8 +96,10 @@
     <string name="p6_spk_keys">OK: пауза / відтворення · Ліворуч / Праворуч: попередній / наступний трек · Кнопки гучності: гучність · Назад: вийти з режиму колонки</string>
     <string name="p6_spk_ending">Вихід з режиму колонки…</string>
     <string name="p6_spk_failed">Не вдалося увімкнути режим колонки. Bluetooth-навушники працюють як раніше.</string>
-    <string name="p6_tile_speaker">Колонка</string>
-    <string name="p6_spk_page">Колонка і підсвічування</string>
+    <string name="p6_tile_speaker">Колонка і світло</string>
+    <string name="p6_spk_page">Колонка і світло</string>
+    <string name="p6_ambsp_on">Увімкнути</string>
+    <string name="p6_amb_desc_one">Зображення гасне, проєктор світиться м’яким кольоровим світлом, а телефон може грати на ньому музику через Bluetooth («XGIMI Play 6»). Вгору / вниз: колір · Ліворуч / праворуч: трек · OK: пауза · Назад: вихід. Утримуйте OK на плитці, щоб відкрити ці налаштування.</string>
     <string name="p6_amb_c_none">Немає</string>
     <string name="p6_lid">Під час закриття</string>
     <string name="p6_lid_off">Вимкнути</string>
@@ -151,4 +153,11 @@
     <string name="sound_output_bt">Bluetooth</string>
     <string name="sound_output_wired">Навушники</string>
     <string name="sound_output_usb">USB-аудіо</string>
+    <string name="p6_lens_lunar">Місяць</string>
+    <string name="p6_lens_dreamscape">Мрії</string>
+    <string name="p6_lens_ripple">Брижі</string>
+    <string name="p6_lens_sunset">Захід сонця</string>
+    <string name="p6_lens_other">Творчий фільтр</string>
+    <string name="p6_lens_hint">Ліворуч / Праворуч: картинка · Вгору / Вниз: яскравість · Назад: вихід</string>
+    <string name="p6_lens_missing">Картинки для цієї лінзи недоступні.</string>
 </resources>

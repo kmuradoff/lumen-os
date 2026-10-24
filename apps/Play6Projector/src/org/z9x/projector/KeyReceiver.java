@@ -127,6 +127,12 @@ public final class KeyReceiver extends BroadcastReceiver {
             return;
         }
         if (code == Z9xKeys.AMBIENT) {
+            // Lumen 1.0.6: the Play 6 key layout sends the remote's shortcut key (scancode 184) as the same code; stock's
+            // default for it on the Play 6 is "ambient light switch": the ambient speaker, then the next colour
+            if (org.z9x.projector.speaker.SpeakerMode.isShortcutKey(ev)) {
+                if (upOk && setupDone(ctx, "shortcut")) org.z9x.projector.speaker.SpeakerMode.shortcutKey(ctx);
+                return;
+            }
             if (upOk && setupDone(ctx, "ambient")) startAmbient(ctx);
             return;
         }
