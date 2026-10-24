@@ -35,8 +35,8 @@ import org.z9x.projector.ui.Theme;
  * panel/ZoomShiftPanel.java (Lumen OS 1.0.4); the Play 6 calls and numbers are the stock Play 6 ones.
  *
  * A full-screen grid with a white edge shows the picture's edge.
- *   Size (first): LEFT / DOWN smaller, RIGHT / UP bigger (also VOLUME DOWN / UP, the stock keys).
- *   OK switches to Shift: the arrows move the picture. BACK: done.
+ *   Size mode (first): RIGHT / UP bigger, LEFT / DOWN smaller (and VOLUME UP / DOWN, stock's keys, if they ever
+ *   reach the window; Android TV keeps them). OK switches to Position: the arrows move the picture. BACK: done.
  * Sequence (Play6AdjustSession for the bracket): IGmpf2 125(1) -> 586 / 573(2,false) -> 121 zoomStart(0) -> 117
  * and 116 read, the raw replies logged. The digital range is used only when it parses as expected
  * (min < max, at most 200 steps, the 116 digital step inside it); otherwise the card offers shift only, and
@@ -45,6 +45,17 @@ import org.z9x.projector.ui.Theme;
  * setScreenResolutions 4 / 0) inside the range, 118, 116 again; the optical step must not move (there is no
  * optical zoom on the G0058; a moved value closes the card). A shift step: 141(dir, true), and 141(dir, false)
  * only when the check answered 0 (stock onKey). Close: 120 zoomFinish(0), 573(2,true), 125(0); no 158 (O4).
+ * Lumen OS 1.0.6, stock parity (owner 2026-10-24: "step 15, then it jumped to 3 and stuck there"; stock
+ * release_838_newsettings ZoomDisplacementWind, non-optical, non-stepless path, re-read from the v1.7.116 dump):
+ *  - steps as stock: one step bigger is 118 to the 116 step - 1 (setScreenResolutions 0), smaller +1 (4); a move
+ *    is 141 (1 up, 2 down, 3 left, 4 right) after its check. Stock's keys (arrows always move, VOLUME sizes) need
+ *    XGIMI's key intercept service, so the keys stay as in 1.0.5 (see the key handler).
+ *  - after a move that the vendor took, stock waits 200 ms and runs initZoom(false) again: 121 zoomStart(0) once more
+ *    and a fresh 117 / 116. The vendor re-bases the zoom on the moved picture (its own log: Digital 0, PreStep 0)
+ *    and the range shrinks near an edge; without the re-read the card kept -19..1 and the step jumped and stuck.
+ *  - a size step outside the range is not sent, and a step the vendor refuses (118 answers -1) says so.
+ *  Not ported, on purpose: vendor.mstar.osd.manualkeystone (no reader in the G0058 vendor), 158
+ *  generateLogoByTrapezoid (owner decision O4), KeyStoneRepository setImageShift / setZoomMode (analytics only).
  * Log tag P6ZoomShift.
  */
 public final class Play6ZoomShiftPanel extends Panel {
@@ -68,6 +79,9 @@ public final class Play6ZoomShiftPanel extends Panel {
     private volatile int lo, hi, cur, optical;
     private volatile boolean digital;
     private TextView mode, value, hint, status;
+    /** Bumped by every move the vendor took: the 200 ms re-read (stock initZoom) runs only for the last one. */
+    private volatile int moveGen;
+    private static final long REINIT_MS = 200;
 
     private Play6ZoomShiftPanel(Context app, Runnable onBackExit) {
         this.app = app;
@@ -166,7 +180,8 @@ public final class Play6ZoomShiftPanel extends Panel {
             cur = after[2];
             Log.i(TAG, "118(" + target + ") -> " + r + ", now digital " + after[2] + " optical " + after[1]);
             if (after[1] != optical) throw new IllegalStateException("optical step moved: " + optical + " -> " + after[1]);
-            ui(this::render);
+            final boolean refused = r != 0 || after[2] != target;
+            ui(() -> { render(); if (refused) say(smaller ? R.string.zoom_limit_small : R.string.zoom_limit_big); });
         } catch (Throwable t) {
             Log.w(TAG, "size step failed: " + t);
             ui(() -> fail("size step"));
@@ -183,12 +198,46 @@ public final class Play6ZoomShiftPanel extends Panel {
             int r = check == 0 ? g.shiftPicture(dir, false) : check; // 141(dir, false)
             Log.i(TAG, "141(" + dir + ") check " + check + " -> " + r);
             ui(() -> { if (check != 0) say(R.string.zs_edge); else if (status != null) status.setText(""); });
+            if (check == 0 && r != -1) {
+                // stock: zoomJob = launchGlobalIO(200 ms) { initZoom(false) } after every move it made
+                final int gen = ++moveGen;
+                Ui.main().postDelayed(() -> {
+                    if (gen != moveGen || closed) return;
+                    Hal.run((gm, g2) -> reinit(gm, gen));
+                }, REINIT_MS);
+            }
         } catch (Throwable t) {
             Log.w(TAG, "shift step failed: " + t);
             ui(() -> say(R.string.zs_refused));
         } finally {
             lastStepAt = SystemClock.uptimeMillis();
             inFlight = false;
+        }
+    }
+
+    /** HAL thread, 200 ms after the last move: stock initZoom(false), 121 again and a fresh 117 / 116. */
+    private void reinit(Play6Gmpf g, int gen) {
+        if (gen != moveGen || closed || state != READY || !active) return;
+        try {
+            Play6AdjustSession.zoomStart(app, g, "zoom after move");
+            int[] range = g.getZoomStepRange();                      // 117
+            int[] step = g.getZoomStep();                            // 116
+            int a = range[3], b = range[4];
+            int nlo = Math.min(a, b), nhi = Math.max(a, b);
+            boolean ok = nhi > nlo && nhi - nlo <= Play6Gmpf.ZOOM_STEP_MAX && nlo >= Play6Gmpf.ZOOM_STEP_MIN
+                    && nhi <= Play6Gmpf.ZOOM_STEP_MAX && step[2] >= nlo && step[2] <= nhi;
+            Log.i(TAG, "after move: 117 digital " + a + ".." + b + ", 116 digital " + step[2] + (ok ? "" : " (not usable)"));
+            if (ok) {
+                lo = nlo;
+                hi = nhi;
+                cur = step[2];
+                digital = true;
+            } else {
+                digital = false;
+            }
+            ui(this::render);
+        } catch (Throwable t) {
+            Log.w(TAG, "re-read after move: " + t);
         }
     }
 
@@ -206,21 +255,26 @@ public final class Play6ZoomShiftPanel extends Panel {
             }
             return true;
         }
-        boolean vol = code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN;
+        // Stock's keys are VOLUME UP / DOWN for the size, but Android TV's window manager never hands the volume keys
+        // to an app (PhoneWindowManager, TV routing; stock had XGIMI's IGimiCommon.registerInterceptKey). They still
+        // work here if they ever arrive; the arrows do the size in Size mode, OK switches Size / Position.
         boolean up = code == KeyEvent.KEYCODE_DPAD_UP, down = code == KeyEvent.KEYCODE_DPAD_DOWN;
-        boolean left = code == KeyEvent.KEYCODE_DPAD_LEFT, right = code == KeyEvent.KEYCODE_DPAD_RIGHT;
-        if (!up && !down && !left && !right && !vol) return false;
+        boolean left = code == KeyEvent.KEYCODE_DPAD_LEFT || code == 149, right = code == KeyEvent.KEYCODE_DPAD_RIGHT || code == 153;
+        boolean bigger = code == KeyEvent.KEYCODE_VOLUME_UP || code == 150 || !shiftMode && (up || right);
+        boolean smaller = code == KeyEvent.KEYCODE_VOLUME_DOWN || code == 148 || !shiftMode && (down || left);
+        int dir = !shiftMode ? 0 : up ? Play6Gmpf.SHIFT_UP : down ? Play6Gmpf.SHIFT_DOWN
+                : left ? Play6Gmpf.SHIFT_LEFT : right ? Play6Gmpf.SHIFT_RIGHT : 0;
+        if (!bigger && !smaller && dir == 0) return up || down || left || right;
         if (ev.getAction() != KeyEvent.ACTION_DOWN || state != READY || inFlight
                 || SystemClock.uptimeMillis() - lastStepAt < MIN_STEP_GAP_MS) return true;
         boolean queued;
-        if (vol || !shiftMode) {
+        if (bigger || smaller) {
             if (!digital) return true;
-            final boolean smaller = left || down || code == KeyEvent.KEYCODE_VOLUME_DOWN;
+            final boolean sm = smaller;
             inFlight = true;
-            queued = Hal.run((g, g2) -> sizeStep(g, smaller));
+            queued = Hal.run((g, g2) -> sizeStep(g, sm));
         } else {
-            final int d = up ? Play6Gmpf.SHIFT_UP : down ? Play6Gmpf.SHIFT_DOWN
-                    : left ? Play6Gmpf.SHIFT_LEFT : Play6Gmpf.SHIFT_RIGHT;
+            final int d = dir;
             inFlight = true;
             queued = Hal.run((g, g2) -> shiftStep(g, d));
         }
@@ -277,8 +331,9 @@ public final class Play6ZoomShiftPanel extends Panel {
     /** Size N of M: M = the full picture, 1 = the smallest (the digital step grows as the picture shrinks). */
     private void render() {
         if (value == null || state != READY) return;
+        if (!digital) shiftMode = true;
         mode.setText(app.getString(shiftMode ? R.string.zs_mode_shift : R.string.zs_mode_size));
-        value.setText(shiftMode ? "" : app.getString(R.string.zoom_position, hi - cur + 1, hi - lo + 1));
+        value.setText(app.getString(R.string.zoom_position, hi - cur + 1, hi - lo + 1));
         value.setVisibility(shiftMode ? View.GONE : View.VISIBLE);
         hint.setText(app.getString(shiftMode ? (digital ? R.string.zs_hint_shift : R.string.zs_hint_shift_only)
                 : R.string.zs_hint_size));
