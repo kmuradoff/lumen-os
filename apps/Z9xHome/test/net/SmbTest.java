@@ -8,8 +8,10 @@ import java.util.List;
 
 /**
  * Network folders, host checks (plain JDK, no android.jar): MD4 (RFC 1320 examples), AES-CMAC (RFC 4493
- * examples), NTLMv2 (MS-NLMP 4.2.4), SPNEGO and DCE/RPC (srvsvc NetrShareEnum) parsing on hand-made buffers,
- * QUERY_DIRECTORY records, and a whole session against FakeSmbServer on loopback (SmbLoopTest).
+ * examples), the SP800-108 KDF layout, AES-CCM (NIST SP 800-38C examples and a block-by-block reference),
+ * AES-GCM and GMAC (McGrew and Viega test cases), SHA-512, NTLMv2 (MS-NLMP 4.2.4), SPNEGO and DCE/RPC
+ * (srvsvc NetrShareEnum) parsing on hand-made buffers, QUERY_DIRECTORY records, and whole sessions against
+ * the fake server on loopback (SmbLoopTest).
  * Run: sh test/net/run.sh
  */
 public final class SmbTest {
@@ -44,6 +46,7 @@ public final class SmbTest {
     public static void main(String[] a) throws Exception {
         md4();
         cmac();
+        aead();
         ntlm();
         spnego();
         rpc();
@@ -95,6 +98,73 @@ public final class SmbTest {
         o.write(0); o.write(0); o.write(0); o.write(0x80);
         byte[] h = Arrays.copyOf(SmbCrypto.hmacSha256(key, o.toByteArray()), 16);
         eqHex(SmbCrypto.kdf(key, lab, ctx), hex(h), "KDF layout");
+        // L = 256 (3.1.1 AES-256 cipher keys): the whole HMAC with 00000100 as L
+        byte[] l256 = o.toByteArray();
+        l256[l256.length - 2] = 1;
+        l256[l256.length - 1] = 0;
+        eqHex(SmbCrypto.kdf(key, lab, ctx, 256), hex(SmbCrypto.hmacSha256(key, l256)), "KDF L=256 layout");
+    }
+
+    // ------------------------------------------------------------------ AES-CCM (NIST SP 800-38C), AES-GCM, GMAC
+
+    static void aead() throws Exception {
+        // SP 800-38C appendix C, examples 1 to 3 (nonce 7, 8, 12 bytes; tag 4, 6, 8 bytes)
+        byte[] k = unhex("404142434445464748494a4b4c4d4e4f");
+        ccmVector(k, "10111213141516", "0001020304050607", "20212223", 4, "7162015b4dac255d", "CCM example 1");
+        ccmVector(k, "1011121314151617", "000102030405060708090a0b0c0d0e0f", "202122232425262728292a2b2c2d2e2f", 6,
+                "d2a1f0e051ea5f62081a7792073d593d1fc64fbfaccd", "CCM example 2");
+        ccmVector(k, "101112131415161718191a1b", "000102030405060708090a0b0c0d0e0f10111213",
+                "202122232425262728292a2b2c2d2e2f3031323334353637", 8,
+                "e3b201a9f5b71a7a9b1ceaeccd97e70b6176aad9a4428aa5484392fbc1b09951", "CCM example 3");
+        // the SMB shape (11-byte nonce, 16-byte tag, 32 bytes of AAD) against the block-by-block reference,
+        // across a 64 KiB chunk edge and with a partial last block, AES-128 and AES-256
+        byte[] nonce = unhex("0102030405060708090a0b"), aad = new byte[32];
+        for (int i = 0; i < 32; i++) aad[i] = (byte) (0xa0 + i);
+        for (int size : new int[]{0, 1, 16, 100, 65536 + 37}) {
+            for (int kl : new int[]{16, 32}) {
+                byte[] key = Arrays.copyOf(unhex("2b7e151628aed2a6abf7158809cf4f3c762e7160f38b4da56a784d9045190cfe"), kl);
+                byte[] p = SmbLoopTest.data(size), c = new byte[size], tag = new byte[16];
+                SmbCrypto.seal(false, key, nonce, aad, 0, 32, p, 0, size, c, 0, tag, 0);
+                byte[][] ref = SmbLoopTest.ccmRef(true, key, nonce, aad, p, null);
+                ok(Arrays.equals(c, ref[0]) && Arrays.equals(tag, ref[1]), "CCM-" + kl * 8 + " " + size + " bytes = reference");
+                byte[] back = new byte[size];
+                ok(SmbCrypto.open(false, key, nonce, aad, 0, 32, c, 0, size, tag, 0, back, 0) && Arrays.equals(back, p),
+                        "CCM-" + kl * 8 + " " + size + " bytes open");
+                tag[3] ^= 1;
+                ok(!SmbCrypto.open(false, key, nonce, aad, 0, 32, c, 0, size, tag, 0, back, 0), "CCM bad tag refused");
+            }
+        }
+        // GCM, McGrew and Viega test cases 1 and 2 (zero key and IV); GMAC of nothing is test case 1's tag
+        byte[] z = new byte[16], iv = new byte[12], ct = new byte[16], tag = new byte[16];
+        SmbCrypto.seal(true, z, iv, new byte[0], 0, 0, new byte[16], 0, 16, ct, 0, tag, 0);
+        eqHex(ct, "0388dace60b6a392f328c2b971b2fe78", "GCM test case 2 ciphertext");
+        eqHex(tag, "ab6e47d42cec13bdf53a67b21257bddf", "GCM test case 2 tag");
+        byte[] back = new byte[16];
+        ok(SmbCrypto.open(true, z, iv, new byte[0], 0, 0, ct, 0, 16, tag, 0, back, 0) && Arrays.equals(back, new byte[16]),
+                "GCM open");
+        ct[0] ^= 1;
+        ok(!SmbCrypto.open(true, z, iv, new byte[0], 0, 0, ct, 0, 16, tag, 0, back, 0), "GCM bad data refused");
+        eqHex(SmbCrypto.gmac(z, iv, new byte[0], 0, 0), "58e2fccefa7e3061367f1d57a4e7455a", "GMAC test case 1");
+        // GCM over a large buffer at offsets, as a decrypted READ is
+        byte[] big = SmbLoopTest.data(300_000), aad2 = Arrays.copyOf(nonce, 32);
+        byte[] enc = new byte[big.length + 52], t2 = new byte[52];
+        SmbCrypto.seal(true, Arrays.copyOf(nonce, 16), iv, aad2, 0, 32, big, 0, big.length, enc, 52, t2, 4);
+        byte[] dec = new byte[big.length];
+        ok(SmbCrypto.open(true, Arrays.copyOf(nonce, 16), iv, aad2, 0, 32, enc, 52, big.length, t2, 4, dec, 0)
+                && Arrays.equals(dec, big), "GCM 300 KB at offsets");
+        // SHA-512 of "abc" (FIPS 180-2)
+        eqHex(SmbCrypto.sha512("abc".getBytes(StandardCharsets.US_ASCII)),
+                "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd"
+                        + "454d4423643ce80e2a9ac94fa54ca49f", "SHA-512");
+    }
+
+    static void ccmVector(byte[] k, String n, String a, String p, int tagLen, String want, String what) throws Exception {
+        byte[] pt = unhex(p), aad = unhex(a), ct = new byte[pt.length], tag = new byte[tagLen];
+        SmbCrypto.ccm(true, k, unhex(n), aad, 0, aad.length, pt, 0, pt.length, ct, 0, tag, 0, tagLen);
+        eqHex(cat(ct, tag), want, what);
+        byte[] back = new byte[pt.length];
+        ok(SmbCrypto.ccm(false, k, unhex(n), aad, 0, aad.length, ct, 0, ct.length, back, 0, tag, 0, tagLen)
+                && Arrays.equals(back, pt), what + " open");
     }
 
     // ------------------------------------------------------------------ NTLMv2, MS-NLMP 4.2.4
