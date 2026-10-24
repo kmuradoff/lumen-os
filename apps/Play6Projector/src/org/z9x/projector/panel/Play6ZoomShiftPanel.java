@@ -77,11 +77,33 @@ public final class Play6ZoomShiftPanel extends Panel {
     private volatile long lastStepAt;
     /** Digital range and position (HAL thread writes); optical position at open (must not change). */
     private volatile int lo, hi, cur, optical;
+    /**
+     * Steps smaller than the full picture: 116 - min of 117 at open and after each move (fresh session), then counted
+     * from the steps the vendor took.
+     */
+    private volatile int level;
+    /** Positions shown ("N of M"): the 117 span at open. */
+    private volatile int span;
     private volatile boolean digital;
     private TextView mode, value, hint, status;
+    /** Stock's side menu: one focused Reset button (MENU shows it). */
+    private LinearLayout menu;
     /** Bumped by every move the vendor took: the 200 ms re-read (stock initZoom) runs only for the last one. */
     private volatile int moveGen;
+    /** This image hands the volume keys to the card on request (lineage patch 0004, ro.lumen.volkeys=1): stock keys. */
+    private final boolean stockKeys = android.os.SystemProperties.getBoolean("ro.lumen.volkeys", false);
+    private static final String PROP_VOLKEYS = "sys.lumen.volkeys_until";
+    private static final long VOLKEYS_LEASE_MS = 60_000, VOLKEYS_RENEW_MS = 20_000;
+    private final Runnable renewVolumeKeys = new Runnable() {
+        @Override public void run() {
+            if (closed) return;
+            leaseVolumeKeys(true);
+            Ui.main().postDelayed(this, VOLKEYS_RENEW_MS);
+        }
+    };
     private static final long REINIT_MS = 200;
+    /** Stock waits 500 ms after the reset before initZoom. */
+    private static final long RESET_SETTLE_MS = 500;
 
     private Play6ZoomShiftPanel(Context app, Runnable onBackExit) {
         this.app = app;
@@ -107,6 +129,7 @@ public final class Play6ZoomShiftPanel extends Panel {
         final Play6ZoomShiftPanel p = new Play6ZoomShiftPanel(app, onBackExit);
         if (!OverlayHost.get(app).show(p)) { refuse(app, "overlay window could not be added", R.string.zs_unavailable); return; }
         sOpen = p;
+        p.renewVolumeKeys.run();                                     // stock registerInterceptKey(24 / 25)
         if (!Hal.run((g, g2) -> p.enter(g, g2))) {
             p.fail("not queued");
             return;
@@ -141,6 +164,8 @@ public final class Play6ZoomShiftPanel extends Panel {
             lo = Math.min(a, b);
             hi = Math.max(a, b);
             cur = step[2];
+            level = cur - lo;
+            span = hi - lo + 1;
             digital = hi > lo && hi - lo <= Play6Gmpf.ZOOM_STEP_MAX && lo >= Play6Gmpf.ZOOM_STEP_MIN
                     && hi <= Play6Gmpf.ZOOM_STEP_MAX && cur >= lo && cur <= hi;
             if (!digital) {
@@ -170,18 +195,22 @@ public final class Play6ZoomShiftPanel extends Panel {
             int[] now = g.getZoomStep();                             // fresh 116
             if (now[1] != optical) throw new IllegalStateException("optical step moved: " + optical + " -> " + now[1]);
             int target = smaller ? now[2] + 1 : now[2] - 1;
-            if (target < lo || target > hi) {
-                cur = now[2];
-                ui(() -> { render(); say(smaller ? R.string.zoom_limit_small : R.string.zoom_limit_big); });
+            // stock setScreenResolutions(0 / 4): 118 to the fresh 116 -1 / +1 with no range check of its own; the
+            // vendor decides. The 117 range is not a limit: after a move the vendor re-bases (116 0, 117 0..N) and
+            // still takes a step bigger (owner 2026-10-24: "20 of 35, moved, then 35 of 35 and no bigger").
+            if (target < Play6Gmpf.ZOOM_STEP_MIN || target > Play6Gmpf.ZOOM_STEP_MAX) {
+                ui(() -> say(smaller ? R.string.zoom_limit_small : R.string.zoom_limit_big));
                 return;
             }
             int r = g.setDigitalZoomStep(target);                    // 118
             int[] after = g.getZoomStep();                           // 116 read-back
             cur = after[2];
-            Log.i(TAG, "118(" + target + ") -> " + r + ", now digital " + after[2] + " optical " + after[1]);
             if (after[1] != optical) throw new IllegalStateException("optical step moved: " + optical + " -> " + after[1]);
-            final boolean refused = r != 0 || after[2] != target;
-            ui(() -> { render(); if (refused) say(smaller ? R.string.zoom_limit_small : R.string.zoom_limit_big); });
+            final boolean took = r == 0 && after[2] == target;
+            if (took) level += smaller ? 1 : -1;
+            Log.i(TAG, "118(" + target + ") -> " + r + ", now digital " + after[2] + " optical " + after[1]
+                    + (took ? ", size level " + level : ", refused"));
+            ui(() -> { render(); if (!took) say(smaller ? R.string.zoom_limit_small : R.string.zoom_limit_big); });
         } catch (Throwable t) {
             Log.w(TAG, "size step failed: " + t);
             ui(() -> fail("size step"));
@@ -215,11 +244,15 @@ public final class Play6ZoomShiftPanel extends Panel {
         }
     }
 
-    /** HAL thread, 200 ms after the last move: stock initZoom(false), 121 again and a fresh 117 / 116. */
+    /**
+     * HAL thread, 200 ms after the last move: a fresh zoom session (120 then 121, Play6AdjustSession.zoomRestart) and
+     * a fresh 117 / 116, so the size level comes from the vendor again. Stock runs initZoom(false) here (121 alone,
+     * which the vendor refuses inside a session); with it the range kept its start values while 116 went back to 0.
+     */
     private void reinit(Play6Gmpf g, int gen) {
         if (gen != moveGen || closed || state != READY || !active) return;
         try {
-            Play6AdjustSession.zoomStart(app, g, "zoom after move");
+            Play6AdjustSession.zoomRestart(app, g, "zoom after move");
             int[] range = g.getZoomStepRange();                      // 117
             int[] step = g.getZoomStep();                            // 116
             int a = range[3], b = range[4];
@@ -231,13 +264,61 @@ public final class Play6ZoomShiftPanel extends Panel {
                 lo = nlo;
                 hi = nhi;
                 cur = step[2];
-                digital = true;
-            } else {
-                digital = false;
+                level = cur - lo;                                    // a move keeps the size: logged if it differs
+                Log.i(TAG, "after move: size level " + level);
             }
             ui(this::render);
         } catch (Throwable t) {
             Log.w(TAG, "re-read after move: " + t);
+        }
+    }
+
+    /**
+     * HAL thread. The side menu's Reset (owner 2026-10-24: back to the full picture in the centre, as stock). Stock
+     * ZoomDisplacementWind.onClick(reset_bt_id) runs KeyStoneManager.resetKeyStone (setIChipReset, then
+     * setLowConfigureKeyStoneValue(50); no stepless zoom, optical zoom or tilt-shift on the G0058) and 500 ms later
+     * initZoom. Here the Keystone page's reset (Play6Gmpf.resetKeystone: 207, 130, 129 when it answers 6; 181 stays
+     * banned, Note A), 500 ms, then a fresh zoom session for the new range.
+     */
+    private void resetAll(Play6Gmpf g) {
+        try {
+            if (state != READY || closed || !active) return;
+            Log.i(TAG, "reset: 207(0), 130 -> " + g.resetKeystone());
+            SystemClock.sleep(RESET_SETTLE_MS);
+            Play6AdjustSession.zoomRestart(app, g, "zoom reset");
+            int[] range = g.getZoomStepRange();                      // 117
+            int[] step = g.getZoomStep();                            // 116
+            int a = range[3], b = range[4];
+            int nlo = Math.min(a, b), nhi = Math.max(a, b);
+            boolean ok = nhi > nlo && nhi - nlo <= Play6Gmpf.ZOOM_STEP_MAX && nlo >= Play6Gmpf.ZOOM_STEP_MIN
+                    && nhi <= Play6Gmpf.ZOOM_STEP_MAX && step[2] >= nlo && step[2] <= nhi;
+            Log.i(TAG, "after reset: 117 digital " + a + ".." + b + ", 116 digital " + step[2] + (ok ? "" : " (not usable)"));
+            if (ok) {
+                lo = nlo;
+                hi = nhi;
+                cur = step[2];
+                level = cur - lo;
+                span = hi - lo + 1;
+                digital = true;
+            }
+            ui(() -> { render(); say(R.string.zs_reset_done); });
+        } catch (Throwable t) {
+            Log.w(TAG, "reset failed: " + t);
+            ui(() -> say(R.string.zs_refused));
+        } finally {
+            lastStepAt = SystemClock.uptimeMillis();
+            inFlight = false;
+        }
+    }
+
+    /** Asks PhoneWindowManager for the volume keys until now + 60 s ({@code on}), or gives them back. */
+    private void leaseVolumeKeys(boolean on) {
+        if (!stockKeys) return;
+        try {
+            android.os.SystemProperties.set(PROP_VOLKEYS,
+                    on ? Long.toString(SystemClock.uptimeMillis() + VOLKEYS_LEASE_MS) : "0");
+        } catch (Throwable t) {
+            Log.w(TAG, "volume keys " + (on ? "lease" : "release") + ": " + t);
         }
     }
 
@@ -248,8 +329,24 @@ public final class Play6ZoomShiftPanel extends Panel {
     @Override
     protected boolean onKeyEvent(KeyEvent ev) {
         int code = ev.getKeyCode();
+        // stock ZoomDisplacementWind: MENU (key up) shows / hides the side menu (KeyStoneLeftMenu, on the G0058 only its
+        // Reset button); BACK hides it first; its Reset runs the reset and hides it.
+        if (code == KeyEvent.KEYCODE_MENU) {
+            if (ev.getAction() == KeyEvent.ACTION_UP && state == READY) showMenu(menu.getVisibility() != View.VISIBLE);
+            return true;
+        }
+        if (menu != null && menu.getVisibility() == View.VISIBLE) {
+            boolean ok = code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER;
+            if (ok && ev.getAction() == KeyEvent.ACTION_UP && state == READY && !inFlight) {
+                showMenu(false);
+                moveGen++;                                           // no re-read of an older move after the reset
+                inFlight = true;
+                if (!Hal.run((g, g2) -> resetAll(g))) inFlight = false;
+            }
+            return code != KeyEvent.KEYCODE_BACK && code != KeyEvent.KEYCODE_ESCAPE;
+        }
         if (code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER) {
-            if (ev.getAction() == KeyEvent.ACTION_UP && state == READY && digital) {
+            if (!stockKeys && ev.getAction() == KeyEvent.ACTION_UP && state == READY && digital) {
                 shiftMode = !shiftMode;
                 render();
             }
@@ -260,10 +357,12 @@ public final class Play6ZoomShiftPanel extends Panel {
         // work here if they ever arrive; the arrows do the size in Size mode, OK switches Size / Position.
         boolean up = code == KeyEvent.KEYCODE_DPAD_UP, down = code == KeyEvent.KEYCODE_DPAD_DOWN;
         boolean left = code == KeyEvent.KEYCODE_DPAD_LEFT || code == 149, right = code == KeyEvent.KEYCODE_DPAD_RIGHT || code == 153;
-        boolean bigger = code == KeyEvent.KEYCODE_VOLUME_UP || code == 150 || !shiftMode && (up || right);
-        boolean smaller = code == KeyEvent.KEYCODE_VOLUME_DOWN || code == 148 || !shiftMode && (down || left);
-        int dir = !shiftMode ? 0 : up ? Play6Gmpf.SHIFT_UP : down ? Play6Gmpf.SHIFT_DOWN
+        boolean arrowsMove = stockKeys || shiftMode;                 // stock: the arrows always move
+        boolean bigger = code == KeyEvent.KEYCODE_VOLUME_UP || code == 150 || !arrowsMove && (up || right);
+        boolean smaller = code == KeyEvent.KEYCODE_VOLUME_DOWN || code == 148 || !arrowsMove && (down || left);
+        int dir = !arrowsMove ? 0 : up ? Play6Gmpf.SHIFT_UP : down ? Play6Gmpf.SHIFT_DOWN
                 : left ? Play6Gmpf.SHIFT_LEFT : right ? Play6Gmpf.SHIFT_RIGHT : 0;
+        if (ev.getAction() == KeyEvent.ACTION_DOWN) leaseVolumeKeys(true);
         if (!bigger && !smaller && dir == 0) return up || down || left || right;
         if (ev.getAction() != KeyEvent.ACTION_DOWN || state != READY || inFlight
                 || SystemClock.uptimeMillis() - lastStepAt < MIN_STEP_GAP_MS) return true;
@@ -284,13 +383,22 @@ public final class Play6ZoomShiftPanel extends Panel {
 
     @Override
     protected boolean onBack() {
+        if (menu != null && menu.getVisibility() == View.VISIBLE) { showMenu(false); return true; }
         backExit = true;
         return false;
+    }
+
+    private void showMenu(boolean show) {
+        if (menu == null) return;
+        menu.setVisibility(show ? View.VISIBLE : View.GONE);
+        Log.i(TAG, "menu " + (show ? "shown" : "hidden"));
     }
 
     @Override
     protected void onDismissed() {
         closed = true;
+        Ui.main().removeCallbacks(renewVolumeKeys);
+        leaseVolumeKeys(false);                                      // stock unregisterInterceptKey(25 / 24)
         if (sOpen == this) sOpen = null;
         if (!Hal.run((g, g2) -> exitNow(g, g2, "zoom close"))) Log.w(TAG, "close not queued: left to the connect hook");
         if (backExit && onBackExit != null) Ui.main().post(onBackExit);
@@ -325,19 +433,46 @@ public final class Play6ZoomShiftPanel extends Panel {
         card.addView(status);
         root.addView(card, new FrameLayout.LayoutParams(Theme.px(c, 900), ViewGroup.LayoutParams.WRAP_CONTENT,
                 Gravity.CENTER));
+        menu = EdgeGrid.card(c);
+        TextView reset = EdgeGrid.text(c, c.getString(R.string.zs_menu_reset), 34, Theme.PANEL_BG);
+        GradientDrawable focus = new GradientDrawable();
+        focus.setColor(Theme.TEXT);
+        focus.setCornerRadius(Theme.px(c, 40));
+        reset.setBackground(focus);
+        int ph = Theme.px(c, 40), pv = Theme.px(c, 14);
+        reset.setPadding(ph, pv, ph, pv);
+        menu.addView(reset);
+        menu.setVisibility(View.GONE);
+        FrameLayout.LayoutParams mlp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL);
+        mlp.leftMargin = Theme.px(c, 96);
+        root.addView(menu, mlp);
         return root;
     }
 
-    /** Size N of M: M = the full picture, 1 = the smallest (the digital step grows as the picture shrinks). */
+    /** Size N of M: M = the full picture, 1 = the smallest (the card's own level, see {@link #level}). */
     private void render() {
         if (value == null || state != READY) return;
         if (!digital) shiftMode = true;
+        if (stockKeys) {                                             // stock: size and the keys, no modes
+            mode.setVisibility(View.GONE);
+            value.setText(app.getString(R.string.zoom_position, shownPosition(), span));
+            value.setVisibility(digital ? View.VISIBLE : View.GONE);
+            hint.setText(app.getString(digital ? R.string.zs_hint_stock : R.string.zs_hint_shift_only));
+            status.setText("");
+            return;
+        }
         mode.setText(app.getString(shiftMode ? R.string.zs_mode_shift : R.string.zs_mode_size));
-        value.setText(app.getString(R.string.zoom_position, hi - cur + 1, hi - lo + 1));
+        value.setText(app.getString(R.string.zoom_position, shownPosition(), span));
         value.setVisibility(shiftMode ? View.GONE : View.VISIBLE);
         hint.setText(app.getString(shiftMode ? (digital ? R.string.zs_hint_shift : R.string.zs_hint_shift_only)
                 : R.string.zs_hint_size));
         status.setText("");
+    }
+
+    /** M = the full picture, 1 = the smallest the vendor offered at open (clamped: the vendor may go further). */
+    private int shownPosition() {
+        return Math.max(1, Math.min(span, span - level));
     }
 
     private void say(int res) {

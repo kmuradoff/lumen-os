@@ -70,7 +70,7 @@ final class Play6Snapshot {
     /** IGmpf2 228 gamma index, 230 dynamic contrast (Custom only, guard open). */
     Integer gamma;
     Boolean dynContrast;
-    /** 651 local contrast (Movie, TV, Custom), 649 HDR auto (all modes). */
+    /** 651 local contrast (Movie, TV, Custom), 649 HDR auto (the stock HDR modes, hdrMode). */
     Integer localContrast;
     Boolean hdrAuto;
     // GAME (HDMI only): 634 colour range, 661 EDID version
@@ -128,7 +128,7 @@ final class Play6Snapshot {
             int pm = s.pictureMode;
             if (memcMode(pm)) s.memc = opt("668", g::getMemcLevel);
             if (memcMode(pm)) s.localContrast = opt("651", g::getLocalContrast);
-            s.hdrAuto = opt("649", g::getHdrAuto);
+            if (hdrMode(pm)) s.hdrAuto = opt("649", g::getHdrAuto);
             if (pm == Play6Gmpf.PICTURE_CUSTOM) {
                 s.nr = opt("670", g::getNoiseReduction);
                 s.colorTemp = opt("684", g::getColorTemperature);
@@ -239,6 +239,15 @@ final class Play6Snapshot {
     }
 
     /** Motion smoothing (668 / 669) exists only in Movie (1), TV (7) and Custom (3) (stock dayao tree). */
+    /**
+     * The modes whose stock page has HDR (image_mode_hdr in the stock tree: AI, Movie, Sport, TV, Custom, Office;
+     * not Performance and not Game; audit 2026-10-24, B4).
+     */
+    static boolean hdrMode(int pm) {
+        return pm == Play6Gmpf.PICTURE_AI || pm == Play6Gmpf.PICTURE_MOVIE || pm == Play6Gmpf.PICTURE_SPORT
+                || pm == Play6Gmpf.PICTURE_TV || pm == Play6Gmpf.PICTURE_CUSTOM || pm == Play6Gmpf.PICTURE_OFFICE;
+    }
+
     static boolean memcMode(int pm) {
         return pm == Play6Gmpf.PICTURE_MOVIE || pm == Play6Gmpf.PICTURE_TV || pm == Play6Gmpf.PICTURE_CUSTOM;
     }

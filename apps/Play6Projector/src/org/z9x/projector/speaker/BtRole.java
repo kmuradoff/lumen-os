@@ -28,8 +28,8 @@ import android.util.Log;
  *           the new sysprops) -> wait ON -> the A2DP sink profile must answer getProfileProxy.
  *  normal:  sys.lumen.p6.bt_role=normal -> the image values back (source true, sink and controller false) ->
  *           the same restart. Headphones work again.
- * Already both roles at boot (the coexist block of overlay/play6/play6_base.rc, default since 2026-10-21): nothing
- * is switched.
+ * Already both roles at boot (opt-in persist.lumen.p6.bt_coexist=1, overlay/play6/play6_base.rc; the default from
+ * 2026-10-21 to 1.0.6, dropped because AVRCP to BlueZ speakers broke): nothing is switched.
  * The image without the rc lines (sys.lumen.p6.bt_roles is not 1): {@link #supported} is false and the speaker
  * mode is hidden (owner rule: nothing unsupported is shown).
  *

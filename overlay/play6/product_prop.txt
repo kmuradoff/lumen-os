@@ -85,3 +85,7 @@ ro.lumen.home.cec_names=1
 # vendor's 15 / 20 stay. All 5 kills on t10 were LOW_MEM with swap 100 % free, which neither line touches.
 #exp5 ro.lmk.swap_free_low_percentage=10
 #exp5 ro.lmk.thrashing_limit=30
+# Lumen OS 1.0.6: this base carries lineage/patches/play6/0004 (PhoneWindowManager hands the volume keys to the
+# focused window while sys.lumen.volkeys_until is in the future). The zoom and shift card then uses stock's keys
+# (arrows move, VOLUME UP / DOWN size); without this mark it keeps its arrow keys.
+ro.lumen.volkeys=1

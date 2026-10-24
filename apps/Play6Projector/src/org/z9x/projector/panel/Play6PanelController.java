@@ -59,8 +59,8 @@ import java.util.Map;
  *                guard is closed) and what it does
  *   Keystone:    Auto keystone now (326 on p6-long), Manual keystone (ManualKeystonePanel; hidden while
  *                the guard is closed), real-time keystone (585 / 586; no ceiling rule on the Play 6, OQ 14),
- *                auto keystone at power-on (552 / 553). No reset row (owner decision O3), no fit to
- *                screen or obstacle avoidance (no hardware feature)
+ *                auto keystone at power-on (552 / 553), Restore default picture (207 setIChipReset, O3
+ *                approved), no fit to screen or obstacle avoidance (no hardware feature)
  *   Brightness:  light 1..10 (176 / 177; the row shows the read-back: the vendor lowers it on battery),
  *                Power saving (327 / 328, stock eco_mode_switch, first-time confirmations), what the
  *                vendor does on battery. Vendor power events 3 and 5 refresh the open page at once
@@ -163,7 +163,8 @@ final class Play6PanelController {
     private NavRow spkOn;
     private TextRow spkDesc, ambDesc;
     // stock parity picture rows (Custom items, local contrast, HDR) and HDMI rows (2026-10-21)
-    private ChoiceRow eqRow;
+    private ChoiceRow eqRow, soundOut;
+    private java.util.List<org.z9x.projector.audio.AudioOutputChoice.Option> outOptions;
     private ToggleRow earcRow;
     private ChoiceRow nrRow, ctRow, gammaRow, lcRow, styleRow, hdmiRangeRow, edidRow;
     private final SliderRow[] wbRows = new SliderRow[6];
@@ -658,7 +659,7 @@ final class Play6PanelController {
     /**
      * Stock parity (2026-10-21, dayao tree): Custom = noise reduction, colour temperature with RGB gains / offsets
      * (Custom temperature), gamma, dynamic contrast, picture style, reset; Movie / TV / Custom = local contrast;
-     * every mode = HDR. A row exists only while its mode has it and its value was read (never disabled).
+     * AI / Movie / Sport / TV / Custom / Office = HDR. A row exists only while its mode has it and its value was read (never disabled).
      */
     private void addStockPictureRows(Page p) {
         nrRow = p.add(new ChoiceRow(app, s(R.string.pro_noise), labels(app, R.string.panel_off, R.string.panel_low,
@@ -696,8 +697,16 @@ final class Play6PanelController {
                     if (pm == null || !Play6Snapshot.memcMode(pm) || i < 0 || i > 3) { refresh(Play6Snapshot.PICTURE); return; }
                     change("655 local contrast " + i, Play6Snapshot.PICTURE, (g, g2) -> g.setLocalContrast(i));
                 }).run()));
+        // stock PictureViewModel: no HDR change on the HDMI input in HDMI 1.4 mode (EDID 1), a notice instead
         hdrRow = p.add(new ToggleRow(app, s(R.string.p6_hdr), (row, w) -> safe("hdr", () ->
-                change("650 HDR auto " + w, Play6Snapshot.PICTURE, (g, g2) -> g.setHdrAuto(w))).run()));
+                change("650 HDR auto " + w, Play6Snapshot.PICTURE, (g, g2) -> {
+                    if (g.getCurrentInputSource() == Play6Gmpf.SOURCE_HDMI1 && g.getEdidVersion() == 1) {
+                        Log.i(TAG, "650 not sent: HDMI 1.4 mode");
+                        Ui.main().post(() -> Ui.toast(app, R.string.p6_hdr_hdmi_compat));
+                        return;
+                    }
+                    g.setHdrAuto(w);
+                })).run()));
         styleRow = p.add(new ChoiceRow(app, s(R.string.p6_style), labels(app, R.string.panel_pm_standard,
                 R.string.p6_style_movie, R.string.panel_pm_office, R.string.p6_pm_custom), (row, i) -> safe("style", () -> {
                     if (!custom() || i < 0 || i >= STYLE_ORDER.length) { refresh(Play6Snapshot.PICTURE); return; }
@@ -751,18 +760,12 @@ final class Play6PanelController {
     }
 
     /**
-     * p6-hal. Stock KeyStoneManager.resetKeyStone (setIChipReset), real-time keystone paused around it as the
-     * manual keystone card does (573(2,false) / 573(2,true), only when it was on).
+     * p6-hal. Stock KeyStoneManager.resetKeyStone (setIChipReset) as stock sends it: real-time keystone is not
+     * paused around it (stock has no 573 pair here; ours had one without a saved marker, so a process death in
+     * between left real-time keystone paused; audit 2026-10-24, A6).
      */
     private void resetKeystone(Play6Gmpf g) throws android.os.RemoteException {
-        boolean rt = false;
-        try { rt = g.getMoveAk(); } catch (Throwable t) { Log.w(TAG, "keystone reset: 586 " + t); }
-        if (rt) Log.i(TAG, "keystone reset: 573(2,false) -> " + g.setRealtimeAkRunning(false));
-        try {
-            Log.i(TAG, "keystone reset: 207(0), 130 -> " + g.resetKeystone());
-        } finally {
-            if (rt) Log.i(TAG, "keystone reset: 573(2,true) -> " + g.setRealtimeAkRunning(true));
-        }
+        Log.i(TAG, "keystone reset: 207(0), 130 -> " + g.resetKeystone());
         Notify.show(app, s(R.string.panel_reset_keystone_done));
     }
 
@@ -892,6 +895,17 @@ final class Play6PanelController {
                     });
                 }).run()));
         soundMode.setCommitDelay(CHOICE_COMMIT_MS);
+        // Lumen 1.0.6 (owner 2026-10-24, as on the Z9X): manual sound output, only connected outputs are listed
+        soundOut = p.add(new ChoiceRow(app, s(R.string.sound_output),
+                labels(app, R.string.sound_output_auto, R.string.sound_output_speaker),
+                (row, i) -> safe("sound output", () -> {
+                    java.util.List<org.z9x.projector.audio.AudioOutputChoice.Option> o = outOptions;
+                    if (o == null || i < 0 || i >= o.size()) { refresh(Play6Snapshot.SOUND); return; }
+                    org.z9x.projector.audio.AudioOutputChoice.Option opt = o.get(i);
+                    org.z9x.projector.audio.AudioOutputChoice.choose(app, opt.kind, opt.addr);
+                    Notify.show(app, row.getTitle(), opt.label);
+                }).run()));
+        soundOut.setCommitDelay(CHOICE_COMMIT_MS);
         // owner 2026-10-21: the equalizer of the Z9X on the Play 6 speaker (audio/P6SoundEq), only while it can work
         eqRow = p.add(new ChoiceRow(app, s(R.string.eq_title), labels(app, R.string.eq_preset_flat, R.string.eq_preset_bass,
                 R.string.eq_preset_voice, R.string.eq_preset_night),
@@ -930,7 +944,7 @@ final class Play6PanelController {
         return p;
     }
 
-    /** Stock sequence (plan 1.7): auto = 580(true); table / ceiling / rear = 580(false) then 172. */
+    /** Stock sequence (plan 1.7): auto = 580(true); table / ceiling = 580(false) then 172; rear = 172 alone. */
     private void onProjection(int kind) {
         if (snap.putMode == null || snap.autoReverse == null) { ready(); return; }
         final int cur = snap.putMode;
@@ -947,7 +961,7 @@ final class Play6PanelController {
             if (auto) change("580 auto projection off", Play6Snapshot.PROJECTION, (g, g2) -> g.setAutoProjection(false));
             return;
         }
-        askPutMode(target);
+        askPutMode(target, true);
     }
 
     /** Rear switch: from 0/2 on -> 2, off -> 0; from 1/3 on -> 3, off -> 1. */
@@ -957,15 +971,19 @@ final class Play6PanelController {
         boolean table = cur == 0 || cur == 2;
         int target = wanted ? (table ? 2 : 3) : (table ? 0 : 1);
         row.setChecked(!wanted);               // until confirmed
-        if (target != cur) askPutMode(target);
+        if (target != cur) askPutMode(target, false);
     }
 
-    /** No 585 or IGmpf2 coupling on the Play 6 (plan 1.7): the confirmation only says the picture flips. */
-    private void askPutMode(int target) {
+    /**
+     * No 585 or IGmpf2 coupling on the Play 6 (plan 1.7): the confirmation only says the picture flips. Table and
+     * Ceiling turn auto flip off first (stock setProjectorPutModeV5: 580(false), 172); the Rear switch sends 172
+     * alone and leaves auto flip as it is (stock ProjectionRepository.setRearProjection, audit 2026-10-24).
+     */
+    private void askPutMode(int target, boolean autoOff) {
         if (target < 0 || target > 3) return;
         confirm(R.string.panel_projection_mode, s(R.string.panel_proj_confirm_flip), R.string.panel_switch,
                 () -> change("172 put mode " + target, Play6Snapshot.PROJECTION, (g, g2) -> {
-                    g.setAutoProjection(false);                    // 580(false)
+                    if (autoOff) g.setAutoProjection(false);       // 580(false)
                     g.setPutMode(target);                          // 172
                 }));
     }
@@ -1324,6 +1342,13 @@ final class Play6PanelController {
         // ---- sound
         int sm = ok ? indexOf(SOUND_ORDER, sn.soundEffect) : -1;
         setChoice(soundMode, sm, sm >= 0, true);
+        if (soundOut != null && !soundOut.isPending()) {                 // AudioManager only, no HAL read
+            outOptions = org.z9x.projector.audio.AudioOutputChoice.options(app);
+            CharSequence[] ol = new CharSequence[outOptions.size()];
+            for (int i = 0; i < ol.length; i++) ol[i] = outOptions.get(i).label;
+            soundOut.setOptions(ol);
+            soundOut.setSelected(org.z9x.projector.audio.AudioOutputChoice.selectedIndex(app, outOptions));
+        }
         if (eqRow != null) {
             boolean eq = ok && Boolean.TRUE.equals(sn.eqOk);
             visible(eqRow, eq);

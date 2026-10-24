@@ -58,6 +58,9 @@
     <string name="zs_hint_size">Управа: большы · Улева: меншы · OK: зрух відарыса · Назад: гатова</string>
     <string name="zs_hint_shift">Стрэлкі: зрух відарыса · OK: памер · Назад: гатова</string>
     <string name="zs_hint_shift_only">Стрэлкі: зрух відарыса · Назад: гатова</string>
+    <string name="zs_hint_stock">Стрэлкі: зрушыць выяву · Гучнасць + / −: памер · Меню: скід · Назад: гатова</string>
+    <string name="zs_menu_reset">Скінуць</string>
+    <string name="zs_reset_done">Скід: поўная выява па цэнтры</string>
     <string name="zs_edge">Відарыс ля краю</string>
     <string name="zs_refused">Праектар не зрушыў відарыс</string>
     <string name="rot_title">Паварот відарыса</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">Халодная</string>
     <string name="p6_ct_warm">Цёплая</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDR недаступны ў рэжыме HDMI 1.4. Спачатку выберыце HDMI 2.0 у наладах HDMI.</string>
     <string name="p6_style">Стыль выявы</string>
     <string name="p6_style_movie">Кіно D65</string>
     <string name="p6_pic_reset_msg">Усе налады рэжыму «Карыстальніцкі» вернуцца да прадвызначаных. Працягнуць?</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">Бас</string>
     <string name="eq_preset_voice">Голас</string>
     <string name="eq_preset_night">Ноч</string>
+    <string name="sound_output">Вывад гуку</string>
+    <string name="sound_output_auto">Аўтаматычна</string>
+    <string name="sound_output_speaker">Дынамік праектара</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Навушнікі</string>
+    <string name="sound_output_usb">USB-аўдыя</string>
 </resources>

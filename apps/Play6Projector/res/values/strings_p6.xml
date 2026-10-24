@@ -78,6 +78,9 @@
     <string name="zs_hint_size">Right: bigger · Left: smaller · OK: move the picture · Back: done</string>
     <string name="zs_hint_shift">Arrows: move the picture · OK: size · Back: done</string>
     <string name="zs_hint_shift_only">Arrows: move the picture · Back: done</string>
+    <string name="zs_hint_stock">Arrows: move the picture · Volume + / −: size · Menu: reset · Back: done</string>
+    <string name="zs_menu_reset">Reset</string>
+    <string name="zs_reset_done">Reset: the full picture, in the centre</string>
     <string name="zs_edge">The picture is at the edge</string>
     <string name="zs_refused">The projector did not move the picture</string>
     <string name="rot_title">Picture rotation</string>
@@ -125,6 +128,7 @@
     <string name="p6_ct_cool">Cool</string>
     <string name="p6_ct_warm">Warm</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDR is not available in HDMI 1.4 mode. Choose HDMI 2.0 in the HDMI settings first.</string>
     <string name="p6_style">Picture style</string>
     <string name="p6_style_movie">Movie D65</string>
     <string name="p6_pic_reset_msg">All settings of the Custom picture mode go back to their defaults. Continue?</string>
@@ -169,4 +173,14 @@
     <string name="eq_preset_bass">Bass</string>
     <string name="eq_preset_voice">Voice</string>
     <string name="eq_preset_night">Night</string>
+
+    <!-- Sound > Sound output (audio/AudioOutputChoice, fork of the Z9X rows; texts as Z9xProjector strings_stock.xml) -->
+    <string name="sound_output">Sound output</string>
+    <string name="sound_output_auto">Auto</string>
+    <string name="sound_output_speaker">Projector speaker</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Headphones</string>
+    <string name="sound_output_usb">USB audio</string>
 </resources>

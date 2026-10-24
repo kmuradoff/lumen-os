@@ -58,6 +58,9 @@
     <string name="zs_hint_size">Droite : plus grand · Gauche : plus petit · OK : déplacer l’image · Retour : terminé</string>
     <string name="zs_hint_shift">Flèches : déplacer l’image · OK : taille · Retour : terminé</string>
     <string name="zs_hint_shift_only">Flèches : déplacer l’image · Retour : terminé</string>
+    <string name="zs_hint_stock">Flèches : déplacer l’image · Volume + / − : taille · Menu : réinitialiser · Retour : terminé</string>
+    <string name="zs_menu_reset">Réinitialiser</string>
+    <string name="zs_reset_done">Réinitialisé : image entière, au centre</string>
     <string name="zs_edge">L’image est au bord</string>
     <string name="zs_refused">Le projecteur n’a pas déplacé l’image</string>
     <string name="rot_title">Rotation de l’image</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">Froide</string>
     <string name="p6_ct_warm">Chaude</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">Le HDR n’est pas disponible en mode HDMI 1.4. Choisissez d’abord HDMI 2.0 dans les réglages HDMI.</string>
     <string name="p6_style">Style d\'image</string>
     <string name="p6_style_movie">Cinéma D65</string>
     <string name="p6_pic_reset_msg">Tous les réglages du mode d\'image Personnalisé reviennent aux valeurs par défaut. Continuer ?</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">Basses</string>
     <string name="eq_preset_voice">Voix</string>
     <string name="eq_preset_night">Nuit</string>
+    <string name="sound_output">Sortie audio</string>
+    <string name="sound_output_auto">Automatique</string>
+    <string name="sound_output_speaker">Haut-parleur du projecteur</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Casque</string>
+    <string name="sound_output_usb">Audio USB</string>
 </resources>

@@ -183,6 +183,8 @@ public final class Play6App {
         step("Battery.install", () -> Battery.install(app));
         // Lumen 1.0.5: Bluetooth headphones get the media route and a non-zero vendor A2DP volume (no HAL call)
         step("BtAudio.install", () -> org.z9x.projector.audio.BtAudio.install(app));
+        // Lumen 1.0.6: the manual sound output of Sound (AudioManager only, no HAL call)
+        step("AudioOutputChoice.install", () -> org.z9x.projector.audio.AudioOutputChoice.install(app));
         step("EyeGuard.install", () -> org.z9x.projector.eye.EyeGuard.install(app));
         step("Assistant.install", () -> org.z9x.projector.voice.Assistant.install(app, new org.z9x.projector.voice.AssistantHost()));
         // connected hook + SCREEN_ON hook (no HAL call here): IGmpf 698 follows tvinput's HDMI sessions (t14)

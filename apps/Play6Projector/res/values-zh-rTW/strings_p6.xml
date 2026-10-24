@@ -58,6 +58,9 @@
     <string name="zs_hint_size">右：放大 · 左：縮小 · OK：移動畫面 · 返回：完成</string>
     <string name="zs_hint_shift">方向鍵：移動畫面 · OK：大小 · 返回：完成</string>
     <string name="zs_hint_shift_only">方向鍵：移動畫面 · 返回：完成</string>
+    <string name="zs_hint_stock">方向鍵：移動畫面 · 音量 + / −：大小 · 選單：重設 · 返回：完成</string>
+    <string name="zs_menu_reset">重設</string>
+    <string name="zs_reset_done">已重設：完整畫面，置中</string>
     <string name="zs_edge">畫面已到邊緣</string>
     <string name="zs_refused">投影機未移動畫面</string>
     <string name="rot_title">畫面旋轉</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">冷色</string>
     <string name="p6_ct_warm">暖色</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDMI 1.4 模式下無法使用 HDR。請先在 HDMI 設定中選擇 HDMI 2.0。</string>
     <string name="p6_style">影像風格</string>
     <string name="p6_style_movie">電影D65</string>
     <string name="p6_pic_reset_msg">自訂影像模式的所有設定將恢復預設值。是否繼續？</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">低音</string>
     <string name="eq_preset_voice">人聲</string>
     <string name="eq_preset_night">夜間</string>
+    <string name="sound_output">聲音輸出</string>
+    <string name="sound_output_auto">自動</string>
+    <string name="sound_output_speaker">投影機喇叭</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">藍牙</string>
+    <string name="sound_output_wired">耳機</string>
+    <string name="sound_output_usb">USB 音訊</string>
 </resources>

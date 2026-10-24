@@ -58,6 +58,9 @@
     <string name="zs_hint_size">W prawo: większy · W lewo: mniejszy · OK: przesuń obraz · Wstecz: gotowe</string>
     <string name="zs_hint_shift">Strzałki: przesuń obraz · OK: rozmiar · Wstecz: gotowe</string>
     <string name="zs_hint_shift_only">Strzałki: przesuń obraz · Wstecz: gotowe</string>
+    <string name="zs_hint_stock">Strzałki: przesuń obraz · Głośność + / −: rozmiar · Menu: resetuj · Wstecz: gotowe</string>
+    <string name="zs_menu_reset">Resetuj</string>
+    <string name="zs_reset_done">Zresetowano: pełny obraz na środku</string>
     <string name="zs_edge">Obraz jest przy krawędzi</string>
     <string name="zs_refused">Projektor nie przesunął obrazu</string>
     <string name="rot_title">Obrót obrazu</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">Zimna</string>
     <string name="p6_ct_warm">Ciepła</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDR nie jest dostępny w trybie HDMI 1.4. Najpierw wybierz HDMI 2.0 w ustawieniach HDMI.</string>
     <string name="p6_style">Styl obrazu</string>
     <string name="p6_style_movie">Film D65</string>
     <string name="p6_pic_reset_msg">Wszystkie ustawienia trybu obrazu Własny wrócą do domyślnych. Kontynuować?</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">Bas</string>
     <string name="eq_preset_voice">Głos</string>
     <string name="eq_preset_night">Noc</string>
+    <string name="sound_output">Wyjście dźwięku</string>
+    <string name="sound_output_auto">Automatycznie</string>
+    <string name="sound_output_speaker">Głośnik projektora</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">Słuchawki</string>
+    <string name="sound_output_usb">Dźwięk USB</string>
 </resources>

@@ -58,6 +58,9 @@
     <string name="zs_hint_size">右: 大きく · 左: 小さく · OK: 画面を移動 · 戻る: 完了</string>
     <string name="zs_hint_shift">矢印: 画面を移動 · OK: サイズ · 戻る: 完了</string>
     <string name="zs_hint_shift_only">矢印: 画面を移動 · 戻る: 完了</string>
+    <string name="zs_hint_stock">矢印: 画面を移動 · 音量 + / −: サイズ · メニュー: リセット · 戻る: 完了</string>
+    <string name="zs_menu_reset">リセット</string>
+    <string name="zs_reset_done">リセット: 全画面、中央</string>
     <string name="zs_edge">画面が端にあります</string>
     <string name="zs_refused">プロジェクターが画面を移動しませんでした</string>
     <string name="rot_title">画面の回転</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">寒色</string>
     <string name="p6_ct_warm">暖色</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDMI 1.4 モードでは HDR を使えません。先に HDMI 設定で HDMI 2.0 を選んでください。</string>
     <string name="p6_style">画像スタイル</string>
     <string name="p6_style_movie">映画 D65</string>
     <string name="p6_pic_reset_msg">カスタム画質モードのすべての設定が初期値に戻ります。続けますか？</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">低音</string>
     <string name="eq_preset_voice">ボイス</string>
     <string name="eq_preset_night">ナイト</string>
+    <string name="sound_output">音声出力</string>
+    <string name="sound_output_auto">自動</string>
+    <string name="sound_output_speaker">プロジェクターのスピーカー</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">ヘッドホン</string>
+    <string name="sound_output_usb">USB オーディオ</string>
 </resources>

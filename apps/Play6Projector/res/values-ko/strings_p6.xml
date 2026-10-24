@@ -58,6 +58,9 @@
     <string name="zs_hint_size">오른쪽: 크게 · 왼쪽: 작게 · OK: 화면 이동 · 뒤로: 완료</string>
     <string name="zs_hint_shift">화살표: 화면 이동 · OK: 크기 · 뒤로: 완료</string>
     <string name="zs_hint_shift_only">화살표: 화면 이동 · 뒤로: 완료</string>
+    <string name="zs_hint_stock">화살표: 화면 이동 · 볼륨 + / −: 크기 · 메뉴: 초기화 · 뒤로: 완료</string>
+    <string name="zs_menu_reset">초기화</string>
+    <string name="zs_reset_done">초기화됨: 전체 화면, 가운데</string>
     <string name="zs_edge">화면이 가장자리에 있습니다</string>
     <string name="zs_refused">프로젝터가 화면을 이동하지 않았습니다</string>
     <string name="rot_title">화면 회전</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">차갑게</string>
     <string name="p6_ct_warm">따뜻하게</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDMI 1.4 모드에서는 HDR을 사용할 수 없습니다. 먼저 HDMI 설정에서 HDMI 2.0을 선택하세요.</string>
     <string name="p6_style">화면 스타일</string>
     <string name="p6_style_movie">영화 D65</string>
     <string name="p6_pic_reset_msg">사용자 지정 화면 모드의 모든 설정이 기본값으로 돌아갑니다. 계속할까요?</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">저음</string>
     <string name="eq_preset_voice">음성</string>
     <string name="eq_preset_night">야간</string>
+    <string name="sound_output">사운드 출력</string>
+    <string name="sound_output_auto">자동</string>
+    <string name="sound_output_speaker">프로젝터 스피커</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">Bluetooth</string>
+    <string name="sound_output_wired">헤드폰</string>
+    <string name="sound_output_usb">USB 오디오</string>
 </resources>

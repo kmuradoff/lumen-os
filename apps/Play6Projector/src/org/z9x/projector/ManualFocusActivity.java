@@ -21,7 +21,8 @@ import android.view.WindowManager;
  */
 public final class ManualFocusActivity extends Activity {
     private static final String TAG = "P6ManualFocus";
-    private static final long IDLE_CLOSE_MS = 8_000;
+    /** Stock FocusAdjust: closes 3 s after opening and after each key up (audit 2026-10-24, A12). */
+    private static final long IDLE_CLOSE_MS = 3_000;
 
     private MotorController motor;
     private long lastKeyAt;

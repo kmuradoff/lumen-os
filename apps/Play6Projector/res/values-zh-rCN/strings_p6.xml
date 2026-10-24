@@ -58,6 +58,9 @@
     <string name="zs_hint_size">右：放大 · 左：缩小 · OK：移动画面 · 返回：完成</string>
     <string name="zs_hint_shift">方向键：移动画面 · OK：大小 · 返回：完成</string>
     <string name="zs_hint_shift_only">方向键：移动画面 · 返回：完成</string>
+    <string name="zs_hint_stock">方向键：移动画面 · 音量 + / −：大小 · 菜单：重置 · 返回：完成</string>
+    <string name="zs_menu_reset">重置</string>
+    <string name="zs_reset_done">已重置：完整画面，居中</string>
     <string name="zs_edge">画面已到边缘</string>
     <string name="zs_refused">投影仪未移动画面</string>
     <string name="rot_title">画面旋转</string>
@@ -102,6 +105,7 @@
     <string name="p6_ct_cool">冷色</string>
     <string name="p6_ct_warm">暖色</string>
     <string name="p6_hdr">HDR</string>
+    <string name="p6_hdr_hdmi_compat">HDMI 1.4 模式下无法使用 HDR。请先在 HDMI 设置中选择 HDMI 2.0。</string>
     <string name="p6_style">图像风格</string>
     <string name="p6_style_movie">电影D65</string>
     <string name="p6_pic_reset_msg">自定义图像模式的全部设置将恢复默认值。是否继续？</string>
@@ -139,4 +143,12 @@
     <string name="eq_preset_bass">低音</string>
     <string name="eq_preset_voice">人声</string>
     <string name="eq_preset_night">夜间</string>
+    <string name="sound_output">声音输出</string>
+    <string name="sound_output_auto">自动</string>
+    <string name="sound_output_speaker">投影仪扬声器</string>
+    <string name="sound_output_arc">HDMI ARC</string>
+    <string name="sound_output_earc">HDMI eARC</string>
+    <string name="sound_output_bt">蓝牙</string>
+    <string name="sound_output_wired">耳机</string>
+    <string name="sound_output_usb">USB 音频</string>
 </resources>

@@ -66,8 +66,9 @@ public class SliderRow extends Row {
 
     public SliderRow setCommitDelay(long ms) { commitDelay = Math.max(0, ms); return this; }
 
-    /** Read-back value (no listener call). Pass null for unknown. */
+    /** Read-back value (no listener call). Pass null for unknown. Ignored while a delayed commit is pending (B1). */
     public SliderRow setValue(Integer v) {
+        if (isPending()) return this;
         known = v != null;
         if (v != null) value = Math.max(min, Math.min(max, v));
         invalidate();
@@ -75,6 +76,9 @@ public class SliderRow extends Row {
     }
 
     public int getValue() { return value; }
+
+    /** A move the user made is waiting for its delayed commit. */
+    public boolean isPending() { return h.hasCallbacks(commit); }
 
     public boolean isKnown() { return known; }
 
