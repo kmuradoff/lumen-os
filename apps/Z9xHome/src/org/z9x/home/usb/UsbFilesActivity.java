@@ -18,6 +18,7 @@ import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import org.z9x.home.R;
+import org.z9x.home.net.NetFolders;
 import org.z9x.home.ui.ContextPanel;
 import org.z9x.home.ui.ListPanel;
 import org.z9x.home.ui.Theme;
@@ -40,6 +41,8 @@ import java.util.concurrent.Future;
  * A long OK on a file or a folder opens its menu: open, copy to another place (the projector's Download folder or a
  * stick's root, under a free name, with progress and cancel), delete (after a confirmation). Removing the stick
  * that is shown goes back to the start. Players read the file through UsbFilesProvider.
+ * 1.0.6: a Network folders row after the places (net/NetFolders: SMB shares of a PC, a Mac, a NAS); its pages
+ * keep their own stack, told about BACK before ours, so mPath and mMenuDepth only ever count USB pages.
  */
 public class UsbFilesActivity extends Activity {
     private static final String TAG = "Z9xHomeFiles";
@@ -58,6 +61,9 @@ public class UsbFilesActivity extends Activity {
     private int mSeq;
     private boolean mOkDown, mOkLong;
     private Future<?> mCopy;
+    private NetFolders mNet;
+    /** A stick came or went while network pages were shown: the places are read again when they are gone. */
+    private boolean mStartStale;
 
     private final BroadcastReceiver mMedia = new BroadcastReceiver() {
         @Override
@@ -77,6 +83,12 @@ public class UsbFilesActivity extends Activity {
         mPanel.setOnClosed(() -> root.postDelayed(this::finish, 200));
         root.addView(mPanel, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);
+        mNet = new NetFolders(this, mPanel, () -> {
+            if (mStartStale && !isFinishing() && !isDestroyed()) {
+                mStartStale = false;
+                showStart();
+            }
+        });
         ArrayList<ListPanel.Item> l = new ArrayList<>();
         l.add(ListPanel.Item.info(0, "…"));
         mPanel.open(getString(R.string.files_title), "", l);
@@ -100,6 +112,7 @@ public class UsbFilesActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
+        mNet.onStop();
         try {
             unregisterReceiver(mMedia);
         } catch (IllegalArgumentException ignored) {
@@ -110,6 +123,7 @@ public class UsbFilesActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         if (mCopy != null) mCopy.cancel(true);
+        mNet.onDestroy();
         mIo.shutdownNow();
         mCopyIo.shutdownNow();
     }
@@ -123,6 +137,8 @@ public class UsbFilesActivity extends Activity {
                 && !e.isCanceled() && mPanel.isOpen()) {
             if (mMenuDepth > 0) {
                 mMenuDepth--;
+            } else if (mNet.onBack()) {
+                // a network page: NetFolders keeps its own stack
             } else if (!mPath.isEmpty()) {
                 mPath.remove(mPath.size() - 1);
                 mSeq++;                               // a folder still being read is not shown any more
@@ -139,14 +155,15 @@ public class UsbFilesActivity extends Activity {
     /** OK on a file or a folder: a short press opens it (on key up), a long one opens its menu. */
     private boolean longOk(int k, KeyEvent e) {
         ListPanel.Item it = mPanel.focusedItem();
-        if (it == null || !(it.tag instanceof UsbFiles.Entry)) return false;
+        if (it == null || !(it.tag instanceof UsbFiles.Entry) && !mNet.hasMenu(it.tag)) return false;
         if (e.getAction() == KeyEvent.ACTION_DOWN) {
             if (e.getRepeatCount() == 0) {
                 mOkDown = true;
                 mOkLong = false;
             } else if (mOkDown && !mOkLong && (e.isLongPress() || e.getEventTime() - e.getDownTime() >= LONG_OK_MS)) {
                 mOkLong = true;
-                showMenu((UsbFiles.Entry) it.tag);
+                if (it.tag instanceof UsbFiles.Entry) showMenu((UsbFiles.Entry) it.tag);
+                else mNet.showMenu(it.tag);
             }
             return true;
         }
@@ -170,6 +187,10 @@ public class UsbFilesActivity extends Activity {
             List<UsbFiles.Stick> places = UsbFiles.places(app, internal);
             mMain.post(() -> {
                 if (seq != mSeq || isFinishing() || isDestroyed()) return;
+                if (mNet.depth() > 0) {
+                    mStartStale = true;                   // network pages opened meanwhile: later
+                    return;
+                }
                 mPlaces = places;
                 mPath.clear();
                 mMenuDepth = 0;
@@ -189,6 +210,7 @@ public class UsbFilesActivity extends Activity {
         boolean stick = false;
         for (UsbFiles.Stick s : places) stick |= !s.internal;
         if (!stick) l.add(ListPanel.Item.info(R.drawable.ic_usb, getString(R.string.files_none)));
+        l.add(mNet.entryItem());
         return l;
     }
 
@@ -258,7 +280,7 @@ public class UsbFilesActivity extends Activity {
         return l;
     }
 
-    private static int icon(int type) {
+    public static int icon(int type) {
         switch (type) {
             case UsbFiles.DIR: return R.drawable.ic_folder;
             case UsbFiles.VIDEO: return R.drawable.ic_movie;
@@ -433,6 +455,10 @@ public class UsbFilesActivity extends Activity {
     /** A stick came or went: back to the start when the folder shown is gone, else refresh the start page. */
     private void onStorageChanged() {
         if (isFinishing() || isDestroyed() || !mPanel.isOpen()) return;
+        if (mNet.depth() > 0) {
+            mStartStale = true;                       // not under the network pages: when they are gone
+            return;
+        }
         File shown = !mPath.isEmpty() ? mPath.get(mPath.size() - 1) : null;
         if (shown != null && shown.isDirectory() && UsbFiles.inPlaces(this, shown)) return;
         if (mCopy != null && !mCopy.isDone()) mCopy.cancel(true);

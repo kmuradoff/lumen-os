@@ -1,0 +1,33 @@
+# Lumen Home (1.0.6 Files: network folders): NEW strings for the merge into
+# langs/zh-rTW.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+net_title=網路資料夾
+net_sub=Windows、Mac、Linux 或 NAS
+net_hint=在伺服器上長按 OK 即可編輯或刪除
+net_add=新增伺服器
+net_found=此網路中
+net_address=位址
+net_address_hint=IP 位址或名稱
+net_port=連接埠
+net_login=使用者名稱
+net_login_hint=留空則以訪客身分存取
+net_password=密碼
+net_share=共用資料夾
+net_name=名稱
+net_not_set=未設定
+net_guest=訪客存取
+net_all_shares=所有共用資料夾
+net_connect=連線
+net_connecting=正在連線…
+net_enter_share=輸入共用資料夾名稱
+net_no_shares=無法取得共用資料夾清單。請輸入共用資料夾名稱。
+net_need_password=輸入密碼以連線
+net_edit=編輯
+net_retry=重試
+net_err_address=請輸入伺服器位址
+net_err_logon=使用者名稱或密碼錯誤
+net_err_denied=存取遭拒
+net_err_share=找不到共用資料夾
+net_err_unreachable=無法連上伺服器。請檢查位址和連接埠。
+net_err_encrypt=此伺服器要求加密，目前不支援
+net_err_other=無法連線：%1$s

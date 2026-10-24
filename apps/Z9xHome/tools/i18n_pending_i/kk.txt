@@ -1,0 +1,33 @@
+# Lumen Home (1.0.6 Files: network folders): NEW strings for the merge into
+# langs/kk.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+net_title=Желілік қалталар
+net_sub=Windows, Mac, Linux немесе NAS
+net_hint=Серверді өзгерту не жою үшін оның үстінде OK басып тұрыңыз
+net_add=Сервер қосу
+net_found=Осы желіде
+net_address=Мекенжай
+net_address_hint=IP мекенжайы немесе атауы
+net_port=Порт
+net_login=Логин
+net_login_hint=Қонақ кіруі үшін бос қалдырыңыз
+net_password=Құпиясөз
+net_share=Ортақ қалта
+net_name=Атауы
+net_not_set=Орнатылмаған
+net_guest=Қонақ кіруі
+net_all_shares=Барлық ортақ қалталар
+net_connect=Қосылу
+net_connecting=Қосылуда…
+net_enter_share=Ортақ қалта атын енгізу
+net_no_shares=Ортақ қалталар тізімі қолжетімсіз. Ортақ қалта атын енгізіңіз.
+net_need_password=Қосылу үшін құпиясөзді енгізіңіз
+net_edit=Өзгерту
+net_retry=Қайталау
+net_err_address=Сервер мекенжайын енгізіңіз
+net_err_logon=Логин немесе құпиясөз қате
+net_err_denied=Кіруге тыйым салынған
+net_err_share=Ортақ қалта табылмады
+net_err_unreachable=Сервер қолжетімсіз. Мекенжай мен портты тексеріңіз.
+net_err_encrypt=Сервер шифрлауды талап етеді, ол қолдау көрсетілмейді
+net_err_other=Қосылу мүмкін болмады: %1$s

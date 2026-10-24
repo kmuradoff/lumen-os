@@ -1,0 +1,33 @@
+# Lumen Home (1.0.6 Files: network folders): NEW strings for the merge into
+# langs/(English base, res/values).txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+net_title=Network folders
+net_sub=Windows, Mac, Linux or a NAS
+net_hint=Hold OK on a server to edit or delete it
+net_add=Add a server
+net_found=On this network
+net_address=Address
+net_address_hint=IP address or name
+net_port=Port
+net_login=Login
+net_login_hint=Empty for guest access
+net_password=Password
+net_share=Share
+net_name=Name
+net_not_set=Not set
+net_guest=Guest access
+net_all_shares=All shares
+net_connect=Connect
+net_connecting=Connecting…
+net_enter_share=Enter a share name
+net_no_shares=The list of shares is not available. Enter a share name.
+net_need_password=Enter the password to connect
+net_edit=Edit
+net_retry=Try again
+net_err_address=Enter the server address
+net_err_logon=Wrong login or password
+net_err_denied=Access denied
+net_err_share=Share not found
+net_err_unreachable=Server not reachable. Check the address and port.
+net_err_encrypt=This server requires encryption, which is not supported
+net_err_other=Could not connect: %1$s

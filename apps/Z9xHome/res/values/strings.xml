@@ -94,6 +94,37 @@
     <string name="files_failed">Could not do it: %1$s</string>
     <string name="files_no_space">Not enough free space</string>
     <string name="files_install">Install app</string>
+    <!-- 1.0.6: Files > Network folders (net/NetFolders: SMB shares of a PC, a Mac, a NAS) -->
+    <string name="net_title">Network folders</string>
+    <string name="net_sub">Windows, Mac, Linux or a NAS</string>
+    <string name="net_hint">Hold OK on a server to edit or delete it</string>
+    <string name="net_add">Add a server</string>
+    <string name="net_found">On this network</string>
+    <string name="net_address">Address</string>
+    <string name="net_address_hint">IP address or name</string>
+    <string name="net_port">Port</string>
+    <string name="net_login">Login</string>
+    <string name="net_login_hint">Empty for guest access</string>
+    <string name="net_password">Password</string>
+    <string name="net_share">Share</string>
+    <string name="net_name">Name</string>
+    <string name="net_not_set">Not set</string>
+    <string name="net_guest">Guest access</string>
+    <string name="net_all_shares">All shares</string>
+    <string name="net_connect">Connect</string>
+    <string name="net_connecting">Connecting…</string>
+    <string name="net_enter_share">Enter a share name</string>
+    <string name="net_no_shares">The list of shares is not available. Enter a share name.</string>
+    <string name="net_need_password">Enter the password to connect</string>
+    <string name="net_edit">Edit</string>
+    <string name="net_retry">Try again</string>
+    <string name="net_err_address">Enter the server address</string>
+    <string name="net_err_logon">Wrong login or password</string>
+    <string name="net_err_denied">Access denied</string>
+    <string name="net_err_share">Share not found</string>
+    <string name="net_err_unreachable">Server not reachable. Check the address and port.</string>
+    <string name="net_err_encrypt">This server requires encryption, which is not supported</string>
+    <string name="net_err_other">Could not connect: %1$s</string>
 
     <!-- inputs, cast, projector tiles -->
     <string name="inputs_connected">Connected devices</string>

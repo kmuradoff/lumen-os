@@ -1,6 +1,6 @@
 #!/bin/sh
 # Lumen Home JVM tests (SPEC T12 IntentGuard, Ranker, Snapshot; 1.0.1: hero art layout, header contrast,
-# UI modes 1080p / 2K / 4K, the files Install from USB offers)
+# UI modes 1080p / 2K / 4K, the files Install from USB offers; 1.0.6: the network folders' SMB client)
 # on the Mac JDK; android.jar only to link.
 set -eu
 HERE=$(cd "$(dirname "$0")/.." && pwd)
@@ -25,3 +25,6 @@ HJ=$HERE/../sdk/framework-full-headers.jar
 "$JAVA_HOME/bin/java" -cp "$OUT:$AJ:$HJ" org.z9x.home.sky.SkySizeTest
 # living sky (org.z9x.home.sky: SolarCalc + SkyLook, plain JDK, no R.java)
 sh "$HERE/test/sky/run.sh"
+# network folders (org.z9x.home.net: MD4, AES-CMAC, NTLMv2, SPNEGO, srvsvc RPC, Smb2 on a loopback fake server;
+# plain JDK, no R.java)
+sh "$HERE/test/net/run.sh"

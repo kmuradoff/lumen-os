@@ -1,0 +1,33 @@
+# Lumen Home (1.0.6 Files: network folders): NEW strings for the merge into
+# langs/uk.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+net_title=Мережеві папки
+net_sub=Windows, Mac, Linux або NAS
+net_hint=Утримуйте OK на сервері, щоб змінити або видалити його
+net_add=Додати сервер
+net_found=У цій мережі
+net_address=Адреса
+net_address_hint=IP-адреса або ім’я
+net_port=Порт
+net_login=Логін
+net_login_hint=Порожньо для гостьового доступу
+net_password=Пароль
+net_share=Спільна папка
+net_name=Назва
+net_not_set=Не задано
+net_guest=Гостьовий доступ
+net_all_shares=Усі спільні папки
+net_connect=Під’єднатися
+net_connecting=Під’єднання…
+net_enter_share=Ввести ім’я спільної папки
+net_no_shares=Список спільних папок недоступний. Введіть ім’я спільної папки.
+net_need_password=Введіть пароль для під’єднання
+net_edit=Змінити
+net_retry=Повторити
+net_err_address=Введіть адресу сервера
+net_err_logon=Неправильний логін або пароль
+net_err_denied=Доступ заборонено
+net_err_share=Спільну папку не знайдено
+net_err_unreachable=Сервер недоступний. Перевірте адресу й порт.
+net_err_encrypt=Сервер вимагає шифрування, воно не підтримується
+net_err_other=Не вдалося під’єднатися: %1$s

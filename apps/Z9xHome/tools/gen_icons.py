@@ -152,6 +152,10 @@ ICONS = {
     "music": [("M9,17.5 V5.5 L19,3.5 V15.5", "s"), (circle(6.8, 17.5, 2.3), "s"), (circle(16.8, 15.5, 2.3), "s")],
     "movie": [(rrect(3, 5, 21, 19, 2.5), "s"), (line((3.5, 9), (20.5, 9)), "s"), (line((7.5, 5), (9, 9)), "s"),
               (line((12.5, 5), (14, 9)), "s"), (line((17.5, 5), (19, 9)), "s"), (poly((10.5, 11.8), (14.5, 14.2), (10.5, 16.6)), "f")],
+    # 1.0.6: Files > Network folders (net/NetFolders): a server, two drive bays with their lights
+    "server": [(rrect(3.5, 4, 20.5, 10.5, 2), "s"), (rrect(3.5, 13.5, 20.5, 20, 2), "s"),
+               (circle(7.5, 7.25, 1.1), "f"), (circle(7.5, 16.75, 1.1), "f"),
+               (line((11.5, 7.25), (17, 7.25)), "s"), (line((11.5, 16.75), (17, 16.75)), "s")],
 }
 
 # two-tone weather icons: (path, kind, color)

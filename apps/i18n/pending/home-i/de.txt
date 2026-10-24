@@ -1,0 +1,33 @@
+# Lumen Home (1.0.6 Files: network folders): NEW strings for the merge into
+# langs/de.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+net_title=Netzwerkordner
+net_sub=Windows, Mac, Linux oder ein NAS
+net_hint=OK auf einem Server halten, um ihn zu bearbeiten oder zu löschen
+net_add=Server hinzufügen
+net_found=In diesem Netzwerk
+net_address=Adresse
+net_address_hint=IP-Adresse oder Name
+net_port=Port
+net_login=Benutzername
+net_login_hint=Leer für Gastzugriff
+net_password=Passwort
+net_share=Freigabe
+net_name=Name
+net_not_set=Nicht festgelegt
+net_guest=Gastzugriff
+net_all_shares=Alle Freigaben
+net_connect=Verbinden
+net_connecting=Verbindung wird hergestellt…
+net_enter_share=Freigabenamen eingeben
+net_no_shares=Die Liste der Freigaben ist nicht verfügbar. Gib einen Freigabenamen ein.
+net_need_password=Gib das Passwort ein, um dich zu verbinden
+net_edit=Bearbeiten
+net_retry=Erneut versuchen
+net_err_address=Gib die Serveradresse ein
+net_err_logon=Falscher Benutzername oder falsches Passwort
+net_err_denied=Zugriff verweigert
+net_err_share=Freigabe nicht gefunden
+net_err_unreachable=Server nicht erreichbar. Prüfe Adresse und Port.
+net_err_encrypt=Dieser Server verlangt Verschlüsselung, die nicht unterstützt wird
+net_err_other=Verbindung fehlgeschlagen: %1$s

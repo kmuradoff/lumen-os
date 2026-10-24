@@ -1,0 +1,33 @@
+# Lumen Home (1.0.6 Files: network folders): NEW strings for the merge into
+# langs/fr.txt (merge_pending.py; gen.py source format).
+@home/strings.xml
+net_title=Dossiers réseau
+net_sub=Windows, Mac, Linux ou un NAS
+net_hint=Maintenez OK sur un serveur pour le modifier ou le supprimer
+net_add=Ajouter un serveur
+net_found=Sur ce réseau
+net_address=Adresse
+net_address_hint=Adresse IP ou nom
+net_port=Port
+net_login=Identifiant
+net_login_hint=Vide pour l’accès invité
+net_password=Mot de passe
+net_share=Partage
+net_name=Nom
+net_not_set=Non défini
+net_guest=Accès invité
+net_all_shares=Tous les partages
+net_connect=Se connecter
+net_connecting=Connexion…
+net_enter_share=Saisir un nom de partage
+net_no_shares=La liste des partages n’est pas disponible. Saisissez un nom de partage.
+net_need_password=Saisissez le mot de passe pour vous connecter
+net_edit=Modifier
+net_retry=Réessayer
+net_err_address=Saisissez l’adresse du serveur
+net_err_logon=Identifiant ou mot de passe incorrect
+net_err_denied=Accès refusé
+net_err_share=Partage introuvable
+net_err_unreachable=Serveur injoignable. Vérifiez l’adresse et le port.
+net_err_encrypt=Ce serveur exige le chiffrement, qui n’est pas pris en charge
+net_err_other=Connexion impossible : %1$s

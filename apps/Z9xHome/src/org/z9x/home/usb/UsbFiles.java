@@ -122,7 +122,12 @@ public final class UsbFiles {
 
     public static int type(File f) {
         if (f.isDirectory()) return DIR;
-        Integer t = TYPES.get(ext(f.getName()));
+        return type(f.getName());
+    }
+
+    /** The type of a file (never DIR) from its name: the network folders have no File to ask. */
+    public static int type(String name) {
+        Integer t = TYPES.get(ext(name));
         return t == null ? OTHER : t;
     }
 
