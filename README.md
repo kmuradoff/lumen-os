@@ -15,9 +15,9 @@ Each projector has its own release files, signed with its own key. The installer
 another projector and any XGIMI firmware it does not know.
 
 - XGIMI Z9X (model code G0082): XGIMI firmware V6.15.58, V6.15.62 or V6.15.19. Updates come over Wi-Fi.
-- XGIMI Play 6 (model code G0058): XGIMI's Chinese firmware V1.7.116, no other version. The global (Russian)
-  firmware, a version like RG0058V1.8xxx, is not supported yet: do not replace it with the Chinese one, on newer
-  units Wi-Fi and Bluetooth then stop working. A new version goes on with the installer over the USB cable and
+- XGIMI Play 6 (model code G0058): XGIMI firmware V1.7.116, no other version. The newer V1.8.x (newer units with
+  another Wi-Fi chip) is not supported yet: do not replace it with V1.7.116, Wi-Fi and Bluetooth then stop
+  working. A new version goes on with the installer over the USB cable and
   keeps your data. Updates over Wi-Fi come later.
 - XGIMI Play 6: Google services are not in the image and cannot be added yet. As on the Z9X, they are
   planned as an add-on that you make from your own MindTheGapps download.
