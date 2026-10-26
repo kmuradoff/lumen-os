@@ -527,11 +527,11 @@ What is different from the Z9X:
 
 ### What you need
 
-- A Play 6 on XGIMI's Chinese firmware V1.7.116 (the latest Chinese one). If yours is an older Chinese one, let
-  stock update over Wi-Fi first. Other versions are refused.
-- XGIMI's global (Russian) firmware, a version like RG0058V1.8xxx, is not supported by Lumen OS yet. Do not
-  replace it with the Chinese V1.7.116 from a stick: on newer Play 6 units Wi-Fi and Bluetooth then stop
-  working, because the Chinese firmware has no driver for their Wi-Fi chip.
+- A Play 6 on XGIMI firmware V1.7.116. If yours is older, let stock update over Wi-Fi first. Other versions are
+  refused.
+- The newer firmware V1.8.x (About shows it as RG0058V1.8xxx) is not supported by Lumen OS yet. It comes on newer
+  Play 6 batches with another Wi-Fi chip. Do not replace it with V1.7.116 from a stick: V1.7.116 has no driver
+  for that chip, so Wi-Fi and Bluetooth stop working.
 - Its power adapter, connected for the whole install.
 - A Wi-Fi network that the projector and the computer are both in. A guest network that keeps devices
   apart does not work.
@@ -551,8 +551,8 @@ on the cable Windows may need the [Google USB Driver](https://developer.android.
 ### 1. Prepare the projector (10 min)
 
 1. On stock, open the settings and look at the system version (About). You need V1.7.116. If it is older, let stock
-   update itself over Wi-Fi to V1.7.116. If it looks like RG0058V1.8xxx (global firmware), stop: Lumen OS does not
-   support it yet, and do not put the Chinese firmware on that projector from a stick.
+   update itself over Wi-Fi to V1.7.116. If it is V1.8.x (shown as RG0058V1.8xxx), stop: Lumen OS does not support
+   it yet, and do not put V1.7.116 on that projector from a stick.
 2. Connect the projector to your Wi-Fi. If the stock settings have automatic system updates, turn them off,
    so that no XGIMI update is downloaded during the install. If one is already waiting, the installer says
    so: then do not restart the projector yourself until Lumen OS is written.
@@ -765,7 +765,7 @@ bash lumen-install.sh --ip 192.168.x.y gapps --remove
 | check | "give the projector's Wi-Fi address" | Run with `--ip ADDRESS`, see [step 1](#play6-prepare), item 4. Nothing was done. |
 | check | "no adb connection to ... over Wi-Fi" | Is debugging on (step 1, item 3), are the projector and the computer in the same network, is the address right? Nothing was done. |
 | any step | "did not allow this computer" | The projector asks whether this computer may use debugging. Tick "Always allow from this computer", press OK and run the same command again. |
-| check | "XGIMI firmware ... is not supported" | Older: let stock update itself to V1.7.116. Newer or global (RG0058V1.8xxx): Lumen OS does not support it yet. Do not install V1.7.116 from a stick: on newer Play 6 units Wi-Fi and Bluetooth stop working. Nothing was done. |
+| check | "XGIMI firmware ... is not supported" | Older: let stock update itself to V1.7.116. Newer (V1.8.x, shown as RG0058V1.8xxx): Lumen OS does not support it yet. Do not install V1.7.116 from a stick: on newer Play 6 units Wi-Fi and Bluetooth stop working. Nothing was done. |
 | check | "this projector is not supported" | This part is only for the Play 6 (G0058). Nothing was done. |
 | check | "the device at ... is an XGIMI Z9X" | Use the Z9X part of this guide: the Z9X installs over the cable, without `--ip`. |
 | check | "this download of the installer is for the XGIMI Z9X" | Download the Play 6 release, see [step 2](#play6-files). |
@@ -822,11 +822,10 @@ start and does not appear in fastboot mode, the stock restore is the way back.
 
 ### Back to stock (erases everything)
 
-**Only for a Play 6 with XGIMI's Chinese firmware.** The file below is the Chinese firmware V1.7.116 for units
-with a MediaTek Wi-Fi module. If your Play 6 was sold with the global (Russian) firmware, a version like
-RG0058V1.8xxx, this file is not for it: Wi-Fi and Bluetooth stop working after it, because newer batches have
-another Wi-Fi chip (AIC) and the Chinese firmware has no driver for it. For such a projector, ask XGIMI support
-for its own firmware.
+**Only for a Play 6 that came with V1.7.116 or older.** The file below is firmware V1.7.116 for units with a
+MediaTek Wi-Fi module. If your Play 6 had V1.8.x (About shows RG0058V1.8xxx), this file is not for it: Wi-Fi
+and Bluetooth stop working after it, because newer batches have another Wi-Fi chip (AIC) and V1.7.116 has no
+driver for it. For such a projector, ask XGIMI support for its own firmware.
 
 XGIMI's own USB update installs the stock firmware from a stick. It works only when the stick is prepared
 exactly like this:
