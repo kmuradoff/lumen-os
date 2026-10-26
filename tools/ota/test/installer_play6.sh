@@ -332,7 +332,7 @@ for fw in v1.7.200 v1.0.9; do
   inst '' --ip 192.0.2.50 check
   expect_rc 1
   expect_out "XGIMI firmware $fw is not supported: Lumen OS for the $NAME is tested on $FWLIST."
-  expect_out "install V${FW1#v} from a USB stick"; expect_out "Nothing was done."
+  expect_out "Do NOT install V${FW1#v} from a USB stick over it"; expect_out "RG0058V1.8xxx"; expect_out "Nothing was done."
   [ -z "$(writes)" ] || fail "adb wrote: $(writes)"
   end
 done
