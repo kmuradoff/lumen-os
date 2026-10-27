@@ -1,3 +1,20 @@
+# 0.3 (versionCode 3), 2026-10-27: real projector output
+
+The owner read "Interface resolution 1920×1080" as the picture going out at 1080p while a PS5 sent 4K. That
+row is the Android interface plane (the Lumen build draws its UI at 1080p); HDMI video goes on its own plane
+and reaches the DLP chip at 4K (vendor log: SetOutputRect 0,0,3840,2160; output timing 3840×2160 at 60).
+
+- New row "Projector output" / "Выход на проектор" (Picture and signal, detailed mode): IGmpf 157
+  getOutputTimingInfo, a read-only getter (bool + a 40-byte struct, size from the Z9X proxy: 7 x i32
+  user_timing_idx, disp_width, disp_height, curr_timing_idx, curr_hres, curr_vres, vfreq, then a 12-byte
+  stDlpSupportTiming that is not read), every 10 s with the other picture reads. Shows
+  curr_hres × curr_vres at vfreq. Added to the allowlist; the layout matches the vendor's own log line.
+- Light source time: the vendor answers usage_time 0 for every light on Lumen (raw reply logged on the
+  owner's Z9X), so a 0 now hides the row instead of showing "0 h".
+- "Interface resolution" / "Refresh rate" are now "Menu resolution" / "Menu refresh rate"
+  («Разрешение меню» / «Частота меню»).
+- Detailed mode asks for about 3.3 calls per second (one more 10 s read); the 2 per second cap is unchanged.
+
 # 0.2 (versionCode 2), 2026-10-27: fixes from the first device test
 
 Device test of 0.1 on the owner's Z9X (Lumen OS 1.0.5, HDMI 1 3840x2160p 59.9 Hz SDR): profile, HAL

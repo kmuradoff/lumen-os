@@ -39,7 +39,7 @@ public final class Z9xGmpfReader {
 
     private final Iface gmpf = new Iface(IGMPF, GmpfAllowlist.IGMPF);
     private final Iface gmpf2 = new Iface(IGMPF2, GmpfAllowlist.IGMPF2);
-    private final byte[] scratch = new byte[16];
+    private final byte[] scratch = new byte[48];
 
     /** Looks up IGmpf (no transact). True when the vendor service answers getService. */
     public boolean connect() {
@@ -140,6 +140,15 @@ public final class Z9xGmpfReader {
         return tx(gmpf, GmpfAllowlist.HDMI_INFO, gmpf.request(),
                 r -> GmpfStructs.hdmiInfo(copy(r.readBuffer(GmpfStructs.HDMI_INFO_SIZE), GmpfStructs.HDMI_INFO_SIZE),
                         GmpfStructs.HDMI_INFO_SIZE, out));
+    }
+
+    /** 157 getOutputTimingInfo() -> bool + buffer 40 decoded into out (GmpfStructs.outputTiming). False = the HAL said no. */
+    public boolean outputTiming(int[] out) throws RemoteException {
+        return tx(gmpf, GmpfAllowlist.OUTPUT_TIMING, gmpf.request(), r -> {
+            if (!r.readBool()) return false;
+            return GmpfStructs.outputTiming(copy(r.readBuffer(GmpfStructs.OUTPUT_TIMING_SIZE), GmpfStructs.OUTPUT_TIMING_SIZE),
+                    GmpfStructs.OUTPUT_TIMING_SIZE, out);
+        });
     }
 
     // ================================================================== IGmpf2 (Z9X numbering)

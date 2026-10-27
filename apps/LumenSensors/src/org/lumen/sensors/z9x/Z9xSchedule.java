@@ -12,7 +12,7 @@ import org.lumen.sensors.hal.GmpfAllowlist;
  * brightness) wait behind ours. 0.1 asked for 6.3 calls per second in detailed mode and got about 4.8
  * (its cap was 5) for values that change slowly. Periods now ({@link #kindOf}):
  *   ROUND    max(4 s, refresh)   196 (the light gate), 438, 439 per sensor, 435, 437 per fan
- *   SLOW     10 s                177, 175, IGmpf2 51, 25, 252 (light); 696, 620, 662 or IGmpf2 319,
+ *   SLOW     10 s                177, 175, IGmpf2 51, 25, 252 (light); 696, 620, 157, 662 or IGmpf2 319,
  *                                IGmpf2 22 (picture); 584, 266 (motion, focus); IGmpf2 241
  *   VOLTAGE  30 s                IGmpf2 68
  *   TOF      60 s                279 ({@link #TOF_MS})
@@ -27,8 +27,8 @@ import org.lumen.sensors.hal.GmpfAllowlist;
  * sensors and 1 fan as on the owner's Z9X, 68 absent on mains; the host test repeats these sums and
  * runs a model of the pump):
  *   detailed  asks for ROUND 196 + 438 + 4 x 439 + 435 + 437 = 8 calls / 4 s = 2.0
- *                      SLOW  177 175 51 25 252 696 620 662 22 584 266 241 = 12 calls / 10 s = 1.2
- *                      TOF   1 call / 60 s = 0.017                   together about 3.2 per second;
+ *                      SLOW  177 175 51 25 252 696 620 157 662 22 584 266 241 = 13 calls / 10 s = 1.3
+ *                      TOF   1 call / 60 s = 0.017                   together about 3.3 per second;
  *             gets 2 per second at most: 196 every 4 s, the other round reads about every 8 s, the
  *             10 s reads about every 14 s, ToF about every 65 s
  *   compact   196 + 3 x 439 (air, DMD, LED) + 437 = 5 calls / 4 s = 1.25 per second (1.0 at refresh 5 s)
@@ -113,6 +113,7 @@ public final class Z9xSchedule {
             {I1, GmpfAllowlist.INPUT_SOURCE, P_SLOW},
             {I1, GmpfAllowlist.HDR_TYPE, P_SLOW},
             {I1, GmpfAllowlist.HDMI_INFO, P_SLOW},
+            {I1, GmpfAllowlist.OUTPUT_TIMING, P_SLOW},
             {I1, GmpfAllowlist.MOTION, P_SLOW},
             {I1, GmpfAllowlist.FOCUS_STEP, P_SLOW},
             {I1, GmpfAllowlist.TOF_DISTANCE, P_TOF},

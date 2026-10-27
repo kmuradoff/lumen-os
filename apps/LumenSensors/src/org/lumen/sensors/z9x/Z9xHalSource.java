@@ -672,6 +672,18 @@ public final class Z9xHalSource implements Source {
             }
         });
 
+        tasks.add(new OneTask("157 output timing", IGMPF, GmpfAllowlist.OUTPUT_TIMING, Group.PICTURE, M_ROW) {
+            @Override Sample create() {
+                return new Sample("hal.output", Group.PICTURE, Fmt.SIGNAL).label(R.string.s_output).order(35);
+            }
+
+            @Override boolean run() throws Exception {
+                if (!hal.outputTiming(st) || !GmpfStructs.outputPlausible(st)) return false;
+                set(st[4], st[5], st[6], 0);                // what the DLP chip gets, not the UI plane
+                return true;
+            }
+        });
+
         hdmiTask = new OneTask("662 HDMI info", IGMPF, GmpfAllowlist.HDMI_INFO, Group.PICTURE, M_ROW) {
             @Override boolean needed() { return Z9xSchedule.readsHdmiInfo(inputSource); }    // HDMI input only
 

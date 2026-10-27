@@ -21,6 +21,14 @@ public final class GmpfStructs {
     public static final int LED_CURRENTS_SIZE = 16;
     /** IGmpf 662 getHdmiInfo: u32 width @0, u32 height @4, u8 interlace @8, u8 hdmi @9, u32 fps x100 @12. */
     public static final int HDMI_INFO_SIZE = 16;
+    /**
+     * IGmpf 157 getOutputTimingInfo (IDisplayType::OutputTimingInfo, 40 bytes: the Z9X proxy reads readBool,
+     * then readBuffer(0x28)): i32 user_timing_idx @0, disp_width @4, disp_height @8, curr_timing_idx @12,
+     * curr_hres @16, curr_vres @20, vfreq @24, then a 12-byte stDlpSupportTiming (not read). The vendor logs the same
+     * seven values (GM_DISP_CTRL_V4 getOutputTimingInfo, device test 2026-10-27: 6, 3840, 2160, 6, 3840, 2160,
+     * 60 with a 4K HDMI input and the 1080p Lumen interface): the timing sent to the DLP chip.
+     */
+    public static final int OUTPUT_TIMING_SIZE = 40;
     /** IGmpf2 319 getVideoInfo: u16 width @0, u16 height @2, u16 fps x100 @4, u16 hdmiOrDvi @6, i32 type @8. */
     public static final int VIDEO_INFO_SIZE = 12;
 
@@ -66,6 +74,17 @@ public final class GmpfStructs {
         return true;
     }
 
+    /** Output timing: out[0..6] in the struct order; out[4] x out[5] at out[6] Hz is what the DLP chip gets. */
+    public static boolean outputTiming(byte[] b, int len, int[] out) {
+        if (len != OUTPUT_TIMING_SIZE || b.length < len || out.length < 7) return false;
+        for (int i = 0; i < 7; i++) out[i] = i32(b, i * 4);
+        return true;
+    }
+
+    public static boolean outputPlausible(int[] o) {
+        return o[4] >= 640 && o[4] <= 7680 && o[5] >= 480 && o[5] <= 4320 && o[6] >= 23 && o[6] <= 240;
+    }
+
     public static boolean videoPlausible(int[] v) {
         return v[0] >= 320 && v[0] <= 7680 && v[1] >= 240 && v[1] <= 4320;
     }
@@ -95,7 +114,8 @@ public final class GmpfStructs {
      * raw JSON once per start so the device can confirm the unit.)
      */
     public static double lightHours(long usageTime) {
-        return usageTime >= 0 && usageTime <= LIGHT_HOURS_MAX ? usageTime : Double.NaN;
+        // 0 is what the vendor answers on Lumen for every light (its tracker keeps no hours there): no row
+        return usageTime > 0 && usageTime <= LIGHT_HOURS_MAX ? usageTime : Double.NaN;
     }
 
     static int i16(byte[] b, int o) {

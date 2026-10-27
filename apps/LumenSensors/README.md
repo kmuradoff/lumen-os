@@ -2,7 +2,7 @@
 
 "Sensors" ("Датчики") shows every temperature and sensor value that can really be read on the
 projector, as an overlay (HUD) on top of whatever plays: a film, HDMI input, the home screen. Keys always
-stay with the app below. Version 0.2 (versionCode 2), Android 14 / Lumen OS, XGIMI Z9X first.
+stay with the app below. Version 0.3 (versionCode 3), Android 14 / Lumen OS, XGIMI Z9X first.
 
 ## What it shows
 
@@ -17,7 +17,7 @@ device is never shown, not even greyed out.
 | Processor and graphics | CPU load (total, per core), CPU clock and clock limit (per cluster), GPU clock and load | `/proc/stat`, cpufreq, Mali module parameters |
 | Memory | RAM in use, zram swap and its memory | `/proc/meminfo`, `/sys/block/zram0/mm_stat` |
 | Network | download / upload rate; Wi-Fi signal, link speed, band (Wi-Fi only) | `/sys/class/net/IFACE/statistics`, WifiManager |
-| Picture and signal | input, video HDR, HDMI signal (HDMI input) or video (media input), output frame rate; interface resolution, refresh rate, HDR support | XGIMI HAL 696, 620, 662 or IGmpf2 319, IGmpf2 22; DisplayManager |
+| Picture and signal | input, video HDR, projector output (the timing the DLP chip gets), HDMI signal (HDMI input) or video (media input), output frame rate; menu resolution and refresh rate (the Android interface plane, not the video), HDR support | XGIMI HAL 696, 620, 157, 662 or IGmpf2 319, IGmpf2 22; DisplayManager |
 | Motion | tilt, accelerometer (in g), gyroscope (raw counts), distance to the wall (once a minute), focus motor step | XGIMI HAL 584, 279, 266 |
 | System | uptime | SystemClock |
 
@@ -83,7 +83,7 @@ missing at a start (cpufreq, Mali, cooling devices load at boot on the Z9X) are 
 ## XGIMI HAL rules (Z9X)
 
 - Read-only allowlist, per interface (`hal/GmpfAllowlist.java`, enforced before every transact):
-  IGmpf 438, 439, 339, 435, 437, 177, 175, 196, 279, 584, 266, 696, 620, 662;
+  IGmpf 438, 439, 339, 435, 437, 177, 175, 196, 279, 584, 266, 696, 620, 157, 662;
   IGmpf2 51, 241, 252, 25, 27, 68, 319, 22. Anything else is refused before it is sent. 592 getSignalStatus
   was read by 0.1 and showed "Signal status code 3", a raw vendor enum with no known meaning: no longer read.
 - Banned, never called (listed in the code and the host test): 298 / 306 (the focus listener; Projector's
@@ -93,7 +93,7 @@ missing at a start (cpufreq, Mali, cooling devices load at boot on the Z9X) are 
   (gmpf_main) and logs each call, so Projector's keystone, focus and brightness calls wait behind ours.
   0.1 asked for 6.3 calls per second in detailed mode and got about 4.8 (device test). Now the shortest
   periods are: temperatures (438, 439 per sensor), fans (435, 437) and the screen check (196) every max(4 s,
-  refresh); light (177, 175, IGmpf2 51, 25, 252), picture and signal (696, 620, 662 or IGmpf2 319, IGmpf2
+  refresh); light (177, 175, IGmpf2 51, 25, 252), picture and signal (696, 620, 157, 662 or IGmpf2 319, IGmpf2
   22), motion and focus (584, 266) and over-temperature (IGmpf2 241) every 10 s; supply voltage (IGmpf2 68)
   every 30 s; ToF (279) every 60 s at most; light usage (IGmpf2 27), fan ids and sensor indexes once per
   start. The first reads of a start go out at least 200 ms apart (a few seconds of probing), every later
@@ -104,7 +104,7 @@ missing at a start (cpufreq, Mali, cooling devices load at boot on the Z9X) are 
 - Steady HAL calls per second, every group on, refresh 2 s, the owner's Z9X (4 sensors, 1 fan, HDMI,
   no 68 on mains): compact = 5 / 4 s (196, 3 x 439, 437) = 1.25 (1.0 at refresh 5 s); graphs = 6 / 4 s
   = 1.5; both keep the periods above. Detailed asks for 8 / 4 s (196, 438, 4 x 439, 435, 437) + 12 / 10 s
-  (177, 175, 51, 25, 252, 696, 620, 662, 22, 584, 266, 241) + 1 / 60 s (279) = about 3.2 and gets 2 at
+  (177, 175, 51, 25, 252, 696, 620, 157, 662, 22, 584, 266, 241) + 1 / 60 s (279) = about 3.3 and gets 2 at
   most: a read that goes out more than 2 s late is next due a full period after its call, so every read
   waits the same few seconds more (196 every 4 s, the other temperatures and the fan about every 8 s, the
   10 s reads about every 14 s, ToF about every 65 s). The host test repeats the sums and runs a model of

@@ -114,13 +114,14 @@
     <string name="s_band">Wi-Fi band</string>
 
     <!-- picture and signal -->
-    <string name="s_ui_res">Interface resolution</string>
-    <string name="s_ui_hz">Refresh rate</string>
+    <string name="s_ui_res">Menu resolution</string>
+    <string name="s_ui_hz">Menu refresh rate</string>
     <string name="s_hdr_caps">HDR support</string>
     <string name="s_source">Input</string>
     <string name="src_android" translatable="false">Android TV</string>
     <string name="src_hdmi" translatable="false">HDMI %1$d</string>
     <string name="s_hdr">Video HDR</string>
+    <string name="s_output">Projector output</string>
     <string name="s_hdmi">HDMI signal</string>
     <string name="s_video">Video</string>
     <string name="s_out_fps">Output frame rate</string>

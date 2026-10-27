@@ -99,11 +99,12 @@
     <string name="s_link">Скорость Wi-Fi</string>
     <string name="s_band">Диапазон Wi-Fi</string>
 
-    <string name="s_ui_res">Разрешение интерфейса</string>
-    <string name="s_ui_hz">Частота обновления</string>
+    <string name="s_ui_res">Разрешение меню</string>
+    <string name="s_ui_hz">Частота меню</string>
     <string name="s_hdr_caps">Поддержка HDR</string>
     <string name="s_source">Источник</string>
     <string name="s_hdr">HDR видео</string>
+    <string name="s_output">Выход на проектор</string>
     <string name="s_hdmi">Сигнал HDMI</string>
     <string name="s_video">Видео</string>
     <string name="s_out_fps">Частота кадров на выходе</string>
