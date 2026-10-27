@@ -2,7 +2,7 @@
 # Lumen OS on the XGIMI Play 6: Wi-Fi of the newer batches with the AICSemi AIC8800D80X2 USB chip (368b:8d90).
 # XGIMI's V1.7.116 vendor has only MediaTek drivers (its wlan_dongle_detect and dongle.cfg know 0e8d only), so on
 # those units Wi-Fi is dead. play6_aic.sh looks at the USB chip first and loads our AIC modules
-# (tools/play6/aic, /system/lib/modules/aic) only when it is 368b:8d90 or 368b:8d91; a MediaTek unit gets nothing.
+# (tools/play6/aic, /system/etc/aic8800) only when it is 368b:8d90 or 368b:8d91; a MediaTek unit gets nothing.
 # Vendor untouched: the stock firmware_class / cfg80211 modules, wpa_supplicant and Wi-Fi HAL drive wlan0 as
 # they do for MediaTek (device test 2026-10-28). Started, not exec'd: it waits for USB and the firmware load in
 # the background, init never waits for it.

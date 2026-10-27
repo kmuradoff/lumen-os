@@ -344,9 +344,12 @@ install -m 0755 "$IN/lumen_gapps.sh" "$S/etc/xgimi/lumen_gapps.sh"
 #     firmware, pinned by aic/SHA256SUMS; play6_aic.sh loads them at boot only when the USB chip is
 #     368b:8d90 / 368b:8d91 (a MediaTek unit gets nothing). Vendor untouched.
 (cd "$IN/aic" && sha256sum -c --quiet SHA256SUMS) || die "aic/: modules or firmware do not match SHA256SUMS"
-install -d -m 0755 "$S/lib/modules/aic" "$S/etc/firmware/aic8800d80x2"
-install -m 0644 "$IN"/aic/modules/*.ko "$S/lib/modules/aic/"
-install -m 0644 "$IN"/aic/firmware/* "$S/etc/firmware/aic8800d80x2/"
+install -d -m 0755 "$S/etc/aic8800/modules" "$S/etc/aic8800/firmware"   # /system/lib/modules is a link to vendor
+install -m 0644 "$IN"/aic/modules/*.ko "$S/etc/aic8800/modules/"
+install -m 0644 "$IN"/aic/firmware/* "$S/etc/aic8800/firmware/"
+install -m 0644 "$IN/aic/bt/libbt-vendor-aic.so" "$S/lib/libbt-vendor-aic.so"   # bound over /vendor/lib/libbt-vendor.so on AIC units
+install -d -m 0755 "$S/etc/bluetooth"
+install -m 0644 "$IN/aic/bt/aicbt.conf" "$S/etc/bluetooth/aicbt.conf"
 install -m 0644 "$IN/play6_aic.rc" "$S/etc/init/play6_aic.rc"
 install -d -m 0755 "$S/etc/xgimi"
 install -m 0755 "$IN/play6_aic.sh" "$S/etc/xgimi/play6_aic.sh"
