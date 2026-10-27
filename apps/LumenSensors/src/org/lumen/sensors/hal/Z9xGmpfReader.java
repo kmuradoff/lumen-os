@@ -108,7 +108,7 @@ public final class Z9xGmpfReader {
         return tx(gmpf, GmpfAllowlist.SCREEN_ON, gmpf.request(), HidlCaller.RET_BOOL);
     }
 
-    /** 279 getTofDistance() -> mm. */
+    /** 279 getTofDistance() -> mm. Not cached: the vendor measures for about 0.6 s (Z9xSchedule.TOF_MS). */
     public int tofDistance() throws RemoteException {
         return tx(gmpf, GmpfAllowlist.TOF_DISTANCE, gmpf.request(), HidlCaller.RET_I32);
     }
@@ -142,11 +142,6 @@ public final class Z9xGmpfReader {
                         GmpfStructs.HDMI_INFO_SIZE, out));
     }
 
-    /** 592 getSignalStatus() -> vendor enum (values unverified). */
-    public int signalStatus() throws RemoteException {
-        return tx(gmpf, GmpfAllowlist.SIGNAL_STATUS, gmpf.request(), HidlCaller.RET_I32);
-    }
-
     // ================================================================== IGmpf2 (Z9X numbering)
     /** IGmpf2 51 getLensDispMode() -> 1 = Boost. */
     public int lensDispMode() throws RemoteException {
@@ -172,7 +167,7 @@ public final class Z9xGmpfReader {
         return tx(gmpf2, GmpfAllowlist.LED_LEVEL, gmpf2.request(), HidlCaller.RET_I32);
     }
 
-    /** IGmpf2 27 getLightUsageInfo() -> JSON text {current_light, error_code, light_list:[{light_id, usage_time}]}. */
+    /** IGmpf2 27 getLightUsageInfo() -> JSON text {current_light, error_code, light_list:[{light_id, usage_time hours}]}. */
     public String lightUsageJson() throws RemoteException {
         return tx(gmpf2, GmpfAllowlist.LIGHT_USAGE, gmpf2.request(), HwParcel::readString);
     }

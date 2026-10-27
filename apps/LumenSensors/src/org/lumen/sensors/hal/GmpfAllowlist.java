@@ -18,21 +18,23 @@ package org.lumen.sensors.hal;
  *   IGmpf  177 getDlpLumensLevel           u8 1..10                                     verified in Projector
  *   IGmpf  175 getDlpLumensMode            u8 16 D65 / 17 colour temp 1                 verified in Projector
  *   IGmpf  196 getScreenOnOff              bool, read before every HAL round            verified in Projector
- *   IGmpf  279 getTofDistance              i32 mm (only while the Motion group shows)   unverified
+ *   IGmpf  279 getTofDistance              i32 mm, an active 0.6 s measurement          unverified
  *   IGmpf  584 getMotionDetection          buffer 14: i16 acc[3], i16 gyro[3], u8 type  unverified order
  *   IGmpf  266 getFocusMotorCurrentStep    i32 steps                                    unverified
  *   IGmpf  696 getCurrentInputSource       i32 0 media / 1 HDMI 1 / 2 HDMI 2            verified in Projector
  *   IGmpf  620 getHdrType                  i32 (GmpfClient HDR_* values)                verified in Projector
- *   IGmpf  662 getHdmiInfo                 buffer 16 (GmpfClient.HdmiSignal layout)     size verified
- *   IGmpf  592 getSignalStatus             i32 vendor enum                              unverified values
+ *   IGmpf  662 getHdmiInfo                 buffer 16 (GmpfClient.HdmiSignal layout)     verified
  *   IGmpf2  51 getLensDispMode             i32, 1 = Boost                               verified in Projector
  *   IGmpf2 241 isTempUltraHigh             bool over-temperature                        unverified
  *   IGmpf2 252 getCurHwCurrent             bool + buffer 16: 8 x i16 R G B C R2 G2 B2 C2 unverified order
  *   IGmpf2  25 getDispLumensLevel          i32 0..1000                                  unverified
- *   IGmpf2  27 getLightUsageInfo           hidl_string JSON (once per HUD start)        unverified
+ *   IGmpf2  27 getLightUsageInfo           hidl_string JSON, usage_time hours (once)    unit to confirm
  *   IGmpf2  68 getPowerSupplyVoltage       float volts                                  unverified
- *   IGmpf2 319 getVideoInfo                bool + buffer 12: u16 w, h, fps x100, hdmi, i32 type  unverified order
+ *   IGmpf2 319 getVideoInfo                bool + buffer 12: u16 w, h, fps x100, hdmi, i32 type  verified w, h, fps
  *   IGmpf2  22 getDispOutputFps            i32 fps                                      unverified scale
+ *
+ * No longer read (device test 2026-10-27): IGmpf 592 getSignalStatus, an i32 raw vendor enum with no known
+ * meaning (it answered 3 on HDMI 1 at 3840x2160p 59.9 Hz); not in the reads, so refused like any other code.
  *
  * BANNED, never called (also listed in the host test; none may ever be added to the reads):
  *   298 connectProjectorFocusManager, 306 setProjectorFocusListener: ONE focus listener exists in the
@@ -65,7 +67,6 @@ public final class GmpfAllowlist {
     public static final int SYSTEM_TEMPERATURE = 438;
     public static final int SENSOR_TEMPERATURE = 439;
     public static final int MOTION = 584;
-    public static final int SIGNAL_STATUS = 592;
     public static final int HDR_TYPE = 620;
     public static final int HDMI_INFO = 662;
     public static final int INPUT_SOURCE = 696;
@@ -82,7 +83,7 @@ public final class GmpfAllowlist {
 
     private static final int[] IGMPF_READS = {
             SENSOR_STATUS, LUMENS_MODE, LAMP_LEVEL, SCREEN_ON, FOCUS_STEP, TOF_DISTANCE, FAN_MODE, FAN_SPEED,
-            SYSTEM_TEMPERATURE, SENSOR_TEMPERATURE, MOTION, SIGNAL_STATUS, HDR_TYPE, HDMI_INFO, INPUT_SOURCE};
+            SYSTEM_TEMPERATURE, SENSOR_TEMPERATURE, MOTION, HDR_TYPE, HDMI_INFO, INPUT_SOURCE};
     private static final int[] IGMPF2_READS = {
             OUTPUT_FPS, LED_LEVEL, LIGHT_USAGE, LENS_DISP_MODE, SUPPLY_VOLTAGE, OVER_TEMPERATURE, LED_CURRENTS,
             VIDEO_INFO};

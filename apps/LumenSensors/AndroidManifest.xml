@@ -4,18 +4,27 @@
   that can really be read, as an overlay (HUD) on top of whatever plays. README.md has the details.
   Platform-signed (release platform key), NOT persistent, NOT priv-app: a test build installs with a plain
   `adb install -r`; in the image later /system/app/LumenSensors/LumenSensors.apk.
-  Version 0.1 (versionCode 1): stays below any image build of this app, so the image copy replaces a test install.
+  Version 0.2 (versionCode 2): a test install stays below any image build of this app, so the image copy
+  replaces it (2 is still tiny; the image build takes a high versionCode).
 
   Permissions (Lineage 21 protection levels): SYSTEM_ALERT_WINDOW is signature|appop, granted by the platform
-  signature (as for org.z9x.projector); FOREGROUND_SERVICE(_SPECIAL_USE), RECEIVE_BOOT_COMPLETED,
+  signature (as for org.z9x.projector); INTERNAL_SYSTEM_WINDOW is signature|module|recents, granted by the
+  platform signature (Projector holds it too): WindowManager allows the HUD's PRIVATE_FLAG_TRUSTED_OVERLAY
+  only with it, and without that flag DisplayPolicy caps a NOT_TOUCHABLE overlay at alpha 0.8 (logged by
+  system_server at the device test of 0.1), so 100 % opacity was really 80 %. The same permission keeps
+  the HUD visible when another window sets HIDE_NON_SYSTEM_OVERLAY_WINDOWS (WindowState
+  setForceHideNonSystemOverlayWindowIfNeeded skips such apps; Projector holds it for exactly that), and
+  the system no longer tracks the HUD as an app "displaying over other apps"; harmless, the HUD takes no
+  touches;
+  FOREGROUND_SERVICE(_SPECIAL_USE), RECEIVE_BOOT_COMPLETED,
   ACCESS_WIFI_STATE and ACCESS_NETWORK_STATE are normal; org.z9x.projector.permission.STANDBY_STATE is
   Projector's signature permission for its lamp-only standby broadcast and provider. No runtime permission,
   so no default-permissions XML; no privileged permission, so no privapp-permissions XML.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.lumen.sensors"
-    android:versionCode="1"
-    android:versionName="0.1">
+    android:versionCode="2"
+    android:versionName="0.2">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
 
@@ -23,6 +32,7 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.INTERNAL_SYSTEM_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />

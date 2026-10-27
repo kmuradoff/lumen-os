@@ -14,12 +14,13 @@ package org.lumen.sensors.core;
  *   DBM       value dBm                                          "-65 dBm"
  *   MM        value millimetres                                  "2394 mm"
  *   VOLT      value volts, one decimal                           "19.5 V"
- *   HOURS     value hours (one decimal below 10)                 "1234 h"
+ *   HOURS     value whole hours                                  "1234 h"
  *   HZ        value Hz, up to two decimals                       "23.98 Hz", "60 Hz"
  *   DEG       value degrees of angle, one decimal                "8.8°"
  *   GHZ       value GHz, up to one decimal                       "2.4 GHz"
  *   INT       value plain integer                                "87"
- *   XYZ       three integers                                     "-613 -89 -4020"
+ *   XYZ       three integers (raw counts)                        "0 / 5 / -2"
+ *   XYZ_G     three values in g, two decimals                    "0.06 / -0.01 / 1.00 g"
  *   FRACTION  value of value2; 0 = "Off"                         "1/3"
  *   RES       value x value2                                     "3840×2160"
  *   SIGNAL    value x value2, flags bit 0 = interlaced, value3 Hz "1920×1080p 60 Hz"
@@ -33,7 +34,7 @@ public final class Fmt {
 
     public static final int TEMP = 1, PERCENT = 2, MHZ = 3, MEM = 4, MEM_PAIR = 5, RATE = 6, DBM = 7, MM = 8,
             VOLT = 9, HOURS = 10, HZ = 11, DEG = 12, GHZ = 13, INT = 14, XYZ = 15, FRACTION = 16, RES = 17,
-            SIGNAL = 18, TEXT = 19, DURATION = 20, ON_OFF = 21, YES_NO = 22;
+            SIGNAL = 18, TEXT = 19, DURATION = 20, ON_OFF = 21, YES_NO = 22, XYZ_G = 23;
 
     private static final double KB_PER_MB = 1024, KB_PER_GB = 1024 * 1024;
 
@@ -77,15 +78,20 @@ public final class Fmt {
             case DBM: sb.append(Math.round(v)).append(w.get(Words.DBM)); break;
             case MM: sb.append(Math.round(v)).append(w.get(Words.MM)); break;
             case VOLT: fixed(sb, v, 1, w.dec); sb.append(w.get(Words.V)); break;
-            case HOURS:
-                if (v < 10) fixed(sb, v, 1, w.dec); else sb.append(Math.round(v));
-                sb.append(w.get(Words.H));
-                break;
+            case HOURS: sb.append(Math.round(v)).append(w.get(Words.H)); break;
             case HZ: trim(sb, v, 2, w.dec); sb.append(w.get(Words.HZ)); break;
             case DEG: fixed(sb, v, 1, w.dec); sb.append(w.get(Words.DEG)); break;
             case GHZ: trim(sb, v, 1, w.dec); sb.append(w.get(Words.GHZ)); break;
             case INT: sb.append(Math.round(v)); break;
-            case XYZ: sb.append(Math.round(v)).append(' ').append(Math.round(v2)).append(' ').append(Math.round(v3)); break;
+            case XYZ: sb.append(Math.round(v)).append(" / ").append(Math.round(v2)).append(" / ").append(Math.round(v3)); break;
+            case XYZ_G:
+                fixed(sb, v, 2, w.dec);
+                sb.append(" / ");
+                fixed(sb, v2, 2, w.dec);
+                sb.append(" / ");
+                fixed(sb, v3, 2, w.dec);
+                sb.append(w.get(Words.G));
+                break;
             case FRACTION:
                 if (Math.round(v) == 0) sb.append(w.get(Words.OFF));
                 else sb.append(Math.round(v)).append('/').append(Math.round(v2));

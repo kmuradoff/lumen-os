@@ -16,6 +16,7 @@ import org.lumen.sensors.core.Registry;
 import org.lumen.sensors.core.Sample;
 import org.lumen.sensors.core.Sampler;
 import org.lumen.sensors.core.Source;
+import org.lumen.sensors.hal.GmpfAllowlist;
 import org.lumen.sensors.hal.GmpfStructs;
 import org.lumen.sensors.hal.Z9xGmpfReader;
 
@@ -23,18 +24,32 @@ import java.util.ArrayList;
 
 /**
  * Z9X ONLY: the projector values that exist only inside XGIMI's gmpf HAL (temperature sensors, fans,
- * light, input signal, motion), read through {@link Z9xGmpfReader} (allowlist of read-only codes).
+ * light, input signal, motion), read through {@link Z9xGmpfReader} (allowlist of read-only codes) on
+ * the plan of {@link Z9xSchedule} (periods per code, gap, input and ToF rules; plain Java, host-tested).
  *
  * Scheduling (one task per value, all on the sampler thread, never on the main thread):
- *  - at most ONE HAL call per {@link #GAP_MS} (200 ms = 5 calls per second in total); the pump always
- *    runs the most overdue task that is wanted, so the calls spread over each period;
- *  - temperatures, fans and the screen check every max(2 s, refresh) ("round"); light, voltage and
- *    LED values every 10 s; picture and signal every 5 s; motion only while the Motion group is on
- *    screen (584 every round, ToF 279 and the focus motor every 5 s); light usage once per start;
+ *  - at least {@link Z9xSchedule#GAP_MS} (200 ms) before a first read (probe step) of a start and
+ *    {@link Z9xSchedule#STEADY_GAP_MS} (500 ms) before every later read, ToF included (a 196 goes at
+ *    the pace of the read it comes before): after the probes never more than 2 calls in a second. The
+ *    pump runs the wanted task that was due first;
+ *  - temperatures, fans and the screen check every max(4 s, refresh) ("round"); light, picture and
+ *    signal, motion, focus motor and over-temperature every 10 s; supply voltage every 30 s; ToF every
+ *    60 s at most; light usage once per start. The vendor serves every gmpf call on one thread and logs
+ *    each one: 0.1 kept it at about 4.8 calls per second (device test). Compact (1.25 per second) and
+ *    graphs (1.5) keep these periods; detailed mode asks for about 3.2 and gets 2 at most, so its reads
+ *    come late and are then due a period after their call ({@link Z9xSchedule#nextDue}): every read
+ *    waits the same few seconds more (round reads about every 8 s; the sums are in Z9xSchedule);
  *  - 196 getScreenOnOff gates every other read: no read goes out unless a 196 reading from this round
  *    (younger than the round period) says the light is on. When the light is off, or 196 failed, only
  *    196 is read (once per round); when 196 is dead (3 failures), nothing is read until the next start.
  *    196 itself is read only right before another read is due (never on its own while nothing else is);
+ *  - the input (696) picks the signal read: 662 HDMI info on HDMI, IGmpf2 319 video info on the media
+ *    input (on HDMI both showed the same signal); an unknown input reads and shows neither;
+ *  - ToF 279 is an active vendor measurement (about 0.6 s on the one gmpf thread, see
+ *    {@link Z9xSchedule#TOF_MS}): read only while its row is drawn, at most once per 60 s (also across
+ *    starts), never before every other first read of a start is done, 5 s
+ *    ({@link Z9xSchedule#TOF_AFTER_MS}) after that and after a view change, then in its turn behind
+ *    every read that was due before it;
  *  - probing once per start: sensor indexes, fan ids and every value's first read. A value that is
  *    absent there is never shown. Probing also runs with only the settings screen open (so it can
  *    list the groups) and runs to its end whatever the mode or the groups; periodic reads run only
@@ -54,11 +69,7 @@ import java.util.ArrayList;
 public final class Z9xHalSource implements Source {
     private static final String TAG = "LumenSensors";
 
-    static final long GAP_MS = 200;
-    private static final long ROUND_MIN_MS = 2_000;
-    private static final long LIGHT_MS = 10_000;
-    private static final long PICTURE_MS = 5_000;
-    private static final long MOTION_SLOW_MS = 5_000;
+    private static final long GAP_MS = Z9xSchedule.GAP_MS;
     private static final long SLOW_CALL_MS = 2_000;
     private static final long RETRY_MS = 3_000;
     private static final int MAX_FAILS = 3;
@@ -67,8 +78,9 @@ public final class Z9xHalSource implements Source {
     private static final int CONNECT_TRIES = 6;
     private static final long BOOT_SETTLE_MS = 60_000;
 
-    /** Period kinds. */
-    private static final int P_ROUND = 0, P_LIGHT = 1, P_PICTURE = 2, P_MOTION_SLOW = 3;
+    private static final int IGMPF = GmpfAllowlist.IGMPF, IGMPF2 = GmpfAllowlist.IGMPF2;
+    /** The raw IGmpf2 27 JSON in the log: at most this many characters. */
+    private static final int USAGE_LOG_CHARS = 240;
 
     /** Modes of the probes (a probe runs to its end anyway; see wanted()). */
     private static final int M_TEMP = Sample.MODE_DETAILED | Sample.MODE_COMPACT | Sample.MODE_GRAPH;
@@ -88,14 +100,18 @@ public final class Z9xHalSource implements Source {
     private Sampler sampler;
     private Registry reg;
     private Handler h;
-    private boolean running, connected, lampOff, pumpLogged;
+    private boolean running, connected, lampOff, pumpLogged, usageLogged;
     private int connectTries;
     private long lastCall;
     /** Uptime of the last good 196 reading (0 = none since the start). */
     private long screenCheckedAt;
-    private int inputSource = -1;
-    private Task screenTask;
-    private Sample hdmiSample, signalSample;
+    /** Uptime when every first read but ToF was done (0 = not yet this start). */
+    private long probesDoneAt;
+    /** Uptime of the last ToF call; kept across starts, so a quick restart does not measure again. */
+    private long tofCalledAt;
+    private int inputSource = Z9xSchedule.INPUT_UNKNOWN;
+    private Task screenTask, tofTask;
+    private OneTask hdmiTask, videoTask;
 
     // texts, resolved at start
     private final String[] fanModes = new String[12];
@@ -116,10 +132,11 @@ public final class Z9xHalSource implements Source {
         connectTries = 0;
         lampOff = false;
         pumpLogged = false;
+        usageLogged = false;
         lastCall = 0;
         screenCheckedAt = 0;
-        inputSource = -1;
-        hdmiSample = signalSample = null;
+        probesDoneAt = 0;
+        inputSource = Z9xSchedule.INPUT_UNKNOWN;
         loadTexts();
         tasks.clear();
         buildTasks();
@@ -129,7 +146,7 @@ public final class Z9xHalSource implements Source {
 
     @Override
     public void poll(Sampler s, long now) {
-        // the HAL work runs on its own pump (one call per GAP_MS), not on the refresh tick
+        // the HAL work runs on its own pump (one call per gap at most), not on the refresh tick
     }
 
     @Override
@@ -138,16 +155,39 @@ public final class Z9xHalSource implements Source {
         if (h != null) h.removeCallbacks(pump);
         s.removeViewListener(onView);
         tasks.clear();
-        screenTask = null;
+        screenTask = tofTask = null;
+        hdmiTask = videoTask = null;
         hal.disconnect();
         connected = false;
     }
 
-    /** The view changed (mode, groups, HUD on screen): look for work at once. Sampler thread. */
+    /**
+     * The view changed (mode, groups, HUD on screen): look for work at once. ToF waits a moment, so it
+     * does not join the reads that the change makes due. Sampler thread.
+     */
     private void kick() {
         if (!running || h == null) return;
+        delayTof(SystemClock.uptimeMillis());
         h.removeCallbacks(pump);
         h.post(pump);
+    }
+
+    /** ToF not before TOF_AFTER_MS from now, and not within TOF_MS of the last ToF call. */
+    private void delayTof(long now) {
+        if (tofTask == null) return;
+        long at = now + Z9xSchedule.TOF_AFTER_MS;
+        if (tofCalledAt != 0) at = Math.max(at, tofCalledAt + Z9xSchedule.TOF_MS);
+        if (tofTask.due < at) tofTask.due = at;
+    }
+
+    /** Has every task but ToF had its first read (or will it not have one now)? */
+    private boolean probesDone() {
+        for (int i = 0; i < tasks.size(); i++) {
+            Task t = tasks.get(i);
+            if (t == screenTask || t == tofTask || t.dead || t.probed || t.fails > 0 || t.slow > 0) continue;
+            if (t.needed()) return false;
+        }
+        return true;
     }
 
     // ================================================================== pump
@@ -185,18 +225,23 @@ public final class Z9xHalSource implements Source {
                 return;
             }
         }
-        Task best = null;
+        if (probesDoneAt == 0 && probesDone()) {
+            probesDoneAt = now;                           // ToF may come now, a little later
+            delayTof(now);
+        }
+        Task best = null;                                 // ToF too: its due already keeps it after the probes
         for (int i = 0; i < tasks.size(); i++) {
             Task t = tasks.get(i);
             if (t != screenTask && wanted(t) && (best == null || t.due < best.due)) best = t;
         }
         if (best == null) return;                         // idle until the view changes (kick); no 196 either
-        long at = Math.max(best.due, lastCall + GAP_MS);
+        // first reads (and a 196 before one) at the start pace; every later read, ToF too, 2 per second at most
+        long at = Math.max(best.due, lastCall + Z9xSchedule.gapMs(!best.probed && best != tofTask));
         if (at > now) {                                   // nothing due yet (196 neither: it goes right before a read)
             h.postAtTime(pump, at);
             return;
         }
-        if (lampOff || now - screenCheckedAt > periodOf(P_ROUND) || now >= screenTask.due) {
+        if (lampOff || now - screenCheckedAt > periodOf(Z9xSchedule.P_ROUND) || now >= screenTask.due) {
             // the light check comes first: no other read without a fresh 196 that says the light is on
             if (screenTask.dead) return;                  // lampOff is set: no HAL reads until the next start
             if (screenTask.due > now) {                   // 196 failed a moment ago: its retry comes first
@@ -216,6 +261,7 @@ public final class Z9xHalSource implements Source {
      */
     private boolean wanted(Task t) {
         if (t.dead || !t.needed()) return false;
+        if (t == tofTask && probesDoneAt == 0) return false;   // after every other first read
         if (!t.probed) return !t.probeOnlyWhenShown || sampler.shown(t.group, t.modes);
         return t.shownNow();
     }
@@ -288,8 +334,8 @@ public final class Z9xHalSource implements Source {
             t.dead = true;                                 // static value: keep the row, never read again
             return;
         }
-        long next = t.due + t.period();
-        t.due = next >= end ? next : end + t.period();
+        t.due = Z9xSchedule.nextDue(t.due, end, t.period());   // late (detailed mode): a period after the call
+        if (t == tofTask) delayTof(end);                   // a full TOF_MS after this call, whatever the phase
     }
 
     private void hide(Task t) {
@@ -299,18 +345,15 @@ public final class Z9xHalSource implements Source {
     }
 
     private long periodOf(int kind) {
-        switch (kind) {
-            case P_ROUND: return Math.max(ROUND_MIN_MS, sampler.refreshMs());
-            case P_LIGHT: return LIGHT_MS;
-            case P_PICTURE: return PICTURE_MS;
-            default: return MOTION_SLOW_MS;
-        }
+        return Z9xSchedule.periodMs(kind, sampler.refreshMs());
     }
 
     // ================================================================== tasks
     private abstract class Task {
         final String name;
-        final int group, modes, periodKind;
+        final int group, modes;
+        /** Z9xSchedule.P_* of the task's HAL code. */
+        final int periodKind;
         long due;
         int fails, slow;
         boolean dead, probed, again;
@@ -321,11 +364,13 @@ public final class Z9xHalSource implements Source {
         /** Not even probed unless its group is on screen (ToF). */
         boolean probeOnlyWhenShown;
 
-        Task(String name, int group, int modes, int periodKind) {
+        /** The period comes from the plan of {@code code} on {@code iface} (Z9xSchedule.kindOf). */
+        Task(String name, int iface, int code, int group, int modes) {
             this.name = name;
             this.group = group;
             this.modes = modes;
-            this.periodKind = periodKind;
+            int kind = Z9xSchedule.kindOf(iface, code);
+            this.periodKind = kind >= 0 ? kind : Z9xSchedule.P_SLOW;
             this.due = SystemClock.uptimeMillis();
         }
 
@@ -347,8 +392,8 @@ public final class Z9xHalSource implements Source {
     private abstract class OneTask extends Task {
         Sample sample;
 
-        OneTask(String name, int group, int modes, int periodKind) {
-            super(name, group, modes, periodKind);
+        OneTask(String name, int iface, int code, int group, int modes) {
+            super(name, iface, code, group, modes);
         }
 
         abstract Sample create();
@@ -385,7 +430,8 @@ public final class Z9xHalSource implements Source {
 
     private void buildTasks() {
         // probe priority = list order (ties of "due" go to the earlier task): one value per group first
-        screenTask = new Task("196 screen", -1, 0, P_ROUND) {   // the gate: pump() runs it, never wanted()
+        // the gate: pump() runs it, never wanted()
+        screenTask = new Task("196 screen", IGMPF, GmpfAllowlist.SCREEN_ON, -1, 0) {
             @Override boolean run() throws Exception {
                 boolean on = hal.screenOn();
                 if (on == lampOff) {
@@ -399,7 +445,8 @@ public final class Z9xHalSource implements Source {
         };
         tasks.add(screenTask);
 
-        tasks.add(new OneTask("438 system temperature", Group.TEMPS, M_ROW_GRAPH, P_ROUND) {   // no compact rank
+        tasks.add(new OneTask("438 system temperature", IGMPF, GmpfAllowlist.SYSTEM_TEMPERATURE, Group.TEMPS,
+                M_ROW_GRAPH) {   // no compact rank
             { deadIfAbsent = true; }
 
             @Override Sample create() {
@@ -415,7 +462,7 @@ public final class Z9xHalSource implements Source {
             }
         });
 
-        tasks.add(new OneTask("435 fan mode", Group.COOLING, M_ROW, P_LIGHT) {
+        tasks.add(new OneTask("435 fan mode", IGMPF, GmpfAllowlist.FAN_MODE, Group.COOLING, M_ROW) {
             { deadIfAbsent = true; }
 
             @Override Sample create() {
@@ -430,7 +477,7 @@ public final class Z9xHalSource implements Source {
             }
         });
 
-        tasks.add(new OneTask("177 brightness level", Group.LIGHT, M_ROW, P_LIGHT) {
+        tasks.add(new OneTask("177 brightness level", IGMPF, GmpfAllowlist.LAMP_LEVEL, Group.LIGHT, M_ROW) {
             { deadIfAbsent = true; }
 
             @Override Sample create() {
@@ -445,7 +492,7 @@ public final class Z9xHalSource implements Source {
             }
         });
 
-        tasks.add(new OneTask("696 input source", Group.PICTURE, M_ROW, P_PICTURE) {
+        tasks.add(new OneTask("696 input source", IGMPF, GmpfAllowlist.INPUT_SOURCE, Group.PICTURE, M_ROW) {
             { deadIfAbsent = true; }
 
             @Override Sample create() {
@@ -453,32 +500,27 @@ public final class Z9xHalSource implements Source {
             }
 
             @Override boolean run() throws Exception {
-                int v = hal.inputSource();
-                String t = v == 0 ? srcAndroid : (v == 1 ? srcHdmi1 : (v == 2 ? srcHdmi2 : null));
-                inputSource = t == null ? -1 : v;
-                if (!isHdmi()) {
-                    synchronized (reg.lock) {                // the HDMI rows belong to an HDMI input only
-                        if (hdmiSample != null) hdmiSample.hide();
-                        if (signalSample != null) signalSample.hide();
-                    }
-                }
+                int v = Z9xSchedule.input(hal.inputSource());
+                setInput(v);
+                String t = v == Z9xSchedule.INPUT_MEDIA ? srcAndroid
+                        : (v == Z9xSchedule.INPUT_HDMI1 ? srcHdmi1 : (v == Z9xSchedule.INPUT_HDMI2 ? srcHdmi2 : null));
                 if (t == null) return false;
                 setText(t);
                 return true;
             }
 
-            /** Failed, dead or implausible: the input is unknown, so the HDMI-only reads stop too. */
+            /** Failed, dead or implausible: the input is unknown, so neither signal row is read or shown. */
             @Override void hide() {
                 super.hide();
-                inputSource = -1;
-                if (hdmiSample != null) hdmiSample.hide();
-                if (signalSample != null) signalSample.hide();
+                inputSource = Z9xSchedule.INPUT_UNKNOWN;
+                if (hdmiTask != null) hdmiTask.hide();
+                if (videoTask != null) videoTask.hide();
             }
         });
 
         tasks.add(new MotionTask());
 
-        tasks.add(new OneTask("266 focus motor", Group.MOTION, M_ROW, P_MOTION_SLOW) {
+        tasks.add(new OneTask("266 focus motor", IGMPF, GmpfAllowlist.FOCUS_STEP, Group.MOTION, M_ROW) {
             { deadIfAbsent = true; }
 
             @Override Sample create() {
@@ -496,7 +538,8 @@ public final class Z9xHalSource implements Source {
         tasks.add(new SensorProbe(socFromThermalZone()));
         tasks.add(new FanProbe());
 
-        tasks.add(new OneTask("IGmpf2 241 over-temperature", Group.TEMPS, M_ROW, P_LIGHT) {
+        tasks.add(new OneTask("IGmpf2 241 over-temperature", IGMPF2, GmpfAllowlist.OVER_TEMPERATURE, Group.TEMPS,
+                M_ROW) {
             @Override Sample create() {
                 return new Sample("hal.overheat", Group.TEMPS, Fmt.YES_NO).label(R.string.s_overheat)
                         .kind(Levels.K_FLAG).order(200);
@@ -508,7 +551,7 @@ public final class Z9xHalSource implements Source {
             }
         });
 
-        tasks.add(new OneTask("IGmpf2 51 Boost", Group.LIGHT, M_ROW, P_LIGHT) {
+        tasks.add(new OneTask("IGmpf2 51 Boost", IGMPF2, GmpfAllowlist.LENS_DISP_MODE, Group.LIGHT, M_ROW) {
             @Override Sample create() {
                 return new Sample("hal.boost", Group.LIGHT, Fmt.ON_OFF).label(R.string.s_boost).order(20);
             }
@@ -521,7 +564,7 @@ public final class Z9xHalSource implements Source {
             }
         });
 
-        tasks.add(new OneTask("175 color temperature", Group.LIGHT, M_ROW, P_LIGHT) {
+        tasks.add(new OneTask("175 color temperature", IGMPF, GmpfAllowlist.LUMENS_MODE, Group.LIGHT, M_ROW) {
             @Override Sample create() {
                 return new Sample("hal.ct", Group.LIGHT, Fmt.TEXT).label(R.string.s_color_temp).order(30);
             }
@@ -535,7 +578,7 @@ public final class Z9xHalSource implements Source {
             }
         });
 
-        tasks.add(new OneTask("IGmpf2 25 LED level", Group.LIGHT, M_ROW, P_LIGHT) {
+        tasks.add(new OneTask("IGmpf2 25 LED level", IGMPF2, GmpfAllowlist.LED_LEVEL, Group.LIGHT, M_ROW) {
             { deadIfAbsent = true; }
 
             @Override Sample create() {
@@ -552,7 +595,7 @@ public final class Z9xHalSource implements Source {
 
         tasks.add(new LedCurrentsTask());
 
-        tasks.add(new OneTask("IGmpf2 68 supply voltage", Group.LIGHT, M_ROW, P_LIGHT) {
+        tasks.add(new OneTask("IGmpf2 68 supply voltage", IGMPF2, GmpfAllowlist.SUPPLY_VOLTAGE, Group.LIGHT, M_ROW) {
             { deadIfAbsent = true; }   // 0 on the Z9X's mains supply: then never shown
 
             @Override Sample create() {
@@ -567,7 +610,7 @@ public final class Z9xHalSource implements Source {
             }
         });
 
-        tasks.add(new OneTask("IGmpf2 27 light usage", Group.LIGHT, M_ROW, P_LIGHT) {
+        tasks.add(new OneTask("IGmpf2 27 light usage", IGMPF2, GmpfAllowlist.LIGHT_USAGE, Group.LIGHT, M_ROW) {
             { deadIfAbsent = true; once = true; }
 
             @Override Sample create() {
@@ -575,14 +618,19 @@ public final class Z9xHalSource implements Source {
             }
 
             @Override boolean run() throws Exception {
-                double hours = lightHours(hal.lightUsageJson());
+                String json = hal.lightUsageJson();
+                if (!usageLogged) {                         // harmless device data: the device test checks the unit
+                    usageLogged = true;
+                    Log.i(TAG, "IGmpf2 27 light usage (usage_time read as hours): " + brief(json));
+                }
+                double hours = GmpfStructs.lightHours(lightUsageTime(json));
                 if (Double.isNaN(hours)) return false;
                 set(hours);
                 return true;
             }
         });
 
-        tasks.add(new OneTask("620 HDR type", Group.PICTURE, M_ROW, P_PICTURE) {
+        tasks.add(new OneTask("620 HDR type", IGMPF, GmpfAllowlist.HDR_TYPE, Group.PICTURE, M_ROW) {
             @Override Sample create() {
                 return new Sample("hal.hdr", Group.PICTURE, Fmt.TEXT).label(R.string.s_hdr).order(20);
             }
@@ -595,7 +643,9 @@ public final class Z9xHalSource implements Source {
             }
         });
 
-        tasks.add(new OneTask("IGmpf2 319 video info", Group.PICTURE, M_ROW, P_PICTURE) {
+        videoTask = new OneTask("IGmpf2 319 video info", IGMPF2, GmpfAllowlist.VIDEO_INFO, Group.PICTURE, M_ROW) {
+            @Override boolean needed() { return Z9xSchedule.readsVideoInfo(inputSource); }   // media input only
+
             @Override Sample create() {
                 return new Sample("hal.video", Group.PICTURE, Fmt.SIGNAL).label(R.string.s_video).order(30);
             }
@@ -606,9 +656,10 @@ public final class Z9xHalSource implements Source {
                 set(st[0], st[1], fps > 0 && fps < 500 ? fps : 0, 0);
                 return true;
             }
-        });
+        };
+        tasks.add(videoTask);
 
-        tasks.add(new OneTask("IGmpf2 22 output frame rate", Group.PICTURE, M_ROW, P_PICTURE) {
+        tasks.add(new OneTask("IGmpf2 22 output frame rate", IGMPF2, GmpfAllowlist.OUTPUT_FPS, Group.PICTURE, M_ROW) {
             @Override Sample create() {
                 return new Sample("hal.outfps", Group.PICTURE, Fmt.HZ).label(R.string.s_out_fps).order(50);
             }
@@ -621,8 +672,8 @@ public final class Z9xHalSource implements Source {
             }
         });
 
-        tasks.add(new OneTask("662 HDMI info", Group.PICTURE, M_ROW, P_PICTURE) {
-            @Override boolean needed() { return isHdmi(); }
+        hdmiTask = new OneTask("662 HDMI info", IGMPF, GmpfAllowlist.HDMI_INFO, Group.PICTURE, M_ROW) {
+            @Override boolean needed() { return Z9xSchedule.readsHdmiInfo(inputSource); }    // HDMI input only
 
             @Override Sample create() {
                 return new Sample("hal.hdmi", Group.PICTURE, Fmt.SIGNAL).label(R.string.s_hdmi).order(40);
@@ -631,28 +682,12 @@ public final class Z9xHalSource implements Source {
             @Override boolean run() throws Exception {
                 if (!hal.hdmiInfo(st) || !GmpfStructs.hdmiPlausible(st)) return false;   // no signal: no row
                 set(st[0], st[1], st[4] / 100.0, st[2]);
-                hdmiSample = sample;
                 return true;
             }
-        });
+        };
+        tasks.add(hdmiTask);
 
-        tasks.add(new OneTask("592 signal status", Group.PICTURE, M_ROW, P_PICTURE) {
-            @Override boolean needed() { return isHdmi(); }
-
-            @Override Sample create() {
-                return new Sample("hal.signal", Group.PICTURE, Fmt.INT).label(R.string.s_signal).order(45);
-            }
-
-            @Override boolean run() throws Exception {
-                int v = hal.signalStatus();
-                if (v < 0 || v > 1000) return false;
-                set(v);
-                signalSample = sample;
-                return true;
-            }
-        });
-
-        tasks.add(new OneTask("279 ToF distance", Group.MOTION, M_ROW, P_MOTION_SLOW) {
+        tofTask = new OneTask("279 ToF distance", IGMPF, GmpfAllowlist.TOF_DISTANCE, Group.MOTION, M_ROW) {
             { probeOnlyWhenShown = true; }
 
             @Override Sample create() {
@@ -660,16 +695,24 @@ public final class Z9xHalSource implements Source {
             }
 
             @Override boolean run() throws Exception {
-                int v = hal.tofDistance();
+                tofCalledAt = SystemClock.uptimeMillis();
+                int v = hal.tofDistance();                  // the vendor measures now (about 0.6 s)
                 if (v < 1 || v > 10_000) return false;
                 set(v);
                 return true;
             }
-        });
+        };
+        tasks.add(tofTask);
+        delayTof(SystemClock.uptimeMillis());
     }
 
-    private boolean isHdmi() {
-        return inputSource == 1 || inputSource == 2;
+    /** A new 696 reading: the signal row of the other input is hidden (and not read: needed() says no). */
+    private void setInput(int v) {
+        inputSource = v;
+        synchronized (reg.lock) {
+            if (hdmiTask != null && !Z9xSchedule.readsHdmiInfo(v)) hdmiTask.hide();
+            if (videoTask != null && !Z9xSchedule.readsVideoInfo(v)) videoTask.hide();
+        }
     }
 
     /** Is the SoC temperature already shown from a thermal zone (ThermalSource started before us)? */
@@ -689,7 +732,7 @@ public final class Z9xHalSource implements Source {
         Sample tilt, accel, gyro;
 
         MotionTask() {
-            super("584 motion", Group.MOTION, M_ROW, P_ROUND);
+            super("584 motion", IGMPF, GmpfAllowlist.MOTION, Group.MOTION, M_ROW);
             deadIfAbsent = true;
         }
 
@@ -698,12 +741,13 @@ public final class Z9xHalSource implements Source {
             double deg = GmpfStructs.tiltDegrees(st[0], st[1], st[2]);
             if (accel == null) {
                 tilt = reg.add(new Sample("hal.tilt", Group.MOTION, Fmt.DEG).label(R.string.s_tilt).order(10));
-                accel = reg.add(new Sample("hal.accel", Group.MOTION, Fmt.XYZ).label(R.string.s_accel).order(20));
+                accel = reg.add(new Sample("hal.accel", Group.MOTION, Fmt.XYZ_G).label(R.string.s_accel).order(20));
+                // raw counts: the gyroscope scale is unknown
                 gyro = reg.add(new Sample("hal.gyro", Group.MOTION, Fmt.XYZ).label(R.string.s_gyro).order(21));
             }
             synchronized (reg.lock) {
                 if (Double.isNaN(deg)) tilt.hide(); else tilt.set(deg);
-                accel.set(st[0], st[1], st[2]);
+                accel.set(GmpfStructs.accelG(st[0]), GmpfStructs.accelG(st[1]), GmpfStructs.accelG(st[2]));
                 gyro.set(st[3], st[4], st[5]);
             }
             return true;
@@ -731,7 +775,7 @@ public final class Z9xHalSource implements Source {
         private boolean statusStep;
 
         SensorProbe(boolean socFromZone) {
-            super("439 sensor probe", Group.TEMPS, M_TEMP, P_ROUND);
+            super("439 sensor probe", IGMPF, GmpfAllowlist.SENSOR_TEMPERATURE, Group.TEMPS, M_TEMP);
             indexes = socFromZone ? new int[] {1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12}
                     : new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
             java.util.Arrays.fill(status, -1);
@@ -813,7 +857,7 @@ public final class Z9xHalSource implements Source {
         final Sample sample;
 
         SensorTask(int idx, Sample sample) {
-            super("439 sensor " + idx, Group.TEMPS, sample.modes, P_ROUND);
+            super("439 sensor " + idx, IGMPF, GmpfAllowlist.SENSOR_TEMPERATURE, Group.TEMPS, sample.modes);
             this.idx = idx;
             this.sample = sample;
             probed = true;
@@ -840,7 +884,7 @@ public final class Z9xHalSource implements Source {
         private int id;
 
         FanProbe() {
-            super("437 fan probe", Group.COOLING, M_FAN, P_ROUND);
+            super("437 fan probe", IGMPF, GmpfAllowlist.FAN_SPEED, Group.COOLING, M_FAN);
         }
 
         @Override boolean run() throws Exception {
@@ -883,7 +927,7 @@ public final class Z9xHalSource implements Source {
         final Sample sample;
 
         FanTask(int fan, Sample sample) {
-            super("437 fan " + fan, Group.COOLING, sample.modes, P_ROUND);
+            super("437 fan " + fan, IGMPF, GmpfAllowlist.FAN_SPEED, Group.COOLING, sample.modes);
             this.fan = fan;
             this.sample = sample;
             probed = true;
@@ -908,7 +952,7 @@ public final class Z9xHalSource implements Source {
         private final int[] cur = new int[8];
 
         LedCurrentsTask() {
-            super("IGmpf2 252 LED currents", Group.LIGHT, M_ROW, P_LIGHT);
+            super("IGmpf2 252 LED currents", IGMPF2, GmpfAllowlist.LED_CURRENTS, Group.LIGHT, M_ROW);
             deadIfAbsent = true;
         }
 
@@ -971,15 +1015,15 @@ public final class Z9xHalSource implements Source {
     }
 
     /**
-     * Hours of light source 0 from the IGmpf2 27 JSON (stock reads light_id 0, usage_time in seconds),
-     * or NaN when the text is not that JSON.
+     * usage_time of light source 0 in the IGmpf2 27 JSON (light_id 0, else the first entry, as stock
+     * reads it), or -1 when the text is not that JSON. GmpfStructs.lightHours checks it (whole hours).
      */
-    static double lightHours(String json) {
-        if (json == null || json.isEmpty()) return Double.NaN;
+    static long lightUsageTime(String json) {
+        if (json == null || json.isEmpty()) return -1;
         try {
             JSONObject o = new JSONObject(json);
             JSONArray list = o.optJSONArray("light_list");
-            if (list == null || list.length() == 0) return Double.NaN;
+            if (list == null || list.length() == 0) return -1;
             JSONObject pick = null;
             for (int i = 0; i < list.length(); i++) {
                 JSONObject e = list.optJSONObject(i);
@@ -989,13 +1033,17 @@ public final class Z9xHalSource implements Source {
                 }
             }
             if (pick == null) pick = list.optJSONObject(0);
-            if (pick == null || !pick.has("usage_time")) return Double.NaN;
-            long sec = pick.optLong("usage_time", -1);
-            if (sec < 0) return Double.NaN;
-            double hours = sec / 3600.0;
-            return hours < 200_000 ? hours : Double.NaN;
+            if (pick == null || !pick.has("usage_time")) return -1;
+            return pick.optLong("usage_time", -1);
         } catch (Exception e) {
-            return Double.NaN;
+            return -1;
         }
+    }
+
+    /** A vendor text for the log: one line, at most USAGE_LOG_CHARS characters. */
+    private static String brief(String text) {
+        if (text == null) return "null";
+        String t = text.replace('\n', ' ').replace('\r', ' ');
+        return t.length() <= USAGE_LOG_CHARS ? t : t.substring(0, USAGE_LOG_CHARS) + "...";
     }
 }
