@@ -210,7 +210,7 @@ public final class SensorsTest {
 
         // IGmpf2 27 usage_time is whole hours (stock PJLink LAMP answers it as is); 0.1 divided by 3600
         near("light hours as is", 1234, GmpfStructs.lightHours(1234), 0);
-        near("light hours zero (new light)", 0, GmpfStructs.lightHours(0), 0);
+        yes("light hours zero hides the row (Lumen answers 0 for every light)", Double.isNaN(GmpfStructs.lightHours(0)));
         near("light hours at the plausible end", 100_000, GmpfStructs.lightHours(100_000), 0);
         yes("light hours above 100000 hidden", Double.isNaN(GmpfStructs.lightHours(100_001)));
         yes("light hours of a seconds-sized counter hidden", Double.isNaN(GmpfStructs.lightHours(3_600_000)));
@@ -248,12 +248,22 @@ public final class SensorsTest {
         yes("video info decodes", GmpfStructs.videoInfo(v.array(), 12, o));
         eq("video", "3840 2160 2398 1 3", o[0] + " " + o[1] + " " + o[2] + " " + o[3] + " " + o[4]);
         yes("video plausible", GmpfStructs.videoPlausible(o));
+        // IGmpf 157: bool true, then 7 x i32 as the vendor logged them (6, 3840, 2160, 6, 3840, 2160, 60)
+        ByteBuffer t = le(40);
+        for (int x : new int[] {6, 3840, 2160, 6, 3840, 2160, 60}) t.putInt(x);
+        int[] ot = new int[7];
+        yes("output timing decodes", GmpfStructs.outputTiming(t.array(), 40, ot));
+        eq("output timing", "3840 2160 60", ot[4] + " " + ot[5] + " " + ot[6]);
+        yes("output timing plausible", GmpfStructs.outputPlausible(ot));
+        eq("output timing 28 bytes refused", false, GmpfStructs.outputTiming(new byte[28], 28, ot));
+        ot[6] = 0;
+        eq("output timing 0 Hz not plausible", false, GmpfStructs.outputPlausible(ot));
         eq("video info 16 bytes refused", false, GmpfStructs.videoInfo(new byte[16], 16, o));
     }
 
     // ------------------------------------------------------------------ HAL allowlist
     private static void allowlist() {
-        int[] igmpf = {438, 439, 339, 435, 437, 177, 175, 196, 279, 584, 266, 696, 620, 662};
+        int[] igmpf = {438, 439, 339, 435, 437, 177, 175, 196, 279, 584, 266, 696, 620, 662, 157};
         int[] igmpf2 = {51, 241, 252, 25, 27, 68, 319, 22};
         for (int c : igmpf) yes("IGmpf " + c + " allowed", GmpfAllowlist.allowed(GmpfAllowlist.IGMPF, c));
         for (int c : igmpf2) yes("IGmpf2 " + c + " allowed", GmpfAllowlist.allowed(GmpfAllowlist.IGMPF2, c));
@@ -355,6 +365,7 @@ public final class SensorsTest {
                 {I1, 177, Z9xSchedule.P_SLOW}, {I1, 175, Z9xSchedule.P_SLOW}, {I2, 51, Z9xSchedule.P_SLOW},
                 {I2, 25, Z9xSchedule.P_SLOW}, {I2, 252, Z9xSchedule.P_SLOW},
                 {I1, 696, Z9xSchedule.P_SLOW}, {I1, 620, Z9xSchedule.P_SLOW}, {I1, 662, Z9xSchedule.P_SLOW},
+                {I1, 157, Z9xSchedule.P_SLOW},
                 {I2, 319, Z9xSchedule.P_SLOW}, {I2, 22, Z9xSchedule.P_SLOW},
                 {I1, 584, Z9xSchedule.P_SLOW}, {I1, 266, Z9xSchedule.P_SLOW}, {I2, 241, Z9xSchedule.P_SLOW},
                 {I2, 68, Z9xSchedule.P_VOLTAGE}, {I1, 279, Z9xSchedule.P_TOF},
@@ -398,12 +409,12 @@ public final class SensorsTest {
         int[][] detailed = {
                 {I1, 196, 1}, {I1, 438, 1}, {I1, 439, 4}, {I1, 435, 1}, {I1, 437, 1},
                 {I1, 177, 1}, {I1, 175, 1}, {I2, 51, 1}, {I2, 25, 1}, {I2, 252, 1},
-                {I1, 696, 1}, {I1, 620, 1}, {I1, 662, 1}, {I2, 22, 1},
+                {I1, 696, 1}, {I1, 620, 1}, {I1, 662, 1}, {I1, 157, 1}, {I2, 22, 1},
                 {I1, 584, 1}, {I1, 266, 1}, {I2, 241, 1}, {I1, 279, 1}, {I2, 27, 1}};
         int[][] compact = {{I1, 196, 1}, {I1, 439, 3}, {I1, 437, 1}};   // air, DMD, LED, fan in the strip
         int[][] graphs = {{I1, 196, 1}, {I1, 438, 1}, {I1, 439, 4}};
         double d = rate(detailed, 2_000), c = rate(compact, 2_000), cap = Z9xSchedule.maxSteadyPerSecond();
-        near("detailed asks for 8 / 4 s + 12 / 10 s + 1 / 60 s", 8 / 4.0 + 12 / 10.0 + 1 / 60.0, d, 1e-9);
+        near("detailed asks for 8 / 4 s + 13 / 10 s + 1 / 60 s", 8 / 4.0 + 13 / 10.0 + 1 / 60.0, d, 1e-9);
         yes("detailed asks for more than the cap", d > cap);
         yes("detailed gets well under half of 0.1's 4.8", Math.min(d, cap) < 0.5 * 4.8);
         near("compact: 5 / 4 s", 1.25, c, 1e-9);
@@ -614,8 +625,8 @@ public final class SensorsTest {
         yes("HUD window is a trusted overlay", service.contains("p.setTrustedOverlay();"));
         yes("manifest asks for INTERNAL_SYSTEM_WINDOW",
                 manifest.contains("<uses-permission android:name=\"android.permission.INTERNAL_SYSTEM_WINDOW\" />"));
-        yes("manifest version 0.2",
-                manifest.contains("android:versionCode=\"2\"") && manifest.contains("android:versionName=\"0.2\""));
+        yes("manifest version 0.3",
+                manifest.contains("android:versionCode=\"3\"") && manifest.contains("android:versionName=\"0.3\""));
         yes("HUD invalidates on a publish only on a change", hud.contains("if (changed) invalidate();"));
         eq("HUD opacity is the setting itself", 1, count(hud, "Math.round(255 * opacityPct / 100f)"));
     }

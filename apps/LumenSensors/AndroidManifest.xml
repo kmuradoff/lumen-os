@@ -4,8 +4,8 @@
   that can really be read, as an overlay (HUD) on top of whatever plays. README.md has the details.
   Platform-signed (release platform key), NOT persistent, NOT priv-app: a test build installs with a plain
   `adb install -r`; in the image later /system/app/LumenSensors/LumenSensors.apk.
-  Version 0.2 (versionCode 2): a test install stays below any image build of this app, so the image copy
-  replaces it (2 is still tiny; the image build takes a high versionCode).
+  Version 0.3 (versionCode 3): a test install stays below any image build of this app, so the image copy
+  replaces it (3 is still tiny; the image build takes a high versionCode).
 
   Permissions (Lineage 21 protection levels): SYSTEM_ALERT_WINDOW is signature|appop, granted by the platform
   signature (as for org.z9x.projector); INTERNAL_SYSTEM_WINDOW is signature|module|recents, granted by the
@@ -23,8 +23,8 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.lumen.sensors"
-    android:versionCode="2"
-    android:versionName="0.2">
+    android:versionCode="3"
+    android:versionName="0.3">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
 

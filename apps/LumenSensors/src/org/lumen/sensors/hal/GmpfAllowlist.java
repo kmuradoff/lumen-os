@@ -24,6 +24,7 @@ package org.lumen.sensors.hal;
  *   IGmpf  696 getCurrentInputSource       i32 0 media / 1 HDMI 1 / 2 HDMI 2            verified in Projector
  *   IGmpf  620 getHdrType                  i32 (GmpfClient HDR_* values)                verified in Projector
  *   IGmpf  662 getHdmiInfo                 buffer 16 (GmpfClient.HdmiSignal layout)     verified
+ *   IGmpf  157 getOutputTimingInfo         bool + buffer 40: 7 x i32 + 12-byte struct   size from the proxy
  *   IGmpf2  51 getLensDispMode             i32, 1 = Boost                               verified in Projector
  *   IGmpf2 241 isTempUltraHigh             bool over-temperature                        unverified
  *   IGmpf2 252 getCurHwCurrent             bool + buffer 16: 8 x i16 R G B C R2 G2 B2 C2 unverified order
@@ -70,6 +71,7 @@ public final class GmpfAllowlist {
     public static final int HDR_TYPE = 620;
     public static final int HDMI_INFO = 662;
     public static final int INPUT_SOURCE = 696;
+    public static final int OUTPUT_TIMING = 157;
 
     // ------------------------------------------------------------------ IGmpf2 reads (Z9X numbering)
     public static final int OUTPUT_FPS = 22;
@@ -83,7 +85,7 @@ public final class GmpfAllowlist {
 
     private static final int[] IGMPF_READS = {
             SENSOR_STATUS, LUMENS_MODE, LAMP_LEVEL, SCREEN_ON, FOCUS_STEP, TOF_DISTANCE, FAN_MODE, FAN_SPEED,
-            SYSTEM_TEMPERATURE, SENSOR_TEMPERATURE, MOTION, HDR_TYPE, HDMI_INFO, INPUT_SOURCE};
+            SYSTEM_TEMPERATURE, SENSOR_TEMPERATURE, MOTION, HDR_TYPE, HDMI_INFO, INPUT_SOURCE, OUTPUT_TIMING};
     private static final int[] IGMPF2_READS = {
             OUTPUT_FPS, LED_LEVEL, LIGHT_USAGE, LENS_DISP_MODE, SUPPLY_VOLTAGE, OVER_TEMPERATURE, LED_CURRENTS,
             VIDEO_INFO};
