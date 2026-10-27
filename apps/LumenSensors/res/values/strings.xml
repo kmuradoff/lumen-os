@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     Lumen Sensors (org.lumen.sensors), English base. Russian: values-ru/strings.xml (hand-written).
+     Other languages come later through apps/i18n when the app ships in the image (README.md).
+     Units carry their own leading no-break space ( ) where the language puts one. -->
+<resources>
+    <string name="app_name">Sensors</string>
+
+    <!-- settings screen -->
+    <string name="set_show">Show overlay</string>
+    <string name="set_mode">Mode</string>
+    <string name="mode_compact">Compact</string>
+    <string name="mode_detailed">Detailed</string>
+    <string name="mode_graphs">Graphs</string>
+    <string name="set_position">Position</string>
+    <string name="pos_tl">Top left</string>
+    <string name="pos_tr">Top right</string>
+    <string name="pos_bl">Bottom left</string>
+    <string name="pos_br">Bottom right</string>
+    <string name="set_size">Size</string>
+    <string name="size_small">Small</string>
+    <string name="size_medium">Medium</string>
+    <string name="size_large">Large</string>
+    <string name="set_opacity">Opacity</string>
+    <string name="opacity_fmt">%1$d%%</string>
+    <string name="set_refresh">Refresh</string>
+    <string name="refresh_fmt">%1$d s</string>
+    <string name="set_boot">Start at boot</string>
+    <string name="set_groups">Groups</string>
+    <string name="set_hint">Remote: in Projector → Remote keys, give the iQIYI or bilibili key to Sensors. The key then opens this screen, and OK on the first row turns the overlay on or off.</string>
+
+    <!-- foreground service notification -->
+    <string name="notif_channel">Sensor overlay</string>
+    <string name="notif_text">The sensor overlay is on</string>
+
+    <!-- groups -->
+    <string name="grp_temps">Temperatures</string>
+    <string name="grp_cooling">Cooling</string>
+    <string name="grp_light">Light</string>
+    <string name="grp_cpu">Processor and graphics</string>
+    <string name="grp_memory">Memory</string>
+    <string name="grp_network">Network</string>
+    <string name="grp_picture">Picture and signal</string>
+    <string name="grp_motion">Motion</string>
+    <string name="grp_system">System</string>
+
+    <!-- temperatures -->
+    <string name="s_soc">Processor (SoC)</string>
+    <string name="s_soc_short">SoC</string>
+    <string name="s_zone">Thermal zone %1$d</string>
+    <string name="s_system">System</string>
+    <string name="s_air">Air inside</string>
+    <string name="s_air_short">Air</string>
+    <string name="s_dmd">DMD chip</string>
+    <string name="s_dmd_short">DMD</string>
+    <string name="s_led">LED</string>
+    <string name="s_led_short">LED</string>
+    <string name="s_led_r">Red LED</string>
+    <string name="s_led_g">Green LED</string>
+    <string name="s_led_b">Blue LED</string>
+    <string name="s_cpu_vendor">Processor</string>
+    <string name="s_sensor">Sensor %1$d</string>
+    <string name="s_overheat">Overheat</string>
+
+    <!-- cooling -->
+    <string name="s_fan_mode">Fan mode</string>
+    <string name="fan_auto">Auto</string>
+    <string name="fan_manual">Manual %1$d</string>
+    <string name="fan_test">Test</string>
+    <string name="s_fan">Fan</string>
+    <string name="s_fan_n">Fan %1$d</string>
+    <string name="s_fan_short">Fan</string>
+    <string name="s_throttle_cpu">CPU throttling</string>
+    <string name="s_throttle_gpu">GPU throttling</string>
+    <string name="s_throttle_cores">CPU cores off</string>
+    <string name="s_throttle_pq">Picture throttling</string>
+    <string name="s_throttle">Cooling device %1$d</string>
+
+    <!-- light -->
+    <string name="s_lamp">Brightness level</string>
+    <string name="s_color_temp">Color temperature</string>
+    <string name="ct_d65" translatable="false">D65</string>
+    <string name="ct_1">Color temp 1</string>
+    <string name="s_boost" translatable="false">Boost</string>
+    <string name="s_led_power">LED power</string>
+    <string name="s_led_current">LED current %1$s</string>
+    <string name="s_light_hours">Light source time</string>
+    <string name="s_voltage">Supply voltage</string>
+
+    <!-- processor and graphics -->
+    <string name="s_cpu_load">CPU load</string>
+    <string name="s_cpu_short">CPU</string>
+    <string name="s_core">Core %1$d</string>
+    <string name="s_cpu_clock">CPU clock</string>
+    <string name="s_cpu_clock_n">CPU clock, cluster %1$d</string>
+    <string name="s_clock_short">Clock</string>
+    <string name="s_cpu_limit">CPU clock limit</string>
+    <string name="s_cpu_limit_n">CPU clock limit, cluster %1$d</string>
+    <string name="s_gpu_clock">GPU clock</string>
+    <string name="s_gpu_load">GPU load</string>
+    <string name="s_gpu_short" translatable="false">GPU</string>
+
+    <!-- memory -->
+    <string name="s_ram">RAM in use</string>
+    <string name="s_ram_short">RAM</string>
+    <string name="s_zram_stored">Swap in zram</string>
+    <string name="s_zram_used">zram memory</string>
+
+    <!-- network -->
+    <string name="s_down">Download</string>
+    <string name="s_up">Upload</string>
+    <string name="s_rssi">Wi-Fi signal</string>
+    <string name="s_link">Wi-Fi link speed</string>
+    <string name="s_band">Wi-Fi band</string>
+
+    <!-- picture and signal -->
+    <string name="s_ui_res">Interface resolution</string>
+    <string name="s_ui_hz">Refresh rate</string>
+    <string name="s_hdr_caps">HDR support</string>
+    <string name="s_source">Input</string>
+    <string name="src_android" translatable="false">Android TV</string>
+    <string name="src_hdmi" translatable="false">HDMI %1$d</string>
+    <string name="s_hdr">Video HDR</string>
+    <string name="s_hdmi">HDMI signal</string>
+    <string name="s_signal">Signal status code</string>
+    <string name="s_video">Video</string>
+    <string name="s_out_fps">Output frame rate</string>
+
+    <!-- motion -->
+    <string name="s_tilt">Tilt</string>
+    <string name="s_accel">Accelerometer</string>
+    <string name="s_gyro">Gyroscope</string>
+    <string name="s_tof">Distance to the wall</string>
+    <string name="s_focus">Focus motor step</string>
+
+    <!-- system -->
+    <string name="s_uptime">Uptime</string>
+
+    <!-- units and words (Words.java order) -->
+    <string name="u_c"> °C</string>
+    <string name="u_pct">%</string>
+    <string name="u_mhz"> MHz</string>
+    <string name="u_mb"> MB</string>
+    <string name="u_gb"> GB</string>
+    <string name="u_mbits"> Mbit/s</string>
+    <string name="u_dbm"> dBm</string>
+    <string name="u_mm"> mm</string>
+    <string name="u_v"> V</string>
+    <string name="u_h"> h</string>
+    <string name="u_hz"> Hz</string>
+    <string name="u_min"> min</string>
+    <string name="u_deg" translatable="false">°</string>
+    <string name="u_ghz"> GHz</string>
+    <string name="w_on">On</string>
+    <string name="w_off">Off</string>
+    <string name="w_yes">Yes</string>
+    <string name="w_no">No</string>
+    <string name="w_min">min</string>
+    <string name="w_max">max</string>
+</resources>

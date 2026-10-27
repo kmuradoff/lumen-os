@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     Launcher icon of Lumen Sensors (org.lumen.sensors): a thermometer glyph (paper stem, warm accent
+     mercury, scale ticks) on the #17181B rounded-square tile, in the palette of tools/brand/lumen_brand.py.
+     Hand-made until the app is added to tools/brand/gen_drawables.py APPS (README: shipping). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <path android:fillColor="#FF17181B"
+        android:pathData="M58,0 L182,0 A58,58 0 0,1 240,58 L240,182 A58,58 0 0,1 182,240 L58,240 A58,58 0 0,1 0,182 L0,58 A58,58 0 0,1 58,0 Z" />
+    <path android:fillColor="#FFF4EFE6"
+        android:pathData="M95,72 A15,15 0 0,1 125,72 L125,136.36 A28,28 0 1,1 95,136.36 Z" />
+    <path android:fillColor="#FFF2B26B"
+        android:pathData="M104,100 A6,6 0 0,1 116,100 L116,143.03 A18,18 0 1,1 104,143.03 Z" />
+    <path android:fillColor="#FFCFC7BA"
+        android:pathData="M140,75 L154,75 A3,3 0 0,1 154,81 L140,81 A3,3 0 0,1 140,75 Z M140,95 L154,95 A3,3 0 0,1 154,101 L140,101 A3,3 0 0,1 140,95 Z M140,115 L154,115 A3,3 0 0,1 154,121 L140,121 A3,3 0 0,1 140,115 Z" />
+</vector>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     TV banner 320x180 dp of Lumen Sensors (org.lumen.sensors): the Lumen mark | the thermometer glyph on
+     #17181B, full bleed (launchers round the corners themselves). The mark and divider paths are those of
+     the generated Projector banner; the glyph is brand_icon_sensors scaled into the right half.
+     Hand-made until the app is added to tools/brand/gen_drawables.py APPS (README: shipping). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path android:fillColor="#FF17181B"
+        android:pathData="M0,0 L320,0 L320,180 L0,180 Z" />
+    <path android:fillColor="#FFF4EFE6"
+        android:pathData="M106,80.64 L121.44,71.73 A23.92,23.92 0 0,1 129.54,94.23 L114.11,85.32 Z M114.11,94.68 L114.11,112.5 A23.92,23.92 0 0,1 90.56,108.27 L106,99.36 Z M97.89,94.68 L82.46,85.77 A23.92,23.92 0 0,1 97.89,67.5 L97.89,85.32 Z" />
+    <path android:fillColor="#FFCFC7BA"
+        android:pathData="M114.11,85.32 L129.54,94.23 A23.92,23.92 0 0,1 114.11,112.5 L114.11,94.68 Z M106,99.36 L90.56,108.27 A23.92,23.92 0 0,1 82.46,85.77 L97.89,94.68 Z M97.89,85.32 L97.89,67.5 A23.92,23.92 0 0,1 121.44,71.73 L106,80.64 Z" />
+    <path android:fillColor="#FFF2B26B"
+        android:pathData="M106,84.28 A5.72,5.72 0 0,1 106,95.72 A5.72,5.72 0 0,1 106,84.28 Z" />
+    <path android:fillColor="#FF3A3631"
+        android:pathData="M153.25,68 L154.75,68 L154.75,112 L153.25,112 Z" />
+    <group
+        android:translateX="165.5"
+        android:translateY="45.9"
+        android:scaleX="0.36"
+        android:scaleY="0.36">
+        <path android:fillColor="#FFF4EFE6"
+            android:pathData="M95,72 A15,15 0 0,1 125,72 L125,136.36 A28,28 0 1,1 95,136.36 Z" />
+        <path android:fillColor="#FFF2B26B"
+            android:pathData="M104,100 A6,6 0 0,1 116,100 L116,143.03 A18,18 0 1,1 104,143.03 Z" />
+        <path android:fillColor="#FFCFC7BA"
+            android:pathData="M140,75 L154,75 A3,3 0 0,1 154,81 L140,81 A3,3 0 0,1 140,75 Z M140,95 L154,95 A3,3 0 0,1 154,101 L140,101 A3,3 0 0,1 140,95 Z M140,115 L154,115 A3,3 0 0,1 154,121 L140,121 A3,3 0 0,1 140,115 Z" />
+    </group>
+</vector>

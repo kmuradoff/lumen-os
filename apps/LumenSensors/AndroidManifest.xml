@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  org.lumen.sensors ("Sensors" / "Датчики") for Lumen OS on the XGIMI Z9X: every temperature and sensor value
+  that can really be read, as an overlay (HUD) on top of whatever plays. README.md has the details.
+  Platform-signed (release platform key), NOT persistent, NOT priv-app: a test build installs with a plain
+  `adb install -r`; in the image later /system/app/LumenSensors/LumenSensors.apk.
+  Version 0.1 (versionCode 1): stays below any image build of this app, so the image copy replaces a test install.
+
+  Permissions (Lineage 21 protection levels): SYSTEM_ALERT_WINDOW is signature|appop, granted by the platform
+  signature (as for org.z9x.projector); FOREGROUND_SERVICE(_SPECIAL_USE), RECEIVE_BOOT_COMPLETED,
+  ACCESS_WIFI_STATE and ACCESS_NETWORK_STATE are normal; org.z9x.projector.permission.STANDBY_STATE is
+  Projector's signature permission for its lamp-only standby broadcast and provider. No runtime permission,
+  so no default-permissions XML; no privileged permission, so no privapp-permissions XML.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.lumen.sensors"
+    android:versionCode="1"
+    android:versionName="0.1">
+
+    <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="org.z9x.projector.permission.STANDBY_STATE" />
+
+    <!-- the standby state provider of org.z9x.projector (power.StandbyStateProvider) -->
+    <queries>
+        <package android:name="org.z9x.projector" />
+    </queries>
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@drawable/brand_icon_sensors"
+        android:banner="@drawable/brand_banner_sensors"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Lumen.Sensors">
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:banner="@drawable/brand_banner_sensors"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Runs only while "Show overlay" is on; owns the HUD window (HudService). -->
+        <service
+            android:name=".HudService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="On-screen sensor overlay (HUD) over the playing video, while the user has it switched on" />
+        </service>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

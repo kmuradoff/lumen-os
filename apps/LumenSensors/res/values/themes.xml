@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     Settings screen of Lumen Sensors: translucent and dimmed, so the picture and the live HUD stay
+     visible while adjusting; the panel itself is drawn by ui.SettingsView. -->
+<resources>
+    <style name="Theme.Lumen.Sensors" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.3</item>
+        <item name="android:colorAccent">#FF3B78E7</item>
+    </style>
+</resources>
