@@ -6,8 +6,12 @@
 # is never read). Used for the AIC pre-release on top of the published play6-1.0.6 image while the build laptop
 # was away; tools/play6/compose.sh puts the same files into a fresh build.
 #
-#   tools/play6/aic/add_aic_to_image.sh IN.img OUT.img TAG
-#     TAG  short build mark, e.g. aic1: ro.lumen.build_id gets "-TAG" and ro.lumen.p6.aic=TAG is added
+#   tools/play6/aic/add_aic_to_image.sh IN.img OUT.img TAG [--diag]
+#     TAG     short build mark, e.g. aic1: ro.lumen.build_id gets "-TAG" and ro.lumen.p6.aic=TAG is added
+#     --diag  also the test builds' boot logger and escape (tools/play6/compose.sh --diag): z9x_earlylog writes a
+#             boot log to a USB stick from 'on init' on (and the previous boot's pstore), earlylog_usb.sh loads
+#             the Play 6 USB host modules for it, lumen_escape reboots into fastbootd when the boot does not
+#             complete. ro.lumen.diag=1 is added. Never for a regular release.
 #
 # Adds (root, the labels the base gives such files):
 #   /system/etc/aic8800/modules/*.ko, /system/etc/aic8800/firmware/*     0644 system_file   (dirs 0755)
@@ -19,7 +23,8 @@
 # modes, owner, labels, e2fsck clean. Writes OUT.img and OUT.img.sha256.
 set -euo pipefail
 die() { echo "add_aic_to_image: ERROR: $*" >&2; exit 1; }
-IN=${1:?usage: add_aic_to_image.sh IN.img OUT.img TAG}; OUT=${2:?OUT.img}; TAG=${3:?TAG}
+IN=${1:?usage: add_aic_to_image.sh IN.img OUT.img TAG [--diag]}; OUT=${2:?OUT.img}; TAG=${3:?TAG}
+DIAG=0; [ "${4:-}" = --diag ] && DIAG=1
 echo "$TAG" | grep -Eq '^[a-z0-9]+$' || die "TAG must be lower case letters and digits, not $TAG"
 G=$(cd "$(dirname "$0")/../../.." && pwd)
 A=$G/build/play6/aic
@@ -40,7 +45,7 @@ grep -q '^ro.lumen.p6.aic=' "$T/product.prop" && die "$IN already has the AIC fi
 OLD_ID=$(sed -n 's/^ro\.lumen\.build_id=//p' "$T/product.prop")
 [ -n "$OLD_ID" ] || die "no ro.lumen.build_id in $IN"
 grep -v '^ro\.lumen\.build_id=' "$T/product.prop" > "$T/product.new"
-{ echo "ro.lumen.build_id=$OLD_ID-$TAG"; echo "ro.lumen.p6.aic=$TAG"; } >> "$T/product.new"
+{ echo "ro.lumen.build_id=$OLD_ID-$TAG"; echo "ro.lumen.p6.aic=$TAG"; [ $DIAG = 1 ] && echo "ro.lumen.diag=1"; } >> "$T/product.new"
 
 cp "$IN" "$OUT.part"
 CMDS=$T/cmds
@@ -83,6 +88,13 @@ add /system/lib/libbt-vendor-aic.so "$A/bt/libbt-vendor-aic.so" 644 "$LLIB" vend
 add /system/etc/bluetooth/aicbt.conf "$A/bt/aicbt.conf" 644 "$LSYS" system_file
 add /system/etc/init/play6_aic.rc "$G/overlay/play6/play6_aic.rc" 644 "$LSYS" system_file
 add /system/etc/xgimi/play6_aic.sh "$G/overlay/play6/play6_aic.sh" 755 "$LSYS" system_file
+if [ $DIAG = 1 ]; then
+  add /system/etc/init/z9x_earlylog.rc "$G/overlay/debug/z9x_earlylog.rc" 644 "$LSYS" system_file
+  add /system/etc/xgimi/z9x_earlylog.sh "$G/overlay/debug/z9x_earlylog.sh" 755 "$LSYS" system_file
+  add /system/etc/xgimi/earlylog_usb.sh "$G/overlay/play6/earlylog_usb.sh" 644 "$LSYS" system_file
+  add /system/etc/init/lumen_escape.rc "$G/overlay/debug/lumen_escape.rc" 644 "$LSYS" system_file
+  add /system/etc/xgimi/lumen_escape.sh "$G/overlay/debug/lumen_escape.sh" 755 "$LSYS" system_file
+fi
 add $PROD "$T/product.new" 644 "$LSYS" system_file
 
 "$D" -w -f "$CMDS" "$OUT.part" >/dev/null 2>"$T/dbg.err" || true
