@@ -83,7 +83,7 @@ NEED="Play6FrameworkOverlay.apk Play6TvSettingsOverlay.apk Play6Projector.apk Z9
       z9x-sysconfig-nogms.xml bootanimation.zip product_prop.txt play6_compat.rc play6_base.rc
       Vendor_000d_Product_3841.kl Vendor_3697_Product_0001.kl Vendor_3697_Product_0002.kl
       Vendor_000d_Product_3841.idc base_id.txt base_signed/base_signed.tsv base_export.sh check_privapp.py apkinfo.py
-      lumen_gapps.rc lumen_gapps.sh z9x_nui.rc z9x_nui.sh"
+      lumen_gapps.rc lumen_gapps.sh z9x_nui.rc z9x_nui.sh play6_aic.rc play6_aic.sh aic/SHA256SUMS"
 [ $OTA = 1 ] && NEED="$NEED Play6Updater.apk lumen_recovery.rc lumen_recovery.sh lumen_play6_ota.x509"
 [ $DEXPREOPT = 1 ] && NEED="$NEED dexpreopt_play6.sh lumen_checks.py"
 if has_exp 2 || has_exp 3; then NEED="$NEED play6_perf.rc"; fi
@@ -340,6 +340,16 @@ fi
 #     post-fs-data when the partition exists, nothing otherwise. No Google file is in this image.
 install -m 0644 "$IN/lumen_gapps.rc" "$S/etc/init/lumen_gapps.rc"
 install -m 0755 "$IN/lumen_gapps.sh" "$S/etc/xgimi/lumen_gapps.sh"
+# 3h. AIC8800D80X2 Wi-Fi/BT of the newer Play 6 batches (tools/play6/aic/BUILD.md): the modules and the chip
+#     firmware, pinned by aic/SHA256SUMS; play6_aic.sh loads them at boot only when the USB chip is
+#     368b:8d90 / 368b:8d91 (a MediaTek unit gets nothing). Vendor untouched.
+(cd "$IN/aic" && sha256sum -c --quiet SHA256SUMS) || die "aic/: modules or firmware do not match SHA256SUMS"
+install -d -m 0755 "$S/lib/modules/aic" "$S/etc/firmware/aic8800d80x2"
+install -m 0644 "$IN"/aic/modules/*.ko "$S/lib/modules/aic/"
+install -m 0644 "$IN"/aic/firmware/* "$S/etc/firmware/aic8800d80x2/"
+install -m 0644 "$IN/play6_aic.rc" "$S/etc/init/play6_aic.rc"
+install -d -m 0755 "$S/etc/xgimi"
+install -m 0755 "$IN/play6_aic.sh" "$S/etc/xgimi/play6_aic.sh"
 # 3g. the vendor native-UI fifo reader (stock parity 2026-10-21, eye protection): the Z9X files unchanged
 #     (overlay/v1/z9x_nui.rc + .sh). gmpf_main of the Play 6 holds /data/vendor/tmp/retnuififo open and writes
 #     nuififo with a blocking open, exactly as on the Z9X (checked on the owner's Play 6, t22): without a reader

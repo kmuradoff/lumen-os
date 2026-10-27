@@ -1,0 +1,91 @@
+diff -ru drv.orig/aic8800/Makefile drv/aic8800/Makefile
+--- drv.orig/aic8800/Makefile	2026-10-27 21:37:11
++++ drv/aic8800/Makefile	2026-10-27 22:08:16
+@@ -16,7 +16,7 @@
+ export CONFIG_PLATFORM_ALLWINNER = n
+ export CONFIG_PLATFORM_AMLOGIC = n
+ export CONFIG_PLATFORM_HI = n
+-export CONFIG_PLATFORM_UBUNTU = y
++export CONFIG_PLATFORM_UBUNTU = n
+ 
+ ifeq ($(CONFIG_PLATFORM_ROCKCHIP), y)
+ ARCH = arm64
+diff -ru drv.orig/aic8800/aic8800_fdrv/Makefile drv/aic8800/aic8800_fdrv/Makefile
+--- drv.orig/aic8800/aic8800_fdrv/Makefile	2026-10-27 21:37:11
++++ drv/aic8800/aic8800_fdrv/Makefile	2026-10-27 22:08:16
+@@ -102,7 +102,7 @@
+ CONFIG_5M10M = n
+ # Need to set fw path in BOARD_KERNEL_CMDLINE
+ CONFIG_USE_FW_REQUEST ?= n
+-CONFIG_USE_P2P0 = n
++CONFIG_USE_P2P0 = y
+ CONFIG_ONE_TXQ = n
+ CONFIG_PER_STA_FC = n
+ CONFIG_PREALLOC_RX_SKB ?= n
+@@ -356,7 +356,7 @@
+ CONFIG_PLATFORM_ALLWINNER ?= n
+ CONFIG_PLATFORM_AMLOGIC ?= n
+ CONFIG_PLATFORM_HI ?= n
+-CONFIG_PLATFORM_UBUNTU ?= y
++CONFIG_PLATFORM_UBUNTU ?= n
+ 
+ ifeq ($(CONFIG_PLATFORM_ROCKCHIP), y)
+ ARCH := arm64
+@@ -416,3 +416,6 @@
+ clean:
+ 	rm -rf *.o *.ko *.o.* *.mod.* modules.* Module.* .a* .o* .*.o.* *.mod .tmp* .cache.mk .modules.order.cmd .Module.symvers.cmd
+ 
++
++# XGIMI Play 6 (Android 10 TV, MStar MT5889, kernel 4.19.116 arm32)
++ccflags-y += -DANDROID_PLATFORM
+diff -ru drv.orig/aic8800/aic8800_fdrv/rwnx_wakelock.c drv/aic8800/aic8800_fdrv/rwnx_wakelock.c
+--- drv.orig/aic8800/aic8800_fdrv/rwnx_wakelock.c	2026-10-27 21:37:11
++++ drv/aic8800/aic8800_fdrv/rwnx_wakelock.c	2026-10-27 22:09:58
+@@ -29,7 +29,8 @@
+ struct wakeup_source *rwnx_wakeup_register(struct device *dev, const char *name)
+ {
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
++/* Android common 4.19 (XGIMI Play 6 stock kernel) has the 2-argument form backported */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0) || defined(ANDROID_PLATFORM)
+ 	return wakeup_source_register(dev, name);
+ #else
+ 
+diff -ru drv.orig/aic8800/aic_load_fw/Makefile drv/aic8800/aic_load_fw/Makefile
+--- drv.orig/aic8800/aic_load_fw/Makefile	2026-10-27 21:37:11
++++ drv/aic8800/aic_load_fw/Makefile	2026-10-27 22:08:16
+@@ -23,7 +23,7 @@
+ CONFIG_PLATFORM_ALLWINNER ?= n
+ CONFIG_PLATFORM_AMLOGIC ?= n
+ CONFIG_PLATFORM_HI ?= n
+-CONFIG_PLATFORM_UBUNTU ?= y
++CONFIG_PLATFORM_UBUNTU ?= n
+ 
+ CONFIG_AIC_LOADFW_SUPPORT = m
+ MODULE_NAME = aic_load_fw
+@@ -122,3 +122,6 @@
+ 
+ clean:
+ 	rm -rf *.o *.ko *.o.* *.mod.* modules.* Module.* .a* .o* .*.o.* *.mod .tmp* .cache.mk .modules.order.cmd .Module.symvers.cmd
++
++# XGIMI Play 6 (Android 10 TV, MStar MT5889, kernel 4.19.116 arm32)
++ccflags-y += -DANDROID_PLATFORM
+diff -ru drv.orig/aic_btusb/Makefile drv/aic_btusb/Makefile
+--- drv.orig/aic_btusb/Makefile	2026-10-27 21:37:11
++++ drv/aic_btusb/Makefile	2026-10-27 22:08:16
+@@ -22,7 +22,7 @@
+ CONFIG_PLATFORM_ROCKCHIP ?= n
+ CONFIG_PLATFORM_ALLWINNER ?= n
+ CONFIG_PLATFORM_AMLOGIC ?= n
+-CONFIG_PLATFORM_UBUNTU ?= y
++CONFIG_PLATFORM_UBUNTU ?= n
+ 
+ 
+ # MTK linux platform use bluedroid
+@@ -84,3 +84,6 @@
+ clean:
+ 	rm -rf *.o *.ko *.o.* *.mod.* modules.* Module.* .a* .o* .*.o.* *.mod .tmp* .cache.mk .Module.symvers.cmd .modules.order.cmd
+ 
++
++# XGIMI Play 6 (Android 10 TV, MStar MT5889, kernel 4.19.116 arm32)
++ccflags-y += -DANDROID_PLATFORM
