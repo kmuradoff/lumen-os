@@ -45,9 +45,10 @@ if [ $chip != aic ]; then
 fi
 say "AIC8800D80X2 found after $i s"
 
-# 1b. Bluetooth library, before the framework first switches Bluetooth on (the HAL loads it only then)
+# 1b. Bluetooth library (the HAL dlopens it when Bluetooth is switched on; restarted in step 4)
+bt_lib=0
 if [ -f $BTLIB ] && ! grep -q " /vendor/lib/libbt-vendor.so " $R/proc/mounts; then
-  mount -o bind $BTLIB $VBTLIB && say "AIC libbt-vendor in place" || say "libbt-vendor bind failed (Wi-Fi goes on)"
+  mount -o bind $BTLIB $VBTLIB && { bt_lib=1; say "AIC libbt-vendor in place"; } || say "libbt-vendor bind failed (Wi-Fi goes on)"
 fi
 
 # 2. firmware into the chip (368b:8d90 -> 368b:8d91)
@@ -76,3 +77,17 @@ while [ $i -lt 10 ] && [ ! -d $R/sys/class/net/wlan0 ]; do sleep 1; i=$((i + 1))
 [ -d $R/sys/class/net/wlan0 ] || fail wlan0
 setprop sys.lumen.aic ready
 say "ready: wlan0$( [ -d $R/sys/class/net/p2p0 ] && echo ' p2p0')$( [ -e $R/dev/aicbt_dev ] && echo ' aicbt_dev')"
+
+# 4. we run after boot_completed: the framework already tried Wi-Fi and Bluetooth without the chip. Wi-Fi
+#    is switched off and on again when the user has it on; the Bluetooth HAL is restarted so its next start
+#    dlopens AIC's library, then Bluetooth is switched off and on again when it is on.
+if [ "$(settings get global wifi_on 2>/dev/null)" = 1 ]; then
+  svc wifi disable; sleep 2; svc wifi enable; say "Wi-Fi restarted on wlan0"
+fi
+if [ $bt_lib = 1 ] && [ -e $R/dev/aicbt_dev ]; then
+  bt_on=$(settings get global bluetooth_on 2>/dev/null)
+  [ "$bt_on" = 1 ] && { cmd bluetooth_manager disable >/dev/null 2>&1; sleep 3; }
+  stop vendor.bluetooth-1-0; sleep 1; start vendor.bluetooth-1-0
+  [ "$bt_on" = 1 ] && { sleep 2; cmd bluetooth_manager enable >/dev/null 2>&1; }
+  say "Bluetooth HAL restarted with AIC libbt-vendor (bluetooth_on=$bt_on)"
+fi

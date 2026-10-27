@@ -35,6 +35,8 @@ EOF
   printf '#!/bin/bash\necho "mount $*" >> "%s/log"; echo "x /vendor/lib/libbt-vendor.so x" >> "%s/proc/mounts"\n' "$R" "$R" > "$R/bin/mount"
   printf '#!/bin/bash\necho "chown $*" >> "%s/log"\n' "$R" > "$R/bin/chown"
   printf '#!/bin/bash\necho "chmod $*" >> "%s/log"\n' "$R" > "$R/bin/chmod"
+  for c in svc cmd stop start; do printf '#!/bin/bash\necho "%s $*" >> "%s/log"\n' "$c" "$R" > "$R/bin/$c"; done
+  printf '#!/bin/bash\necho 1\n' > "$R/bin/settings"
   chmod 755 "$R/bin/"*
 }
 run() { R=$R PATH="$R/bin:$PATH" sh "$SCRIPT"; }
@@ -49,6 +51,7 @@ eq "MediaTek unit: chip" mediatek "$(prop sys.lumen.wifi_chip)"
 eq "MediaTek unit: aic off" off "$(prop sys.lumen.aic)"
 eq "MediaTek unit: nothing loaded" 0 "$(grep -c insmod "$R/log")"
 eq "MediaTek unit: MediaTek Bluetooth library kept" 0 "$(grep -c '^mount' "$R/log")"
+eq "MediaTek unit: Wi-Fi and Bluetooth left alone" 0 "$(grep -cE '^(svc|cmd|stop|start) ' "$R/log")"
 rm -rf "$R"
 
 setup 368b:8d90 1; run
@@ -60,6 +63,9 @@ eq "AIC unit: wlan0" yes "$([ -d "$R/sys/class/net/wlan0" ] && echo yes)"
 eq "AIC unit: Bluetooth library bound once" 1 "$(grep -c "^mount -o bind $R/system/lib/libbt-vendor-aic.so $R/vendor/lib/libbt-vendor.so" "$R/log")"
 eq "AIC unit: aicbt_dev for user bluetooth" 1 "$(grep -c "^chown bluetooth:bluetooth $R/dev/aicbt_dev" "$R/log")"
 eq "AIC unit: aicbt_dev mode" 1 "$(grep -c "^chmod 0660 $R/dev/aicbt_dev" "$R/log")"
+eq "AIC unit: Wi-Fi restarted after the driver" 1 "$(grep -c '^svc wifi enable' "$R/log")"
+eq "AIC unit: Bluetooth HAL restarted" "stop vendor.bluetooth-1-0 start vendor.bluetooth-1-0" "$(grep -E '^(stop|start) vendor' "$R/log" | xargs)"
+eq "AIC unit: Bluetooth switched on again" 1 "$(grep -c '^cmd bluetooth_manager enable' "$R/log")"
 run   # a second start loads nothing twice
 eq "AIC unit: second run loads nothing again" 3 "$(grep -c insmod "$R/log")"
 eq "AIC unit: second run binds nothing again" 1 "$(grep -c '^mount' "$R/log")"
