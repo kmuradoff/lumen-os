@@ -184,7 +184,7 @@ public final class Hub {
         int[] ids = {R.string.u_c, R.string.u_pct, R.string.u_mhz, R.string.u_mb, R.string.u_gb, R.string.u_mbits,
                 R.string.u_dbm, R.string.u_mm, R.string.u_v, R.string.u_h, R.string.u_hz, R.string.u_min, R.string.u_deg,
                 R.string.u_ghz, R.string.w_on, R.string.w_off, R.string.w_yes, R.string.w_no, R.string.w_min,
-                R.string.w_max};
+                R.string.w_max, R.string.u_g};
         String[] w = new String[ids.length];
         for (int i = 0; i < ids.length; i++) w[i] = r.getString(ids[i]);
         char dec = '.';

@@ -5,13 +5,18 @@ package org.lumen.sensors.hal;
  * into a reused byte array). The reply size is checked twice: HwParcel.readBuffer(n) fails when the
  * vendor's buffer is not n bytes, and every decoder here refuses a length other than its exact size,
  * so a size mismatch only makes the value unavailable. Field order comes from the stock AIDL twins
- * (research); sizes from the Z9X proxy library. Plain Java (host tests).
+ * (research); sizes from the Z9X proxy library. Also the units of the motion and light usage
+ * values. Plain Java (host tests).
  */
 public final class GmpfStructs {
     private GmpfStructs() {}
 
     /** IGmpf 584 getMotionDetection: int16 acc x,y,z @0/2/4, int16 gyro x,y,z @6/8/10, u8 type @12, 1 pad. */
     public static final int MOTION_SIZE = 14;
+    /** Accelerometer counts per g: z reads 4092 with the owner's Z9X lying flat (device test 2026-10-27). */
+    public static final double ACCEL_LSB_PER_G = 4096;
+    /** Plausible light source hours (IGmpf2 27). */
+    public static final long LIGHT_HOURS_MAX = 100_000;
     /** IGmpf2 252 getCurHwCurrent: 8 x int16 R, G, B, C, R2, G2, B2, C2. */
     public static final int LED_CURRENTS_SIZE = 16;
     /** IGmpf 662 getHdmiInfo: u32 width @0, u32 height @4, u8 interlace @8, u8 hdmi @9, u32 fps x100 @12. */
@@ -65,15 +70,32 @@ public final class GmpfStructs {
         return v[0] >= 320 && v[0] <= 7680 && v[1] >= 240 && v[1] <= 4320;
     }
 
+    /** One accelerometer axis of 584 in g. */
+    public static double accelG(int raw) {
+        return raw / ACCEL_LSB_PER_G;
+    }
+
     /**
      * Tilt of the projector from horizontal in degrees (angle between the accelerometer vector and its
      * z axis), or NaN when the reading is not about 1 g. Axis-independent, so the sign conventions of
-     * the stock struct do not matter; z is about -4020 when the Z9X lies flat (about 4096 per g).
+     * the stock struct do not matter; z is about 4092 when the Z9X lies flat (the research logs had
+     * -4020 on another unit; about 4096 per g).
      */
     public static double tiltDegrees(int ax, int ay, int az) {
         double g = Math.sqrt((double) ax * ax + (double) ay * ay + (double) az * az);
         if (g < 1000 || g > 20000) return Double.NaN;
         return Math.toDegrees(Math.acos(Math.min(1.0, Math.abs(az) / g)));
+    }
+
+    /**
+     * Light source hours from light_list[].usage_time of the IGmpf2 27 JSON, or NaN outside
+     * 0..{@link #LIGHT_HOURS_MAX}. usage_time is whole HOURS: stock PJLink (settings LampCommand)
+     * answers the LAMP query, cumulative lamp hours by the PJLink spec, with it as is. (Stock System
+     * info divides it by 3600 as seconds; 0.1 did the same and showed "0.0 h". The HAL source logs the
+     * raw JSON once per start so the device can confirm the unit.)
+     */
+    public static double lightHours(long usageTime) {
+        return usageTime >= 0 && usageTime <= LIGHT_HOURS_MAX ? usageTime : Double.NaN;
     }
 
     static int i16(byte[] b, int o) {

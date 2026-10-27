@@ -3,6 +3,7 @@ package org.lumen.sensors.core;
 
 import org.lumen.sensors.hal.GmpfAllowlist;
 import org.lumen.sensors.hal.GmpfStructs;
+import org.lumen.sensors.z9x.Z9xSchedule;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -16,11 +17,13 @@ import java.util.stream.Stream;
 
 /**
  * Host test of Lumen Sensors' plain-Java parts (sh test/run.sh): /proc/stat, /proc/meminfo, zram mm_stat
- * and thermal parsing, the XGIMI HAL struct decoders (584 motion, IGmpf2 252 LED currents, 662 HDMI info,
- * IGmpf2 319 video info), the HAL allowlist (banned codes refused), value formatting, level thresholds,
- * the device profile decision, the graph history and the registry order. Arguments: the reader source,
- * the HidlCaller copy, apps/common/hal/HidlCaller.java and the app's src/ root (static checks of the HAL
- * path and of the device separation over every source file).
+ * and thermal parsing, the XGIMI HAL struct decoders (584 motion and its g scale, IGmpf2 252 LED currents,
+ * 662 HDMI info, IGmpf2 319 video info, IGmpf2 27 light hours), the HAL allowlist (banned codes refused),
+ * the Z9X read plan (periods per code, ToF, input-dependent 319 / 662, steady calls per second), value
+ * formatting, level thresholds, the device profile decision, the graph history and the registry order.
+ * Arguments: the reader source, the HidlCaller copy, apps/common/hal/HidlCaller.java and the app's src/
+ * root (static checks of the HAL path, of the device-test fixes and of the device separation over every
+ * source file).
  */
 public final class SensorsTest {
     private static int failed, passed;
@@ -55,9 +58,11 @@ public final class SensorsTest {
         clocks();
         structs();
         allowlist();
+        schedule();
         if (a.length >= 4) {
             halSources(a[0], a[1], a[2]);
             separation(a[3]);
+            fixes(a[3]);
         } else {
             failed++;
             System.out.println("FAIL static HAL checks: run through test/run.sh");
@@ -195,9 +200,21 @@ public final class SensorsTest {
         eq("motion 13 bytes refused", false, GmpfStructs.motion(new byte[13], 13, o));
         eq("motion 16 bytes refused", false, GmpfStructs.motion(new byte[16], 16, o));
         near("tilt of the logged reading", 8.75, GmpfStructs.tiltDegrees(-613, -89, -4020), 0.05);
+        near("tilt of the device test reading", 3.2, GmpfStructs.tiltDegrees(229, -29, 4092), 0.05);
         near("flat", 0, GmpfStructs.tiltDegrees(0, 0, 4096), 1e-9);
         near("on its side", 90, GmpfStructs.tiltDegrees(4096, 0, 0), 1e-9);
         yes("no gravity = misread", Double.isNaN(GmpfStructs.tiltDegrees(1, 2, 3)));
+        near("accelerometer 4096 counts = 1 g", 1.0, GmpfStructs.accelG(4096), 1e-12);
+        near("accelerometer z flat (device test)", 0.999, GmpfStructs.accelG(4092), 0.0005);
+        near("accelerometer negative", -0.00708, GmpfStructs.accelG(-29), 0.00001);
+
+        // IGmpf2 27 usage_time is whole hours (stock PJLink LAMP answers it as is); 0.1 divided by 3600
+        near("light hours as is", 1234, GmpfStructs.lightHours(1234), 0);
+        near("light hours zero (new light)", 0, GmpfStructs.lightHours(0), 0);
+        near("light hours at the plausible end", 100_000, GmpfStructs.lightHours(100_000), 0);
+        yes("light hours above 100000 hidden", Double.isNaN(GmpfStructs.lightHours(100_001)));
+        yes("light hours of a seconds-sized counter hidden", Double.isNaN(GmpfStructs.lightHours(3_600_000)));
+        yes("no usage_time (-1) hidden", Double.isNaN(GmpfStructs.lightHours(-1)));
 
         // IGmpf2 252: 8 x int16
         ByteBuffer c = le(16);
@@ -236,7 +253,7 @@ public final class SensorsTest {
 
     // ------------------------------------------------------------------ HAL allowlist
     private static void allowlist() {
-        int[] igmpf = {438, 439, 339, 435, 437, 177, 175, 196, 279, 584, 266, 696, 620, 662, 592};
+        int[] igmpf = {438, 439, 339, 435, 437, 177, 175, 196, 279, 584, 266, 696, 620, 662};
         int[] igmpf2 = {51, 241, 252, 25, 27, 68, 319, 22};
         for (int c : igmpf) yes("IGmpf " + c + " allowed", GmpfAllowlist.allowed(GmpfAllowlist.IGMPF, c));
         for (int c : igmpf2) yes("IGmpf2 " + c + " allowed", GmpfAllowlist.allowed(GmpfAllowlist.IGMPF2, c));
@@ -267,6 +284,10 @@ public final class SensorsTest {
         eq("IGmpf 319 (special autofocus) refused", false, GmpfAllowlist.allowed(GmpfAllowlist.IGMPF, 319));
         eq("IGmpf2 438 refused", false, GmpfAllowlist.allowed(GmpfAllowlist.IGMPF2, 438));
         eq("IGmpf2 52 (Boost setter) refused", false, GmpfAllowlist.allowed(GmpfAllowlist.IGMPF2, 52));
+        // 592 getSignalStatus (raw vendor enum, "Signal status code 3") is no longer read
+        eq("IGmpf 592 (removed) refused", false, GmpfAllowlist.allowed(GmpfAllowlist.IGMPF, 592));
+        refused("IGmpf 592 removed", GmpfAllowlist.IGMPF, 592);
+        eq("IGmpf2 592 refused", false, GmpfAllowlist.allowed(GmpfAllowlist.IGMPF2, 592));
         // a few setters of Projector's GmpfClient
         for (int c : new int[] {176, 174, 195, 434, 436, 148, 152, 300, 307, 161, 119}) {
             eq("setter " + c + " refused", false, GmpfAllowlist.allowed(GmpfAllowlist.IGMPF, c));
@@ -294,6 +315,199 @@ public final class SensorsTest {
     private static boolean contains(int[] a, int v) {
         for (int x : a) if (x == v) return true;
         return false;
+    }
+
+    // ------------------------------------------------------------------ Z9X read plan
+    private static final int I1 = GmpfAllowlist.IGMPF, I2 = GmpfAllowlist.IGMPF2;
+
+    /** Steady calls per second of these reads ({iface, code, how many values}). */
+    private static double rate(int[][] reads, long refreshMs) {
+        double sum = 0;
+        for (int[] r : reads) sum += r[2] * Z9xSchedule.perSecond(r[0], r[1], refreshMs);
+        return sum;
+    }
+
+    private static void schedule() {
+        eq("gap between probe calls", 200L, Z9xSchedule.GAP_MS);
+        eq("gap before a later call", 500L, Z9xSchedule.STEADY_GAP_MS);
+        eq("probe pace", 200L, Z9xSchedule.gapMs(true));
+        eq("steady pace", 500L, Z9xSchedule.gapMs(false));
+        near("steady cap 2 per second", 2.0, Z9xSchedule.maxSteadyPerSecond(), 1e-12);
+        // next due: on the beat when about on time, else a period after the call
+        eq("on time keeps the beat", 14_000L, Z9xSchedule.nextDue(10_000, 10_005, 4_000));
+        eq("1.5 s late keeps the beat", 14_000L, Z9xSchedule.nextDue(10_000, 11_505, 4_000));
+        eq("3 s late: a period after the call", 17_005L, Z9xSchedule.nextDue(10_000, 13_005, 4_000));
+        eq("3 s late on a 10 s read too", 23_005L, Z9xSchedule.nextDue(10_000, 13_005, 10_000));
+        eq("a long wait (not wanted meanwhile)", 74_000L, Z9xSchedule.nextDue(0, 70_000, 4_000));
+        eq("round at refresh 1 s", 4_000L, Z9xSchedule.periodMs(Z9xSchedule.P_ROUND, 1_000));
+        eq("round at refresh 2 s", 4_000L, Z9xSchedule.periodMs(Z9xSchedule.P_ROUND, 2_000));
+        eq("round at refresh 5 s", 5_000L, Z9xSchedule.periodMs(Z9xSchedule.P_ROUND, 5_000));
+        eq("slow period", 10_000L, Z9xSchedule.periodMs(Z9xSchedule.P_SLOW, 2_000));
+        eq("voltage period", 30_000L, Z9xSchedule.periodMs(Z9xSchedule.P_VOLTAGE, 2_000));
+        eq("ToF period", 60_000L, Z9xSchedule.periodMs(Z9xSchedule.P_TOF, 1_000));
+        eq("ToF period constant", 60_000L, Z9xSchedule.TOF_MS);
+        yes("ToF never in the same second as the first reads", Z9xSchedule.TOF_AFTER_MS >= 2_000);
+        eq("a failed once-per-start read waits 10 s", 10_000L, Z9xSchedule.periodMs(Z9xSchedule.P_ONCE, 1_000));
+
+        int[][] want = {
+                {I1, 196, Z9xSchedule.P_ROUND}, {I1, 438, Z9xSchedule.P_ROUND}, {I1, 439, Z9xSchedule.P_ROUND},
+                {I1, 435, Z9xSchedule.P_ROUND}, {I1, 437, Z9xSchedule.P_ROUND},
+                {I1, 177, Z9xSchedule.P_SLOW}, {I1, 175, Z9xSchedule.P_SLOW}, {I2, 51, Z9xSchedule.P_SLOW},
+                {I2, 25, Z9xSchedule.P_SLOW}, {I2, 252, Z9xSchedule.P_SLOW},
+                {I1, 696, Z9xSchedule.P_SLOW}, {I1, 620, Z9xSchedule.P_SLOW}, {I1, 662, Z9xSchedule.P_SLOW},
+                {I2, 319, Z9xSchedule.P_SLOW}, {I2, 22, Z9xSchedule.P_SLOW},
+                {I1, 584, Z9xSchedule.P_SLOW}, {I1, 266, Z9xSchedule.P_SLOW}, {I2, 241, Z9xSchedule.P_SLOW},
+                {I2, 68, Z9xSchedule.P_VOLTAGE}, {I1, 279, Z9xSchedule.P_TOF},
+                {I2, 27, Z9xSchedule.P_ONCE}, {I1, 339, Z9xSchedule.P_ONCE}};
+        for (int[] w : want) {
+            eq("period kind of " + (w[0] == I2 ? "IGmpf2 " : "IGmpf ") + w[1], w[2], Z9xSchedule.kindOf(w[0], w[1]));
+        }
+        int planned = 0;
+        for (int iface : new int[] {I1, I2}) {
+            for (int c : GmpfAllowlist.reads(iface)) {
+                planned++;
+                yes("read " + iface + "/" + c + " has a period", Z9xSchedule.kindOf(iface, c) >= 0);
+            }
+        }
+        eq("every read listed above", want.length, planned);
+        eq("592 not planned", -1, Z9xSchedule.kindOf(I1, 592));
+        eq("a banned code is not planned", -1, Z9xSchedule.kindOf(I1, 298));
+        eq("IGmpf 319 is not IGmpf2 319", -1, Z9xSchedule.kindOf(I1, 319));
+        near("ToF once a minute", 1 / 60.0, Z9xSchedule.perSecond(I1, 279, 2_000), 1e-12);
+        near("light usage once per start", 0, Z9xSchedule.perSecond(I2, 27, 2_000), 0);
+
+        // 696 decides the signal read: 662 on HDMI, IGmpf2 319 on the media input, neither when unknown
+        eq("media input", Z9xSchedule.INPUT_MEDIA, Z9xSchedule.input(0));
+        eq("HDMI 2", Z9xSchedule.INPUT_HDMI2, Z9xSchedule.input(2));
+        eq("odd input value is unknown", Z9xSchedule.INPUT_UNKNOWN, Z9xSchedule.input(7));
+        eq("negative input value is unknown", Z9xSchedule.INPUT_UNKNOWN, Z9xSchedule.input(-5));
+        yes("HDMI 1 reads 662", Z9xSchedule.readsHdmiInfo(Z9xSchedule.INPUT_HDMI1));
+        yes("HDMI 2 reads 662", Z9xSchedule.readsHdmiInfo(Z9xSchedule.INPUT_HDMI2));
+        eq("HDMI 1 does not read 319", false, Z9xSchedule.readsVideoInfo(Z9xSchedule.INPUT_HDMI1));
+        yes("media reads 319", Z9xSchedule.readsVideoInfo(Z9xSchedule.INPUT_MEDIA));
+        eq("media does not read 662", false, Z9xSchedule.readsHdmiInfo(Z9xSchedule.INPUT_MEDIA));
+        eq("unknown input reads no 662", false, Z9xSchedule.readsHdmiInfo(Z9xSchedule.INPUT_UNKNOWN));
+        eq("unknown input reads no 319", false, Z9xSchedule.readsVideoInfo(Z9xSchedule.INPUT_UNKNOWN));
+        for (int raw = -2; raw <= 4; raw++) {
+            int in = Z9xSchedule.input(raw);
+            yes("never both signal rows for input " + raw,
+                    !(Z9xSchedule.readsHdmiInfo(in) && Z9xSchedule.readsVideoInfo(in)));
+        }
+
+        // steady calls per second, every group on, the owner's Z9X (4 sensors, 1 fan, HDMI, 68 absent)
+        int[][] detailed = {
+                {I1, 196, 1}, {I1, 438, 1}, {I1, 439, 4}, {I1, 435, 1}, {I1, 437, 1},
+                {I1, 177, 1}, {I1, 175, 1}, {I2, 51, 1}, {I2, 25, 1}, {I2, 252, 1},
+                {I1, 696, 1}, {I1, 620, 1}, {I1, 662, 1}, {I2, 22, 1},
+                {I1, 584, 1}, {I1, 266, 1}, {I2, 241, 1}, {I1, 279, 1}, {I2, 27, 1}};
+        int[][] compact = {{I1, 196, 1}, {I1, 439, 3}, {I1, 437, 1}};   // air, DMD, LED, fan in the strip
+        int[][] graphs = {{I1, 196, 1}, {I1, 438, 1}, {I1, 439, 4}};
+        double d = rate(detailed, 2_000), c = rate(compact, 2_000), cap = Z9xSchedule.maxSteadyPerSecond();
+        near("detailed asks for 8 / 4 s + 12 / 10 s + 1 / 60 s", 8 / 4.0 + 12 / 10.0 + 1 / 60.0, d, 1e-9);
+        yes("detailed asks for more than the cap", d > cap);
+        yes("detailed gets well under half of 0.1's 4.8", Math.min(d, cap) < 0.5 * 4.8);
+        near("compact: 5 / 4 s", 1.25, c, 1e-9);
+        near("compact at refresh 5 s: 5 / 5 s", 1.0, rate(compact, 5_000), 1e-9);
+        near("graphs: 6 / 4 s", 1.5, rate(graphs, 2_000), 1e-9);
+        yes("compact and graphs ask for less than the cap", c < cap && rate(graphs, 2_000) < cap);
+
+        // the pump model: what each mode really gets
+        double[] md = model(detailed, 2_000), mc = model(compact, 2_000), mg = model(graphs, 2_000);
+        yes("model detailed: under half of 4.8 (" + md[0] + ")", md[0] < 0.5 * 4.8 && md[0] <= cap);
+        yes("model detailed: at the cap (" + md[0] + ")", md[0] > 0.9 * cap);
+        eq("model detailed: at most 2 calls in any second", 2.0, md[1]);
+        yes("model detailed: calls at least the steady gap apart", md[2] >= Z9xSchedule.STEADY_GAP_MS);
+        near("model detailed: 196 every round", 4.0, md[3], 0.1);
+        yes("model detailed: a sensor about every 8 s, before the 10 s reads (" + md[4] + ")",
+                md[4] > 6 && md[4] < 10 && md[4] < md[5]);
+        yes("model detailed: 177 about every 14 s (" + md[5] + ")", md[5] >= 10 && md[5] < 18);
+        yes("model detailed: ToF at most once a minute (" + md[6] + ")", md[6] >= 60 && md[6] < 90);
+        near("model compact: 1.25 per second", 1.25, mc[0], 0.01);
+        eq("model compact: at most 2 calls in any second", 2.0, mc[1]);
+        near("model compact: a sensor every 4 s", 4.0, mc[4], 0.05);
+        near("model graphs: 1.5 per second", 1.5, mg[0], 0.01);
+        near("model graphs: a sensor every 4 s", 4.0, mg[4], 0.05);
+        near("model compact at refresh 5 s: 1 per second", 1.0, model(compact, 5_000)[0], 0.01);
+    }
+
+    /** A modelled read: due time, period, length of the call, code; its calls in the measured window. */
+    private static final class Read {
+        long due, period, ms, first, last;
+        int code, calls;
+    }
+
+    /**
+     * A model of Z9xHalSource.pumpOnce and execute in steady state (every value probed; calls of 5 ms,
+     * ToF 570 ms; 10 minutes after a 2-minute warm-up): the wanted read that was due first, a 196 before
+     * it when the last one is a round old or due, the steady gap, Z9xSchedule.nextDue, ToF at least
+     * TOF_MS after its last call. Returns {calls per second, most calls in one second, shortest gap in
+     * ms, seconds between two 196 reads, between two reads of the first 439, of 177 (0 if absent), of
+     * 279 (0 if absent)}.
+     */
+    private static double[] model(int[][] reads, long refreshMs) {
+        java.util.ArrayList<Read> list = new java.util.ArrayList<>();
+        for (int[] r : reads) {
+            int k = Z9xSchedule.kindOf(r[0], r[1]);
+            if (r[1] == 196 || k == Z9xSchedule.P_ONCE) continue;
+            for (int i = 0; i < r[2]; i++) {
+                Read x = new Read();
+                x.period = Z9xSchedule.periodMs(k, refreshMs);
+                x.ms = r[1] == 279 ? 570 : 5;
+                x.code = r[1];
+                list.add(x);
+            }
+        }
+        Read screen = new Read();
+        screen.period = Z9xSchedule.periodMs(Z9xSchedule.P_ROUND, refreshMs);
+        screen.ms = 5;
+        screen.code = 196;
+        long now = 0, last = -60_000, checked = -60_000, from = 120_000, to = 720_000, minGap = Long.MAX_VALUE;
+        java.util.ArrayList<Long> calls = new java.util.ArrayList<>();
+        while (now < to) {
+            Read best = null;
+            for (Read x : list) if (best == null || x.due < best.due) best = x;
+            long at = Math.max(best.due, last + Z9xSchedule.gapMs(false));
+            if (at > now) {
+                now = at;
+                continue;
+            }
+            Read run = best;
+            if (now - checked > screen.period || now >= screen.due) {
+                if (screen.due > now) {
+                    now = screen.due;
+                    continue;
+                }
+                run = screen;
+            }
+            if (now >= from) {
+                minGap = Math.min(minGap, now - last);
+                calls.add(now);
+                if (run.calls++ == 0) run.first = now;
+                run.last = now;
+            }
+            long end = now + run.ms;
+            last = end;
+            if (run == screen) checked = end;
+            run.due = Z9xSchedule.nextDue(run.due, end, run.period);
+            if (run.code == 279) run.due = Math.max(run.due, now + Z9xSchedule.TOF_MS);
+            now = end + Z9xSchedule.GAP_MS;
+        }
+        int most = 0;
+        for (int i = 0, j = 0; i < calls.size(); i++) {
+            while (calls.get(j) < calls.get(i) - 999) j++;
+            most = Math.max(most, i - j + 1);
+        }
+        double[] out = {calls.size() / ((to - from) / 1000.0), most, minGap, every(screen), 0, 0, 0};
+        for (Read x : list) {
+            if (x.code == 439 && out[4] == 0) out[4] = every(x);
+            if (x.code == 177) out[5] = every(x);
+            if (x.code == 279) out[6] = every(x);
+        }
+        return out;
+    }
+
+    private static double every(Read x) {
+        return x.calls > 1 ? (x.last - x.first) / 1000.0 / (x.calls - 1) : 0;
     }
 
     /** Static checks of the HAL path: one transact path, and the HidlCaller copy is the common file. */
@@ -365,6 +579,51 @@ public final class SensorsTest {
         eq("reader created in one place", 1, readerMakers);
     }
 
+    /**
+     * Static checks of the device-test fixes of 0.2 that need Android to run: 592 is gone from the code,
+     * every HAL task takes its period from the plan (Z9xSchedule.kindOf of its own code), the HUD window
+     * is a trusted overlay with the permission for it, and the HUD redraws only on a change.
+     */
+    private static void fixes(String srcRoot) throws Exception {
+        Path root = Paths.get(srcRoot);
+        String src = read(root.resolve("org/lumen/sensors/z9x/Z9xHalSource.java"));
+        String reader = read(root.resolve("org/lumen/sensors/hal/Z9xGmpfReader.java"));
+        String service = read(root.resolve("org/lumen/sensors/HudService.java"));
+        String hud = read(root.resolve("org/lumen/sensors/ui/HudView.java"));
+        String manifest = read(root.resolve("../AndroidManifest.xml"));
+        for (String gone : new String[] {"SIGNAL_STATUS", "signalStatus", "s_signal"}) {
+            eq("HAL source: no " + gone, 0, count(src, gone));
+            eq("reader: no " + gone, 0, count(reader, gone));
+        }
+        yes("tasks take the period of their code", count(src, "Z9xSchedule.kindOf(iface, code)") == 1);
+        int tasks = count(src, "new OneTask(\"") + count(src, "new Task(\"") + count(src, "super(\"");
+        int planned = count(src, ", IGMPF, GmpfAllowlist.") + count(src, ", IGMPF2, GmpfAllowlist.");
+        eq("every task names its interface and code", tasks, planned);
+        yes("ToF task reads 279",
+                src.contains("tofTask = new OneTask(\"279 ToF distance\", IGMPF, GmpfAllowlist.TOF_DISTANCE"));
+        yes("ToF waits for every other first read", src.contains("if (t == tofTask && probesDoneAt == 0) return false;"));
+        yes("ToF takes its turn by due time", src.contains("if (t != screenTask && wanted(t) && (best == null || t.due < best.due))")
+                && count(src, "tofTask.due < best.due") == 0);
+        yes("steady reads at the steady pace", src.contains("Z9xSchedule.gapMs(!best.probed && best != tofTask)"));
+        yes("late reads due a period after the call", src.contains("t.due = Z9xSchedule.nextDue(t.due, end, t.period());"));
+        yes("ToF a full minute after its last call", src.contains("tofCalledAt + Z9xSchedule.TOF_MS"));
+        yes("662 only on HDMI", src.contains("needed() { return Z9xSchedule.readsHdmiInfo(inputSource); }"));
+        yes("319 only on the media input", src.contains("needed() { return Z9xSchedule.readsVideoInfo(inputSource); }"));
+        yes("accelerometer in g", src.contains("Fmt.XYZ_G") && src.contains("GmpfStructs.accelG(st[2])"));
+        yes("raw light usage JSON logged", src.contains("Log.i(TAG, \"IGmpf2 27 light usage"));
+        yes("HUD window is a trusted overlay", service.contains("p.setTrustedOverlay();"));
+        yes("manifest asks for INTERNAL_SYSTEM_WINDOW",
+                manifest.contains("<uses-permission android:name=\"android.permission.INTERNAL_SYSTEM_WINDOW\" />"));
+        yes("manifest version 0.2",
+                manifest.contains("android:versionCode=\"2\"") && manifest.contains("android:versionName=\"0.2\""));
+        yes("HUD invalidates on a publish only on a change", hud.contains("if (changed) invalidate();"));
+        eq("HUD opacity is the setting itself", 1, count(hud, "Math.round(255 * opacityPct / 100f)"));
+    }
+
+    private static String read(Path p) throws Exception {
+        return new String(Files.readAllBytes(p), StandardCharsets.UTF_8);
+    }
+
     private static int count(String s, String what) {
         int n = 0;
         for (int i = s.indexOf(what); i >= 0; i = s.indexOf(what, i + 1)) n++;
@@ -398,7 +657,8 @@ public final class SensorsTest {
         eq("mm", "2394 mm", f(Fmt.MM, 2394));
         eq("volts", "19.5 V", f(Fmt.VOLT, 19.5));
         eq("hours", "1234 h", f(Fmt.HOURS, 1234.4));
-        eq("few hours", "2.3 h", f(Fmt.HOURS, 2.25));
+        eq("few hours, whole", "7 h", f(Fmt.HOURS, 7));
+        eq("no hours yet", "0 h", f(Fmt.HOURS, 0));
         eq("Hz whole", "60 Hz", f(Fmt.HZ, 60.0));
         eq("Hz film", "23.98 Hz", f(Fmt.HZ, 23.976));
         eq("Hz NTSC", "59.94 Hz", f(Fmt.HZ, 59.94));
@@ -407,7 +667,11 @@ public final class SensorsTest {
         eq("GHz", "2.4 GHz", f(Fmt.GHZ, 2.4));
         eq("GHz whole", "5 GHz", f(Fmt.GHZ, 5));
         eq("int", "87", f(Fmt.INT, 87));
-        eq("xyz", "-613 -89 -4020", f(Fmt.XYZ, -613, -89, -4020, 0, null, en));
+        eq("gyroscope raw", "0 / 5 / -2", f(Fmt.XYZ, 0, 5, -2, 0, null, en));
+        eq("xyz", "-613 / -89 / -4020", f(Fmt.XYZ, -613, -89, -4020, 0, null, en));
+        double ax = GmpfStructs.accelG(229), ay = GmpfStructs.accelG(-29), az = GmpfStructs.accelG(4092);
+        eq("accelerometer in g", "0.06 / -0.01 / 1.00 g", f(Fmt.XYZ_G, ax, ay, az, 0, null, en));
+        eq("accelerometer near zero", "0.00 / 0.00 / -1.00 g", f(Fmt.XYZ_G, -0.004, 0.001, -1, 0, null, en));
         eq("fraction off", "Off", f(Fmt.FRACTION, 0, 3, 0, 0, null, en));
         eq("fraction", "1/3", f(Fmt.FRACTION, 1, 3, 0, 0, null, en));
         eq("resolution", "3840×2160", f(Fmt.RES, 3840, 2160, 0, 0, null, en));
@@ -421,11 +685,14 @@ public final class SensorsTest {
         eq("no", "No", f(Fmt.YES_NO, 0));
         Words ru = new Words(new String[] {" °C", " %", " МГц", " МБ", " ГБ", " Мбит/с",
                 " дБм", " мм", " В", " ч", " Гц", " мин", "°", " ГГц", "Вкл", "Выкл",
-                "Да", "Нет", "мин", "макс"}, ',');
+                "Да", "Нет", "мин", "макс", " g"}, ',');
         eq("ru volts", "19,5 В", f(Fmt.VOLT, 19.5, 0, 0, 0, null, ru));
         eq("ru percent", "24 %", f(Fmt.PERCENT, 23.6, 0, 0, 0, null, ru));
         eq("ru GB", "2,7 ГБ", f(Fmt.MEM, 2854904, 0, 0, 0, null, ru));
         eq("ru duration", "1 ч 00 мин", f(Fmt.DURATION, 3600, 0, 0, 0, null, ru));
+        eq("ru accelerometer in g", "0,06 / -0,01 / 1,00 g", f(Fmt.XYZ_G, ax, ay, az, 0, null, ru));
+        eq("ru gyroscope raw", "0 / 5 / -2", f(Fmt.XYZ, 0, 5, -2, 0, null, ru));
+        eq("ru hours", "1234 ч", f(Fmt.HOURS, 1234, 0, 0, 0, null, ru));
         StringBuilder sb = new StringBuilder();
         Fmt.fixed(sb, -0.04, 1, '.');
         eq("no negative zero", "0.0", sb.toString());

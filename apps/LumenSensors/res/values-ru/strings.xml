@@ -105,13 +105,12 @@
     <string name="s_source">Источник</string>
     <string name="s_hdr">HDR видео</string>
     <string name="s_hdmi">Сигнал HDMI</string>
-    <string name="s_signal">Код состояния сигнала</string>
     <string name="s_video">Видео</string>
     <string name="s_out_fps">Частота кадров на выходе</string>
 
     <string name="s_tilt">Наклон</string>
     <string name="s_accel">Акселерометр</string>
-    <string name="s_gyro">Гироскоп</string>
+    <string name="s_gyro">Гироскоп (сырые данные)</string>
     <string name="s_tof">Расстояние до стены</string>
     <string name="s_focus">Шаг мотора фокуса</string>
 

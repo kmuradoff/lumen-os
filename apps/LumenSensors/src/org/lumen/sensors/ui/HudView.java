@@ -37,7 +37,9 @@ import java.util.Collections;
  * full safe height, then everything shrinks by one factor ("fit") until it fits. The fit is worked
  * out again at each setting change and only shrinks while the rows stay the same.
  *
- * Readable over bright video: below 80 % opacity the texts get a soft dark shadow of their own.
+ * Opacity is the panel background's own alpha (100 % = opaque): the window itself stays at alpha 1,
+ * because HudService makes it a trusted overlay. Readable over bright video: below 80 % opacity the
+ * texts get a soft dark shadow of their own.
  * Stale (Hub.onStale: no publish for a while, the sampler thread is stuck on a HAL call): the values
  * turn faint until the next publish.
  *
@@ -45,9 +47,11 @@ import java.util.Collections;
  * rows this view draws or a setting changes (a registration or availability change of a row it does
  * not draw only copies values); on a normal publish the view copies the sampler's formatted values
  * into its own arrays (under the registry lock, short), rebuilds the sparkline Paths in place and
- * invalidates. onDraw allocates nothing and takes no lock; requestLayout only when the panel size
- * changes. Value columns only grow while the layout stays the same, so the window does not resize at
- * every refresh. Main thread only.
+ * invalidates, but only when something it draws changed (a text, a level colour, a graph point, the
+ * layout or the stale state): over the HDMI sideband every redraw makes hwcomposer recompose and
+ * PowerHAL boost (device test of 0.1). onDraw allocates nothing and takes no lock; requestLayout only
+ * when the panel size changes. Value columns only grow while the layout stays the same, so the window
+ * does not resize at every refresh. Main thread only.
  */
 public final class HudView extends View implements Hub.Listener {
     // design px at size "medium" (scaled by display width / 1920 and the size setting)
@@ -129,6 +133,8 @@ public final class HudView extends View implements Hub.Listener {
     private float panelW, panelH;
     private int builtVersion = -1;
     private boolean dirty = true;
+    /** Something drawn differs from the frame on screen (set while handling a publish). */
+    private boolean changed;
 
     public HudView(Context c, Hub hub) {
         super(c);
@@ -195,7 +201,7 @@ public final class HudView extends View implements Hub.Listener {
         border.setStrokeWidth(Math.max(1f, Look.STROKE * s / 2f));
         spark.setStrokeWidth(G_STROKE * s);
         guide.setStrokeWidth(Math.max(1f, s));
-        int a = Math.round(((Look.PANEL_BG >>> 24) & 0xff) * opacityPct / 100f);
+        int a = Math.round(255 * opacityPct / 100f);       // the setting itself: 100 % = opaque panel
         bg.setColor((a << 24) | (Look.PANEL_BG & 0x00FFFFFF));
         boolean shadow = opacityPct < SHADOW_BELOW_PCT;
         for (TextPaint p : texts) {
@@ -207,16 +213,20 @@ public final class HudView extends View implements Hub.Listener {
     // ================================================================== data
     @Override
     public void onSamples() {
+        changed = stale;                                   // faint values turn normal again
         stale = false;
         float w0 = panelW, h0 = panelH;
         if (dirty || reg.layoutVersion() != builtVersion) {
             rebuild();
         } else {
             if (copyValues()) layoutEntries();
-            updateGraphs();
+            if (changed) updateGraphs();
         }
-        if (panelW != w0 || panelH != h0) requestLayout();
-        invalidate();
+        if (panelW != w0 || panelH != h0) {
+            requestLayout();
+            changed = true;
+        }
+        if (changed) invalidate();                         // the same texts and points: no redraw
     }
 
     @Override
@@ -272,9 +282,10 @@ public final class HudView extends View implements Hub.Listener {
         if (!full && samePicks()) {
             // a registration or availability change of a row this view does not draw: nothing to rebuild
             if (copyValues()) layoutEntries();
-            updateGraphs();
+            if (changed) updateGraphs();
             return;
         }
+        changed = true;
         allocate(pickS.size());
         Resources r = getResources();
         for (int i = 0; i < n; i++) {
@@ -339,24 +350,41 @@ public final class HudView extends View implements Hub.Listener {
         for (int i = 0; i < n; i++) labelW[i] = (kind[i] == E_HEADER ? header : label).measureText(text[i]);
     }
 
-    /** Copies the sampler's formatted values; true when a value became wider than its column. */
+    /**
+     * Copies the sampler's formatted values and graph points; sets {@link #changed} when one differs
+     * from what is on screen. True when a value became wider than its column.
+     */
     private boolean copyValues() {
         int window = windowPoints();
+        boolean any = false;
         synchronized (reg.lock) {
             for (int i = 0; i < n; i++) {
                 Sample x = sample[i];
                 if (x == null) continue;
-                int len = Math.min(x.len, val[i].length);
-                System.arraycopy(x.chars, 0, val[i], 0, len);
-                valLen[i] = x.available ? len : 0;
-                level[i] = x.level;
+                int len = x.available ? Math.min(x.len, val[i].length) : 0;
+                if (len != valLen[i] || x.level != level[i] || !same(x.chars, val[i], len)) {
+                    System.arraycopy(x.chars, 0, val[i], 0, len);
+                    valLen[i] = len;
+                    level[i] = x.level;
+                    any = true;
+                }
                 if (pts[i] != null && x.hist != null) {
                     int m = Math.min(x.histSize, window);
-                    for (int k = 0; k < m; k++) pts[i][k] = x.histAt(m, k);
+                    float[] p = pts[i];
+                    if (m != ptsN[i]) any = true;
+                    for (int k = 0; k < m; k++) {
+                        float v = x.histAt(m, k);
+                        if (v != p[k]) {
+                            p[k] = v;
+                            any = true;
+                        }
+                    }
                     ptsN[i] = m;
                 }
             }
         }
+        if (!any) return false;                            // nothing new to measure or draw
+        changed = true;
         boolean grew = false;
         for (int i = 0; i < n; i++) {
             if (sample[i] == null) continue;
@@ -647,6 +675,11 @@ public final class HudView extends View implements Hub.Listener {
     }
 
     // ================================================================== helpers
+    private static boolean same(char[] a, char[] b, int len) {
+        for (int i = 0; i < len; i++) if (a[i] != b[i]) return false;
+        return true;
+    }
+
     /** Level colour, or faint while the values are stale. */
     private int valueColor(int i) {
         return stale ? Look.FAINT : Look.levelColor(level[i]);

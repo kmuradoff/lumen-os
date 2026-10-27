@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
@@ -35,11 +36,16 @@ import org.lumen.sensors.ui.Look;
  *
  * The window: ONE TYPE_APPLICATION_OVERLAY, NOT_FOCUSABLE | NOT_TOUCHABLE | LAYOUT_IN_SCREEN |
  * HARDWARE_ACCELERATED, translucent, no window animation (Projector's OverlayHost.params(false, ..)),
- * so keys always stay with the app below. It is added once when the service starts and removed only
- * when the service ends; position and size changes go through updateViewLayout, content through
- * invalidate. While the screen is off or Projector is in its lamp-only standby the view is GONE (the
- * window keeps its place in the z order, so Projector's AK pattern, quick panel and notice card,
- * added later, stay above it) and the sampler stops: no work, no thread. The view is added GONE and
+ * so keys always stay with the app below. It is a trusted overlay (privateFlags TRUSTED_OVERLAY, needs
+ * INTERNAL_SYSTEM_WINDOW, granted by the platform signature): otherwise DisplayPolicy caps the alpha
+ * of a NOT_TOUCHABLE system alert window at 0.8 ("setting alpha to 0.80 to let touches pass through",
+ * device test of 0.1), and the Opacity setting could never reach 100 %. The same permission keeps the
+ * HUD visible when another window sets HIDE_NON_SYSTEM_OVERLAY_WINDOWS (permission and installer
+ * dialogs), as for Projector's OverlayHost windows; harmless, the HUD takes no touches. It is added
+ * once when the service starts and removed only when the service ends; position and size changes go
+ * through updateViewLayout, content through invalidate. While the screen is off or Projector is in
+ * its lamp-only standby the view is GONE (the window keeps its place in the z order, so Projector's
+ * AK pattern, quick panel and notice card, added later, stay above it) and the sampler stops: no work, no thread. The view is added GONE and
  * shown only once the state is known; hiding empties its rows, so a later show never draws old values.
  * Width: the HUD fits between the safe margins; while the settings screen is open, between the
  * settings panel and the right margin, for every corner (HudView shrinks to fit), so it never
@@ -60,6 +66,8 @@ public final class HudService extends Service implements SharedPreferences.OnSha
     static final String PERMISSION_STANDBY = "org.z9x.projector.permission.STANDBY_STATE";
     static final String STANDBY_AUTHORITY = "org.z9x.projector.standbystate";
     static final String STANDBY_METHOD = "standby_state";
+    /** Signature permission (system API constant), held for the trusted overlay flag. */
+    static final String PERMISSION_INTERNAL_WINDOW = "android.permission.INTERNAL_SYSTEM_WINDOW";
 
     /** The running service (main thread), for the settings screen's "move the HUD aside". */
     private static HudService sInstance;
@@ -231,11 +239,30 @@ public final class HudService extends Service implements SharedPreferences.OnSha
                 ViewGroup.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, flags,
                 PixelFormat.TRANSLUCENT);
         p.windowAnimations = 0;
+        p.alpha = 1f;                                      // the Opacity setting is the panel's own (HudView)
+        trusted(p);
         try { p.setFitInsetsTypes(0); } catch (Throwable ignored) { }
         p.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
         p.setTitle("LumenSensorsHud");
         place(p);
         return p;
+    }
+
+    /**
+     * Trusted overlay, so the system keeps alpha 1 (AOSP 14 DisplayPolicy.adjustWindowParamsLw skips
+     * the 0.8 cap with PRIVATE_FLAG_TRUSTED_OVERLAY). WindowManager requires INTERNAL_SYSTEM_WINDOW for
+     * that flag, so it is set only with the permission (a test-key build keeps the cap but still shows).
+     */
+    private void trusted(WindowManager.LayoutParams p) {
+        if (checkSelfPermission(PERMISSION_INTERNAL_WINDOW) != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "INTERNAL_SYSTEM_WINDOW not granted (platform signature expected): HUD capped at 80 % opacity");
+            return;
+        }
+        try {
+            p.setTrustedOverlay();
+        } catch (Throwable t) {
+            Log.w(TAG, "trusted overlay: " + t);
+        }
     }
 
     /**

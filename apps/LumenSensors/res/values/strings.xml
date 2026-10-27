@@ -122,14 +122,13 @@
     <string name="src_hdmi" translatable="false">HDMI %1$d</string>
     <string name="s_hdr">Video HDR</string>
     <string name="s_hdmi">HDMI signal</string>
-    <string name="s_signal">Signal status code</string>
     <string name="s_video">Video</string>
     <string name="s_out_fps">Output frame rate</string>
 
     <!-- motion -->
     <string name="s_tilt">Tilt</string>
     <string name="s_accel">Accelerometer</string>
-    <string name="s_gyro">Gyroscope</string>
+    <string name="s_gyro">Gyroscope (raw)</string>
     <string name="s_tof">Distance to the wall</string>
     <string name="s_focus">Focus motor step</string>
 
@@ -157,4 +156,5 @@
     <string name="w_no">No</string>
     <string name="w_min">min</string>
     <string name="w_max">max</string>
+    <string name="u_g" translatable="false"> g</string>
 </resources>
