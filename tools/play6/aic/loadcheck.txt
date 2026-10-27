@@ -1,0 +1,4 @@
+aic_load_fw.ko: vermagic='4.19.116+ SMP preempt mod_unload modversions ARMv7 ' versions=77 undefined=76 depends='' problems=0
+aic8800_fdrv.ko: vermagic='4.19.116+ SMP preempt mod_unload modversions ARMv7 ' versions=243 undefined=242 depends='cfg80211,aic_load_fw,firmware_class' problems=0
+aic_btusb.ko: vermagic='4.19.116+ SMP preempt mod_unload modversions ARMv7 ' versions=95 undefined=94 depends='' problems=0
+TOTAL problems: 0

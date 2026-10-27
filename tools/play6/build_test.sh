@@ -273,6 +273,8 @@ IN=(
   "$G/overlay/play6/play6_perf.rc"
   "$G/overlay/play6/lumen_gapps.rc"
   "$G/overlay/play6/lumen_gapps.sh"
+  "$G/overlay/play6/play6_aic.rc"
+  "$G/overlay/play6/play6_aic.sh"
   "$G/overlay/v1/z9x_nui.rc"
   "$G/overlay/v1/z9x_nui.sh"
   "$P/compose.sh"
@@ -287,6 +289,11 @@ IN=(
 [ -n "$DIAG" ] && IN+=("$G/overlay/debug/z9x_earlylog.rc" "$G/overlay/debug/z9x_earlylog.sh" "$G/overlay/play6/earlylog_usb.sh"
   "$G/overlay/debug/lumen_escape.rc" "$G/overlay/debug/lumen_escape.sh")
 BS=$G/build/play6/signed/base
+# AIC8800D80X2 Wi-Fi/BT modules and firmware (tools/play6/aic/BUILD.md; binaries in build/play6/aic, not in git):
+# pinned by tools/play6/aic/SHA256SUMS, checked here and again by compose.sh on the build laptop
+AIC=$G/build/play6/aic
+cp "$P/aic/SHA256SUMS" "$AIC/SHA256SUMS"
+(cd "$AIC" && shasum -a 256 -c SHA256SUMS >/dev/null) || die "build/play6/aic does not match tools/play6/aic/SHA256SUMS"
 for f in "${IN[@]}" "$BS/base_signed.tsv"; do [ -s "$f" ] || die "missing $f"; done
 D=$(for f in "${IN[@]}"; do basename "$f"; done | sort | uniq -d)
 [ -z "$D" ] || die "two staged files share a name: $D"
@@ -304,9 +311,11 @@ fi
 
 # ---- 7. stage, 8. compose, 9. copy back
 trap gms_cleanup EXIT
-"${SSH[@]}" "$BUILDER" 'rm -rf ~/play6-work/in/base_signed ~/play6-work/in/gms && mkdir -p ~/play6-work/in'
+"${SSH[@]}" "$BUILDER" 'rm -rf ~/play6-work/in/base_signed ~/play6-work/in/gms ~/play6-work/in/aic && mkdir -p ~/play6-work/in'
 "${SCP[@]}" "${IN[@]}" "${BUILDER}:play6-work/in/"
 "${SCP[@]}" -r "$BS" "${BUILDER}:play6-work/in/base_signed"
+"${SSH[@]}" "$BUILDER" 'mkdir -p ~/play6-work/in/aic'
+"${SCP[@]}" -r "$AIC/modules" "$AIC/firmware" "$AIC/SHA256SUMS" "${BUILDER}:play6-work/in/aic/"
 [ "$GMS" = 0 ] || "${SCP[@]}" -r "$GM" "${BUILDER}:play6-work/in/gms"
 echo "inputs staged on the build laptop"
 
