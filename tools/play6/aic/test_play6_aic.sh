@@ -10,8 +10,9 @@ fails=0; n=0
 setup() {   # $1 = usb id of the internal chip ("" = none), $2 = 1 when the vendor modules are in
   R=$(mktemp -d)
   mkdir -p "$R/sys/bus/usb/devices" "$R/sys/module" "$R/sys/class/net" "$R/proc" "$R/dev" "$R/bin" \
-    "$R/system/lib/modules/aic"
-  : > "$R/proc/modules"; : > "$R/props"; : > "$R/log"
+    "$R/system/etc/aic8800/modules" "$R/system/lib" "$R/vendor/lib"
+  : > "$R/proc/modules"; : > "$R/proc/mounts"; : > "$R/props"; : > "$R/log"
+  : > "$R/system/lib/libbt-vendor-aic.so"; : > "$R/vendor/lib/libbt-vendor.so"
   mkdir -p "$R/sys/bus/usb/devices/usb1"; echo 1d6b > "$R/sys/bus/usb/devices/usb1/idVendor"
   echo 0002 > "$R/sys/bus/usb/devices/usb1/idProduct"
   if [ -n "$1" ]; then
@@ -31,6 +32,9 @@ EOF
   printf '#!/bin/bash\necho "$1=$2" >> "%s/props"\n' "$R" > "$R/bin/setprop"
   printf '#!/bin/bash\nshift 2; echo "log $*" >> "%s/log"\n' "$R" > "$R/bin/log"
   printf '#!/bin/bash\nexit 0\n' > "$R/bin/sleep"
+  printf '#!/bin/bash\necho "mount $*" >> "%s/log"; echo "x /vendor/lib/libbt-vendor.so x" >> "%s/proc/mounts"\n' "$R" "$R" > "$R/bin/mount"
+  printf '#!/bin/bash\necho "chown $*" >> "%s/log"\n' "$R" > "$R/bin/chown"
+  printf '#!/bin/bash\necho "chmod $*" >> "%s/log"\n' "$R" > "$R/bin/chmod"
   chmod 755 "$R/bin/"*
 }
 run() { R=$R PATH="$R/bin:$PATH" sh "$SCRIPT"; }
@@ -44,16 +48,21 @@ setup 0e8d:7663 1; run
 eq "MediaTek unit: chip" mediatek "$(prop sys.lumen.wifi_chip)"
 eq "MediaTek unit: aic off" off "$(prop sys.lumen.aic)"
 eq "MediaTek unit: nothing loaded" 0 "$(grep -c insmod "$R/log")"
+eq "MediaTek unit: MediaTek Bluetooth library kept" 0 "$(grep -c '^mount' "$R/log")"
 rm -rf "$R"
 
 setup 368b:8d90 1; run
 eq "AIC unit: chip" aic "$(prop sys.lumen.wifi_chip)"
 eq "AIC unit: ready" ready "$(prop sys.lumen.aic)"
 eq "AIC unit: load order" "aic_load_fw aic_btusb aic8800_fdrv" "$(awk '{print $1}' "$R/proc/modules" | xargs)"
-eq "AIC unit: firmware path" 1 "$(grep -c 'aic_load_fw.ko aic_fw_path=/system/etc/firmware/aic8800d80x2' "$R/log")"
+eq "AIC unit: firmware path" 1 "$(grep -c 'aic_load_fw.ko aic_fw_path=/system/etc/aic8800/firmware' "$R/log")"
 eq "AIC unit: wlan0" yes "$([ -d "$R/sys/class/net/wlan0" ] && echo yes)"
+eq "AIC unit: Bluetooth library bound once" 1 "$(grep -c "^mount -o bind $R/system/lib/libbt-vendor-aic.so $R/vendor/lib/libbt-vendor.so" "$R/log")"
+eq "AIC unit: aicbt_dev for user bluetooth" 1 "$(grep -c "^chown bluetooth:bluetooth $R/dev/aicbt_dev" "$R/log")"
+eq "AIC unit: aicbt_dev mode" 1 "$(grep -c "^chmod 0660 $R/dev/aicbt_dev" "$R/log")"
 run   # a second start loads nothing twice
 eq "AIC unit: second run loads nothing again" 3 "$(grep -c insmod "$R/log")"
+eq "AIC unit: second run binds nothing again" 1 "$(grep -c '^mount' "$R/log")"
 rm -rf "$R"
 
 setup 368b:8d91 1; run
@@ -63,6 +72,7 @@ rm -rf "$R"
 setup "" 1; run
 eq "no chip: none" none "$(prop sys.lumen.wifi_chip)"
 eq "no chip: nothing loaded" 0 "$(grep -c insmod "$R/log")"
+eq "no chip: no bind mount" 0 "$(grep -c '^mount' "$R/log")"
 rm -rf "$R"
 
 setup 368b:8d90 0; run

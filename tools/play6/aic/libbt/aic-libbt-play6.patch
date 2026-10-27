@@ -1,0 +1,59 @@
+diff -ruN -x *.bak a/src/aic_heartbeat.c b/src/aic_heartbeat.c
+--- a/src/aic_heartbeat.c	2026-10-28 00:42:07
++++ b/src/aic_heartbeat.c	2026-10-28 00:43:38
+@@ -50,7 +50,7 @@
+ 
+ #include "bt_vendor_lib.h"
+ 
+-#define AICBT_HEARTBEAT_CONF_FILE            "/vendor/etc/bluetooth/aicbt_heartbeat.conf"
++#define AICBT_HEARTBEAT_CONF_FILE            "/system/etc/bluetooth/aicbt_heartbeat.conf"
+ 
+ #define HCI_EVT_HEARTBEAT_STATUS_OFFSET      (5)
+ #define HCI_EVT_HEARTBEAT_SEQNUM_OFFSET_L    (6)
+diff -ruN -x *.bak a/src/bt_vendor_aic.c b/src/bt_vendor_aic.c
+--- a/src/bt_vendor_aic.c	2026-10-28 00:42:07
++++ b/src/bt_vendor_aic.c	2026-10-28 00:45:35
+@@ -69,7 +69,7 @@
+ **  Local type definitions
+ ******************************************************************************/
+ #define DEVICE_NODE_MAX_LEN     512
+-#define AICBT_CONF_FILE         "/vendor/etc/bluetooth/aicbt.conf"
++#define AICBT_CONF_FILE         "/system/etc/bluetooth/aicbt.conf"
+ #define USB_DEVICE_DIR          "/sys/bus/usb/devices"
+ #define DEBUG_SCAN_USB          FALSE
+ 
+@@ -128,7 +128,7 @@
+     struct stat filestat;
+     struct stat subfilestat;
+     if (stat(path, &filestat) != 0) {
+-        ALOGE("The file or path(%s) can not be get stat!\n", newpath);
++        ALOGE("The file or path(%s) can not be get stat!\n", path);
+         return -1;
+     }
+     if ((filestat.st_mode & S_IFDIR) != S_IFDIR) {
+@@ -136,6 +136,10 @@
+         return -1;
+     }
+     pdir = opendir(path);
++    if (pdir == NULL) {
++        ALOGE("opendir(%s) failed: %s\n", path, strerror(errno));
++        return -1;
++    }
+     /*enter sub direc*/
+     while ((ptr = readdir(pdir)) != NULL) {
+         if (strcmp(ptr->d_name, ".") == 0 || strcmp(ptr->d_name, "..") == 0)
+@@ -150,9 +154,13 @@
+         }
+         /* Check if it is path. */
+         if ((filestat.st_mode & S_IFDIR) == S_IFDIR) {
+-            if (!Check_Key_Value(newpath, "idVendor", 0xa69c))
++            /* 0xa69c: AIC (ROM/first gen); 0x368b: AIC V2 (AIC8800D80X2 etc. after fw load) */
++            if (!Check_Key_Value(newpath, "idVendor", 0xa69c) &&
++                !Check_Key_Value(newpath, "idVendor", 0x368b))
+                 continue;
+             newpdir = opendir(newpath);
++            if (newpdir == NULL)
++                continue;
+             /*read sub directory*/
+             while ((newptr = readdir(newpdir)) != NULL) {
+                 if (strcmp(newptr->d_name, ".") == 0 || strcmp(newptr->d_name, "..") == 0)

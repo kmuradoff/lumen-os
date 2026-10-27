@@ -315,7 +315,7 @@ trap gms_cleanup EXIT
 "${SCP[@]}" "${IN[@]}" "${BUILDER}:play6-work/in/"
 "${SCP[@]}" -r "$BS" "${BUILDER}:play6-work/in/base_signed"
 "${SSH[@]}" "$BUILDER" 'mkdir -p ~/play6-work/in/aic'
-"${SCP[@]}" -r "$AIC/modules" "$AIC/firmware" "$AIC/SHA256SUMS" "${BUILDER}:play6-work/in/aic/"
+"${SCP[@]}" -r "$AIC/modules" "$AIC/firmware" "$AIC/bt" "$AIC/SHA256SUMS" "${BUILDER}:play6-work/in/aic/"
 [ "$GMS" = 0 ] || "${SCP[@]}" -r "$GM" "${BUILDER}:play6-work/in/gms"
 echo "inputs staged on the build laptop"
 
