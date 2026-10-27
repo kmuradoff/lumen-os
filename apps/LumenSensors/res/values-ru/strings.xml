@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     Lumen Sensors (org.lumen.sensors), Russian, hand-written. Same keys as values/strings.xml. -->
+<resources>
+    <string name="app_name">Датчики</string>
+
+    <string name="set_show">Показывать датчики</string>
+    <string name="set_mode">Вид</string>
+    <string name="mode_compact">Компактный</string>
+    <string name="mode_detailed">Подробный</string>
+    <string name="mode_graphs">Графики</string>
+    <string name="set_position">Положение</string>
+    <string name="pos_tl">Слева вверху</string>
+    <string name="pos_tr">Справа вверху</string>
+    <string name="pos_bl">Слева внизу</string>
+    <string name="pos_br">Справа внизу</string>
+    <string name="set_size">Размер</string>
+    <string name="size_small">Мелкий</string>
+    <string name="size_medium">Средний</string>
+    <string name="size_large">Крупный</string>
+    <string name="set_opacity">Непрозрачность</string>
+    <string name="opacity_fmt">%1$d %%</string>
+    <string name="set_refresh">Обновление</string>
+    <string name="refresh_fmt">%1$d с</string>
+    <string name="set_boot">Включать после загрузки</string>
+    <string name="set_groups">Группы</string>
+    <string name="set_hint">Пульт: в приложении «Проектор» → Кнопки пульта назначьте кнопке iQIYI или bilibili приложение «Датчики». Кнопка откроет этот экран, а OK в первой строке включает и выключает показ.</string>
+
+    <string name="notif_channel">Показ датчиков</string>
+    <string name="notif_text">Показ датчиков включён</string>
+
+    <string name="grp_temps">Температуры</string>
+    <string name="grp_cooling">Охлаждение</string>
+    <string name="grp_light">Свет</string>
+    <string name="grp_cpu">Процессор и графика</string>
+    <string name="grp_memory">Память</string>
+    <string name="grp_network">Сеть</string>
+    <string name="grp_picture">Изображение и сигнал</string>
+    <string name="grp_motion">Движение</string>
+    <string name="grp_system">Система</string>
+
+    <string name="s_soc">Процессор (SoC)</string>
+    <string name="s_soc_short">SoC</string>
+    <string name="s_zone">Термозона %1$d</string>
+    <string name="s_system">Система</string>
+    <string name="s_air">Воздух внутри</string>
+    <string name="s_air_short">Воздух</string>
+    <string name="s_dmd">Чип DMD</string>
+    <string name="s_dmd_short">DMD</string>
+    <string name="s_led">Светодиоды</string>
+    <string name="s_led_short">LED</string>
+    <string name="s_led_r">Красный LED</string>
+    <string name="s_led_g">Зелёный LED</string>
+    <string name="s_led_b">Синий LED</string>
+    <string name="s_cpu_vendor">Процессор</string>
+    <string name="s_sensor">Датчик %1$d</string>
+    <string name="s_overheat">Перегрев</string>
+
+    <string name="s_fan_mode">Режим вентилятора</string>
+    <string name="fan_auto">Авто</string>
+    <string name="fan_manual">Ручной %1$d</string>
+    <string name="fan_test">Тест</string>
+    <string name="s_fan">Вентилятор</string>
+    <string name="s_fan_n">Вентилятор %1$d</string>
+    <string name="s_fan_short">Вент.</string>
+    <string name="s_throttle_cpu">Троттлинг ЦП</string>
+    <string name="s_throttle_gpu">Троттлинг GPU</string>
+    <string name="s_throttle_cores">Отключение ядер ЦП</string>
+    <string name="s_throttle_pq">Троттлинг изображения</string>
+    <string name="s_throttle">Охлаждение %1$d</string>
+
+    <string name="s_lamp">Уровень яркости</string>
+    <string name="s_color_temp">Цветовая температура</string>
+    <string name="ct_1">Температура 1</string>
+    <string name="s_led_power">Мощность LED</string>
+    <string name="s_led_current">Ток LED %1$s</string>
+    <string name="s_light_hours">Наработка источника света</string>
+    <string name="s_voltage">Напряжение питания</string>
+
+    <string name="s_cpu_load">Загрузка ЦП</string>
+    <string name="s_cpu_short">ЦП</string>
+    <string name="s_core">Ядро %1$d</string>
+    <string name="s_cpu_clock">Частота ЦП</string>
+    <string name="s_cpu_clock_n">Частота ЦП, кластер %1$d</string>
+    <string name="s_clock_short">Част.</string>
+    <string name="s_cpu_limit">Предел частоты ЦП</string>
+    <string name="s_cpu_limit_n">Предел частоты ЦП, кластер %1$d</string>
+    <string name="s_gpu_clock">Частота GPU</string>
+    <string name="s_gpu_load">Загрузка GPU</string>
+
+    <string name="s_ram">Занято ОЗУ</string>
+    <string name="s_ram_short">ОЗУ</string>
+    <string name="s_zram_stored">Своп в zram</string>
+    <string name="s_zram_used">Память zram</string>
+
+    <string name="s_down">Приём</string>
+    <string name="s_up">Передача</string>
+    <string name="s_rssi">Сигнал Wi-Fi</string>
+    <string name="s_link">Скорость Wi-Fi</string>
+    <string name="s_band">Диапазон Wi-Fi</string>
+
+    <string name="s_ui_res">Разрешение интерфейса</string>
+    <string name="s_ui_hz">Частота обновления</string>
+    <string name="s_hdr_caps">Поддержка HDR</string>
+    <string name="s_source">Источник</string>
+    <string name="s_hdr">HDR видео</string>
+    <string name="s_hdmi">Сигнал HDMI</string>
+    <string name="s_signal">Код состояния сигнала</string>
+    <string name="s_video">Видео</string>
+    <string name="s_out_fps">Частота кадров на выходе</string>
+
+    <string name="s_tilt">Наклон</string>
+    <string name="s_accel">Акселерометр</string>
+    <string name="s_gyro">Гироскоп</string>
+    <string name="s_tof">Расстояние до стены</string>
+    <string name="s_focus">Шаг мотора фокуса</string>
+
+    <string name="s_uptime">Время работы</string>
+
+    <string name="u_c"> °C</string>
+    <string name="u_pct"> %</string>
+    <string name="u_mhz"> МГц</string>
+    <string name="u_mb"> МБ</string>
+    <string name="u_gb"> ГБ</string>
+    <string name="u_mbits"> Мбит/с</string>
+    <string name="u_dbm"> дБм</string>
+    <string name="u_mm"> мм</string>
+    <string name="u_v"> В</string>
+    <string name="u_h"> ч</string>
+    <string name="u_hz"> Гц</string>
+    <string name="u_min"> мин</string>
+    <string name="u_ghz"> ГГц</string>
+    <string name="w_on">Вкл</string>
+    <string name="w_off">Выкл</string>
+    <string name="w_yes">Да</string>
+    <string name="w_no">Нет</string>
+    <string name="w_min">мин</string>
+    <string name="w_max">макс</string>
+</resources>
