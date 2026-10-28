@@ -5,11 +5,16 @@ vendor.mstar.trapezoid.trigger.osd.offset; the vendor HWC then asks for a refres
 SurfaceFlinger warped the client target with them (GLESTrapezoidalRenderEngine). This patch adds the
 corner quad to DisplaySettings (so the client composition cache misses on a change), fills it for physical
 displays in CompositionEngine Display, and applies a 4-point perspective transform in SkiaRenderEngine.
+Quality as stock (2026-10-29, owner's tester saw stair-steps): the stock GLESTrapezoidalRenderEngine
+sampled every layer with GL_LINEAR and drew into a 4x MSAA target; here every buffer layer is sampled
+linear while the keystone is on, rectangular layers get edge anti-aliasing, and the client target is
+rendered with 4x MSAA like stock (AutoBackendTexture, GL_EXT_multisampled_render_to_texture on the
+Mali-G52, falls back to no MSAA if the driver refuses).
 Research: docs/play6/research/keystone_stock.md. Applied only to the Play 6 base build (play6_overrides.sh).
 
 diff -ruN a/frameworks/native/libs/renderengine/include/renderengine/DisplaySettings.h b/frameworks/native/libs/renderengine/include/renderengine/DisplaySettings.h
---- a/frameworks/native/libs/renderengine/include/renderengine/DisplaySettings.h	2026-10-12 16:46:13
-+++ b/frameworks/native/libs/renderengine/include/renderengine/DisplaySettings.h	2026-10-12 16:46:28
+--- a/frameworks/native/libs/renderengine/include/renderengine/DisplaySettings.h	2026-10-29 02:16:12
++++ b/frameworks/native/libs/renderengine/include/renderengine/DisplaySettings.h	2026-10-29 02:16:15
 @@ -29,6 +29,7 @@
  #include <ui/Region.h>
  #include <ui/Transform.h>
@@ -50,9 +55,48 @@ diff -ruN a/frameworks/native/libs/renderengine/include/renderengine/DisplaySett
      *os << "\n}";
  }
  
+diff -ruN a/frameworks/native/libs/renderengine/skia/AutoBackendTexture.cpp b/frameworks/native/libs/renderengine/skia/AutoBackendTexture.cpp
+--- a/frameworks/native/libs/renderengine/skia/AutoBackendTexture.cpp	2026-10-29 02:16:15
++++ b/frameworks/native/libs/renderengine/skia/AutoBackendTexture.cpp	2026-10-29 02:16:51
+@@ -27,6 +27,7 @@
+ #include <include/gpu/ganesh/vk/GrVkBackendSurface.h>
+ #include <include/gpu/vk/GrVkTypes.h>
+ #include <android/hardware_buffer.h>
++#include <android-base/properties.h>
+ #include "ColorSpaces.h"
+ #include "log/log_main.h"
+ #include "utils/Trace.h"
+@@ -195,11 +196,26 @@
+     ATRACE_CALL();
+     LOG_ALWAYS_FATAL_IF(!mIsOutputBuffer, "You can't generate a SkSurface for a read-only texture");
+     if (!mSurface.get() || mDataspace != dataspace) {
++        // Lumen (XGIMI Play 6): the stock XGIMI SurfaceFlinger renders the client target with 4x
++        // MSAA wherever the vendor keystone exists (GLESTrapezoidalRenderEngine::bindFrameBuffer:
++        // glFramebufferTexture2DMultisampleEXT, 4 samples). The Play 6 Mali-G52 has
++        // GL_EXT_multisampled_render_to_texture, so the samples resolve on the tile (no extra
++        // buffer). Same here; without MSAA if the driver refuses the wrapped surface.
++        static const int kStockSamples =
++                base::GetIntProperty("vendor.mstar.trapezoid.enable", 0) == 1 ? 4 : 0;
+         sk_sp<SkSurface> surface =
+                 SkSurfaces::WrapBackendTexture(context, mBackendTexture,
+-                                               kTopLeft_GrSurfaceOrigin, 0, mColorType,
++                                               kTopLeft_GrSurfaceOrigin, kStockSamples, mColorType,
+                                                toSkColorSpace(dataspace), nullptr,
+                                                releaseSurfaceProc, this);
++        if (!surface.get() && kStockSamples > 0) {
++            ALOGW("Lumen keystone: no %dx MSAA output surface, drawing without MSAA",
++                  kStockSamples);
++            surface = SkSurfaces::WrapBackendTexture(context, mBackendTexture,
++                                                     kTopLeft_GrSurfaceOrigin, 0, mColorType,
++                                                     toSkColorSpace(dataspace), nullptr,
++                                                     releaseSurfaceProc, this);
++        }
+         if (surface.get()) {
+             // The following ref will be counteracted by releaseProc, when SkSurface is discarded.
+             ref();
 diff -ruN a/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp b/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp
---- a/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp	2026-10-12 16:46:13
-+++ b/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp	2026-10-12 16:46:28
+--- a/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp	2026-10-29 02:16:13
++++ b/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp	2026-10-29 02:16:15
 @@ -558,6 +558,24 @@
      // displays might have different scaling when compared to the physical screen.
  
@@ -78,9 +122,30 @@ diff -ruN a/frameworks/native/libs/renderengine/skia/SkiaRenderEngine.cpp b/fram
      canvas->translate(display.physicalDisplay.left, display.physicalDisplay.top);
  
      const auto clipWidth = display.clip.width();
+@@ -996,7 +1014,9 @@
+ 
+             sk_sp<SkShader> shader;
+ 
+-            if (layer.source.buffer.useTextureFiltering) {
++            // Lumen (XGIMI Play 6): under the keystone warp every layer is resampled, so filter it as the
++            // stock XGIMI SurfaceFlinger did (GL_LINEAR for every layer); nearest sampling gave stair-steps.
++            if (layer.source.buffer.useTextureFiltering || CC_UNLIKELY(display.keystone)) {
+                 shader = image->makeShader(SkTileMode::kClamp, SkTileMode::kClamp,
+                                            SkSamplingOptions(
+                                                    {SkFilterMode::kLinear, SkMipmapMode::kNone}),
+@@ -1128,6 +1148,9 @@
+             paint.setAntiAlias(true);
+             canvas->drawRRect(bounds, paint);
+         } else {
++            // Lumen (XGIMI Play 6): the keystone warp turns the rectangle into a quad; smooth its edges
++            // (stock rendered the warped frame with 4x MSAA).
++            if (CC_UNLIKELY(display.keystone)) paint.setAntiAlias(true);
+             canvas->drawRect(bounds.rect(), paint);
+         }
+         if (kFlushAfterEveryLayer) {
 diff -ruN a/frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/Display.h b/frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/Display.h
---- a/frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/Display.h	2026-10-12 16:46:13
-+++ b/frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/Display.h	2026-10-12 16:46:28
+--- a/frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/Display.h	2026-10-29 02:16:13
++++ b/frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/Display.h	2026-10-29 02:16:15
 @@ -63,6 +63,8 @@
      void setExpensiveRenderingExpected(bool) override;
      void finishFrame(GpuCompositionResult&&) override;
@@ -91,8 +156,8 @@ diff -ruN a/frameworks/native/services/surfaceflinger/CompositionEngine/include/
      // compositionengine::Display overrides
      DisplayId getId() const override;
 diff -ruN a/frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp b/frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp
---- a/frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp	2026-10-12 16:46:13
-+++ b/frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp	2026-10-12 16:53:57
+--- a/frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp	2026-10-29 02:16:14
++++ b/frameworks/native/services/surfaceflinger/CompositionEngine/src/Display.cpp	2026-10-29 02:16:15
 @@ -14,6 +14,7 @@
   * limitations under the License.
   */
