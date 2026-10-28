@@ -365,6 +365,14 @@ public final class UpdateService extends Service implements Engine.Listener {
             return;
         }
         if (p == null) return;
+        // update_engine may already be applying it: a second install request (a second start of this service a
+        // few seconds after the first, owner 2026-10-28) got "Already processing an update" back, showed code -1
+        // and stopped following an install that then finished fine. Follow the running one instead.
+        int ue = Engine.get().status();
+        if (engineApplying(ue) || ue == Ota.UE_NEED_REBOOT) {
+            attach(st, m, ue);
+            return;
+        }
         File src = payloadSource(this, st, p), meta = metaFile(this, p);
         if (!src.isFile() || !meta.isFile()) {
             st.setState(Store.State.AVAILABLE);
@@ -401,11 +409,38 @@ public final class UpdateService extends Service implements Engine.Listener {
             while (st.state() == Store.State.INSTALLING && !stop) sleep(1000);
         } catch (IOException e) {
             Log.w(Ota.TAG, "apply failed", e);
+            int now = Engine.get().status();
+            if (engineApplying(now) || now == Ota.UE_NEED_REBOOT) {   // it is running (or done) after all
+                attach(st, m, now);
+                return;
+            }
             st.clearPending();
             st.setError("err_install", "-1");
             Ota.setBusy(this, false, "error");
             releaseWake();
         }
+    }
+
+    /** update_engine is writing, checking or finishing a payload (this app is its only client). */
+    private static boolean engineApplying(int ue) {
+        return ue == Ota.UE_DOWNLOADING || ue == Ota.UE_VERIFYING || ue == Ota.UE_FINALIZING;
+    }
+
+    /**
+     * Follow an install update_engine already runs, as if this request had started it: INSTALLING with the
+     * progress from onStatus and the end from onComplete. A finished one (UE_NEED_REBOOT) goes straight to READY.
+     */
+    private void attach(Store st, UpdateManifest m, int ue) {
+        Log.i(Ota.TAG, "install: update_engine already has it (status " + ue + "), following it");
+        st.setPending(m.buildId, m.version, Ota.buildId(), Ota.currentVersion());
+        st.setState(Store.State.INSTALLING);
+        if (ue == Ota.UE_NEED_REBOOT) {
+            onComplete(Ota.ERR_SUCCESS);
+            return;
+        }
+        Ota.setBusy(this, true, "installing");
+        acquireWake();
+        while (st.state() == Store.State.INSTALLING && !stop) sleep(1000);
     }
 
     /** Dry run of everything install() checks; logs the result, writes nothing to any slot. */
