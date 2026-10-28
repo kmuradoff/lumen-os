@@ -61,8 +61,16 @@ has 368b:8d91 || fail firmware
 
 # 3. Bluetooth node, then Wi-Fi once the vendor's cfg80211 and firmware_class are in
 loaded aic_btusb || insmod $M/aic_btusb.ko || say "aic_btusb did not load (Wi-Fi goes on)"
-if [ -e $R/dev/aicbt_dev ]; then   # the stock HAL runs as user bluetooth
-  chown bluetooth:bluetooth $R/dev/aicbt_dev; chmod 0660 $R/dev/aicbt_dev
+# ueventd creates the node a moment after the module's uevent, as root 0600; the stock HAL runs as user
+# bluetooth (1002, by number: /system/etc/passwd is empty) and fails "Permission denied" without this
+# (aic1 / aic2 checked right after insmod and skipped it: Bluetooth stayed off, device test 2026-10-28)
+i=0
+while [ $i -lt 20 ] && [ ! -e $R/dev/aicbt_dev ]; do sleep 1; i=$((i + 1)); done
+if [ -e $R/dev/aicbt_dev ]; then
+  chown 1002:1002 $R/dev/aicbt_dev && chmod 0660 $R/dev/aicbt_dev \
+    && say "aicbt_dev ready for user bluetooth" || say "aicbt_dev: chown/chmod failed (Bluetooth stays off)"
+else
+  say "no /dev/aicbt_dev after 20 s (Bluetooth stays off)"
 fi
 i=0
 while [ $i -lt 30 ] && ! { [ -d $R/sys/module/cfg80211 ] && [ -d $R/sys/module/firmware_class ]; }; do

@@ -25,13 +25,19 @@ setup() {   # $1 = usb id of the internal chip ("" = none), $2 = 1 when the vend
 m=\$(basename "\$1" .ko); echo "\$m 1 0 - Live 0x0" >> "$R/proc/modules"; echo "insmod \$*" >> "$R/log"
 case \$m in
   aic_load_fw) echo 8d91 > "$R/sys/bus/usb/devices/3-1/idProduct" ;;
-  aic_btusb) touch "$R/dev/aicbt_dev" ;;
+  aic_btusb) echo late > "$R/aicbt_pending" ;;
   aic8800_fdrv) mkdir -p "$R/sys/class/net/wlan0" "$R/sys/class/net/p2p0" ;;
 esac
 EOF
   printf '#!/bin/bash\necho "$1=$2" >> "%s/props"\n' "$R" > "$R/bin/setprop"
   printf '#!/bin/bash\nshift 2; echo "log $*" >> "%s/log"\n' "$R" > "$R/bin/log"
-  printf '#!/bin/bash\nexit 0\n' > "$R/bin/sleep"
+  cat > "$R/bin/sleep" <<EOF
+#!/bin/bash
+# ueventd creates /dev/aicbt_dev a few seconds after aic_btusb loads
+if [ -f "$R/aicbt_pending" ]; then c=\$(cat "$R/aicbt_n" 2>/dev/null || echo 0); c=\$((c + 1)); echo \$c > "$R/aicbt_n"
+  [ \$c -ge 3 ] && { touch "$R/dev/aicbt_dev"; rm -f "$R/aicbt_pending"; }; fi
+exit 0
+EOF
   printf '#!/bin/bash\necho "mount $*" >> "%s/log"; echo "x /vendor/lib/libbt-vendor.so x" >> "%s/proc/mounts"\n' "$R" "$R" > "$R/bin/mount"
   printf '#!/bin/bash\necho "chown $*" >> "%s/log"\n' "$R" > "$R/bin/chown"
   printf '#!/bin/bash\necho "chmod $*" >> "%s/log"\n' "$R" > "$R/bin/chmod"
@@ -61,7 +67,7 @@ eq "AIC unit: load order" "aic_load_fw aic_btusb aic8800_fdrv" "$(awk '{print $1
 eq "AIC unit: firmware path" 1 "$(grep -c 'aic_load_fw.ko aic_fw_path=/system/etc/aic8800/firmware' "$R/log")"
 eq "AIC unit: wlan0" yes "$([ -d "$R/sys/class/net/wlan0" ] && echo yes)"
 eq "AIC unit: Bluetooth library bound once" 1 "$(grep -c "^mount -o bind $R/system/lib/libbt-vendor-aic.so $R/vendor/lib/libbt-vendor.so" "$R/log")"
-eq "AIC unit: aicbt_dev for user bluetooth" 1 "$(grep -c "^chown bluetooth:bluetooth $R/dev/aicbt_dev" "$R/log")"
+eq "AIC unit: aicbt_dev for user bluetooth (1002)" 1 "$(grep -c "^chown 1002:1002 $R/dev/aicbt_dev" "$R/log")"
 eq "AIC unit: aicbt_dev mode" 1 "$(grep -c "^chmod 0660 $R/dev/aicbt_dev" "$R/log")"
 eq "AIC unit: Wi-Fi restarted after the driver" 1 "$(grep -c '^svc wifi enable' "$R/log")"
 eq "AIC unit: Bluetooth HAL restarted" "stop vendor.bluetooth-1-0 start vendor.bluetooth-1-0" "$(grep -E '^(stop|start) vendor' "$R/log" | xargs)"
