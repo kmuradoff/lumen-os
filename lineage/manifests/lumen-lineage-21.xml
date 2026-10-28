@@ -4,10 +4,9 @@
      checked out (or, for 84 clone-depth=1 AOSP prebuilts, to their fixed android-14.0.0 tag); the
      projects of lineage/local_manifests/z9x_trim.xml (emulator / x86 prebuilts, VTS) are left out.
      Made from the build tree with `repo manifest` + `git rev-parse HEAD` per project.
-     Use: repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --git-lfs
-          cp lumen-lineage-21.xml .repo/manifests/ && repo init -m lumen-lineage-21.xml
-          repo sync -c -j8
-     then apply lineage/patches (docs/selfbuild). -->
+     How to use it: docs/selfbuild (repo init of lineage-21.0, copy this file into .repo/manifests,
+     repo init with this manifest, repo sync, then lineage/patches). No double hyphens in this comment:
+     newer repo versions reject them as invalid XML. -->
 <manifest>
   <remote name="aosp" fetch="https://android.googlesource.com" review="android-review.googlesource.com" revision="refs/tags/android-14.0.0_r67" />
   <remote name="aosp-akita" fetch="https://android.googlesource.com" review="android-review.googlesource.com" revision="refs/tags/android-14.0.0_r68" />
