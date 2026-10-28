@@ -3,11 +3,20 @@
 # on 5555 / -1), so every reboot turned it off. Remember the user's own choice and restore it once the system is up.
 # Nothing opens the port unless the user turned the switch on; adbd still runs only with USB debugging on and still
 # asks for the computer's RSA key on screen (ro.adb.secure=1). Turning the switch off (-1) forgets it.
+# 1.0.7: the restore runs ONCE per boot. In 1.0.4 to 1.0.6 it was triggered by persist.z9x.adb_net too, which the
+# port rule below sets again (init fires on every set, also of the same value): restore -> port 5555 -> record ->
+# restore ..., and init.lineage.atv.rc restarted adbd each time. A Z9X with USB debugging and ADB over network on
+# had adbd killed every ~5 s for as long as it ran (no USB adb: sys.usb.ffs.ready=0, "udc failed to start g1: -19";
+# no network adb either; owner's subscriber, 2026-10-28). Now the boot value is copied into sys.z9x.adb_net_boot
+# once, and only that property restores the port.
 on property:service.adb.tcp.port=5555
     setprop persist.z9x.adb_net 1
 
 on property:service.adb.tcp.port=-1
     setprop persist.z9x.adb_net 0
 
-on property:sys.boot_completed=1 && property:persist.z9x.adb_net=1
+on property:sys.boot_completed=1
+    setprop sys.z9x.adb_net_boot ${persist.z9x.adb_net:-0}
+
+on property:sys.z9x.adb_net_boot=1
     setprop service.adb.tcp.port 5555
