@@ -712,7 +712,8 @@ yet).
    [MindTheGapps-14.0.0-arm-ATV-full-20240523_191930.zip](https://github.com/MindTheGapps/14.0.0-arm-ATV/releases/download/MindTheGapps-14.0.0-arm-ATV-20240523_192108/MindTheGapps-14.0.0-arm-ATV-full-20240523_191930.zip).
    Safari on a Mac sometimes unpacks the zip by itself. If that happens, download it with another browser:
    you need the `.zip`.
-2. Turn debugging on and look up the address ([step 6](#play6-verify), items 1 to 4).
+2. Turn debugging on and look up the address ([step 6](#play6-verify), items 1 to 4). In the same Developer options
+   also turn on "Rooted debugging": this step needs root, without it the installer stops.
 3. Run:
 
    ```
@@ -783,6 +784,7 @@ bash lumen-install.sh --ip 192.168.x.y gapps --remove
 | first start | "! ... the image names its version differently from its release" | Nothing to do: the image was checked before the write and the install goes on. Report it, so that the next release is fixed. |
 | first start | "Allow USB debugging?" on the projector | Tick "Always allow from this computer" and press OK. |
 | wipe | "the factory reset did not start" or "adb root is not possible" | On the projector: Settings > Device Preferences > Reset > Factory reset. |
+| gapps, wipe | "root debugging is off on the projector" | Settings > Device Preferences > Developer options > Rooted debugging: turn it on, then run the same command again. Nothing was written. |
 | wipe | "after 'adb root' the projector did not answer" | Allow debugging on the projector if it asks ("Always allow from this computer", OK) and run the installer again. Nothing was erased. |
 | wipe | "the factory reset of an earlier run has already erased the data" | Join Wi-Fi and turn debugging on (step 6), then run the installer again with `--ip ADDRESS`: it sees that the data is erased and finishes. |
 | after the wipe | The picture stays dark for more than 10 minutes | Press the power button once. If it stays dark, do the [stock restore](#play6-stock). |

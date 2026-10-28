@@ -1333,7 +1333,7 @@ play6_device() {  # connected: firmware, single slot, stock or Lumen OS; saves s
   case " $P_VENDOR_OK " in
     *" $vend "*) ;;
     *) all=$(p6_fw_list); first=$(p6_fw_first)
-       die "$(t "XGIMI firmware $vend is not supported: Lumen OS for the $P_NAME is tested on $all only. Older: let the stock system update itself to $first (Settings, Wi-Fi), then run the installer again. Newer (for example V1.8.x, shown in Settings as RG0058V1.8xxx): Lumen OS does not support it yet. Do NOT install $first from a USB stick over it: newer $P_NAME units have another Wi-Fi chip, $first has no driver for it, and Wi-Fi and Bluetooth then stop working. Nothing was done." "прошивка XGIMI $vend не поддерживается: Lumen OS для $P_NAME проверена только на $all. Если ваша старее, дайте стоку обновиться до $first (настройки, Wi-Fi) и запустите установщик снова. Если новее (например V1.8.x, в настройках видна как RG0058V1.8xxx), Lumen OS её пока не поддерживает. НЕ ставьте поверх неё $first с флешки: в новых $P_NAME другой чип Wi-Fi, драйвера для него в $first нет, и Wi-Fi с Bluetooth перестают работать. Ничего не сделано.")" ;;
+       die "$(t "XGIMI firmware $vend is not supported: Lumen OS for the $P_NAME is tested on $all only. Older: let the stock system update itself to $first (Settings, Wi-Fi), then run the installer again. Newer (for example V1.8.x, shown in Settings as R${P_MODEL}V1.8xxx): Lumen OS does not support it yet. Do NOT install $first from a USB stick over it: newer $P_NAME units have another Wi-Fi chip, $first has no driver for it, and Wi-Fi and Bluetooth then stop working. Nothing was done." "прошивка XGIMI $vend не поддерживается: Lumen OS для $P_NAME проверена только на $all. Если ваша старее, дайте стоку обновиться до $first (настройки, Wi-Fi) и запустите установщик снова. Если новее (например V1.8.x, в настройках видна как R${P_MODEL}V1.8xxx), Lumen OS её пока не поддерживает. НЕ ставьте поверх неё $first с флешки: в новых $P_NAME другой чип Wi-Fi, драйвера для него в $first нет, и Wi-Fi с Bluetooth перестают работать. Ничего не сделано.")" ;;
   esac
   [ -z "$slot" ] || die "$(t "this projector has a second system slot ($slot): it is not the $P_NAME this installer knows. Nothing was done." "у этого проектора есть второй системный слот ($slot): это не тот $P_NAME, который знает установщик. Ничего не сделано.")"
   case "$lum" in
@@ -1654,10 +1654,14 @@ play6_boot1() {  # the first start of Lumen OS on the old data: Wi-Fi and debugg
 }
 
 p6_root() {  # adb root restarts adbd, so connect again. 0 = root; 1 = this system gives no root (not userdebug);
-  # 2 = no answer after 'adb root' (the allow prompt was not accepted, or the network): try again later
+  # 2 = no answer after 'adb root' (the allow prompt was not accepted, or the network): try again later;
+  # 3 = Developer options > Rooted debugging is off (LineageOS adbd asks its adb_root service first and answers
+  #     "ADB Root access is disabled by system setting"; Play 6 AIC test unit 2026-10-28)
+  local out
   [ "$(prop ro.debuggable)" = 1 ] || return 1
   [ "$(adbs shell id -u 2>/dev/null | tr -d '\r')" = 0 ] && return 0
-  adbs root >/dev/null 2>&1
+  out=$(adbs root 2>&1)
+  case "$out" in *"disabled by system setting"*) return 3 ;; esac
   sleep 3
   wifi_connect 60 || return 2
   [ "$(adbs shell id -u 2>/dev/null | tr -d '\r')" = 0 ] || return 1
@@ -1706,7 +1710,8 @@ accounts, settings, files, Wi-Fi networks). XGIMI's recovery carries it out, as 
   case "$rc" in
     0) ;;
     2) die "$(t "after 'adb root' the projector did not answer over Wi-Fi again within a minute (adbd restarts with it). If the projector asks: allow debugging from this computer, tick \"Always allow from this computer\" and press OK. Then run the installer again. Nothing was erased." "после 'adb root' проектор не ответил по Wi-Fi снова за минуту (adbd при этом перезапускается). Если проектор спрашивает, разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK. Затем запустите установщик снова. Ничего не стёрто.")" ;;
-    *) warn "$(t "adb root is not possible on this system: the installer cannot start the factory reset" "adb root на этой системе невозможен: установщик не может запустить сброс")"
+    *) [ "$rc" = 3 ] && say "$(t "(root debugging is off: Settings > Device Preferences > Developer options > Rooted debugging)" "(выключена отладка с правами root: Настройки > Настройки устройства > Для разработчиков > Отладка суперпользователем)")"
+       warn "$(t "adb root is not possible on this system: the installer cannot start the factory reset" "adb root на этой системе невозможен: установщик не может запустить сброс")"
        say "$(t "On the projector: Settings > Device Preferences > Reset > Factory reset." "На проекторе: Настройки > Настройки устройства > Сброс > Сброс к заводским настройкам.")"
        state_set step_wipe manual
        return 0 ;;
@@ -1921,6 +1926,7 @@ p6_root_or_die() {  # adb root over Wi-Fi, else STOP (nothing written yet)
   case "$rc" in
     0) ;;
     2) die "$(t "after 'adb root' the projector did not answer over Wi-Fi again within a minute (adbd restarts with it). If the projector asks: allow debugging from this computer, tick \"Always allow from this computer\" and press OK. Then run the installer again." "после 'adb root' проектор не ответил по Wi-Fi снова за минуту (adbd при этом перезапускается). Если проектор спрашивает, разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK. Затем запустите установщик снова.")" ;;
+    3) die "$(t "root debugging is off on the projector. Turn it on: Settings > Device Preferences > Developer options > Rooted debugging. Then run the same command again. Nothing was written." "на проекторе выключена отладка с правами root. Включите: Настройки > Настройки устройства > Для разработчиков > Отладка суперпользователем. Затем запустите ту же команду снова. Ничего не записано.")" ;;
     *) die "$(t "adb root is not possible on this system (Lumen OS is a userdebug build: is it really Lumen OS?)" "adb root на этой системе невозможен (Lumen OS собрана как userdebug: точно ли это Lumen OS?)")" ;;
   esac
 }

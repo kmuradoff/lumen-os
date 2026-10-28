@@ -1037,7 +1037,7 @@ function Play6-Device {  # connected: firmware, single slot, stock or Lumen OS; 
   $vend = Prop ro.vendor.build.version.incremental; $slot = Prop ro.boot.slot_suffix; $lum = Prop (P6-LProp)
   if (@($script:Prof["VENDOR_OK"] -split " ") -cnotcontains $vend) {
     $all = P6-Fw-List; $first = P6-Fw-First
-    Die (T "XGIMI firmware $vend is not supported: Lumen OS for the $nm is tested on $all only. Older: let the stock system update itself to $first (Settings, Wi-Fi), then run the installer again. Newer (for example V1.8.x, shown in Settings as RG0058V1.8xxx): Lumen OS does not support it yet. Do NOT install $first from a USB stick over it: newer $nm units have another Wi-Fi chip, $first has no driver for it, and Wi-Fi and Bluetooth then stop working. Nothing was done." "прошивка XGIMI $vend не поддерживается: Lumen OS для $nm проверена только на $all. Если ваша старее, дайте стоку обновиться до $first (настройки, Wi-Fi) и запустите установщик снова. Если новее (например V1.8.x, в настройках видна как RG0058V1.8xxx), Lumen OS её пока не поддерживает. НЕ ставьте поверх неё $first с флешки: в новых $nm другой чип Wi-Fi, драйвера для него в $first нет, и Wi-Fi с Bluetooth перестают работать. Ничего не сделано.")
+    Die (T "XGIMI firmware $vend is not supported: Lumen OS for the $nm is tested on $all only. Older: let the stock system update itself to $first (Settings, Wi-Fi), then run the installer again. Newer (for example V1.8.x, shown in Settings as R$($script:Prof["MODEL"])V1.8xxx): Lumen OS does not support it yet. Do NOT install $first from a USB stick over it: newer $nm units have another Wi-Fi chip, $first has no driver for it, and Wi-Fi and Bluetooth then stop working. Nothing was done." "прошивка XGIMI $vend не поддерживается: Lumen OS для $nm проверена только на $all. Если ваша старее, дайте стоку обновиться до $first (настройки, Wi-Fi) и запустите установщик снова. Если новее (например V1.8.x, в настройках видна как R$($script:Prof["MODEL"])V1.8xxx), Lumen OS её пока не поддерживает. НЕ ставьте поверх неё $first с флешки: в новых $nm другой чип Wi-Fi, драйвера для него в $first нет, и Wi-Fi с Bluetooth перестают работать. Ничего не сделано.")
   }
   if ($slot) { Die (T "this projector has a second system slot ($slot): it is not the $nm this installer knows. Nothing was done." "у этого проектора есть второй системный слот ($slot): это не тот $nm, который знает установщик. Ничего не сделано.") }
   if (-not $lum) {
@@ -1315,9 +1315,12 @@ function Play6-Boot1 {  # the first start of Lumen OS on the old data: Wi-Fi and
 }
 function P6-Root {  # adb root restarts adbd, so connect again. 0 = root; 1 = this system gives no root (not userdebug);
   # 2 = no answer after 'adb root' (the allow prompt was not accepted, or the network): try again later
+  # 3 = Developer options > Rooted debugging is off (LineageOS adbd: "ADB Root access is disabled by system setting")
   if ((Prop ro.debuggable) -ne "1") { return 1 }
   if (((Adb shell id "-u") | Out-String).Trim() -eq "0") { return 0 }
-  Adb root | Out-Null
+  $t = if ($script:AdbT) { $script:AdbT } else { $script:Serial }
+  $out = (& adb -s $t root 2>&1) | Out-String   # both streams: the refusal text decides return 3
+  if ($out -match "disabled by system setting") { return 3 }
   Start-Sleep 3
   if (-not (Wifi-Connect 60)) { return 2 }
   if (((Adb shell id "-u") | Out-String).Trim() -eq "0") { return 0 } else { return 1 }
@@ -1354,6 +1357,7 @@ function Play6-Wipe {  # Android's own factory reset on the first Lumen OS start
   $rc = P6-Root
   if ($rc -eq 2) { Die (T "after 'adb root' the projector did not answer over Wi-Fi again within a minute (adbd restarts with it). If the projector asks: allow debugging from this computer, tick `"Always allow from this computer`" and press OK. Then run the installer again. Nothing was erased." "после 'adb root' проектор не ответил по Wi-Fi снова за минуту (adbd при этом перезапускается). Если проектор спрашивает, разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK. Затем запустите установщик снова. Ничего не стёрто.") }
   if ($rc -ne 0) {
+    if ($rc -eq 3) { Say (T "(root debugging is off: Settings > Device Preferences > Developer options > Rooted debugging)" "(выключена отладка с правами root: Настройки > Настройки устройства > Для разработчиков > Отладка суперпользователем)") }
     Warn (T "adb root is not possible on this system: the installer cannot start the factory reset" "adb root на этой системе невозможен: установщик не может запустить сброс")
     Say (T "On the projector: Settings > Device Preferences > Reset > Factory reset." "На проекторе: Настройки > Настройки устройства > Сброс > Сброс к заводским настройкам.")
     State-Set step_wipe manual
@@ -1560,6 +1564,7 @@ function P6-Lumen-Only {  # connected: Lumen OS for this projector runs (Play6-D
 function P6-Root-Or-Die {  # adb root over Wi-Fi, else STOP
   $rc = P6-Root
   if ($rc -eq 2) { Die (T "after 'adb root' the projector did not answer over Wi-Fi again within a minute (adbd restarts with it). If the projector asks: allow debugging from this computer, tick `"Always allow from this computer`" and press OK. Then run the installer again." "после 'adb root' проектор не ответил по Wi-Fi снова за минуту (adbd при этом перезапускается). Если проектор спрашивает, разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK. Затем запустите установщик снова.") }
+  if ($rc -eq 3) { Die (T "root debugging is off on the projector. Turn it on: Settings > Device Preferences > Developer options > Rooted debugging. Then run the same command again. Nothing was written." "на проекторе выключена отладка с правами root. Включите: Настройки > Настройки устройства > Для разработчиков > Отладка суперпользователем. Затем запустите ту же команду снова. Ничего не записано.") }
   if ($rc -ne 0) { Die (T "adb root is not possible on this system (Lumen OS is a userdebug build: is it really Lumen OS?)" "adb root на этой системе невозможен (Lumen OS собрана как userdebug: точно ли это Lumen OS?)") }
 }
 function P6-Wait-Lumen($why) {  # after a restart: Lumen OS of this projector back over Wi-Fi and started (else STOP)
