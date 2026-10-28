@@ -77,7 +77,7 @@ APEX. Предкомпиляция (`WITH_DEXPREOPT`) обязательна. Б
 
 ## 3. Файлы с вашего проектора
 
-Подключите проектор по USB с отладкой по USB, как в [инструкции по установке](../install/ru.md), и
+Подключите проектор по USB с отладкой по USB, как в [инструкции по установке](../install/z9x/ru.md), и
 запустите из репозитория:
 
 ```sh
@@ -107,7 +107,7 @@ tools/selfbuild/build.sh all ~/lineage/out/target/product/generic_arm64/system.i
 
 ## 5. Установка
 
-Дальше всё как в [инструкции по установке](../install/ru.md), только установщик берите из папки сборки:
+Дальше всё как в [инструкции по установке](../install/z9x/ru.md), только установщик берите из папки сборки:
 
 ```sh
 build/selfbuild/release/installer/lumen-install.sh --image build/selfbuild/release/lumen-os-1.0.3-nogms-system.img

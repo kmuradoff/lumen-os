@@ -3,7 +3,7 @@
 English | [Русский](ru.md)
 
 How to use the projector on Lumen OS 1.0.5. How to install the system is in the
-[install guide](../install/en.md).
+[install guide](../install/z9x/en.md).
 
 ## Remote
 

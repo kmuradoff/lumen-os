@@ -3,6 +3,15 @@
 Сверху новые версии. Версии 1.0.x выходят для XGIMI Z9X, у XGIMI Play 6 свои записи с пометкой Play 6.
 [English below](#english).
 
+## Установщик и инструкции, ещё не в релизе
+
+- Инструкция по установке разделена: у Z9X и у Play 6 теперь свои страницы,
+  [для Z9X](docs/install/z9x/ru.md) и [для Play 6](docs/install/play6/ru.md). Обе начинаются с трёх
+  вариантов установки. Старые ссылки ведут на страницу со ссылками на обе инструкции.
+- Lumen OS и сервисы Google одной командой, на обоих проекторах: `--gapps-zip ФАЙЛ` (на Windows
+  `-GappsZip ФАЙЛ`) ставит систему и сервисы Google из вашего файла MindTheGapps за один запуск, а данные
+  стираются только один раз. Отдельный шаг `gapps` для уже установленной Lumen OS остался как был.
+
 ## 1.0.7, октябрь 2026
 
 Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
@@ -87,7 +96,7 @@
   прочитать целиком.
 - Chromecast built-in убран: Google не выдаёт ключи устройства для несертифицированных проекторов, поэтому
   проектор появлялся в списке, но не подключался. Что использовать вместо него: раздел
-  [«Chromecast»](docs/install/ru.md#chromecast).
+  [«Chromecast»](docs/install/z9x/ru.md#chromecast).
 
 ## 1.0.4, октябрь 2026
 
@@ -128,7 +137,7 @@
 ## XGIMI Play 6, бета 1, октябрь 2026
 
 Первая бета Lumen OS для XGIMI Play 6 (G0058) с прошивкой XGIMI V1.7.116. Релиз с тегом `play6-beta1`
-помечен как Pre-release, инструкция в разделе [«XGIMI Play 6»](docs/install/ru.md#play6). Это бета: ставьте,
+помечен как Pre-release, инструкция в разделе [«XGIMI Play 6»](docs/install/play6/ru.md). Это бета: ставьте,
 если готовы тестировать и писать о проблемах.
 
 - Установка с компьютера по Wi-Fi. Кабель USB A–A нужен только для записи системы. Установка стирает все
@@ -221,6 +230,15 @@ HDMI, заставка, 3D и оптический зум. На 1.0.2 обнов
 
 Newest first. Versions 1.0.x are for the XGIMI Z9X; the XGIMI Play 6 has its own entries marked Play 6.
 
+## Installer and guides, not released yet
+
+- The install guide is split: the Z9X and the Play 6 each have their own page,
+  [for the Z9X](docs/install/z9x/en.md) and [for the Play 6](docs/install/play6/en.md). Both start with the
+  three ways to install. Old links lead to a page that links both guides.
+- Lumen OS and Google services in one command, on both projectors: `--gapps-zip FILE` (on Windows
+  `-GappsZip FILE`) installs the system and Google services from your own MindTheGapps download in one run,
+  with only one data wipe. The separate `gapps` step for an installed Lumen OS stays as it was.
+
 ## 1.0.7, October 2026
 
 The update arrives over Wi-Fi: Settings > About > Lumen OS update. Your data is kept.
@@ -302,7 +320,7 @@ The update comes over Wi-Fi: Settings > Device Preferences > About > Lumen OS up
   Wi-Fi.
 - Long names in the projector settings and the quick panel scroll while focused, so they can be read in full.
 - Chromecast built-in is gone: Google gives no device keys to uncertified projectors, so the projector showed up
-  in the list but never connected. What to use instead: [Chromecast](docs/install/en.md#chromecast).
+  in the list but never connected. What to use instead: [Chromecast](docs/install/z9x/en.md#chromecast).
 
 ## 1.0.4, October 2026
 
@@ -343,7 +361,7 @@ Fixes:
 ## XGIMI Play 6, beta 1, October 2026
 
 The first beta of Lumen OS for the XGIMI Play 6 (G0058) on XGIMI firmware V1.7.116. The release has the tag
-`play6-beta1` and is marked Pre-release; the guide is the [XGIMI Play 6](docs/install/en.md#play6) part of the
+`play6-beta1` and is marked Pre-release; the guide is the [XGIMI Play 6](docs/install/play6/en.md) part of the
 install guide. This is a beta: install it if you are ready to test and report back.
 
 - Installs from a computer over Wi-Fi. The USB A-to-A cable is needed only to write the system. The install

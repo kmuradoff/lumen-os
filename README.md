@@ -8,8 +8,8 @@ Android TV 14 for XGIMI projectors, built on LineageOS 21.
 
 | Projector | Status | Latest release | Install guide |
 |---|---|---|---|
-| XGIMI Z9X | stable | [Lumen OS 1.0.7](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.7) | [English](docs/install/en.md), [Русский](docs/install/ru.md) |
-| XGIMI Play 6 | stable | [Lumen OS 1.0.7 for the Play 6](https://github.com/kmuradoff/lumen-os/releases/tag/play6-1.0.7) | [English](docs/install/en.md#play6), [Русский](docs/install/ru.md#play6) |
+| XGIMI Z9X | stable | [Lumen OS 1.0.7](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.7) | [English](docs/install/z9x/en.md), [Русский](docs/install/z9x/ru.md) |
+| XGIMI Play 6 | stable | [Lumen OS 1.0.7 for the Play 6](https://github.com/kmuradoff/lumen-os/releases/tag/play6-1.0.7) | [English](docs/install/play6/en.md), [Русский](docs/install/play6/ru.md) |
 
 Each projector has its own release files, signed with its own key. The installer refuses an image for
 another projector and any XGIMI firmware it does not know.
@@ -62,8 +62,9 @@ plain HTTP, ipapi.co or ipwho.is), the weather (Open-Meteo) and updates (GitHub)
 
 The published edition has no Google apps: no Google Play, no Chromecast built-in, no Google voice
 search. Apps that need Google Play services will not run. Apps install from a USB stick or from any store
-you choose. You can add Google services yourself from your own MindTheGapps download with one installer
-command, see [Adding Google services](docs/install/en.md#google). This works only on the Z9X for now.
+you choose. You can add Google services yourself from your own MindTheGapps download: together with the
+install in one command, or later with the installer's `gapps` step. See the Google part of the guide for
+the [Z9X](docs/install/z9x/en.md#google) or the [Play 6](docs/install/play6/en.md#play6-google).
 
 ## Install
 
@@ -72,8 +73,8 @@ USB A-to-A cable. The install erases all data on the projector. On the Z9X the c
 projector's USB 2.0 port, and there is one vbmeta step that you do by hand. The Play 6 talks to the
 computer over Wi-Fi and needs the cable only for the write itself.
 
-- [Install guide](docs/install/en.md), the Play 6 has [its own part](docs/install/en.md#play6)
-- [Инструкция по установке](docs/install/ru.md), для Play 6 [свой раздел](docs/install/ru.md#play6)
+- Install guide: [XGIMI Z9X](docs/install/z9x/en.md), [XGIMI Play 6](docs/install/play6/en.md)
+- Инструкция по установке: [XGIMI Z9X](docs/install/z9x/ru.md), [XGIMI Play 6](docs/install/play6/ru.md)
 
 Download only from this repository's [Releases](https://github.com/kmuradoff/lumen-os/releases). The
 release marked Latest is for the Z9X. The Play 6 release has a tag that starts with `play6-`. Every release has `SHA256SUMS` and `SHA256SUMS.sig`; the installer checks both and
@@ -83,14 +84,14 @@ refuses anything else. Copies on forums and file hosts are not ours.
 
 On the Z9X, Lumen OS updates itself over Wi-Fi from Settings > Device Preferences > About > Lumen OS
 update. An update installs into the other slot, keeps your data and waits for your OK. See
-[Updates](docs/install/en.md#updates) and [CHANGELOG.md](CHANGELOG.md).
+[Updates](docs/install/z9x/en.md#updates) and [CHANGELOG.md](CHANGELOG.md).
 
 On the Play 6 there are no updates over Wi-Fi yet. Download the new Play 6 release and run
 `bash lumen-install.sh --ip ADDRESS --keep-data flash`. It writes the new system over the USB cable and
-keeps your data. Debugging must be on, see [step 6 of the Play 6 part](docs/install/en.md#play6-verify).
+keeps your data. Debugging must be on, see [step 6 of the Play 6 guide](docs/install/play6/en.md#play6-verify).
 
 To go back, flash the official XGIMI firmware from a USB stick. This erases everything, see Back to stock
-for the [Z9X](docs/install/en.md#stock) and for the [Play 6](docs/install/en.md#play6-stock).
+for the [Z9X](docs/install/z9x/en.md#stock) and for the [Play 6](docs/install/play6/en.md#play6-stock).
 
 ## Known issues
 

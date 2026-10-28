@@ -1,11 +1,11 @@
 # Lumen OS installer
 
 Installs Lumen OS from a computer on an XGIMI Z9X (G0082, XGIMI firmware V6.15.58, V6.15.62 or V6.15.19) or an
-XGIMI Play 6 (G0058, XGIMI firmware V1.7.116). Follow the install guide, it has every step in order:
-[English](https://github.com/kmuradoff/lumen-os/blob/main/docs/install/en.md),
-[Русский](https://github.com/kmuradoff/lumen-os/blob/main/docs/install/ru.md); the XGIMI Play 6 has its own
-section there ([English](https://github.com/kmuradoff/lumen-os/blob/main/docs/install/en.md#play6),
-[Русский](https://github.com/kmuradoff/lumen-os/blob/main/docs/install/ru.md#play6)).
+XGIMI Play 6 (G0058, XGIMI firmware V1.7.116). Follow the install guide of your projector, it has every step in order. XGIMI Z9X:
+[English](https://github.com/kmuradoff/lumen-os/blob/main/docs/install/z9x/en.md),
+[Русский](https://github.com/kmuradoff/lumen-os/blob/main/docs/install/z9x/ru.md). XGIMI Play 6:
+[English](https://github.com/kmuradoff/lumen-os/blob/main/docs/install/play6/en.md),
+[Русский](https://github.com/kmuradoff/lumen-os/blob/main/docs/install/play6/ru.md).
 
 ## Files
 
@@ -34,6 +34,7 @@ image of the other projector.
 | Command | What it does | Writes to the projector |
 |---|---|---|
 | none | runs `check`, `backup`, `blobs`, `vbmeta`, `flash` and `verify` in order and resumes where it stopped | yes |
+| none, with `--gapps-zip FILE` | Lumen OS and Google services in one run: checks the zip, writes the system and creates `z9x_gapps_<slot>` in fastbootd, starts Lumen OS once on the old data, fills the partition as root, then the one wipe (`format`); resumes where it stopped | yes, erases data |
 | `check` | checks the computer, cable, projector, firmware, the image's signature and checksum, and the vbmeta step | no |
 | `backup` | copies your apps (APK files), photos, videos, downloads and settings lists to `~/Lumen-backup` | no |
 | `blobs` | copies the codec and audio files from your projector, checks them and builds the `z9x_blobs` image | no |
@@ -53,6 +54,7 @@ XGIMI Play 6 (it has no USB debugging: `--ip ADDRESS` is its Wi-Fi address, save
 | Command | What it does | Writes to the projector |
 |---|---|---|
 | none | runs `check`, `backup` (asked) and `flash` in order and resumes where it stopped | yes |
+| none, with `--gapps-zip FILE` | Lumen OS and Google services in one run: checks the zip, writes the system and creates `lumen_gapps` in the same fastboot session, starts Lumen OS once on the old data, adds the Google apps as root, then Android's factory reset (the one wipe); resumes where it stopped | yes, erases data |
 | `check` | connects over Wi-Fi, checks the computer, projector, firmware, and the image's release version (from its name, against `release.conf`), signature and checksum | no |
 | `backup` | as for the Z9X, over Wi-Fi, to `~/Lumen-backup/play6-<date>` | no |
 | `flash` | asks for the A-to-A cable, writes the system in fastboot mode, waits for the first start of Lumen OS, then asks Android for its factory reset, which erases all data | yes, erases data |
@@ -77,6 +79,7 @@ Options:
 | `--wipe=factory-reset` | `-Wipe factory-reset` | leave the wipe to a factory reset on the projector instead of `format` |
 | `--no-blobs` | `-NoBlobs` | install without the codec and audio files: no sound, no protected video |
 | `--zip FILE`, `--remove` | `-Zip FILE`, `-Remove` | for `gapps` |
+| `--gapps-zip FILE` | `-GappsZip FILE` | install Lumen OS and Google services in one run, with one wipe; not with a command name, `--keep-data`, `--wipe=factory-reset` or an image with Google built in |
 | `--ip ADDRESS[:PORT]` | `-Ip ADDRESS[:PORT]` | the XGIMI Play 6's Wi-Fi address (port 5555 if not given) |
 | `--device z9x\|play6` | `-Device z9x\|play6` | which projector, when the installer cannot tell by itself |
 | `stick DIR` | `stick -Path E:\` | the stick to check |
