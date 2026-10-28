@@ -6,7 +6,7 @@
 > This guide starts with the XGIMI Z9X. For the XGIMI Play 6 go to [XGIMI Play 6](#play6): it
 > installs differently (over Wi-Fi, with a cable only for the write) and needs its own release files.
 
-This guide covers Lumen OS 1.0.6 without Google on the XGIMI Z9X (model code G0082) with XGIMI
+This guide covers Lumen OS 1.0.7 without Google on the XGIMI Z9X (model code G0082) with XGIMI
 firmware V6.15.58, V6.15.62 or V6.15.19. Lumen OS is Android TV 14, built on LineageOS 21. It replaces only the
 system partition. The XGIMI firmware and calibration are not touched, and focus, keystone and the lamp
 work as on stock.
@@ -74,8 +74,8 @@ fastboot, install the [Google USB Driver](https://developer.android.com/studio/r
 
 1. Open the [Releases page](https://github.com/kmuradoff/lumen-os/releases) on GitHub. Download only
    from there. We do not check or support copies on forums or file hosts.
-2. From the latest release (now 1.0.6), download four files: `lumen-os-1.0.6-nogms-system.img`,
-   `SHA256SUMS`, `SHA256SUMS.sig` and `lumen-os-1.0.6-installer.zip`.
+2. From the latest release (now 1.0.7), download four files: `lumen-os-1.0.7-nogms-system.img`,
+   `SHA256SUMS`, `SHA256SUMS.sig` and `lumen-os-1.0.7-installer.zip`.
 3. Unpack the installer zip. Put the image and both `SHA256SUMS` files next to `lumen-install.sh`.
    Remove any older `lumen-os-*-system.img` from that folder.
 4. Open a terminal and go to that folder:
@@ -247,7 +247,7 @@ If there is no setup screen after 10 minutes, see [Something went wrong](#proble
 
 ## 8. Optional: verify the install
 
-On the projector, open Settings > Device Preferences > About. It should show Lumen OS 1.0.6.
+On the projector, open Settings > Device Preferences > About. It should show Lumen OS 1.0.7.
 
 To check over USB:
 

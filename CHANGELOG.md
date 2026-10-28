@@ -3,6 +3,25 @@
 Сверху новые версии. Версии 1.0.x выходят для XGIMI Z9X, у XGIMI Play 6 свои записи с пометкой Play 6.
 [English below](#english).
 
+## 1.0.7, октябрь 2026
+
+Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
+
+- Исправлена отладка по USB: если одновременно включены «Отладка по USB» и «ADB по сети», Lumen OS с 1.0.4
+  перезапускала adb каждые несколько секунд, и компьютер не видел проектор ни по кабелю, ни по сети.
+  Теперь настройка «ADB по сети» восстанавливается после перезагрузки один раз.
+
+## XGIMI Play 6, 1.0.7, октябрь 2026
+
+Ставится тем же установщиком, `--keep-data flash` сохраняет данные.
+
+- Play 6 новых партий с чипом Wi-Fi и Bluetooth AICSemi (USB 368b:8d90): Wi-Fi (2,4 и 5 ГГц) и Bluetooth
+  теперь работают. В прошивке XGIMI V1.7.116 драйвера для этого чипа нет, Lumen OS ставит свой. При каждом
+  запуске система смотрит, какой стоит чип, и загружает драйвер AIC только на проекторах с ним. На Play 6 с
+  MediaTek всё как в 1.0.6.
+- Установщик: если шагу «Сервисы Google» нужен root, а на проекторе выключена «Отладка суперпользователем»,
+  он сразу говорит, где её включить, а не останавливается посередине.
+
 ## 1.0.6, октябрь 2026
 
 Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
@@ -201,6 +220,25 @@ HDMI, заставка, 3D и оптический зум. На 1.0.2 обнов
 <a name="english"></a>
 
 Newest first. Versions 1.0.x are for the XGIMI Z9X; the XGIMI Play 6 has its own entries marked Play 6.
+
+## 1.0.7, October 2026
+
+The update arrives over Wi-Fi: Settings > About > Lumen OS update. Your data is kept.
+
+- USB debugging fixed: with both "USB debugging" and "ADB over network" on, Lumen OS 1.0.4 to 1.0.6 restarted
+  adb every few seconds, so the computer could not reach the projector over the cable or the network. "ADB over
+  network" is now restored once after a restart.
+
+## XGIMI Play 6, 1.0.7, October 2026
+
+Installed with the same installer; `--keep-data flash` keeps your data.
+
+- Newer Play 6 batches with the AICSemi Wi-Fi and Bluetooth chip (USB 368b:8d90): Wi-Fi (2.4 and 5 GHz) and
+  Bluetooth now work. XGIMI firmware V1.7.116 has no driver for this chip, so Lumen OS brings its own. At every
+  start the system checks which chip the projector has and loads the AIC driver only on projectors with it. A
+  MediaTek Play 6 is the same as in 1.0.6.
+- Installer: when the Google services step needs root and "Rooted debugging" is off on the projector, it now says
+  where to turn it on instead of stopping half way.
 
 ## 1.0.6, October 2026
 
