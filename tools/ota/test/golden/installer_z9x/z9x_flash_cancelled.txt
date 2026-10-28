@@ -16,7 +16,7 @@ ONE MANUAL STEP: vbmeta (you do it yourself; this installer never runs any vbmet
   future updates over Wi-Fi need nothing more. Restart, let the projector start normally, connect
   the cable again.
   Google: https://source.android.com/docs/core/tests/vts/gsi#flashing-gsis
-  Guide: https://github.com/kmuradoff/lumen-os/blob/main/docs/install/en.md#vbmeta
+  Guide: https://github.com/kmuradoff/lumen-os/blob/main/docs/install/z9x/en.md#vbmeta
 
 Have you done the vbmeta step and did the projector start normally after it? [yes/no] 12:00:00   ✓ vbmeta: verification is off on slot b (no system-verity)
 

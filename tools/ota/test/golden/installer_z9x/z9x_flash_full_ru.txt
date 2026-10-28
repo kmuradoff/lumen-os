@@ -16,7 +16,7 @@
   обновления по Wi-Fi ничего больше не потребуют. Перезагрузите, дайте проектору нормально
   загрузиться, снова подключите кабель.
   Google: https://source.android.com/docs/core/tests/vts/gsi#flashing-gsis
-  Инструкция: https://github.com/kmuradoff/lumen-os/blob/main/docs/install/ru.md#vbmeta
+  Инструкция: https://github.com/kmuradoff/lumen-os/blob/main/docs/install/z9x/ru.md#vbmeta
 
 Вы сделали шаг vbmeta и проектор после него нормально загрузился? [да/нет] 12:00:00   ✓ vbmeta: проверка в слоте b выключена (нет system-verity)
 

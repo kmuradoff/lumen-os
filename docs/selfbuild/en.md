@@ -77,7 +77,7 @@ The result is `~/lineage/out/target/product/generic_arm64/system.img`.
 
 ## 3. Files from your projector
 
-Connect the projector over USB with USB debugging on, as in the [install guide](../install/en.md), and
+Connect the projector over USB with USB debugging on, as in the [install guide](../install/z9x/en.md), and
 run from the repository:
 
 ```sh
@@ -107,7 +107,7 @@ The finished files land in `build/selfbuild/release/`: the image, `SHA256SUMS`, 
 
 ## 5. Install
 
-From here on, follow the [install guide](../install/en.md), but use the installer from the build folder:
+From here on, follow the [install guide](../install/z9x/en.md), but use the installer from the build folder:
 
 ```sh
 build/selfbuild/release/installer/lumen-install.sh --image build/selfbuild/release/lumen-os-1.0.3-nogms-system.img

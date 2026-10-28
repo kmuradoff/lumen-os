@@ -4,7 +4,7 @@
 #
 #   lumen-install.cmd [command] [-Image FILE] [-Serial S] [-KeepData] [-Wipe format|factory-reset]
 #                     [-Lang en|ru] [-Blobs partition|embedded] [-NoBlobs] [-UnsignedImage] [-Zip FILE] [-Remove]
-#                     [-Ip ADDRESS[:PORT]] [-Device z9x|play6] [-Path FOLDER]
+#                     [-Ip ADDRESS[:PORT]] [-Device z9x|play6] [-Path FOLDER] [-GappsZip FILE]
 #   commands: (none = continue) check | backup | blobs | vbmeta | flash | verify | gsf | rescue | gapps | status | reset
 #   XGIMI Play 6 (-Ip: its Wi-Fi address; it has no USB debugging): (none) | check | backup | flash | verify |
 #   rescue | stick -Path E:\ | gapps | gsf | status | reset. 'flash' writes system in fastboot mode over the A-to-A
@@ -17,6 +17,9 @@
 #   -UnsignedImage: the owner's own build without a signed SHA256SUMS (asks you to type UNSIGNED).
 #   -Image: required when several lumen-os-*-system.img lie next to the installer (with and without Google).
 #   gsf: only when Google services are there (built in, or added with 'gapps').
+#   -GappsZip FILE: the full install (no command) with Google services in one pass and ONE data wipe (not with
+#   -KeepData or -Wipe factory-reset): Lumen OS starts once on the old data, the Google apps are filled in as root
+#   (Developer options > Rooted debugging; the installer waits for it), then the wipe.
 #
 # rescue: Lumen OS that no longer starts goes to fastboot mode by itself after 3 failed starts in a row;
 # 'rescue' waits for it there and writes system (+ z9x_blobs) again WITHOUT wiping data (no adb needed).
@@ -33,7 +36,8 @@
 # lib\devices.conf.
 param([string]$Command = "", [string]$Image = "", [string]$Serial = "", [switch]$KeepData,
       [string]$Wipe = "format", [string]$Lang = "", [string]$Blobs = "", [switch]$NoBlobs, [switch]$UnsignedImage,
-      [string]$Zip = "", [switch]$Remove, [string]$Ip = "", [string]$Device = "", [string]$Path = "")
+      [string]$Zip = "", [switch]$Remove, [string]$Ip = "", [string]$Device = "", [string]$Path = "",
+      [string]$GappsZip = "")
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
@@ -41,8 +45,9 @@ $Here = $PSScriptRoot
 $StateDir = if ($env:LUMEN_STATE_DIR) { $env:LUMEN_STATE_DIR } else { Join-Path $HOME ".lumen-installer" }
 $BackupRoot = if ($env:LUMEN_BACKUP_DIR) { $env:LUMEN_BACKUP_DIR } else { Join-Path $HOME "Lumen-backup" }
 $ModelCode = "G0082"; $Board = "mt9952"; $FbProduct = "mt5877"; $VendorOk = @("v6.15.58", "v6.15.62", "v6.15.19")
-$GuideEn = "https://github.com/kmuradoff/lumen-os/blob/main/docs/install/en.md"
-$GuideRu = "https://github.com/kmuradoff/lumen-os/blob/main/docs/install/ru.md"
+$GuideBase = "https://github.com/kmuradoff/lumen-os/blob/main/docs/install"   # one guide per projector and language
+$GuideEn = "$GuideBase/z9x/en.md"
+$GuideRu = "$GuideBase/z9x/ru.md"
 $GoogleGsi = "https://source.android.com/docs/core/tests/vts/gsi#flashing-gsis"
 $BlobSize = 4194304
 if (-not $Lang) { $Lang = if ((Get-Culture).TwoLetterISOLanguageName -eq "ru") { "ru" } else { "en" } }
@@ -402,6 +407,15 @@ function Try-Root {
   Adb root | Out-Null; Start-Sleep 3; Adb wait-for-device | Out-Null
   return (((Adb shell id -u) | Out-String).Trim() -eq "0")
 }
+function Root-Setting-Wait {  # -GappsZip: Developer options > Rooted debugging is off; $true = the user turned it on, try again
+  # (LineageOS adbd asks its adb_root service first: "ADB Root access is disabled by system setting"; never bypassed)
+  Write-Host ""
+  Write-Host (T "Root debugging is off on the projector, and the Google services step needs it. With the remote: Settings > Device Preferences > Developer options > Rooted debugging: turn it on. If Developer options is not in the list: Settings > Device Preferences > About, press Build 7 times, then go back. Nothing was erased; your data is still there." "На проекторе выключена отладка с правами root, а она нужна для шага с сервисами Google. Пультом: Настройки > Настройки устройства > Для разработчиков > Отладка суперпользователем: включите. Если пункта «Для разработчиков» нет: Настройки > Настройки устройства > Об устройстве, нажмите 7 раз на «Сборка» и вернитесь назад. Ничего не стёрто, данные на месте.")
+  return (Ask (T "Is Rooted debugging on now?" "Отладка суперпользователем включена?"))
+}
+function Root-Setting-Stop {  # the user did not turn it on now: the next run continues at this step
+  Die (T "turn on Rooted debugging (Settings > Device Preferences > Developer options) and run the same command again: it continues here. Nothing was erased." "включите отладку суперпользователем (Настройки > Настройки устройства > Для разработчиков) и запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто.")
+}
 function Calib-Snapshot($tag) {
   $f = Join-Path $StateDir "calib_$tag.txt"
   $lines = foreach ($p in @("persist","xgimidatabase","xgimisps","xgimicri","project_id","tvcertificate")) {
@@ -425,7 +439,17 @@ function Cmd-Flash {
   }
   else {
     Write-Host (T "Writing Lumen OS to slot $sl and then ERASING ALL DATA (apps, accounts, settings, files). On slot $sl XGIMI's product$S and system_ext$S partitions are DELETED (parts of the stock system that Lumen OS does not use; the stock system on the other slot keeps its own), plus any *-cow update leftovers. XGIMI calibration, the other slot, vendor and boot stay untouched." "Записываю Lumen OS в слот $sl, затем СТИРАЮ ВСЕ ДАННЫЕ (приложения, аккаунты, настройки, файлы). В слоте $sl УДАЛЯЮТСЯ разделы XGIMI product$S и system_ext$S (части стоковой системы, Lumen OS их не использует; стоковая система в другом слоте сохраняет свои) и остатки обновлений *-cow. Калибровка XGIMI, второй слот, vendor и boot не затрагиваются.")
+    if ($GappsZip) {
+      Write-Host (T "With -GappsZip the same session also creates the partition z9x_gapps$S ($([math]::Floor($script:GzPart / 1MB)) MB) for $($script:GzName) and does not wipe yet: Lumen OS starts once on the old data, the installer copies the Google apps into that partition as root (Rooted debugging), and only then erases the data, once." "С -GappsZip в той же сессии создаётся ещё раздел z9x_gapps$S ($([math]::Floor($script:GzPart / 1MB)) МБ) для $($script:GzName), а данные пока не стираются: Lumen OS один раз загружается на старых данных, установщик копирует приложения Google в этот раздел с правами root (отладка суперпользователем) и только потом стирает данные, один раз.")
+    }
     if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
+    $script:EraseNow = $true
+  }
+  # -GappsZip: the Google services of this write (Z9x-Gapps-Finish completes them); any other write forgets what an
+  # earlier one-pass install left saved
+  if ($GappsZip -or (State-Get gapps_plan) -or (State-Get step_gapps_part) -or (State-Get step_gapps_fill)) {
+    State-Set gapps_plan $script:GzSha; State-Set step_gapps_part ""; State-Set step_gapps_fill ""
+    if ($GappsZip) { State-Set step_wipe "" }
   }
   if (Try-Root) { Calib-Snapshot before }
   Say (T "restarting into fastbootd (about 30 s)" "перезагрузка в fastbootd (около 30 секунд)")
@@ -443,7 +467,7 @@ function Cmd-Flash {
   $cows = $gv | ForEach-Object { if ($_ -match "partition-size:([a-z0-9_]+-cow):") { $Matches[1] } } | Sort-Object -Unique
   foreach ($p in $cows) { Say ((T "removing update leftover" "удаляю остаток обновления") + " $p"); if (-not (Fb-Do delete $p)) { Fb reboot | Out-Null; Die "delete $p" } }
   foreach ($p in @("product$S", "system_ext$S")) { if ($gv -match "partition-size:${p}:") { Say ((T "removing unused XGIMI partition" "удаляю неиспользуемый раздел XGIMI") + " $p"); $null = Fb-Do delete $p } }
-  if ($gv -match "partition-size:z9x_gapps${S}:") { Say (T "z9x_gapps$S (Google services you added) stays as it is; 'gapps -Remove' removes it" "z9x_gapps$S (добавленные вами сервисы Google) остаётся как есть; 'gapps -Remove' его удаляет") }
+  if (-not $GappsZip -and $gv -match "partition-size:z9x_gapps${S}:") { Say (T "z9x_gapps$S (Google services you added) stays as it is; 'gapps -Remove' removes it" "z9x_gapps$S (добавленные вами сервисы Google) остаётся как есть; 'gapps -Remove' его удаляет") }
   Say (T "writing system (about 40 s)" "записываю system (около 40 секунд)")
   if (-not (Fb-Do flash system $script:Image)) { Fb reboot | Out-Null; Die (T "system was not written; the projector still has its old system" "system не записан; на проекторе осталась старая система") }
   State-Set step_flash_system done
@@ -451,8 +475,11 @@ function Cmd-Flash {
     if ($gv -match "partition-size:z9x_blobs${S}:") { $null = Fb-Do resize "z9x_blobs$S" $BlobSize } else { $null = Fb-Do create "z9x_blobs$S" $BlobSize }
     if (Fb-Do flash "z9x_blobs$S" $blobImg) { Ok "z9x_blobs$S" } else { Warn (T "codec and audio files not written: no sound and no protected video until 'blobs' + 'flash -KeepData'" "файлы кодеков и звука не записаны: не будет звука и защищённого видео до 'blobs' + 'flash -KeepData'") }
   }
+  if (State-Get gapps_plan) { if (-not (Z9x-Gapps-Add $S)) { State-Set gapps_plan "" } }
   if (-not $KeepData) {
-    if ($Wipe -eq "format") {
+    if ((State-Get step_gapps_part) -eq "done") {
+      Say (T "the data is wiped after the Google services are in (after the first start)" "данные стираются после того, как сервисы Google будут добавлены (после первого запуска)")
+    } elseif ($Wipe -eq "format") {
       Say (T "wiping data (format userdata, metadata, cache)" "очистка данных (format userdata, metadata, cache)")
       if (-not (Fb-Do format userdata)) { Fb reboot | Out-Null; Die (T "the wipe failed: do Settings > Device > Reset on the projector instead" "очистка не удалась: сделайте сброс в настройках проектора") }
       $null = Fb-Do format metadata
@@ -462,6 +489,7 @@ function Cmd-Flash {
   }
   Fb reboot | Out-Null
   State-Set step_flash done
+  if ((State-Get step_gapps_part) -eq "done") { Ok (T "written. Lumen OS now starts once on the old data (2-4 minutes); keep the cable in." "записано. Сейчас Lumen OS один раз загрузится на старых данных (2–4 минуты); кабель не вынимайте."); return }
   Ok (T "written. First start takes 2-4 minutes; the setup screen appears on the projector." "записано. Первый запуск 2–4 минуты; на проекторе появится экран настройки.")
   if ($Wipe -eq "factory-reset" -and -not $KeepData) { Say (T "Now on the projector: Settings > Device preferences > Reset > Factory reset." "Теперь на проекторе: Настройки > Настройки устройства > Сброс.") }
 }
@@ -806,6 +834,129 @@ function Cmd-Gapps {
   if ($Remove) { Gapps-Remove } elseif ($Zip) { Gapps-Install } else { Gapps-Status }
 }
 
+# ------------------------------------------------------------------ XGIMI Z9X: Lumen OS and Google services in one pass (-GappsZip FILE)
+# See lumen-install.sh, same section: the zip checked first; in the 'flash' session system (+ z9x_blobs), then
+# z9x_gapps_<slot> created or resized and formatted, and NO wipe there (no room or a failure: Google left out, the
+# session wipes as a clean install does); Lumen OS starts once on the old data (USB debugging carries over), adb root
+# (Rooted debugging off: Root-Setting-Wait), gapps_fill.sh fills, z9x_gapps.sh 'check'; fastbootd again: Fb-Wipe.
+# Filled on the projector, not built here: an image made on this computer would need e2fsdroid (root-owned files).
+# State: gapps_plan, step_gapps_part, step_gapps_fill (started | done), step_wipe (empty until the wipe).
+$script:GzSha = ""; $script:GzName = ""; $script:GzPart = [int64]0; $script:GzZip = ""
+function Z9x-Gapps-Plan {  # -GappsZip, before anything else: the zip, and that the install saved here can take it
+  if (-not (Test-Path -LiteralPath $GappsZip)) { Die (T "no file $GappsZip" "нет файла $GappsZip") }
+  $script:GzZip = (Resolve-Path -LiteralPath $GappsZip).Path
+  $zname = Split-Path -Leaf $script:GzZip
+  Say (T "checking $zname" "проверяю $zname")
+  $script:GzSha = Sha256 $script:GzZip
+  $zl = Gapps-Line $script:GzSha
+  if (-not $zl) { Die ((T "$zname is not the MindTheGapps file this installer accepts (sha256 $($script:GzSha.Substring(0,16))...). Download exactly the file the guide names, section 'Adding Google services'" "$zname не тот файл MindTheGapps, который принимает установщик (sha256 $($script:GzSha.Substring(0,16))...). Скачайте ровно тот файл, что указан в инструкции, раздел «Как поставить сервисы Google»") + ". " + (T "Nothing was written." "Ничего не записано.")) }
+  $script:GzName = ("$zl" -split " ")[1]; $script:GzPart = [int64](Gapps-Field $zl "part")
+  Ok "$($script:GzName), sha256 $($script:GzSha.Substring(0,16))..."
+  $plan = State-Get gapps_plan
+  if ((State-Get step_flash) -eq "done") {
+    if ((State-Get step_gapps_part) -ne "done" -or ((State-Get step_wipe) -and (State-Get step_gapps_fill) -ne "done")) {
+      Die (T "Lumen OS was installed here without Google services. To add them: lumen-install.cmd gapps -Zip FILE. For a new install: lumen-install.cmd reset first. Nothing was written." "Lumen OS здесь уже установлена без сервисов Google. Добавить их: lumen-install.cmd gapps -Zip ФАЙЛ. Для новой установки сначала: lumen-install.cmd reset. Ничего не записано.")
+    }
+    if ($plan -and $plan -ne $script:GzSha) { Die (T "this install was started with another MindTheGapps file: use the same file. Nothing was erased." "эта установка начата с другим файлом MindTheGapps: укажите тот же файл. Ничего не стёрто.") }
+  }
+}
+function Z9x-Gapps-Add($S) {  # fastbootd after system: z9x_gapps_<slot> made and formatted for the plan; $false = left out (warned)
+  $p = "z9x_gapps$S"
+  $part = [int64]0; $pt = Gapps-Field (Gapps-Line (State-Get gapps_plan)) "part"; if ($pt) { $part = [int64]$pt }
+  $why = T "the install goes on without Google services (add them later: gapps -Zip FILE)" "установка продолжается без сервисов Google (добавить их позже: gapps -Zip ФАЙЛ)"
+  $gv = Fb getvar all   # system and z9x_blobs have their new sizes now
+  $free = Super-Free $gv; $cur = [int64]0
+  $have = Gv-Size $gv $p; if ($null -ne $have) { $cur = $have }
+  if ($part -le 0 -or ($free + $cur) -lt $part) { Warn ((T "not enough free space in super for the Google services ($([math]::Floor(($free + $cur) / 1MB)) MB): " "в super мало места для сервисов Google ($([math]::Floor(($free + $cur) / 1MB)) МБ): ") + $why); return $false }
+  Say (T "creating $p ($([math]::Floor($part / 1MB)) MB) for the Google services" "создаю $p ($([math]::Floor($part / 1MB)) МБ) для сервисов Google")
+  $made = if ($cur -gt 0) { Fb-Do resize $p $part } else { Fb-Do create $p $part }
+  if (-not $made) { Warn ((T "$p could not be created: " "$p создать не удалось: ") + $why); return $false }
+  if (-not (Fb-Do format $p)) { $null = Fb-Do delete $p; Warn ((T "$p could not be formatted and was removed again: " "$p не удалось отформатировать, раздел удалён: ") + $why); return $false }
+  State-Set step_gapps_part done
+  return $true
+}
+function Z9x-In-Fastboot {
+  if (-not $script:Serial) { return $false }
+  return (@(& fastboot devices 2>$null | ForEach-Object { ("$_".Trim() -split "\s+")[0] }) -ccontains $script:Serial)
+}
+function Z9x-Root-Wait {  # adb root over USB; Rooted debugging off: waits for the user; else STOP (the next run continues here)
+  while ($true) {
+    if ((Prop ro.debuggable) -ne "1") { Die (T "adb root is not possible on this system (Lumen OS is a userdebug build: is it really Lumen OS?). Nothing was erased." "adb root на этой системе невозможен (Lumen OS собрана как userdebug: точно ли это Lumen OS?). Ничего не стёрто.") }
+    if (((Adb shell id -u) | Out-String).Trim() -eq "0") { return }
+    $out = (& adb -s $script:Serial root 2>&1) | Out-String   # both streams: the refusal text decides
+    if ($out -match "disabled by system setting") { if (-not (Root-Setting-Wait)) { Root-Setting-Stop }; continue }
+    Start-Sleep 3; Adb wait-for-device | Out-Null
+    if (((Adb shell id -u) | Out-String).Trim() -eq "0") { return }
+    Die (T "adb root did not work ($($out.Trim())). Run the same command again: it continues here. Nothing was erased." "adb root не сработал ($($out.Trim())). Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто.")
+  }
+}
+function Z9x-Gapps-Fill {  # Lumen OS on the old data, root, fill, check; $false = Google left out (the wipe follows anyway)
+  $slot = State-Get slot; $p = "z9x_gapps$slot"
+  $again = T "Run the same command again: it continues here. Nothing was erased." "Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто."
+  Say (T "waiting for Lumen OS to start on the old data (up to 5 minutes)" "жду, пока Lumen OS загрузится на старых данных (до 5 минут)")
+  if (-not (Boot-Wait)) {
+    if (Z9x-In-Fastboot) {
+      Warn (T "Lumen OS did not start on the old data: the projector went to fastboot mode after failed starts. The install finishes without Google services (add them later: gapps -Zip FILE)." "Lumen OS не загрузилась на старых данных: после неудачных запусков проектор ушёл в режим fastboot. Установка завершается без сервисов Google (добавить их позже: gapps -Zip ФАЙЛ).")
+      return $false
+    }
+    Die (T "Lumen OS did not come back over USB within 5 minutes. If Lumen OS is on the screen: cable in, debugging allowed on the screen? Run the same command again: it continues here. If the projector restarts again and again: after 3 failed starts it goes to fastboot mode by itself; then run the same command again: it wipes the data and finishes without Google services. Nothing was erased." "Lumen OS не вернулась по USB за 5 минут. Если на экране Lumen OS: кабель вставлен, отладка на экране разрешена? Запустите ту же команду снова: установка продолжится с этого места. Если проектор перезагружается снова и снова: после 3 неудачных запусков он сам уходит в режим fastboot; тогда запустите ту же команду снова: она сотрёт данные и завершит установку без сервисов Google. Ничего не стёрто.")
+  }
+  if ((Prop ro.z9x.gms) -ne "0") { Die (T "the projector does not run the Lumen OS without Google that was written (ro.z9x.gms='$(Prop ro.z9x.gms)'). Nothing was erased." "на проекторе не та Lumen OS без Google, что была записана (ro.z9x.gms='$(Prop ro.z9x.gms)'). Ничего не стёрто.") }
+  Ok (T "Lumen OS $(Prop ro.z9x.version) started on the old data" "Lumen OS $(Prop ro.z9x.version) загрузилась на старых данных")
+  Z9x-Root-Wait
+  $al = @((Adb shell cat /system/etc/z9x/gapps_allow.txt) | ForEach-Object { "$_".TrimEnd("`r") })
+  if (-not ($al | Where-Object { $_ -like "zip=$($script:GzSha) *" })) { Warn (T "this Lumen OS does not accept $($script:GzName): the install finishes without Google services" "эта Lumen OS не принимает $($script:GzName): установка завершается без сервисов Google"); return $false }
+  if ((State-Get step_gapps_fill) -eq "started") {
+    # a fill of an earlier run did not finish: the partition must be empty again (gapps_fill.sh fills only that)
+    Say (T "an earlier fill did not finish: formatting $p again" "прошлое заполнение не завершилось: снова форматирую $p")
+    $null = Fbd-Enter $slot
+    if (-not (Fb-Do format $p)) { Fb reboot | Out-Null; Die ((T "$p could not be formatted. " "$p отформатировать не удалось. ") + $again) }
+    Fb reboot | Out-Null
+    if (-not (Boot-Wait)) { Die ((T "the projector did not come back over USB within 5 minutes. " "проектор не вернулся по USB за 5 минут. ") + $again) }
+    Z9x-Root-Wait
+  }
+  Gapps-Push-Fill
+  $o = Gapps-Sh pre $script:GzSha (Get-Item -LiteralPath $script:GzZip).Length
+  if (-not $o.StartsWith("OK pre ")) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "the projector is not ready" "проектор не готов") + ": " + ($o -replace "^FAIL ", "") + ". " + (T "Nothing was erased." "Ничего не стёрто.")) }
+  Say (T "copying $($script:GzName) to the projector (about a minute)" "копирую $($script:GzName) на проектор (около минуты)")
+  Adb push $script:GzZip "$GappsDir/gapps.zip" | Out-Null
+  if ($LASTEXITCODE -ne 0) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "adb push of the zip failed. " "adb push архива не удался. ") + $again) }
+  Say (T "copying the Google apps into $p and checking each one (1 to 2 minutes)" "копирую приложения Google в $p и проверяю каждое (1–2 минуты)")
+  State-Set step_gapps_fill started
+  $o = Gapps-Sh fill $script:GzSha
+  if (-not $o.StartsWith("OK fill ")) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "the Google services were not added" "сервисы Google не добавлены") + ": " + ($o -replace "^FAIL ", "") + ". " + $again) }
+  $c = ((Adb shell sh /system/etc/z9x/z9x_gapps.sh check) | Out-String).Trim()
+  Adb shell rm -rf $GappsDir /metadata/z9x_gapps | Out-Null
+  if (-not $c.StartsWith("ok: ")) { Die ((T "the projector's own check of $p failed" "собственная проверка $p на проекторе не прошла") + ": $c. " + $again) }
+  Ok "${p}: $($c.Substring(4))"
+  State-Set gapps $script:GzName
+  State-Set step_gapps_fill done
+  return $true
+}
+function Z9x-Gapps-Finish {  # after 'flash' with -GappsZip: the fill (unless done), then the one data wipe
+  $slot = State-Get slot
+  if ((State-Get step_gapps_fill) -ne "done" -and (State-Get gapps_plan)) {
+    if (-not $GappsZip) {
+      Say (T "this install was started with Google services (-GappsZip), and they are not in yet" "эта установка начата с сервисами Google (-GappsZip), и они ещё не добавлены")
+      if (-not (Ask (T "Finish the install without Google services? (Adding them later with 'gapps' wipes the data once more.)" "Завершить установку без сервисов Google? (Если добавить их позже через 'gapps', данные сотрутся ещё раз.)"))) { Die (T "run the same command again with -GappsZip FILE: it continues there. Nothing was erased." "запустите ту же команду снова с -GappsZip ФАЙЛ: установка продолжится с того же места. Ничего не стёрто.") }
+      State-Set gapps_plan ""
+    } elseif (-not (Z9x-Gapps-Fill)) { State-Set gapps_plan "" }
+  }
+  # the one data wipe of this install, in fastbootd (where the projector may already wait after failed starts);
+  # a later run than the one where ERASE was typed asks again
+  if (-not $script:EraseNow) {
+    Write-Host ""
+    Write-Host (T "Lumen OS is written. Next the installer ERASES ALL DATA on the projector (apps, accounts, settings, files) in fastbootd, as at a clean install." "Lumen OS записана. Дальше установщик СТИРАЕТ ВСЕ ДАННЫЕ проектора (приложения, аккаунты, настройки, файлы) в fastbootd, как при чистой установке.")
+    if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") { Die (T "cancelled, nothing was erased" "отменено, ничего не стёрто") }
+    $script:EraseNow = $true
+  }
+  $gv = if (Z9x-In-Fastboot) { Fbd-Check $slot } else { Fbd-Enter $slot }
+  Fb-Wipe $gv
+  Fb reboot | Out-Null
+  if ((State-Get step_gapps_fill) -eq "done") { Ok (T "data wiped. The first start takes 2-4 minutes; the setup has a Google sign-in step." "данные стёрты. Первый запуск 2–4 минуты; в настройке есть шаг входа в Google.") }
+  else { Ok (T "data wiped. The first start takes 2-4 minutes; the setup screen appears on the projector." "данные стёрты. Первый запуск 2–4 минуты; на проекторе появится экран настройки.") }
+}
+
 # ------------------------------------------------------------------ projector profiles (lib\devices.conf)
 # What a projector IS comes from lib\devices.conf: data only, checked line by line here and never run. What the
 # installer DOES (its steps, and Fb-Allowed) stays in this script, so that file cannot widen what is written. The
@@ -930,7 +1081,7 @@ $P6Marker = "/data/local/tmp/lumen-install-wipe"  # written before the wipe; a r
 function P6-LProp { return ($script:Prof["LUMEN_PROP"] -split " ", 2)[0] }
 function P6-LVal { return ($script:Prof["LUMEN_PROP"] -split " ", 2)[1] }
 function P6-Name { return $script:Prof["NAME"] }
-function P6-Guide { $g = if ($Lang -eq "ru") { $GuideRu } else { $GuideEn }; return "$g#$($script:Prof['GUIDE'])" }
+function P6-Guide { $l = if ($Lang -eq "ru") { "ru" } else { "en" }; return "$GuideBase/$($script:Prof['GUIDE'])/$l.md" }
 $script:P6St = ""   # what 'adb get-state' said last in Wifi-Connect (unauthorized: the allow prompt was not accepted)
 function P6-NoConn($secs) {  # why Wifi-Connect gave up, as the user can act on it
   $nm = P6-Name; $t = $script:AdbT
@@ -1194,7 +1345,8 @@ function Play6-Fbd-Check {  # fastbootd: this Play 6 (serial), its firmware and 
   Ok (T "fastboot mode: $nm $($script:Serial)" "режим fastboot: $nm $($script:Serial)")
   return $gv
 }
-function P6-Room($gv) {  # the image must fit into super next to the other logical partitions (each rounded up to 1 MiB)
+function P6-Room($gv, $gapps) {  # the image must fit into super next to the other logical partitions (each rounded up to 1 MiB);
+  # with -GappsZip the image and lumen_gapps at $gapps bytes together (an existing lumen_gapps is resized to it)
   $sup = Gv-Size $gv "super"
   if ($null -eq $sup) { P6-Fb-Stop (T "fastbootd did not report the size of super." "fastbootd не сообщил размер super.") }
   $used = [int64]0
@@ -1205,9 +1357,14 @@ function P6-Room($gv) {  # the image must fit into super next to the other logic
     $used += [int64]([math]::Ceiling($sz / 1MB) * 1MB)
   }
   $sz = Gv-Size $gv "lumen_gapps"   # the Google services add-on ('gapps') keeps its space
-  if ($null -ne $sz) { $used += [int64]([math]::Ceiling($sz / 1MB) * 1MB) }
+  if ($null -ne $sz -and -not $gapps) { $used += [int64]([math]::Ceiling($sz / 1MB) * 1MB) }
   $room = [int64]($sup - $used - [int64]$script:Prof["SUPER_RESERVE"])
   $len = (Get-Item -LiteralPath $script:Image).Length
+  if ($gapps) {
+    $need = [int64]([math]::Ceiling($len / 1MB) * 1MB) + [int64]([math]::Ceiling([int64]$gapps / 1MB) * 1MB)
+    if ($need -gt $room) { P6-Fb-Stop (T "the image and the Google services do not fit into super together ($([math]::Truncate($room / 1MB)) MB free, $([math]::Truncate($need / 1MB)) MB needed)." "образ и сервисы Google вместе не помещаются в super (свободно $([math]::Truncate($room / 1MB)) МБ, нужно $([math]::Truncate($need / 1MB)) МБ).") }
+    return
+  }
   if ($len -gt $room) { P6-Fb-Stop (T "the image does not fit into super ($([math]::Truncate($room / 1MB)) MB free, $([math]::Ceiling($len / 1MB)) MB needed)." "образ не помещается в super (свободно $([math]::Truncate($room / 1MB)) МБ, нужно $([math]::Ceiling($len / 1MB)) МБ).") }
 }
 function P6-Cable-Out {  # after 'fastboot reboot': the projector does not start while the computer's cable is in
@@ -1222,6 +1379,8 @@ function Play6-Write {  # check, confirmation, cable, fastbootd, write system, r
   if ((State-Get step_fastboot) -and (State-Get step_flash) -ne "done" -and (P6-In-Fastboot)) {
     $infb = $true
     if ((State-Get step_flash_system) -eq "done") {   # fastboot said OKAY, the restart was not sent
+      if ($GappsZip) { State-Set gapps_plan $script:P6gSha }
+      if ((State-Get gapps_plan) -and (State-Get step_gapps_part) -ne "done") { $null = Play6-Fbd-Check; P6-Gapps-Add }
       Ok (T "system is already written; restarting the projector" "system уже записан; перезагружаю проектор")
       Fb reboot | Out-Null
       State-Set step_flash done
@@ -1244,12 +1403,18 @@ function Play6-Write {  # check, confirmation, cable, fastbootd, write system, r
     if ((Read-Host (T "Type WRITE to continue" "Введите WRITE, чтобы продолжить")) -cne "WRITE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
   } else {
     Write-Host (T "Writing Lumen OS to the system partition of the $nm, then ERASING ALL DATA (apps, accounts, settings, files, Wi-Fi networks) with Android's factory reset after the first start. XGIMI's firmware stays untouched: vendor, boot, recovery, MBOOT, calibration and factory data. The $nm has only one system: if the write is cut off by a power loss, the way back is the USB stick restore (guide, 'Back to stock'). Keep the power adapter connected." "Записываю Lumen OS в раздел system $nm, затем СТИРАЮ ВСЕ ДАННЫЕ (приложения, аккаунты, настройки, файлы, сети Wi-Fi) сбросом Android к заводским настройкам после первого запуска. Прошивка XGIMI не затрагивается: vendor, boot, recovery, MBOOT, калибровка и заводские данные. Система у $nm одна: если запись оборвётся из-за отключения питания, вернуть проектор можно только восстановлением с флешки (инструкция, «Откат на сток»). Блок питания держите подключённым.")
+    if ($GappsZip) {
+      Write-Host (T "With -GappsZip the same fastboot session also creates the partition $P6Gapps ($([math]::Floor($script:P6gPart / 1MB)) MB) for $($script:P6gName). After the first start on the old data the installer copies the Google apps into it as root (Rooted debugging), and only then erases the data, once." "С -GappsZip в той же сессии fastboot создаётся ещё раздел $P6Gapps ($([math]::Floor($script:P6gPart / 1MB)) МБ) для $($script:P6gName). После первого запуска на старых данных установщик копирует в него приложения Google с правами root (отладка суперпользователем) и только потом стирает данные, один раз.")
+    }
     if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
     $script:EraseNow = $true
     State-Set erase_ok (Get-Date -Format "yyyyMMdd-HHmmss")
   }
+  # -GappsZip: the Google services of this install (P6-Gapps-Fill-Step adds them after the first start). A new write
+  # takes this run's choice; a write resumed in fastboot mode keeps the saved one unless -GappsZip is given.
+  if (-not $infb -or $GappsZip -or $KeepData) { State-Set gapps_plan $script:P6gSha }
   if (-not $infb) {
-    foreach ($k in @("step_fastboot", "step_flash_system", "step_flash", "step_boot1", "step_wipe", "step_verify", "wipe_marker")) { State-Set $k "" }
+    foreach ($k in @("step_fastboot", "step_flash_system", "step_flash", "step_boot1", "step_wipe", "step_verify", "wipe_marker", "step_gapps_part", "step_gapps_fill")) { State-Set $k "" }
     Write-Host ""
     Write-Host (T "Take the USB stick out of the projector's USB port, if one is in, and connect that port to this computer with the USB A-to-A cable. Keep the power adapter connected." "Выньте флешку из USB-порта проектора, если она там, и соедините этот порт с компьютером кабелем USB A–A. Блок питания оставьте подключённым.")
     $null = Read-Host (T "Press Enter when the cable is in" "Когда кабель вставлен, нажмите Enter")
@@ -1266,10 +1431,11 @@ function Play6-Write {  # check, confirmation, cable, fastbootd, write system, r
   }
   if (-not (P6-Fb-Wait 180)) { Die (T "the projector did not appear on the cable within 3 minutes. Is the cable in the projector's USB port (not a hub)? On Windows the Google USB Driver is needed. Nothing was written. Run the installer again: it finds the projector in fastboot mode or sends it there again." "проектор не появился на кабеле за 3 минуты. Кабель в USB-порту проектора (не через хаб)? На Windows нужен Google USB Driver. Ничего не записано. Запустите установщик снова: он найдёт проектор в режиме fastboot или снова отправит его туда.") }
   $gv = Play6-Fbd-Check
-  P6-Room $gv
+  P6-Room $gv (P6-Plan-Part)
   Say (T "writing system (about 1 minute). Do not unplug the cable or the power until it is done." "записываю system (около минуты). Не отключайте кабель и питание, пока запись не закончится.")
   if (-not (Fb-Do flash system $script:Image)) { Die (T "system was not written completely. The projector stays in fastboot mode: keep the cable in and run the installer again, it writes system again." "system записан не полностью. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите установщик снова, он запишет system ещё раз.") }
   State-Set step_flash_system done
+  if (State-Get gapps_plan) { P6-Gapps-Add }
   Fb reboot | Out-Null
   State-Set step_flash done
   P6-Cable-Out
@@ -1423,6 +1589,7 @@ function Play6-Verify($secs) {  # over Wi-Fi, after the wipe (the user joined Wi
 function Play6-Install {  # write, first start, wipe: each step once, continued where it stopped
   if ((State-Get step_flash) -ne "done") { Play6-Write }
   if ((State-Get step_boot1) -ne "done") { Play6-Boot1 }
+  if (-not (State-Get step_wipe) -and (State-Get gapps_plan) -and (State-Get step_gapps_fill) -ne "done") { P6-Gapps-Fill-Step }
   if (-not (State-Get step_wipe)) { if ($KeepData) { State-Set step_wipe keep } else { Play6-Wipe } }
 }
 function Play6-Done {
@@ -1440,6 +1607,9 @@ function Play6-Done {
       if ($script:AdbT -and (Wifi-Connect 0)) { Play6-Verify 0; Write-Host "" }
     }
     Write-Host (T "Done. On the projector: Settings > Network & Internet: join your Wi-Fi. To check the install from this computer later: turn on debugging (guide, section '$nm', 'Check the install') and run: lumen-install.cmd verify -Ip ADDRESS" "Готово. На проекторе: «Настройки > Сеть и Интернет», подключитесь к своему Wi-Fi. Проверить установку с компьютера можно позже: включите отладку (инструкция, раздел «${nm}», «Проверьте установку») и запустите: lumen-install.cmd verify -Ip АДРЕС")
+    if ((State-Get gapps_plan) -and (State-Get step_gapps_fill) -eq "done") {
+      Ok (T "Google services are in: after joining Wi-Fi, sign in with Settings > Accounts > Add account. If Google refuses the sign-in, register the GSF ID (guide, section '$nm', 'Google services')." "сервисы Google добавлены: после подключения к Wi-Fi войдите через Настройки > Аккаунты > Добавить аккаунт. Если Google не пускает, зарегистрируйте GSF ID (инструкция, раздел «${nm}», «Сервисы Google»).")
+    }
   }
   Write-Host "  $(T 'Guide' 'Инструкция'): $(P6-Guide)"
 }
@@ -1452,6 +1622,7 @@ function Play6-Flash {  # the 'flash' command: a new write, unless a write waits
   Play6-Done
 }
 function Play6-All {
+  if ($GappsZip) { P6-Gapps-Plan }
   if ((State-Get step_check) -ne "done") { Play6-Check }
   if (-not (State-Get step_backup) -and -not (P6-In-Fastboot)) {
     if (Ask (T "Make a backup of your apps and files first (recommended)?" "Сначала сделать копию ваших приложений и файлов (рекомендуется)?")) { Cmd-Backup } else { State-Set step_backup skipped }
@@ -1754,19 +1925,136 @@ function Play6-Gsf {
   Write-Host "GSF ID: $id"
   Write-Host (T "Register it at https://www.google.com/android/uncertified (signed in with your Google account), wait 10-30 minutes, then sign in on the projector." "Зарегистрируйте его на https://www.google.com/android/uncertified (войдя в свой аккаунт Google), подождите 10–30 минут и войдите на проекторе.")
 }
+# ------------------------------------------------------------------ XGIMI Play 6: Lumen OS and Google services in one pass (-GappsZip FILE)
+# See lumen-install.sh, same section: the zip checked first (P6-Gapps-Plan); the write's fastboot session counts the
+# image and lumen_gapps together (P6-Room), writes system, then creates or resizes lumen_gapps (P6-Gapps-Add; a
+# failure leaves Google out); the first start on the old data, then P6-Gapps-Fill-Step (adb root with the Rooted
+# debugging pause, a lumen_gapps still in use turned off with one restart, gapps_fill.sh pre / zip / fill), then
+# Play6-Wipe. State: gapps_plan, step_gapps_part, step_gapps_fill.
+$script:P6gSha = ""; $script:P6gName = ""; $script:P6gPart = [int64]0; $script:P6gZip = ""
+function P6-Plan-Part {  # lumen_gapps bytes of the saved plan ("" without one)
+  $sha = State-Get gapps_plan
+  if (-not $sha) { return "" }
+  return (Gapps-Field (P6-Gapps-Line $sha) "part")
+}
+function P6-Gapps-Plan {  # -GappsZip, before anything else: the zip, and that the install saved here can take it
+  $nm = P6-Name
+  if (-not (Test-Path -LiteralPath $GappsZip)) { Die (T "no file $GappsZip" "нет файла $GappsZip") }
+  $script:P6gZip = (Resolve-Path -LiteralPath $GappsZip).Path
+  foreach ($f in @("gapps_allow.txt", "gapps_fill.sh", "lumen-gapps.xml")) { if (-not (Test-Path (P6-Gapps-Lib $f))) { Die "internal: lib\play6\$f is missing: re-download the installer of the $nm release" } }
+  $zname = Split-Path -Leaf $script:P6gZip
+  Say (T "checking $zname" "проверяю $zname")
+  $script:P6gSha = Sha256 $script:P6gZip
+  $zl = P6-Gapps-Line $script:P6gSha
+  if (-not $zl) { Die ((T "$zname is not the MindTheGapps file this installer accepts for the $nm (sha256 $($script:P6gSha.Substring(0,16))...). Download exactly the file the guide names, section '$nm', 'Google services'" "$zname не тот файл MindTheGapps, который установщик принимает для $nm (sha256 $($script:P6gSha.Substring(0,16))...). Скачайте ровно тот файл, что указан в инструкции, раздел «${nm}», «Сервисы Google»") + ". " + (T "Nothing was written." "Ничего не записано.")) }
+  $script:P6gName = ("$zl" -split " ")[1]; $script:P6gPart = [int64](Gapps-Field $zl "part")
+  if ((Sha256 (P6-Gapps-Lf "lumen-gapps.xml")) -ne (Gapps-Field $zl "sysconfig")) { Die "internal: lib\play6\lumen-gapps.xml is not the allow-listed one: re-download the installer" }
+  Ok "$($script:P6gName), sha256 $($script:P6gSha.Substring(0,16))..."
+  if ((State-Get step_flash) -ne "done") { return }
+  $plan = State-Get gapps_plan
+  if (State-Get step_wipe) {
+    if ((State-Get step_gapps_fill) -ne "done") { Die (T "Lumen OS was installed here without Google services. To add them: lumen-install.cmd gapps -Zip FILE. For a new install: lumen-install.cmd reset -Device play6 first. Nothing was written." "Lumen OS здесь уже установлена без сервисов Google. Добавить их: lumen-install.cmd gapps -Zip ФАЙЛ. Для новой установки сначала: lumen-install.cmd reset -Device play6. Ничего не записано.") }
+  } elseif (-not $plan) {
+    Die (T "this install was started without Google services and Lumen OS is written already: finish it without -GappsZip, then add them with 'gapps -Zip FILE'. Nothing was erased." "эта установка начата без сервисов Google, и Lumen OS уже записана: завершите её без -GappsZip, затем добавьте их через 'gapps -Zip ФАЙЛ'. Ничего не стёрто.")
+  } elseif ($plan -ne $script:P6gSha) {
+    Die (T "this install was started with another MindTheGapps file: use the same file. Nothing was erased." "эта установка начата с другим файлом MindTheGapps: укажите тот же файл. Ничего не стёрто.")
+  }
+}
+function P6-Gapps-Add {  # fastboot mode, system written: lumen_gapps for the saved plan; a failure leaves Google out (warned)
+  $nm = P6-Name
+  $pt = P6-Plan-Part
+  $gv = Fb getvar all   # system has its new size now
+  $why = "internal: lib\play6\gapps_allow.txt part="
+  if ($pt) {
+    $part = [int64]$pt; $mb = [int64][math]::Floor($part / 1MB)
+    $free = P6-Super-Free $gv; $cur = Gv-Size $gv $P6Gapps; if ($null -eq $cur) { $cur = [int64]0 }
+    if (($free + [int64][math]::Ceiling($cur / 1MB) * 1MB) -lt $part) {
+      $why = T "not enough free space in super: $([math]::Truncate(($free + $cur) / 1MB)) MB, the Google services need $mb MB." "в super мало места: свободно $([math]::Truncate(($free + $cur) / 1MB)) МБ, сервисам Google нужно $mb МБ."
+    } elseif ($cur -eq 0) {
+      Say (T "creating $P6Gapps ($mb MB)" "создаю $P6Gapps ($mb МБ)")
+      if (Fb-Do create $P6Gapps $part) { State-Set step_gapps_part done; return }
+      $why = T "$P6Gapps could not be created." "$P6Gapps создать не удалось."
+    } elseif ($cur -ne $part) {
+      Say (T "resizing $P6Gapps to $mb MB" "меняю размер $P6Gapps на $mb МБ")
+      if (Fb-Do resize $P6Gapps $part) { State-Set step_gapps_part done; return }
+      $why = T "$P6Gapps could not be resized." "размер $P6Gapps изменить не удалось."
+    } else { Ok (T "$P6Gapps is there ($mb MB)" "$P6Gapps уже есть ($mb МБ)"); State-Set step_gapps_part done; return }
+  }
+  Warn ($why + " " + (T "Lumen OS is installed without Google services; add them later: gapps -Zip FILE (guide, section '$nm', 'Google services')." "Lumen OS ставится без сервисов Google; добавить их можно позже: gapps -Zip ФАЙЛ (инструкция, раздел «${nm}», «Сервисы Google»)."))
+  State-Set gapps_plan ""
+}
+function P6-Root-Wait {  # adb root over Wi-Fi; Rooted debugging off: waits for the user; else STOP (the next run continues here)
+  while ($true) {
+    $rc = P6-Root
+    if ($rc -eq 0) { return }
+    if ($rc -eq 3) { if (-not (Root-Setting-Wait)) { Root-Setting-Stop }; continue }
+    if ($rc -eq 2) { Die (T "after 'adb root' the projector did not answer over Wi-Fi again within a minute (adbd restarts with it). If the projector asks: allow debugging from this computer, tick `"Always allow from this computer`" and press OK. Then run the same command again: it continues here. Nothing was erased." "после 'adb root' проектор не ответил по Wi-Fi снова за минуту (adbd при этом перезапускается). Если проектор спрашивает, разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK. Затем запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто.") }
+    Die (T "adb root is not possible on this system (Lumen OS is a userdebug build: is it really Lumen OS?). Nothing was erased." "adb root на этой системе невозможен (Lumen OS собрана как userdebug: точно ли это Lumen OS?). Ничего не стёрто.")
+  }
+}
+function P6-Gapps-Fill-Step {  # on the first start (old data): lumen_gapps filled as root; Google left out: plan cleared
+  $nm = P6-Name
+  $again = T "Run the same command again: it continues here. Nothing was erased." "Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто."
+  if (-not $GappsZip) {
+    Say (T "this install was started with Google services (-GappsZip), and they are not in yet" "эта установка начата с сервисами Google (-GappsZip), и они ещё не добавлены")
+    if (-not (Ask (T "Finish the install without Google services? (Adding them later with 'gapps' erases the data once more.)" "Завершить установку без сервисов Google? (Если добавить их позже через 'gapps', данные сотрутся ещё раз.)"))) { Die (T "run the same command again with -GappsZip FILE: it continues there. Nothing was erased." "запустите ту же команду снова с -GappsZip ФАЙЛ: установка продолжится с того же места. Ничего не стёрто.") }
+    State-Set gapps_plan ""; return
+  }
+  if (-not $script:AdbT) { $script:AdbT = State-Get ip }
+  if (-not (Wifi-Connect 120)) { Die ((P6-NoConn 120) + " " + (T "Nothing was erased." "Ничего не стёрто.")) }
+  P6-Identity
+  if ((Prop (P6-LProp)) -cne (P6-LVal)) { Die (T "the projector does not run Lumen OS for the $nm. Nothing was erased." "на проекторе не Lumen OS для $nm. Ничего не стёрто.") }
+  $v = Prop sys.lumen.gapps
+  if (-not $v -or $v -eq "none") {
+    Warn (T "this Lumen OS shows no $P6Gapps (sys.lumen.gapps='$v'): the install finishes without Google services; add them later: gapps -Zip FILE" "эта Lumen OS не видит $P6Gapps (sys.lumen.gapps='$v'): установка завершается без сервисов Google; добавить их позже: gapps -Zip ФАЙЛ")
+    State-Set gapps_plan ""; return
+  }
+  P6-Root-Wait
+  if ((Prop sys.lumen.gapps) -like "mounted:*") {
+    # Google from an earlier install is in use: the 'off' file, one restart, then the partition is free to format
+    Say (T "Google services from an earlier install are in use: turning them off for one restart" "сервисы Google от прошлой установки используются: выключаю их на один перезапуск")
+    P6-Gapps-Push
+    $o = Gapps-Sh off $script:P6gSha
+    Adb shell rm -rf $GappsDir | Out-Null
+    if (-not $o.StartsWith("OK off")) { Die ((T "the projector is not ready" "проектор не готов") + ": " + ($o -replace "^FAIL ", "") + ". " + (T "Nothing was erased." "Ничего не стёрто.")) }
+    Adb reboot | Out-Null
+    for ($i = 0; (P6-Alive) -and $i -lt 60; $i += 5) { Start-Sleep 5 }   # until it goes away
+    & adb disconnect $script:AdbT 2>&1 | Out-Null
+    P6-Wait-Lumen (T "Nothing was erased." "Ничего не стёрто.")
+    P6-Root-Wait
+    if ((Prop sys.lumen.gapps) -ne "off") { Die (T "the projector did not leave $P6Gapps unmounted (sys.lumen.gapps=$(Prop sys.lumen.gapps)). Restart it and run the same command again. Nothing was erased." "проектор не оставил $P6Gapps неподключённым (sys.lumen.gapps=$(Prop sys.lumen.gapps)). Перезагрузите его и запустите ту же команду снова. Ничего не стёрто.") }
+  }
+  P6-Gapps-Push
+  $o = Gapps-Sh pre $script:P6gSha (Get-Item -LiteralPath $script:P6gZip).Length
+  if (-not $o.StartsWith("OK pre ")) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "the projector is not ready" "проектор не готов") + ": " + ($o -replace "^FAIL ", "") + ". " + (T "Nothing was erased." "Ничего не стёрто.")) }
+  Say (T "copying $($script:P6gName) to the projector over Wi-Fi (a few minutes)" "копирую $($script:P6gName) на проектор по Wi-Fi (несколько минут)")
+  Adb push $script:P6gZip "$GappsDir/gapps.zip" | Out-Null
+  if ($LASTEXITCODE -ne 0) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "adb push of the zip failed. " "adb push архива не удался. ") + $again) }
+  Say (T "formatting $P6Gapps and copying the Google apps into it, each one checked (2 to 4 minutes)" "форматирую $P6Gapps и копирую в него приложения Google, проверяя каждое (2-4 минуты)")
+  $o = Gapps-Sh fill $script:P6gSha
+  Adb shell rm -rf $GappsDir | Out-Null
+  if (-not $o.StartsWith("OK fill ")) { Die ((T "the Google services were not added" "сервисы Google не добавлены") + ": " + ($o -replace "^FAIL ", "") + ". " + $again) }
+  Ok "${P6Gapps}: $($o.Substring(8)) $(T 'of' 'из') $($script:P6gName)"
+  State-Set gapps $script:P6gName
+  State-Set step_gapps_fill done
+}
+
 function Play6-Not-Needed($c) {  # the Z9X commands the Play 6 has no use for
   $nm = P6-Name
   Die (T "'$c' is not needed on the $nm. Nothing was done." "на $nm шаг '$c' не нужен. Ничего не сделано.")
 }
 
 function Cmd-All {
+  if ($GappsZip) { Z9x-Gapps-Plan }
   if ((State-Get step_check) -ne "done") { Cmd-Check }
+  if ($GappsZip -and (State-Get image_gms) -ne "0") { Die (T "this image has Google services built in: -GappsZip is for Lumen OS without Google. Nothing was written." "в этом образе сервисы Google уже встроены: -GappsZip нужен для Lumen OS без Google. Ничего не записано.") }
   if ((State-Get step_backup) -ne "done") { if (Ask (T "Make a backup of your apps and files first (recommended)?" "Сначала сделать копию ваших приложений и файлов (рекомендуется)?")) { Cmd-Backup } else { State-Set step_backup skipped } }
   if ($Blobs -eq "partition" -and (State-Get step_blobs) -ne "done") { Cmd-Blobs }
   if ((State-Get step_vbmeta) -ne "done") { Cmd-Vbmeta }
   if ((State-Get step_flash) -ne "done") { Cmd-Flash }
+  if ((State-Get step_gapps_part) -eq "done" -and -not (State-Get step_wipe)) { Z9x-Gapps-Finish }
   if ((State-Get step_verify) -ne "done") { Cmd-Verify }
-  if ((State-Get image_gms) -eq "0") {
+  if ((State-Get image_gms) -eq "0" -and (State-Get step_gapps_fill) -ne "done") {
     Write-Host (T "Done. Finish the setup on the projector. Install apps from a USB stick: Lumen Home > Apps > Install from USB. Google services can be added later: 'gapps' (guide)." "Готово. Завершите настройку на проекторе. Приложения ставятся с USB-накопителя: Lumen Home > Приложения > Установить с USB. Сервисы Google можно добавить позже: 'gapps' (инструкция).")
   } else {
     Write-Host (T "Done. Finish the setup on the projector. For Google sign-in register the GSF ID first: lumen-install.cmd gsf" "Готово. Завершите настройку на проекторе. Для входа в Google сначала зарегистрируйте GSF ID: lumen-install.cmd gsf")
@@ -1791,6 +2079,11 @@ if ($Command -eq "reset") {
   else { Remove-Item -Recurse -Force $StateDir -ErrorAction SilentlyContinue }
   Write-Host (T "progress forgotten" "прогресс сброшен")
   exit 0
+}
+if ($GappsZip) {   # one pass, one wipe: the full install only
+  if ($Command) { Die (T "-GappsZip belongs to the full install (no command). For Lumen OS that is installed already: gapps -Zip FILE. Nothing was done." "-GappsZip относится к полной установке (без команды). Для уже установленной Lumen OS: gapps -Zip ФАЙЛ. Ничего не сделано.") }
+  if ($KeepData) { Die (T "-GappsZip installs with one data wipe, not with -KeepData. To keep the data: flash -KeepData, then gapps -KeepData -Zip FILE. Nothing was done." "-GappsZip ставит систему с одним стиранием данных, не с -KeepData. Чтобы сохранить данные: flash -KeepData, затем gapps -KeepData -Zip ФАЙЛ. Ничего не сделано.") }
+  if ($Wipe -ne "format") { Die (T "-GappsZip wipes the data itself, not with -Wipe factory-reset. Nothing was done." "-GappsZip стирает данные сам, не с -Wipe factory-reset. Ничего не сделано.") }
 }
 Resolve-Device
 if (-not $script:Serial) { $script:Serial = State-Get serial; if ($script:Serial) { $script:SerialFromState = $true } }

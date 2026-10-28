@@ -25,7 +25,14 @@
 # room in super (nothing created); a failed fill (no wipe, Google stays off); a failed push; a projector left
 # in fastboot mode by an earlier run; --remove with the wipe, with --keep-data, with nothing to remove; the
 # status (on, none, off, broken); gsf with and without Google; Z9X untouched (the Z9X allow-list and fill
-# script are not used). Every case fails on an unexpected adb or fastboot command, on a fastboot format, erase,
+# script are not used). The full install with --gapps-zip (Lumen OS and Google services in one pass, one wipe):
+# a signed fake image (a throwaway test key), stock on the projector, 'flash system' then lumen_gapps in the same
+# fastboot session, the first start on the old data, the fill, one factory reset; also in Russian, over Google of
+# an earlier install still in use (the 'off' restart), the zip refused before anything is written, Rooted debugging
+# off (adb root says "disabled by system setting": turned on when asked, or not: STOP, then the next run goes on
+# from there), a run without --gapps-zip that finishes without Google, the refusals (with a command, with
+# --keep-data, with --wipe=factory-reset, an install saved here without Google), no room for both in super.
+# Every case fails on an unexpected adb or fastboot command, on a fastboot format, erase,
 # -w, flashing, set_active, oem, boot or flash, and on a logical-partition command for any partition but
 # lumen_gapps.
 # Exit status 0 only when every case passes. Never touches anything outside its temp dir.
@@ -43,7 +50,9 @@ conf() { awk -v k="$1.$2" 'index($0, k "=") == 1 { print substr($0, length(k) + 
 NAME=$(conf play6 NAME); MODEL=$(conf play6 MODEL); BOARD=$(conf play6 BOARD); PRODUCT=$(conf play6 FB_PRODUCT)
 FW=$(conf play6 VENDOR_OK | awk '{print $1}')
 
-mkdir -p "$W/bin" "$W/stubs" "$W/fx"
+mkdir -p "$W/bin" "$W/stubs" "$W/fx" "$W/keys"
+openssl req -x509 -newkey rsa:2048 -nodes -keyout "$W/keys/k.key" -out "$W/keys/k.pem" -subj /CN=lumen-test -days 2 >/dev/null 2>&1 \
+  || { echo "openssl cannot make a test key"; exit 1; }
 for f in getprop setprop log mount umount blockdev chcon chown; do cp "$HERE/stubs/$f" "$W/stubs/$f"; done
 cat > "$W/stubs/mke2fs" <<'EOF'
 #!/bin/sh
@@ -126,6 +135,8 @@ run_dev() {  # a script on the projector (as root only)
 }
 case "$1" in
   root) [ "$(gp ro.debuggable)" = 1 ] || { echo "adbd cannot run as root in production builds"; exit 1; }
+        # Developer options > Rooted debugging off; the test turns it on once it was refused (the user did)
+        [ -e "$FB/root_disabled" ] && { rm -f "$FB/root_disabled"; echo "ADB Root access is disabled by system setting - enable in Settings -> System -> Developer options"; exit 1; }
         touch "$FB/root"; grep -vxF "$ADDR" "$FB/connected" > "$FB/c.tmp"; mv "$FB/c.tmp" "$FB/connected"
         echo "restarting adbd as root" ;;
   push) [ -e "$FB/push_fail" ] && case "$2" in *.zip) exit 1 ;; esac
@@ -138,6 +149,7 @@ case "$1" in
       "getprop "*) gp "$2" ;;
       "id -u") [ -e "$FB/root" ] && echo 0 || echo 2000 ;;
       "settings get system xgimi_ota_update") echo null ;;
+      "pidof org.z9x.projector") echo 1234 ;;
       "rm -rf /data/local/tmp/lumen-gapps") rm -rf "$DEV/data/local/tmp/lumen-gapps" ;;
       "mkdir -p /data/local/tmp/lumen-gapps") mkdir -p "$DEV/data/local/tmp/lumen-gapps" ;;
       "sh /data/local/tmp/lumen-gapps/fill.sh "*) shift; run_dev "$@" ;;
@@ -176,12 +188,14 @@ case "$1" in
                             : > "$P"; echo "$3" > "$FB/size" ;;
   resize-logical-partition) [ "$2" = lumen_gapps ] && [ -e "$P" ] || exit 1; echo "$3" > "$FB/size" ;;
   delete-logical-partition) [ "$2" = lumen_gapps ] && [ -e "$P" ] || exit 1; rm -rf "$P" "$FB/size" ;;
+  flash) [ "$2" = system ] && [ -f "$3" ] || exit 1; cp "$FB/props_lumen" "$T/base_props" ;;   # the next start is Lumen OS
   reboot) sh "$FB/boot.sh" ;;
   *) echo "UNEXPECTED fastboot $*" >> "$FB/unexpected"; exit 1 ;;
 esac
 exit 0
 EOF
 printf '#!/bin/sh\nexit 0\n' > "$W/bin/sleep"
+printf '#!/bin/sh\nexit 1\n' > "$W/bin/debugfs"   # the image content is not read (the signed SHA256SUMS binds it)
 cat > "$W/bin/date" <<'EOF'
 #!/bin/sh
 case "${1-}" in +%H:%M:%S) echo 12:00:00 ;; +%Y%m%d%H%M%S) echo 20261020120000 ;; *) exec /bin/date "$@" ;; esac
@@ -195,8 +209,14 @@ ro.serialno=$SER
 ro.debuggable=1
 ro.lumen.device=play6
 ro.lumen.version=1.0.5"
+PROPS_STOCK="ro.boot.xgimi.modelname=$MODEL
+ro.boot.hardware=$BOARD
+ro.vendor.build.version.incremental=$FW
+ro.serialno=$SER
+ro.debuggable=0"
+IMGN=lumen-os-play6-1.0.5-nogms-system.img
 begin() {
-  CASE=$1; CFAIL=0; BROADCAST=0
+  CASE=$1; CFAIL=0; BROADCAST=0; FLASHOK=0
   C=$W/$1; rm -rf "$C"; mkdir -p "$C/inst" "$C/fb" "$C/t" "$C/state" "$C/backup" "$C/dev"
   FB=$C/fb; T=$C/t; DEV=$C/dev
   cp "$INST/lumen-install.sh" "$C/inst/"; cp -R "$INST/lib" "$INST/certs" "$C/inst/"
@@ -207,7 +227,7 @@ begin() {
       product/etc/permissions product/etc/sysconfig product/etc/default-permissions system_ext/app system_ext/priv-app \
       system_ext/etc/permissions; do mkdir -p "$DEV/system/$d"; done
   cp "$W/lumen_gapps.sh" "$DEV/system/etc/xgimi/lumen_gapps.sh"
-  printf '%s\n' "$PROPS_LUMEN" > "$T/base_props"
+  printf '%s\n' "$PROPS_LUMEN" > "$T/base_props"; printf '%s\n' "$PROPS_LUMEN" > "$FB/props_lumen"
   { echo "(bootloader) is-userspace:yes"; echo "(bootloader) product:$PRODUCT"; echo "(bootloader) unlocked:yes"
     echo "(bootloader) serialno:$SER"; echo "(bootloader) slot-count:0"; echo "(bootloader) current-slot:"
     echo "(bootloader) super-partition-name:super"
@@ -256,7 +276,8 @@ state() { sed -n "s/^$1=//p" "$C/state/play6/state" 2>/dev/null | tail -1; }
 pushed() { grep -c " push " "$FB/adb.log" | tr -d ' '; }
 end() {
   [ ! -s "$FB/unexpected" ] || fail "unexpected: $(cat "$FB/unexpected")"
-  if grep -qE '(^| )(format|erase|-w|flashing|set_active|--set-active|oem|boot|snapshot-update|flash)( |:|$)' "$FB/fb.log"; then
+  if grep -v "^-s $SER flash system $C/inst/$IMGN\$" "$FB/fb.log" | grep -qE '(^| )(format|erase|-w|flashing|set_active|--set-active|oem|boot|snapshot-update|flash)( |:|$)' \
+     || { [ "$FLASHOK" = 0 ] && grep -q ' flash ' "$FB/fb.log"; }; then
     fail "forbidden fastboot command: $(cat "$FB/fb.log")"
   fi
   if grep -E -- '-logical-partition ' "$FB/fb.log" | grep -vqE -- '-logical-partition lumen_gapps( |$)'; then
@@ -497,6 +518,144 @@ begin z9x_files_untouched
 echo broken > "$C/inst/lib/gapps_allow.txt"; echo broken > "$C/inst/lib/gapps_fill.sh"
 inst 'WRITE\n\n\n' --ip 192.0.2.50 --keep-data gapps --zip "$ZIP"
 expect_rc 0; expect_cmds "$CREATE"
+end
+
+# ---------------------------------------------------------------- the full install with --gapps-zip (one pass, one wipe)
+release() {  # [stock]: a signed release image next to the installer copy (throwaway test key); the projector on stock
+  cp "$W/keys/k.pem" "$C/inst/certs/play6/ota.x509.pem"
+  head -c 1048576 /dev/zero > "$C/inst/$IMGN"
+  printf '\123\357' | dd of="$C/inst/$IMGN" bs=1 seek=1080 conv=notrunc 2>/dev/null   # the ext4 magic
+  (cd "$C/inst" && { sha256sum "$IMGN" 2>/dev/null || shasum -a 256 "$IMGN"; } > SHA256SUMS
+   openssl dgst -sha256 -sign "$W/keys/k.key" -out SHA256SUMS.sig SHA256SUMS)
+  if [ "${1-}" = stock ]; then printf '%s\n' "$PROPS_STOCK" > "$T/base_props"; sh "$FB/boot.sh"; fi
+  FLASHOK=1
+}
+ONE="ERASE\n\n\n"   # ERASE, cable in, cable out
+filled() {  # the partition holds the allow-listed files, the next start mounts it, one factory reset
+  [ "$(cd "$DEV/dev/block/mapper/lumen_gapps" 2>/dev/null && find . -type f | wc -l | tr -d ' ')" = $((NFILES + 2)) ] || fail "files in the partition"
+  [ -e "$FB/wiped" ] || fail "not wiped"
+  [ "$(grep -c 'am broadcast' "$FB/adb.log")" = 1 ] || fail "factory resets: $(grep -c 'am broadcast' "$FB/adb.log")"
+  n_fill=$(grep -n "fill.sh fill" "$FB/adb.log" | cut -d: -f1); n_bc=$(grep -n "am broadcast" "$FB/adb.log" | cut -d: -f1)
+  [ -n "$n_fill" ] && [ "$n_fill" -lt "$n_bc" ] || fail "order: fill $n_fill, reset $n_bc"
+  mounted_ok
+}
+
+begin one_pass
+release stock
+inst "no\n${ONE}yes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+expect_rc 0; BROADCAST=1
+[ "$(cmds)" = "$S getvar all;$S flash system $C/inst/$IMGN;$S getvar all;$S create-logical-partition lumen_gapps $PART;$S reboot;" ] \
+  || fail "fastboot commands: $(cmds)"
+expect_out "$ZNAME, sha256 ${ZSHA:0:16}"; expect_out "With --gapps-zip the same fastboot session also creates the partition lumen_gapps"
+expect_out "creating lumen_gapps ($((PART / 1048576)) MB)"; expect_out "lumen_gapps: $NFILES files of $ZNAME"
+expect_out "asking Android for its factory reset"; expect_out "Google services are in: after joining Wi-Fi"
+expect_no_out "Root debugging is off"
+[ "$(grep -c 'Type ERASE' "$C/out")" = 1 ] || fail "ERASE asked $(grep -c 'Type ERASE' "$C/out") times"
+n_zip=$(grep -n "sha256 ${ZSHA:0:16}" "$C/out" | head -1 | cut -d: -f1); n_er=$(grep -n "Type ERASE" "$C/out" | cut -d: -f1)
+[ "$n_zip" -lt "$n_er" ] || fail "the zip was checked after ERASE"
+[ "$(state gapps_plan)" = "$ZSHA" ] && [ "$(state step_gapps_part)" = done ] && [ "$(state step_gapps_fill)" = done ] \
+  && [ "$(state gapps)" = "$ZNAME" ] && [ "$(state step_wipe)" = requested ] || fail "state: $(cat "$C/state/play6/state")"
+filled
+end
+
+begin one_pass_ru
+release stock
+LANG_CASE=ru_RU.UTF-8 inst "нет\n${ONE}да\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+expect_rc 0; BROADCAST=1
+expect_out "С --gapps-zip в той же сессии fastboot создаётся ещё раздел lumen_gapps"; expect_out "сервисы Google добавлены"
+if grep -q "$(printf '\342\200\224')" "$C/out"; then fail "an em dash in the Russian text"; fi
+filled
+end
+
+begin one_pass_over_google_in_use
+release; partition   # Lumen OS with Google added earlier: lumen_gapps of the right size, mounted at every start
+[ "$(gprop sys.lumen.gapps)" = "mounted:$NDIRS" ] || fail "setup: sys.lumen.gapps=$(gprop sys.lumen.gapps)"
+inst "no\n${ONE}yes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+expect_rc 0; BROADCAST=1
+expect_out "lumen_gapps is there ($((PART / 1048576)) MB)"; expect_out "turning them off for one restart"
+n_off=$(grep -n "fill.sh off" "$FB/adb.log" | cut -d: -f1); n_fill=$(grep -n "fill.sh fill" "$FB/adb.log" | cut -d: -f1)
+[ -n "$n_off" ] && [ "$n_off" -lt "$n_fill" ] || fail "order: off $n_off, fill $n_fill"
+filled
+end
+
+begin one_pass_zip_refused_first
+release stock
+inst "no\n${ONE}yes\n" --ip 192.0.2.50 --gapps-zip "$OTHER"
+expect_rc 1; expect_cmds ""
+expect_out "is not the MindTheGapps file this installer accepts for the $NAME"; expect_out "Nothing was written."
+expect_no_out "Type ERASE"
+if grep -q -- "-s " "$FB/adb.log"; then fail "the projector was used: $(cat "$FB/adb.log")"; fi
+[ ! -f "$C/state/play6/state" ] || ! grep -q '^gapps_plan=.' "$C/state/play6/state" || fail "a plan saved"
+end
+
+begin one_pass_missing_zip
+release stock
+inst '' --ip 192.0.2.50 --gapps-zip "$C/nothing.zip"
+expect_rc 1; expect_out "no file"; expect_cmds ""
+end
+
+begin one_pass_rooted_debugging_turned_on
+release stock; touch "$FB/root_disabled"
+inst "no\n${ONE}yes\nyes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+expect_rc 0; BROADCAST=1
+expect_out "Root debugging is off on the projector"; expect_out "Developer options > Rooted debugging"
+expect_out "press Build 7 times"; expect_out "Is Rooted debugging on now?"
+filled
+end
+
+begin one_pass_rooted_debugging_later
+release stock; touch "$FB/root_disabled"
+inst "no\n${ONE}no\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+expect_rc 1
+expect_out "turn on Rooted debugging (Settings > Device Preferences > Developer options) and run the same command again: it continues here. Nothing was erased."
+[ ! -e "$FB/wiped" ] || fail "wiped"; [ "$(state step_boot1)" = done ] || fail "no first start saved"
+[ "$(state step_gapps_part)" = done ] && [ -z "$(state step_gapps_fill)" ] && [ -z "$(state step_wipe)" ] || fail "state: $(cat "$C/state/play6/state")"
+: > "$FB/fb.log"
+inst "ERASE\nyes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"   # the next run: the same command, Rooted debugging on now
+expect_rc 0; BROADCAST=1; expect_cmds ""
+expect_no_out "Root debugging is off"; expect_out "lumen_gapps: $NFILES files of $ZNAME"
+filled
+end
+
+begin one_pass_finished_without_google
+release stock; touch "$FB/root_disabled"
+inst "no\n${ONE}no\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+expect_rc 1
+inst "no\n" --ip 192.0.2.50   # without --gapps-zip: not now
+expect_rc 1; expect_out "run the same command again with --gapps-zip FILE"; [ ! -e "$FB/wiped" ] || fail "wiped"
+inst "yes\nERASE\nyes\n" --ip 192.0.2.50   # finish without Google
+expect_rc 0; BROADCAST=1
+expect_out "this install was started with Google services (--gapps-zip), and they are not in yet"
+[ -e "$FB/wiped" ] || fail "not wiped"; [ -z "$(state gapps_plan)" ] || fail "plan kept"
+grep -q "fill.sh fill" "$FB/adb.log" && fail "filled"
+expect_no_out "Google services are in"
+end
+
+begin one_pass_refusals
+release stock
+inst '' --ip 192.0.2.50 --gapps-zip "$ZIP" flash
+expect_rc 1; expect_out "--gapps-zip belongs to the full install (no command)"
+inst '' --ip 192.0.2.50 --gapps-zip "$ZIP" --keep-data
+expect_rc 1; expect_out "--gapps-zip installs with one data wipe, not with --keep-data"
+inst '' --ip 192.0.2.50 --gapps-zip "$ZIP" --wipe=factory-reset
+expect_rc 1; expect_out "not with --wipe=factory-reset"
+expect_cmds ""; if grep -q -- "-s " "$FB/adb.log"; then fail "the projector was used"; fi
+end
+
+begin one_pass_after_install_without_google
+release stock
+mkdir -p "$C/state/play6"; printf '%s\n' "serial=$SER" "ip=$ADDR" step_check=done step_flash=done step_boot1=done step_wipe=requested > "$C/state/play6/state"
+inst '' --ip 192.0.2.50 --gapps-zip "$ZIP"
+expect_rc 1; expect_out "Lumen OS was installed here without Google services. To add them: bash lumen-install.sh gapps --zip FILE"
+expect_cmds ""
+end
+
+begin one_pass_no_room_for_both
+release stock
+sed -i.bak 's/^(bootloader) partition-size:super:.*/(bootloader) partition-size:super:0x79F08000/' "$FB/getvar"
+inst "no\n${ONE}" --ip 192.0.2.50 --gapps-zip "$ZIP"
+expect_rc 1; expect_cmds "$S getvar all;$S reboot;"
+expect_out "the image and the Google services do not fit into super together"; expect_out "Nothing was written."
 end
 
 echo "installer play6 gapps: $PASS passed, $FAIL failed"
