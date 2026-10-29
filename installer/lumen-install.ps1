@@ -241,8 +241,9 @@ function Pt-Fetch($zip, $sha) {  # the pinned zip into tools\ (kept: a later run
   if (Test-Path -LiteralPath $curl) {
     # Windows' curl checks certificate revocation, which often cannot be reached (seen 2026-10-29): skip only that
     # check; the certificate itself is still checked, and the zip must match the pinned sha256 anyway
-    $rev = if ($script:OnWindows) { @("--ssl-no-revoke") } else { @() }
-    & $curl -fsSL @rev --retry 3 --connect-timeout 20 --speed-limit 1024 --speed-time 60 -o $part $url
+    # (each argument written out: PowerShell 5.1 mangled a splatted "--ssl-no-revoke" into "-:", 2026-10-29)
+    if ($script:OnWindows) { & $curl -fsSL --ssl-no-revoke --retry 3 --connect-timeout 20 --speed-limit 1024 --speed-time 60 -o $part $url 2>$null }
+    else { & $curl -fsSL --retry 3 --connect-timeout 20 --speed-limit 1024 --speed-time 60 -o $part $url 2>$null }
     if ($LASTEXITCODE -ne 0) { Remove-Item -LiteralPath $part -Force -ErrorAction SilentlyContinue }
   }
   if (-not (Test-Path -LiteralPath $part)) {   # no curl, or it failed: PowerShell's own download
