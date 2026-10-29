@@ -1,16 +1,18 @@
 == exit 1
 == output
+12:00:00   ✓ Platform-Tools 35.0.2 (tools/platform-tools, checked), own adb server on port 5038
 12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
 12:00:00 STOP: this is not an XGIMI Z9X (model 'G0099', board 'mt9999'). Nothing was done.
 == adb
 version
+start-server
 devices
 -s ZF62TEST0009 shell getprop ro.boot.xgimi.modelname
 -s ZF62TEST0009 shell getprop ro.boot.hardware
 -s ZF62TEST0009 shell getprop ro.vendor.build.version.incremental
 -s ZF62TEST0009 shell getprop ro.boot.slot_suffix
 -s ZF62TEST0009 shell getprop ro.z9x.version
+kill-server
 == fastboot
---version
 --version
 == unexpected

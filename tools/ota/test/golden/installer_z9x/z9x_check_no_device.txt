@@ -1,14 +1,16 @@
 == exit 1
 == output
+12:00:00   ✓ Platform-Tools 35.0.2 (tools/platform-tools, checked), own adb server on port 5038
 12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
 List of devices attached
 
 12:00:00 STOP: exactly one projector must be connected over adb, found 0. USB debugging on? Projector restarted after enabling it? A-A cable in the projector's USB 2.0 port? Allowed the 'USB debugging' prompt on the screen?
 == adb
 version
+start-server
 devices
 devices
+kill-server
 == fastboot
---version
 --version
 == unexpected

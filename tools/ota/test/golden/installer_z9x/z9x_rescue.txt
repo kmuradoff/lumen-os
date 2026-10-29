@@ -1,5 +1,6 @@
 == exit 0
 == output
+12:00:00   ✓ Platform-Tools 35.0.2 (tools/platform-tools, checked), own adb server on port 5038
 12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
 12:00:00   ! --no-blobs: no sound and no protected video (e.g. Kinopoisk HD) with this install
 12:00:00   ✓ SHA256SUMS signature: Lumen OS release key
@@ -21,8 +22,9 @@ Type WRITE to continue: 12:00:00 waiting for the projector in fastboot mode (up 
 12:00:00   ✓ written. The projector starts now (1-3 minutes, your data is kept). If it ends up in fastboot mode again after 3 more failed starts, the system partition was not the cause: the stock restore at the end of the guide is the way out (it erases everything).
 == adb
 version
+start-server
+kill-server
 == fastboot
---version
 --version
 devices
 -s ZF62TEST0009 getvar all

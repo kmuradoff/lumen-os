@@ -19,6 +19,14 @@
 # meant for another projector, and points a known other projector to its own way of installing.
 # Part 3, device separation: Z9X runs replayed with an unfinished XGIMI Play 6 install saved on the computer (the
 # owner's case, both projectors) must match the same golden files byte for byte.
+# Part 4, the installer's own Platform-Tools: every case of parts 1 and 3 runs with a checked
+# tools/platform-tools (the fakes, with the marker a download leaves) and decoy adb/fastboot first on PATH that
+# must never run; every adb call must reach the installer's own server port 5038, also when the environment
+# names another port or server socket. Part 4 cases: a changed file in tools/platform-tools, a download that
+# fails or is not Google's file (fake curl), --platform-tools with too old tools or without mke2fs, adb that
+# hangs (a short time limit through LUMEN_TIMEOUT_MAX) and a fastboot flash that hangs.
+# Golden files re-recorded on 2026-10-29 for the own Platform-Tools (start-server/kill-server, one version
+# check per run, the Platform-Tools line); everything else in them is unchanged.
 # Exit status 0 only when every case passes. Never touches anything outside its temp dir (and, with --record,
 # the golden folder).
 set -u
@@ -39,6 +47,9 @@ cat > "$W/bin/adb" <<'EOF'
 #!/bin/sh
 # fake adb of a Z9X on the USB cable: state in $FB (mode android|fastboot, usb = cable in, props, root)
 echo "$*" >> "$FB/adb.log"
+echo "${ANDROID_ADB_SERVER_PORT-none} ${ADB_SERVER_SOCKET-}" >> "$FB/port.log"
+case "$1" in start-server|kill-server) exit 0 ;; esac
+[ "$1" = devices ] && [ -e "$FB/hang_devices" ] && exec /bin/sleep 30
 [ "$1" = version ] && { echo "Android Debug Bridge version 1.0.41"; echo "Version 35.0.2-12147458"; exit 0; }
 [ "$1" = mdns ] && { echo "List of discovered mdns services"; exit 0; }
 if [ "$1" = devices ]; then
@@ -86,9 +97,20 @@ if [ "$1" = devices ]; then [ "$(cat "$FB/mode")" = fastboot ] && printf '%s\tfa
 case "$1" in
   getvar) cat "$FB/getvar" >&2 ;;
   reboot) echo android > "$FB/mode" ;;
+  flash) [ -e "$FB/hang_flash" ] && exec /bin/sleep 30 ;;
 esac
 exit 0
 EOF
+mkdir -p "$W/decoy"   # adb and fastboot on PATH: the installer must never run them
+printf '#!/bin/sh\necho "$(basename "$0") $*" >> "$FB/path_used"\nexit 1\n' > "$W/decoy/adb"
+cp "$W/decoy/adb" "$W/decoy/fastboot"
+chmod 755 "$W/decoy/adb" "$W/decoy/fastboot"
+case "$(uname -s)" in Darwin) PT_OS=darwin ;; *) PT_OS=linux ;; esac
+PT_SHA=$(sed -n "s/^PT_SHA_$PT_OS=//p" "$INST/lumen-install.sh")
+pt_folder() {  # DIR: the fakes as a checked tools/platform-tools (the marker a real download leaves)
+  mkdir -p "$1"; cp "$W/bin/adb" "$W/bin/fastboot" "$W/bin/mke2fs" "$W/bin/make_f2fs" "$1/"
+  { echo "zip $PT_SHA"; for f in adb fastboot mke2fs make_f2fs; do echo "$(shasum -a 256 "$1/$f" | cut -d' ' -f1) $f"; done; } > "$1/.lumen-platform-tools"
+}
 cat > "$W/bin/date" <<'EOF'
 #!/bin/sh
 # fixed clock: the golden output does not depend on when the test runs
@@ -145,13 +167,15 @@ begin() {
     echo "(bootloader) partition-size:system_ext_b:0x8000000"; echo "(bootloader) is-logical:system_ext_b:yes"
     echo "(bootloader) partition-size:system_b-cow:0x100000"; echo "all: Done"; } > "$FB/getvar"
   echo android > "$FB/mode"; touch "$FB/usb"
+  pt_folder "$C/inst/tools/platform-tools"
   : > "$FB/adb.log"; : > "$FB/fb.log"; : > "$FB/packages3"; : > "$FB/packages"
 }
 lumen() { printf '%s\n' "$LUMEN" >> "$FB/props"; }
 setprop() { sed -i.bak "s|^$1=.*|$1=$2|" "$FB/props"; }
 inst() {  # answers args... -> the installer copy; exit status in RC, output in $C/out
   local ans=$1; shift
-  printf '%b' "$ans" | env PATH="$W/bin:$PATH" FB="$FB" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
+  printf '%b' "$ans" | env PATH="$W/decoy:$W/bin:$PATH" ANDROID_ADB_SERVER_PORT=5037 ADB_SERVER_SOCKET=tcp:localhost:5037 \
+    FB="$FB" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
     LUMEN_BACKUP_DIR="$C/backup" LANG="${LANG_CASE:-en_US.UTF-8}" bash "$C/inst/lumen-install.sh" "$@" > "$C/out" 2>&1
   RC=$?
 }
@@ -171,6 +195,8 @@ golden() {  # compare with (or, with --record, write) the golden file of this ca
   cmp -s "$g" "$C/now.txt" || fail "differs from the golden log: $(diff "$g" "$C/now.txt" | head -8 | tr '\n' '|')"
 }
 end() {
+  [ ! -s "$FB/path_used" ] || fail "adb or fastboot from PATH ran: $(tr '\n' ';' < "$FB/path_used")"
+  if [ -s "$FB/port.log" ] && grep -vqx '5038 ' "$FB/port.log"; then fail "adb outside the own server: $(sort -u "$FB/port.log" | tr '\n' ';')"; fi
   if grep -qE '(^| )(erase|-w|flashing|set_active|--set-active)( |:|$)' "$FB/fb.log"; then fail "forbidden fastboot command: $(cat "$FB/fb.log")"; fi
   if [ "$CFAIL" = 0 ]; then PASS=$((PASS + 1)); echo "ok   $CASE"
   else FAIL=$((FAIL + 1)); echo "FAIL $CASE"; [ ! -f "$C/out" ] || sed 's/^/     | /' "$C/out" | tail -12; fi
@@ -349,7 +375,7 @@ begin z9x_found_with_download_for_another_projector
 echo "DEVICE=play6" >> "$C/inst/release.conf"
 inst '' check
 expect_rc 1; expect_out "the projector on the USB cable is an XGIMI Z9X, and this download of the installer is for the $(conf play6 NAME)"
-if grep -vE '^(version|devices|mdns services|-s [A-Z0-9]+ shell getprop [a-z.]+)$' "$FB/adb.log" | grep -q .; then fail "adb did more than read: $(cat "$FB/adb.log")"; fi
+if grep -vE '^(version|start-server|kill-server|devices|mdns services|-s [A-Z0-9]+ shell getprop [a-z.]+)$' "$FB/adb.log" | grep -q .; then fail "adb did more than read: $(cat "$FB/adb.log")"; fi
 if grep -vx -e '--version' "$FB/fb.log" | grep -q .; then fail "fastboot used: $(cat "$FB/fb.log")"; fi
 end
 
@@ -371,6 +397,18 @@ begin no_em_dash
 for f in "$INST/lumen-install.sh" "$INST/lumen-install.ps1" "$CONF"; do
   if grep -q '—' "$f"; then fail "an em dash in $(basename "$f")"; fi
 done
+end
+
+begin ps1_own_platform_tools
+# Windows: adb/fastboot only through Pt-Adb / Pt-Fastboot. PowerShell names ignore case: '& adb' called the helper
+# function Adb instead of adb.exe, an endless recursion (fixed 2026-10-29), so no call by name may come back.
+PS1=$INST/lumen-install.ps1
+grep -nE '&[[:space:]]*"?(adb|fastboot)(\.exe)?"?([[:space:]]|$)' "$PS1" && fail "the ps1 calls adb or fastboot by name"
+[ "$(sed -n 's/^\$PtVer = "\(.*\)"$/\1/p' "$PS1")" = "$(sed -n 's/^PT_VER=\([0-9.]*\).*/\1/p' "$INST/lumen-install.sh")" ] || fail "Platform-Tools versions differ"
+for os in darwin linux; do
+  grep -q "$(sed -n "s/^PT_SHA_$os=//p" "$INST/lumen-install.sh")" "$PS1" || fail "the $os sha256 differs between the scripts"
+done
+grep -q '^\$AdbPort = "5038"' "$PS1" && grep -q '^ADB_PORT=5038 ' "$INST/lumen-install.sh" || fail "not the own adb port 5038 in both"
 end
 
 # ---------------------------------------------------------------- part 3: a Play 6 install saved, the Z9X unchanged
@@ -425,6 +463,89 @@ golden_as z9x_gsf; end
 begin p6pending_z9x_gapps_status
 p6_pending; lumen; inst '' gapps
 golden_as z9x_gapps_status; end
+
+# ---------------------------------------------------------------- part 4: the installer's own Platform-Tools
+nothing_ran() {  # neither adb nor fastboot of the projector was used
+  grep -vxE 'version|--version|start-server|kill-server' "$FB/adb.log" "$FB/fb.log" | grep -q . && fail "the projector was used: $(cat "$FB/adb.log" "$FB/fb.log" | tr '\n' ';')"
+  return 0
+}
+fake_curl() {  # what: junk|fail -> a curl on PATH that writes junk to the -o file, or cannot connect
+  mkdir -p "$C/curl"
+  if [ "$1" = junk ]; then
+    printf '#!/bin/sh\necho "curl $*" >> "%s/curl.log"\nwhile [ $# -gt 1 ]; do [ "$1" = -o ] && printf "NOT-GOOGLE" > "$2"; shift; done\nexit 0\n' "$FB" > "$C/curl/curl"
+  else
+    printf '#!/bin/sh\necho "curl $*" >> "%s/curl.log"\nexit 6\n' "$FB" > "$C/curl/curl"
+  fi
+  chmod 755 "$C/curl/curl"
+}
+inst_path() {  # PATH answers args...: like inst, with another PATH in front
+  local pre=$1 ans=$2; shift 2
+  printf '%b' "$ans" | env PATH="$pre:$W/decoy:$W/bin:$PATH" FB="$FB" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
+    LUMEN_BACKUP_DIR="$C/backup" LANG=en_US.UTF-8 ${TMAX:+LUMEN_TIMEOUT_MAX=$TMAX} bash "$C/inst/lumen-install.sh" "$@" > "$C/out" 2>&1
+  RC=$?
+}
+
+begin pt_changed_file_not_used
+# a file in tools/platform-tools differs from the marker: not used, a new download; that one is not Google's file
+printf '\n# changed\n' >> "$C/inst/tools/platform-tools/adb"
+fake_curl junk; inst_path "$C/curl" '' check
+expect_rc 1; expect_out "downloading Google's Android SDK Platform-Tools"; expect_out "is not Google's file (sha256 differs): removed, not used"
+grep -q "dl.google.com/android/repository/platform-tools_r[0-9.]*-$PT_OS.zip" "$FB/curl.log" || fail "not the pinned URL: $(cat "$FB/curl.log")"
+ls "$C/inst/tools/"*.part >/dev/null 2>&1 && fail "the partial download was kept"
+nothing_ran; [ -s "$FB/adb.log" ] && fail "adb ran: $(cat "$FB/adb.log")"
+end
+
+begin pt_download_fails
+rm -rf "$C/inst/tools"; fake_curl fail; inst_path "$C/curl" '' check
+expect_rc 1; expect_out "the download failed (no internet?)"; expect_out "--platform-tools DIR"
+[ -s "$FB/adb.log" ] && fail "adb ran: $(cat "$FB/adb.log")"
+end
+
+begin pt_given_dir
+# --platform-tools DIR: used without the marker, version checked, nothing downloaded
+rm -rf "$C/inst/tools"; mkdir -p "$C/pt"; cp "$W/bin/adb" "$W/bin/fastboot" "$W/bin/mke2fs" "$W/bin/make_f2fs" "$C/pt/"
+fake_curl fail; inst_path "$C/curl" '' --platform-tools "$C/pt" check
+expect_rc 0; expect_out "Platform-Tools 35.0.2 ($C/pt), own adb server on port 5038"; expect_out "check passed"
+[ -e "$FB/curl.log" ] && fail "downloaded: $(cat "$FB/curl.log")"
+end
+
+begin pt_given_dir_too_old
+mkdir -p "$C/pt"; sed 's/35\.0\.2/34.0.5/' "$W/bin/fastboot" > "$C/pt/fastboot"; cp "$W/bin/adb" "$C/pt/"; chmod 755 "$C/pt/fastboot"
+inst_path "$C/pt" '' --platform-tools "$C/pt" check
+expect_rc 1; expect_out "too old or does not run: need Platform-Tools 35 or newer. Nothing was done."
+nothing_ran
+end
+
+begin pt_given_dir_without_mke2fs
+mkdir -p "$C/pt"; cp "$W/bin/adb" "$W/bin/fastboot" "$C/pt/"
+inst_path "$C/pt" 'yes\nERASE\n' --platform-tools "$C/pt" --no-blobs flash
+expect_rc 1; expect_out "make_f2fs/mke2fs missing next to fastboot ($C/pt)"
+nothing_ran
+end
+
+begin pt_adb_hangs
+# 'adb devices' hangs (the 2026-10-29 Windows report): stopped at the time limit, the own server stopped
+touch "$FB/hang_devices"
+TMAX=2 inst_path /nonexistent '' check
+expect_rc 1; expect_out "STOP: 'adb devices' did not answer within 2 s and was stopped"
+[ "$(tail -n 1 "$FB/adb.log")" = kill-server ] || fail "the own adb server was not stopped: $(tr '\n' ';' < "$FB/adb.log")"
+grep -q 'check passed' "$C/out" && fail "went on"
+[ "$(tr '\n' ' ' < "$FB/adb.log")" = "version start-server devices kill-server " ] || fail "adb did more: $(tr '\n' ';' < "$FB/adb.log")"
+end
+
+begin pt_flash_hangs
+touch "$FB/hang_flash"
+TMAX=2 inst_path /nonexistent 'yes\nERASE\n' --no-blobs flash
+expect_rc 1; expect_out "did not finish in 2 s and was stopped: the write is incomplete"
+expect_out "system was not written; the projector still has its old system"
+grep -q 'format' "$FB/fb.log" && fail "wiped after a failed write: $(tr '\n' ';' < "$FB/fb.log")"
+end
+
+begin pt_reused_without_download
+fake_curl fail; inst_path "$C/curl" '' check
+expect_rc 0; expect_out "Platform-Tools 35.0.2 (tools/platform-tools, checked), own adb server on port 5038"
+[ -e "$FB/curl.log" ] && fail "downloaded again: $(cat "$FB/curl.log")"
+end
 
 echo "installer profiles: $PASS passed, $FAIL failed"
 [ "$FAIL" = 0 ]

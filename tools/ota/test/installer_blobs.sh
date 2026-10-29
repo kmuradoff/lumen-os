@@ -32,6 +32,7 @@ python3 "$HERE/blobs_fixture.py" allow "$IMGDIR/blobs_allow.txt" "$W/allow.txt" 
 cat > "$W/bin/adb" <<'EOF'
 #!/bin/sh
 # fake adb: the projector is the tree $DEV (pull) + $FB/props (getprop); everything is logged
+case "$1" in start-server|kill-server) exit 0 ;; esac   # the installer's own adb server (port 5038)
 echo "$*" >> "$FB/adb.log"
 [ "$1" = version ] && { echo "Android Debug Bridge version 1.0.41"; echo "Version 35.0.2-12147458"; exit 0; }
 if [ "$1" = devices ]; then printf 'List of devices attached\n%s\tdevice\n\n' "$FB_SERIAL"; exit 0; fi
@@ -91,7 +92,7 @@ begin() {
   : > "$C/fb/adb.log"; : > "$C/fb/fb.log"
 }
 inst() {  # args... -> runs the installer copy; exit status in RC, output in $C/out
-  printf 'no\n' | env PATH="$W/bin:$PATH" FB="$C/fb" DEV="$DEV" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
+  printf 'no\n' | env LUMEN_PLATFORM_TOOLS="$W/bin" PATH="$W/bin:$PATH" FB="$C/fb" DEV="$DEV" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
     LUMEN_BACKUP_DIR="$C/backup" LANG=en_US.UTF-8 bash "$C/inst/lumen-install.sh" "$@" > "$C/out" 2>&1
   RC=$?
 }

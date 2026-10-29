@@ -69,6 +69,8 @@ apps_installed.txt
 local.properties
 .lumen-installer/
 Lumen-backup/
+# Google's Platform-Tools the installer downloads next to itself (never passed on: Android SDK license)
+installer/tools/
 
 # ---- OS / editor
 .DS_Store

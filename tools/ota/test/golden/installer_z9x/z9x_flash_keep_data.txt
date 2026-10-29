@@ -1,5 +1,6 @@
 == exit 0
 == output
+12:00:00   ✓ Platform-Tools 35.0.2 (tools/platform-tools, checked), own adb server on port 5038
 12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
 12:00:00   ✓ XGIMI Z9X ZF62TEST0009, firmware v6.15.58, slot b, system: Lumen/Z9X OS 1.0.2
 12:00:00   ! --no-blobs: no sound and no protected video (e.g. Kinopoisk HD) with this install
@@ -21,6 +22,7 @@ Type WRITE to continue: 12:00:00 restarting into fastbootd (about 30 s)
 12:00:00   ✓ written. First start takes 2-4 minutes; the setup screen appears on the projector.
 == adb
 version
+start-server
 devices
 -s ZF62TEST0009 shell getprop ro.boot.xgimi.modelname
 -s ZF62TEST0009 shell getprop ro.boot.hardware
@@ -32,8 +34,8 @@ devices
 -s ZF62TEST0009 shell ls /dev/block/mapper/
 -s ZF62TEST0009 shell getprop ro.debuggable
 -s ZF62TEST0009 reboot fastboot
+kill-server
 == fastboot
---version
 --version
 devices
 -s ZF62TEST0009 getvar all

@@ -4,7 +4,7 @@
 #
 #   lumen-install.cmd [command] [-Image FILE] [-Serial S] [-KeepData] [-Wipe format|factory-reset]
 #                     [-Lang en|ru] [-Blobs partition|embedded] [-NoBlobs] [-UnsignedImage] [-Zip FILE] [-Remove]
-#                     [-Ip ADDRESS[:PORT]] [-Device z9x|play6] [-Path FOLDER] [-GappsZip FILE]
+#                     [-Ip ADDRESS[:PORT]] [-Device z9x|play6] [-Path FOLDER] [-GappsZip FILE] [-PlatformTools DIR]
 #   commands: (none = continue) check | backup | blobs | vbmeta | flash | verify | gsf | rescue | gapps | status | reset
 #   XGIMI Play 6 (-Ip: its Wi-Fi address; it has no USB debugging): (none) | check | backup | flash | verify |
 #   rescue | stick -Path E:\ | gapps | gsf | status | reset. 'flash' writes system in fastboot mode over the A-to-A
@@ -29,7 +29,11 @@
 # unfinished Lumen OS update of the slot it repairs (fastboot snapshot-update merge|cancel) and never
 # formats anything. NEVER vbmeta (your manual step), boot, vendor, persist, xgimi*, misc, frp, the
 # other slot; never 'fastboot -w' or 'fastboot erase'.
-# A Windows USB driver for the projector's adb/fastboot interface may be needed (Google USB Driver).
+# A Windows USB driver for the projector's adb/fastboot interface may be needed (Google USB Driver): when the
+# projector does not show up in fastboot mode, the installer looks for a USB device without a driver and says how.
+# adb and fastboot: never the ones on PATH. The first run downloads Google's Platform-Tools (pinned version and
+# sha256) into tools\platform-tools next to this script; -PlatformTools DIR uses the adb.exe and fastboot.exe in DIR
+# instead (35 or newer), for a computer without internet access. Own adb server on port 5038; time limits on every call.
 # XGIMI Play 6: only system is written (Fb-Allowed), and 'gapps' creates, resizes or deletes lumen_gapps (formatted
 # and filled on the projector over adb root, lib\play6\gapps_fill.sh); the data wipe is Android's own factory reset.
 # Never vendor, boot, recovery, MBOOT, env, calibration or factory data. Its model, firmware list and image name:
@@ -37,7 +41,7 @@
 param([string]$Command = "", [string]$Image = "", [string]$Serial = "", [switch]$KeepData,
       [string]$Wipe = "format", [string]$Lang = "", [string]$Blobs = "", [switch]$NoBlobs, [switch]$UnsignedImage,
       [string]$Zip = "", [switch]$Remove, [string]$Ip = "", [string]$Device = "", [string]$Path = "",
-      [string]$GappsZip = "")
+      [string]$GappsZip = "", [string]$PlatformTools = "")
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
@@ -72,8 +76,7 @@ function T($en, $ru) { if ($Lang -eq "ru") { $ru } else { $en } }
 function Say($m) { Write-Host ("{0} {1}" -f (Get-Date -Format HH:mm:ss), $m) }
 function Ok($m) { Say "  + $m" }
 function Warn($m) { Say "  ! $m" }
-function Die($m) { Say ((T "STOP" "СТОП") + ": $m"); exit 1 }
-function Need($c) { if (-not (Get-Command $c -ErrorAction SilentlyContinue)) { Die (T "missing ${c}: install Android SDK Platform-Tools 35+ and add the folder to PATH" "нет ${c}: установите Android SDK Platform-Tools 35+ и добавьте папку в PATH") } }
+function Die($m) { Say ((T "STOP" "СТОП") + ": $m"); Pt-Cleanup; exit 1 }
 function Ask($q) { $a = Read-Host ("$q [" + (T "yes/no" "да/нет") + "]"); return @("y","yes","Yes","YES","д","да","Да","ДА") -contains $a }
 function Sha256($f) { (Get-FileHash $f -Algorithm SHA256).Hash.ToLower() }
 # identity of the file on disk (size, last write time): a cached check is only valid for exactly that file
@@ -93,9 +96,249 @@ function State-Set($k, $v) {
   Set-Content -Path $f -Value $lines -Encoding UTF8
 }
 
-function Adb { $t = if ($script:AdbT) { $script:AdbT } else { $script:Serial }; & adb -s $t @args 2>$null }   # AdbT: never set on the Z9X
+function Adb { $t = if ($script:AdbT) { $script:AdbT } else { $script:Serial }; Pt-Adb -s $t @args 2>$null }   # AdbT: never set on the Z9X
 function Prop($p) { ((Adb shell getprop $p) | Out-String).Trim() }
-function Fb { & fastboot -s $script:Serial @args 2>&1 | ForEach-Object { "$_" } }
+function Fb { Pt-Fastboot -s $script:Serial @args 2>&1 | ForEach-Object { "$_" } }
+
+# ------------------------------------------------------------------ adb and fastboot (own copy, time limits)
+# Never the adb/fastboot on PATH: Pt-Setup downloads Google's Platform-Tools $PtVer into tools\platform-tools next
+# to this script (sha256 pinned below; a platform-tools_r$PtVer-win.zip already in tools\ is checked and used
+# without a download) or takes -PlatformTools DIR. Its adb server runs on its own port ($AdbPort), and only that
+# server is stopped at the end. Every call runs through Pt-Call with a time limit: a call that hangs is stopped.
+# The functions are Pt-Adb and Pt-Fastboot, never 'adb'/'fastboot': PowerShell names ignore case, and a function
+# 'adb' (or the helper 'Adb') would be called instead of adb.exe.
+$PtVer = "35.0.2"
+$PtSha = @{ win = "2975a3eac0b19182748d64195375ad056986561d994fffbdc64332a516300bb9"
+            darwin = "1820078db90bf21628d257ff052528af1c61bb48f754b3555648f5652fa35d78"
+            linux = "acfdcccb123a8718c46c46c059b2f621140194e5ec1ac9d81715be3d6ab6cd0a" }
+$PtUrl = "https://dl.google.com/android/repository"
+$AdbPort = "5038"     # the installer's own adb server (adb's default is 5037)
+$script:OnWindows = ($PSVersionTable.PSEdition -ne "Core") -or $IsWindows
+$script:PtExt = if ($script:OnWindows) { ".exe" } else { "" }
+$script:PtDir = ""; $script:PtServer = $false; $script:PtAdbV = ""; $script:PtFbV = ""; $script:PnpBefore = @()
+function Pt-Adb { Pt-Call "adb" $args }
+function Pt-Fastboot { Pt-Call "fastboot" $args }
+function Pt-Watch {  # the watchdog: a timer that stops our adb/fastboot process when its time is up
+  if ("LumenWatch" -as [type]) { return }
+  Add-Type -TypeDefinition @"
+using System;
+using System.Diagnostics;
+using System.Threading;
+public static class LumenWatch {
+  static Timer timer;
+  static volatile bool fired;
+  static string path;
+  static DateTime since;
+  public static void Arm(string exe, int seconds) {
+    fired = false; path = exe; since = DateTime.Now.AddSeconds(-2);
+    timer = new Timer(Fire, null, seconds * 1000L, Timeout.Infinite);
+  }
+  public static bool Disarm() {
+    Timer t = timer; timer = null;
+    if (t != null) t.Dispose();
+    return fired;
+  }
+  static void Fire(object o) {
+    fired = true;
+    string name = System.IO.Path.GetFileNameWithoutExtension(path);
+    foreach (Process p in Process.GetProcessesByName(name)) {
+      try {
+        if (p.StartTime < since) continue;   // started before this call: another program's, or our server
+        string f = null;
+        try { f = p.MainModule.FileName; } catch { }
+        bool win = Environment.OSVersion.Platform == PlatformID.Win32NT;   // elsewhere: only the tests of this script
+        if (f == null || !win || String.Equals(f, path, StringComparison.OrdinalIgnoreCase)) p.Kill();
+      } catch { }
+    }
+  }
+}
+"@
+}
+function Pt-Cap($s) { if ($env:LUMEN_TIMEOUT_MAX -and [int]$s -gt [int]$env:LUMEN_TIMEOUT_MAX) { return [int]$env:LUMEN_TIMEOUT_MAX }; return [int]$s }   # tests only
+function Pt-Sub($a) {  # the command word after the options (-s SERIAL, --fs-options=...)
+  for ($i = 0; $i -lt $a.Count; $i++) {
+    $w = "$($a[$i])"
+    if ($w -eq "-s" -or $w -eq "-t") { $i++; continue }
+    if ($w -eq "--version") { return "version" }
+    if ($w.StartsWith("-")) { continue }
+    return $w
+  }
+  return ""
+}
+function Pt-Limit($tool, $a) {  # seconds the call may take (generous: only a hang reaches it)
+  $sub = Pt-Sub $a
+  switch -Wildcard ("$tool $sub") {
+    "* version" { return 20 }
+    "adb devices" { return 20 }
+    "adb start-server" { return 20 }
+    "adb kill-server" { return 20 }
+    "adb get-state" { return 20 }
+    "adb get-serialno" { return 20 }
+    "adb disconnect" { return 20 }
+    "adb mdns" { return 20 }
+    "adb connect" { return 30 }
+    "adb root" { return 60 }
+    "adb unroot" { return 60 }
+    "adb reboot" { return 60 }
+    "adb reconnect" { return 60 }
+    "adb wait-for-*" { return 180 }
+    "adb pull" { return 7200 }
+    "adb shell" { return 1800 }
+    "adb push" { return 1800 }
+    "adb install*" { return 1800 }
+    "fastboot devices" { return 20 }
+    "fastboot getvar" { return 60 }
+    "fastboot reboot*" { return 180 }
+    "fastboot flash" {   # at least 2 MB/s from the disk to the projector (USB 2.0 does about 30)
+      $f = "$($a[$a.Count - 1])"; $len = 0
+      if (Test-Path -LiteralPath $f) { $len = (Get-Item -LiteralPath $f).Length }
+      return [int](300 + $len / 2MB)
+    }
+  }
+  return 600
+}
+function Pt-Call($tool, $a) {  # adb|fastboot, its arguments: our own copy, within the time limit of that call
+  if (-not $script:PtDir) { Die "internal: $tool before the Platform-Tools check" }
+  $a = @($a)
+  $secs = Pt-Cap (Pt-Limit $tool $a)
+  $exe = Join-Path $script:PtDir "$tool$($script:PtExt)"
+  [LumenWatch]::Arm($exe, $secs)
+  try { & $exe @a } finally { $fired = [LumenWatch]::Disarm() }
+  if (-not $fired) { return }
+  if ($tool -eq "fastboot" -and (Pt-Sub $a) -eq "flash") {   # the caller says what that means for the projector
+    Warn (T "'fastboot $a' did not finish in $secs s and was stopped: the write is incomplete. A slow disk (USB stick, network drive) can cause it: copy the installer folder to the computer's own disk (C:)." "'fastboot $a' не завершился за $secs с и остановлен: запись неполная. Причиной может быть медленный диск (флешка, сетевой диск): скопируйте папку установщика на диск самого компьютера (C:).")
+    $global:LASTEXITCODE = 124
+    return
+  }
+  $hint = if ($tool -eq "fastboot") { Fb-Driver-Hint } else { "" }
+  Die ((T "'$tool $a' did not answer within $secs s and was stopped; the installer went no further (nothing after this step was written). Unplug the USB cable and plug it in again (Play 6: check its Wi-Fi), then run the same command again. If it happens again, restart the computer: another program may be holding the USB connection." "'$tool $a' не ответил за $secs с и остановлен; установщик дальше не пошёл (ничего после этого шага не записано). Выньте и снова вставьте кабель USB (Play 6: проверьте его Wi-Fi) и запустите ту же команду ещё раз. Если повторится, перезагрузите компьютер: соединение USB может держать другая программа.") + $hint)
+}
+function Pt-Files {  # what the installer runs or fastboot needs (Windows: and adb's USB libraries)
+  $f = @("adb", "fastboot", "mke2fs", "make_f2fs") | ForEach-Object { "$_$($script:PtExt)" }
+  if ($script:OnWindows) { $f += @("AdbWinApi.dll", "AdbWinUsbApi.dll") }
+  return $f
+}
+function Pt-Marker-Ok($dir, $sha) {  # our checked unpack: zip sha256, and the sha256 of each file it runs
+  $m = Join-Path $dir ".lumen-platform-tools"
+  if (-not (Test-Path -LiteralPath $m)) { return $false }
+  $lines = @(Get-Content -LiteralPath $m)
+  if ($lines -notcontains "zip $sha") { return $false }
+  foreach ($f in (Pt-Files)) {
+    $want = $lines | Where-Object { $_ -like "* $f" } | ForEach-Object { ($_ -split " ")[0] } | Select-Object -First 1
+    $p = Join-Path $dir $f
+    if (-not $want -or -not (Test-Path -LiteralPath $p) -or (Sha256 $p) -ne $want) { return $false }
+  }
+  return $true
+}
+function Pt-Fetch($zip, $sha) {  # the pinned zip into tools\ (kept: a later run checks it again instead of downloading)
+  $dir = Join-Path $Here "tools"; $url = "$PtUrl/$zip"; $dst = Join-Path $dir $zip; $part = "$dst.part"
+  try { New-Item -ItemType Directory -Force -Path $dir -ErrorAction Stop | Out-Null; $w = Join-Path $dir ".write-test"; [IO.File]::WriteAllText($w, ""); [IO.File]::Delete($w) }
+  catch { Die (T "cannot write ${dir}: copy the installer folder to a folder of your own (for example Documents on C:) and run it there. Nothing was done." "нельзя писать в ${dir}: скопируйте папку установщика в свою папку (например, «Документы» на C:) и запустите оттуда. Ничего не сделано.") }
+  if ((Test-Path -LiteralPath $dst) -and (Sha256 $dst) -eq $sha) { return }
+  Say (T "downloading Google's Android SDK Platform-Tools $PtVer (adb and fastboot, about 7 MB, once): $url" "скачиваю Android SDK Platform-Tools $PtVer от Google (adb и fastboot, около 7 МБ, один раз): $url")
+  Remove-Item -LiteralPath $part -Force -ErrorAction SilentlyContinue
+  $curl = if ($script:OnWindows) { Join-Path $env:SystemRoot "System32\curl.exe" } else { "/usr/bin/curl" }
+  if (Test-Path -LiteralPath $curl) {
+    & $curl -fsSL --retry 3 --connect-timeout 20 --speed-limit 1024 --speed-time 60 -o $part $url
+  } else {
+    try {
+      [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+      $pp = $ProgressPreference; $ProgressPreference = "SilentlyContinue"
+      Invoke-WebRequest -Uri $url -OutFile $part -UseBasicParsing -TimeoutSec 300 -ErrorAction Stop
+      $ProgressPreference = $pp
+    } catch { }
+  }
+  if (-not (Test-Path -LiteralPath $part)) { Die (T "the download failed (no internet?). Download $url yourself and put it into $dir, or run with -PlatformTools DIR (Platform-Tools 35 or newer). Nothing was done." "скачать не удалось (нет интернета?). Скачайте $url сами и положите в $dir или запустите с -PlatformTools ПАПКА (Platform-Tools 35 или новее). Ничего не сделано.") }
+  if ((Sha256 $part) -ne $sha) { Remove-Item -LiteralPath $part -Force; Die (T "the downloaded $zip is not Google's file (sha256 differs): removed, not used. Try again later. Nothing was done." "скачанный $zip не совпадает с файлом Google (другой sha256): удалён, не используется. Повторите позже. Ничего не сделано.") }
+  Move-Item -LiteralPath $part -Destination $dst -Force
+}
+function Pt-Unpack($zip, $sha) {  # zip -> tools\platform-tools, with the marker that lets later runs reuse it
+  $tools = Join-Path $Here "tools"; $new = Join-Path $tools ".platform-tools.new"; $dir = Join-Path $tools "platform-tools"
+  Remove-Item -LiteralPath $new -Recurse -Force -ErrorAction SilentlyContinue
+  try { Expand-Archive -LiteralPath (Join-Path $tools $zip) -DestinationPath $new -Force -ErrorAction Stop }
+  catch { Remove-Item -LiteralPath $new -Recurse -Force -ErrorAction SilentlyContinue; Die (T "cannot unpack $zip ($($_.Exception.Message)). Nothing was done." "не удаётся распаковать $zip ($($_.Exception.Message)). Ничего не сделано.") }
+  $pt = Join-Path $new "platform-tools"
+  if ($script:OnWindows) { Get-ChildItem -LiteralPath $pt -Recurse -File | Unblock-File -ErrorAction SilentlyContinue }
+  else { foreach ($f in (Pt-Files)) { if (Test-Path -LiteralPath (Join-Path $pt $f)) { & chmod 755 (Join-Path $pt $f) } } }
+  $m = @("zip $sha") + @(Pt-Files | Where-Object { Test-Path -LiteralPath (Join-Path $pt $_) } | ForEach-Object { "$(Sha256 (Join-Path $pt $_)) $_" })
+  Set-Content -LiteralPath (Join-Path $pt ".lumen-platform-tools") -Value $m -Encoding ASCII
+  Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+  Move-Item -LiteralPath $pt -Destination $dir
+  Remove-Item -LiteralPath $new -Recurse -Force -ErrorAction SilentlyContinue
+}
+function Pt-Major($text) { if ("$text" -match "(?m)^(Version|fastboot version) (\d+)\.") { return [int]$Matches[2] }; return 0 }
+function Pt-Run-Quiet($exe, $a, $secs) {  # our tool outside Pt-Call (setup, cleanup): output as text; $null = it hung
+  [LumenWatch]::Arm($exe, (Pt-Cap $secs))
+  try { $o = (& $exe @a 2>&1 | ForEach-Object { "$_" }) -join "`n" } finally { $fired = [LumenWatch]::Disarm() }
+  if ($fired) { return $null }
+  return $o
+}
+function Pt-Setup {  # adb and fastboot of our own, checked; our own adb server started (it answers within seconds)
+  Pt-Watch
+  $os = if ($script:OnWindows) { "win" } elseif ($IsMacOS) { "darwin" } else { "linux" }
+  $pt = if ($PlatformTools) { $PlatformTools } else { $env:LUMEN_PLATFORM_TOOLS }
+  if ($pt) {
+    $dir = (Resolve-Path -LiteralPath $pt -ErrorAction SilentlyContinue).ProviderPath
+    if (-not $dir -or -not (Test-Path -LiteralPath (Join-Path $dir "adb$($script:PtExt)")) -or -not (Test-Path -LiteralPath (Join-Path $dir "fastboot$($script:PtExt)"))) {
+      Die (T "-PlatformTools ${pt}: no adb and fastboot there. Nothing was done." "-PlatformTools ${pt}: там нет adb и fastboot. Ничего не сделано.")
+    }
+    $src = $dir
+  } else {
+    $sha = $PtSha[$os]; $zip = "platform-tools_r$PtVer-$os.zip"; $dir = Join-Path (Join-Path $Here "tools") "platform-tools"
+    if (-not (Pt-Marker-Ok $dir $sha)) {
+      Pt-Fetch $zip $sha; Pt-Unpack $zip $sha
+      if (-not (Pt-Marker-Ok $dir $sha)) { Die "internal: the unpacked Platform-Tools do not check out" }
+    }
+    $src = "tools\platform-tools, " + (T "checked" "проверены")
+  }
+  $env:ANDROID_ADB_SERVER_PORT = $AdbPort
+  Remove-Item Env:ADB_SERVER_SOCKET -ErrorAction SilentlyContinue
+  $adb = Join-Path $dir "adb$($script:PtExt)"; $fb = Join-Path $dir "fastboot$($script:PtExt)"
+  $av = Pt-Run-Quiet $adb @("version") 20; $fv = Pt-Run-Quiet $fb @("--version") 20
+  if ((Pt-Major $av) -lt 35 -or (Pt-Major $fv) -lt 35) { Die (T "adb or fastboot in $dir is too old or does not run: need Platform-Tools 35 or newer. Nothing was done." "adb или fastboot в $dir слишком старые или не запускаются: нужны Platform-Tools 35 или новее. Ничего не сделано.") }
+  $script:PtAdbV = (("$av" -split "`n")[0] -split " ")[-1].Trim(); $script:PtFbV = ((("$fv" -split "`n")[0]) -split " ")[2].Trim()
+  $script:PtDir = $dir
+  if ($script:OnWindows) { $script:PnpBefore = @(Usb-Problem-Ids) }
+  $script:PtServer = $true
+  $s = Pt-Run-Quiet $adb @("start-server") 20
+  if ($null -eq $s) { Die (T "adb did not start within 20 s (port $AdbPort). Close programs for phones and Android devices (Android Studio, phone managers, scrcpy) or restart the computer, then try again. Nothing was done." "adb не запустился за 20 с (порт $AdbPort). Закройте программы для телефонов и Android-устройств (Android Studio, менеджеры телефонов, scrcpy) или перезагрузите компьютер и повторите. Ничего не сделано.") }
+  if ($LASTEXITCODE -ne 0) { Die (T "adb did not start (port $AdbPort busy?). Restart the computer and try again. Nothing was done." "adb не запустился (порт $AdbPort занят?). Перезагрузите компьютер и повторите. Ничего не сделано.") }
+  Ok ("Platform-Tools $(($script:PtFbV -split '-')[0]) ($src), " + (T "own adb server on port" "свой сервер adb на порту") + " $AdbPort")
+  Slow-Drive-Warn $Here
+  if ($script:Image) { Slow-Drive-Warn (Split-Path -Parent ([IO.Path]::GetFullPath($script:Image))) }
+}
+function Pt-Cleanup {  # only our own adb server, never another program's
+  if (-not $script:PtServer) { return }
+  $script:PtServer = $false
+  $null = Pt-Run-Quiet (Join-Path $script:PtDir "adb$($script:PtExt)") @("kill-server") 10
+}
+function Usb-Problem-Ids {  # Windows: USB devices that have no working driver (Device Manager's yellow mark)
+  try { return @(Get-PnpDevice -PresentOnly -ErrorAction Stop | Where-Object { $_.Status -ne "OK" -and $_.InstanceId -like "USB\*" } | ForEach-Object { $_.InstanceId }) }
+  catch {
+    try { return @(& pnputil /enum-devices /problem 2>$null | Where-Object { $_ -match "^\s*Instance ID:\s+(USB\\\S+)" } | ForEach-Object { $Matches[1] }) } catch { return @() }
+  }
+}
+function Fb-Driver-Hint {  # Windows: the projector is on the cable in fastboot mode, but Windows has no driver for it
+  if (-not $script:OnWindows) { return "" }
+  $new = @(Usb-Problem-Ids | Where-Object { $script:PnpBefore -notcontains $_ })
+  $named = @()
+  try { $named = @(Get-PnpDevice -PresentOnly -ErrorAction Stop | Where-Object { $_.Status -ne "OK" -and ($_.InstanceId -match "VID_18D1|VID_0E8D" -or "$($_.FriendlyName)" -match "Android|fastboot|ADB") }) } catch { }
+  if ($new.Count -eq 0 -and $named.Count -eq 0) { return "" }
+  return " " + (T "Windows sees a USB device without a driver (Device Manager shows it with a yellow mark, often as 'Android' or under Other devices): that is the projector in fastboot mode. Install the Google USB Driver: download it from https://developer.android.com/studio/run/win-usb and unpack it; in Device Manager right-click that device > Update driver > Browse my computer > Let me pick > Show All Devices > Have Disk, choose android_winusb.inf from the unpacked folder, then 'Android Bootloader Interface'. Then run the same command again." "Windows видит устройство USB без драйвера (в Диспетчере устройств оно с жёлтым значком, часто как «Android» или в «Другие устройства»): это проектор в режиме fastboot. Установите Google USB Driver: скачайте его с https://developer.android.com/studio/run/win-usb и распакуйте; в Диспетчере устройств щёлкните это устройство правой кнопкой > Обновить драйвер > Найти драйверы на этом компьютере > Выбрать драйвер из списка > Показать все устройства > Установить с диска, выберите android_winusb.inf из распакованной папки, затем «Android Bootloader Interface». Потом запустите ту же команду ещё раз.")
+}
+function Slow-Drive-Warn($folder) {  # Windows: the installer or the image on a USB stick, card or network drive
+  if (-not $script:OnWindows -or -not $folder) { return }
+  try {
+    $full = [IO.Path]::GetFullPath($folder)
+    $slow = $full.StartsWith("\\")
+    if (-not $slow) {
+      $root = [IO.Path]::GetPathRoot($full); $d = New-Object IO.DriveInfo($root)
+      $slow = @("Removable", "Network", "CDRom") -contains "$($d.DriveType)"
+      if (-not $slow) { try { $slow = ((Get-Partition -DriveLetter $root.Substring(0, 1) -ErrorAction Stop | Get-Disk -ErrorAction Stop).BusType -eq "USB") } catch { } }
+    }
+    if ($slow) { Warn (T "$full is on a USB stick, card, external or network drive. Writing the image from there can be very slow or hang: copy the whole installer folder (with the image) to the computer's own disk, for example C:\Lumen, and run it from there." "$full лежит на флешке, карте, внешнем или сетевом диске. Запись образа оттуда может идти очень медленно или зависнуть: скопируйте всю папку установщика (с образом) на диск самого компьютера, например C:\Lumen, и запустите оттуда.") }
+  } catch { }
+}
 
 function Fb-Allowed($act, $part) {
   # XGIMI Play 6: system, and the Google services add-on partition lumen_gapps ('gapps': create, resize, delete;
@@ -124,14 +367,14 @@ function Fb-Do($act, $part, $arg) {
 }
 
 function Pick-Device {
-  $list = @(& adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" } | ForEach-Object { ($_ -split "\t")[0] })
+  $list = @(Pt-Adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" } | ForEach-Object { ($_ -split "\t")[0] })
   if ($script:Serial) {
     if ($list -contains $script:Serial) { return }
     if (-not $script:SerialFromState) { Die (T "device $($script:Serial) is not connected over adb" "устройство $($script:Serial) не подключено по adb") }
     $script:Serial = ""
   }
   if ($list.Count -ne 1) {
-    & adb devices
+    Pt-Adb devices
     Die (T "exactly one projector must be connected over adb, found $($list.Count). USB debugging on? Restarted after enabling it? A-A cable in the USB 2.0 port? ADB driver installed? Allowed the prompt on the screen?" "нужно ровно одно устройство в adb, найдено: $($list.Count). Отладка включена? Проектор перезагружали после её включения? Кабель A–A в USB 2.0? Драйвер ADB установлен? Разрешили запрос на экране?")
   }
   $script:Serial = $list[0]
@@ -185,17 +428,13 @@ function Edition-Guard($mode) {
   if ($mode -eq "rescue") { Warn (T "the edition installed on this projector is unknown here: make sure the image is the same edition (with or without Google)" "редакция на этом проекторе здесь неизвестна: убедитесь, что образ той же редакции (с Google или без)") }
 }
 
-function Check-Tools {
-  Need adb; Need fastboot
-  $v = ((& fastboot --version | Select-Object -First 1) | Out-String).Trim()
-  if ($v -notmatch "fastboot version (\d+)" -or [int]$Matches[1] -lt 35) { Die (T "fastboot is too old ($v): need Platform-Tools 35+" "fastboot слишком старый ($v): нужны Platform-Tools 35+") }
-  $dir = Split-Path -Parent (Get-Command fastboot).Source
+function Check-Tools {  # Pt-Setup ran: adb and fastboot of our own, 35 or newer
   if ($script:Projector -eq "z9x" -and -not $KeepData -and $Wipe -eq "format") {
-    if (-not ((Test-Path (Join-Path $dir "make_f2fs.exe")) -and (Test-Path (Join-Path $dir "mke2fs.exe")))) {
-      Die (T "make_f2fs.exe/mke2fs.exe missing next to fastboot ($dir): use the official Platform-Tools zip" "нет make_f2fs.exe/mke2fs.exe рядом с fastboot ($dir): используйте официальный архив Platform-Tools")
+    if (-not ((Test-Path (Join-Path $script:PtDir "make_f2fs$($script:PtExt)")) -and (Test-Path (Join-Path $script:PtDir "mke2fs$($script:PtExt)")))) {
+      Die (T "make_f2fs.exe/mke2fs.exe missing next to fastboot ($($script:PtDir)): use the official Platform-Tools zip" "нет make_f2fs.exe/mke2fs.exe рядом с fastboot ($($script:PtDir)): используйте официальный архив Platform-Tools")
     }
   }
-  Ok $v
+  Ok "adb $($script:PtAdbV), fastboot $($script:PtFbV)"
 }
 
 function Verify-Sums($sums) {
@@ -455,8 +694,8 @@ function Cmd-Flash {
   Say (T "restarting into fastbootd (about 30 s)" "перезагрузка в fastbootd (около 30 секунд)")
   Adb reboot fastboot | Out-Null
   $seen = $false
-  for ($i = 0; $i -lt 45; $i++) { if ((& fastboot devices) -match "^$([regex]::Escape($script:Serial))\s") { $seen = $true; break }; Start-Sleep 2 }
-  if (-not $seen) { Die (T "the projector did not appear in fastboot within 90 s (USB driver?)" "проектор не появился в fastboot за 90 секунд (драйвер USB?)") }
+  for ($i = 0; $i -lt 45; $i++) { if ((Pt-Fastboot devices) -match "^$([regex]::Escape($script:Serial))\s") { $seen = $true; break }; Start-Sleep 2 }
+  if (-not $seen) { Die ((T "the projector did not appear in fastboot within 90 s (USB driver?)" "проектор не появился в fastboot за 90 секунд (драйвер USB?)") + (Fb-Driver-Hint)) }
   $gv = Fb getvar all
   function Val($k) { $l = $gv | Where-Object { $_ -like "(bootloader) ${k}:*" } | Select-Object -First 1; if ($l) { ($l.Substring(("(bootloader) ${k}:").Length)).Trim() } else { "" } }
   if ((Val is-userspace) -ne "yes") { Fb reboot | Out-Null; Die (T "not fastbootd" "это не fastbootd") }
@@ -497,7 +736,7 @@ function Cmd-Flash {
 function Cmd-Verify {
   Say (T "waiting for the projector to finish starting (up to 5 minutes)" "жду, пока проектор загрузится (до 5 минут)")
   for ($i = 0; $i -lt 150; $i++) {
-    $l = @(& adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" } | ForEach-Object { ($_ -split "\t")[0] })
+    $l = @(Pt-Adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" } | ForEach-Object { ($_ -split "\t")[0] })
     if ($l.Count -ge 1) { if (-not $script:Serial) { $script:Serial = $l[0] }; if ((Prop sys.boot_completed) -eq "1") { break } }
     Start-Sleep 2
   }
@@ -529,7 +768,7 @@ function Cmd-Verify {
 # the question come before the wait.
 function Fbd-Find($secs) {
   for ($i = 0; $i -lt $secs; $i += 2) {
-    $list = @(& fastboot devices 2>$null | ForEach-Object { ("$_".Trim() -split "\s+")[0] } | Where-Object { $_ })
+    $list = @(Pt-Fastboot devices 2>$null | ForEach-Object { ("$_".Trim() -split "\s+")[0] } | Where-Object { $_ })
     if ($script:Serial -and ($list -contains $script:Serial)) { return $true }
     if ($list.Count -eq 1 -and (-not $script:Serial -or $script:SerialFromState)) {
       if ($script:Serial) { Warn (T "using $($list[0]) (the saved serial was $($script:Serial))" "использую $($list[0]) (сохранённый серийный номер был $($script:Serial))") }
@@ -555,7 +794,7 @@ function Cmd-Rescue {
   Write-Host (T "RESCUE: writes Lumen OS again into the slot the projector cannot start from, WITHOUT wiping data (apps, accounts, settings and files stay). If that slot holds an unfinished Lumen OS update, it is finished or cancelled first (this image replaces its system anyway; a cancelled update may also leave the other slot unable to start, as the two share that storage until an update is finished); *-cow update leftovers are removed. Calibration, vendor and boot stay untouched, and so does the other slot otherwise. Use it only for a projector that runs Lumen OS and no longer starts." "РЕМОНТ: заново записывает Lumen OS в слот, из которого проектор не может загрузиться, БЕЗ очистки данных (приложения, аккаунты, настройки и файлы сохраняются). Если в этом слоте незавершённое обновление Lumen OS, оно сначала завершается или отменяется (system всё равно заменяется этим образом; после отмены второй слот может не загрузиться: до завершения обновления у них общая область); остатки обновлений *-cow удаляются. Калибровка, vendor и boot не затрагиваются, второй слот в остальных случаях тоже. Только для проектора с Lumen OS, который больше не загружается.")
   if ((Read-Host (T "Type WRITE to continue" "Введите WRITE, чтобы продолжить")) -cne "WRITE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
   Say (T "waiting for the projector in fastboot mode (up to 15 minutes). After 3 failed starts in a row Lumen OS goes there by itself; the picture may stay dark. Keep the A-to-A cable in the USB 2.0 port. Fastboot mode ends by itself after about 2 minutes and the projector tries to start again: this command simply waits for its next visit." "жду проектор в режиме fastboot (до 15 минут). После 3 неудачных загрузок подряд Lumen OS переходит туда сама; изображения может не быть. Кабель A–A должен быть в порту USB 2.0. Режим fastboot сам завершается примерно через 2 минуты, и проектор снова пытается загрузиться: команда просто дождётся следующего раза.")
-  if (-not (Fbd-Find 900)) { Die (T "the projector did not appear in fastboot mode within 15 minutes. Is it running Lumen OS 1.0.1 or newer? Cable in the USB 2.0 port? USB driver? Nothing was written." "проектор не появился в режиме fastboot за 15 минут. На нём Lumen OS 1.0.1 или новее? Кабель в порту USB 2.0? Драйвер USB? Ничего не записано.") }
+  if (-not (Fbd-Find 900)) { Die ((T "the projector did not appear in fastboot mode within 15 minutes. Is it running Lumen OS 1.0.1 or newer? Cable in the USB 2.0 port? USB driver? Nothing was written." "проектор не появился в режиме fastboot за 15 минут. На нём Lumen OS 1.0.1 или новее? Кабель в порту USB 2.0? Драйвер USB? Ничего не записано.") + (Fb-Driver-Hint)) }
   $gv = Fb getvar all
   function Val($k) { $l = $gv | Where-Object { $_ -like "(bootloader) ${k}:*" } | Select-Object -First 1; if ($l) { ($l.Substring(("(bootloader) ${k}:").Length)).Trim() } else { "" } }
   if ((Val is-userspace) -ne "yes") { Fb reboot | Out-Null; Die (T "not fastbootd" "это не fastbootd") }
@@ -657,8 +896,8 @@ function Fbd-Enter($slot) {
   Say (T "restarting into fastbootd (about 30 s)" "перезагрузка в fastbootd (около 30 секунд)")
   Adb reboot fastboot | Out-Null
   $seen = $false
-  for ($i = 0; $i -lt 45; $i++) { if ((& fastboot devices) -match "^$([regex]::Escape($script:Serial))\s") { $seen = $true; break }; Start-Sleep 2 }
-  if (-not $seen) { Die (T "the projector did not appear in fastboot within 90 s (USB driver?)" "проектор не появился в fastboot за 90 секунд (драйвер USB?)") }
+  for ($i = 0; $i -lt 45; $i++) { if ((Pt-Fastboot devices) -match "^$([regex]::Escape($script:Serial))\s") { $seen = $true; break }; Start-Sleep 2 }
+  if (-not $seen) { Die ((T "the projector did not appear in fastboot within 90 s (USB driver?)" "проектор не появился в fastboot за 90 секунд (драйвер USB?)") + (Fb-Driver-Hint)) }
   return (Fbd-Check $slot)
 }
 function Fb-Wipe($gv) {  # the data wipe of 'flash', in fastbootd
@@ -670,7 +909,7 @@ function Fb-Wipe($gv) {  # the data wipe of 'flash', in fastbootd
 }
 function Boot-Wait {  # up to 5 min for the projector back over adb with sys.boot_completed=1
   for ($i = 0; $i -lt 150; $i++) {
-    $l = @(& adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" } | ForEach-Object { ($_ -split "\t")[0] })
+    $l = @(Pt-Adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" } | ForEach-Object { ($_ -split "\t")[0] })
     if (($l -contains $script:Serial) -and ((Prop sys.boot_completed) -eq "1")) { return $true }
     Start-Sleep 2
   }
@@ -692,8 +931,8 @@ function Gapps-Install {
   if (-not (Test-Path -LiteralPath $Zip)) { Die (T "no file $Zip" "нет файла $Zip") }
   $zip = (Resolve-Path -LiteralPath $Zip).Path
   Check-Tools
-  $dir = Split-Path -Parent (Get-Command fastboot).Source
-  if (-not (Test-Path (Join-Path $dir "mke2fs.exe"))) { Die (T "mke2fs.exe missing next to fastboot ($dir): use the official Platform-Tools zip" "нет mke2fs.exe рядом с fastboot ($dir): используйте официальный архив Platform-Tools") }
+  $dir = $script:PtDir
+  if (-not (Test-Path (Join-Path $dir "mke2fs$($script:PtExt)"))) { Die (T "mke2fs.exe missing next to fastboot ($dir): use the official Platform-Tools zip" "нет mke2fs.exe рядом с fastboot ($dir): используйте официальный архив Platform-Tools") }
   $zname = Split-Path -Leaf $zip
   Say (T "checking $zname" "проверяю $zname")
   $zsha = Sha256 $zip
@@ -780,7 +1019,7 @@ function Gapps-Install {
 
 function Gapps-Remove {
   Check-Tools
-  $list = @(& adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" })
+  $list = @(Pt-Adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" })
   $viaAdb = $list.Count -gt 0
   if ($viaAdb) { Check-Device }
   if ($KeepData -or $Wipe -eq "factory-reset") {
@@ -793,7 +1032,7 @@ function Gapps-Remove {
   if ($viaAdb) { $gv = Fbd-Enter (State-Get slot) }
   else {
     Say (T "no projector over adb: waiting for it in fastboot mode (up to 15 minutes; after 3 failed starts in a row Lumen OS goes there by itself)" "проектора нет в adb: жду его в режиме fastboot (до 15 минут; после 3 неудачных загрузок подряд Lumen OS переходит туда сама)")
-    if (-not (Fbd-Find 900)) { Die (T "the projector did not appear in fastboot mode within 15 minutes; nothing was written" "проектор не появился в режиме fastboot за 15 минут; ничего не записано") }
+    if (-not (Fbd-Find 900)) { Die ((T "the projector did not appear in fastboot mode within 15 minutes; nothing was written" "проектор не появился в режиме fastboot за 15 минут; ничего не записано") + (Fb-Driver-Hint)) }
     $gv = Fbd-Check ""
     State-Set serial $script:Serial; State-Set slot $script:FbdSlot
   }
@@ -877,13 +1116,13 @@ function Z9x-Gapps-Add($S) {  # fastbootd after system: z9x_gapps_<slot> made an
 }
 function Z9x-In-Fastboot {
   if (-not $script:Serial) { return $false }
-  return (@(& fastboot devices 2>$null | ForEach-Object { ("$_".Trim() -split "\s+")[0] }) -ccontains $script:Serial)
+  return (@(Pt-Fastboot devices 2>$null | ForEach-Object { ("$_".Trim() -split "\s+")[0] }) -ccontains $script:Serial)
 }
 function Z9x-Root-Wait {  # adb root over USB; Rooted debugging off: waits for the user; else STOP (the next run continues here)
   while ($true) {
     if ((Prop ro.debuggable) -ne "1") { Die (T "adb root is not possible on this system (Lumen OS is a userdebug build: is it really Lumen OS?). Nothing was erased." "adb root на этой системе невозможен (Lumen OS собрана как userdebug: точно ли это Lumen OS?). Ничего не стёрто.") }
     if (((Adb shell id -u) | Out-String).Trim() -eq "0") { return }
-    $out = (& adb -s $script:Serial root 2>&1) | Out-String   # both streams: the refusal text decides
+    $out = (Pt-Adb -s $script:Serial root 2>&1) | Out-String   # both streams: the refusal text decides
     if ($out -match "disabled by system setting") { if (-not (Root-Setting-Wait)) { Root-Setting-Stop }; continue }
     Start-Sleep 3; Adb wait-for-device | Out-Null
     if (((Adb shell id -u) | Out-String).Trim() -eq "0") { return }
@@ -1092,10 +1331,10 @@ function P6-NoConn($secs) {  # why Wifi-Connect gave up, as the user can act on 
   }
   return (T "no adb connection to $t over Wi-Fi $en. On the projector: is Wi-Fi on, is network debugging on (guide, section '$nm'), is it this address (the projector's network settings show it)? This computer must be in the same network. Nothing was done." "нет связи adb с $t по Wi-Fi $ru. На проекторе включены Wi-Fi и отладка по сети (инструкция, раздел «${nm}»), адрес тот же (он виден в настройках сети проектора)? Компьютер должен быть в той же сети. Ничего не сделано.")
 }
-function P6-State { return ((@(& adb -s $script:AdbT get-state 2>&1 | ForEach-Object { "$_" }) -join "`n").Trim()) }
+function P6-State { return ((@(Pt-Adb -s $script:AdbT get-state 2>&1 | ForEach-Object { "$_" }) -join "`n").Trim()) }
 function P6-Alive {  # $true = the projector answers on a NEW connection (an old one may still say 'device' after a restart)
-  & adb disconnect $script:AdbT 2>&1 | Out-Null
-  & adb connect $script:AdbT 2>&1 | Out-Null
+  Pt-Adb disconnect $script:AdbT 2>&1 | Out-Null
+  Pt-Adb connect $script:AdbT 2>&1 | Out-Null
   return ((P6-State) -eq "device")
 }
 $P6NoMark = "lumen-install-no-check-file"
@@ -1109,7 +1348,7 @@ function P6-Marker {  # the wipe's check file: 'there' (no wipe since it was wri
 }
 function P6-Discover($ser) {  # ADDR:PORT of the one projector that 'adb mdns services' lists (with that serial), or ""
   $pre = if ($ser) { "adb-$ser-" } else { "" }
-  $found = @(& adb mdns services 2>$null | ForEach-Object {
+  $found = @(Pt-Adb mdns services 2>$null | ForEach-Object {
     $f = @("$_".Trim() -split "\s+")
     if ($f.Count -ge 3 -and $f[0] -like "adb-*" -and $f[1] -match '^_adb\._tcp\.?$' -and (-not $pre -or $f[0].StartsWith($pre))) { $f[-1] }
   } | Sort-Object -Unique)
@@ -1120,13 +1359,13 @@ function Wifi-Connect($secs) {  # adb to $script:AdbT until it answers as 'devic
   # network that drops packets), so "a minute" stays about a minute.
   $said = $false; $sw = [Diagnostics.Stopwatch]::StartNew()
   for ($i = 0; ; $i += 5) {
-    & adb connect $script:AdbT 2>&1 | Out-Null
+    Pt-Adb connect $script:AdbT 2>&1 | Out-Null
     $st = P6-State
     $script:P6St = $st
     if ($st -eq "device") { return $true }
     if ($st -match "unauthorized") {
       if (-not $said) { Say (T "On the projector: allow debugging from this computer. Tick `"Always allow from this computer`" and press OK." "На проекторе разрешите отладку с этого компьютера: отметьте «Всегда разрешать с этого компьютера» и нажмите OK."); $said = $true }
-    } elseif ($st -match "offline") { & adb disconnect $script:AdbT 2>&1 | Out-Null }
+    } elseif ($st -match "offline") { Pt-Adb disconnect $script:AdbT 2>&1 | Out-Null }
     if ($i -ge $secs -or $sw.Elapsed.TotalSeconds -ge $secs) { return $false }
     # the address may have changed (DHCP): the projector's mDNS name carries its serial (only that projector, also
     # with -Ip: P6-Identity checks the serial again)
@@ -1140,13 +1379,13 @@ function Wifi-Connect($secs) {  # adb to $script:AdbT until it answers as 'devic
 function P6-Identity {  # the device at AdbT: this projector model, and the saved one (DHCP may give its address away)
   $code = Prop ro.boot.xgimi.modelname; $board = Prop ro.boot.hardware; $ser = Prop ro.serialno; $t = $script:AdbT
   if ($code -cne $script:Prof["MODEL"] -or $board -cne $script:Prof["BOARD"]) {
-    & adb disconnect $t 2>&1 | Out-Null
+    Pt-Adb disconnect $t 2>&1 | Out-Null
     if ((Profile-Of $code $board) -eq "z9x") { Die (T "the device at $t is an XGIMI Z9X: it installs over the USB cable, without -Ip (guide). Nothing was done." "устройство по адресу $t это XGIMI Z9X: он ставится по кабелю USB, без -Ip (инструкция). Ничего не сделано.") }
     Die (T "this projector is not supported: model '$code', board '$board'. Lumen OS installs on $(Profiles-Named). Nothing was done." "этот проектор не поддерживается: код модели '$code', плата '$board'. Lumen OS ставится на $(Profiles-Named). Ничего не сделано.")
   }
   if (-not $ser) { Die (T "the projector at $t reports no serial number. Nothing was done." "проектор по адресу $t не сообщает серийный номер. Ничего не сделано.") }
   if ($script:Serial -and $script:Serial -cne $ser) {
-    & adb disconnect $t 2>&1 | Out-Null
+    Pt-Adb disconnect $t 2>&1 | Out-Null
     $saved = $script:Serial
     if ($script:SerialFromState) { Die (T "the projector at $t has the serial $ser, but this install was started on $saved. Another projector? Then first: lumen-install.cmd reset -Device play6. Nothing was done." "у проектора по адресу $t серийный номер $ser, а установка начиналась на $saved. Другой проектор? Тогда сначала: lumen-install.cmd reset -Device play6. Ничего не сделано.") }
     Die (T "the projector at $t has the serial $ser, not $saved (-Serial). Nothing was done." "у проектора по адресу $t серийный номер $ser, а не $saved (-Serial). Ничего не сделано.")
@@ -1154,10 +1393,10 @@ function P6-Identity {  # the device at AdbT: this projector model, and the save
   $script:Serial = $ser
 }
 function P6-Usb-Hint {  # no address for a Play 6: a Z9X on the USB cable means the wrong download or the wrong option
-  $l = @(& adb devices 2>$null | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" } | ForEach-Object { ($_ -split "\t")[0] } | Where-Object { $_ -notmatch ":" })
+  $l = @(Pt-Adb devices 2>$null | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" } | ForEach-Object { ($_ -split "\t")[0] } | Where-Object { $_ -notmatch ":" })
   if ($l.Count -ne 1) { return }
-  $code = ((& adb -s $l[0] shell getprop ro.boot.xgimi.modelname 2>$null) | Out-String).Trim()
-  $board = ((& adb -s $l[0] shell getprop ro.boot.hardware 2>$null) | Out-String).Trim()
+  $code = ((Pt-Adb -s $l[0] shell getprop ro.boot.xgimi.modelname 2>$null) | Out-String).Trim()
+  $board = ((Pt-Adb -s $l[0] shell getprop ro.boot.hardware 2>$null) | Out-String).Trim()
   if ((Profile-Of $code $board) -eq "z9x") {
     $nm = P6-Name
     if ($RelDevice -eq "play6") { Die (T "the projector on the USB cable is an XGIMI Z9X, and this download of the installer is for the ${nm}: download the XGIMI Z9X release (see the guide). Nothing was done." "на кабеле USB проектор XGIMI Z9X, а этот установщик скачан для ${nm}: скачайте релиз для XGIMI Z9X (см. инструкцию). Ничего не сделано.") }
@@ -1306,7 +1545,7 @@ function Play6-Check {
 }
 function P6-In-Fastboot {
   if (-not $script:Serial) { return $false }
-  return (@(& fastboot devices 2>$null | ForEach-Object { ("$_".Trim() -split "\s+")[0] }) -ccontains $script:Serial)
+  return (@(Pt-Fastboot devices 2>$null | ForEach-Object { ("$_".Trim() -split "\s+")[0] }) -ccontains $script:Serial)
 }
 function P6-Fb-Wait($secs) {  # the projector ($script:Serial) in fastboot mode on the cable
   for ($i = 0; $i -lt $secs; $i += 2) {
@@ -1428,9 +1667,9 @@ function Play6-Write {  # check, confirmation, cable, fastbootd, write system, r
       State-Set step_fastboot ""
       Die (T "adb reboot fastboot failed: the projector still runs its system. Nothing was written. Unplug the A-to-A cable and run the installer again." "adb reboot fastboot не удался: проектор работает в своей системе. Ничего не записано. Выньте кабель A–A и запустите установщик снова.")
     }
-    & adb disconnect $script:AdbT 2>&1 | Out-Null
+    Pt-Adb disconnect $script:AdbT 2>&1 | Out-Null
   }
-  if (-not (P6-Fb-Wait 180)) { Die (T "the projector did not appear on the cable within 3 minutes. Is the cable in the projector's USB port (not a hub)? On Windows the Google USB Driver is needed. Nothing was written. Run the installer again: it finds the projector in fastboot mode or sends it there again." "проектор не появился на кабеле за 3 минуты. Кабель в USB-порту проектора (не через хаб)? На Windows нужен Google USB Driver. Ничего не записано. Запустите установщик снова: он найдёт проектор в режиме fastboot или снова отправит его туда.") }
+  if (-not (P6-Fb-Wait 180)) { Die ((T "the projector did not appear on the cable within 3 minutes. Is the cable in the projector's USB port (not a hub)? On Windows the Google USB Driver is needed. Nothing was written. Run the installer again: it finds the projector in fastboot mode or sends it there again." "проектор не появился на кабеле за 3 минуты. Кабель в USB-порту проектора (не через хаб)? На Windows нужен Google USB Driver. Ничего не записано. Запустите установщик снова: он найдёт проектор в режиме fastboot или снова отправит его туда.") + (Fb-Driver-Hint)) }
   $gv = Play6-Fbd-Check
   P6-Room $gv (P6-Plan-Part)
   Say (T "writing system (about 1 minute). Do not unplug the cable or the power until it is done." "записываю system (около минуты). Не отключайте кабель и питание, пока запись не закончится.")
@@ -1486,7 +1725,7 @@ function P6-Root {  # adb root restarts adbd, so connect again. 0 = root; 1 = th
   if ((Prop ro.debuggable) -ne "1") { return 1 }
   if (((Adb shell id "-u") | Out-String).Trim() -eq "0") { return 0 }
   $t = if ($script:AdbT) { $script:AdbT } else { $script:Serial }
-  $out = (& adb -s $t root 2>&1) | Out-String   # both streams: the refusal text decides return 3
+  $out = (Pt-Adb -s $t root 2>&1) | Out-String   # both streams: the refusal text decides return 3
   if ($out -match "disabled by system setting") { return 3 }
   Start-Sleep 3
   if (-not (Wifi-Connect 60)) { return 2 }
@@ -1541,7 +1780,7 @@ function Play6-Wipe {  # Android's own factory reset on the first Lumen OS start
     if ($i -ge 60 -or $sw.Elapsed.TotalSeconds -ge 60) { Die (T "the projector still answers a minute after the factory reset was asked for: the factory reset did not start, your data is unchanged. On the projector: Settings > Device Preferences > Reset > Factory reset. To report it, send the logcat lines of MasterClearReceiver and uncrypt." "проектор отвечает и через минуту после запроса сброса: сброс не начался, данные не изменены. На проекторе: Настройки > Настройки устройства > Сброс > Сброс к заводским настройкам. Для отчёта пришлите строки logcat от MasterClearReceiver и uncrypt.") }
     Start-Sleep 5
   }
-  & adb disconnect $script:AdbT 2>&1 | Out-Null
+  Pt-Adb disconnect $script:AdbT 2>&1 | Out-Null
   State-Set step_wipe requested
   $script:WipedNow = $true
   Write-Host ""
@@ -1640,7 +1879,7 @@ function Play6-Rescue {  # the projector waits in fastboot mode: write system ag
   if ((Read-Host (T "Type WRITE to continue" "Введите WRITE, чтобы продолжить")) -cne "WRITE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
   $saved = State-Get serial
   Say (T "Take the USB stick out and connect the projector's USB port to this computer with the A-to-A cable. Waiting for the projector in fastboot mode (up to 15 minutes); the picture may stay dark." "Выньте флешку и соедините USB-порт проектора с компьютером кабелем A–A. Жду проектор в режиме fastboot (до 15 минут); изображения может не быть.")
-  if (-not (Fbd-Find 900)) { Die (T "the projector did not appear in fastboot mode within 15 minutes. Cable in the projector's USB port? USB driver? Nothing was written. If it never gets there: guide, 'Back to stock'." "проектор не появился в режиме fastboot за 15 минут. Кабель в USB-порту проектора? Драйвер USB? Ничего не записано. Если он туда не попадает: инструкция, «Откат на сток».") }
+  if (-not (Fbd-Find 900)) { Die ((T "the projector did not appear in fastboot mode within 15 minutes. Cable in the projector's USB port? USB driver? Nothing was written. If it never gets there: guide, 'Back to stock'." "проектор не появился в режиме fastboot за 15 минут. Кабель в USB-порту проектора? Драйвер USB? Ничего не записано. Если он туда не попадает: инструкция, «Откат на сток».") + (Fb-Driver-Hint)) }
   # fastbootd cannot tell stock from Lumen OS here (its system-fingerprint is XGIMI's recovery's own, stock on every
   # Play 6), so the saved progress does: this projector last seen on stock with nothing written to it stays stock
   if ($script:Serial -ceq $saved -and (State-Get dev_lumen) -eq "0" -and -not ((State-Get step_fastboot) + (State-Get step_flash) + (State-Get step_rescue))) {
@@ -1758,8 +1997,8 @@ function P6-To-Fastboot {  # Lumen OS runs: cable in, restart into fastboot mode
   Say (T "restarting into fastboot mode (about 30 seconds)" "перезагрузка в режим fastboot (около 30 секунд)")
   Adb reboot fastboot | Out-Null
   if ($LASTEXITCODE -ne 0 -and (P6-Alive)) { Die (T "adb reboot fastboot failed: the projector still runs its system. Unplug the A-to-A cable and run the same command again." "adb reboot fastboot не удался: проектор работает в своей системе. Выньте кабель A–A и запустите ту же команду снова.") }
-  & adb disconnect $script:AdbT 2>&1 | Out-Null
-  if (-not (P6-Fb-Wait 180)) { Die (T "the projector did not appear on the cable within 3 minutes. Is the cable in the projector's USB port (not a hub)? On Windows the Google USB Driver is needed. Unplug the cable, press the power button if the picture is dark, and run the same command again." "проектор не появился на кабеле за 3 минуты. Кабель в USB-порту проектора (не через хаб)? На Windows нужен Google USB Driver. Выньте кабель, нажмите кнопку питания, если изображения нет, и запустите ту же команду снова.") }
+  Pt-Adb disconnect $script:AdbT 2>&1 | Out-Null
+  if (-not (P6-Fb-Wait 180)) { Die ((T "the projector did not appear on the cable within 3 minutes. Is the cable in the projector's USB port (not a hub)? On Windows the Google USB Driver is needed. Unplug the cable, press the power button if the picture is dark, and run the same command again." "проектор не появился на кабеле за 3 минуты. Кабель в USB-порту проектора (не через хаб)? На Windows нужен Google USB Driver. Выньте кабель, нажмите кнопку питания, если изображения нет, и запустите ту же команду снова.") + (Fb-Driver-Hint)) }
   return (Play6-Fbd-Check)
 }
 function P6-Super-Free($gv) {  # bytes of super no logical partition uses (each rounded up to 1 MiB), minus SUPER_RESERVE
@@ -1852,7 +2091,7 @@ function Play6-Gapps-Install {
     Say (T "restarting" "перезагрузка")
     Adb reboot | Out-Null
     for ($i = 0; (P6-Alive) -and $i -lt 60; $i += 5) { Start-Sleep 5 }   # until it goes away
-    & adb disconnect $script:AdbT 2>&1 | Out-Null
+    Pt-Adb disconnect $script:AdbT 2>&1 | Out-Null
     P6-Wait-Lumen ""
     $v = Prop sys.lumen.gapps
     if ($v -like "mounted:*") { Ok (T "Google services are on. Sign in: Settings > Accounts. If Google refuses the sign-in, register the GSF ID (lumen-install.cmd gsf)." "сервисы Google включены. Вход: Настройки > Аккаунты. Если Google не пускает, зарегистрируйте GSF ID (lumen-install.cmd gsf).") }
@@ -2020,7 +2259,7 @@ function P6-Gapps-Fill-Step {  # on the first start (old data): lumen_gapps fill
     if (-not $o.StartsWith("OK off")) { Die ((T "the projector is not ready" "проектор не готов") + ": " + ($o -replace "^FAIL ", "") + ". " + (T "Nothing was erased." "Ничего не стёрто.")) }
     Adb reboot | Out-Null
     for ($i = 0; (P6-Alive) -and $i -lt 60; $i += 5) { Start-Sleep 5 }   # until it goes away
-    & adb disconnect $script:AdbT 2>&1 | Out-Null
+    Pt-Adb disconnect $script:AdbT 2>&1 | Out-Null
     P6-Wait-Lumen (T "Nothing was erased." "Ничего не стёрто.")
     P6-Root-Wait
     if ((Prop sys.lumen.gapps) -ne "off") { Die (T "the projector did not leave $P6Gapps unmounted (sys.lumen.gapps=$(Prop sys.lumen.gapps)). Restart it and run the same command again. Nothing was erased." "проектор не оставил $P6Gapps неподключённым (sys.lumen.gapps=$(Prop sys.lumen.gapps)). Перезагрузите его и запустите ту же команду снова. Ничего не стёрто.") }
@@ -2089,6 +2328,9 @@ if ($GappsZip) {   # one pass, one wipe: the full install only
 Resolve-Device
 if (-not $script:Serial) { $script:Serial = State-Get serial; if ($script:Serial) { $script:SerialFromState = $true } }
 if (@("", "check", "flash", "rescue") -contains $Command) { Release-Guard }
+# every command that talks to the projector: our own adb and fastboot first
+if (@("", "check", "backup", "flash", "verify", "gsf", "rescue", "gapps") -contains $Command -or
+    ($script:Projector -eq "z9x" -and @("blobs", "vbmeta") -contains $Command)) { Pt-Setup }
 if ($script:Projector -eq "play6") {
   switch ($Command) {
     ""       { Play6-All }
@@ -2104,6 +2346,7 @@ if ($script:Projector -eq "play6") {
     "gapps"  { Play6-Gapps }
     default  { Get-Content $PSCommandPath -TotalCount 20 | Select-Object -Skip 1; exit 2 }  # the usage lines above
   }
+  Pt-Cleanup
   exit 0
 }
 switch ($Command) {
@@ -2120,3 +2363,4 @@ switch ($Command) {
   "stick"  { Stick-Check }
   default  { Get-Content $PSCommandPath -TotalCount 20 | Select-Object -Skip 1; exit 2 }  # the usage lines above
 }
+Pt-Cleanup

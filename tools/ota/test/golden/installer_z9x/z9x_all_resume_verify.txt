@@ -1,5 +1,6 @@
 == exit 0
 == output
+12:00:00   ✓ Platform-Tools 35.0.2 (tools/platform-tools, checked), own adb server on port 5038
 Make a backup of your apps and files first (recommended)? [yes/no] 12:00:00 waiting for the projector to finish starting (up to 5 minutes)
 12:00:00   ✓ Lumen OS 1.0.2 (lumen-1.0.2-20261010enp, public, without Google)
 12:00:00   ✓ no Google package
@@ -11,6 +12,8 @@ Make a backup of your apps and files first (recommended)? [yes/no] 12:00:00 wait
 Done. On the projector: choose the language, Wi-Fi and the rest of the setup. Install apps from a
 USB stick: Lumen Home > Apps > Install from USB. Google services can be added later: 'gapps' (guide).
 == adb
+version
+start-server
 devices
 -s ZF62TEST0009 shell getprop sys.boot_completed
 -s ZF62TEST0009 shell getprop sys.boot_completed
@@ -26,5 +29,7 @@ devices
 -s ZF62TEST0009 shell getprop sys.z9x.gapps
 -s ZF62TEST0009 shell dumpsys media.audio_policy
 -s ZF62TEST0009 shell mount | grep " /data "
+kill-server
 == fastboot
+--version
 == unexpected

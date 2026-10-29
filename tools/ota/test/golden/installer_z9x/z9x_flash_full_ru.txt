@@ -1,5 +1,6 @@
 == exit 0
 == output
+12:00:00   ✓ Platform-Tools 35.0.2 (tools/platform-tools, проверены), свой сервер adb на порту 5038
 12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
 12:00:00   ✓ XGIMI Z9X ZF62TEST0009, прошивка v6.15.58, слот b, система: родная XGIMI
 12:00:00   ! --no-blobs: не будет звука и защищённого видео (например, Кинопоиск HD)
@@ -33,6 +34,7 @@
 12:00:00   ✓ записано. Первый запуск 2–4 минуты; на проекторе появится экран настройки.
 == adb
 version
+start-server
 devices
 -s ZF62TEST0009 shell getprop ro.boot.xgimi.modelname
 -s ZF62TEST0009 shell getprop ro.boot.hardware
@@ -43,8 +45,8 @@ devices
 -s ZF62TEST0009 shell ls /dev/block/mapper/
 -s ZF62TEST0009 shell getprop ro.debuggable
 -s ZF62TEST0009 reboot fastboot
+kill-server
 == fastboot
---version
 --version
 devices
 -s ZF62TEST0009 getvar all

@@ -27,6 +27,20 @@ Put `lumen-os-<version>-nogms-system.img` (Play 6: `lumen-os-play6-<version>-nog
 `SHA256SUMS` and `SHA256SUMS.sig` from the same release next to `lumen-install.sh`. The installer refuses an
 image of the other projector.
 
+## adb and fastboot
+
+The installer never uses an adb or fastboot installed on the computer. On the first run it downloads Google's
+Android SDK Platform-Tools 35.0.2 from dl.google.com (`platform-tools_r35.0.2-<darwin|linux|win>.zip`), checks
+the sha256 written in the scripts, unpacks it into `tools/platform-tools` next to itself and checks those files
+again on every later run. The zip is not part of the download because Google's license does not allow passing it
+on. Its adb server runs on port 5038 (adb's usual one is 5037), so adb servers of other programs (Android Studio,
+phone managers, scrcpy) cannot get in the way; only that server is stopped at the end. Every adb and fastboot
+call has a time limit; a call that hangs stops the installer with a message. Offline: put the zip into `tools/`,
+or pass `--platform-tools DIR` (`-PlatformTools DIR`), a folder with adb and fastboot 35 or newer (and
+`mke2fs`, `make_f2fs` for the Z9X wipe). Linux on ARM: Google's zip is x86-64 only, use `--platform-tools`.
+On Windows the installer also warns when it runs from a USB stick or network drive, and when the projector does
+not show up in fastboot mode it looks for a USB device without a driver and explains the Google USB Driver.
+
 ## Commands
 
 `bash lumen-install.sh [options] [command]`. On Windows: `lumen-install.cmd [command] [options]`.
@@ -82,6 +96,7 @@ Options:
 | `--gapps-zip FILE` | `-GappsZip FILE` | install Lumen OS and Google services in one run, with one wipe; not with a command name, `--keep-data`, `--wipe=factory-reset` or an image with Google built in |
 | `--ip ADDRESS[:PORT]` | `-Ip ADDRESS[:PORT]` | the XGIMI Play 6's Wi-Fi address (port 5555 if not given) |
 | `--device z9x\|play6` | `-Device z9x\|play6` | which projector, when the installer cannot tell by itself |
+| `--platform-tools DIR` | `-PlatformTools DIR` | adb and fastboot from DIR instead of the installer's own download (offline computers) |
 | `stick DIR` | `stick -Path E:\` | the stick to check |
 
 ## What it writes

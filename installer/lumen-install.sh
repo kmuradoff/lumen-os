@@ -47,6 +47,15 @@
 #                       as root (Developer options > Rooted debugging; the installer waits for it), then the wipe
 #   --ip ADDR[:PORT]    the XGIMI Play 6's Wi-Fi address (port 5555 if not given): it has no USB debugging
 #   --device z9x|play6  which projector (default: the one this download is for, or an unfinished install)
+#   --platform-tools DIR  use the adb and fastboot in DIR (Platform-Tools 35 or newer, with mke2fs and
+#                       make_f2fs) instead of downloading them: for a computer without internet access
+#
+# adb and fastboot: the installer never uses the ones on PATH. On first use it downloads Google's
+# Platform-Tools 35.0.2 (zip from dl.google.com, sha256 pinned in the script) into tools/platform-tools next to
+# this script and reuses that folder after checking it again (a platform-tools_r35.0.2-<os>.zip already in tools/
+# is checked and used without a download). Its adb server runs on its own port (5038), so adb servers of
+# other programs cannot get in the way, and only that server is stopped at the end. Every adb and fastboot
+# call has a time limit: a call that hangs stops the installer with a message instead of waiting for ever.
 #
 # XGIMI Z9X, what it writes, ever: system_<slot>, z9x_blobs_<slot> (create/resize/flash), z9x_gapps_<slot>
 # ('gapps': create/resize/format, filled over adb as root, delete), and formats userdata, metadata and cache. It may
@@ -87,6 +96,18 @@
 set -u
 
 HERE=$(cd "$(dirname "$0")" && pwd)
+PT_VER=35.0.2           # Google's Platform-Tools this installer downloads (sha256 of each zip as published)
+PT_SHA_darwin=1820078db90bf21628d257ff052528af1c61bb48f754b3555648f5652fa35d78
+PT_SHA_linux=acfdcccb123a8718c46c46c059b2f621140194e5ec1ac9d81715be3d6ab6cd0a
+PT_URL=https://dl.google.com/android/repository
+ADB_PORT=5038           # the installer's own adb server (adb's default is 5037)
+PT_OPT=${LUMEN_PLATFORM_TOOLS:-}   # --platform-tools DIR
+PT_DIR=""               # the adb and fastboot in use (set by pt_setup)
+PT_SHA=""
+PT_SERVER=0
+PT_SLEEP=/bin/sleep     # the watchdog's clock: the system's own sleep, never one found on PATH
+[ -x "$PT_SLEEP" ] || PT_SLEEP=/usr/bin/sleep
+[ -x "$PT_SLEEP" ] || PT_SLEEP=$(command -pv sleep 2>/dev/null || echo sleep)
 STATE_DIR=${LUMEN_STATE_DIR:-$HOME/.lumen-installer}
 BACKUP_ROOT=${LUMEN_BACKUP_DIR:-$HOME/Lumen-backup}
 MODEL_CODE=G0082
@@ -137,7 +158,6 @@ say() { printf '%s %s\n' "$(date +%H:%M:%S)" "$*"; }
 ok() { say "  ✓ $*"; }
 warn() { say "  ! $*"; }
 die() { say "$(t 'STOP' 'СТОП'): $*"; exit 1; }
-need() { command -v "$1" >/dev/null 2>&1 || die "$(t "missing program $1: install Android SDK Platform-Tools 35 or newer and put it on PATH" "нет программы $1: установите Android SDK Platform-Tools версии 35 или новее и добавьте в PATH") (https://developer.android.com/tools/releases/platform-tools)"; }
 sha256() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi; }
 # identity of the file on disk (size, mtime, inode): a cached check is only valid for exactly that file
 filekey() { local m; m=$(stat -f '%z %m %i' "$1" 2>/dev/null) || m=$(stat -c '%s %Y %i' "$1" 2>/dev/null) || m="?"; printf '%s' "$m" | tr ' ' ':'; }
@@ -153,6 +173,147 @@ state_set() {
   mkdir -p "$SD"
   { [ -f "$SD/state" ] && grep -v "^$1=" "$SD/state"; echo "$1=$2"; } > "$SD/state.tmp"
   mv "$SD/state.tmp" "$SD/state"
+}
+# ------------------------------------------------------------------ adb and fastboot (own copy, time limits)
+adb() { pt_call adb "$@"; }
+fastboot() { pt_call fastboot "$@"; }
+pt_run() {  # seconds program args...: runs it; 124 = it did not finish in time and was stopped
+  local secs=$(pt_cap "$1") p w rc fired; shift
+  "$@" <&0 9>&- &
+  p=$!
+  ( st=1; s=""
+    trap 'kill $s 2>/dev/null; exit $st' TERM
+    "$PT_SLEEP" "$secs" & s=$!; wait $s || exit 1
+    st=0; kill -TERM "$p" 2>/dev/null
+    "$PT_SLEEP" 3 & s=$!; wait $s; kill -KILL "$p" 2>/dev/null; exit 0 ) </dev/null >/dev/null 2>&1 9>&- &
+  w=$!
+  wait "$p" 2>/dev/null; rc=$?
+  kill -TERM "$w" 2>/dev/null; wait "$w" 2>/dev/null; fired=$?
+  [ "$fired" = 0 ] && [ "$rc" -ge 128 ] && return 124
+  return "$rc"
+}
+pt_cap() { if [ -n "${LUMEN_TIMEOUT_MAX:-}" ] && [ "$1" -gt "$LUMEN_TIMEOUT_MAX" ]; then echo "$LUMEN_TIMEOUT_MAX"; else echo "$1"; fi; }   # tests only
+pt_sub() {  # args...: the command word after the options (-s SERIAL, --fs-options=...)
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -s|-t) if [ $# -ge 2 ]; then shift 2; else shift; fi ;;
+      --version) echo version; return ;;
+      -*) shift ;;
+      *) echo "$1"; return ;;
+    esac
+  done
+}
+pt_limit() {  # adb|fastboot args...: seconds the call may take (generous: only a hang reaches it)
+  local tool=$1 sub sz; shift
+  sub=$(pt_sub "$@")
+  case "$tool $sub" in
+    *" version"|"adb devices"|"adb start-server"|"adb kill-server"|"adb get-state"|"adb get-serialno"|"adb disconnect"|"adb mdns") echo 20 ;;
+    "adb connect") echo 30 ;;
+    "adb root"|"adb unroot"|"adb reboot"|"adb reconnect") echo 60 ;;
+    "adb wait-for-"*) echo 180 ;;
+    "adb pull") echo 7200 ;;
+    "adb shell"|"adb push"|"adb install"*) echo 1800 ;;
+    "fastboot devices") echo 20 ;;
+    "fastboot getvar") echo 60 ;;
+    "fastboot reboot"*) echo 180 ;;
+    "fastboot flash")   # at least 2 MB/s from the disk to the projector (USB 2.0 does about 30)
+      eval "sz=\${$#}"; sz=$(wc -c < "$sz" 2>/dev/null | tr -d ' '); echo $((300 + ${sz:-0} / 2097152)) ;;
+    *) echo 600 ;;
+  esac
+}
+pt_call() {  # adb|fastboot args...: our own copy, within the time limit of that call
+  local tool=$1 secs rc; shift
+  [ -n "$PT_DIR" ] || die "internal: $tool before the Platform-Tools check"
+  secs=$(pt_cap "$(pt_limit "$tool" "$@")")
+  pt_run "$secs" "$PT_DIR/$tool" "$@"; rc=$?
+  [ "$rc" = 124 ] || return "$rc"
+  if [ "$tool" = fastboot ] && [ "$(pt_sub "$@")" = flash ]; then   # the caller says what that means for the projector
+    say "  ! $(t "'fastboot $*' did not finish in $secs s and was stopped: the write is incomplete. A slow disk (USB stick, network drive) can cause it: copy the installer folder to the computer's own disk." "'fastboot $*' не завершился за $secs с и остановлен: запись неполная. Причиной может быть медленный диск (флешка, сетевой диск): скопируйте папку установщика на диск самого компьютера.")" >&9
+    return 124
+  fi
+  say "$(t 'STOP' 'СТОП'): $(t "'$tool $*' did not answer within $secs s and was stopped; the installer went no further (nothing after this step was written). Unplug the USB cable and plug it in again (Play 6: check its Wi-Fi), then run the same command again. If it happens again, restart the computer: another program may be holding the USB connection." "'$tool $*' не ответил за $secs с и остановлен; установщик дальше не пошёл (ничего после этого шага не записано). Выньте и снова вставьте кабель USB (Play 6: проверьте его Wi-Fi) и запустите ту же команду ещё раз. Если повторится, перезагрузите компьютер: соединение USB может держать другая программа.")" >&9   # fd 9: the terminal, also when the caller hides stderr
+  kill -TERM $$ 2>/dev/null   # the whole installer stops, also from inside $(...)
+  exit 1
+}
+pt_major() { sed -n -e 's/^Version \([0-9][0-9]*\)\..*/\1/p' -e 's/^fastboot version \([0-9][0-9]*\)\..*/\1/p' | head -n 1; }
+pt_files() { echo adb; echo fastboot; echo mke2fs; echo make_f2fs; }   # what the installer runs or fastboot needs
+pt_marker_ok() {  # DIR: our checked unpack (zip sha256, and the sha256 of each file it runs)
+  local d=$1 f want
+  [ -f "$d/.lumen-platform-tools" ] || return 1
+  [ "$(sed -n 's/^zip //p' "$d/.lumen-platform-tools")" = "$PT_SHA" ] || return 1
+  for f in $(pt_files); do
+    want=$(awk -v f="$f" '$2 == f { print $1 }' "$d/.lumen-platform-tools")
+    [ -n "$want" ] && [ -f "$d/$f" ] && [ "$(sha256 "$d/$f")" = "$want" ] || return 1
+  done
+}
+pt_fetch() {  # zip name: the pinned zip into $HERE/tools (kept: a later run checks it again instead of downloading)
+  local zip=$1 url=$PT_URL/$1 dir=$HERE/tools
+  mkdir -p "$dir" 2>/dev/null && [ -w "$dir" ] || die "$(t "cannot write $dir: copy the installer folder to a folder of your own (for example your home folder) and run it there. Nothing was done." "нельзя писать в $dir: скопируйте папку установщика в свою папку (например, домашнюю) и запустите оттуда. Ничего не сделано.")"
+  if [ -f "$dir/$zip" ] && [ "$(sha256 "$dir/$zip")" = "$PT_SHA" ]; then return 0; fi
+  say "$(t "downloading Google's Android SDK Platform-Tools $PT_VER (adb and fastboot, about 10 MB, once): $url" "скачиваю Android SDK Platform-Tools $PT_VER от Google (adb и fastboot, около 10 МБ, один раз): $url")"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL --retry 3 --connect-timeout 20 --speed-limit 1024 --speed-time 60 -o "$dir/$zip.part" "$url"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q -T 60 -t 3 -O "$dir/$zip.part" "$url"
+  else
+    false
+  fi || die "$(t "the download failed (no internet?). Download $url yourself and put it into $dir, or run with --platform-tools DIR (Platform-Tools 35 or newer). Nothing was done." "скачать не удалось (нет интернета?). Скачайте $url сами и положите в $dir или запустите с --platform-tools ПАПКА (Platform-Tools 35 или новее). Ничего не сделано.")"
+  [ "$(sha256 "$dir/$zip.part")" = "$PT_SHA" ] || { rm -f "${dir:?}/${zip:?}.part"; die "$(t "the downloaded $zip is not Google's file (sha256 differs): removed, not used. Try again later. Nothing was done." "скачанный $zip не совпадает с файлом Google (другой sha256): удалён, не используется. Повторите позже. Ничего не сделано.")"; }
+  mv "$dir/$zip.part" "$dir/$zip"
+}
+pt_unpack() {  # zip name -> $HERE/tools/platform-tools, with the marker that lets later runs reuse it
+  local zip=$HERE/tools/$1 new=$HERE/tools/.platform-tools.new f
+  rm -rf "${new:?}"; mkdir -p "$new"
+  if command -v unzip >/dev/null 2>&1; then unzip -q "$zip" -d "$new"
+  else python3 -I -m zipfile -e "$zip" "$new"; fi \
+    || { rm -rf "${new:?}"; die "$(t "cannot unpack $zip (install unzip). Nothing was done." "не удаётся распаковать $zip (установите unzip). Ничего не сделано.")"; }
+  [ -f "$new/platform-tools/adb" ] || { rm -rf "${new:?}"; die "internal: $zip has no platform-tools/adb"; }
+  for f in $(pt_files) make_f2fs_casefold; do [ -f "$new/platform-tools/$f" ] && chmod 755 "$new/platform-tools/$f"; done
+  { echo "zip $PT_SHA"; for f in $(pt_files); do [ -f "$new/platform-tools/$f" ] && echo "$(sha256 "$new/platform-tools/$f") $f"; done; } \
+    > "$new/platform-tools/.lumen-platform-tools"
+  rm -rf "${HERE:?}/tools/platform-tools"; mv "$new/platform-tools" "$HERE/tools/platform-tools"; rm -rf "${new:?}"
+}
+pt_setup() {  # adb and fastboot of our own, checked; our own adb server started (it answers within seconds)
+  local os="" zip dir v src
+  case "$(uname -s)" in
+    Darwin) os=darwin ;;
+    Linux) case "$(uname -m)" in x86_64|amd64) os=linux ;; esac ;;
+  esac
+  if [ -n "$PT_OPT" ]; then
+    dir=$(cd "$PT_OPT" 2>/dev/null && pwd) && [ -x "$dir/adb" ] && [ -x "$dir/fastboot" ] \
+      || die "$(t "--platform-tools $PT_OPT: no adb and fastboot there. Nothing was done." "--platform-tools $PT_OPT: там нет adb и fastboot. Ничего не сделано.")"
+    src=$dir
+  else
+    [ -n "$os" ] || die "$(t "Google's Platform-Tools run on macOS, Linux x86-64 and Windows (lumen-install.cmd), not on this computer ($(uname -s) $(uname -m)): install adb and fastboot 35 or newer for it and run with --platform-tools DIR (the folder that has them). Nothing was done." "Platform-Tools от Google работают на macOS, Linux x86-64 и Windows (lumen-install.cmd), а не на этом компьютере ($(uname -s) $(uname -m)): установите для него adb и fastboot версии 35 или новее и запустите с --platform-tools ПАПКА (где они лежат). Ничего не сделано.")"
+    eval "PT_SHA=\$PT_SHA_$os"; zip=platform-tools_r$PT_VER-$os.zip; dir=$HERE/tools/platform-tools
+    if ! pt_marker_ok "$dir"; then
+      pt_fetch "$zip"; pt_unpack "$zip"
+      pt_marker_ok "$dir" || die "internal: the unpacked Platform-Tools do not check out"
+    fi
+    src="tools/platform-tools, $(t "checked" "проверены")"
+  fi
+  PT_DIR=$dir
+  exec 9>&2
+  export ANDROID_ADB_SERVER_PORT=$ADB_PORT; unset ADB_SERVER_SOCKET
+  PT_ADBV=$(pt_run 20 "$dir/adb" version 2>/dev/null </dev/null | tr -d '\r')
+  PT_FBV=$(pt_run 20 "$dir/fastboot" --version 2>/dev/null </dev/null | tr -d '\r')
+  for v in "$(printf '%s\n' "$PT_ADBV" | pt_major)" "$(printf '%s\n' "$PT_FBV" | pt_major)"; do
+    [ -n "$v" ] && [ "$v" -ge 35 ] 2>/dev/null || die "$(t "adb or fastboot in $dir is too old or does not run: need Platform-Tools 35 or newer. Nothing was done." "adb или fastboot в $dir слишком старые или не запускаются: нужны Platform-Tools 35 или новее. Ничего не сделано.")"
+  done
+  PT_ADBV=$(printf '%s\n' "$PT_ADBV" | head -n 1 | awk '{print $NF}'); PT_FBV=$(printf '%s\n' "$PT_FBV" | head -n 1 | awk '{print $3}')
+  trap pt_cleanup EXIT; trap 'exit 1' TERM; trap 'exit 130' INT
+  PT_SERVER=1
+  pt_run 20 "$dir/adb" start-server >/dev/null 2>&1 </dev/null
+  case $? in
+    0) ;;
+    124) die "$(t "adb did not start within 20 s (port $ADB_PORT). Close programs for phones and Android devices (Android Studio, phone managers, scrcpy) or restart the computer, then try again. Nothing was done." "adb не запустился за 20 с (порт $ADB_PORT). Закройте программы для телефонов и Android-устройств (Android Studio, менеджеры телефонов, scrcpy) или перезагрузите компьютер и повторите. Ничего не сделано.")" ;;
+    *) die "$(t "adb did not start (port $ADB_PORT busy?). Restart the computer and try again. Nothing was done." "adb не запустился (порт $ADB_PORT занят?). Перезагрузите компьютер и повторите. Ничего не сделано.")" ;;
+  esac
+  ok "Platform-Tools $(printf '%s' "$PT_FBV" | cut -d- -f1) ($src), $(t "own adb server on port" "свой сервер adb на порту") $ADB_PORT"
+}
+pt_cleanup() {  # only our own adb server, never another program's
+  [ "$PT_SERVER" = 1 ] && pt_run 10 "$PT_DIR/adb" kill-server >/dev/null 2>&1 </dev/null
+  PT_SERVER=0
 }
 adbs() { adb -s "${ADB_T:-$SERIAL}" "$@"; }   # ADB_T: the Play 6 over Wi-Fi; never set on the Z9X
 prop() { adbs shell getprop "$1" 2>/dev/null | tr -d '\r'; }
@@ -265,17 +426,12 @@ edition_guard() {
 }
 
 # ------------------------------------------------------------------ check
-check_tools() {
-  need adb; need fastboot
-  local v fbdir
-  v=$(fastboot --version 2>/dev/null | head -1 | sed -n 's/^fastboot version \([0-9]*\).*/\1/p')
-  [ -n "$v" ] && [ "$v" -ge 35 ] 2>/dev/null || die "$(t "fastboot $v is too old: need Platform-Tools 35 or newer" "fastboot $v слишком старый: нужны Platform-Tools 35 или новее")"
-  fbdir=$(dirname "$(command -v fastboot)")
+check_tools() {  # pt_setup ran: adb and fastboot of our own, 35 or newer
   if [ "$PROJECTOR" = z9x ] && [ "$KEEP_DATA" = 0 ] && [ "$WIPE" = format ]; then
-    [ -x "$fbdir/make_f2fs" ] && [ -x "$fbdir/mke2fs" ] \
-      || die "$(t "make_f2fs/mke2fs missing next to fastboot ($fbdir): use the official Platform-Tools zip" "нет make_f2fs/mke2fs рядом с fastboot ($fbdir): используйте официальный архив Platform-Tools")"
+    [ -x "$PT_DIR/make_f2fs" ] && [ -x "$PT_DIR/mke2fs" ] \
+      || die "$(t "make_f2fs/mke2fs missing next to fastboot ($PT_DIR): use the official Platform-Tools zip" "нет make_f2fs/mke2fs рядом с fastboot ($PT_DIR): используйте официальный архив Platform-Tools")"
   fi
-  ok "adb $(adb version 2>/dev/null | head -1 | awk '{print $NF}'), fastboot $(fastboot --version | head -1 | awk '{print $3}')"
+  ok "adb $PT_ADBV, fastboot $PT_FBV"
 }
 
 check_image() {
@@ -928,11 +1084,10 @@ gapps_zipcheck() {  # FILE: the zip on this computer (sha256 in lib/gapps_allow.
 }
 
 gapps_install() {
-  local zip=$GAPPS_ZIP zsha zl name part fbdir slot p o a free cur have
+  local zip=$GAPPS_ZIP zsha zl name part slot p o a free cur have
   [ -f "$zip" ] || die "$(t "no file $zip" "нет файла $zip")"
   check_tools
-  fbdir=$(dirname "$(command -v fastboot)")
-  [ -x "$fbdir/mke2fs" ] || die "$(t "mke2fs missing next to fastboot ($fbdir): use the official Platform-Tools zip" "нет mke2fs рядом с fastboot ($fbdir): используйте официальный архив Platform-Tools")"
+  [ -x "$PT_DIR/mke2fs" ] || die "$(t "mke2fs missing next to fastboot ($PT_DIR): use the official Platform-Tools zip" "нет mke2fs рядом с fastboot ($PT_DIR): используйте официальный архив Platform-Tools")"
   gapps_zipcheck "$zip"
   zsha=$GZ_SHA; name=$GZ_NAME; part=$GZ_PART
   check_device
@@ -2644,6 +2799,8 @@ while [ $# -gt 0 ]; do
     --ip=*) IP=${1#*=}; IP_GIVEN=1 ;;
     --device) DEVICE_OPT=${2-}; shift ;;
     --device=*) DEVICE_OPT=${1#*=} ;;
+    --platform-tools) PT_OPT=${2-}; shift ;;
+    --platform-tools=*) PT_OPT=${1#*=} ;;
     -h|--help) awk 'NR == 1 { next } /^set -u$/ { exit } { print }' "$0"; exit 0 ;;
     -*) die "unknown option $1" ;;
     *) if [ "$CMD" = stick ] && [ -z "$STICK" ]; then STICK=$1; else CMD=$1; fi ;;
@@ -2683,6 +2840,9 @@ resolve_device
 SERIAL_FROM_STATE=0
 if [ -z "$SERIAL" ]; then SERIAL=$(state_get serial); [ -n "$SERIAL" ] && SERIAL_FROM_STATE=1; fi
 case "${CMD:-all}" in all|check|flash|rescue) release_guard ;; esac
+case "$PROJECTOR ${CMD:-all}" in   # every command that talks to the projector: our own adb and fastboot first
+  *" all"|*" check"|*" backup"|z9x" blobs"|z9x" vbmeta"|*" flash"|*" verify"|*" gsf"|*" rescue"|*" gapps") pt_setup ;;
+esac
 if [ "$PROJECTOR" = play6 ]; then
   case "${CMD:-all}" in
     all) play6_all ;;

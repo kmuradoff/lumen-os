@@ -67,6 +67,7 @@ done
 cat > "$W/bin/adb" <<'EOF'
 #!/bin/sh
 # fake adb of an XGIMI Play 6 over Wi-Fi (see the header of installer_play6.sh)
+case "$1" in start-server|kill-server) exit 0 ;; esac   # the installer's own adb server (port 5038)
 echo "$*" >> "$FB/adb.log"
 mode=$(cat "$FB/mode")
 up() { case "$mode" in stock|lumen) [ ! -e "$FB/net_down" ] ;; *) return 1 ;; esac; }
@@ -274,7 +275,7 @@ begin() {
 }
 inst() {  # answers args... -> the installer copy; exit status in RC, output in $C/out
   local ans=$1; shift
-  printf '%b' "$ans" | env PATH="${TPATH:-$W/bin:$PATH}" FB="$FB" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
+  printf '%b' "$ans" | env LUMEN_PLATFORM_TOOLS="$W/bin" PATH="${TPATH:-$W/bin:$PATH}" FB="$FB" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
     LUMEN_BACKUP_DIR="$C/backup" LANG="${LANG_CASE:-en_US.UTF-8}" bash "$C/inst/lumen-install.sh" "$@" > "$C/out" 2>&1
   RC=$?
 }

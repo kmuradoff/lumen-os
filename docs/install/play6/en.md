@@ -56,16 +56,18 @@ projector up only once.
 - A Wi-Fi network that the projector and the computer are both in. A guest network that keeps devices
   apart does not work.
 - A computer with macOS or Linux. There is a Windows 10/11 installer, but it has not been tested yet.
-- Android SDK Platform-Tools 35 or newer, [from Google](https://developer.android.com/tools/releases/platform-tools),
-  on PATH as described in the Z9X guide, [What you need](../z9x/en.md#what-you-need).
+- Internet access on the first run: the installer downloads Google's Platform-Tools (adb and fastboot) for
+  itself, checks them and uses only that copy, on its own adb port, with a time limit on every step. Without
+  internet, see the Z9X guide, [What you need](../z9x/en.md#what-you-need).
 - A USB A-to-A cable (plain USB-A on both ends).
 - A USB stick: for SystemUI Tuner now, and as the stock restore stick if you ever need it.
 - 4 GB of free space on the computer.
 
 On Windows, run `lumen-install.cmd` instead of `bash lumen-install.sh`, with `-Ip` instead of `--ip` and
 the options after the command, for example `lumen-install.cmd check -Ip 192.168.x.y`. `--gapps-zip` is
-`-GappsZip` there. For fastboot mode
-on the cable Windows may need the [Google USB Driver](https://developer.android.com/studio/run/win-usb).
+`-GappsZip` there. Keep the installer folder on the computer's own disk (for example `C:\lumen`), not on a USB
+stick. For fastboot mode on the cable Windows may need the [Google USB Driver](https://developer.android.com/studio/run/win-usb):
+the installer says so when it finds a USB device without a driver.
 
 <a name="play6-prepare"></a>
 
