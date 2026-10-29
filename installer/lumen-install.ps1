@@ -239,8 +239,13 @@ function Pt-Fetch($zip, $sha) {  # the pinned zip into tools\ (kept: a later run
   Remove-Item -LiteralPath $part -Force -ErrorAction SilentlyContinue
   $curl = if ($script:OnWindows) { Join-Path $env:SystemRoot "System32\curl.exe" } else { "/usr/bin/curl" }
   if (Test-Path -LiteralPath $curl) {
-    & $curl -fsSL --retry 3 --connect-timeout 20 --speed-limit 1024 --speed-time 60 -o $part $url
-  } else {
+    # Windows' curl checks certificate revocation, which often cannot be reached (seen 2026-10-29): skip only that
+    # check; the certificate itself is still checked, and the zip must match the pinned sha256 anyway
+    $rev = if ($script:OnWindows) { @("--ssl-no-revoke") } else { @() }
+    & $curl -fsSL @rev --retry 3 --connect-timeout 20 --speed-limit 1024 --speed-time 60 -o $part $url
+    if ($LASTEXITCODE -ne 0) { Remove-Item -LiteralPath $part -Force -ErrorAction SilentlyContinue }
+  }
+  if (-not (Test-Path -LiteralPath $part)) {   # no curl, or it failed: PowerShell's own download
     try {
       [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
       $pp = $ProgressPreference; $ProgressPreference = "SilentlyContinue"
