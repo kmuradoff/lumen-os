@@ -54,6 +54,8 @@ devices/<codename>/image.conf (section 4), same format, how the system image is 
   stage       the files staged into <remote_dir>/in (generic only), or none (the entry stages them) (list)
   variants    NAME:ARGS of each image variant (generic only; ARGS comma-separated, may be empty) (list)
   fs          the image's file system, must equal the device's image_fs
+  stage_dir   optional: a folder (relative to gsi/) of signed build outputs that compose.sh copies whole into
+              <remote_dir>/in/<its name>; signed on the Mac, never a key (compose.sh refuses key-like files)
 """
 import os
 import re
@@ -80,6 +82,7 @@ ENUMS = {
 PATHS = ("forks", "hal_app", "hal_codes", "hal_banned", "hal_allowed")
 IMAGE_KEYS = ("generic", "entry", "compose", "host", "remote_dir", "stage", "variants", "fs")
 IMAGE_LISTS = ("stage", "variants")
+IMAGE_OPTIONAL = ("stage_dir",)
 # a path under these folders is private (publish_audit.py excludes it): absent from a public checkout, reported only
 PRIVATE_PATHS = ("research/",)
 BUILT_IN_FLOWS = ("z9x-usb", "play6-wifi")
@@ -171,13 +174,16 @@ def image(root, codename):
     p = os.path.join(root, "devices", codename, "image.conf")
     if not os.path.isfile(p):
         raise RegistryError("%s has no image.conf" % codename)
-    vals, errs = parse(p, IMAGE_KEYS)
+    vals, errs = parse(p, IMAGE_KEYS + IMAGE_OPTIONAL)
     if errs:
         raise RegistryError(errs[0])
     missing = [k for k in IMAGE_KEYS if k not in vals]
     if missing:
         raise RegistryError("%s: missing %s" % (p, " ".join(missing)))
-    return {k: (v.split() if k in IMAGE_LISTS else v) for k, v in vals.items()}
+    out = {k: (v.split() if k in IMAGE_LISTS else v) for k, v in vals.items()}
+    for k in IMAGE_OPTIONAL:
+        out.setdefault(k, "")
+    return out
 
 
 def validate_image(root, codename, image_fs, errs, notes):
@@ -185,7 +191,7 @@ def validate_image(root, codename, image_fs, errs, notes):
     p = os.path.join(root, rel)
     if not os.path.isfile(p):
         return
-    vals, e = parse(p, IMAGE_KEYS)
+    vals, e = parse(p, IMAGE_KEYS + IMAGE_OPTIONAL)
     errs += e
     for k in IMAGE_KEYS:
         if k not in vals:
@@ -209,6 +215,9 @@ def validate_image(root, codename, image_fs, errs, notes):
         for v in vals.get("variants", "").split():
             if not re.match(r"^[a-z0-9]+:", v):
                 errs.append("%s: variant %r is not NAME:ARGS" % (rel, v))
+    sd = vals.get("stage_dir", "")
+    if sd and (sd.startswith("/") or ".." in sd.split("/") or not re.match(r"^[A-Za-z0-9._/-]+$", sd)):
+        errs.append("%s: stage_dir %r must be a plain relative path" % (rel, sd))
 
 
 def validate(root):
@@ -352,7 +361,7 @@ def main(argv):
             print(" ".join(v) if isinstance(v, list) else v)
             return 0
         if cmd == "image" and len(argv) == 3:
-            if argv[2] not in IMAGE_KEYS:
+            if argv[2] not in IMAGE_KEYS + IMAGE_OPTIONAL:
                 raise RegistryError("unknown image.conf key %r" % argv[2])
             v = image(root, argv[1])[argv[2]]
             print(" ".join(v) if isinstance(v, list) else v)

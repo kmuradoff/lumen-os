@@ -11,6 +11,9 @@
 #     | tee ~/<remote_dir>/<composer name>-VARIANT-NAME.log
 # (ARGS: the variant's comma-separated arguments in image.conf, NAME:ARG1,ARG2). LUMEN_IMAGE_DIR tells the composer
 # where its inputs are and where to write. Outputs stay on the host, where the composer writes them.
+# An image.conf with stage_dir=DIR also gets DIR (signed build outputs, made and signed on the Mac) copied whole
+# into ~/<remote_dir>/in/<name of DIR>, replacing the copy there. It must exist and hold no key-like file
+# (*.pk8, *.pem, *.jks, *.key, *.p12, or a PEM private key block); certificates travel inside APKs only.
 # Environment: IMAGE_HOST overrides the host; BUILD_ID and SOURCE_DATE_EPOCH, when set, are passed on to the
 # composer (a fixed build id and file time for a repeatable image).
 set -euo pipefail
@@ -54,8 +57,23 @@ if [ -n "${SOURCE_DATE_EPOCH:-}" ]; then
   ENV="$ENV SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
 fi
 
+SD=$(img stage_dir)
+if [ -n "$SD" ]; then
+  [ -d "$G/$SD" ] || die "stage_dir $SD does not exist (build and sign it on the Mac first)"
+  SDN=$(basename "$SD")
+  case $SDN in *[!A-Za-z0-9._-]*|''|.|..) die "stage_dir name $SDN must be letters, digits and . _ -" ;; esac
+  if find "$G/$SD" \( -name '*.pk8' -o -name '*.pem' -o -name '*.jks' -o -name '*.key' -o -name '*.p12' \) | grep -q . \
+     || grep -rlE -- '-----BEGIN [A-Z ]*PRIVATE KEY-----' "$G/$SD" > /dev/null 2>&1; then
+    die "something like a key file is in $SD: nothing sent"
+  fi
+fi
 ssh "$SRV" "mkdir -p ~/$RD/in"
 scp -q "${STAGE[@]}" "${SRV}:$RD/in/"
+if [ -n "$SD" ]; then
+  ssh "$SRV" "rm -rf ~/$RD/in/$SDN"
+  scp -q -r "$G/$SD" "${SRV}:$RD/in/$SDN"
+  echo "compose: staged $SD as ~/$RD/in/$SDN ($(find "$G/$SD" -type f | wc -l | tr -d ' ') files)"
+fi
 for r in "${RUN[@]}"; do
   n=${r%%:*} a=${r#*:}
   ssh "$SRV" "set -o pipefail; $ENV bash ~/$RD/in/$CN.sh $V ${a//,/ } 2>&1 | tee ~/$RD/$CN-$V-$n.log"
