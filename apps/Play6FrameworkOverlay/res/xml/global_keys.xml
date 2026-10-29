@@ -25,11 +25,11 @@
      android.intent.extra.KEY_EVENT.
 -->
 
-<!-- Z9X v6.1 / v6.2 (org.z9x.overlay.framework, static RRO on "android", priority 2000).
+<!-- Z9X v6.1 / v6.2 (org.lumen.overlay.framework, static RRO on "android", priority 2000).
      This file REPLACES TvFrameworkOverlay's res/xml/global_keys.xml as a whole, so its entries are
      copied below verbatim (device/google/atv/overlay/TvFrameworkOverlay/res/xml/global_keys.xml:31-35),
      except KEYCODE_TV_INPUT (com.google.android.tv is not in the image, so the Source key was
-     swallowed): v6 sent it to org.z9x.tvinput, v6.1 sends it to org.z9x.projector, whose
+     swallowed): v6 sent it to org.lumen.tvinput, v6.1 sends it to org.lumen.projector, whose
      SourceOverlay shows the input chooser over the running video (gsi/apps/V61_KEYS_PLAN.md).
      Read by GlobalKeyManager.loadGlobalKeys (Lineage 21):
      root <global_keys version="1">, attributes keyCode / component / dispatchWhenNonInteractive,
@@ -45,48 +45,48 @@
     <key keyCode="KEYCODE_GUIDE" component="com.google.android.tv/.receiver.GlobalKeyReceiver" />
     <key keyCode="KEYCODE_TV" component="com.google.android.tv/.receiver.GlobalKeyReceiver" />
     <!-- TvFrameworkOverlay original: <key keyCode="KEYCODE_TV_INPUT" component="com.google.android.tv/.receiver.GlobalKeyReceiver" /> -->
-    <key keyCode="KEYCODE_TV_INPUT" component="org.z9x.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_TV_INPUT" component="org.lumen.projector/.KeyReceiver" />
     <key keyCode="KEYCODE_PAIRING" component="com.android.tv.settings/.GlobalKeyReceiver" dispatchWhenNonInteractive="true" />
 
     <!-- OEMs might want to add more custom global key handlings for TV specific key codes. -->
 
-    <!-- ===== Z9X: org.z9x.tvinput (HDMI inputs) ===== -->
+    <!-- ===== Z9X: org.lumen.tvinput (HDMI inputs) ===== -->
     <!-- Source key: BT scancode 430, IR 88 (SINGAL), keypad 225/268 = KEYCODE_TV_INPUT (above,
-         v6.1: org.z9x.projector input overlay). The direct keys stay here:
+         v6.1: org.lumen.projector input overlay). The direct keys stay here:
          IR 68/82 and keypad 282/283 = direct HDMI 1 / HDMI 2. -->
-    <key keyCode="KEYCODE_TV_INPUT_HDMI_1" component="org.z9x.tvinput/.GlobalKeyReceiver" />
-    <key keyCode="KEYCODE_TV_INPUT_HDMI_2" component="org.z9x.tvinput/.GlobalKeyReceiver" />
+    <key keyCode="KEYCODE_TV_INPUT_HDMI_1" component="org.lumen.tvinput/.GlobalKeyReceiver" />
+    <key keyCode="KEYCODE_TV_INPUT_HDMI_2" component="org.lumen.tvinput/.GlobalKeyReceiver" />
 
-    <!-- ===== Z9X: org.z9x.projector ===== -->
+    <!-- ===== Z9X: org.lumen.projector ===== -->
     <!-- Gear key (BT 66/64/251/275, IR 192, keypad 9/4) stays KEYCODE_SETTINGS in the .kl files.
          As a global key it is dispatched before LineageParts atv KeyHandler (PhoneWindowManager
          :5263 before :5311, :4328 before :4334), so TvSettings no longer opens by itself.
-         Short press = quick panel, long press = TvSettings (org.z9x.projector KeyReceiver). -->
-    <key keyCode="KEYCODE_SETTINGS" component="org.z9x.projector/.KeyReceiver" />
+         Short press = quick panel, long press = TvSettings (org.lumen.projector KeyReceiver). -->
+    <key keyCode="KEYCODE_SETTINGS" component="org.lumen.projector/.KeyReceiver" />
     <!-- Voice key (BT scancode 63 = HID F5; AI key 137), mapped SEARCH WAKE in the BT .kl files.
          Lineage consumes KEYCODE_ASSIST before the global-key check, so SEARCH is used; the app calls
          SearchManager.launchAssist on the first DOWN, while the remote still streams audio.
          dispatchWhenNonInteractive: with the screen off, the press wakes the projector AND is
          delivered (EXTRA_BEGAN_FROM_NON_INTERACTIVE=true). -->
-    <key keyCode="KEYCODE_SEARCH" component="org.z9x.projector/.KeyReceiver" dispatchWhenNonInteractive="true" />
+    <key keyCode="KEYCODE_SEARCH" component="org.lumen.projector/.KeyReceiver" dispatchWhenNonInteractive="true" />
     <!-- Focus key: short press (BT 87/65) = autofocus; long press (BT 62) = manual-focus overlay. -->
-    <key keyCode="KEYCODE_FOCUS" component="org.z9x.projector/.KeyReceiver" />
-    <key keyCode="KEYCODE_TV_CONTENTS_MENU" component="org.z9x.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_FOCUS" component="org.lumen.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_TV_CONTENTS_MENU" component="org.lumen.projector/.KeyReceiver" />
     <!-- Manual focus step keys (other XGIMI remotes, IR 193/194 and 62/61, keypad 253/254):
          move while held, stop on any UP. -->
-    <key keyCode="KEYCODE_MEDIA_STEP_BACKWARD" component="org.z9x.projector/.KeyReceiver" />
-    <key keyCode="KEYCODE_MEDIA_STEP_FORWARD" component="org.z9x.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_MEDIA_STEP_BACKWARD" component="org.lumen.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_MEDIA_STEP_FORWARD" component="org.lumen.projector/.KeyReceiver" />
     <!-- Ambient key (BT 183, stock "screen saver" key) -> start the screensaver (Ambient mode). -->
-    <key keyCode="KEYCODE_TV_SATELLITE_SERVICE" component="org.z9x.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_TV_SATELLITE_SERVICE" component="org.lumen.projector/.KeyReceiver" />
     <!-- Projector picture / keystone panel (IR KEYSTONE 64, IR LENS 183, keypad 267). -->
-    <key keyCode="KEYCODE_TV_NETWORK" component="org.z9x.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_TV_NETWORK" component="org.lumen.projector/.KeyReceiver" />
     <!-- App keys = user-assignable slots 1..5 (BT 240, 230, 235 iQIYI, 144 bilibili, 134).
          The Z9X remote has slot 3 (iQIYI) and slot 4 (bilibili). -->
-    <key keyCode="KEYCODE_TV_TERRESTRIAL_ANALOG" component="org.z9x.projector/.KeyReceiver" />
-    <key keyCode="KEYCODE_TV_TERRESTRIAL_DIGITAL" component="org.z9x.projector/.KeyReceiver" />
-    <key keyCode="KEYCODE_TV_SATELLITE" component="org.z9x.projector/.KeyReceiver" />
-    <key keyCode="KEYCODE_TV_SATELLITE_BS" component="org.z9x.projector/.KeyReceiver" />
-    <key keyCode="KEYCODE_TV_SATELLITE_CS" component="org.z9x.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_TV_TERRESTRIAL_ANALOG" component="org.lumen.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_TV_TERRESTRIAL_DIGITAL" component="org.lumen.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_TV_SATELLITE" component="org.lumen.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_TV_SATELLITE_BS" component="org.lumen.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_TV_SATELLITE_CS" component="org.lumen.projector/.KeyReceiver" />
 
     <!-- ===== v6.2 own power key (module power) ===== -->
     <!-- The BT remote power button (BT scancode 113; other BT remotes c081/af02: 116) is
@@ -96,7 +96,7 @@
          in frameworks/base. NO dispatchWhenNonInteractive: with the screen off the press only wakes
          the projector (interceptKeyBeforeQueueing result 0, mPendingWakeKey swallows the UP,
          synthesized repeats carry no PASS_TO_USER), so it is never also handled as "sleep".
-         Screen on: DOWN / repeats / UP go to KeyReceiver -> org.z9x.projector.power.PowerKey:
+         Screen on: DOWN / repeats / UP go to KeyReceiver -> org.lumen.projector.power.PowerKey:
          short press = fade to black + sleep, long press = own power menu. -->
-    <key keyCode="KEYCODE_STB_POWER" component="org.z9x.projector/.KeyReceiver" />
+    <key keyCode="KEYCODE_STB_POWER" component="org.lumen.projector/.KeyReceiver" />
 </global_keys>

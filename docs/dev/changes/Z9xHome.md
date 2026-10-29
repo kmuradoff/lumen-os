@@ -165,9 +165,9 @@ font size, most long lines at font scale 1.3), and a focused asleep card replace
 
 Author kmuradoff. Still 1.0.2 / versionCode 103. A card read the TIF input state of the port, so a console
 asleep over HDMI-CEC (no +5V) showed "Standby" and a pulled cable could look the same. The TV input app now
-reports each port's device ("hdmi_state" of content://org.z9x.tvinput.hdmistate: "port_ids" and a "port_<n>"
+reports each port's device ("hdmi_state" of content://org.lumen.tvinput.hdmistate: "port_ids" and a "port_<n>"
 bundle with device_state, label, title, kind, accent, child_input_id, ...; changes notified on
-content://org.z9x.tvinput.hdmistate/ports). With an older TV input app (no "port_ids") every card is as before.
+content://org.lumen.tvinput.hdmistate/ports). With an older TV input app (no "port_ids") every card is as before.
 - `data/InputSource`: one "hdmi_state" call per refresh (it already made it for the open ports); a reported
   port's card gets the device's state ("On", "Asleep", "No signal", "Not connected"; "unknown" keeps the TIF
   state), its title over the port's label (a name the user gave the input still wins), the gamepad or player
@@ -255,7 +255,7 @@ lag. The motion comes back, cheaper and out of the UI's way. All new paths are o
 Author kmuradoff. Still 1.0.2 / versionCode 103 in the manifest: the version is the owner's call when he pins
 the APK ("About this screen" shows the name, so a bump would be the one change a Z9X user could see). Every
 new path is off unless a `ro.lumen.home.*` / `debug.lumen.home.*` property is set (a device whose image asks
-for weak-GPU drawing) or org.z9x.projector has the device-state provider (a projector app that reports an
+for weak-GPU drawing) or org.lumen.projector has the device-state provider (a projector app that reports an
 internal battery or tiles it cannot serve). The Z9X has neither, so Home draws and behaves there as 1.0.2.
 No device name or device check in Home's code: the switches are properties and a capability provider.
 - **Weak-GPU switches** (`ui/Gfx`, new): `ro.lumen.home.sky_fps` (unset or negative: as the scene needs; 0: a
@@ -269,15 +269,15 @@ No device name or device check in Home's code: the switches are properties and a
 - **Battery mark** in the header (`ui/TopBar.BatteryMark`): before search, "85 %" in the header font (the
   locale's percent format) and a battery glyph with the fill, a bolt while the power adapter is in, the warm
   accent at 20 % or less on battery; the header's soft shadows (the outline's blurred copy through
-  `Glow.iconShadow`, the tabs' text shadow); not a focus stop. Only while org.z9x.projector's provider
-  (content://org.z9x.projector.device, call "battery") reports a battery; the view is made at the first
+  `Glow.iconShadow`, the tabs' text shadow); not a focus stop. Only while org.lumen.projector's provider
+  (content://org.lumen.projector.device, call "battery") reports a battery; the view is made at the first
   reading, so without it the header is laid out exactly as before. Updates from the provider's notify Uri
-  (content://org.z9x.projector.device/battery) while Home is started (`HomeActivity.startBattery`, observer
+  (content://org.lumen.projector.device/battery) while Home is started (`HomeActivity.startBattery`, observer
   registered in onStart, removed in onStop), no polling.
 - **Unsupported Projector tiles**: `data/InputSource.tiles` leaves out the tiles the provider's call("caps")
   lists in "unsupported" (tile intents such as "section:eye", or Card ids). No provider: every tile.
 - `proj/ProjectorBridge`: the provider client. `hasDeviceState`: the authority must belong to the system app
-  org.z9x.projector (any app could declare it), a PackageManager lookup once per process (no provider start,
+  org.lumen.projector (any app could declare it), a PackageManager lookup once per process (no provider start,
   no log); `battery`, `unsupportedTiles` through an unstable client; a missing provider, an exception or a
   refused permission all read as "nothing".
 - Strings (18 locales, `tools/i18n_home_f.py`, lane `apps/i18n/pending/home-f` merged into apps/i18n/langs):
@@ -297,7 +297,7 @@ Author kmuradoff. Still 1.0.1 / versionCode 102; one APK for both editions (docs
   message. The tile (`ic_usb`) is on the Apps page in every edition, after Play's "Get more apps".
 - Manifest: INSTALL_PACKAGES, REQUEST_INSTALL_PACKAGES, MANAGE_EXTERNAL_STORAGE (granted by the platform
   signature); `image/privapp-permissions-z9xhome.xml` + INSTALL_PACKAGES. Both new components carry
-  `org.z9x.keep_in_classic` (search may open the activity).
+  `org.lumen.keep_in_classic` (search may open the activity).
 - Search: without Play the keyboard hint opens Install from USB (`kb_no_store`); without any speech
   recognizer the mic is hidden and the mic key goes straight to the keyboard (`voice_none`); "no
   recognizer" is no longer remembered for 24 h (`VoiceInput.available` is asked at every start).
@@ -393,7 +393,7 @@ Not verified on the Z9X (no device in this lane), to check there, in each UI mod
   its 1080p size; the sky's ridges and the moon sharp, grain not blocky; focus glows look as at 1080p;
 - 4K: every hero a card (1280x720 at most); sky and focus animation smooth (gfxinfo); first focus of a
   card size without a hitch; the big calm clock (400 px glyphs, drawn as paths by Skia above 256 px);
-- `dumpsys meminfo org.z9x.home` (Graphics + Native) within the estimates above;
+- `dumpsys meminfo org.lumen.home` (Graphics + Native) within the estimates above;
 - 1080p: everything as 1.0.1 except the header (scrim and shadows instead of the plate).
 
 ## Review fixes (last owner wishes)
@@ -526,7 +526,7 @@ Not verified on the Z9X (no device in this lane), to check there:
 - **i18n**: copy `Z9xHome/tools/i18n_pending_e/*.txt` to `apps/i18n/pending/home-e/` and run
   `merge_pending.py --write home-e`; gen.py --write then reproduces Z9xHome's res files unchanged.
 
-# Lumen Home 1.0.1 (org.z9x.home): owner feedback on 1.0.0 (2026-10-08)
+# Lumen Home 1.0.1 (org.lumen.home): owner feedback on 1.0.0 (2026-10-08)
 
 Author kmuradoff. The manifest still says 1.0.0 / 101: lumen_checks.py wants one versionName for every
 app, so the version bump to 1.0.1 is the integration lane's (handoff below).
@@ -626,11 +626,11 @@ sky fades in once, then stands still), the screensaver values on the owner's upg
   memory on the MT9681). Home follows such a change (rebuild, art at real pixels); its known 4K limits:
   the sky renders at most at 1080p and is scaled (render cap in SkyView, memory), masters stay <= 1080p.
 
-# Lumen Home 1.0.0 (org.z9x.home): direction D "Кинозал + Свет" (2026-10-08)
+# Lumen Home 1.0.0 (org.lumen.home): direction D "Кинозал + Свет" (2026-10-08)
 
 versionCode 101, versionName 1.0.0. Author kmuradoff. Mockups: D_Home (something to continue),
 D_Calm (nothing started), D_Mark 2A (mark), D_Live (living sky; the sky itself is the Sky lane's
-`src/org/z9x/home/sky/**`, used here through its public API only).
+`src/org/lumen/home/sky/**`, used here through its public API only).
 
 ## What changed
 - **Living sky behind Home** (`HomeActivity`): `SkyView` is the full-bleed bottom layer. It gets the
@@ -724,7 +724,7 @@ glow / ring look at 10 ft, Prata/Onest rendering on the device, TvProvider conte
   `overlay/v1/z9x-home-default-permissions.xml`; `tools/lumen_v1.sh` asserts that file holds only
   RECORD_AUDIO: it must accept `['android.permission.READ_TV_LISTINGS', 'android.permission.RECORD_AUDIO']`.
 - **Default screensaver**: framework-res overlay `config_dreamsDefaultComponent` =
-  `org.z9x.home/.sky.SkyDreamService` (SettingsProvider seeds `screensaver_components` and
+  `org.lumen.home/.sky.SkyDreamService` (SettingsProvider seeds `screensaver_components` and
   `screensaver_default_component` from it on a fresh userdata), plus `config_dreamsEnabledByDefault`
   true. Existing installs keep their old value (BasicDreams is removed from the image): set both
   Settings.Secure keys once on upgrade (projector/setup, or an init script).
@@ -736,7 +736,7 @@ glow / ring look at 10 ft, Prata/Onest rendering on the device, TvProvider conte
 - **Sky lane**: `SkyView.setScrim` draws the side scrim on the left only; Home in RTL (Arabic) has its
   text on the right.
 
-# Lumen Home 1.0 (org.z9x.home), lane L-HOME, wave 1
+# Lumen Home 1.0 (org.lumen.home), lane L-HOME, wave 1
 
 New app: Lumen OS launcher in Google TV style (home/SPEC.md + PLAN.md C1-C4, C7, C13, C15, C17).
 versionCode 100, versionName 1.0. Author kmuradoff.
@@ -791,26 +791,26 @@ fallback, classic-mode search, Russian and Arabic (RTL). Not verified: anything 
 ## Contracts other lanes must implement (hooks)
 
 **L-PROJECTOR (Z9xProjector)**
-1. Mic key (C4): `uses-permission org.z9x.home.permission.MIC`. On KEYCODE_SEARCH DOWN (repeat 0, setup
-   complete, interactive): `startActivity(new Intent("org.z9x.home.action.VOICE_SEARCH")
-   .setPackage("org.z9x.home").putExtra("held", true).putExtra("down_uptime", event.getDownTime())
-   .addFlags(NEW_TASK | NO_ANIMATION))`. On UP: `sendBroadcast(new Intent("org.z9x.home.action.MIC_UP")
-   .setPackage("org.z9x.home"))`. Screen off / not interactive: same intent with `held=false` (search
+1. Mic key (C4): `uses-permission org.lumen.home.permission.MIC`. On KEYCODE_SEARCH DOWN (repeat 0, setup
+   complete, interactive): `startActivity(new Intent("org.lumen.home.action.VOICE_SEARCH")
+   .setPackage("org.lumen.home").putExtra("held", true).putExtra("down_uptime", event.getDownTime())
+   .addFlags(NEW_TASK | NO_ANIMATION))`. On UP: `sendBroadcast(new Intent("org.lumen.home.action.MIC_UP")
+   .setPackage("org.lumen.home"))`. Screen off / not interactive: same intent with `held=false` (search
    opens without listening). A tap shorter than 400 ms is tap-to-talk (the recognizer end-points).
-   Recents' non-type-5 ASSIST: `Intent("android.search.action.GLOBAL_SEARCH").setPackage("org.z9x.home")`.
-2. `SET_LAUNCHER` broadcast receiver (C1): action `org.z9x.projector.action.SET_LAUNCHER`, permission
-   `org.z9x.projector.permission.SET_LAUNCHER`, extra `mode` (also sent as `target`) = `z9x|classic`.
-   Z9X set = components of org.z9x.home: `.HomeActivity`, `.AllAppsAlias`,
+   Recents' non-type-5 ASSIST: `Intent("android.search.action.GLOBAL_SEARCH").setPackage("org.lumen.home")`.
+2. `SET_LAUNCHER` broadcast receiver (C1): action `org.lumen.projector.action.SET_LAUNCHER`, permission
+   `org.lumen.projector.permission.SET_LAUNCHER`, extra `mode` (also sent as `target`) = `z9x|classic`.
+   Z9X set = components of org.lumen.home: `.HomeActivity`, `.AllAppsAlias`,
    `.tvp.BrowsableRequestActivity`, `.tvp.BrowsableRequestReceiver`, `.tvp.PackageReceiver`. Never
    disable the package, `.search.SearchActivity`, `.search.VoiceSearchAlias` or `.search.MicUpReceiver`.
    HOME priority here is 3 (C3).
-3. `SHOW_PANEL` receiver: action `org.z9x.projector.action.SHOW_PANEL`, permission
-   `org.z9x.projector.permission.SHOW_PANEL`; extras `section` = keystone|picture|sound|eye|general,
+3. `SHOW_PANEL` receiver: action `org.lumen.projector.action.SHOW_PANEL`, permission
+   `org.lumen.projector.permission.SHOW_PANEL`; extras `section` = keystone|picture|sound|eye|general,
    or `action` = autofocus|lamp_standby|sleep_timer; no extra = the quick-panel grid (top-bar gear).
    `lamp_standby` is labelled "Sleep" in Lumen Home: under the v1 power rules it is the projector's
    sleep (lamp off + STR, or lamp-only standby while USB is connected).
 4. Existing, used read-only: `SHOW_SOURCE` (top-bar input button), `standbystate` provider
-   `call("standby_state")`, broadcast `org.z9x.projector.action.STANDBY_CHANGED` (extra `standby`) sent
+   `call("standby_state")`, broadcast `org.lumen.projector.action.STANDBY_CHANGED` (extra `standby`) sent
    with permission STANDBY_STATE (Lumen Home registers with that broadcast permission).
 5. "Home screen" item in Projector settings / quick panel to switch back from classic (C1).
 
@@ -818,22 +818,22 @@ fallback, classic-mode search, Russian and Arabic (RTL). Not verified: anything 
 - `/system/priv-app/Z9xHome/Z9xHome.apk` (0644), `image/privapp-permissions-z9xhome.xml` ->
   `/system/etc/permissions/`, `image/default-permissions-z9xhome.xml` ->
   `/system/product/etc/default-permissions/` (RECORD_AUDIO), bump `ro.build.version.incremental`.
-- C6: merge `image/sysconfig-z9xhome.snippet.xml` (`initial-package-state org.z9x.home stopped=false`).
+- C6: merge `image/sysconfig-z9xhome.snippet.xml` (`initial-package-state org.lumen.home stopped=false`).
 - C10: dexpreopt with `--dex-location=/system/priv-app/Z9xHome/Z9xHome.apk`, oat in that dir.
 - i18n W2: add `"home": APPS + "/Z9xHome/res"` to gen.py RES and append
   `apps/i18n/pending/L-HOME/<locale>.txt` to `langs/<locale>.txt` (en.txt is the base, for reference).
   The `res/values-*` files already in the app are exactly what `gen.py --write` produces.
-- Branding: user-visible name "Lumen Home" / "Lumen OS"; internal ids stay org.z9x.*.
+- Branding: user-visible name "Lumen Home" / "Lumen OS"; internal ids stay org.lumen.*.
 
-**L-OTA (updater)**: badge contract (C17): provider authority `org.z9x.updater`, uri
-`content://org.z9x.updater/state`, protected by signature permission `org.z9x.updater.permission.OTA_STATE` (W2: aligned with Z9xUpdater)
+**L-OTA (updater)**: badge contract (C17): provider authority `org.lumen.updater`, uri
+`content://org.lumen.updater/state`, protected by signature permission `org.lumen.updater.permission.OTA_STATE` (W2: aligned with Z9xUpdater)
 (Lumen Home holds the uses-permission). Lumen Home calls `call("state", null, null)` and reads Bundle
 key `state`; if that fails it queries the uri and reads column `state`. Values `ready`, `downloaded`
 or `reboot_required` show the "Update ready" chip, whose OK starts
-`Intent("android.settings.SYSTEM_UPDATE_SETTINGS").setPackage("org.z9x.updater")`.
+`Intent("android.settings.SYSTEM_UPDATE_SETTINGS").setPackage("org.lumen.updater")`.
 
 **L-SETUP**: copy the shared sources with `sh apps/common/sync.sh Z9xSetup` (tokens -> res/values/
-z9x_tokens.xml, GeoIp -> src/org/z9x/common/GeoIp.java). `GeoIp.lookup(timeoutMs, ua)` returns
+z9x_tokens.xml, GeoIp -> src/org/lumen/common/GeoIp.java). `GeoIp.lookup(timeoutMs, ua)` returns
 city/region/countryCode/timezone/lat/lon/source; add the Gservices `ip_timezone` fallback on top.
 If Setup uses the ip-api.com fallback it needs the same cleartext domain-config as Lumen Home.
 
@@ -845,7 +845,7 @@ If Setup uses the ip-api.com fallback it needs the same cleartext domain-config 
 
 ## Files
 - `AndroidManifest.xml`, `res/` (strings + 16 locales, themes, ~57 own vector icons, network config),
-  `src/org/z9x/home/**` (51 Java files, ~10.7 k lines), `src/org/z9x/common/GeoIp.java` (copy), `test/**`,
+  `src/org/lumen/home/**` (51 Java files, ~10.7 k lines), `src/org/lumen/common/GeoIp.java` (copy), `test/**`,
   `tools/` (gen_icons.py, i18n_local.py, i18n_home_{a,b}.py, run_tests.sh), `image/` (XMLs for L-SYSTEM).
 
 ## Known limits / open
@@ -877,13 +877,13 @@ If Setup uses the ip-api.com fallback it needs the same cleartext domain-config 
   grantable, language not supported even online). ERROR_INSUFFICIENT_PERMISSIONS or a failed start: 5 min.
   SERVER_DISCONNECTED (recognizer process killed, e.g. lmkd during a 4K film), CLIENT, RECOGNIZER_BUSY:
   keyboard for this press only; after SERVER_DISCONNECTED the SpeechRecognizer is recreated.
-- Tap-to-talk extra `tap_voice` (from org.z9x.projector for the classic launcher's voice orb): listen at once.
+- Tap-to-talk extra `tap_voice` (from org.lumen.projector for the classic launcher's voice orb): listen at once.
 - Build: 1.0 (100), sha256 cdf42a8153dcba2fa3ec882fdca0983540e73e9abb4433c159d42767f9482180 (test key).
 
 ## 1.0.0 integration (2026-10-08)
 - Icon and banner: `brand_icon_home` / `brand_banner_home` (the 2A mark, apps/common/brand, sync.sh);
   `ic_launcher` / `banner` stay in res/ but are no longer the application's.
-- `.sky.SkyDreamService` carries `org.z9x.keep_in_classic`, so Z9xProjector's LauncherSwitcher keeps the
+- `.sky.SkyDreamService` carries `org.lumen.keep_in_classic`, so Z9xProjector's LauncherSwitcher keeps the
   screensaver enabled in classic-launcher mode (the comment above it already promised that). The image makes
   it the framework default dream (Z9xFrameworkKeysOverlay `config_dreamsDefaultComponent`); the active
   screensaver on a fresh device is still Z9xProjector's clock (its one-shot default), see overlay/v1/CHANGES.md.

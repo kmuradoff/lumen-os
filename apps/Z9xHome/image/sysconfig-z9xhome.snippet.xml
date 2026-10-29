@@ -3,5 +3,5 @@
      config_stopSystemPackagesByDefault=true on this image: without this, a fresh system package starts
      "stopped" and its receivers (MIC_UP, browsable requests, package diff) never run. -->
 <config>
-    <initial-package-state package="org.z9x.home" stopped="false" />
+    <initial-package-state package="org.lumen.home" stopped="false" />
 </config>

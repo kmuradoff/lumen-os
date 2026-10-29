@@ -8,7 +8,7 @@
      not have to match SetupWraith. Lineage's own SetupWraith overlays (priority 0) do not touch this
      resource. No code, no permissions. min/target SDK 34 come from gsi/apps/build_apk.sh. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.overlay.setupwraith"
+    package="org.lumen.overlay.setupwraith"
     android:versionCode="6"
     android:versionName="6.0">
     <overlay android:targetPackage="com.google.android.tungsten.setupwraith"

@@ -8,7 +8,7 @@
     <string name="remote_connected">Remote connected</string>
     <string name="remote_pairing">Pairing the remote…</string>
     <string name="remote_pair_searching">Looking for the remote…</string>
-    <!-- Key combination as used by org.z9x.btpair (pairing proven on the device). -->
+    <!-- Key combination as used by org.lumen.btpair (pairing proven on the device). -->
     <string name="remote_pair_hint">Hold Back and Home on the remote</string>
     <!-- Description of the card shown when the user starts pairing (RemoteAutoPair.MANUAL_MS = 2 min). -->
     <string name="remote_pair_window">Searching for 2 minutes</string>

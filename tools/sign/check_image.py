@@ -19,7 +19,7 @@ Checks (ota/SPEC.md T2, PLAN.md W4; every failure is listed, exit 1 if any):
             wipe, RSA prompt when the owner turns it on); no pm.boot.disable_package_cache;
             with --base: ro.build.fingerprint / ro.product.* / ro.build.version.* identical to the base
   updater   system/app/Z9xUpdater/Z9xUpdater.apk present, signed with the release platform key,
-            sysconfig initial-package-state org.z9x.updater stopped="false"
+            sysconfig initial-package-state org.lumen.updater stopped="false"
   ota       (unless --no-ota-plumbing) the OTA init files of tools/ota/image are in the tar, byte-identical
   uires     (1.0.1) z9x_uires.sh and the replaced init.lineage.atv.scaling.rc byte-identical to
             overlay/v1/z9x_uires; effective ro.surface_flinger.max_graphics_width/height 3840/2160;
@@ -524,13 +524,13 @@ def main():
             plat = sign_tar.release_cert(a.keys, "platform", openssl, need_key=False)
             if [d for d, _ in info["signers"]] != [plat["sha256"]]:
                 errs.append(f"updater: not signed with the release platform key: {info['signers']}")
-            if info["package"] != "org.z9x.updater":
+            if info["package"] != "org.lumen.updater":
                 errs.append(f"updater: package {info['package']!r}")
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
     sc = data.get(SYSCONFIG, b"").decode()
-    if not re.search(r'<initial-package-state\s+package="org\.z9x\.updater"\s+stopped="false"\s*/>', sc):
-        errs.append(f"updater: {SYSCONFIG} lacks initial-package-state org.z9x.updater stopped=\"false\" (PLAN C6)")
+    if not re.search(r'<initial-package-state\s+package="org\.lumen\.updater"\s+stopped="false"\s*/>', sc):
+        errs.append(f"updater: {SYSCONFIG} lacks initial-package-state org.lumen.updater stopped=\"false\" (PLAN C6)")
 
     # ---- OTA plumbing
     if not a.no_ota_plumbing:

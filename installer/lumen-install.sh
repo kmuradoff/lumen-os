@@ -1397,7 +1397,8 @@ release_guard() {  # the image of this download belongs to one projector (releas
 # (asked) -> write (fastbootd, system only) -> boot1 (the first start of Lumen OS on the old data, over Wi-Fi)
 # -> wipe (Android's own factory reset, asked for as root over adb; XGIMI's recovery formats userdata and
 # cache, as for Settings > Reset) -> verify (optional, later). Progress: $STATE_DIR/play6/state.
-P6_APP=org.z9x.projector                          # the projector app of the image
+P6_APP=org.lumen.projector                          # the projector app of the image (1.0.8 and later)
+P6_APP_OLD=org.z9x.projector                       # its name up to 1.0.7 (status of an older install)
 P6_TUNER=com.zacharee1.systemuituner              # installed on stock to turn debugging on; a wipe removes it
 P6_MARKER=/data/local/tmp/lumen-install-wipe      # written before the wipe; a real wipe removes it
 
@@ -2009,7 +2010,7 @@ play6_verify() {  # [seconds]: over Wi-Fi, after the wipe (the user joined Wi-Fi
   done
   [ "$flags" = 111 ] && ok "$(t "the projector is marked set up (Home and the remote work)" "проектор отмечен как настроенный (Home и пульт работают)")" \
     || warn "$(t "the projector is not marked set up ($flags): Home and the remote may not work; report it" "проектор не отмечен как настроенный ($flags): Home и пульт могут не работать; сообщите об этом")"
-  [ -n "$(adbs shell pidof "$P6_APP" 2>/dev/null | tr -d '\r')" ] && ok "$(t "projector app running" "приложение проектора работает")" || warn "$(t "the projector app ($P6_APP) is not running" "приложение проектора ($P6_APP) не запущено")"
+  [ -n "$(adbs shell pidof "$P6_APP" "$P6_APP_OLD" 2>/dev/null | tr -d '\r')" ] && ok "$(t "projector app running" "приложение проектора работает")" || warn "$(t "the projector app ($P6_APP) is not running" "приложение проектора ($P6_APP) не запущено")"
   adbs shell dumpsys media.audio_policy 2>/dev/null | grep -q "Output" && ok "$(t "audio outputs present" "аудиовыходы есть")" || warn "$(t "no audio outputs listed" "аудиовыходы не найдены")"
   state_set step_verify done
 }

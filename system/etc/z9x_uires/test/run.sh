@@ -221,7 +221,7 @@ complete() {  # sys.boot_completed=1 (the rc triggers)
   resc ok
   run check
 }
-pick_now() {  # the user's choice in Projector settings (org.z9x.projector sets the persist prop)
+pick_now() {  # the user's choice in Projector settings (org.lumen.projector sets the persist prop)
   setp persist.z9x.ui_res "$1"
   run pick
 }

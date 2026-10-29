@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  org.z9x.setup ("Setup"): the Lumen OS first-run wizard (setup/SPEC.md, PLAN.md C1-C3, C6, C12-C14,
+  org.lumen.setup ("Setup"): the Lumen OS first-run wizard (setup/SPEC.md, PLAN.md C1-C3, C6, C12-C14,
   C17, C22, C23, C25). Built by gsi/apps/build_apk.sh (Lumen OS 1.0.3: versionCode 104 / versionName 1.0.3 in this manifest).
 
   Install: /system/priv-app/Z9xSetup/Z9xSetup.apk (priv-app ONLY so that the HOME priority 10 is not
@@ -17,9 +17,9 @@
   LauncherSwitcher (bridge set_launcher); this app has no fallback copy of it.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.setup"
-    android:versionCode="104"
-    android:versionName="1.0.3">
+    package="org.lumen.setup"
+    android:versionCode="108"
+    android:versionName="1.0.8">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
 
@@ -52,14 +52,14 @@
     <uses-permission android:name="android.permission.GET_ACCOUNTS_PRIVILEGED" />
     <!-- GSF android_id for the uncertified-device helper, Gservices ip_timezone (normal) -->
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
-    <!-- Z9xProjector SetupBridge (signature permission defined by org.z9x.projector) -->
-    <uses-permission android:name="org.z9x.projector.permission.SETUP_BRIDGE" />
+    <!-- Z9xProjector SetupBridge (signature permission defined by org.lumen.projector) -->
+    <uses-permission android:name="org.lumen.projector.permission.SETUP_BRIDGE" />
     <!-- installed/enabled checks of the launchers, GMS, SetupWraith (normal) -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <queries>
-        <package android:name="org.z9x.projector" />
-        <package android:name="org.z9x.home" />
+        <package android:name="org.lumen.projector" />
+        <package android:name="org.lumen.home" />
         <package android:name="com.google.android.tvlauncher" />
         <package android:name="com.google.android.gms" />
         <package android:name="com.google.android.gsf" />
@@ -72,6 +72,7 @@
     </queries>
 
     <application
+        android:name=".LumenApp"
         android:label="@string/app_name"
         android:icon="@drawable/brand_icon_setup"
         android:allowBackup="false"

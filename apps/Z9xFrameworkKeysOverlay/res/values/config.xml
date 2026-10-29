@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Z9X v6.1 / v6.2 power-key configuration (org.z9x.overlay.framework, static RRO on "android",
+<!-- Z9X v6.1 / v6.2 power-key configuration (org.lumen.overlay.framework, static RRO on "android",
      priority 2000, so these values win over TvFrameworkOverlay (0) and the Lineage product RRO (1)).
      Names, types and values checked in the Lineage 21 source (~/lineage on the build laptop):
        frameworks/base/core/res/res/values/config.xml:1150 config_longPressOnPowerBehavior (integer)
@@ -11,7 +11,7 @@
 <resources>
     <!-- v6.5 (review 6.5, PowerKey): 0 = SHORT_PRESS_POWER_NOTHING (Lineage 21 config.xml
          config_shortPressOnPowerBehavior, PhoneWindowManager SHORT_PRESS_POWER_NOTHING). Every
-         user power key is KEYCODE_STB_POWER (org.z9x.projector: lamp-only standby, the display stays
+         user power key is KEYCODE_STB_POWER (org.lumen.projector: lamp-only standby, the display stays
          on). What is still KEYCODE_POWER (the factory remotes, a phone remote app's POWER, and
          KEYCODE_TV_POWER, which PhoneWindowManager turns into POWER on a leanback TV) used to call
          goToSleep while Android is awake, also during our standby: a display-off sleep, and the next
@@ -24,12 +24,12 @@
     <integer name="config_shortPressOnPowerBehavior">0</integer>
 
     <!-- User decision (2026-10-04): short press = sleep (live value 1, lamp off through
-         org.z9x.projector PowerPolicy); long press = power menu with "Power off" and "Restart".
+         org.lumen.projector PowerPolicy); long press = power menu with "Power off" and "Restart".
          1 = LONG_PRESS_POWER_GLOBAL_ACTIONS (Lineage 21 config.xml:1150). Known issue to fix next:
          a real shutdown on the Z9X powers itself back on after 20-40 s (a wake source; under test).
          v6.2: these values now serve only KEYCODE_POWER, i.e. the IR remote, the keypad and the
-         factory remotes: the IR / keypad POWER fallback, which also works when org.z9x.projector is
-         down. The BT remote power key is KEYCODE_STB_POWER -> org.z9x.projector (own fade + sleep,
+         factory remotes: the IR / keypad POWER fallback, which also works when org.lumen.projector is
+         down. The BT remote power key is KEYCODE_STB_POWER -> org.lumen.projector (own fade + sleep,
          own 3-item power menu; res/xml/global_keys.xml). Values unchanged. -->
     <integer name="config_longPressOnPowerBehavior">1</integer>
 
@@ -53,18 +53,18 @@
 
     <!-- Speed spec 3.3 / 6.1: the Google Assistant (Katniss) is removed from the image, so the
          ASSISTANT role (roles.xml: defaultHolders = config_defaultAssistant,
-         fallBackToDefaultHolder = true) falls back to org.z9x.projector. Its RecentsActivity handles
+         fallBackToDefaultHolder = true) falls back to org.lumen.projector. Its RecentsActivity handles
          android.intent.action.ASSIST: a long press on HOME (Lineage action SEARCH,
          invocation_type 5) opens Recent apps; any other ASSIST opens Lumen Home search.
          VoiceInteractionManagerService then writes Settings.Secure.assistant to that activity. -->
-    <string name="config_defaultAssistant" translatable="false">org.z9x.projector</string>
+    <string name="config_defaultAssistant" translatable="false">org.lumen.projector</string>
 
     <!-- HDMI-CEC defaults (cec spec 3.3, phase 1; read by HdmiCecConfig in system_server; a value
          stored earlier in /data wins, Lumen OS 1.0 is flashed with a userdata wipe).
          "TV wake on One Touch Play" = "Turn on with an HDMI device": OFF by default (cec spec guard 8,
          review 2026-10-07: the CEC wake detection after STR is not verified on the device yet) and
-         user-configurable (org.z9x.projector's CEC page and TvSettings show the same value). Once the
-         user turns it on, the vendor HAL's enableWakeupByOtp follows it, org.z9x.projector (cec.CecPolicy)
+         user-configurable (org.lumen.projector's CEC page and TvSettings show the same value). Once the
+         user turns it on, the vendor HAL's enableWakeupByOtp follows it, org.lumen.projector (cec.CecPolicy)
          arms the PM51 wake source cec0 before every allowed sleep (init: z9x_power.rc, z9x_power_cec.rc)
          and switches this value off for a sleep its guards refuse (night guard 01:00-07:00 by default,
          storm limit, setup gate C14; restored at the next user wake), and a real power-off switches it
@@ -73,7 +73,7 @@
     <bool name="config_cecTvWakeOnOneTouchPlayEnabled_default">false</bool>
     <bool name="config_cecTvWakeOnOneTouchPlayDisabled_default">true</bool>
     <!-- "Turn off devices with the projector" (tv_send_standby_on_sleep): ON, user-configurable;
-         the single source of truth for the framework and for org.z9x.projector's standby. -->
+         the single source of truth for the framework and for org.lumen.projector's standby. -->
     <bool name="config_cecTvSendStandbyOnSleep_userConfigurable">true</bool>
     <bool name="config_cecTvSendStandbyOnSleepEnabled_default">true</bool>
     <bool name="config_cecTvSendStandbyOnSleepDisabled_default">false</bool>
@@ -84,7 +84,7 @@
 
     <!-- ================= Lumen OS 1.0.0 ====
 
-         Default screensaver: the living sky of Lumen Home (org.z9x.home.sky.SkyDreamService, kept
+         Default screensaver: the living sky of Lumen Home (org.lumen.home.sky.SkyDreamService, kept
          enabled in classic-launcher mode). TvFrameworkOverlay sets com.android.dreams.basic Colors,
          and BasicDreams is removed from the image, so the old default pointed at a missing package.
          SettingsProvider (DatabaseHelper.loadSecureSettings) copies this value into Settings.Secure
@@ -92,7 +92,7 @@
          when screensaver_components is empty or names a missing dream. The active choice
          (screensaver_components) is not set here: Z9xProjector's one-shot dream defaults and the user
          (TvSettings > Screen saver, quick panel) own it. -->
-    <string name="config_dreamsDefaultComponent" translatable="false">org.z9x.home/org.z9x.home.sky.SkyDreamService</string>
+    <string name="config_dreamsDefaultComponent" translatable="false">org.lumen.home/org.lumen.home.sky.SkyDreamService</string>
 
     <!-- ================= Lumen OS 1.0.1 final, build suffix e (UI resolution 4K, overlay/v1/z9x_uires) ====
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Lumen OS 1.0: home screen choice (home.LauncherSwitcher; quick panel All settings and Projector
      settings) and the mic key's search (home.HomeSearch). English base; translations:
-     apps/i18n/pending/projector/<locale>.txt. "Lumen Home" is the product name of org.z9x.home. -->
+     apps/i18n/pending/projector/<locale>.txt. "Lumen Home" is the product name of org.lumen.home. -->
 <resources>
     <string name="launcher_row">Home screen</string>
     <string name="launcher_lumen">Lumen Home</string>

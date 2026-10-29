@@ -1,4 +1,4 @@
-package org.z9x.play6;
+package org.lumen.play6;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

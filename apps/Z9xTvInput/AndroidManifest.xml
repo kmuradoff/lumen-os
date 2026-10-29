@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  org.z9x.tvinput: clean-room HDMI input for the Z9X Android TV image (LineageOS 21 TV GSI).
+  org.lumen.tvinput: clean-room HDMI input for the Z9X Android TV image (LineageOS 21 TV GSI).
   Contains no XGIMI code and makes no IGmpf / vendor HwBinder calls; it talks only to
   system_server (TvInputManager, HdmiControlManager).
 
@@ -13,29 +13,29 @@
   v6.5: VERSION_CODE=65 VERSION_NAME=6.5; Lumen OS 1.0: 100 / 1.0; Lumen OS 1.0.0: 101 / 1.0.0;
   Lumen OS 1.0.1: 102 / 1.0.1; Lumen OS 1.0.3: 104 / 1.0.3, 1.0.2 kept the 1.0.1 build);
   do not add them here, aapt2 never overrides manifest values.
-  v6.1: the Source key (KEYCODE_TV_INPUT) belongs to org.z9x.projector (input overlay); this app
+  v6.1: the Source key (KEYCODE_TV_INPUT) belongs to org.lumen.projector (input overlay); this app
   keeps the direct HDMI 1 / HDMI 2 keys and the viewer that the overlay opens.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.tvinput">
+    package="org.lumen.tvinput">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
 
-    <!-- v6.1: org.z9x.projector asks HdmiStateProvider whether an HDMI session is open. -->
+    <!-- v6.1: org.lumen.projector asks HdmiStateProvider whether an HDMI session is open. -->
     <permission
-        android:name="org.z9x.tvinput.permission.HDMI_STATE"
+        android:name="org.lumen.tvinput.permission.HDMI_STATE"
         android:protectionLevel="signature" />
-    <!-- v6.1: MENU in the HDMI viewer opens org.z9x.projector's Source overlay (its receiver). -->
-    <uses-permission android:name="org.z9x.projector.permission.SHOW_SOURCE" />
-    <!-- v6.1: messages go to org.z9x.projector's shared card (Toast only as a fallback). -->
-    <uses-permission android:name="org.z9x.projector.permission.NOTIFY" />
-    <!-- v6.2 (game module of org.z9x.projector): HDMI session / CEC events to its
+    <!-- v6.1: MENU in the HDMI viewer opens org.lumen.projector's Source overlay (its receiver). -->
+    <uses-permission android:name="org.lumen.projector.permission.SHOW_SOURCE" />
+    <!-- v6.1: messages go to org.lumen.projector's shared card (Toast only as a fallback). -->
+    <uses-permission android:name="org.lumen.projector.permission.NOTIFY" />
+    <!-- v6.2 (game module of org.lumen.projector): HDMI session / CEC events to its
          game.HdmiEventReceiver (ProjectorEvents). Signature permission. -->
-    <uses-permission android:name="org.z9x.projector.permission.HDMI_EVENT" />
-    <!-- v6.5: org.z9x.projector's lamp-only standby state (its StandbyStateProvider call() and the
+    <uses-permission android:name="org.lumen.projector.permission.HDMI_EVENT" />
+    <!-- v6.5: org.lumen.projector's lamp-only standby state (its StandbyStateProvider call() and the
          STANDBY_CHANGED broadcast). Signature permission. HdmiWatcher treats standby like "screen
          is off": no automatic switch on plug / HPD / CEC Active Source / open on boot. -->
-    <uses-permission android:name="org.z9x.projector.permission.STANDBY_STATE" />
+    <uses-permission android:name="org.lumen.projector.permission.STANDBY_STATE" />
 
     <!-- signature|privileged|vendorPrivileged (core manifest :2765).
          getHardwareList / acquireTvInputHardware / releaseTvInputHardware, and
@@ -58,9 +58,9 @@
          startActivity() itself is not filtered (resolveForStart). -->
     <queries>
         <package android:name="com.google.android.tvlauncher" />
-        <!-- v6.1: GlobalKeyReceiver checks whether org.z9x.projector/.KeyReceiver (the owner of
+        <!-- v6.1: GlobalKeyReceiver checks whether org.lumen.projector/.KeyReceiver (the owner of
              the Source key) exists before using its own last-resort Source fallback. -->
-        <package android:name="org.z9x.projector" />
+        <package android:name="org.lumen.projector" />
         <intent>
             <action android:name="com.android.tv.action.VIEW_INPUTS" />
         </intent>
@@ -83,7 +83,7 @@
 
         <!-- One hardware TIS for every TvInputHardwareInfo of type HDMI reported by the vendor
              TV input HAL (deviceId == portId == 1 / 2). Input ids:
-             org.z9x.tvinput/.HdmiInputService/HW1 and .../HW2 -->
+             org.lumen.tvinput/.HdmiInputService/HW1 and .../HW2 -->
         <service
             android:name=".HdmiInputService"
             android:label="@string/service_label"
@@ -126,17 +126,17 @@
             </intent-filter>
         </activity>
 
-        <!-- v6.1: "is an HDMI session open?" for org.z9x.projector (call() only; signature
+        <!-- v6.1: "is an HDMI session open?" for org.lumen.projector (call() only; signature
              permission checked in call()). -->
         <provider
             android:name=".HdmiStateProvider"
-            android:authorities="org.z9x.tvinput.hdmistate"
+            android:authorities="org.lumen.tvinput.hdmistate"
             android:exported="true"
-            android:permission="org.z9x.tvinput.permission.HDMI_STATE" />
+            android:permission="org.lumen.tvinput.permission.HDMI_STATE" />
 
-        <!-- Own source list: fallback for MENU inside the viewer when org.z9x.projector is missing
+        <!-- Own source list: fallback for MENU inside the viewer when org.lumen.projector is missing
              (v6.1: MENU opens the projector's Source overlay) and the last-resort SOURCE-key
-             fallback when org.z9x.projector is missing. Started only from this app
+             fallback when org.lumen.projector is missing. Started only from this app
              (HdmiInputs.openPicker). v6.2 (V62_REQUIREMENTS 4): no launcher tile any more; inputs
              are reached through the Source key and the quick panel's Input tile. Own task affinity
              so that opening it does not bring a stopped viewer back to the front. -->
@@ -145,30 +145,30 @@
             android:label="@string/picker_label"
             android:exported="false"
             android:excludeFromRecents="true"
-            android:taskAffinity="org.z9x.tvinput.picker"
+            android:taskAffinity="org.lumen.tvinput.picker"
             android:theme="@android:style/Theme.DeviceDefault.Dialog.NoActionBar" />
 
         <!-- v6.2 (panel module, V62_REQUIREMENTS 4): with the picker's launcher tile gone, the HDMI
-             settings are opened from org.z9x.projector's quick panel (All settings > HDMI settings).
+             settings are opened from org.lumen.projector's quick panel (All settings > HDMI settings).
              Exported only to platform-signed apps that hold our signature permission HDMI_STATE. -->
         <activity
             android:name=".SettingsActivity"
             android:label="@string/settings_label"
             android:exported="true"
-            android:permission="org.z9x.tvinput.permission.HDMI_STATE"
+            android:permission="org.lumen.tvinput.permission.HDMI_STATE"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
 
         <!-- Framework global keys (res/xml/global_keys.xml in the static RRO on "android")
              deliver KEYCODE_TV_INPUT_HDMI_1 / _2 here as ACTION_GLOBAL_BUTTON (v6.1: KEYCODE_TV_INPUT
-             goes to org.z9x.projector/.KeyReceiver instead).
+             goes to org.lumen.projector/.KeyReceiver instead).
              system_server (uid 1000) may deliver to a non-exported receiver, so no intent-filter;
-             onReceive checks the action. Component name must stay org.z9x.tvinput/.GlobalKeyReceiver. -->
+             onReceive checks the action. Component name must stay org.lumen.tvinput/.GlobalKeyReceiver. -->
         <receiver
             android:name=".GlobalKeyReceiver"
             android:exported="false" />
 
         <!-- Compatibility alias: the remote-topic RRO draft (v6/remote/global_keys.xml) points the
-             same keys at org.z9x.tvinput/.KeyReceiver. Same code; harmless if unused. -->
+             same keys at org.lumen.tvinput/.KeyReceiver. Same code; harmless if unused. -->
         <receiver
             android:name=".KeyReceiver"
             android:exported="false" />

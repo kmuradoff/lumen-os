@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0.8 bridge for the pre-1.0.8 package @PKG@ (see src/org/lumen/bridge/BridgeProvider.java and
+     README.txt). Generated per old name by build_bridges.sh; never installed by hand. No launcher, no
+     receivers, no services: one read-only provider for the new org.lumen app to import the old data. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="@PKG@"@SHARED_UID@
+    android:versionCode="900000" android:versionName="1.0.8-bridge">
+    <application android:label="Lumen bridge" android:allowBackup="false" android:hasCode="true"
+        android:directBootAware="true" android:defaultToDeviceProtectedStorage="false">
+        <provider android:name="org.lumen.bridge.BridgeProvider"
+            android:authorities="@PKG@.bridge"
+            android:exported="true" android:directBootAware="true" />
+    </application>
+</manifest>

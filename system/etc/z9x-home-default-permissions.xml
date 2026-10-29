@@ -9,7 +9,7 @@
      ACCESS_ALL_EPG_DATA; this grant keeps its "limited" fallback (searchable programs) working.
      Source copy: apps/Z9xHome/image/default-permissions-z9xhome.xml. -->
 <exceptions>
-    <exception package="org.z9x.home">
+    <exception package="org.lumen.home">
         <permission name="android.permission.RECORD_AUDIO" fixed="false" />
         <permission name="android.permission.READ_TV_LISTINGS" fixed="false" />
     </exception>

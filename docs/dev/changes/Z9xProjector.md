@@ -143,7 +143,7 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
 - **HDMI picture** (`source/HdmiSource`, new; installed by App, fed by `game/HdmiEventReceiver`): every HDMI view
   was black because nothing connected the HDMI input to the main video window. The vendor TV input HAL only hands
   out the sideband handle; on stock firmware the HDMI player sends IGmpf 698 switchInputSourceWithCallingPid(source,
-  its pid) when it tunes and (0, pid) when it leaves, and org.z9x.tvinput (TIF, no IGmpf) never did. Now each
+  its pid) when it tunes and (0, pid) when it leaves, and org.lumen.tvinput (TIF, no IGmpf) never did. Now each
   tvinput "session" event schedules one decision 150 ms later on z9x-hal (a newer event replaces it): the port
   tvinput shows (hdmi_state "ports", new shared `TifHdmiState.readPorts`; unknown = nothing sent) gives the
   source, port 1 -> 1 (HDMI 1), port 2 -> 2 (HDMI 2), none -> 0 (Android), the same numbers 696 reports and the
@@ -256,8 +256,8 @@ docs/z9x/OPEN_stock_gap.md, private; calls and values from the decompiled stock 
 # 1.0.1, no-Google edition (2026-10-09)
 
 - `AppSlots`: an app key without an assignment falls back to the Play Store only when Play can be launched,
-  else to Lumen Home's Apps page (`HOME_APPS`: ACTION_ALL_APPS for org.z9x.home, AllAppsAlias); its label
-  in Projector settings is "Lumen Home: Apps" (`slot_home_apps`, 18 locales). `<queries>` + org.z9x.home.
+  else to Lumen Home's Apps page (`HOME_APPS`: ACTION_ALL_APPS for org.lumen.home, AllAppsAlias); its label
+  in Projector settings is "Lumen Home: Apps" (`slot_home_apps`, 18 locales). `<queries>` + org.lumen.home.
 
 # Z9xProjector: Lumen OS 1.0 (lane L-PROJECTOR, W1)
 
@@ -337,7 +337,7 @@ use existing whitelisted methods (autofocus 44, autoKst / newAutoKst(11), the si
     first 5 min only), so Recents is empty after a reboot;
   - P5 first-boot disable of the six APEX apps (only while their state is DEFAULT);
   - `ensureAssistant`: sets the role only when it is empty or its holder is gone.
-- `mem/ProtectedSet` decides what Close never force-stops: org.z9x.*, HOME, the IME, accessibility
+- `mem/ProtectedSet` decides what Close never force-stops: org.lumen.*, HOME, the IME, accessibility
   services, notification listeners, the dream, speech services, the VPN owner and running VpnServices,
   persistent apps, GMS / GSF / Play / Chromecast / TTS / TvProvider.
 - P4 (standby trim) is dropped: the projector suspends now.
@@ -354,19 +354,19 @@ use existing whitelisted methods (autofocus 44, autoKst / newAutoKst(11), the si
   - Classic set, switched at package level: tvlauncher, plus tvrecommendations and tvcustomizer when
     installed.
   - Lumen set, switched at component level: every activity, alias, receiver and service of
-    org.z9x.home, except `org.z9x.home.search.*` and components with meta-data
-    `org.z9x.keep_in_classic=true`.
+    org.lumen.home, except `org.lumen.home.search.*` and components with meta-data
+    `org.lumen.keep_in_classic=true`.
   - Order: the target is enabled first, then the role is assigned, then the other set is disabled.
   - Secure `z9x_launcher` is written only by an explicit apply.
-  - `ensure()` at boot does nothing while setup is incomplete or `org.z9x.setup/.SetupActivity` is
+  - `ensure()` at boot does nothing while setup is incomplete or `org.lumen.setup/.SetupActivity` is
     enabled. A missing value counts as undecided. It never starts HOME.
 - `setup/SetupBridgeProvider` follows the setup `bridge_api.md` (authority
-  `org.z9x.projector.setupbridge`, signature permission SETUP_BRIDGE, checked in `call()`).
+  `org.lumen.projector.setupbridge`, signature permission SETUP_BRIDGE, checked in `call()`).
   - Methods: ping, remote_state, hal_state, af_run, kst_auto, kst_fit, kst_manual, focus_manual,
     toggles_get, toggle_set, set_device_name, set_launcher, feature (`alice` = false).
   - Not exposed: no generic transact, no factory or calibration codes, no bonding.
-  - `setup/SetupEvents` sends `SETUP_STATE` (`what` = remote | hal | af | kst) to org.z9x.setup and
-    org.z9x.home only.
+  - `setup/SetupEvents` sends `SETUP_STATE` (`what` = remote | hal | af | kst) to org.lumen.setup and
+    org.lumen.home only.
   - Supporting changes:
     - `HalController.requestAutofocus` / `requestKeystone` now return a status (callers that ignore it
       are unchanged);
@@ -377,14 +377,14 @@ use existing whitelisted methods (autofocus 44, autoKst / newAutoKst(11), the si
   - or `action` = autofocus | lamp_standby | sleep_timer | recents.
 
 ## Mic key (C4)
-- `KeyReceiver`: mic DOWN, after setup with the display on, opens `org.z9x.home.action.VOICE_SEARCH`
+- `KeyReceiver`: mic DOWN, after setup with the display on, opens `org.lumen.home.action.VOICE_SEARCH`
   (VoiceSearchAlias, which needs the MIC permission) with `held=true`; UP sends `MIC_UP`.
 - From sleep, or in a blocked lamp-only standby, the key wakes the projector and opens `GLOBAL_SEARCH`
   without voice.
 - `SearchManager.launchAssist` is no longer used anywhere. If Lumen Home has no search, a toast says so.
 
 ## Updater hooks (C16)
-- `power/OtaStateReceiver` handles `org.z9x.projector.action.OTA_STATE` (perm OTA_STATE):
+- `power/OtaStateReceiver` handles `org.lumen.projector.action.OTA_STATE` (perm OTA_STATE):
   - `busy`: blocks STR;
   - `reboot_when_off`: the next turn-off reboots with reason `z9x-ota` instead of entering STR, and the
     following boot goes dark again by itself (marker `pw_dark_next_boot`).
@@ -398,7 +398,7 @@ use existing whitelisted methods (autofocus 44, autoKst / newAutoKst(11), the si
   - MANAGE_ROLE_HOLDERS, CHANGE_COMPONENT_ENABLED_STATE;
   - REAL_GET_TASKS, START_TASKS_FROM_RECENTS, REMOVE_TASKS, READ_FRAME_BUFFER;
   - FORCE_STOP_PACKAGES, KILL_BACKGROUND_PROCESSES, NETWORK_SETTINGS;
-  - `org.z9x.home.permission.MIC`;
+  - `org.lumen.home.permission.MIC`;
   - all of them are signature-level or normal, so no privapp allowlist is needed.
 - New own signature permissions: SET_LAUNCHER, SHOW_PANEL, SETUP_BRIDGE, OTA_STATE.
 - New components: RecentsActivity (ASSIST filter), SetupBridgeProvider, LauncherRequestReceiver,
@@ -425,17 +425,17 @@ use existing whitelisted methods (autofocus 44, autoKst / newAutoKst(11), the si
   - remove the `z9x_no_str` block (post-fs `wake_lock` and its `allow_str` triggers) from
     `overlay/v1/z9x_base.rc`;
   - install `overlay/v1/z9x_power.rc` as `/system/etc/init/z9x_power.rc`;
-  - Z9xFrameworkKeysOverlay `config_defaultAssistant` = `org.z9x.projector` (C9);
-  - `initial-package-state stopped=false` for org.z9x.home, org.z9x.setup and org.z9x.updater (C6).
+  - Z9xFrameworkKeysOverlay `config_defaultAssistant` = `org.lumen.projector` (C9);
+  - `initial-package-state stopped=false` for org.lumen.home, org.lumen.setup and org.lumen.updater (C6).
   - Keep `config_shortPressOnPowerBehavior=0` and the STB_POWER keylayouts from v6.5: our app owns the
     remote's power key.
-- **L-HOME** (org.z9x.home):
-  - search must live in the `org.z9x.home.search` package (SearchActivity with GLOBAL_SEARCH,
+- **L-HOME** (org.lumen.home):
+  - search must live in the `org.lumen.home.search` package (SearchActivity with GLOBAL_SEARCH,
     VoiceSearchAlias, MicUpReceiver);
-  - define `org.z9x.home.permission.MIC` (signature);
+  - define `org.lumen.home.permission.MIC` (signature);
   - send `SET_LAUNCHER` with `mode=z9x|classic`;
   - send `SHOW_PANEL` with `section` / `action`;
-  - mark any component that must survive classic mode with meta-data `org.z9x.keep_in_classic=true`.
+  - mark any component that must survive classic mode with meta-data `org.lumen.keep_in_classic=true`.
 - **L-SETUP**: the bridge keys follow `bridge_api.md`. `set_launcher` replies `ok`, `holder`, and
   `pending=true` when the role answer took longer than 5.5 s.
 - **L-OTA** (updater): send `OTA_STATE` with `busy` and `reboot_when_off`. z9x_ota.sh publishes
@@ -451,7 +451,7 @@ use existing whitelisted methods (autofocus 44, autoKst / newAutoKst(11), the si
 - `cat /sys/mtk_pm/wakeup_source/*` matches the list above.
 - Long-press HOME in an app: `Z9xRecents: open type=5 … firstFrameMs<300`. Close leads to `Z9xMem: close …
   forceStop=yes`. After a reboot: `boot-clean removed=N`.
-- `cmd role get-role-holders android.app.role.ASSISTANT` returns org.z9x.projector.
+- `cmd role get-role-holders android.app.role.ASSISTANT` returns org.lumen.projector.
 
 ## Review fixes (2026-10-07, round 3)
 - CEC wake detection without `PowerManager.getLastWakeup` (not in Android 14): the root oneshot
@@ -646,7 +646,7 @@ GM_DISP_* lines). No new HAL code, no new call site of a code this class did not
   sha256 dc358f2cababcf93372a55317fdc509ebb155f1f6ff972202ceda3108ff4057e.
 
 ## Problem reports (Lumen OS 1.0.1, switched off)
-- New package org.z9x.projector.report: ReportActivity (consent > collecting > sending > code), ReportJob (one
+- New package org.lumen.projector.report: ReportActivity (consent > collecting > sending > code), ReportJob (one
   process-wide report, started only by the user's Send / Try again; Cancel and Back stop it and delete its
   files), ReportCollector (summary, props, 30 min logcat of system and image apps, crash/kernel buffers,
   previous-boot pstore/pmsg/z9x_diag when readable, OTA log, DropBox 7 days, exit reasons), Scrubber (known
@@ -672,8 +672,8 @@ Versions unchanged (`VERSION_CODE=102 VERSION_NAME=1.0.1`). Files: `dream/DreamS
   runs once more on projectors upgraded over the air (v1 already set). Step 1 replaces v1's "clock while
   nothing was chosen":
   - screensaver on: `screensaver_components` unset, or naming only defaults of earlier images (the v1
-    clock `org.z9x.projector/.dream.ClockDream`, BasicDreams Colors, Backdrop, DeskClock) -> Lumen Home's
-    `org.z9x.home/.sky.SkyDreamService` (component checked in apps/Z9xHome/AndroidManifest.xml) through
+    clock `org.lumen.projector/.dream.ClockDream`, BasicDreams Colors, Backdrop, DeskClock) -> Lumen Home's
+    `org.lumen.home/.sky.SkyDreamService` (component checked in apps/Z9xHome/AndroidManifest.xml) through
     DreamManager.setActiveDream (Settings fallback). It stays on. Anything else is the user's choice and
     stays; the marker keeps every later choice (the panel's "Use clock", TvSettings) untouched.
   - screensaver off (IdleOwner: `dream_user_off`, the blank standby dream active): stays off (the user's
@@ -936,7 +936,7 @@ debug property, the dev values, 4K <-> 1080p restarts and the keep question) and
   as UI pixels`; either way the pattern must land on the vendor's quad and the AK must succeed (116
   final_state_after_ak success). Also with "Fit to screen".
 - Recents at 4K (long-press HOME from an app): `snapshot task N 3840x2160 -> 480x270 on the GPU in M ms`
-  (no "full copy" line); banners sharp; `dumpsys meminfo org.z9x.projector` while Recents is open.
+  (no "full copy" line); banners sharp; `dumpsys meminfo org.lumen.projector` while Recents is open.
 - Quick panel, notification card, remote prompt, power menu, standby, the clock screensaver, the curtain
   and the eye mask look the same size as at 1080p, only sharper.
 

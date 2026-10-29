@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""check_hal_callers.py: build-time guard for the typed HAL whitelist of org.z9x.projector.
+"""check_hal_callers.py: build-time guard for the typed HAL whitelist of org.lumen.projector.
 
 Fails (exit 1) when a method of hal/GmpfClient.java or hal/Gmpf2Client.java that performs a HAL
 transaction (its body calls call(...) / callXxx(...)) has no caller outside the hal/ package,

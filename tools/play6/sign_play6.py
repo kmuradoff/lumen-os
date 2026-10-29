@@ -57,7 +57,7 @@ base: BASEDIR holds a copy of the base build's system tree at its image paths, B
   laptop's ~/play6-out/target/product/generic/system/..., brought to the Mac by build_test.sh, plan step
   15; this script never connects anywhere). Needed in it: every *.apk, every *.apex|*.capex (system/apex and
   system_ext/apex) and the mac_permissions files of tools/sign/keymap.json; framework-res.apk,
-  plat_mac_permissions.xml and at least one APEX in system/apex must be there, and no org.z9x.* APK (those
+  plat_mac_permissions.xml and at least one APEX in system/apex must be there, and no org.lumen.* APK (those
   come from build_play6.sh and the pinned stage).
   1. APEX: every APK inside every APEX payload (read only) is inspected. One that does not verify stops the
      stage. The APEXes holding an APK on the AOSP test platform certificate must be exactly the verified ones
@@ -780,9 +780,9 @@ def stage_base(a, tools, env, km, test, key, tp, openssl):
         for n, p in apks:
             cls, detail = sign_tar.classify(n, info[n], test, km.get("presigned_known", {}))
             rows.append({"path": n, "file": p, "info": info[n], "class": cls, "detail": detail})
-        z9x = [r["path"] for r in rows if r["info"]["package"].startswith("org.z9x.")]
+        z9x = [r["path"] for r in rows if r["info"]["package"].startswith(("org.lumen.", "org.z9x."))]
         if z9x:
-            die("org.z9x.* APKs in BASEDIR (not a base build): " + ", ".join(z9x))
+            die("org.lumen.* APKs in BASEDIR (not a base build): " + ", ".join(z9x))
         uncl = [r for r in rows if r["class"] == "UNCLASSIFIED"]
         if uncl:
             die("unclassified APKs:\n  " + "\n  ".join(f"{r['path']}: {r['detail']}" for r in uncl))

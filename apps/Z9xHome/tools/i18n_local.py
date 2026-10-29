@@ -54,7 +54,7 @@ def main():
         print(f"FAILED: {len(errs)} errors")
         return 1
     os.makedirs(PENDING, exist_ok=True)
-    head = ("# Lumen Home (org.z9x.home), lane L-HOME, wave 1: NEW strings for the W2 merge into langs/{loc}.txt.\n"
+    head = ("# Lumen Home (org.lumen.home), lane L-HOME, wave 1: NEW strings for the W2 merge into langs/{loc}.txt.\n"
             "# gen.py source format; add the app home (APPS + /Z9xHome/res) to the RES map of gen.py.\n")
     with open(os.path.join(PENDING, "en.txt"), "w", encoding="utf-8") as fh:
         fh.write(head.format(loc="(English base, res/values)") + SECTION + "\n")

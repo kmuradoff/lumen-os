@@ -1075,7 +1075,8 @@ function Release-Guard {  # the image of this download belongs to one projector 
 # does not start while that cable is in, so it goes in only for the write. Steps: check -> backup (asked) -> write
 # (fastbootd, system only) -> boot1 (first start on the old data) -> wipe (Android's own factory reset as root over
 # adb, carried out by XGIMI's recovery) -> verify (optional, later). Progress: $StateDir\play6\state.
-$P6App = "org.z9x.projector"                      # the projector app of the image
+$P6App = "org.lumen.projector"                      # the projector app of the image (1.0.8 and later)
+$P6AppOld = "org.z9x.projector"                    # its name up to 1.0.7 (status of an older install)
 $P6Tuner = "com.zacharee1.systemuituner"          # installed on stock to turn debugging on; a wipe removes it
 $P6Marker = "/data/local/tmp/lumen-install-wipe"  # written before the wipe; a real wipe removes it
 function P6-LProp { return ($script:Prof["LUMEN_PROP"] -split " ", 2)[0] }
@@ -1582,7 +1583,7 @@ function Play6-Verify($secs) {  # over Wi-Fi, after the wipe (the user joined Wi
   foreach ($s in @(@("global", "device_provisioned"), @("secure", "user_setup_complete"), @("secure", "tv_user_setup_complete"))) { $flags += ((Adb shell settings get $s[0] $s[1]) | Out-String).Trim() }
   if ($flags -eq "111") { Ok (T "the projector is marked set up (Home and the remote work)" "проектор отмечен как настроенный (Home и пульт работают)") }
   else { Warn (T "the projector is not marked set up ($flags): Home and the remote may not work; report it" "проектор не отмечен как настроенный ($flags): Home и пульт могут не работать; сообщите об этом") }
-  if (((Adb shell pidof $P6App) | Out-String).Trim()) { Ok (T "projector app running" "приложение проектора работает") } else { Warn (T "the projector app ($P6App) is not running" "приложение проектора ($P6App) не запущено") }
+  if (((Adb shell pidof $P6App $P6AppOld) | Out-String).Trim()) { Ok (T "projector app running" "приложение проектора работает") } else { Warn (T "the projector app ($P6App) is not running" "приложение проектора ($P6App) не запущено") }
   if ((Adb shell dumpsys media.audio_policy) -match "Output") { Ok (T "audio outputs present" "аудиовыходы есть") } else { Warn (T "no audio outputs listed" "аудиовыходы не найдены") }
   State-Set step_verify done
 }

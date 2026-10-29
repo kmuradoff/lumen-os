@@ -376,7 +376,7 @@ eq_no_mode=Elija primero un modo de sonido
 eq_speaker_only=El ecualizador solo funciona en el altavoz integrado
 eq_hint_mode=Guardado para %1$s · altavoz integrado
 
-# v6.3 org.z9x.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
+# v6.3 org.lumen.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
 @airplay/strings.xml
 notif_channel=Receptor AirPlay
 notif_ready=Listo para AirPlay como «%1$s»

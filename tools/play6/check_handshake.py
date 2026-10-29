@@ -9,7 +9,7 @@ Baseline: tools/play6/baseline/{App,BootReceiver,BootHandshake,Play6Gmpf}.java, 
 The sha256 of each baseline copy is fixed below, so an edited baseline fails too.
 - BootHandshake.java and BootReceiver.java: byte-identical to the baseline.
 - App.java: the baseline, or the baseline plus exactly one line right after `BootHandshake.start(this);`:
-  `org.z9x.projector.Play6App.onProcessStart(this);` (any indentation). Nothing else may differ.
+  `org.lumen.projector.Play6App.onProcessStart(this);` (any indentation). Nothing else may differ.
 - Play6Gmpf.java: the class declaration line and the handshake members (IGMPF, the constructor,
   connect(), setSystemUiReady, setBootAnimFinished, getBootAnimState, goToBootCompleted, the four code
   constants, SYSTEM_UI_STATE_READY, BOOT_ANIM_STATE_FINISHED, STAGE_EARLY / STAGE_AFTER_BOOTANIM) are
@@ -38,18 +38,19 @@ import javascan  # noqa: E402
 G = os.path.dirname(os.path.dirname(HERE))
 BASE = os.path.join(HERE, "baseline")
 
-# sha256 of the baseline copies (plan section 5, check K)
+# sha256 of the baseline copies (plan section 5, check K); re-pinned 2026-10-29 for the org.z9x -> org.lumen
+# rename (each copy differs from the t1..t11 baseline only by that rename: org/lumen, org.lumen)
 BASELINE_SHA = {
-    "BootHandshake.java": "08cfa0e3521f4c41caa98416dd9e578196e38c89c39f34c7e7dd8e672571861b",
-    "BootReceiver.java": "68e211c9e296320bdca0cfe6d3f339e4fb9e7133c43801f0eff53e9383672016",
-    "App.java": "95fcf8cbc3e22f2f07f7640163e4cae24d3118eae7702032475c345eec2d29af",
-    "Play6Gmpf.java": "ca7c687e5662dfac383f071c8cee83de9e7ae14174d4808447fa45668556ff14",
+    "BootHandshake.java": "4e2faa0c83057ee21ab7b3c2f25227a0422b0813c7907673ea001bfa54b60439",
+    "BootReceiver.java": "2fcbe4ce33217930c5c4efb104f67636e67473fe88421f92e6170c4b24a33dd1",
+    "App.java": "be8e9ee665514f1a5d9bad4f50ffa56b5ff2a5fd5c6f9cf7792337199b923e9a",
+    "Play6Gmpf.java": "59dd15256f0e2e09093e3f4551e1cd39f4561fcc889b17d844bc677dec78447b",
 }
 PATHS = {
-    "BootHandshake.java": "src/org/z9x/play6/BootHandshake.java",
-    "BootReceiver.java": "src/org/z9x/play6/BootReceiver.java",
-    "App.java": "src/org/z9x/play6/App.java",
-    "Play6Gmpf.java": "src/org/z9x/projector/hal/Play6Gmpf.java",
+    "BootHandshake.java": "src/org/lumen/play6/BootHandshake.java",
+    "BootReceiver.java": "src/org/lumen/play6/BootReceiver.java",
+    "App.java": "src/org/lumen/play6/App.java",
+    "Play6Gmpf.java": "src/org/lumen/projector/hal/Play6Gmpf.java",
 }
 HANDSHAKE_MEMBERS = (
     "field IGMPF",
@@ -60,11 +61,11 @@ HANDSHAKE_MEMBERS = (
     "Play6Gmpf()", "connect()", "setSystemUiReady()", "setBootAnimFinished()", "getBootAnimState()",
     "goToBootCompleted(int)",
 )
-HIDL_CALLER = "src/org/z9x/projector/hal/HidlCaller.java"
+HIDL_CALLER = "src/org/lumen/projector/hal/HidlCaller.java"
 # a field initializer that runs code: a call, an object (not a primitive array), a lambda, a method reference
 RUNS_CODE = re.compile(r"[\w$]\s*\(|\bnew\b(?!\s+(?:int|long|short|byte|char|boolean|float|double)\s*\[)|->|::")
 START_LINE = re.compile(r"^\s*BootHandshake\.start\(this\);\s*$")
-ADDED_LINE = re.compile(r"^\s*org\.z9x\.projector\.Play6App\.onProcessStart\(this\);\s*$")
+ADDED_LINE = re.compile(r"^\s*org\.lumen\.projector\.Play6App\.onProcessStart\(this\);\s*$")
 
 
 def sha(path):
@@ -113,7 +114,7 @@ def main():
                 notes.append("App.java: the baseline plus the Play6App line after BootHandshake.start(this)")
             else:
                 errors.append("App.java: differs from the baseline by more than the one Play6App line right "
-                              "after BootHandshake.start(this) (allowed: `org.z9x.projector.Play6App.onProcessStart(this);`)")
+                              "after BootHandshake.start(this) (allowed: `org.lumen.projector.Play6App.onProcessStart(this);`)")
 
     if "Play6Gmpf.java" in cur:
         try:

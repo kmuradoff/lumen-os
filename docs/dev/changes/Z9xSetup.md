@@ -30,7 +30,7 @@ says.
 - No flow change. Without Google Play services the "more languages" hint and the Done screen's offline
   note do not mention Google (`lang_more_hint_nogms`, `done_offline_hint_nogms`, 18 locales).
 
-# Z9xSetup (org.z9x.setup): Lumen OS first-run setup
+# Z9xSetup (org.lumen.setup): Lumen OS first-run setup
 
 ## 1.0 (versionCode 100), lane L-SETUP, W1 (2026-10-07)
 
@@ -80,11 +80,11 @@ This is a new app. It implements `research/v7/setup/SPEC.md` and the binding PLA
 - After a power cut, setup resumes at the stored step, or the nearest step that is available.
 - Crash guard: 3 uncaught exceptions in one boot within 3 minutes trigger a safe finish. Low-memory kills and power cycles do not count.
 - Holding BACK for 8 s shows "Skip setup?", then a safe finish.
-- adb rescue on the device: `am start -S -n org.z9x.setup/.SetupActivity --ez safe_finish true`. It is honoured only for shell/root.
+- adb rescue on the device: `am start -S -n org.lumen.setup/.SetupActivity --ez safe_finish true`. It is honoured only for shell/root.
 - Test hook (T13): on a userdebug build, `debug.z9x.setup.crash=1` makes onCreate throw.
 
 **Shared sources**
-- `res/values/z9x_tokens.xml` and `src/org/z9x/common/GeoIp.java` are copies made by `apps/common/sync.sh` (C7/C13); never edit them here.
+- `res/values/z9x_tokens.xml` and `src/org/lumen/common/GeoIp.java` are copies made by `apps/common/sync.sh` (C7/C13); never edit them here.
 - `net/TzLookup` adds setup's Gservices `ip_timezone` fallback on top of the shared chain.
 
 **i18n**
@@ -171,5 +171,5 @@ Versions unchanged (versionCode 102 / versionName 1.0.1 in the manifest). The UI
 - Device checks (2K default, then 4K and 1080p): every step fills the screen like at 1080p (wordmark, dots,
   title column, remote drawing, Wi-Fi list, sheets, picture grid with its corner marks on the screen edges);
   text sharp; the QR codes (Google help, Alice) scan; focus moves without stutter on the welcome and network
-  steps at 4K (`dumpsys gfxinfo org.z9x.setup`: janky frames). A runtime change (`wm size 1920x1080; wm
+  steps at 4K (`dumpsys gfxinfo org.lumen.setup`: janky frames). A runtime change (`wm size 1920x1080; wm
   density 320` as root on a test unit, then reset) relaunches at the same step with the logcat line above.

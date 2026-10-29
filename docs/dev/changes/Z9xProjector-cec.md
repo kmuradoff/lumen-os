@@ -1,6 +1,6 @@
 # Z9xProjector — HDMI-CEC phase 1 (W2 lane CEC, Lumen OS 1.0, versionCode 100)
 
-Spec: research/v7/cec/SPEC.md + PLAN C11/C14/C15, adapted to real STR. New package `org.z9x.projector.cec`
+Spec: research/v7/cec/SPEC.md + PLAN C11/C14/C15, adapted to real STR. New package `org.lumen.projector.cec`
 (no HAL call anywhere in it; only HdmiControlService @SystemApi, PowerManager, two init properties).
 
 - **CecSettings**: one owner per row. Framework (HdmiControlManager): HDMI-CEC master, **"Turn on with an HDMI

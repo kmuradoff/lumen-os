@@ -72,8 +72,8 @@ overlay.
 
 Fast on weak hardware: nothing runs while the overlay is off (the sampler thread quits 5 s after the last
 owner), while the screen is off, or during Projector's lamp-only standby
-(`org.z9x.projector.action.STANDBY_CHANGED`, extra `standby`, permission
-`org.z9x.projector.permission.STANDBY_STATE`; initial state from `content://org.z9x.projector.standbystate`
+(`org.lumen.projector.action.STANDBY_CHANGED`, extra `standby`, permission
+`org.lumen.projector.permission.STANDBY_STATE`; initial state from `content://org.lumen.projector.standbystate`
 call `standby_state`, through an unstable provider client). The HUD window is added once (GONE until the
 state is known) and only hidden (view GONE, rows emptied so a later show draws nothing old) in those states,
 so Projector's AK pattern, quick panel and notice card, added later, stay above it. Kernel nodes that are

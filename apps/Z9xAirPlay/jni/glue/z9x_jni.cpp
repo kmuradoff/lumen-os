@@ -1,6 +1,6 @@
 /*
  * JNI entry for libz9xairplay.so. Only JNI_OnLoad is exported; the natives of
- * org.z9x.airplay.NativeBridge are bound with RegisterNatives (table at the end).
+ * org.lumen.airplay.NativeBridge are bound with RegisterNatives (table at the end).
  *
  * Java side (BUILD_PLAN.md section 5.1):
  *   static native long     create(Callback cb, byte[] hwAddr6, String name, String keyFile,
@@ -68,7 +68,7 @@ extern "C" {
 
 namespace {
 
-constexpr const char *kBridgeClass = "org/z9x/airplay/NativeBridge";
+constexpr const char *kBridgeClass = "org/lumen/airplay/NativeBridge";
 
 pthread_key_t gEnvKey;
 JavaVM *gVm = nullptr;
@@ -404,7 +404,7 @@ void nDestroy(JNIEnv *env, jclass, jlong h) {
 }
 
 const JNINativeMethod kMethods[] = {
-    { "create", "(Lorg/z9x/airplay/NativeBridge$Callback;[BLjava/lang/String;Ljava/lang/String;IIZZZIIII)J", (void *) nCreate },
+    { "create", "(Lorg/lumen/airplay/NativeBridge$Callback;[BLjava/lang/String;Ljava/lang/String;IIZZZIIII)J", (void *) nCreate },
     { "start", "(JI)I", (void *) nStart },
     { "txt", "(JI)[Ljava/lang/String;", (void *) nTxt },
     { "raopServiceName", "(J)Ljava/lang/String;", (void *) nRaopServiceName },

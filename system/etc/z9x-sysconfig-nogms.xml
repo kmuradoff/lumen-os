@@ -5,16 +5,16 @@
      that the two cannot drift apart.
      Lineage 21 sets config_stopSystemPackagesByDefault=true: a system package seen for the first time is
      put in the "stopped" state if it has an exported LAUNCHER activity, and a stopped package gets no
-     BOOT_COMPLETED / implicit broadcasts / jobs until the user opens it. Every org.z9x package must run
+     BOOT_COMPLETED / implicit broadcasts / jobs until the user opens it. Every org.lumen package must run
      without being opened first (plan C6): the projector, tvinput and airplay services, Lumen Home's jobs
      and receivers, the first-run setup, and the updater's check job. -->
 <config>
-    <initial-package-state package="org.z9x.projector" stopped="false" />
-    <initial-package-state package="org.z9x.tvinput" stopped="false" />
-    <initial-package-state package="org.z9x.airplay" stopped="false" />
-    <initial-package-state package="org.z9x.home" stopped="false" />
-    <initial-package-state package="org.z9x.setup" stopped="false" />
-    <initial-package-state package="org.z9x.updater" stopped="false" />
+    <initial-package-state package="org.lumen.projector" stopped="false" />
+    <initial-package-state package="org.lumen.tvinput" stopped="false" />
+    <initial-package-state package="org.lumen.airplay" stopped="false" />
+    <initial-package-state package="org.lumen.home" stopped="false" />
+    <initial-package-state package="org.lumen.setup" stopped="false" />
+    <initial-package-state package="org.lumen.updater" stopped="false" />
 
     <!-- LineageOS anonymous statistics: LineageSetupWizard (removed, our first-run replaces it) held the
          only consent screen ("Help improve LineageOS"), while the base's LineageSettingsProvider RRO

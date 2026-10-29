@@ -51,20 +51,20 @@ import org.lumen.sensors.ui.Look;
  * settings panel and the right margin, for every corner (HudView shrinks to fit), so it never
  * covers the panel.
  *
- * Standby: org.z9x.projector broadcasts org.z9x.projector.action.STANDBY_CHANGED (boolean extra
- * "standby", FLAG_RECEIVER_REGISTERED_ONLY) to holders of org.z9x.projector.permission.STANDBY_STATE,
- * and answers the current value at content://org.z9x.projector.standbystate, call "standby_state"
- * (Bundle "standby"), exactly as org.z9x.tvinput reads it. A missing Projector counts as "not in standby".
+ * Standby: org.lumen.projector broadcasts org.lumen.projector.action.STANDBY_CHANGED (boolean extra
+ * "standby", FLAG_RECEIVER_REGISTERED_ONLY) to holders of org.lumen.projector.permission.STANDBY_STATE,
+ * and answers the current value at content://org.lumen.projector.standbystate, call "standby_state"
+ * (Bundle "standby"), exactly as org.lumen.tvinput reads it. A missing Projector counts as "not in standby".
  */
 public final class HudService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "LumenSensors";
     private static final String CHANNEL = "hud";
     private static final int NOTIFICATION_ID = 1;
 
-    static final String ACTION_STANDBY_CHANGED = "org.z9x.projector.action.STANDBY_CHANGED";
+    static final String ACTION_STANDBY_CHANGED = "org.lumen.projector.action.STANDBY_CHANGED";
     static final String EXTRA_STANDBY = "standby";
-    static final String PERMISSION_STANDBY = "org.z9x.projector.permission.STANDBY_STATE";
-    static final String STANDBY_AUTHORITY = "org.z9x.projector.standbystate";
+    static final String PERMISSION_STANDBY = "org.lumen.projector.permission.STANDBY_STATE";
+    static final String STANDBY_AUTHORITY = "org.lumen.projector.standbystate";
     static final String STANDBY_METHOD = "standby_state";
     /** Signature permission (system API constant), held for the trusted overlay flag. */
     static final String PERMISSION_INTERNAL_WINDOW = "android.permission.INTERNAL_SYSTEM_WINDOW";
@@ -325,7 +325,7 @@ public final class HudService extends Service implements SharedPreferences.OnSha
         IntentFilter f = new IntentFilter(Intent.ACTION_SCREEN_ON);
         f.addAction(Intent.ACTION_SCREEN_OFF);
         registerReceiver(screenReceiver, f, Context.RECEIVER_NOT_EXPORTED);
-        // only org.z9x.projector (holder of the signature permission) can send it
+        // only org.lumen.projector (holder of the signature permission) can send it
         registerReceiver(standbyReceiver, new IntentFilter(ACTION_STANDBY_CHANGED), PERMISSION_STANDBY, null,
                 Context.RECEIVER_EXPORTED);
         receivers = true;

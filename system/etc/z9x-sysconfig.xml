@@ -3,7 +3,7 @@
      Lineage 21 sets config_stopSystemPackagesByDefault=true: a system package seen for the first
      time is put in the "stopped" state if it has an exported LAUNCHER activity, and a stopped
      package gets no BOOT_COMPLETED / implicit broadcasts / jobs until the user opens it.
-     Every org.z9x package must run without being opened first (plan C6): the projector, tvinput and
+     Every org.lumen package must run without being opened first (plan C6): the projector, tvinput and
      airplay services, Lumen Home's jobs and receivers, the first-run setup, and the updater's
      check job. Lumen OS 1.0 is flashed with a userdata wipe, so every base package is "first seen"
      too: the Google packages below have an exported LAUNCHER activity (aapt2 on the signed tar) and
@@ -11,19 +11,19 @@
      starts only from BOOT_COMPLETED, Play's boot and auto-update work, GMS / GSF (precaution: system
      binds usually un-stop them). Chromecast (mediashell) has no LAUNCHER activity. -->
 <config>
-    <initial-package-state package="org.z9x.projector" stopped="false" />
-    <initial-package-state package="org.z9x.tvinput" stopped="false" />
-    <initial-package-state package="org.z9x.airplay" stopped="false" />
-    <initial-package-state package="org.z9x.home" stopped="false" />
-    <initial-package-state package="org.z9x.setup" stopped="false" />
-    <initial-package-state package="org.z9x.updater" stopped="false" />
+    <initial-package-state package="org.lumen.projector" stopped="false" />
+    <initial-package-state package="org.lumen.tvinput" stopped="false" />
+    <initial-package-state package="org.lumen.airplay" stopped="false" />
+    <initial-package-state package="org.lumen.home" stopped="false" />
+    <initial-package-state package="org.lumen.setup" stopped="false" />
+    <initial-package-state package="org.lumen.updater" stopped="false" />
     <initial-package-state package="com.google.android.tv.remote.service" stopped="false" />
     <initial-package-state package="com.android.vending" stopped="false" />
     <initial-package-state package="com.google.android.gms" stopped="false" />
     <initial-package-state package="com.google.android.gsf" stopped="false" />
 
     <!-- Google's setup stays installed (Google sign-in needs SetupWraith's AddAccount activities, plan
-         C22) but its own wizard never runs; org.z9x.setup is the first-run setup (setup spec 3).
+         C22) but its own wizard never runs; org.lumen.setup is the first-run setup (setup spec 3).
          <component-override> changes the DEFAULT enabled state of these components of the system
          package, also when Play updates it (SystemConfig.readComponentOverrides,
          ScanPackageUtils.configurePackageComponents). SetupWraith stays the platform's setup-wizard
@@ -41,10 +41,10 @@
          would upload a hashed ANDROID_ID, device, version and country to stats.lineageos.org at the
          first boot and then daily, without asking. Lumen OS never reports. -->
     <!-- Settings > About > System update (android.settings.SYSTEM_UPDATE_SETTINGS): GMS's Pano update
-         screen and org.z9x.updater both answer it at priority 0 (the updater is not privileged, so its
+         screen and org.lumen.updater both answer it at priority 0 (the updater is not privileged, so its
          priority 10 is ignored) and the user got a chooser. Lumen OS updates come only from
-         org.z9x.updater (Google has no update for this system); verified on the device 2026-10-08 with
-         pm disable: the intent then resolves straight to org.z9x.updater/.UpdaterActivity. -->
+         org.lumen.updater (Google has no update for this system); verified on the device 2026-10-08 with
+         pm disable: the intent then resolves straight to org.lumen.updater/.UpdaterActivity. -->
     <component-override package="com.google.android.gms">
         <component class="com.google.android.gms.update.SystemUpdatePanoActivity" enabled="false" />
     </component-override>

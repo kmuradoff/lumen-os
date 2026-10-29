@@ -1,4 +1,4 @@
-package org.z9x.play6;
+package org.lumen.play6;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -7,7 +7,7 @@ import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.util.Log;
 
-import org.z9x.projector.hal.Play6Gmpf;
+import org.lumen.projector.hal.Play6Gmpf;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

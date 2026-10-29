@@ -14,7 +14,7 @@ Subcommands (every one exits non-zero with 'ERROR ...' lines on a failure):
   base BASE_TAR REMOVE...      the base tar has every path this build relies on, nothing it adds
   verify BASE_TAR OUT_TAR SPEC member diff and content checks of the output against the base
   packages TAR                 package-level checks over every APK in a tar (removed / required
-                               packages, HOME priorities, partner customization, org.z9x signers)
+                               packages, HOME priorities, partner customization, org.lumen signers)
   signed UNSIGNED SIGNED TESTCERTS RELEASECERTS
                                the sign stage changed only signatures, certs and seinfo (APEXes: the
                                files pinned by $SIGN_APEX_MANIFEST); no test key left on any APK or in
@@ -70,17 +70,27 @@ def certs_in(d):
 # name, package, install dir in the tar ('' = system/product/overlay/<name>.apk), kind
 # kind: app = our code APK; rro = static overlay; pinned = unchanged older build (sha pinned)
 APKS = [
-    ('Z9xProjector', 'org.z9x.projector', 'system/app/Z9xProjector', 'app'),
-    ('Z9xTvInput', 'org.z9x.tvinput', 'system/app/Z9xTvInput', 'pinned'),
-    ('Z9xAirPlay', 'org.z9x.airplay', 'system/app/Z9xAirPlay', 'pinned'),
-    ('Z9xHome', 'org.z9x.home', 'system/priv-app/Z9xHome', 'app'),
-    ('Z9xSetup', 'org.z9x.setup', 'system/priv-app/Z9xSetup', 'app'),
-    ('Z9xUpdater', 'org.z9x.updater', 'system/app/Z9xUpdater', 'app'),
-    ('Z9xFrameworkKeysOverlay', 'org.z9x.overlay.framework', '', 'rro'),
-    ('Z9xLineagePlatformOverlay', 'org.z9x.overlay.lineageplatform', '', 'rro'),
-    ('Z9xDeviceConfigOverlay', 'org.z9x.overlay.deviceconfig', '', 'rro'),
-    ('Z9xTvSettingsHdrOverlay', 'org.z9x.overlay.tvsettings.hdr', '', 'pinned'),
+    ('Z9xProjector', 'org.lumen.projector', 'system/app/Z9xProjector', 'app'),
+    ('Z9xTvInput', 'org.lumen.tvinput', 'system/app/Z9xTvInput', 'pinned'),
+    ('Z9xAirPlay', 'org.lumen.airplay', 'system/app/Z9xAirPlay', 'pinned'),
+    ('Z9xHome', 'org.lumen.home', 'system/priv-app/Z9xHome', 'app'),
+    ('Z9xSetup', 'org.lumen.setup', 'system/priv-app/Z9xSetup', 'app'),
+    ('Z9xUpdater', 'org.lumen.updater', 'system/app/Z9xUpdater', 'app'),
+    ('Z9xFrameworkKeysOverlay', 'org.lumen.overlay.framework', '', 'rro'),
+    ('Z9xLineagePlatformOverlay', 'org.lumen.overlay.lineageplatform', '', 'rro'),
+    ('Z9xDeviceConfigOverlay', 'org.lumen.overlay.deviceconfig', '', 'rro'),
+    ('Z9xTvSettingsHdrOverlay', 'org.lumen.overlay.tvsettings.hdr', '', 'pinned'),
+    # Lumen OS 1.0.8 bridges (apps/LumenBridge): the pre-1.0.8 names, so Android keeps their data for the
+    # one-time import into org.lumen.* (org.lumen.common.LumenImport). Never removed while a 1.0.7 device may
+    # still update straight to this image.
+    ('LumenBridgeProjector', 'org.z9x.projector', 'system/app/LumenBridgeProjector', 'bridge'),
+    ('LumenBridgeHome', 'org.z9x.home', 'system/app/LumenBridgeHome', 'bridge'),
+    ('LumenBridgeSetup', 'org.z9x.setup', 'system/app/LumenBridgeSetup', 'bridge'),
+    ('LumenBridgeTvInput', 'org.z9x.tvinput', 'system/app/LumenBridgeTvInput', 'bridge'),
+    ('LumenBridgeUpdater', 'org.z9x.updater', 'system/app/LumenBridgeUpdater', 'bridge'),
+    ('LumenBridgeAirPlay', 'org.z9x.airplay', 'system/app/LumenBridgeAirPlay', 'bridge'),
 ]
+BRIDGE_VERSION = ('1.0.8-bridge', 900000)   # above every old copy (104 on the Z9X, 600000 + N on the Play 6)
 # unchanged v6.5 builds (no lane edits them in Lumen OS 1.0; re-signed with the release key by the
 # sign stage). An apps_v1/PINS.sha256 line for the name overrides the pin (a rebuilt APK).
 PINNED = {
@@ -89,26 +99,23 @@ PINNED = {
     'Z9xTvSettingsHdrOverlay': None,   # v6.1 build, content-checked below instead of a pin
 }
 RRO = {  # package -> (target, priority, isStatic)
-    'org.z9x.overlay.framework': ('android', 2000, True),
-    'org.z9x.overlay.lineageplatform': ('lineageos.platform', 2000, True),
-    'org.z9x.overlay.deviceconfig': ('org.protonaosp.deviceconfig', 2000, True),
-    'org.z9x.overlay.tvsettings.hdr': ('com.android.tv.settings', 10, True),
+    'org.lumen.overlay.framework': ('android', 2000, True),
+    'org.lumen.overlay.lineageplatform': ('lineageos.platform', 2000, True),
+    'org.lumen.overlay.deviceconfig': ('org.protonaosp.deviceconfig', 2000, True),
+    'org.lumen.overlay.tvsettings.hdr': ('com.android.tv.settings', 10, True),
 }
 # contract filters (plan C1-C5, C16/C17, speed 3.3, brand 6.3) that the image depends on
 NEEDS_ACTION = {
-    'org.z9x.projector': ['android.intent.action.ASSIST'],          # config_defaultAssistant
-    'org.z9x.home': ['android.search.action.GLOBAL_SEARCH'],         # mic key / Recents fallback
-    'org.z9x.updater': ['android.settings.SYSTEM_UPDATE_SETTINGS'],  # About > System update row
+    'org.lumen.projector': ['android.intent.action.ASSIST'],          # config_defaultAssistant
+    'org.lumen.home': ['android.search.action.GLOBAL_SEARCH'],         # mic key / Recents fallback
+    'org.lumen.updater': ['android.settings.SYSTEM_UPDATE_SETTINGS'],  # About > System update row
 }
-HOME_PRIO = {'org.z9x.setup': 10, 'org.z9x.home': 3}                 # plan C3
-VERSION_NAME = '1.0.3'  # Lumen OS 1.0.3 (1.0.2 had '1.0.2', 1.0.1 '1.0.1', 1.0.0 '1.0.0', the 1.0 builds '1.0')
+HOME_PRIO = {'org.lumen.setup': 10, 'org.lumen.home': 3}                 # plan C3
+VERSION_NAME = '1.0.8'  # Lumen OS 1.0.8, the org.lumen rename: every APK rebuilt (1.0.3 had '1.0.3', 1.0.2 '1.0.2', ...)
 # Since 1.0.3 an app or RRO whose sources did not change keeps its earlier build byte for byte, and so its
 # version (overlay/apps_v1/README.txt): name -> the versionName it kept. A self-build (LUMEN_SELF=1,
 # docs/selfbuild) builds every APK from source, so there VERSION_NAME is accepted for them too.
-KEPT_VERSION = {
-    'Z9xUpdater': '1.0.2', 'Z9xFrameworkKeysOverlay': '1.0.2',
-    'Z9xLineagePlatformOverlay': '1.0.2', 'Z9xDeviceConfigOverlay': '1.0.2',
-}
+KEPT_VERSION = {}   # 1.0.8: none kept (the rename gave every APK a new package)
 
 
 def cmd_apks(apps, testcerts, releasecerts, plan_out):
@@ -154,6 +161,11 @@ def cmd_apks(apps, testcerts, releasecerts, plan_out):
         if kind == 'pinned' and name not in pins and PINNED.get(name) and PINNED[name] != h \
                 and os.environ.get('LUMEN_SELF') != '1':
             err('%s: sha256 %s is not the pinned v6.5 build %s' % (name, h, PINNED[name]))
+        if kind == 'bridge':
+            if (m['versionName'], m['versionCode']) != BRIDGE_VERSION:
+                err('%s: version %r / %r, expected %r (apps/LumenBridge)' % (name, m['versionName'], m['versionCode'], BRIDGE_VERSION))
+            if m['actions'] or m['persistent']:
+                err('%s: a bridge has no intent filters and is not persistent' % name)
         if kind in ('app', 'rro'):
             want = KEPT_VERSION.get(name, VERSION_NAME)
             if m['versionName'] != want and not (os.environ.get('LUMEN_SELF') == '1'
@@ -186,17 +198,17 @@ def cmd_apks(apps, testcerts, releasecerts, plan_out):
                     % (name, m['homePriorities'], HOME_PRIO[pkg]))
         elif m['homePriorities']:
             err('%s: unexpected HOME filter %r' % (name, m['homePriorities']))
-        if pkg == 'org.z9x.setup' and 'android.intent.category.SETUP_WIZARD' in m['categories']:
+        if pkg == 'org.lumen.setup' and 'android.intent.category.SETUP_WIZARD' in m['categories']:
             err('%s: must not declare CATEGORY_SETUP_WIZARD (SetupWraith stays the setup package)' % name)
         if 'com.tv.settings.action.PARTNER_CUSTOMIZATION' in m['actions']:
             err('%s: declares com.tv.settings.action.PARTNER_CUSTOMIZATION (blanks TvSettings)' % name)
-        if pkg in ('org.z9x.projector', 'org.z9x.tvinput') and not m['persistent']:
+        if pkg in ('org.lumen.projector', 'org.lumen.tvinput') and not m['persistent']:
             err('%s: expected android:persistent' % name)
-        if pkg in ('org.z9x.airplay', 'org.z9x.home', 'org.z9x.setup', 'org.z9x.updater') and m['persistent']:
+        if pkg in ('org.lumen.airplay', 'org.lumen.home', 'org.lumen.setup', 'org.lumen.updater') and m['persistent']:
             err('%s: must not be persistent' % name)
         if m['sharedUserId']:
             err('%s: sharedUserId %s is not allowed' % (name, m['sharedUserId']))
-        if pkg == 'org.z9x.airplay':
+        if pkg == 'org.lumen.airplay':
             check_airplay(p, m)
         # dexpreopt: code APKs only, classes.dex stored + 4-aligned (--copy-dex-files=false maps it
         # from the APK), and no <uses-library> (the class loader context would not be PCL[])
@@ -297,8 +309,8 @@ def cmd_maxui(apk, minw):
         vals = apkinfo.resource_values(b, 'integer', 'config_maxUiWidth')
     except Exception as e:  # noqa: BLE001
         err('%s: cannot read (%s)' % (apk, e)); done('')
-    if m['package'] != 'org.z9x.overlay.framework' or (m['overlay'] or {}).get('target') != 'android':
-        err('%s: not the framework RRO org.z9x.overlay.framework on android (%s, %r)'
+    if m['package'] != 'org.lumen.overlay.framework' or (m['overlay'] or {}).get('target') != 'android':
+        err('%s: not the framework RRO org.lumen.overlay.framework on android (%s, %r)'
             % (name, m['package'], m['overlay']))
     if not vals:
         err('%s: no integer/config_maxUiWidth: TvFrameworkOverlay\'s 1920 would cap the 4K UI at 1920x1080 '
@@ -369,8 +381,8 @@ def cmd_base(base, removes):
     for p in adds:
         if p in meta:
             err('already present in the base (would be replaced silently): %s' % p)
-    # every org.z9x package is ours: none may be in the base
-    z9 = [n for n in meta if re.search(r'/Z9x[A-Za-z]+(\.apk)?$', n)]
+    # every org.lumen package and every 1.0.8 bridge is ours: none may be in the base
+    z9 = [n for n in meta if re.search(r'/(Z9x|LumenBridge)[A-Za-z]+(\.apk)?$', n)]
     if z9:
         err('the base already has Z9x members: %s' % z9[:5])
     # v6.2b Codec2 store libs: parents and neighbour labels
@@ -504,14 +516,20 @@ FORBIDDEN = {
     'com.google.android.videos': 'Play Movies (user decision: removed)',
     'org.lineageos.setupwizard': 'LineageSetupWizard (setup spec: removed)',
     'com.android.tv.feedbackconsent': 'TvFeedbackConsent (plan C22: removed)',
-    'org.z9x.overlay.setupwraith': 'Z9xSetupWraithOverlay (setup spec: dropped)',
+    'org.lumen.overlay.setupwraith': 'Z9xSetupWraithOverlay (setup spec: dropped)',
+    'org.z9x.overlay.setupwraith': 'Z9xSetupWraithOverlay, its pre-1.0.8 name (setup spec: dropped)',
+    'org.z9x.btpair': 'Z9xBtPair, retired before 1.0 (its 1.0.8 name org.lumen.btpair is not built either)',
     'com.example.sampleleanbacklauncher': 'sample launcher (v6)',
     'com.google.android.tv.dfuservice': 'DfuService (speed: removed)',
 }
-REQUIRED = ['android', 'lineageos.platform', 'org.z9x.projector', 'org.z9x.tvinput', 'org.z9x.airplay',
-            'org.z9x.home', 'org.z9x.setup', 'org.z9x.updater', 'org.z9x.overlay.framework',
-            'org.z9x.overlay.lineageplatform', 'org.z9x.overlay.deviceconfig',
-            'org.z9x.overlay.tvsettings.hdr',
+REQUIRED = ['android', 'lineageos.platform', 'org.lumen.projector', 'org.lumen.tvinput', 'org.lumen.airplay',
+            'org.lumen.home', 'org.lumen.setup', 'org.lumen.updater', 'org.lumen.overlay.framework',
+            'org.lumen.overlay.lineageplatform', 'org.lumen.overlay.deviceconfig',
+            'org.lumen.overlay.tvsettings.hdr',
+            # the 1.0.8 bridges under the pre-1.0.8 names (apps/LumenBridge): without one, Android wipes that
+            # app's old data before the new app can import it
+            'org.z9x.projector', 'org.z9x.home', 'org.z9x.setup', 'org.z9x.tvinput', 'org.z9x.updater',
+            'org.z9x.airplay',
             'org.protonaosp.deviceconfig',
             'com.android.tv.settings', 'com.android.providers.tv']
 # the Google edition (GMS=1, tools/lumen_v1.sh) only
@@ -554,7 +572,7 @@ def cmd_packages(path):
         pkgs.setdefault(p, []).append(name)
         for pr in mf['homePriorities']:
             homes.append((pr, p, name))
-        if p and p.startswith('org.z9x.') and 'com.tv.settings.action.PARTNER_CUSTOMIZATION' in mf['actions']:
+        if p and p.startswith('org.lumen.') and 'com.tv.settings.action.PARTNER_CUSTOMIZATION' in mf['actions']:
             err('%s declares PARTNER_CUSTOMIZATION' % p)
     for p, why in forbidden.items():
         if p in pkgs:
@@ -565,7 +583,7 @@ def cmd_packages(path):
                 err('Google package %s in the no-Google edition (GMS=0): %s' % (p, where))
     for p in required:
         if p not in pkgs:
-            if os.environ.get('ALLOW_MISSING_APKS') == '1' and p in ('org.z9x.projector', 'org.z9x.home', 'org.z9x.setup', 'org.z9x.updater'):
+            if os.environ.get('ALLOW_MISSING_APKS') == '1' and p in ('org.lumen.projector', 'org.lumen.home', 'org.lumen.setup', 'org.lumen.updater'):
                 print('WARN required package %s missing (partial dry run)' % p); continue
             err('required package %s missing' % p)
     for p, where in pkgs.items():
@@ -576,15 +594,15 @@ def cmd_packages(path):
     homes = [h for h in homes if h[1] != 'com.google.android.tungsten.setupwraith']
     homes.sort(reverse=True)
     print('HOME filters: ' + ', '.join('%s=%d' % (p, pr) for pr, p, _ in homes))
-    top = [h for h in homes if h[1] != 'org.z9x.setup']
-    partial = os.environ.get('ALLOW_MISSING_APKS') == '1' and not {'org.z9x.setup', 'org.z9x.home'} <= set(pkgs)
+    top = [h for h in homes if h[1] != 'org.lumen.setup']
+    partial = os.environ.get('ALLOW_MISSING_APKS') == '1' and not {'org.lumen.setup', 'org.lumen.home'} <= set(pkgs)
     if partial:
         print('WARN HOME priority order not checked (partial dry run)')
     else:
-        if not homes or homes[0][1] != 'org.z9x.setup' or (len(homes) > 1 and homes[1][0] >= homes[0][0]):
-            err('org.z9x.setup must have the single highest HOME priority (plan C3): %r' % homes[:3])
-        if not top or top[0][1] != 'org.z9x.home' or (len(top) > 1 and top[1][0] >= top[0][0]):
-            err('org.z9x.home must be the single next HOME priority (plan C3): %r' % top[:3])
+        if not homes or homes[0][1] != 'org.lumen.setup' or (len(homes) > 1 and homes[1][0] >= homes[0][0]):
+            err('org.lumen.setup must have the single highest HOME priority (plan C3): %r' % homes[:3])
+        if not top or top[0][1] != 'org.lumen.home' or (len(top) > 1 and top[1][0] >= top[0][0]):
+            err('org.lumen.home must be the single next HOME priority (plan C3): %r' % top[:3])
     done('package check ok (gms=%s): %d packages in %d APKs' % (gms, len(pkgs), sum(len(v) for v in pkgs.values())))
 
 

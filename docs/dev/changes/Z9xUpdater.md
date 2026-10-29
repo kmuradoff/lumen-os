@@ -30,7 +30,7 @@ de, fr, it, pt "Build").
 - About > Licences: the Google line only where `com.google.android.gms` is installed (`<queries>` for it).
 - Test: `test/run.sh` also runs `ChannelTest`.
 
-# org.z9x.updater ("Lumen OS update") 1.0 (versionCode 100)
+# org.lumen.updater ("Lumen OS update") 1.0 (versionCode 100)
 
 New in Lumen OS 1.0 (lane L-OTA). Build: `VERSION_CODE=100 VERSION_NAME=1.0 sh ../build_apk.sh Z9xUpdater`.
 Install: `/system/app/Z9xUpdater/Z9xUpdater.apk`, platform-signed (re-signed with the Lumen release
@@ -46,19 +46,19 @@ platform key by `tools/sign/sign_tar.py`), not priv-app, not persistent. Image w
 - Ready: Restart now (`reboot,z9x-ota`) / at the next restart / cancel (`resetShouldSwitchSlotOnReboot`).
 - After reboot: "Updated to x.y" or "could not start, x.y restored" (gate property / build id).
 - Install from a USB stick; "verify only" dry run for test T5
-  (`am start -n org.z9x.updater/.UpdaterActivity --ez verify_only true`).
+  (`am start -n org.lumen.updater/.UpdaterActivity --ez verify_only true`).
 - About: version, build, author kmuradoff, project page with an own QR encoder (verified by decoding
   with CoreImage), licences and disclaimer.
-- `content://org.z9x.updater` call("state") for Lumen Home's badge and the projector's power policy
-  (signature permission `org.z9x.updater.permission.OTA_STATE`).
+- `content://org.lumen.updater` call("state") for Lumen Home's badge and the projector's power policy
+  (signature permission `org.lumen.updater.permission.OTA_STATE`).
 - Strings: English base here; 16 translations in `apps/i18n/pending/ota/` (validated with gen.py's
   rules and test-built). W2: add `"updater": APPS + "/Z9xUpdater/res"` to gen.py's RES and merge.
 
 ## W2 integration (2026-10-07)
-- Ota.setBusy also sends the explicit broadcast org.z9x.projector.action.OTA_STATE (extra busy) to
-  org.z9x.projector (power.OtaStateReceiver keeps the SoC out of STR while busy); manifest now holds
-  uses-permission org.z9x.projector.permission.OTA_STATE. sys.z9x.ota.busy stays as a best-effort duplicate.
-- Lumen Home now requests org.z9x.updater.permission.OTA_STATE (was a non-existent ...permission.STATE).
+- Ota.setBusy also sends the explicit broadcast org.lumen.projector.action.OTA_STATE (extra busy) to
+  org.lumen.projector (power.OtaStateReceiver keeps the SoC out of STR while busy); manifest now holds
+  uses-permission org.lumen.projector.permission.OTA_STATE. sys.z9x.ota.busy stays as a best-effort duplicate.
+- Lumen Home now requests org.lumen.updater.permission.OTA_STATE (was a non-existent ...permission.STATE).
 
 ## Review fixes (2026-10-07, round 3)
 - The brand eyebrow reads "Lumen OS" (mixed case, the same mark as boot, wake and power-off).

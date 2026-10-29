@@ -49,12 +49,12 @@ DIVIDER = "#FF3A3631"   # hairline between the mark and the glyph (decoration on
 
 # app key -> (package, label used in the comment)
 APPS = {
-    "home": ("org.z9x.home", "Lumen Home (\"Lumen\")"),
-    "projector": ("org.z9x.projector", "Projector"),
-    "updater": ("org.z9x.updater", "Lumen OS update"),
-    "airplay": ("org.z9x.airplay", "AirPlay"),
-    "setup": ("org.z9x.setup", "Setup"),
-    "tvinput": ("org.z9x.tvinput", "HDMI inputs"),
+    "home": ("org.lumen.home", "Lumen Home (\"Lumen\")"),
+    "projector": ("org.lumen.projector", "Projector"),
+    "updater": ("org.lumen.updater", "Lumen OS update"),
+    "airplay": ("org.lumen.airplay", "AirPlay"),
+    "setup": ("org.lumen.setup", "Setup"),
+    "tvinput": ("org.lumen.tvinput", "HDMI inputs"),
 }
 
 

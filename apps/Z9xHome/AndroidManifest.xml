@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  org.z9x.home "Lumen Home": the Google TV style launcher of Lumen OS (author kmuradoff).
+  org.lumen.home "Lumen Home": the Google TV style launcher of Lumen OS (author kmuradoff).
   Install: /system/priv-app/Z9xHome/Z9xHome.apk, platform-signed (release platform key after sign_tar),
   NOT persistent, no sharedUserId. Image files: image/privapp-permissions-z9xhome.xml,
   image/default-permissions-z9xhome.xml, and initial-package-state stopped=false (PLAN C6).
 
-  Components marked [launcher] are switched by org.z9x.projector's LauncherSwitcher (PLAN C1) and are
+  Components marked [launcher] are switched by org.lumen.projector's LauncherSwitcher (PLAN C1) and are
   disabled in classic mode; .search.SearchActivity, .search.VoiceSearchAlias and .search.MicUpReceiver
   stay enabled (mic key) and cost nothing until used. HOME priority 3: Lumen Setup 10 > Lumen Home 3 >
   tvlauncher 2, so the fallback holder is deterministic (PLAN C3).
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.home"
-    android:versionCode="106"
-    android:versionName="1.0.5">
+    package="org.lumen.home"
+    android:versionCode="108"
+    android:versionName="1.0.8">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
 
-    <!-- Only org.z9x.projector (platform-signed) may start voice search and signal the mic release. -->
-    <permission android:name="org.z9x.home.permission.MIC" android:protectionLevel="signature" />
+    <!-- Only org.lumen.projector (platform-signed) may start voice search and signal the mic release. -->
+    <permission android:name="org.lumen.home.permission.MIC" android:protectionLevel="signature" />
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -56,12 +56,12 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <!-- our other apps (signature permissions they define) -->
-    <uses-permission android:name="org.z9x.projector.permission.SHOW_PANEL" />
-    <uses-permission android:name="org.z9x.projector.permission.SHOW_SOURCE" />
-    <uses-permission android:name="org.z9x.projector.permission.SET_LAUNCHER" />
-    <uses-permission android:name="org.z9x.projector.permission.STANDBY_STATE" />
-    <uses-permission android:name="org.z9x.tvinput.permission.HDMI_STATE" />
-    <uses-permission android:name="org.z9x.updater.permission.OTA_STATE" />
+    <uses-permission android:name="org.lumen.projector.permission.SHOW_PANEL" />
+    <uses-permission android:name="org.lumen.projector.permission.SHOW_SOURCE" />
+    <uses-permission android:name="org.lumen.projector.permission.SET_LAUNCHER" />
+    <uses-permission android:name="org.lumen.projector.permission.STANDBY_STATE" />
+    <uses-permission android:name="org.lumen.tvinput.permission.HDMI_STATE" />
+    <uses-permission android:name="org.lumen.updater.permission.OTA_STATE" />
 
     <queries>
         <intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LEANBACK_LAUNCHER" /></intent>
@@ -72,10 +72,10 @@
         <package android:name="com.google.android.youtube.tv" />
         <package android:name="com.google.android.tvlauncher" />
         <package android:name="com.google.android.apps.mediashell" />
-        <package android:name="org.z9x.projector" />
-        <package android:name="org.z9x.tvinput" />
-        <package android:name="org.z9x.airplay" />
-        <package android:name="org.z9x.updater" />
+        <package android:name="org.lumen.projector" />
+        <package android:name="org.lumen.tvinput" />
+        <package android:name="org.lumen.airplay" />
+        <package android:name="org.lumen.updater" />
     </queries>
 
     <application
@@ -130,7 +130,7 @@
             android:windowSoftInputMode="adjustNothing|stateHidden" />
 
         <!-- 1.0.1: Apps > Install from USB (the Apps page tile, search's keyboard hint). Kept enabled in
-             classic-launcher mode (org.z9x.keep_in_classic: Z9xProjector's LauncherSwitcher skips it), like
+             classic-launcher mode (org.lumen.keep_in_classic: Z9xProjector's LauncherSwitcher skips it), like
              search, which may open it; costs nothing until opened -->
         <activity
             android:name=".usb.UsbInstallActivity"
@@ -139,7 +139,7 @@
             android:theme="@style/Theme.Lumen.Panel"
             android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density"
             android:windowSoftInputMode="adjustNothing|stateHidden">
-            <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
+            <meta-data android:name="org.lumen.keep_in_classic" android:value="true" />
         </activity>
         <!-- 1.0.4: Files (usb/UsbFilesActivity): the USB sticks' folders, in place of XGIMI's file manager. Opened
              from the Apps page and, through the Files entry below, from any launcher; kept enabled in classic-
@@ -152,7 +152,7 @@
             android:theme="@style/Theme.Lumen.Panel"
             android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density"
             android:windowSoftInputMode="adjustNothing|stateHidden">
-            <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
+            <meta-data android:name="org.lumen.keep_in_classic" android:value="true" />
         </activity>
         <activity-alias
             android:name=".FilesLauncher"
@@ -165,7 +165,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
-            <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
+            <meta-data android:name="org.lumen.keep_in_classic" android:value="true" />
         </activity-alias>
         <activity
             android:name=".usb.PhotoActivity"
@@ -173,7 +173,7 @@
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Lumen.Home"
             android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density">
-            <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
+            <meta-data android:name="org.lumen.keep_in_classic" android:value="true" />
         </activity>
         <activity
             android:name=".usb.PlayerActivity"
@@ -181,31 +181,31 @@
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Lumen.Home"
             android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density">
-            <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
+            <meta-data android:name="org.lumen.keep_in_classic" android:value="true" />
         </activity>
         <!-- the file a player of Files opens (read only, one-off grant with the VIEW intent) -->
         <provider
             android:name=".usb.UsbFilesProvider"
-            android:authorities="org.z9x.home.usbfiles"
+            android:authorities="org.lumen.home.usbfiles"
             android:exported="false"
             android:grantUriPermissions="true" />
         <!-- 1.0.6: a file of a network folder (net/NetFilesProvider: SMB reads behind a seekable proxy descriptor),
              for the player of Files the same way: read only, one-off grant with the VIEW intent -->
         <provider
             android:name=".net.NetFilesProvider"
-            android:authorities="org.z9x.home.netfiles"
+            android:authorities="org.lumen.home.netfiles"
             android:exported="false"
             android:grantUriPermissions="true" />
         <!-- its PackageInstaller session status (our own explicit PendingIntent only) -->
         <receiver android:name=".usb.UsbInstallReceiver" android:exported="false">
-            <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
+            <meta-data android:name="org.lumen.keep_in_classic" android:value="true" />
         </receiver>
 
         <!-- ALWAYS enabled (also in classic mode): search. Listening only via VoiceSearchAlias (MIC perm). -->
         <activity
             android:name=".search.SearchActivity"
             android:exported="true"
-            android:taskAffinity="org.z9x.home.search"
+            android:taskAffinity="org.lumen.home.search"
             android:launchMode="singleTask"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Lumen.Search"
@@ -229,17 +229,17 @@
             android:name=".search.VoiceSearchAlias"
             android:targetActivity=".search.SearchActivity"
             android:exported="true"
-            android:permission="org.z9x.home.permission.MIC">
+            android:permission="org.lumen.home.permission.MIC">
             <intent-filter>
-                <action android:name="org.z9x.home.action.VOICE_SEARCH" />
+                <action android:name="org.lumen.home.action.VOICE_SEARCH" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity-alias>
         <receiver
             android:name=".search.MicUpReceiver"
             android:exported="true"
-            android:permission="org.z9x.home.permission.MIC">
-            <intent-filter><action android:name="org.z9x.home.action.MIC_UP" /></intent-filter>
+            android:permission="org.lumen.home.permission.MIC">
+            <intent-filter><action android:name="org.lumen.home.action.MIC_UP" /></intent-filter>
         </receiver>
 
         <!-- [launcher] TvProvider plumbing that tvrecommendations used to provide (SPEC D6, 5.4) -->
@@ -261,8 +261,8 @@
             android:permission="android.permission.MODIFY_PARENTAL_CONTROLS">
             <intent-filter><action android:name="android.media.tv.action.CHANNEL_BROWSABLE_REQUESTED" /></intent-filter>
         </receiver>
-        <!-- Lumen screensaver: the living landscape (org.z9x.home.sky, scene shared with the Home wallpaper).
-             Stays enabled in classic-launcher mode (org.z9x.keep_in_classic: Z9xProjector's LauncherSwitcher
+        <!-- Lumen screensaver: the living landscape (org.lumen.home.sky, scene shared with the Home wallpaper).
+             Stays enabled in classic-launcher mode (org.lumen.keep_in_classic: Z9xProjector's LauncherSwitcher
              skips it). The image makes it the framework default dream (Z9xFrameworkKeysOverlay
              config_dreamsDefaultComponent -> Settings.Secure screensaver_default_component on a fresh
              userdata; 1.0.1: sky/DreamDefault does it once on projectors upgraded from 1.0); the active
@@ -277,7 +277,7 @@
                 <action android:name="android.service.dreams.DreamService" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-            <meta-data android:name="org.z9x.keep_in_classic" android:value="true" />
+            <meta-data android:name="org.lumen.keep_in_classic" android:value="true" />
         </service>
 
         <!-- [launcher] best effort only; the authoritative diff runs at every HomeActivity start -->

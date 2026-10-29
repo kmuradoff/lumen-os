@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  org.z9x.airplay ("AirPlay") for the XGIMI Z9X GSI (v6.3). GPL-3.0 (see NOTICE / LICENSE).
+  org.lumen.airplay ("AirPlay") for the XGIMI Z9X GSI (v6.3). GPL-3.0 (see NOTICE / LICENSE).
   Install: /system/app/Z9xAirPlay/Z9xAirPlay.apk (NOT priv-app), platform-signed, no sharedUserId.
   Also works when adb-installed to /data for testing: libz9xairplay.so is self-contained
   (BoringSSL linked statically) and is loaded straight from the APK (stored, 16 KB aligned,
@@ -13,7 +13,7 @@
   MAIN + INFO activity; launchers do not list INFO), the service notification
   (POST_NOTIFICATIONS: pre-granted in the image by overlay/v63/z9x-airplay-default-permissions.xml
   -> /system/product/etc/default-permissions/z9x-airplay.xml, otherwise asked once by the
-  settings screen) and the intent action org.z9x.airplay.SETTINGS. TvSettings on this image
+  settings screen) and the intent action org.lumen.airplay.SETTINGS. TvSettings on this image
   does not use APPLICATION_PREFERENCES (no gear); the filter is kept for other settings UIs.
 
   Deliberately NOT android:persistent (decided for the v6.3 image integration): the receiver is
@@ -34,12 +34,12 @@
 
   Test from /data: adb install leaves the package in the stopped state (no launcher entry),
   so BOOT_COMPLETED is not delivered until it is started once:
-    adb shell am start -a org.z9x.airplay.SETTINGS
+    adb shell am start -a org.lumen.airplay.SETTINGS
   Network: TCP 7000 (7001-7010 if busy) plus UxPlay's dynamic data ports; mDNS through the
   system NsdManager only, so Google Cast (mediashell, 8008/8009 and its own 5353) is untouched.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.airplay">
+    package="org.lumen.airplay">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
 
@@ -64,6 +64,7 @@
     <uses-permission android:name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
 
     <application
+        android:name=".LumenApp"
         android:label="@string/app_name"
         android:icon="@drawable/brand_icon_airplay"
         android:allowBackup="false"
@@ -98,7 +99,7 @@
             android:name=".MirrorActivity"
             android:exported="false"
             android:launchMode="singleTask"
-            android:taskAffinity="org.z9x.airplay.receiver"
+            android:taskAffinity="org.lumen.airplay.receiver"
             android:excludeFromRecents="true"
             android:resizeableActivity="false"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density"
@@ -119,7 +120,7 @@
                 <category android:name="android.intent.category.INFO" />
             </intent-filter>
             <intent-filter>
-                <action android:name="org.z9x.airplay.SETTINGS" />
+                <action android:name="org.lumen.airplay.SETTINGS" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>

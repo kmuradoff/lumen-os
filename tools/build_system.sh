@@ -28,7 +28,7 @@
 #   Mac:     bash "gsi/tools/lumen_v1.sh" remote                    (or sign, with OUTDIR=...)
 #
 # Lumen OS 1.0 compared with v6.5.2:
-#   - name "Lumen OS" (every user-visible "Z9X OS"); internal package names org.z9x.* and the
+#   - name "Lumen OS" (every user-visible "Z9X OS"); internal package names org.lumen.* and the
 #     persist.z9x.* / ro.z9x.* props stay. Props: ro.z9x.version=$VER (system), ro.lumen.version=$VER
 #     (product); About: ro.build.display.id = "Lumen OS $VER (<build id>, <date>)",
 #     ro.lineage.display.version = "$VER (kmuradoff)", row titles from Z9xLineagePlatformOverlay
@@ -41,7 +41,7 @@
 #       /system/priv-app:  Z9xHome (Lumen Home, 1.0, new, HOME priority 3), Z9xSetup (first-run,
 #                          1.0, new, HOME priority 10)
 #       /system/product/overlay: Z9xFrameworkKeysOverlay (1.0: + cached processes 16, default
-#                          assistant org.z9x.projector, 8 CEC defaults), Z9xLineagePlatformOverlay
+#                          assistant org.lumen.projector, 8 CEC defaults), Z9xLineagePlatformOverlay
 #                          (new: HOME double-tap 0 = no 300 ms delay, long-press HOME = assist ->
 #                          Recents, "Lumen OS" strings), Z9xDeviceConfigOverlay (new: device_config
 #                          max_cached_processes 16, freezer on), Z9xTvSettingsHdrOverlay (v6.2:
@@ -63,7 +63,7 @@
 #     z9x_poweroff.rc/.sh (v6.2 watchdog magic-close at a real power-off) and the boot-dark safety
 #     (z9x_bootinfo) are kept. z9x_diag: the '!!! vendor suspend' alarm only with allow_str=0; every
 #     power capture also logs the USB device controller state and the PM51 wake sources.
-#   - first run: org.z9x.setup + sysconfig component-overrides of SetupWraith's MainActivity and
+#   - first run: org.lumen.setup + sysconfig component-overrides of SetupWraith's MainActivity and
 #     BootCompletedReceiver; initial-package-state stopped=false for all six org.z9x apps (C6);
 #     privapp allow-lists for the two priv-apps; default permissions for Lumen Home (RECORD_AUDIO,
 #     + READ_TV_LISTINGS in 1.0.0)
@@ -241,13 +241,13 @@ EDITION_SFX=; [ "$GMS" = 0 ] && EDITION_SFX=-nogms
 MANIFEST_BASE=https://github.com/kmuradoff/lumen-os/releases/latest/download
 CHANNEL=$([ "$VARIANT" = public ] && echo public || echo stable)$EDITION_SFX
 MANIFEST_URL=$MANIFEST_BASE/update-$CHANNEL.json
-# Lumen OS release (1.0.3; 1.0.0 shipped 2026-10-08, 1.0.1 and 1.0.2 on 2026-10-10): user-facing version and the updater's version_code.
+# Lumen OS release (1.0.8, the org.lumen bridge release; 1.0.4 to 1.0.7 were tar patches on the Mac; 1.0.0 shipped 2026-10-08, 1.0.1 and 1.0.2 on 2026-10-10): user-facing version and the updater's version_code.
 # Scheme (tools/ota/image/ota_props.txt, docs/ota.md): version_code = major*10000 + minor*100 + patch + 1,
 # so 1.0.0 = 10001 is offered over the 1.0 test builds (version_code 10000, build_id lumen-1.0-<date>)
 # 1.0.1 = 10002 over 1.0.0, 1.0.2 = 10003 over 1.0.1 and 1.0.3 = 10004 over 1.0.2.
 # ro.z9x.version, ro.lumen.version, the build id lumen-$VER-<date>[suffix], the version_code and the APK set's
 # versionName (tools/lumen/lumen_checks.py VERSION_NAME) are all checked against VER in the preflight.
-VER=1.0.3
+VER=1.0.8
 BUILD_ID=lumen-$VER-$BUILD_DATE$BUILD_ID_SUFFIX
 # 1.0.3 system library slot (header, SYSLIBS below): on by default from VER 1.0.3; SYSLIB=0 keeps the base's
 # libraries. Only these two values (an unset or empty SYSLIB takes the default).
@@ -764,8 +764,8 @@ for f in sorted(os.listdir(d)) + [otaperm]:
         ET.parse(p)
 r = ET.parse(os.path.join(d, 'z9x-sysconfig.xml')).getroot()
 st = {(e.get('package'), e.get('stopped')) for e in r.findall('initial-package-state')}
-want = {(p, 'false') for p in ('org.z9x.projector', 'org.z9x.tvinput', 'org.z9x.airplay', 'org.z9x.home',
-                                'org.z9x.setup', 'org.z9x.updater', 'com.google.android.tv.remote.service',
+want = {(p, 'false') for p in ('org.lumen.projector', 'org.lumen.tvinput', 'org.lumen.airplay', 'org.lumen.home',
+                                'org.lumen.setup', 'org.lumen.updater', 'com.google.android.tv.remote.service',
                                 'com.android.vending', 'com.google.android.gms', 'com.google.android.gsf')}
 assert st == want, st
 co = {(e.get('package'), c.get('class'), c.get('enabled')) for e in r.findall('component-override') for c in e}
@@ -780,23 +780,23 @@ assert co == {('com.google.android.tungsten.setupwraith', 'com.google.android.tu
 rn = ET.parse(nogms).getroot()
 stn = {(e.get('package'), e.get('stopped')) for e in rn.findall('initial-package-state')}
 con = {(e.get('package'), c.get('class'), c.get('enabled')) for e in rn.findall('component-override') for c in e}
-assert stn == {x for x in st if x[0].startswith('org.z9x.')} and len(stn) == 6, stn
+assert stn == {x for x in st if x[0].startswith('org.lumen.')} and len(stn) == 6, stn
 assert con == {x for x in co if x[0] == LP} and len(con) == 3, con
 assert {c.tag for c in rn} == {'initial-package-state', 'component-override'}, {c.tag for c in rn}
 bad = [v for e in rn.iter() for v in e.attrib.values() if 'google' in v.lower() or 'vending' in v]
 assert not bad, 'Google names in %s: %s' % (nogms, bad)
 def exc(f):
     return [(e.get('package'), sorted(q.get('name') for q in e.findall('permission'))) for e in ET.parse(f).getroot().findall('exception')]
-assert exc(os.path.join(d, 'z9x-home-default-permissions.xml')) == [('org.z9x.home', ['android.permission.READ_TV_LISTINGS', 'android.permission.RECORD_AUDIO'])]
-assert exc(os.path.join(d, 'z9x-airplay-default-permissions.xml')) == [('org.z9x.airplay', ['android.permission.POST_NOTIFICATIONS'])]
-assert exc(os.path.join(d, 'z9x-projector-default-permissions.xml'))[0][0] == 'org.z9x.projector'
-assert [e.get('package') for e in ET.parse(otaperm).getroot().findall('exception')] == ['org.z9x.updater']
-for f, pkg in (('privapp-permissions-z9xhome.xml', 'org.z9x.home'), ('privapp-permissions-z9xsetup.xml', 'org.z9x.setup')):
+assert exc(os.path.join(d, 'z9x-home-default-permissions.xml')) == [('org.lumen.home', ['android.permission.READ_TV_LISTINGS', 'android.permission.RECORD_AUDIO'])]
+assert exc(os.path.join(d, 'z9x-airplay-default-permissions.xml')) == [('org.lumen.airplay', ['android.permission.POST_NOTIFICATIONS'])]
+assert exc(os.path.join(d, 'z9x-projector-default-permissions.xml'))[0][0] == 'org.lumen.projector'
+assert [e.get('package') for e in ET.parse(otaperm).getroot().findall('exception')] == ['org.lumen.updater']
+for f, pkg in (('privapp-permissions-z9xhome.xml', 'org.lumen.home'), ('privapp-permissions-z9xsetup.xml', 'org.lumen.setup')):
     assert [e.get('package') for e in ET.parse(os.path.join(d, f)).getroot().findall('privapp-permissions')] == [pkg], f
 r = ET.parse(os.path.join(d, 'audio_policy_engine_stream_volumes.xml')).getroot()
 g = {x.findtext('name'): {v.get('deviceCategory'): v.get('ref') for v in x.findall('volume')} for x in r.findall('volumeGroup')}
 assert len(g) == 12 and g['system']['DEVICE_CATEGORY_SPEAKER'] == 'MM' and g['system']['DEVICE_CATEGORY_HEADSET'] == 'MM'
-print('xml ok: sysconfig (6 org.z9x + 4 Google packages not stopped, SetupWraith + LineageOS stats overrides; nogms: the 6 + the 3 stats), permissions, stream volumes')
+print('xml ok: sysconfig (6 org.lumen + 4 Google packages not stopped, SetupWraith + LineageOS stats overrides; nogms: the 6 + the 3 stats), permissions, stream volumes')
 PY
   # the Google services add-on's sysconfig layer (tools/ota/image, both public editions) = exactly the Google
   # entries of the Google edition's z9x.xml (main minus nogms), so the three files cannot drift apart
@@ -1226,6 +1226,8 @@ stage_prep() {
 
   log "base member check"
   NEW_PATHS=$(printf '%s\n' system/app/Z9xProjector system/app/Z9xTvInput system/app/Z9xAirPlay system/app/Z9xUpdater \
+      system/app/LumenBridgeProjector system/app/LumenBridgeHome system/app/LumenBridgeSetup \
+      system/app/LumenBridgeTvInput system/app/LumenBridgeUpdater system/app/LumenBridgeAirPlay \
       system/priv-app/Z9xHome system/priv-app/Z9xSetup system/product/usr/idc system/etc/sysconfig/z9x.xml \
       system/product/usr/keylayout/Generic.kl system/etc/z9x system/etc/init/z9x_ota.rc system/etc/init/z9x_rescue.rc \
       system/etc/permissions/privapp-permissions-z9xhome.xml system/etc/permissions/privapp-permissions-z9xsetup.xml \

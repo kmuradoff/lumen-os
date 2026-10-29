@@ -1,7 +1,7 @@
 # Shared files of the device projector apps: single source apps/common/projector/<path>, copied to
 # <app>/<path> by `sh apps/common/sync.sh APP_DIR projector` (rules: README.txt next to this file).
 # One path per line, relative to the app dir, no spaces; # starts a comment.
-# Never a path under src/org/z9x/projector/hal/: the device HAL clients are per device.
+# Never a path under src/org/lumen/projector/hal/: the device HAL clients are per device.
 
 # strings files and their locale copies (languages: apps/i18n/gen.py target common; values-ru/strings.xml,
 # strings_power.xml, strings_remote.xml, strings_source.xml and every strings_pair.xml are hand-written)
@@ -171,55 +171,55 @@ res/layout/activity_manual_focus.xml
 res/values/colors.xml
 res/values/themes.xml
 
-# Java without device seams: these classes use only each other, Android and org.z9x.projector.R (the
+# Java without device seams: these classes use only each other, Android and org.lumen.projector.R (the
 # resources above)
-src/org/z9x/projector/SafeHandler.java
-src/org/z9x/projector/Ui.java
-src/org/z9x/projector/Z9xKeys.java
-src/org/z9x/projector/ui/Theme.java
-src/org/z9x/projector/ui/OverlayHost.java
-src/org/z9x/projector/ui/Panel.java
-src/org/z9x/projector/ui/Page.java
-src/org/z9x/projector/ui/PagedPanel.java
-src/org/z9x/projector/ui/Marquee.java
-src/org/z9x/projector/ui/Row.java
-src/org/z9x/projector/ui/CheckRow.java
-src/org/z9x/projector/ui/ChoiceRow.java
-src/org/z9x/projector/ui/HeaderRow.java
-src/org/z9x/projector/ui/NavRow.java
-src/org/z9x/projector/ui/SliderRow.java
-src/org/z9x/projector/ui/TextRow.java
-src/org/z9x/projector/ui/ToggleRow.java
-src/org/z9x/projector/ui/DialogPanel.java
-src/org/z9x/projector/ui/Notify.java
-src/org/z9x/projector/ui/NotifyRequestReceiver.java
-src/org/z9x/projector/panel/Tile.java
-src/org/z9x/projector/panel/TileGrid.java
-src/org/z9x/projector/power/WakeCurtain.java
-src/org/z9x/projector/home/HomeSearch.java
-src/org/z9x/projector/home/LauncherSwitcher.java
-src/org/z9x/projector/home/LauncherRequestReceiver.java
-src/org/z9x/projector/AppSlots.java
-src/org/z9x/projector/sys/BootReason.java
-src/org/z9x/projector/mem/ProtectedSet.java
-src/org/z9x/projector/recents/RecentsModel.java
-src/org/z9x/projector/recents/RecentsView.java
-src/org/z9x/projector/remote/RemoteArt.java
-src/org/z9x/projector/source/TifHdmiState.java
-src/org/z9x/projector/source/SourceRow.java
+src/org/lumen/projector/SafeHandler.java
+src/org/lumen/projector/Ui.java
+src/org/lumen/projector/Z9xKeys.java
+src/org/lumen/projector/ui/Theme.java
+src/org/lumen/projector/ui/OverlayHost.java
+src/org/lumen/projector/ui/Panel.java
+src/org/lumen/projector/ui/Page.java
+src/org/lumen/projector/ui/PagedPanel.java
+src/org/lumen/projector/ui/Marquee.java
+src/org/lumen/projector/ui/Row.java
+src/org/lumen/projector/ui/CheckRow.java
+src/org/lumen/projector/ui/ChoiceRow.java
+src/org/lumen/projector/ui/HeaderRow.java
+src/org/lumen/projector/ui/NavRow.java
+src/org/lumen/projector/ui/SliderRow.java
+src/org/lumen/projector/ui/TextRow.java
+src/org/lumen/projector/ui/ToggleRow.java
+src/org/lumen/projector/ui/DialogPanel.java
+src/org/lumen/projector/ui/Notify.java
+src/org/lumen/projector/ui/NotifyRequestReceiver.java
+src/org/lumen/projector/panel/Tile.java
+src/org/lumen/projector/panel/TileGrid.java
+src/org/lumen/projector/power/WakeCurtain.java
+src/org/lumen/projector/home/HomeSearch.java
+src/org/lumen/projector/home/LauncherSwitcher.java
+src/org/lumen/projector/home/LauncherRequestReceiver.java
+src/org/lumen/projector/AppSlots.java
+src/org/lumen/projector/sys/BootReason.java
+src/org/lumen/projector/mem/ProtectedSet.java
+src/org/lumen/projector/recents/RecentsModel.java
+src/org/lumen/projector/recents/RecentsView.java
+src/org/lumen/projector/remote/RemoteArt.java
+src/org/lumen/projector/source/TifHdmiState.java
+src/org/lumen/projector/source/SourceRow.java
 
 # Java with seams: these classes also call classes that every projector app provides itself (Hal,
 # KeyReceiver, power/StandbyController, power/PowerKey, power/SleepTimer, panel/QuickPanel,
 # source/SourceOverlay, setup/SetupEvents, eye/EyeGuard, cec/CecPolicy, ak/AkOverlay), with the members
 # and meaning these files expect
-src/org/z9x/projector/mem/MemoryGuard.java
-src/org/z9x/projector/recents/RecentsActivity.java
-src/org/z9x/projector/remote/RemoteAutoPair.java
-src/org/z9x/projector/remote/RemotePrompt.java
-src/org/z9x/projector/power/PowerMenu.java
-src/org/z9x/projector/home/PanelRequestReceiver.java
-src/org/z9x/projector/source/SourceRequestReceiver.java
-src/org/z9x/projector/power/StandbyStateProvider.java
+src/org/lumen/projector/mem/MemoryGuard.java
+src/org/lumen/projector/recents/RecentsActivity.java
+src/org/lumen/projector/remote/RemoteAutoPair.java
+src/org/lumen/projector/remote/RemotePrompt.java
+src/org/lumen/projector/power/PowerMenu.java
+src/org/lumen/projector/home/PanelRequestReceiver.java
+src/org/lumen/projector/source/SourceRequestReceiver.java
+src/org/lumen/projector/power/StandbyStateProvider.java
 # Lumen OS 1.0.5: voice assistant
 res/values/strings_voice.xml
 res/values-ar/strings_voice.xml
@@ -239,10 +239,10 @@ res/values-tr/strings_voice.xml
 res/values-uk/strings_voice.xml
 res/values-zh-rCN/strings_voice.xml
 res/values-zh-rTW/strings_voice.xml
-src/org/z9x/projector/voice/Commands.java
-src/org/z9x/projector/voice/AppMatcher.java
-src/org/z9x/projector/voice/Speaker.java
-src/org/z9x/projector/voice/OrbView.java
-src/org/z9x/projector/voice/Assistant.java
-src/org/z9x/projector/voice/VoiceSettings.java
-src/org/z9x/projector/voice/Chime.java
+src/org/lumen/projector/voice/Commands.java
+src/org/lumen/projector/voice/AppMatcher.java
+src/org/lumen/projector/voice/Speaker.java
+src/org/lumen/projector/voice/OrbView.java
+src/org/lumen/projector/voice/Assistant.java
+src/org/lumen/projector/voice/VoiceSettings.java
+src/org/lumen/projector/voice/Chime.java

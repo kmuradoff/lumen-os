@@ -114,9 +114,9 @@ grep -E "warning:" "$B/ndk-build.log" | grep -c . | sed 's/^/build_native: compi
 
 # ---- 4. ELF checks ----------------------------------------------------------------------
 ALLOWED_NEEDED="libandroid.so liblog.so libmediandk.so libaaudio.so libm.so libdl.so libc.so"
-# Java side (org.z9x.airplay.NativeBridge) that the RegisterNatives table must match.
+# Java side (org.lumen.airplay.NativeBridge) that the RegisterNatives table must match.
 JNI_METHODS="create start txt raopServiceName setSurface disconnectAll setOutputMuted updatePlaybackInfo isRunning stop destroy"
-JNI_SIGS="(Lorg/z9x/airplay/NativeBridge\$Callback;[BLjava/lang/String;Ljava/lang/String;IIZZZIIII)J
+JNI_SIGS="(Lorg/lumen/airplay/NativeBridge\$Callback;[BLjava/lang/String;Ljava/lang/String;IIZZZIIII)J
 (JI)I
 (JI)[Ljava/lang/String;
 (J)Ljava/lang/String;
@@ -210,7 +210,7 @@ DL=$TP/_downloads
     echo "    build-id: $("$READELF" -n "$so" | sed -n 's/.*Build ID: *//p')"
   done
   echo
-  echo "exported: JNI_OnLoad only. RegisterNatives class org/z9x/airplay/NativeBridge:"
+  echo "exported: JNI_OnLoad only. RegisterNatives class org/lumen/airplay/NativeBridge:"
   sed -n 's/^ *{ *"\([A-Za-z]*\)", *"\([^"]*\)".*/  \1 \2/p' "$JNI/glue/z9x_jni.cpp"
 } > "$JNI/BUILDINFO.txt"
 

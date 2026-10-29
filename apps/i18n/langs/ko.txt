@@ -372,7 +372,7 @@ eq_no_mode=먼저 사운드 모드를 선택하세요
 eq_speaker_only=이퀄라이저는 내장 스피커에서만 작동합니다
 eq_hint_mode=%1$s에 저장 · 내장 스피커
 
-# v6.3 org.z9x.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
+# v6.3 org.lumen.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
 @airplay/strings.xml
 notif_channel=AirPlay 수신기
 notif_ready=‘%1$s’(으)로 AirPlay 준비됨

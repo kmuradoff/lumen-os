@@ -88,7 +88,7 @@ Stages: `prep` (laptop: preflight, base check, dexpreopt, patch_tar, member diff
   /sys/power/state, reboots, block devices, persist props or HAL calls in those files. `z9x_diag.sh`: vendor-suspend alarm only with allow_str=0; each power capture logs UDC
   state, USB config and PM51 wake sources. `z9x_poweroff` and `z9x_bootinfo` unchanged.
 - **Framework RRO** (`Z9xFrameworkKeysOverlay` 1.0, code 100): + `config_customizedMaxCachedProcesses`
-  16, `config_defaultAssistant` org.z9x.projector (Recents on long-press HOME), 8 CEC default bools
+  16, `config_defaultAssistant` org.lumen.projector (Recents on long-press HOME), 8 CEC default bools
   (cec spec 3.3). `config_shortPressOnPowerBehavior` 0 etc. unchanged. Shutdown layout: the "Lumen" wordmark
   (review fix 2026-10-07, the same mark as WakeCurtain / power_wordmark).
 - **New RROs**: `Z9xLineagePlatformOverlay` (HOME double-tap 0, long-press HOME 3, Lumen OS strings),
@@ -169,11 +169,11 @@ OK, 64 members read back identical, check_image.py: only "Z9xUpdater.apk missing
   RRO of ours is versionName 1.0.0 / versionCode 101 (lumen_checks.py VERSION_NAME). App icons (and
   banners where an app had one) are the brand drawables of apps/common/brand. Z9xTvInput / Z9xAirPlay
   re-pinned in apps_v1/PINS.sha256 (their sources reproduced the 1.0 pins before the icon change).
-- **Framework RRO**: `config_dreamsDefaultComponent` = org.z9x.home/org.z9x.home.sky.SkyDreamService (the
+- **Framework RRO**: `config_dreamsDefaultComponent` = org.lumen.home/org.lumen.home.sky.SkyDreamService (the
   TvFrameworkOverlay default, BasicDreams Colors, is not in the image). Seeds Settings.Secure
   screensaver_default_component on a fresh userdata; the active screensaver stays Z9xProjector's choice
   (clock, set once on the first boot) or the user's. The sky screensaver stays enabled in classic-launcher
-  mode (`org.z9x.keep_in_classic` on the service).
+  mode (`org.lumen.keep_in_classic` on the service).
 - **Default permissions**: Lumen Home + READ_TV_LISTINGS (z9x-home-default-permissions.xml; the preflight
   assert follows). Applied on a fresh userdata only (the fingerprint does not change between Lumen builds).
 - **Boot animation**: "Aperture" from tools/brand/gen_bootanim.py (894,696 bytes, 152x248 box, 240 frames,
@@ -325,7 +325,7 @@ OK, 64 members read back identical, check_image.py: only "Z9xUpdater.apk missing
   (com.android.tv.overlay.framework, AOSP `TvFrameworkOverlay/res/values/config.xml:173`; framework default 0).
   Lineage 21 `DisplayContent.updateBaseDisplayMetrics` (line 3099) clamps the base width to it also for a forced
   size, and `setForcedSize` (3172) clamps too, so neither `ro.config.size_override` nor `wm size 3840x2160` gets
-  past it. Our static RRO `org.z9x.overlay.framework` (priority 2000, after TvFrameworkOverlay and the Lineage
+  past it. Our static RRO `org.lumen.overlay.framework` (priority 2000, after TvFrameworkOverlay and the Lineage
   product RRO in `cmd overlay list android`) now sets 3840: the 4K mode runs 1:1, the 2K debug mode (2560) is not
   capped either, 1080p (1920 wide) is below the cap and unchanged. Device check (z9x_uires README section 6,
   check 1): the lookup prints `3840`; in 4K `wm size` shows no `Override size`.
@@ -339,7 +339,7 @@ OK, 64 members read back identical, check_image.py: only "Z9xUpdater.apk missing
   integer, >= 3840. The 20261009d APK fails it (`no integer/config_maxUiWidth`); synthetic RROs tested: sparse /
   compact / hex encodings pass, a `values-land` copy, a reference, 1920 and a missing value fail, aapt2 agreeing
   in each case.
-- **(c) Z9xProjector: visible OFF switch** (`apps/Z9xProjector/src/org/z9x/projector/ui/ToggleRow.java`):
+- **(c) Z9xProjector: visible OFF switch** (`apps/Z9xProjector/src/org/lumen/projector/ui/ToggleRow.java`):
   `track.setAlpha(0xFF)` replaced the alpha of `Theme.SWITCH_OFF` (0x4DFFFFFF), so an unfocused OFF switch was a
   solid white pill with an invisible white knob (and a focused one a solid black pill). Now
   `track.setAlpha(Color.alpha(col) * (pending ? 0x60 : 0xFF) / 0xFF)`: OFF = 30 % white (unfocused) / 30 % black
@@ -360,7 +360,7 @@ OK, 64 members read back identical, check_image.py: only "Z9xUpdater.apk missing
 ## Lumen OS 1.0.1: 4K switched off, 1080p only (2026-10-09, from build suffix f)
 
 - 20261009e ran real 4K on the owner's projector (all 12 state fields 3840x2160, check=ok), but the owner found the
-  UI far too slow, and the verification measured it (logs/owner_<serial>/verify_1.0.1e): org.z9x.home at about
+  UI far too slow, and the verification measured it (logs/owner_<serial>/verify_1.0.1e): org.lumen.home at about
   7-10 fps (97.5 % janky frames, GPU 30-120 ms per frame), DMA-BUF +230 MB for the Home scene (every GOP buffer has
   an uncached twin), one LOW_MEMORY kill of Lampa. Decision (owner): no 4K in 1.0.1.
 - `overlay/v1/z9x_uires/product_prop.txt`: `ro.z9x.uires.allow=0` (the existing kill switch: every start is 1080p,

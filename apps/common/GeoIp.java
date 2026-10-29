@@ -1,9 +1,9 @@
 /*
  * Lumen OS (author kmuradoff). SINGLE SOURCE: gsi/apps/common/GeoIp.java (PLAN.md C13).
- * Copied unchanged into each app as src/org/z9x/common/GeoIp.java by gsi/apps/common/sync.sh;
+ * Copied unchanged into each app as src/org/lumen/common/GeoIp.java by gsi/apps/common/sync.sh;
  * there is no shared runtime library. Edit only the source file, then run sync.sh for every app.
  */
-package org.z9x.common;
+package org.lumen.common;
 
 import android.util.Log;
 

@@ -10,12 +10,12 @@
      t12 (docs/play6/SETTINGS_PLAN.md step 12): also the framework values of Lumen OS, a fork of the Z9X's
      Z9xFrameworkKeysOverlay without the power-key items and config_maxUiWidth (res/values/config.xml), and
      res/xml/global_keys.xml + res/layout/shutdown_dialog.xml, synced copies of apps/common/overlay (sync.sh
-     keys item; remote keys to org.z9x.projector and org.z9x.tvinput, the Lumen shutdown screen).
+     keys item; remote keys to org.lumen.projector and org.lumen.tvinput, the Lumen shutdown screen).
      Priority 2001: ordered after TvFrameworkOverlay (0) and the Lineage product RRO, so these values win.
      Install: /system/product/overlay/Play6FrameworkOverlay.apk (0644), Play 6 platform key via
      tools/play6/build_play6.sh (rule S1). No code, no permissions. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.overlay.play6"
+    package="org.lumen.overlay.play6"
     android:versionCode="1"
     android:versionName="play6-t18">
     <overlay

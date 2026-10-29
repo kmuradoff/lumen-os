@@ -31,7 +31,7 @@
 # 'timeout': 'count' blocks init, and the vendor's PWM watchdog reboots the projector when early-boot
 # is late. 'verifier' (blocks zygote-start) makes none: it reads what 'count' published.
 #
-# Properties published (read by org.z9x.updater and org.z9x.projector):
+# Properties published (read by org.lumen.updater and org.lumen.projector):
 #   sys.z9x.slot                    current slot suffix (_a/_b)
 #   sys.z9x.ota                     none | pending | marked | merging | unhealthy | rollback | rolledback
 #   sys.z9x.ota.attempt             boot attempt of the pending slot (1..4)
@@ -226,7 +226,7 @@ health_ok() {  # prints the failed check, returns 1 on failure
   [ "$(getprop init.svc.surfaceflinger)" = running ] || { echo "surfaceflinger not running"; return 1; }
   [ "$(getprop init.svc.gmpf_main)" = running ] || { echo "gmpf_main (lamp/fans) not running"; return 1; }
   # soft checks: logged only
-  [ -n "$(pidof org.z9x.projector)" ] || say "soft: org.z9x.projector not running"
+  [ -n "$(pidof org.lumen.projector)" ] || say "soft: org.lumen.projector not running"
   [ "$(getprop sys.z9x.blobs)" = ok ] || say "soft: sys.z9x.blobs=$(getprop sys.z9x.blobs)"
   return 0
 }

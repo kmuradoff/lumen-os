@@ -115,9 +115,9 @@ if [ -f "$APP/res/xml/global_keys.xml" ] && [ -f "$HERE/check_global_keys.py" ];
   fi
 fi
 
-# org.z9x.projector: every HAL method that transacts must have a reviewed caller outside hal/
+# org.lumen.projector: every HAL method that transacts must have a reviewed caller outside hal/
 # (no dead whitelist entries in the dex; gsi/apps/check_hal_callers.py).
-if [ -f "$APP/src/org/z9x/projector/hal/GmpfClient.java" ]; then
+if [ -f "$APP/src/org/lumen/projector/hal/GmpfClient.java" ]; then
   [ -f "$HERE/check_hal_callers.py" ] || die "missing $HERE/check_hal_callers.py"
   python3 "$HERE/check_hal_callers.py" "$APP/src" || die "HAL caller check failed"
 fi

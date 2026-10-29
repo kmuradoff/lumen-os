@@ -78,13 +78,14 @@ S=$T/system
 IMG=$T/system_play6_$TAG.img
 export PATH=/out/host/linux-x86/bin:$PATH PYTHONDONTWRITEBYTECODE=1
 NEED="Play6FrameworkOverlay.apk Play6TvSettingsOverlay.apk Play6Projector.apk Z9xHome.apk Z9xTvInput.apk Z9xLineagePlatformOverlay.apk Z9xSetup.apk
+      LumenBridge_projector.apk LumenBridge_home.apk LumenBridge_setup.apk LumenBridge_tvinput.apk
       privapp-permissions-z9xhome.xml privapp-permissions-z9xsetup.xml z9x-home-default-permissions.xml
       z9x-projector-default-permissions.xml
       z9x-sysconfig-nogms.xml bootanimation.zip product_prop.txt play6_compat.rc play6_base.rc
       Vendor_000d_Product_3841.kl Vendor_3697_Product_0001.kl Vendor_3697_Product_0002.kl
       Vendor_000d_Product_3841.idc base_id.txt base_signed/base_signed.tsv base_export.sh check_privapp.py apkinfo.py
       lumen_gapps.rc lumen_gapps.sh z9x_nui.rc z9x_nui.sh play6_aic.rc play6_aic.sh aic/SHA256SUMS"
-[ $OTA = 1 ] && NEED="$NEED Play6Updater.apk lumen_recovery.rc lumen_recovery.sh lumen_play6_ota.x509"
+[ $OTA = 1 ] && NEED="$NEED Play6Updater.apk LumenBridge_updater.apk lumen_recovery.rc lumen_recovery.sh lumen_play6_ota.x509"
 [ $DEXPREOPT = 1 ] && NEED="$NEED dexpreopt_play6.sh lumen_checks.py"
 if has_exp 2 || has_exp 3; then NEED="$NEED play6_perf.rc"; fi
 [ $DIAG = 1 ] && NEED="$NEED z9x_earlylog.rc z9x_earlylog.sh earlylog_usb.sh lumen_escape.rc lumen_escape.sh"
@@ -287,7 +288,7 @@ install -m 0644 "$IN/play6_base.rc" "$S/etc/init/play6_base.rc"
 install -m 0644 "$IN/Play6FrameworkOverlay.apk" "$S/product/overlay/Play6FrameworkOverlay.apk"
 # 1b. TvSettings: the Z9X switch fix (apps/Play6TvSettingsOverlay, static RRO; Install unknown apps and others)
 install -m 0644 "$IN/Play6TvSettingsOverlay.apk" "$S/product/overlay/Play6TvSettingsOverlay.apk"
-# 2. Play 6 projector app (org.z9x.projector): boot handshake with the vendor HAL (persistent,
+# 2. Play 6 projector app (org.lumen.projector): boot handshake with the vendor HAL (persistent,
 #    platform-signed, /system/app) and the default runtime permissions of its remote pairing
 install -d -m 0755 "$S/app/Play6Projector"
 install -m 0644 "$IN/Play6Projector.apk" "$S/app/Play6Projector/Play6Projector.apk"
@@ -305,9 +306,9 @@ install -m 0644 "$IN/Z9xTvInput.apk" "$S/app/Z9xTvInput/Z9xTvInput.apk"
 # 3b. Lumen's LineageOS platform values (static RRO on lineageos.platform: About strings, HOME double-tap)
 install -m 0644 "$IN/Z9xLineagePlatformOverlay.apk" "$S/product/overlay/Z9xLineagePlatformOverlay.apk"
 # 3c. sysconfig, the Z9X's no-Google file: org.z9x packages are not "stopped" at first sight (Lineage's
-#     config_stopSystemPackagesByDefault; org.z9x.setup is listed too), LineageOS statistics off.
+#     config_stopSystemPackagesByDefault; org.lumen.setup is listed too), LineageOS statistics off.
 install -m 0644 "$IN/z9x-sysconfig-nogms.xml" "$S/etc/sysconfig/z9x.xml"
-# 3d. Lumen Setup, the first-run flow (org.z9x.setup, t19, docs/play6/impl/setup-design.md): priv-app only, so
+# 3d. Lumen Setup, the first-run flow (org.lumen.setup, t19, docs/play6/impl/setup-design.md): priv-app only, so
 #     its HOME priority 10 is not capped (Lumen Home 3), and the privileged allow-list (the vendor enforces it).
 #     No default permissions: it asks for no runtime permission. Play6App.provisionIfNoSetup leaves the setup
 #     flags to it while its activity is enabled; at its end it sets them, makes Lumen Home HOME and disables
@@ -315,9 +316,16 @@ install -m 0644 "$IN/z9x-sysconfig-nogms.xml" "$S/etc/sysconfig/z9x.xml"
 install -d -m 0755 "$S/priv-app/Z9xSetup"
 install -m 0644 "$IN/Z9xSetup.apk" "$S/priv-app/Z9xSetup/Z9xSetup.apk"
 install -m 0644 "$IN/privapp-permissions-z9xsetup.xml" "$S/etc/permissions/privapp-permissions-z9xsetup.xml"
+# 3d2. Lumen OS 1.0.8 bridges (apps/LumenBridge): the pre-1.0.8 names org.z9x.{projector,home,setup,tvinput}, so a
+#     reinstall with --keep-data keeps their data for the one-time import into org.lumen.* (LumenImport); the
+#     updater's bridge comes with --ota (3e). /system/app, no permissions, nothing runs but one provider.
+for b in Projector:projector Home:home Setup:setup TvInput:tvinput; do
+  install -d -m 0755 "$S/app/LumenBridge${b%%:*}"
+  install -m 0644 "$IN/LumenBridge_${b##*:}.apk" "$S/app/LumenBridge${b%%:*}/LumenBridge${b%%:*}.apk"
+done
 # 3e. --ota only: Lumen updates over the air (docs/play6/OTA_GMS_PLAN.md 2; postponed by the owner on 2026-10-13,
 #     updates go over the USB cable until the recovery with the Lumen certificate is proven safe to write):
-#     org.z9x.updater (apps/Play6Updater, system uid, /system/app;
+#     org.lumen.updater (apps/Play6Updater, system uid, /system/app;
 #     the package goes to /cache, XGIMI's recovery installs it), the OTA trust the updater and
 #     RecoverySystem.verifyPackage read (/system/etc/security/otacerts.zip = the Play 6 OTA certificate only, the
 #     same one the patched recovery adds), and lumen_recovery.{rc,sh}: sys.lumen.recovery_cert after the boot.
@@ -325,6 +333,8 @@ install -d -m 0755 "$S/etc/xgimi"
 if [ $OTA = 1 ]; then
 install -d -m 0755 "$S/app/Play6Updater"
 install -m 0644 "$IN/Play6Updater.apk" "$S/app/Play6Updater/Play6Updater.apk"
+install -d -m 0755 "$S/app/LumenBridgeUpdater"
+install -m 0644 "$IN/LumenBridge_updater.apk" "$S/app/LumenBridgeUpdater/LumenBridgeUpdater.apk"
 python3 - "$IN/lumen_play6_ota.x509" "$S/etc/security/otacerts.zip" <<'OTAPY'
 import sys, zipfile
 with zipfile.ZipFile(sys.argv[2], "w") as z:
@@ -454,11 +464,11 @@ def facts(rel):
     with open(os.path.join(root, rel), "rb") as f:
         return apkinfo.manifest_bytes(f.read())
 st = facts("priv-app/Z9xSetup/Z9xSetup.apk")
-if st["package"] != "org.z9x.setup" or st["homePriorities"] != [10] or WIZ in st["categories"]:
-    fail("priv-app/Z9xSetup: %s, HOME priorities %s, SETUP_WIZARD %s (want org.z9x.setup, [10], none)"
+if st["package"] != "org.lumen.setup" or st["homePriorities"] != [10] or WIZ in st["categories"]:
+    fail("priv-app/Z9xSetup: %s, HOME priorities %s, SETUP_WIZARD %s (want org.lumen.setup, [10], none)"
          % (st["package"], st["homePriorities"], WIZ in st["categories"]))
 hm = facts("priv-app/Z9xHome/Z9xHome.apk")
-if hm["package"] != "org.z9x.home" or not hm["homePriorities"] or max(hm["homePriorities"]) >= 10:
+if hm["package"] != "org.lumen.home" or not hm["homePriorities"] or max(hm["homePriorities"]) >= 10:
     fail("priv-app/Z9xHome: %s, HOME priorities %s" % (hm["package"], hm["homePriorities"]))
 n = 0
 for part in ("", "product", "system_ext"):

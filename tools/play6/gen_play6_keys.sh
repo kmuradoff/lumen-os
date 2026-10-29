@@ -9,7 +9,7 @@
 # tools/sign/release_certs, or the public AOSP test certs of Z9X lab images: tools/sign/testcerts,
 # apps/sdk/platform.x509.pem). With its own platform key, adb install and Lumen Home's Install from USB fail
 # with a signature mismatch in both directions between a Z9X and a Play 6, although both carry the package
-# org.z9x.projector.
+# org.lumen.projector.
 #
 # Writes in KEYS_DIR (mode 700): platform.pk8 (unencrypted PKCS#8 DER private key, mode 600),
 # platform.x509.pem (public certificate), FINGERPRINTS.txt (SHA-256 of the DER certificate), README.txt.

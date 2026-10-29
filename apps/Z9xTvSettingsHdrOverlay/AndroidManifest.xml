@@ -13,7 +13,7 @@
      Those resources reference TvSettings' own style, id and strings through the link-time stub in
      stub/ (ids.txt = TvSettings' real ids; check with tools/lumen/check_tvsettings_stub.sh). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.overlay.tvsettings.hdr"
+    package="org.lumen.overlay.tvsettings.hdr"
     android:versionCode="62"
     android:versionName="6.2">
     <overlay android:targetPackage="com.android.tv.settings"

@@ -11,7 +11,7 @@ HDMI-CEC phase 1 (research/v7/cec/SPEC.md 3.1, PLAN C14/C15), adapted to the rea
 - **Viewer** follows the parent port's state for a child input, keeps the picture on the port input when the child
   disappears, banner "HDMI 2 · PS5".
 - **HdmiWatcher** (`<Active Source>`): nothing before setup is complete (C14); with the projector in its lamp-only
-  standby a CEC *source* asks the projector (`content://org.z9x.projector.standbystate` call `cec_wake`, extras
+  standby a CEC *source* asks the projector (`content://org.lumen.projector.standbystate` call `cec_wake`, extras
   port/la/type/vendor/osd) and its input opens only when `accepted`; while the projector is on, the v6.x One Touch Play
   switch, now to the child input; never re-tunes a port that is already shown.
 - **HdmiStateProvider**: `hdmi_state` also returns `streams` (ports with a streaming session = a picture);
@@ -75,7 +75,7 @@ Versions unchanged (`VERSION_CODE=102 VERSION_NAME=1.0.1` when built). The Z9X k
   listed (a source going to sleep drops +5V before its power status changes). Rule table in `PortState.classify`.
   Refreshed by events only: port and child input states (`HdmiWatcher`), CEC device added / updated / removed
   (`HdmiInputService`), session streaming / no signal (`HdmiSession`); coalesced, logged as transitions
-  (`Z9xHdmiPortState`), announced on `content://org.z9x.tvinput.hdmistate/ports`. No background polling. Android 14
+  (`Z9xHdmiPortState`), announced on `content://org.lumen.tvinput.hdmistate/ports`. No background polling. Android 14
   gives an app no way to send `<Give Device Power Status>` alone, so the state relies on the framework's own
   power status updates and on +5V.
 - **HdmiStateProvider** `hdmi_state`: new `port_ids` and `port_<n>` bundles (device_state, input_id, label,

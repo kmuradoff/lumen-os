@@ -8,12 +8,14 @@
 #
 # Copies:
 #   common/tokens.xml  -> APP_DIR/res/values/z9x_tokens.xml
-#   common/GeoIp.java  -> APP_DIR/src/org/z9x/common/GeoIp.java   (package org.z9x.common, unchanged)
-#   common/hal/HidlCaller.java -> APP_DIR/src/org/z9x/projector/hal/HidlCaller.java (package kept, so the
+#   common/GeoIp.java  -> APP_DIR/src/org/lumen/common/GeoIp.java   (package org.lumen.common, unchanged)
+#   migrate: common/LumenImport.java -> APP_DIR/src/org/lumen/common/LumenImport.java (the 1.0.8 import of the
+#                      pre-1.0.8 org.z9x data through apps/LumenBridge): every app that had an org.z9x name
+#   common/hal/HidlCaller.java -> APP_DIR/src/org/lumen/projector/hal/HidlCaller.java (package kept, so the
 #                      device clients next to it need no change): every device projector app
 #   projector: every PATH listed in common/projector/FILES -> APP_DIR/PATH, from common/projector/PATH
 #                      (one path per line, relative to the app dir, no spaces; # starts a comment): every
-#                      device projector app. Refused: a path under src/org/z9x/projector/hal/ (the device HAL
+#                      device projector app. Refused: a path under src/org/lumen/projector/hal/ (the device HAL
 #                      clients are per device; HidlCaller is the `hal` item). Rules: common/projector/README.txt
 #   keys:  common/overlay/xml/global_keys.xml -> APP_DIR/res/xml/global_keys.xml and
 #          common/overlay/layout/shutdown_dialog.xml -> APP_DIR/res/layout/shutdown_dialog.xml: every device
@@ -25,7 +27,7 @@ set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 CHECK=0
 if [ "${1:-}" = "--check" ]; then CHECK=1; shift; fi
-[ $# -ge 1 ] || { echo "usage: sync.sh [--check] APP_DIR [tokens] [geoip] [hal] [projector] [keys]" >&2; exit 2; }
+[ $# -ge 1 ] || { echo "usage: sync.sh [--check] APP_DIR [tokens] [geoip] [migrate] [hal] [projector] [keys]" >&2; exit 2; }
 APP=$(cd "$1" && pwd); shift
 WHAT=${*:-tokens geoip}
 RC=0
@@ -39,7 +41,7 @@ case " $WHAT " in
     for p in $(sed 's/#.*//' "$F"); do
       case $p in
         /*|..|../*|*/..|*/../*|*[*?[]*) echo "sync: $F: bad path $p" >&2; exit 2 ;;
-        src/org/z9x/projector/hal/*) echo "sync: $F: $p is a device HAL file (never shared)" >&2; exit 2 ;;
+        src/org/lumen/projector/hal/*) echo "sync: $F: $p is a device HAL file (never shared)" >&2; exit 2 ;;
       esac
       [ -f "$HERE/projector/$p" ] || { echo "sync: $F lists $p, but $HERE/projector/$p is missing" >&2; exit 2; }
       PFILES="$PFILES $p"
@@ -58,8 +60,9 @@ one() { # src dst
 for w in $WHAT; do
   case $w in
     tokens) one "$HERE/tokens.xml" "$APP/res/values/z9x_tokens.xml" ;;
-    geoip)  one "$HERE/GeoIp.java" "$APP/src/org/z9x/common/GeoIp.java" ;;
-    hal)    one "$HERE/hal/HidlCaller.java" "$APP/src/org/z9x/projector/hal/HidlCaller.java" ;;
+    geoip)  one "$HERE/GeoIp.java" "$APP/src/org/lumen/common/GeoIp.java" ;;
+    migrate) one "$HERE/LumenImport.java" "$APP/src/org/lumen/common/LumenImport.java" ;;
+    hal)    one "$HERE/hal/HidlCaller.java" "$APP/src/org/lumen/projector/hal/HidlCaller.java" ;;
     projector)
       set -f
       for p in $PFILES; do one "$HERE/projector/$p" "$APP/$p"; done

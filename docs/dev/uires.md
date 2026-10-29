@@ -50,7 +50,7 @@ The cap: `cmd overlay lookup android android:integer/config_maxUiWidth` = **1920
 WindowManagerService hands it to `DisplayContent`, whose `updateBaseDisplayMetrics` clamps the base width to
 it (and scales the height) also for a forced size, and `setForcedSize` clamps too: neither
 `ro.config.size_override` nor `wm size 3840x2160` gets past it. Fix: our framework RRO
-`org.z9x.overlay.framework` (`apps/Z9xFrameworkKeysOverlay`, `/system/product/overlay/Z9xFrameworkKeysOverlay.apk`,
+`org.lumen.overlay.framework` (`apps/Z9xFrameworkKeysOverlay`, `/system/product/overlay/Z9xFrameworkKeysOverlay.apk`,
 static, priority 2000: after TvFrameworkOverlay and the Lineage product RRO in `cmd overlay list android`, so
 its value wins) sets `config_maxUiWidth` **3840**. 1080p (1920 wide) is below the cap, so nothing changes
 there; 2K debug (2560) is no longer capped either. Build guard: the `lumen_v1.sh` preflight refuses an APK set
@@ -264,7 +264,7 @@ What a `why` means (`sys.z9x.ui_res.why`, `log.txt`):
 | `restart before the ... check passed` / `did not complete boot` / `no boot_completed within 360s` | pending at the next start / hung start (`watch`) |
 | `... (not recorded)` | as above, but `failed.<mode>` could not be written |
 
-## 5. Contract with org.z9x.projector (Projector settings)
+## 5. Contract with org.lumen.projector (Projector settings)
 
 - `persist.z9x.ui_res` = `1080` | `2160`. Unset or empty = the default **2160**. Any other value is
   ignored, **including `1440`** (2K is not offered; a `1440` stored by 1.0.1-20261009b is treated as unset,

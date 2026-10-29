@@ -75,4 +75,6 @@ for app in $SRC; do
   BUILD_DIR="$OUT/apk/$app" KEY_PK8="$KEY_PK8" KEY_PEM="$KEY_PEM" VERSION_CODE="$vc" VERSION_NAME="$vn" TMDB_KEY_FILE="$key" \
     sh "$G/apps/build_apk.sh" "$G/apps/$app" "$OUT/$app.apk"
 done
+# Lumen OS 1.0.8 bridges under the Play 6's pre-1.0.8 names (apps/LumenBridge), Play 6 key: OUT_DIR/LumenBridge_<app>.apk
+KEY_PK8="$KEY_PK8" KEY_PEM="$KEY_PEM" sh "$G/apps/LumenBridge/build_bridges.sh" "$OUT" play6
 echo "build_play6: OK ($OUT)"

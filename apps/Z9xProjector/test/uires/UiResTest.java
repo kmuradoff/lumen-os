@@ -1,13 +1,13 @@
-package org.z9x.projector.display;
+package org.lumen.projector.display;
 
-import org.z9x.projector.sys.BootReason;
+import org.lumen.projector.sys.BootReason;
 
 /**
  * Host check of the Lumen OS 1.0.1 interface resolution decisions ({@link UiRes}: property values, the 4K
  * default, the chooser's rows (2K only with the debug property), sizes, the setting's fallback note,
  * restart or not, the "Keep this resolution?" question) and of the unattended-restart boot reasons
  * ({@link BootReason}, RemoteAutoPair's remote-lost prompt). The 109 corner units of the auto keystone
- * are checked by org.z9x.projector.ak.AkUnitsTest (same run).
+ * are checked by org.lumen.projector.ak.AkUnitsTest (same run).
  * sh test/uires/run.sh
  */
 public final class UiResTest {

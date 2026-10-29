@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lumen Home (org.z9x.home), English base. Translations: apps/i18n/pending/L-HOME/<locale>.txt
+<!-- Lumen Home (org.lumen.home), English base. Translations: apps/i18n/pending/L-HOME/<locale>.txt
      (gen.py source format, section @home/strings.xml); W2 merges them into apps/i18n/langs.
      No ASCII double quotes in text (gen.py rule): use typographic quotes. -->
 <resources>

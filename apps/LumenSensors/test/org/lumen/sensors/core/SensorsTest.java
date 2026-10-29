@@ -537,7 +537,7 @@ public final class SensorsTest {
         String common = new String(Files.readAllBytes(Paths.get(commonPath)), StandardCharsets.UTF_8);
         yes("HidlCaller copy has its header", copy.startsWith("/*\n * COPY of gsi/apps/common/hal/HidlCaller.java"));
         String body = copy.substring(copy.indexOf("*/\n") + 3)
-                .replace("package org.lumen.sensors.hal;", "package org.z9x.projector.hal;");
+                .replace("package org.lumen.sensors.hal;", "package org.lumen.projector.hal;");
         yes("HidlCaller copy identical to apps/common apart from the package", body.equals(common));
     }
 

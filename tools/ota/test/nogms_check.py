@@ -28,14 +28,14 @@ import check_release_assets as cra  # noqa: E402
 BASE = "https://github.com/kmuradoff/lumen-os/releases/latest/download/"
 PROD = ("ro.z9x.variant=public\nro.z9x.gms=0\nro.z9x.build_id=lumen-1.0.1-20261009enp\n"
         "ro.z9x.ota.manifest_url=" + BASE + "update-public-nogms.json\n")
-SYSCONFIG = (b'<config>\n    <initial-package-state package="org.z9x.updater" stopped="false" />\n</config>\n')
+SYSCONFIG = (b'<config>\n    <initial-package-state package="org.lumen.updater" stopped="false" />\n</config>\n')
 
 
 def clean_members():
     return {
         "system/build.prop": b"ro.build.type=userdebug\n",
         "system/product/etc/build.prop": PROD.encode(),
-        "system/app/Ok/Ok.apk": cra.fake_apk("org.z9x.selftest"),
+        "system/app/Ok/Ok.apk": cra.fake_apk("org.lumen.selftest"),
         "system/app/Web/Web.apk": cra.fake_apk("com.android.webview"),
         "system/etc/sysconfig/z9x.xml": SYSCONFIG,
         "system/etc/permissions/privapp-permissions-lineage-atv.xml":
@@ -108,7 +108,7 @@ def main():
         g["system/product/priv-app/PrebuiltGmsCorePano/readme.txt"] = b"x\n"
         expect("member under a removed path", run_case(td, "under", g), False, "PrebuiltGmsCorePano")
         g = dict(m)
-        g["system/etc/sysconfig/z9x.xml"] = SYSCONFIG.replace(b"org.z9x.updater", b"com.android.vending")
+        g["system/etc/sysconfig/z9x.xml"] = SYSCONFIG.replace(b"org.lumen.updater", b"com.android.vending")
         expect("sysconfig naming Play", run_case(td, "sysconfig", g), False, 'names package="com.android.vending"')
         g = dict(m)
         g["system/product/etc/build.prop"] = (PROD + "ro.com.google.gmsversion=14_202403\n").encode()

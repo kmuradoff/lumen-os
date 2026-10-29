@@ -1,4 +1,4 @@
-package org.z9x.home.sky;
+package org.lumen.home.sky;
 
 /**
  * Host self-check of the live sky's astronomy (no JUnit, no Android): sh test/sky/run.sh

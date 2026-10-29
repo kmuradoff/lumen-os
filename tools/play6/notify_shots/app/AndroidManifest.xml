@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Render harness of the notification cards (tools/play6/notify_shots/run.sh). Test emulator only, never shipped. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.shots"
+    package="org.lumen.shots"
     android:versionCode="1"
     android:versionName="1.0">
     <application android:label="Card shots" android:supportsRtl="true">

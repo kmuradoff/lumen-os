@@ -14,7 +14,7 @@ ro.hardware.egl=mali
 
 # ---- identity (docs/play6/SETTINGS_PLAN.md 1.1 and step 13). t10 showed the base's "AOSP TV on ARM"
 # (ro.product.model is derived from ro.product.product.model when nobody sets it) and stock showed
-# "XGIMI TV"; the pinned Lumen apps fall back to Z9X names when nothing better is there. org.z9x.projector
+# "XGIMI TV"; the pinned Lumen apps fall back to Z9X names when nothing better is there. org.lumen.projector
 # copies this model into Settings.Global device_name once (empty or a Z9X name only).
 ro.product.model=XGIMI Play 6
 bluetooth.device.default_name=XGIMI Play 6
@@ -50,7 +50,7 @@ log.tag.gralloc4=I
 # docs/play6/research/performance.md 4, docs/play6/impl/t13-home.md, t14-home.md. Read by Lumen Home (Props.java)
 # from the t14 build on; an older Home ignores the new ones. The Z9X sets none of them, so Home draws there
 # exactly as 1.0.2. Test other values on a test build with: adb shell setprop debug.lumen.home.sky_fps N
-# (or .sky_scale, .sky_yield, .lite, .cec_names), then adb shell am force-stop org.z9x.home (debug.* wins over ro.*, gone
+# (or .sky_scale, .sky_yield, .lite, .cec_names), then adb shell am force-stop org.lumen.home (debug.* wins over ro.*, gone
 # after a reboot).
 # the living sky at most 12 frames/s, its particles on a run clock (no jumps; t13's still sky 0 looked dead)
 ro.lumen.home.sky_fps=12

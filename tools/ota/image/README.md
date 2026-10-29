@@ -22,7 +22,7 @@ Props: append `ota_props.txt` to the **product** build.prop snippet (replace `<D
 Sysconfig (`system/etc/sysconfig/z9x.xml`, PLAN C6), add:
 
 ```xml
-<initial-package-state package="org.z9x.updater" stopped="false" />
+<initial-package-state package="org.lumen.updater" stopped="false" />
 ```
 
 No privapp-permissions XML is needed (not priv-app; every permission it uses is `signature`
@@ -159,12 +159,12 @@ Host tests: `sh tools/ota/test/gapps.sh`, `bash tools/ota/test/installer_gapps.s
 | `sys.z9x.ota.why` | short text (<= 90 chars) | why `unhealthy`, or why a rollback was not possible (`no rollback: ...`); empty otherwise. For the updater to show next to `unhealthy` |
 | reboot reasons | `reboot,z9x-ota` (updater), `reboot,z9x-ota-rollback`, `reboot,z9x-ota-stuck` (gate: 8 min without boot_completed and no rollback possible), `reboot,fastboot` (boot rescue) | attended reboots: no boot-dark power-off |
 | `sys.z9x.ota.busy` | `1` while the updater downloads/installs, else `0` (best effort `SystemProperties.set`) | do not enter STR / real power-off while `1`; the updater also holds a partial wake lock while `update_engine` writes |
-| broadcast `org.z9x.updater.action.OTA_STATE` | extras `busy` (boolean), `state` (string: idle, downloading, installing, ready, error) | sent to holders of the signature permission `org.z9x.updater.permission.OTA_STATE` |
-| provider `content://org.z9x.updater/state` | `call("state", null, null)` -> Bundle {busy, state, version, ready, progress} | read permission `org.z9x.updater.permission.OTA_STATE` (signature) |
+| broadcast `org.lumen.updater.action.OTA_STATE` | extras `busy` (boolean), `state` (string: idle, downloading, installing, ready, error) | sent to holders of the signature permission `org.lumen.updater.permission.OTA_STATE` |
+| provider `content://org.lumen.updater/state` | `call("state", null, null)` -> Bundle {busy, state, version, ready, progress} | read permission `org.lumen.updater.permission.OTA_STATE` (signature) |
 
 For Z9X Home (C17, "Update ready" badge): the same provider; `ready=true` means "restart to finish",
 `state=available` means an update can be downloaded. Open the updater with
-`new Intent("android.settings.SYSTEM_UPDATE_SETTINGS").setPackage("org.z9x.updater")`.
+`new Intent("android.settings.SYSTEM_UPDATE_SETTINGS").setPackage("org.lumen.updater")`.
 
 For Setup Done (C17): show "Protected video components missing" when `sys.z9x.blobs` is set and not
 `ok` (public images only; the property is absent on the owner's image). Since the public 1.0.1 image the

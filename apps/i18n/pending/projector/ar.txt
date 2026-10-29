@@ -1,4 +1,4 @@
-# Lumen OS 1.0, lane L-PROJECTOR, Arabic: new strings of org.z9x.projector (W2 merges them into langs/ar.txt).
+# Lumen OS 1.0, lane L-PROJECTOR, Arabic: new strings of org.lumen.projector (W2 merges them into langs/ar.txt).
 # strings_recents.xml and strings_home.xml are new files (gen.py generates values-<locale>/ for them);
 # strings_power.xml gets two keys (values-ru/strings_power.xml is hand-written: add them there by hand).
 # Product names stay untranslated: Lumen Home, Android TV.

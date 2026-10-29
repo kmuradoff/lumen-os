@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- English base of org.z9x.setup. Source: gsi/apps/i18n/pending/setup/en.txt (gen.py format);
+<!-- English base of org.lumen.setup. Source: gsi/apps/i18n/pending/setup/en.txt (gen.py format);
      translations: pending/setup/<locale>.txt, merged into langs/ by W2. -->
 <resources>
     <string name="app_name">Setup</string>

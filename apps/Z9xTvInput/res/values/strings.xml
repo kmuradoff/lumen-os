@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- org.z9x.tvinput strings. v6.1: English is the base language (V61_REQUIREMENTS item 6);
+<!-- org.lumen.tvinput strings. v6.1: English is the base language (V61_REQUIREMENTS item 6);
      Russian is in values-ru/strings.xml, other languages come from the translate phase. -->
 <resources>
     <string name="app_name">HDMI</string>

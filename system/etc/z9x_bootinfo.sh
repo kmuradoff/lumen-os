@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # Z9X v6.5: started once by z9x_bootinfo.rc at 'on boot'. Copies the PM boot reason, the wake source
 # and the PM watchdog reset flag (read-only sysfs, each read bounded by 'timeout 1') into
-# sys.z9x.wake_name / sys.z9x.wdt_reset_chk / sys.z9x.boot_reason for org.z9x.projector (boot-dark
+# sys.z9x.wake_name / sys.z9x.wdt_reset_chk / sys.z9x.boot_reason for org.lumen.projector (boot-dark
 # power-off after an unattended reset). Never writes anything else.
 # wdt_reset_chk is sticky (set by every PM watchdog reset incl. normal reboots, cleared only by AC
 # loss): "pm51-wdt-reset" alone proves nothing, "no-pm-wdt-reset" rules out a watchdog reset (an AC

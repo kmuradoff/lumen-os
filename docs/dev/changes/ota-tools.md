@@ -10,7 +10,7 @@
   only where a path starts, the scratch path, MAC addresses that are not part of a longer hex run such as a
   certificate fingerprint, e-mails other than EMAIL_OK) plus the local list. The export scripts are copied
   as they are, and the export refuses to run without the local list. The old home-path rule had rewritten
-  `org/z9x/home/...` to `org/z9x$HOME/...` in published files (apps/Z9xHome/tools/run_tests.sh).
+  `org/lumen/home/...` to `org/z9x$HOME/...` in published files (apps/Z9xHome/tools/run_tests.sh).
 - `docs/repo/publish_audit.py`: PRE_RULES (single files out of a collapsed folder: the stock remote's
   getevent capture is published as `docs/interop/stock_getevent_remote.txt`, `docs/4pda/shots/01_home.jpg`
   is excluded by name), `*.mp4` / `*.wav` excluded, a BIG (> 5 MB) file is excluded, and every check sees the

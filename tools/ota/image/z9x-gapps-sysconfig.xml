@@ -9,8 +9,8 @@
        "stopped" state (config_stopSystemPackagesByDefault); the Android TV Remote Service starts only from
        BOOT_COMPLETED, Play's boot and auto-update work, GMS / GSF (precaution);
      - SetupWraith stays installed for Google sign-in (its AddAccount activities) but its own wizard and its
-       boot receiver never run: org.z9x.setup is the first-run setup;
-     - GMS's Pano system update screen is off: Lumen OS updates come only from org.z9x.updater. -->
+       boot receiver never run: org.lumen.setup is the first-run setup;
+     - GMS's Pano system update screen is off: Lumen OS updates come only from org.lumen.updater. -->
 <config>
     <initial-package-state package="com.google.android.tv.remote.service" stopped="false" />
     <initial-package-state package="com.android.vending" stopped="false" />

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: Apache-2.0
-     org.z9x.updater English base. Translations: apps/i18n/pending/L-OTA/<locale>.txt (@updater/strings.xml),
+     org.lumen.updater English base. Translations: apps/i18n/pending/L-OTA/<locale>.txt (@updater/strings.xml),
      merged by gen.py in W2. "Lumen OS" is a name: never translated. -->
 <resources>
     <string name="app_name">Lumen OS update</string>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Module "screensaver" strings (owner: the screensaver module, package org.z9x.projector.dream).
+<!-- Module "screensaver" strings (owner: the screensaver module, package org.lumen.projector.dream).
      English base; translations in values-<lang>/strings_dream.xml. Prefix every name with "dream_".
      The clock and date text itself needs no strings (ICU formats per locale). -->
 <resources>

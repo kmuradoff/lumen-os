@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- org.z9x.projector base strings: ENGLISH is the default (V61_REQUIREMENTS item 6).
+<!-- org.lumen.projector base strings: ENGLISH is the default (V61_REQUIREMENTS item 6).
      Translations live in values-<lang>/strings.xml (values-ru is the reference translation).
      Module strings are in strings_panel.xml, strings_ak.xml, strings_power.xml, strings_source.xml,
      strings_sys.xml (one owner each, see V61_ARCH.md). -->

@@ -21,7 +21,7 @@
 
 /*
  * Events delivered to NativeBridge.Callback.onEvent(int what, int a, int b).
- * The Java side (org.z9x.airplay.NativeBridge) must use the same numbers.
+ * The Java side (org.lumen.airplay.NativeBridge) must use the same numbers.
  */
 #define Z9X_EV_CONN_INIT       1  /* a = open connections after the increment */
 #define Z9X_EV_CONN_DESTROY    2  /* a = open connections left (0 = sender gone) */
