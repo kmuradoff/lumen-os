@@ -318,6 +318,12 @@ function Pt-Cleanup {  # only our own adb server, never another program's
   $script:PtServer = $false
   $null = Pt-Run-Quiet (Join-Path $script:PtDir "adb$($script:PtExt)") @("kill-server") 10
 }
+function Other-Adb-Hint {  # adb.exe of another program still runs: on Windows it keeps the projector's USB to itself
+  $mine = Join-Path $script:PtDir "adb$($script:PtExt)"
+  $other = @(Get-Process -Name adb -ErrorAction SilentlyContinue | Where-Object { $p = $null; try { $p = $_.Path } catch { }; -not $p -or $p -ne $mine })
+  if ($other.Count -eq 0) { return "" }
+  return " " + (T "Another program's adb is running ($($other.Count)x adb.exe): it can hold the projector's USB connection. Close it with: taskkill /F /IM adb.exe, then run the same command again." "Работает adb другой программы ($($other.Count)x adb.exe): он может держать USB-соединение с проектором. Закройте его командой: taskkill /F /IM adb.exe и запустите ту же команду ещё раз.")
+}
 function Usb-Problem-Ids {  # Windows: USB devices that have no working driver (Device Manager's yellow mark)
   try { return @(Get-PnpDevice -PresentOnly -ErrorAction Stop | Where-Object { $_.Status -ne "OK" -and $_.InstanceId -like "USB\*" } | ForEach-Object { $_.InstanceId }) }
   catch {
@@ -381,7 +387,7 @@ function Pick-Device {
   }
   if ($list.Count -ne 1) {
     Pt-Adb devices
-    Die (T "exactly one projector must be connected over adb, found $($list.Count). USB debugging on? Restarted after enabling it? A-A cable in the USB 2.0 port? ADB driver installed? Allowed the prompt on the screen?" "нужно ровно одно устройство в adb, найдено: $($list.Count). Отладка включена? Проектор перезагружали после её включения? Кабель A–A в USB 2.0? Драйвер ADB установлен? Разрешили запрос на экране?")
+    Die ((T "exactly one projector must be connected over adb, found $($list.Count). USB debugging on? Restarted after enabling it? A-A cable in the USB 2.0 port? ADB driver installed? Allowed the prompt on the screen?" "нужно ровно одно устройство в adb, найдено: $($list.Count). Отладка включена? Проектор перезагружали после её включения? Кабель A–A в USB 2.0? Драйвер ADB установлен? Разрешили запрос на экране?") + (Other-Adb-Hint))
   }
   $script:Serial = $list[0]
 }
