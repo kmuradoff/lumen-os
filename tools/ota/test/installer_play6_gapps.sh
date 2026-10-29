@@ -110,6 +110,7 @@ done
 cat > "$W/bin/adb" <<'EOF'
 #!/bin/sh
 # fake adb of an XGIMI Play 6 over Wi-Fi (see the header of installer_play6_gapps.sh)
+case "$1" in start-server|kill-server) exit 0 ;; esac   # the installer's own adb server (port 5038)
 echo "$*" >> "$FB/adb.log"
 mode=$(cat "$FB/mode")
 up() { case "$mode" in stock|lumen) return 0 ;; *) return 1 ;; esac; }
@@ -251,7 +252,7 @@ EOB
 }
 inst() {  # answers args... -> the installer copy; exit status in RC, output in $C/out
   local ans=$1; shift
-  printf '%b' "$ans" | env PATH="$W/bin:$PATH" FB="$FB" T="$T" DEV="$DEV" STUBS="$W/stubs" ADDR="$ADDR" FB_SERIAL=$SER \
+  printf '%b' "$ans" | env LUMEN_PLATFORM_TOOLS="$W/bin" PATH="$W/bin:$PATH" FB="$FB" T="$T" DEV="$DEV" STUBS="$W/stubs" ADDR="$ADDR" FB_SERIAL=$SER \
     LUMEN_STATE_DIR="$C/state" LUMEN_BACKUP_DIR="$C/backup" LANG="${LANG_CASE:-en_US.UTF-8}" \
     bash "$C/inst/lumen-install.sh" "$@" > "$C/out" 2>&1
   RC=$?
@@ -382,7 +383,7 @@ end
 
 begin refuse_missing_zip
 inst '' --ip 192.0.2.50 gapps --zip "$C/nothing.zip"
-expect_rc 1; expect_out "no file"; [ ! -s "$FB/adb.log" ] || fail "adb used"
+expect_rc 1; expect_out "no file"; grep -vqx version "$FB/adb.log" && fail "adb used"
 end
 
 begin refuse_stock

@@ -52,6 +52,7 @@ NFILES=$(awk '$1 !~ /^#/ && $1 !~ /^zip=/ && NF == 3' "$W/fx/allow.txt" | wc -l 
 cat > "$W/bin/adb" <<'EOF'
 #!/bin/sh
 # fake adb (see the header of installer_gapps.sh)
+case "$1" in start-server|kill-server) exit 0 ;; esac   # the installer's own adb server (port 5038)
 echo "$*" >> "$FB/adb.log"
 [ "$1" = version ] && { echo "Android Debug Bridge version 1.0.41"; echo "Version 35.0.2-12147458"; exit 0; }
 if [ "$1" = devices ]; then
@@ -179,7 +180,7 @@ partition() {  # a filled partition z9x_gapps_b (the real gapps_fill.sh, as on t
 }
 inst() {  # answers args... -> runs the installer copy; exit status in RC, output in $C/out
   local ans=$1; shift
-  printf '%b' "$ans" | env PATH="$W/bin:$PATH" FB="$FB" T="$T" DEV="$DEV" STUBS="$W/stubs" FB_SERIAL=$SER \
+  printf '%b' "$ans" | env LUMEN_PLATFORM_TOOLS="$W/bin" PATH="$W/bin:$PATH" FB="$FB" T="$T" DEV="$DEV" STUBS="$W/stubs" FB_SERIAL=$SER \
     LUMEN_STATE_DIR="$C/state" LUMEN_BACKUP_DIR="$C/backup" LANG="${LANG_CASE:-en_US.UTF-8}" \
     bash "$C/inst/lumen-install.sh" "$@" > "$C/out" 2>&1
   RC=$?

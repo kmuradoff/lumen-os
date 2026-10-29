@@ -54,19 +54,24 @@ install ([way 2](#one-pass)) or later ([way 3](#google)).
 - Everything works on stock: picture, autofocus, sound, HDMI. If something is already broken, sort that
   out first, or later you will not know what caused it.
 - A computer with macOS or Linux. There is a Windows 10/11 installer, but it has not been tested yet.
-- Android SDK Platform-Tools 35 or newer, [from Google](https://developer.android.com/tools/releases/platform-tools).
-  Unpack the whole zip and add the `platform-tools` folder to PATH. On macOS and Linux, if you unpacked
-  it into your home folder, run this in the same terminal you start the installer from:
-  `export PATH="$HOME/platform-tools:$PATH"`. Do not take files out of the zip one by one: the
-  installer needs `make_f2fs` and `mke2fs` next to `fastboot`.
+- Internet access on the first run. The installer then downloads Google's Android SDK Platform-Tools
+  (adb and fastboot, about 10 MB) into `tools/platform-tools` next to itself, checks the file's sha256 and
+  from then on uses only that copy, never an adb or fastboot you installed yourself. Its adb runs on its own
+  port (5038), so Android Studio, phone apps or scrcpy cannot get in its way. Every adb and fastboot step has
+  a time limit: if one hangs, the installer stops with a message instead of waiting. Without internet: put
+  [platform-tools_r35.0.2-darwin.zip](https://dl.google.com/android/repository/platform-tools_r35.0.2-darwin.zip)
+  (Linux: `-linux.zip`, Windows: `-win.zip`) into the installer's `tools` folder, or run it with
+  `--platform-tools DIR` (Windows: `-PlatformTools DIR`), a folder with adb and fastboot 35 or newer.
 - A USB A-to-A cable (plain USB-A on both ends). It goes into the projector's USB 2.0 port.
 - 4 GB of free space on the computer.
 - A USB stick, in case you need the stock restore.
 
 On Windows, run `lumen-install.cmd` instead of `bash lumen-install.sh`. Options are spelled differently
 there and go after the command: `-Lang en`, `-KeepData`, `-NoBlobs`, `-Zip`, `-Remove`, `-GappsZip`. Unpack everything
-into a folder whose path has only Latin letters, such as `C:\lumen`. If the projector does not show up in
-fastboot, install the [Google USB Driver](https://developer.android.com/studio/run/win-usb).
+into a folder whose path has only Latin letters on the computer's own disk, such as `C:\lumen`, not on a USB
+stick or network drive: writing from there can be very slow or hang (the installer warns about it). If the
+projector does not show up in fastboot, install the [Google USB Driver](https://developer.android.com/studio/run/win-usb):
+the installer looks for a USB device without a driver and says how to install it.
 
 ## 1. Prepare the projector (10 min)
 
@@ -477,7 +482,9 @@ downloaded, Lumen Home shows an "Update ready" badge.
 | check | "no SHA256SUMS" or "no SHA256SUMS.sig" | Put both files from the same release next to the image. |
 | check | "several images found" | Keep one image in the folder, or name it: `--image FILE`. |
 | check | "the file name and the image disagree" | The file was renamed or is damaged. Download it again. |
-| check | "make_f2fs/mke2fs missing" or "fastboot … is too old" | Get a fresh Platform-Tools zip and keep its files together. |
+| check | "make_f2fs/mke2fs missing" or "too old or does not run" | Only with `--platform-tools DIR`: use a whole, fresh Platform-Tools zip. Without that option the installer uses its own copy. |
+| any | "… did not answer within N s and was stopped" | Unplug and plug the cable, run the same command again. If it repeats, restart the computer. |
+| first run | "the download failed" | No internet: see [What you need](#what-you-need) for the offline way. |
 | flash | a file "does not match the allow-list" | The installer does not know your firmware's codec files, see [step 6](#flash). Nothing was written. |
 | flash | "the projector did not appear in fastboot within 90 s" | Reconnect the cable and run `flash` again. On Windows, install the Google USB Driver. Nothing was written. |
 | flash | "an XGIMI or Lumen update is still being finished" | Let the projector start, wait 10 minutes and try again. Nothing was written. |

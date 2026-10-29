@@ -56,16 +56,18 @@ XGIMI она не трогает.
 - Сеть Wi-Fi, в которой и проектор, и компьютер. Гостевая сеть, где устройства не видят друг друга, не
   подойдёт.
 - Компьютер с macOS или Linux. На Windows 10/11 установщик есть, но ещё не проверялся.
-- Android SDK Platform-Tools 35 или новее, [скачать у Google](https://developer.android.com/tools/releases/platform-tools),
-  в PATH, как описано в инструкции для Z9X, в разделе [«Что нужно»](../z9x/ru.md#что-нужно).
+- Интернет при первом запуске: установщик сам скачивает у Google Platform-Tools (adb и fastboot), проверяет
+  их и работает только с этой копией, на своём порту adb и с пределом времени на каждом шаге. Без интернета:
+  см. инструкцию для Z9X, раздел [«Что нужно»](../z9x/ru.md#что-нужно).
 - Кабель USB A–A, с обеих сторон обычный USB-A.
 - Флешка: сейчас для SystemUI Tuner, а если понадобится, для отката на сток.
 - 4 ГБ свободного места на компьютере.
 
 На Windows вместо `bash lumen-install.sh` запускайте `lumen-install.cmd`, вместо `--ip` пишите `-Ip`,
 параметры ставятся после команды, например `lumen-install.cmd check -Ip 192.168.x.y`. Вместо
-`--gapps-zip` там пишут `-GappsZip`. Для режима
-fastboot на кабеле Windows может понадобиться [Google USB Driver](https://developer.android.com/studio/run/win-usb).
+`--gapps-zip` там пишут `-GappsZip`. Держите папку установщика на диске самого компьютера (например `C:\lumen`),
+а не на флешке. Для режима fastboot на кабеле Windows может понадобиться
+[Google USB Driver](https://developer.android.com/studio/run/win-usb): установщик скажет, если найдёт устройство USB без драйвера.
 
 <a name="play6-prepare"></a>
 

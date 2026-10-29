@@ -27,6 +27,7 @@ openssl req -x509 -newkey rsa:2048 -nodes -keyout "$W/keys/k.pem" -out "$W/keys/
 cat > "$W/bin/adb" <<'EOF'
 #!/bin/sh
 # fake adb: getprop from $FB/props, pm from $FB/packages; everything is logged
+case "$1" in start-server|kill-server) exit 0 ;; esac   # the installer's own adb server (port 5038)
 echo "$*" >> "$FB/adb.log"
 [ "$1" = version ] && { echo "Android Debug Bridge version 1.0.41"; echo "Version 35.0.2-12147458"; exit 0; }
 if [ "$1" = devices ]; then printf 'List of devices attached\n%s\tdevice\n\n' "$FB_SERIAL"; exit 0; fi
@@ -90,7 +91,7 @@ running() {  # a running Lumen OS: version [gms prop value or empty]
   return 0
 }
 inst() {  # args... -> runs the installer copy; exit status in RC, output in $C/out
-  printf 'no\n' | env PATH="$W/bin:$PATH" FB="$C/fb" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
+  printf 'no\n' | env LUMEN_PLATFORM_TOOLS="$W/bin" PATH="$W/bin:$PATH" FB="$C/fb" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
     LUMEN_BACKUP_DIR="$C/backup" LANG=en_US.UTF-8 bash "$C/inst/lumen-install.sh" "$@" > "$C/out" 2>&1
   RC=$?
 }

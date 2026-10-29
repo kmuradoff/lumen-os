@@ -1,5 +1,6 @@
 == exit 0
 == output
+12:00:00   ✓ Platform-Tools 35.0.2 (tools/platform-tools, checked), own adb server on port 5038
 12:00:00 waiting for the projector to finish starting (up to 5 minutes)
 12:00:00   ✓ Lumen OS 1.0.2 (lumen-1.0.2-20261010enp, public, without Google)
 12:00:00   ✓ no Google package
@@ -9,6 +10,8 @@
 12:00:00   ✓ audio outputs present
 12:00:00   ✓ /data f2fs
 == adb
+version
+start-server
 devices
 -s ZF62TEST0009 shell getprop sys.boot_completed
 -s ZF62TEST0009 shell getprop sys.boot_completed
@@ -24,5 +27,7 @@ devices
 -s ZF62TEST0009 shell getprop sys.z9x.gapps
 -s ZF62TEST0009 shell dumpsys media.audio_policy
 -s ZF62TEST0009 shell mount | grep " /data "
+kill-server
 == fastboot
+--version
 == unexpected

@@ -1,10 +1,15 @@
 == exit 0
 == output
+12:00:00   ✓ Platform-Tools 35.0.2 (tools/platform-tools, checked), own adb server on port 5038
 12:00:00 no Google services added. To add them: bash lumen-install.sh gapps --zip FILE (guide, section 'Adding Google services')
 == adb
+version
+start-server
 devices
 -s ZF62TEST0009 shell getprop ro.z9x.version
 -s ZF62TEST0009 shell getprop sys.z9x.gapps
 -s ZF62TEST0009 shell getprop sys.z9x.gapps.zip
+kill-server
 == fastboot
+--version
 == unexpected

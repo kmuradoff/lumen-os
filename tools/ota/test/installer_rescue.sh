@@ -44,6 +44,7 @@ EOF
 cat > "$W/bin/adb" <<'EOF'
 #!/bin/sh
 # fake adb: only 'adb version' (check_tools) is expected; anything else is logged as an error
+case "$1" in start-server|kill-server) exit 0 ;; esac   # the installer's own adb server (port 5038)
 [ "$1" = version ] && { echo "Android Debug Bridge version 1.0.41"; echo "Version 35.0.2-12147458"; exit 0; }
 echo "adb $*" >> "$FB/adb.log"
 exit 1
@@ -71,7 +72,7 @@ begin() {
 gv() { sed -i.bak "s/^(bootloader) $1:.*/(bootloader) $1:$2/" "$C/fb/getvar"; }
 addgv() { echo "(bootloader) $1" >> "$C/fb/getvar"; }
 rescue() {  # answer [lang] -> runs the installer copy, exit status in RC, output in $C/out
-  printf '%s\n' "$1" | env PATH="$W/bin:$PATH" FB="$C/fb" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
+  printf '%s\n' "$1" | env LUMEN_PLATFORM_TOOLS="$W/bin" PATH="$W/bin:$PATH" FB="$C/fb" FB_SERIAL=$SER LUMEN_STATE_DIR="$C/state" \
     LUMEN_BACKUP_DIR="$C/backup" LANG="${2:-en_US.UTF-8}" bash "$C/inst/lumen-install.sh" rescue > "$C/out" 2>&1
   RC=$?
 }

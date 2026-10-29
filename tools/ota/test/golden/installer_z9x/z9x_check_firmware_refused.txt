@@ -1,16 +1,18 @@
 == exit 1
 == output
+12:00:00   ✓ Platform-Tools 35.0.2 (tools/platform-tools, checked), own adb server on port 5038
 12:00:00   ✓ adb 1.0.41, fastboot 35.0.2-12147458
 12:00:00 STOP: XGIMI firmware v6.15.30 is not supported (V6.15.58, V6.15.62 or V6.15.19 only). If it is older, let the stock system update itself (Settings, Wi-Fi), then run the installer again. If it is newer, Lumen OS does not support it yet. Nothing was written.
 == adb
 version
+start-server
 devices
 -s ZF62TEST0009 shell getprop ro.boot.xgimi.modelname
 -s ZF62TEST0009 shell getprop ro.boot.hardware
 -s ZF62TEST0009 shell getprop ro.vendor.build.version.incremental
 -s ZF62TEST0009 shell getprop ro.boot.slot_suffix
 -s ZF62TEST0009 shell getprop ro.z9x.version
+kill-server
 == fastboot
---version
 --version
 == unexpected
