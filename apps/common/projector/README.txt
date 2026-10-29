@@ -3,7 +3,7 @@ devices share (Z9xProjector and the projector app of any other device).
 
 What is shared: every path listed in FILES (relative to the app dir). `sh apps/common/sync.sh APP_DIR
 projector` copies them from here into an app; with --check it only reports a copy that differs. The device
-HAL clients (src/org/z9x/projector/hal/) are never shared, each device has its own code table;
+HAL clients (src/org/lumen/projector/hal/) are never shared, each device has its own code table;
 hal/HidlCaller.java is the separate `hal` item (apps/common/hal).
 
 Rules

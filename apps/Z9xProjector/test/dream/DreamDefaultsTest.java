@@ -1,4 +1,4 @@
-package org.z9x.projector.dream;
+package org.lumen.projector.dream;
 
 /**
  * Host check of the Lumen OS 1.0.1 screensaver one-shot (DreamSettings.applyDefaultsOnce, marker
@@ -29,7 +29,7 @@ public final class DreamDefaultsTest {
         eq("blank", DreamDefaults.Active.SKY, DreamDefaults.active("  ", true));
         eq("v1 clock", DreamDefaults.Active.SKY, DreamDefaults.active(CLOCK, true));
         eq("v1 clock, short form", DreamDefaults.Active.SKY,
-                DreamDefaults.active("org.z9x.projector/.dream.ClockDream", true));
+                DreamDefaults.active("org.lumen.projector/.dream.ClockDream", true));
         eq("BasicDreams Colors", DreamDefaults.Active.SKY, DreamDefaults.active(COLORS, true));
         eq("Colors, short form", DreamDefaults.Active.SKY, DreamDefaults.active("com.android.dreams.basic/.Colors", true));
         eq("Backdrop", DreamDefaults.Active.SKY, DreamDefaults.active(BACKDROP, true));
@@ -38,7 +38,7 @@ public final class DreamDefaultsTest {
         eq("unreadable", DreamDefaults.Active.SKY, DreamDefaults.active("garbage", true));
         // ---- already the sky
         eq("sky", DreamDefaults.Active.ALREADY, DreamDefaults.active(SKY, true));
-        eq("sky, short form", DreamDefaults.Active.ALREADY, DreamDefaults.active("org.z9x.home/.sky.SkyDreamService", true));
+        eq("sky, short form", DreamDefaults.Active.ALREADY, DreamDefaults.active("org.lumen.home/.sky.SkyDreamService", true));
         eq("sky first in a list", DreamDefaults.Active.ALREADY, DreamDefaults.active(SKY + "," + CLOCK, true));
         // ---- the user's own choice is never replaced
         eq("user's dream", DreamDefaults.Active.KEEP, DreamDefaults.active(USERS, true));
@@ -60,13 +60,13 @@ public final class DreamDefaultsTest {
         eq("off, saved user's dream", false, DreamDefaults.savedToSky(USERS, true));
         eq("off, no sky", false, DreamDefaults.savedToSky("", false));
         eq("standby dream active", true, DreamDefaults.isIdle(IDLE));
-        eq("standby dream, short form", true, DreamDefaults.isIdle("org.z9x.projector/.dream.StandbyIdleDream"));
+        eq("standby dream, short form", true, DreamDefaults.isIdle("org.lumen.projector/.dream.StandbyIdleDream"));
         eq("sky is not the standby dream", false, DreamDefaults.isIdle(SKY));
         eq("unset is not the standby dream", false, DreamDefaults.isIdle(null));
 
         // ---- 1.0.1 quick panel "Show" row: which of the sky / the clock is active
         eq("show sky", DreamDefaults.Shown.SKY, DreamDefaults.shown(SKY));
-        eq("show sky, short form", DreamDefaults.Shown.SKY, DreamDefaults.shown("org.z9x.home/.sky.SkyDreamService"));
+        eq("show sky, short form", DreamDefaults.Shown.SKY, DreamDefaults.shown("org.lumen.home/.sky.SkyDreamService"));
         eq("show clock", DreamDefaults.Shown.CLOCK, DreamDefaults.shown(CLOCK));
         eq("show clock first in a list", DreamDefaults.Shown.CLOCK, DreamDefaults.shown(CLOCK + "," + SKY));
         eq("show user's dream", DreamDefaults.Shown.OTHER, DreamDefaults.shown(USERS));
@@ -74,9 +74,9 @@ public final class DreamDefaultsTest {
         eq("show unset", DreamDefaults.Shown.OTHER, DreamDefaults.shown(null));
 
         // ---- component names
-        eq("normalize short", SKY, DreamDefaults.normalize(" org.z9x.home/.sky.SkyDreamService "));
+        eq("normalize short", SKY, DreamDefaults.normalize(" org.lumen.home/.sky.SkyDreamService "));
         eq("normalize full", CLOCK, DreamDefaults.normalize(CLOCK));
-        eq("normalize no class", "null", String.valueOf(DreamDefaults.normalize("org.z9x.home/")));
+        eq("normalize no class", "null", String.valueOf(DreamDefaults.normalize("org.lumen.home/")));
         eq("normalize no package", "null", String.valueOf(DreamDefaults.normalize("/.Dream")));
 
         System.out.println((failed == 0 ? "OK" : "FAILED") + ": " + passed + " passed, " + failed + " failed");

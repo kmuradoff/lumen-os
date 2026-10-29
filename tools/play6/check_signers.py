@@ -15,9 +15,9 @@ signer itself. Red:
    tools/sign/release_certs/FINGERPRINTS.txt and apex/FINGERPRINTS.txt, and the digest of every *.x509.pem
    below tools/sign/release_certs;
 3. a certificate is the public AOSP test platform certificate (a Z9X lab image trusts it):
-   apps/sdk/platform.x509.pem = tools/sign/testcerts/platform.x509.pem. A staged APK is an org.z9x.* APK or
+   apps/sdk/platform.x509.pem = tools/sign/testcerts/platform.x509.pem. A staged APK is an org.lumen.* APK or
    one of the platform set (the base APKs signed with that very certificate), so none may still carry it;
-4. an org.z9x.* package is not signed by exactly one signer, the Play 6 platform certificate (--cert,
+4. an org.lumen.* package is not signed by exactly one signer, the Play 6 platform certificate (--cert,
    default tools/play6/certs/platform.x509.pem), or carries a lineage;
 5. a staged APEX is one the Play 6 sign stage re-signed (sign_play6.py apex-sign), so: its container is
    signed by exactly the Play 6 APEX certificate of its module (--apex-certs, default tools/play6/certs/apex:
@@ -33,7 +33,7 @@ signer itself. Red:
    off without --gms and --gms is a usage error.
 Before any file, the Play 6 certificate itself must be none of 2 and 3 and no AOSP test certificate at all,
 and no foreign certificate of rule 6 may be a Lumen release, AOSP test or Play 6 certificate.
-Other AOSP test certificates (shared, media, networkstack, ...) on an APK that is not org.z9x.* are listed
+Other AOSP test certificates (shared, media, networkstack, ...) on an APK that is not org.lumen.* are listed
 as notes: plan 2.1 re-signs only the platform set.
 sign_play6.py imports release_digests() and test_digests() from here: one definition of the S1 sets.
 Exit 0 = OK, 1 = red, 2 = usage, tools or certificate files missing.
@@ -180,7 +180,7 @@ def certs_of(apk, tools, env):
                        capture_output=True, text=True)
     m = re.search(r'A: package="([^"]+)"', x.stdout)
     if x.returncode != 0 or not m:
-        # without the package, rule 4 (org.z9x.* only with the Play 6 certificate) could not be applied
+        # without the package, rule 4 (org.lumen.* only with the Play 6 certificate) could not be applied
         return (f"cannot read the package name (aapt2 dump xmltree rc {x.returncode}: "
                 + " ".join((x.stderr or x.stdout).split())[:200] + ")"), signers, lineage, ""
     return "", signers, lineage, m.group(1)
@@ -238,7 +238,7 @@ class S1:
         if d == self.sdk_platform:
             return f"{role} {d[:16]} is the public AOSP test platform certificate", ""
         if d in self.test:
-            if pkg.startswith("org.z9x."):
+            if pkg.startswith(("org.lumen.", "org.z9x.")):   # org.z9x.*: the 1.0.8 bridges
                 return f"{role} {d[:16]} is the public AOSP test certificate {self.test[d]}", ""
             return "", f"AOSP test certificate {self.test[d]} (not the platform set)"
         return "", ""
@@ -258,8 +258,8 @@ class S1:
                 bad.append(e)
             if n:
                 notes.append(f"{name} ({pkg}): {n}")
-        if pkg.startswith("org.z9x.") and not bad and ([d for d, _ in signers] != [self.play6] or lineage):
-            bad.append(f"org.z9x.* package not signed by exactly the Play 6 platform certificate "
+        if pkg.startswith(("org.lumen.", "org.z9x.")) and not bad and ([d for d, _ in signers] != [self.play6] or lineage):
+            bad.append(f"org.lumen.* package not signed by exactly the Play 6 platform certificate "
                        f"({', '.join(d[:16] for d, _ in signers)}{', lineage' if lineage else ''})")
         ferr, fok = self.foreign_rule(pkg, signers, lineage)
         bad += ferr

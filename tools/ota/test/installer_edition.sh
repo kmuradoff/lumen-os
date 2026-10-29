@@ -186,14 +186,14 @@ end
 
 begin verify_nogms_reports_google_packages
 running 1.0.1 0
-printf '%s\n' org.z9x.home com.google.android.gms > "$C/fb/packages"
+printf '%s\n' org.lumen.home com.google.android.gms > "$C/fb/packages"
 inst verify
 expect_rc 0; expect_out "without Google)"; expect_out "Google packages on Lumen OS without Google: com.google.android.gms"
 end
 
 begin verify_nogms_clean
 running 1.0.1 0
-printf '%s\n' org.z9x.home com.android.webview > "$C/fb/packages"
+printf '%s\n' org.lumen.home com.android.webview > "$C/fb/packages"
 inst verify
 expect_rc 0; expect_out "no Google package"
 end

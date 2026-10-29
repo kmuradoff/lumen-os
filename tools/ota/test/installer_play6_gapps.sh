@@ -149,7 +149,7 @@ case "$1" in
       "getprop "*) gp "$2" ;;
       "id -u") [ -e "$FB/root" ] && echo 0 || echo 2000 ;;
       "settings get system xgimi_ota_update") echo null ;;
-      "pidof org.z9x.projector") echo 1234 ;;
+      "pidof org.lumen.projector"|"pidof org.lumen.projector org.z9x.projector") echo 1234 ;;
       "rm -rf /data/local/tmp/lumen-gapps") rm -rf "$DEV/data/local/tmp/lumen-gapps" ;;
       "mkdir -p /data/local/tmp/lumen-gapps") mkdir -p "$DEV/data/local/tmp/lumen-gapps" ;;
       "sh /data/local/tmp/lumen-gapps/fill.sh "*) shift; run_dev "$@" ;;

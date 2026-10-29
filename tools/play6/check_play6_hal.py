@@ -8,9 +8,9 @@ and the special values of Note C can only leave from the methods allowed to send
 
 Rules (Note B):
  1. No GmpfClient.java, Gmpf2Client.java or KstPoint.java anywhere under APP_DIR. A file of package
-    org.z9x.projector.hal is one of HidlCaller, Play6Gmpf, Play6Gmpf2, Play6KstPoint, Play6FocusCallback,
-    Play6PowerCallback, and nothing imports org.z9x.projector.hal.* or another hal class; no static
-    import from org.z9x.projector.hal outside hal/ (the caller rules below need qualified calls).
+    org.lumen.projector.hal is one of HidlCaller, Play6Gmpf, Play6Gmpf2, Play6KstPoint, Play6FocusCallback,
+    Play6PowerCallback, and nothing imports org.lumen.projector.hal.* or another hal class; no static
+    import from org.lumen.projector.hal outside hal/ (the caller rules below need qualified calls).
     apps/common/projector/FILES (once it exists) lists nothing under hal/. No transact( (`.transact(`,
     `. transact(`, `::transact`) and no HwBinder.getService outside HidlCaller.
  2. Every static final integral constant of Play6Gmpf.java / Play6Gmpf2.java is
@@ -397,7 +397,7 @@ def main():
         return 2
     app = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(G, "apps/Play6Projector")
     src = os.path.join(app, "src")
-    hal = os.path.join(src, "org/z9x/projector/hal")
+    hal = os.path.join(src, "org/lumen/projector/hal")
     if not os.path.isdir(src):
         print("check_play6_hal: no %s" % src)
         return 2
@@ -434,12 +434,12 @@ def main():
             find(rel, "cannot scan: %s" % e)
             continue
         scanned[p] = jf
-        if jf.package == "org.z9x.projector.hal" and jf.class_name not in HAL_CLASSES:
-            find(rel, "class %s in package org.z9x.projector.hal is not one of %s" % (jf.class_name, sorted(HAL_CLASSES)))
-        if jf.package == "org.z9x.projector.hal" and os.path.dirname(p) != hal:
-            find(rel, "package org.z9x.projector.hal outside src/org/z9x/projector/hal")
+        if jf.package == "org.lumen.projector.hal" and jf.class_name not in HAL_CLASSES:
+            find(rel, "class %s in package org.lumen.projector.hal is not one of %s" % (jf.class_name, sorted(HAL_CLASSES)))
+        if jf.package == "org.lumen.projector.hal" and os.path.dirname(p) != hal:
+            find(rel, "package org.lumen.projector.hal outside src/org/lumen/projector/hal")
         for static, imp in jf.imports:
-            m = re.match(r"org\.z9x\.projector\.hal\.(\*|\w+)", imp)
+            m = re.match(r"org\.lumen\.projector\.hal\.(\*|\w+)", imp)
             if m and (m.group(1) == "*" or m.group(1) not in HAL_CLASSES):
                 find(rel, "import %s%s" % ("static " if static else "", imp))
             elif m and static and os.path.dirname(p) != hal:
@@ -450,9 +450,9 @@ def main():
                 find(rel, "uses transact itself (only HidlCaller.call may transact)")
             if GET_SERVICE_RE.search(jf.m):
                 find(rel, "uses HwBinder.getService itself (only HidlCaller connects)")
-        for m in re.finditer(r"\borg\.z9x\.projector\.hal\.(\w+)", jf.m):
+        for m in re.finditer(r"\borg\.lumen\.projector\.hal\.(\w+)", jf.m):
             if m.group(1) not in HAL_CLASSES and not jf.m[m.start() - 7:m.start()].strip().endswith("package"):
-                find(rel, "uses org.z9x.projector.hal.%s" % m.group(1))
+                find(rel, "uses org.lumen.projector.hal.%s" % m.group(1))
     if os.path.isfile(COMMON_FILES):
         for n, line in enumerate(open(COMMON_FILES, encoding="utf-8"), 1):
             s = line.split("#", 1)[0].strip()

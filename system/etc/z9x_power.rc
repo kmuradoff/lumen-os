@@ -3,13 +3,13 @@
 # does not exist fails harmlessly with one init log line.
 #
 # Background (VERIFIED on the device 2026-10-06): STR works on this GSI. A short POWER press, the sleep
-# timer, the power menu's Sleep and the idle time switch the lamp off (org.z9x.projector) and put Android
+# timer, the power menu's Sleep and the idle time switch the lamp off (org.lumen.projector) and put Android
 # to sleep; the SoC suspends at once. A remote key wakes it through the PM51 wake sources below, the
 # vendor power HAL injects KEY_POWER, Android wakes, the projector app lights the lamp (no boot
 # animation, the same app resumes). Every self-reboot seen that day had ONE cause: a USB host (the Mac's
 # adb) on the cable keeps a USB device controller clock on, PM51 logs "can not power down because clk is
 # enable" and resets the chip 20 s later (boot_reason 0xF1). The app therefore never suspends while a
-# USB host is connected (org.z9x.projector power/StrGate: it stays in the lamp-only standby instead).
+# USB host is connected (org.lumen.projector power/StrGate: it stays in the lamp-only standby instead).
 
 # ---- 1) PM51 wake sources (/sys/mtk_pm/wakeup_source/<name>, 1 = may wake the SoC from STR).
 # Wanted: keypad0 (projector keys), ir0 (IR remote), bt-gpio (BT remote, verified), mute-gpio (was 1 in

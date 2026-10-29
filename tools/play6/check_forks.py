@@ -19,7 +19,7 @@ do not drift unnoticed, and every resource of the Z9X projector app has a place.
    tools/play6/res_not_shared.txt, never both; every pattern matches a file. Until FILES exists (plan steps
    5 and 7) the shared files are reported as pending and do not fail.
 3. A file of apps/Play6Projector/{src,res} at the same path as a file of apps/Z9xProjector is a synced copy
-   (hal/HidlCaller.java, or listed in FILES) or a row of forks.tsv: no untracked copy.
+   (hal/HidlCaller.java, common/LumenImport.java, or listed in FILES) or a row of forks.tsv: no untracked copy.
 Exit 0 = F green, 1 = red.
 """
 import fnmatch
@@ -175,8 +175,15 @@ def main():
                 rel = os.path.relpath(os.path.join(d, f), p6app)
                 if f == ".DS_Store" or not os.path.isfile(os.path.join(z9, rel)):
                     continue
-                if rel == "src/org/z9x/projector/hal/HidlCaller.java" or (shared and rel in shared):
+                if rel == "src/org/lumen/projector/hal/HidlCaller.java" or (shared and rel in shared):
                     continue                           # synced copies (sync.sh items hal / projector)
+                if rel == "src/org/lumen/common/LumenImport.java":
+                    # sync.sh item migrate (the 1.0.8 bridge import): byte-identical to apps/common
+                    with open(os.path.join(p6app, rel), "rb") as a, open(os.path.join(root, "apps/common/LumenImport.java"), "rb") as b:
+                        if a.read() != b.read():
+                            errors.append("apps/Play6Projector/%s differs from apps/common/LumenImport.java "
+                                          "(sh apps/common/sync.sh APP migrate)" % rel)
+                    continue
                 if "apps/Play6Projector/" + rel not in seen:
                     errors.append("apps/Play6Projector/%s has the path of a Z9X file but is neither synced "
                                   "(FILES) nor listed in forks.tsv" % rel)

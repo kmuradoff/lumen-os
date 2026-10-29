@@ -178,7 +178,7 @@ timeout 20 logcat -L -b all -d -v threadtime > $B/prev_logcat_pmsg.txt 2>&1
 # review 6.5: vendor suspend in the previous boot although STR was blocked and we did not power off.
 # The Projector app has not started yet ('on boot'), so its prefs still hold the previous boot's
 # last power state (read-only).
-prev_app=$(grep -o '"pw_state">[a-z]*' $R/data/data/org.z9x.projector/shared_prefs/z9x_power.xml 2>/dev/null | head -n 1)
+prev_app=$(grep -o '"pw_state">[a-z]*' $R/data/data/org.lumen.projector/shared_prefs/z9x_power.xml 2>/dev/null | head -n 1)
 prev_app=${prev_app##*>}
 if grep -aq 'gmpf_suspend' $B/prev_logcat_pmsg.txt 2>/dev/null; then
   if [ "$prev_app" = off ]; then
@@ -279,7 +279,7 @@ ss_get() {
 }
 # power state the Projector app last saved (StandbyController marker: active / standby / sleep / off);
 # read-only, the app's prefs file (root can read it)
-APPPREFS=$R/data/data/org.z9x.projector/shared_prefs/z9x_power.xml
+APPPREFS=$R/data/data/org.lumen.projector/shared_prefs/z9x_power.xml
 app_state() {
   a=$(grep -o '"pw_state">[a-z]*' $APPPREFS 2>/dev/null | head -n 1)
   a=${a##*>}

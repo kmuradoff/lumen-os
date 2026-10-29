@@ -164,7 +164,7 @@ key 140   CALCULATOR
 # Z9X v6.5: KEY_SLEEP (142; HID usage 0x01 0x0082 System Sleep and 0x0c 0x0032 map to it in the
 # Z9X v6.5: kernel) is STB_POWER WAKE here, not SLEEP: SLEEP = PhoneWindowManager goToSleep, a display
 # Z9X v6.5: power cycle whose wake leaves block noise in one quadrant. STB_POWER goes to
-# Z9X v6.5: org.z9x.projector (lamp-only standby / power menu). Installed as
+# Z9X v6.5: org.lumen.projector (lamp-only standby / power menu). Installed as
 # Z9X v6.5: /product/usr/keylayout/Generic.kl (searched before /system/usr/keylayout). Only this
 # Z9X v6.5: line and these comment lines differ from the AOSP / v4 /system/usr/keylayout/Generic.kl.
 key 142   STB_POWER WAKE

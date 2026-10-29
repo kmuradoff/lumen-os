@@ -374,7 +374,7 @@ eq_no_mode=Önce bir ses modu seçin
 eq_speaker_only=Ekolayzer yalnızca dahili hoparlörde çalışır
 eq_hint_mode=%1$s için kaydedilir · dahili hoparlör
 
-# v6.3 org.z9x.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
+# v6.3 org.lumen.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
 @airplay/strings.xml
 notif_channel=AirPlay alıcısı
 notif_ready=AirPlay için “%1$s” olarak hazır

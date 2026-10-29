@@ -5,7 +5,7 @@
      (TYPE_VOLUME_OVERLAY, layer 22, opaque black scrim on TV: TvSystemUI dimens
      shutdown_scrim_behind_alpha 1.0) is what ShutdownThread shows for every power off / restart
      (config_showSysuiShutdown true). Here it shows the same thin "Lumen" wordmark (Z9xProjector power_wordmark) + hairline as
-     org.z9x.projector's WakeCurtain instead of "Shutting down..." and the spinner, so whatever
+     org.lumen.projector's WakeCurtain instead of "Shutting down..." and the spinner, so whatever
      layer is left on screen during the last seconds of a shutdown looks the same.
      ShutdownUi.java needs these ids (findViewById, NPE otherwise): @android:id/progress
      (getIndeterminateDrawable().setTint), @android:id/text1, @android:id/text2 (setTextColor /

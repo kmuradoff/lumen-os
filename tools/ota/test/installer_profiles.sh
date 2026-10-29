@@ -231,7 +231,7 @@ inst '' --no-blobs
 golden; end
 
 begin z9x_verify
-lumen; printf '%s\n' org.z9x.home > "$FB/packages"
+lumen; printf '%s\n' org.lumen.home > "$FB/packages"
 inst '' verify
 golden; end
 
@@ -404,7 +404,7 @@ inst '' --no-blobs
 golden_as z9x_all_resume_verify; end
 
 begin p6pending_z9x_verify
-p6_pending; lumen; printf '%s\n' org.z9x.home > "$FB/packages"
+p6_pending; lumen; printf '%s\n' org.lumen.home > "$FB/packages"
 inst '' verify
 golden_as z9x_verify; end
 

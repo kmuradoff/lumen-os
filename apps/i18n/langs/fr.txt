@@ -376,7 +376,7 @@ eq_no_mode=Choisissez d’abord un mode audio
 eq_speaker_only=L’égaliseur agit uniquement sur le haut-parleur intégré
 eq_hint_mode=Enregistré pour %1$s · haut-parleur intégré
 
-# v6.3 org.z9x.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
+# v6.3 org.lumen.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
 @airplay/strings.xml
 notif_channel=Récepteur AirPlay
 notif_ready=Prêt pour AirPlay sous le nom « %1$s »

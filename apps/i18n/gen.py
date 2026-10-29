@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate values-<locale>/strings*.xml for org.z9x.projector, .tvinput, .airplay, .home, .setup and
+"""Generate values-<locale>/strings*.xml for org.lumen.projector, .tvinput, .airplay, .home, .setup and
 .updater from
 compact per-language sources (langs/<locale>.txt), and validate every locale dir
 (including hand-written ones such as values-ru) against the English base.

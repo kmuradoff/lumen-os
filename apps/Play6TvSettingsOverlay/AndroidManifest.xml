@@ -6,7 +6,7 @@
      taken: it is Z9X-specific. Install: /system/product/overlay/Play6TvSettingsOverlay.apk (0644), priority 10,
      no code, no permissions. The stub/ is the link-time stub of TvSettings' ids, as the Z9X overlay's. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.overlay.tvsettings.play6"
+    package="org.lumen.overlay.tvsettings.play6"
     android:versionCode="106"
     android:versionName="1.0.6">
     <overlay android:targetPackage="com.android.tv.settings"

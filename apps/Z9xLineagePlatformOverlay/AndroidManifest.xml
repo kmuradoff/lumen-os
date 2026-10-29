@@ -6,9 +6,9 @@
      from the base image's target APK: edit the generator, not the res/ files.
      No code, no permissions. Signed with the release platform key by the sign stage. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.overlay.lineageplatform"
-    android:versionCode="103"
-    android:versionName="1.0.2">
+    package="org.lumen.overlay.lineageplatform"
+    android:versionCode="108"
+    android:versionName="1.0.8">
     <overlay
         android:targetPackage="lineageos.platform"
         android:isStatic="true"

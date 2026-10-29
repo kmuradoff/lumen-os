@@ -74,7 +74,7 @@
 # z9x_rescue's counter /metadata/z9x_rescue/count ("<starts without boot_completed> <slot>", this start
 # included) is only read, to say why a pending start failed. One failed 4K/2K start costs one restart:
 # well inside the rescue's 3 (z9x_rescue.sh) and the OTA gate's 3 attempts (z9x_ota.sh).
-# Properties published (read by org.z9x.projector):
+# Properties published (read by org.lumen.projector):
 #   sys.z9x.ui_res.active   mode of this start: 1080 | 2160 (| 1440 in debug)
 #   sys.z9x.ui_res.want     the mode asked for (the stored choice, or the default 2160; debug: its mode)
 #   sys.z9x.ui_res.why      why active differs from want, or why 'check' failed (<= 90 chars; else unset)

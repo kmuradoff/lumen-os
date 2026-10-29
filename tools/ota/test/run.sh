@@ -40,7 +40,7 @@ begin() {  # case name: fresh root; slot B runs, both slots marked successful, a
   printf '%s\n' ro.boot.slot_suffix=_b ro.z9x.build_id=lumen-1.0.1-20261009 \
     init.svc.zygote=running init.svc.surfaceflinger=running init.svc.gmpf_main=running \
     sys.system_server.start_count=1 sys.z9x.blobs=ok > "$T/props"
-  echo org.z9x.projector > "$T/procs"
+  echo org.lumen.projector > "$T/procs"
   echo 1 > "$T/hal/current"; echo 1 > "$T/hal/active"; echo 0 > "$T/hal/merge"
   echo 1 > "$T/hal/marked0"; echo 1 > "$T/hal/marked1"
   echo 1 > "$T/hal/bootable0"; echo 1 > "$T/hal/bootable1"

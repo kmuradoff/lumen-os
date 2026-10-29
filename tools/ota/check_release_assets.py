@@ -415,7 +415,7 @@ def self_test_images(td):
     def mkimg(name, prop, extra=()):
         root = os.path.join(td, name + ".d")
         files = [("system/product/etc/build.prop", prop.encode()), ("system/app/Note/readme.txt", b"Lumen OS\n"),
-                 ("system/app/Ok/Ok.apk", fake_apk("org.z9x.selftest"))] + list(extra)
+                 ("system/app/Ok/Ok.apk", fake_apk("org.lumen.selftest"))] + list(extra)
         for rel, data in files:
             os.makedirs(os.path.dirname(os.path.join(root, rel)), exist_ok=True)
             with open(os.path.join(root, rel), "wb") as f:

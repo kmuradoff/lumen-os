@@ -15,7 +15,7 @@
 #   boot           z9x_ota_info: sys.z9x.slot + AVB flags of both vbmeta slots (read-only, 128 bytes)
 #   request        sys.z9x.ota.request=mark (updater "Keep this version"): the health gate at once
 # Reboot reasons used: reboot,z9x-ota (updater), reboot,z9x-ota-rollback and reboot,z9x-ota-stuck (this
-# gate); all are attended reboots for org.z9x.projector's boot classification (no boot-dark power-off).
+# gate); all are attended reboots for org.lumen.projector's boot classification (no boot-dark power-off).
 # Domain u:r:su:s0 exists only on userdebug (this image), like z9x_bootinfo / z9x_diag.
 
 on post-fs-data

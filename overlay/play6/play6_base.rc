@@ -38,7 +38,7 @@ on early-boot && property:persist.lumen.p6.bt_coexist=1
     setprop bluetooth.profile.a2dp.sink.enabled true
     setprop bluetooth.profile.avrcp.controller.enabled true
 
-# ---- Play 6 only, P3 item 21: the Bluetooth A2DP role of the speaker mode (org.z9x.projector speaker/BtRole,
+# ---- Play 6 only, P3 item 21: the Bluetooth A2DP role of the speaker mode (org.lumen.projector speaker/BtRole,
 # docs/play6/TASKS.md "P3 stock features"). The Bluetooth app of Android 14 reads these profile switches when its
 # process starts; a platform app may not write bluetooth.profile.* itself, so the projector app writes
 # sys.lumen.p6.bt_role and init applies the set, then the app restarts Bluetooth. "speaker": the projector is an

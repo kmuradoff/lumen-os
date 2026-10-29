@@ -9,7 +9,7 @@ overlay/v1/bootanimation.zip.
 
 Renders the boot animation of Lumen OS from text and geometry only (no XGIMI, MediaTek or
 Lineage asset): the thin wide-tracked "Lumen" wordmark (Roboto variable font at wght 200, the
-same drawing as org.z9x.projector's WakeCurtain mark: letterSpacing 0.42 em, alpha 0xE0, a 1.5 px
+same drawing as org.lumen.projector's WakeCurtain mark: letterSpacing 0.42 em, alpha 0xE0, a 1.5 px
 hairline under the baseline) plus a small "OS" label under the hairline. Brand spec v7 section 4,
 with the product renamed from "Z9X OS" to "Lumen OS" (user decision 2026-10-06).
 

@@ -27,7 +27,7 @@
 #    (apps/common/sync.sh --check: HAL transport and projector files of both projector apps, the framework
 #    key files of Play6FrameworkOverlay; copy-mode sync never runs here), P (docs/repo/publish_audit.py: no
 #    REVIEW row, that is no file without a rule and no published file that names a serial-named private log
-#    folder, the LOGREF flag); apps/Play6Projector must be org.z9x.projector (D1)
+#    folder, the LOGREF flag); apps/Play6Projector must be org.lumen.projector (D1)
 # 2. tools/play6/build_play6.sh: H, K, F, then Play6Projector, Play6FrameworkOverlay and the apps given as
 #    source builds signed with the Play 6 platform key (rule S1) -> build/play6/
 # 3. sign_play6.py pinned: Z9xHome, Z9xTvInput, Z9xLineagePlatformOverlay, Z9xSetup re-signed -> build/play6/signed/;
@@ -177,9 +177,9 @@ SRC_APPS=()
 [ "$SETUP_SRC" = 1 ] && SRC_APPS+=(Z9xSetup)
 
 # ---- 1. checks (Mac)
-# D1: the pinned Lumen Home and TvInput and the framework key map talk to org.z9x.projector
+# D1: the pinned Lumen Home and TvInput and the framework key map talk to org.lumen.projector
 P6PKG=$(sed -n '/package="/{s/.*package="\([^"]*\)".*/\1/p;q;}' "$G/apps/Play6Projector/AndroidManifest.xml")
-[ "$P6PKG" = org.z9x.projector ] || die "apps/Play6Projector is package '$P6PKG', not org.z9x.projector (SETTINGS_PLAN.md D1)"
+[ "$P6PKG" = org.lumen.projector ] || die "apps/Play6Projector is package '$P6PKG', not org.lumen.projector (SETTINGS_PLAN.md D1)"
 echo "== G: the Z9X gate"
 if ! sh "$P/z9x_gate.sh"; then
   REDS=$(grep '^RED: ' "$G/build/play6/z9x_gate.log" || true)
@@ -256,6 +256,10 @@ IN=(
   "$G/build/play6/signed/Z9xTvInput.apk"
   "$G/build/play6/signed/Z9xLineagePlatformOverlay.apk"
   "$G/build/play6/signed/Z9xSetup.apk"
+  "$G/build/play6/LumenBridge_projector.apk"
+  "$G/build/play6/LumenBridge_home.apk"
+  "$G/build/play6/LumenBridge_setup.apk"
+  "$G/build/play6/LumenBridge_tvinput.apk"
   "$L/base_id.txt"
   "$G/overlay/v1/privapp-permissions-z9xhome.xml"
   "$G/overlay/v1/privapp-permissions-z9xsetup.xml"
@@ -284,7 +288,7 @@ IN=(
   "$G/tools/lumen/lumen_checks.py"
   "$G/tools/lumen/apkinfo.py"
 )
-[ "$OTA" = 1 ] && IN+=("$G/build/play6/Play6Updater.apk" "$G/overlay/play6/lumen_recovery.rc" "$G/overlay/play6/lumen_recovery.sh"
+[ "$OTA" = 1 ] && IN+=("$G/build/play6/Play6Updater.apk" "$G/build/play6/LumenBridge_updater.apk" "$G/overlay/play6/lumen_recovery.rc" "$G/overlay/play6/lumen_recovery.sh"
   "$G/build/play6/lumen_play6_ota.x509")
 [ -n "$DIAG" ] && IN+=("$G/overlay/debug/z9x_earlylog.rc" "$G/overlay/debug/z9x_earlylog.sh" "$G/overlay/play6/earlylog_usb.sh"
   "$G/overlay/debug/lumen_escape.rc" "$G/overlay/debug/lumen_escape.sh")

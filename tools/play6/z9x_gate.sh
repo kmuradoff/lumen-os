@@ -63,7 +63,7 @@ list_inputs() {
         [ -d "$a/$s" ] && find "$a/$s" -type f
       done
     done
-    find apps/common apps/i18n apps/sdk overlay/v1 overlay/apps_v1 overlay/debug overlay/v65 \
+    find apps/common apps/i18n apps/sdk apps/LumenBridge overlay/v1 overlay/apps_v1 overlay/debug overlay/v65 \
       tools/lumen tools/sign tools/ota -type f
     for f in apps/build_apk.sh apps/check_hal_callers.py apps/check_global_keys.py tools/lumen_v1.sh tools/compose_tv.py; do
       echo "$f"
@@ -108,6 +108,9 @@ if [ -f "$OK_FILE" ]; then
       overlay/apps_v1/*)
         say "  $st $p  (pin list: every pinned APK is rebuilt, for the report)"; ALL=1
         red "pin list changed since the recorded green run: $p (the owner confirms it, then re-record)" ;;
+      apps/LumenBridge/*)
+        say "  $st $p  (rebuild every LumenBridge*)"
+        for n in $APKS; do case $n in LumenBridge*) add "$n" ;; esac; done ;;
       apps/Z9x*/jni/*)
         n=${p#apps/}; n=${n%%/*}
         if is_pinned "$n"; then say "  $st $p"
@@ -142,6 +145,19 @@ done
 NB=0
 for n in $REBUILD; do
   pin=overlay/apps_v1/$n.apk
+  case $n in
+    LumenBridge*)   # the 1.0.8 bridges: one source (apps/LumenBridge), one APK per old name
+      if [ ! -d "$W/bridges" ] && ! sh apps/LumenBridge/build_bridges.sh "$W/bridges" z9x > "$W/bridges.log" 2>&1; then
+        red "$n: build_bridges.sh failed ($W/bridges.log)"; continue
+      fi
+      b=$(printf '%s' "${n#LumenBridge}" | tr 'A-Z' 'a-z')
+      NB=$((NB + 1))
+      got=$(shasum -a 256 "$W/bridges/LumenBridge_$b.apk" 2>/dev/null | cut -d' ' -f1)
+      have=$(shasum -a 256 "$pin" | cut -d' ' -f1)
+      if [ -n "$got" ] && [ "$got" = "$have" ]; then say "  $n: identical to the pin ($got)"
+      else red "$n: rebuilt ${got:-nothing}, pinned $have"; fi
+      continue ;;
+  esac
   if [ ! -f "apps/$n/AndroidManifest.xml" ]; then red "$n: no source tree apps/$n"; continue; fi
   badge=$("$AAPT2" dump badging "$pin" 2>/dev/null | head -1)
   vc=$(printf '%s' "$badge" | sed -n "s/.* versionCode='\([^']*\)'.*/\1/p")

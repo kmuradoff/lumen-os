@@ -1,7 +1,7 @@
 /*
  * COPY of gsi/apps/common/hal/HidlCaller.java (Lumen Sensors, org.lumen.sensors.hal). Only the package
  * line differs; the behaviour is identical. It is not synced by apps/common/sync.sh (that script copies
- * into org.z9x.projector.hal only): when the common file changes, copy it again by hand and keep this
+ * into org.lumen.projector.hal only): when the common file changes, copy it again by hand and keep this
  * header. The typed, read-only client over it is Z9xGmpfReader (allowlist in GmpfAllowlist).
  */
 /*

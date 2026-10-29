@@ -373,7 +373,7 @@ eq_no_mode=请先选择声音模式
 eq_speaker_only=均衡器仅对内置扬声器生效
 eq_hint_mode=为 %1$s 单独保存 · 内置扬声器
 
-# v6.3 org.z9x.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
+# v6.3 org.lumen.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
 @airplay/strings.xml
 notif_channel=AirPlay 接收器
 notif_ready=可通过 AirPlay 连接，名称为“%1$s”

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: Apache-2.0
-     TV banner 320x180 dp of Files (org.z9x.home .FilesLauncher, Lumen OS 1.0.4): the folder of ic_folder with a
+     TV banner 320x180 dp of Files (org.lumen.home .FilesLauncher, Lumen OS 1.0.4): the folder of ic_folder with a
      play mark in the Lumen colours on #17181B, full bleed (launchers round the corners and show the name). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="320dp"

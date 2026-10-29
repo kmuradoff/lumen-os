@@ -138,7 +138,7 @@ case "$1" in
           printf '%s\n' "device_provisioned 0" "user_setup_complete 0" "tv_user_setup_complete 0" > "$FB/settings"
           touch "$FB/wiped"
         fi ;;
-      "pidof org.z9x.projector") [ "$mode" = lumen ] && echo 1234 ;;
+      "pidof org.lumen.projector"|"pidof org.lumen.projector org.z9x.projector") [ "$mode" = lumen ] && echo 1234 ;;
       "pm path "*) grep -qxF "$3" "$FB/packages3" && echo "package:/data/app/$3-1/base.apk" ;;
       "pm list packages -3") sed 's/^/package:/' "$FB/packages3" ;;
       "dumpsys media.audio_policy") echo "Outputs:" ;;

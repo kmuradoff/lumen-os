@@ -23,7 +23,7 @@ on early-boot
 # ---- v6.5: the v6.4 AFBC workaround is removed (vendor.mtk.disable.layer.afbc /
 # vendor.mtk.enable.framebuffer.afbc are back to the vendor defaults). The block noise after a quick
 # wake came back with linear scan-out too, so GOP AFBC was not the cause (research/v65 decision).
-# v6.5 avoids the display power cycle on a short sleep instead (lamp-only standby in org.z9x.projector).
+# v6.5 avoids the display power cycle on a short sleep instead (lamp-only standby in org.lumen.projector).
 
 # ---- Lumen OS 1.0: STR (suspend to RAM) is allowed again (verified on the device 2026-10-06: a short
 # POWER press = lamp off, then Android goToSleep and a real STR; wake by keypad / IR / BT remote,
@@ -31,7 +31,7 @@ on early-boot
 # post-fs is gone: persist.z9x.allow_str is unset on a fresh /data, and unset means "allowed".
 # Every self-reboot seen on 2026-10-06 had one cause: a USB host (the Mac's adb) on the USB device
 # port keeps a UDC clock on, PM51 logs 'can not power down because clk is enable' and resets the chip
-# 20 s later (boot_reason 0xF1). org.z9x.projector therefore stays in the lamp-only standby (no STR)
+# 20 s later (boot_reason 0xF1). org.lumen.projector therefore stays in the lamp-only standby (no STR)
 # while a USB host is connected; the PM51 wake sources are set at boot by z9x_power*.rc.
 # The kill switch persist.z9x.allow_str (0 = kernel wakelock z9x_no_str held, never STR; 1 / unset =
 # STR allowed) lives in z9x_power.rc (lane L-PROJECTOR, single owner of the power init), next to the

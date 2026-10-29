@@ -378,7 +378,7 @@ eq_no_mode=Спачатку выберыце рэжым гуку
 eq_speaker_only=Эквалайзер працуе толькі на ўбудаваным дынаміку
 eq_hint_mode=Захоўваецца для рэжыму «%1$s» · убудаваны дынамік
 
-# v6.3 org.z9x.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
+# v6.3 org.lumen.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
 @airplay/strings.xml
 notif_channel=Прымач AirPlay
 notif_ready=Гатовы да AirPlay як «%1$s»

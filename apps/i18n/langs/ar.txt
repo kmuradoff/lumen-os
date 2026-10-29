@@ -1,4 +1,4 @@
-# Arabic (MSA). org.z9x.projector is supportsRtl=false: arrows → ← and ◀ ▶ name physical D-pad keys
+# Arabic (MSA). org.lumen.projector is supportsRtl=false: arrows → ← and ◀ ▶ name physical D-pad keys
 # and stay as they are; only the breadcrumb in toast_curtain_offer uses ← (reading direction).
 # Plurals: one/two use the idiomatic forms without the number (gen.py allows that for ar only).
 @common/strings.xml
@@ -384,7 +384,7 @@ eq_no_mode=اختر وضع الصوت أولًا
 eq_speaker_only=يعمل المعادل على مكبر الصوت المدمج فقط
 eq_hint_mode=محفوظ لوضع %1$s · مكبر الصوت المدمج
 
-# v6.3 org.z9x.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
+# v6.3 org.lumen.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
 @airplay/strings.xml
 notif_channel=مستقبِل AirPlay
 notif_ready=جاهز لـ AirPlay باسم «%1$s»

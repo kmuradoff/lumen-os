@@ -1,4 +1,4 @@
-Z9xAirPlay (org.z9x.airplay) - AirPlay receiver for the XGIMI Z9X
+Z9xAirPlay (org.lumen.airplay) - AirPlay receiver for the XGIMI Z9X
 Version 1.0 (versionCode 1)
 
 Copyright (C) 2026 Z9X project; parts Copyright (C) jqssun / android-airplay-server
@@ -43,7 +43,7 @@ android-airplay-server  v0.0.31, commit c8defdd7
         audio_engine.cpp and helpers (-> jni/glue/), the UxPlay patches above, and the Kotlin
         classes NativeBridge, RaopCallbackHandler, AirPlayService, NsdServiceManager,
         BootReceiver, AirPlayVideoPlayer, DmapParser, TrackInfo, DacpController, Prefs,
-        ported to Java (-> src/org/z9x/airplay/).
+        ported to Java (-> src/org/lumen/airplay/).
 
 libplist  2.8.0, commit fe3dc34dc3484006e12b403f7ceb06f0ad40b6f4
         https://github.com/libimobiledevice/libplist

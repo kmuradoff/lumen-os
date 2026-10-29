@@ -24,7 +24,7 @@
  *    be repeated.
  *  - No subclass exposes a raw code: every public method is one typed, whitelisted call.
  */
-package org.z9x.projector.hal;
+package org.lumen.projector.hal;
 
 import android.os.HwBinder;
 import android.os.HwParcel;

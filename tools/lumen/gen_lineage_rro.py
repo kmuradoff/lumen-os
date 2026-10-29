@@ -9,7 +9,7 @@ Values:
   integer/config_doubleTapOnHomeBehavior = 0   (Lineage TV overlay: 2 = APP_SWITCH, a no-op on TV that
       makes PhoneWindowManager defer EVERY short HOME press by the 300 ms double-tap timeout)
   integer/config_longPressOnHomeBehavior = 3   (SEARCH = launch assist with invocation_type 5: Recent
-      apps in org.z9x.projector; the Lineage default, written out so nobody changes it)
+      apps in org.lumen.projector; the Lineage default, written out so nobody changes it)
   string/lineage_version, lineageos_system_label, lineage_updates: the target's own text with
       "LineageOS" replaced by "Lumen OS", for EVERY configuration the target defines. RRO lookup is
       per configuration: an overlay with only values/ would leave e.g. "Версия LineageOS" in a Russian
@@ -38,9 +38,9 @@ MANIFEST = '''<?xml version="1.0" encoding="utf-8"?>
      from the base image's target APK: edit the generator, not the res/ files.
      No code, no permissions. Signed with the release platform key by the sign stage. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.overlay.lineageplatform"
-    android:versionCode="102"
-    android:versionName="1.0.1">
+    package="org.lumen.overlay.lineageplatform"
+    android:versionCode="108"
+    android:versionName="1.0.8">
     <overlay
         android:targetPackage="lineageos.platform"
         android:isStatic="true"

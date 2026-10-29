@@ -374,7 +374,7 @@ eq_no_mode=Алдымен дыбыс режимін таңдаңыз
 eq_speaker_only=Эквалайзер тек кірістірілген динамикте жұмыс істейді
 eq_hint_mode=«%1$s» режимі үшін сақталады · кірістірілген динамик
 
-# v6.3 org.z9x.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
+# v6.3 org.lumen.airplay (GPL-3.0 app). "AirPlay", "Apple", "YouTube", "H.264", "HEVC" stay untranslated.
 @airplay/strings.xml
 notif_channel=AirPlay қабылдағышы
 notif_ready=AirPlay «%1$s» ретінде дайын

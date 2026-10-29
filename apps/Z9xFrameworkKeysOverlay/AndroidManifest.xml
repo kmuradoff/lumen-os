@@ -17,7 +17,7 @@
      v6.5: + config_shortPressOnPowerBehavior 0 (a system POWER short press while awake does
      nothing; see res/values/config.xml).
      Lumen OS 1.0 (versionCode 100): + config_customizedMaxCachedProcesses 16, config_defaultAssistant
-     org.z9x.projector (Recents on long-press HOME; Katniss removed) and 8 HDMI-CEC default bools
+     org.lumen.projector (Recents on long-press HOME; Katniss removed) and 8 HDMI-CEC default bools
      (see res/values/config.xml). Signed with the release platform key by the sign stage.
      Lumen OS 1.0.0 (versionCode 101): + config_dreamsDefaultComponent = the Lumen Home sky screensaver.
      Lumen OS 1.0.1 (versionCode 102): version only; build suffix e (versionCode still 102, versionName
@@ -26,9 +26,9 @@
      Lumen OS 1.0.2 (versionCode 103): version only.
      No code, no permissions, no sharedUserId. min/target SDK 34 come from build_apk.sh. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.z9x.overlay.framework"
-    android:versionCode="103"
-    android:versionName="1.0.2">
+    package="org.lumen.overlay.framework"
+    android:versionCode="108"
+    android:versionName="1.0.8">
     <overlay
         android:targetPackage="android"
         android:isStatic="true"
