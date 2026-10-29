@@ -7,9 +7,12 @@
 # Refuses a device whose image.conf says generic=no (it names its own entry) and an image.conf whose fs is not the
 # device's image_fs. Copies exactly the stage files of image.conf, flat, into ~/<remote_dir>/in on the host (no
 # key, no APK, nothing signed goes to the server), then runs the composer from there once per variant:
-#   bash ~/<remote_dir>/in/<composer> VARIANT ARGS 2>&1 | tee ~/<remote_dir>/<composer name>-VARIANT-NAME.log
-# (ARGS: the variant's comma-separated arguments in image.conf, NAME:ARG1,ARG2).
-# Outputs stay on the host, where the composer writes them. IMAGE_HOST (environment) overrides the host.
+#   LUMEN_IMAGE_DIR=~/<remote_dir> bash ~/<remote_dir>/in/<composer> VARIANT ARGS 2>&1 \
+#     | tee ~/<remote_dir>/<composer name>-VARIANT-NAME.log
+# (ARGS: the variant's comma-separated arguments in image.conf, NAME:ARG1,ARG2). LUMEN_IMAGE_DIR tells the composer
+# where its inputs are and where to write. Outputs stay on the host, where the composer writes them.
+# Environment: IMAGE_HOST overrides the host; BUILD_ID and SOURCE_DATE_EPOCH, when set, are passed on to the
+# composer (a fixed build id and file time for a repeatable image).
 set -euo pipefail
 G=$(cd "$(dirname "$0")/../.." && pwd)          # the gsi folder
 C=${1:?usage: compose.sh CODENAME VARIANT [NAME]}
@@ -40,10 +43,20 @@ for v in $(img variants); do
   RUN+=("$n:$a")
 done
 [ ${#RUN[@]} -gt 0 ] || die "no variant $ONLY in devices/$C/image.conf ($(img variants))"
+case $RD in *[!A-Za-z0-9._/-]*|''|/*|*..*) die "remote_dir $RD must be a plain relative path" ;; esac
+ENV="LUMEN_IMAGE_DIR=\$HOME/$RD"
+if [ -n "${BUILD_ID:-}" ]; then
+  case $BUILD_ID in *[!A-Za-z0-9._-]*) die "BUILD_ID may hold only letters, digits and . _ -" ;; esac
+  ENV="$ENV BUILD_ID=$BUILD_ID"
+fi
+if [ -n "${SOURCE_DATE_EPOCH:-}" ]; then
+  case $SOURCE_DATE_EPOCH in *[!0-9]*) die "SOURCE_DATE_EPOCH must be digits only" ;; esac
+  ENV="$ENV SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
+fi
 
 ssh "$SRV" "mkdir -p ~/$RD/in"
 scp -q "${STAGE[@]}" "${SRV}:$RD/in/"
 for r in "${RUN[@]}"; do
   n=${r%%:*} a=${r#*:}
-  ssh "$SRV" "set -o pipefail; bash ~/$RD/in/$CN.sh $V ${a//,/ } 2>&1 | tee ~/$RD/$CN-$V-$n.log"
+  ssh "$SRV" "set -o pipefail; $ENV bash ~/$RD/in/$CN.sh $V ${a//,/ } 2>&1 | tee ~/$RD/$CN-$V-$n.log"
 done
