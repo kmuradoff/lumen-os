@@ -5,8 +5,9 @@
 #   bash tools/devices/test/devices_test.sh
 #
 # The good registry must pass validate, check-installer and check-wire; every broken copy (a bad line, an unknown
-# key, a key given twice, a folder that is not the codename, two devices with one installer id, an installer file
-# that disagrees, a wire id the tools do not carry) must fail. Exit 0 only when every case gives what it should.
+# key, a key given twice, a folder that is not the codename, two devices with one installer id, an AIDL check
+# without its allowlist, an installer file that disagrees, a wire id the tools do not carry) must fail. Exit 0 only
+# when every case gives what it should.
 set -u
 D=$(cd "$(dirname "$0")/.." && pwd)
 py() { python3 -B "$D/devices.py" "$@"; }
@@ -44,8 +45,10 @@ hal_check=aidl-table
 hal_app=apps/${4}Boot
 hal_codes=none
 hal_banned=none
+hal_allowed=apps/${4}Boot/allowed.tsv
 EOF
   mkdir -p "$1/apps/${4}Boot"
+  printf '# service\tcode\tmethod\treason\n' > "$1/apps/${4}Boot/allowed.tsv"
 }
 inst() { # dir codename installer_id: installer lines that agree with conf
   mkdir -p "$1/installer/lib"
@@ -104,6 +107,8 @@ good "$R"; sed -i.bak 's#^keys_dir=.*#keys_dir=~/keys#' "$R/devices/alpha_one/de
 expect keys_dir_outside 1 py --root "$R" validate
 good "$R"; sed -i.bak 's#^forks=none#forks=devices/alpha_one/forks.tsv#' "$R/devices/alpha_one/device.conf"
 expect missing_path 1 py --root "$R" validate
+good "$R"; sed -i.bak '/^hal_allowed=/d' "$R/devices/alpha_one/device.conf"
+expect aidl_needs_allowed 1 py --root "$R" validate
 good "$R"; sed -i.bak 's/^tb.BOARD=.*/tb.BOARD=other/' "$R/installer/lib/devices.conf"
 expect installer_mismatch 1 py --root "$R" check-installer
 good "$R"; sed -i.bak '/^tb.FLOW=/d' "$R/installer/lib/devices.conf"

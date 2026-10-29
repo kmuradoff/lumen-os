@@ -42,6 +42,7 @@ Keys (all required unless marked optional):
   hal_app           the app that talks to the gmpf HAL
   hal_codes         the HAL code table, or none
   hal_banned        the table of banned HAL calls, or none
+  hal_allowed       optional, required with hal_check=aidl-table: the complete list of HAL calls the app may send
   apps              optional: device-only apps under apps/<name> (list)
 
 devices/<codename>/image.conf (section 4), same format, how the system image is composed:
@@ -65,7 +66,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 REQUIRED = ("codename name models platform hardware abi base_product vendor_sdk vendor_firmware hal_transport "
             "image_fs slots install_flow ota_engine ota_wire_id prop_namespace keys_dir app_prefix channel "
             "installer_id fastboot_product forks hal_check hal_app hal_codes hal_banned").split()
-OPTIONAL = ("apps",)
+OPTIONAL = ("apps", "hal_allowed")
 LISTS = ("models", "vendor_firmware", "channel", "apps")
 ENUMS = {
     "abi": ("arm64", "arm32"),
@@ -76,7 +77,7 @@ ENUMS = {
     "ota_engine": ("update_engine", "recovery-block", "none"),
     "hal_check": ("z9x-callers", "play6-hidl", "aidl-table"),
 }
-PATHS = ("forks", "hal_app", "hal_codes", "hal_banned")
+PATHS = ("forks", "hal_app", "hal_codes", "hal_banned", "hal_allowed")
 IMAGE_KEYS = ("generic", "entry", "compose", "host", "remote_dir", "stage", "variants", "fs")
 IMAGE_LISTS = ("stage", "variants")
 # a path under these folders is private (publish_audit.py excludes it): absent from a public checkout, reported only
@@ -235,6 +236,8 @@ def validate(root):
                     errs.append("%s: %s=%s is also in %s" % (rel, k, vals[k], other))
         if vals.get("install_flow") == "ab-fastbootd" and vals.get("slots") not in ("ab", "ab-virtual"):
             errs.append("%s: install_flow ab-fastbootd needs slots ab or ab-virtual, not %s" % (rel, vals.get("slots")))
+        if vals.get("hal_check") == "aidl-table" and vals.get("hal_allowed", "none") == "none":
+            errs.append("%s: hal_check aidl-table needs hal_allowed (the check refuses every call without it)" % rel)
         if "ota_engine" in vals and (vals["ota_engine"] == "none") != (vals.get("ota_wire_id") == "none"):
             errs.append("%s: ota_wire_id must be none exactly when ota_engine is none" % rel)
         kd = vals.get("keys_dir")
