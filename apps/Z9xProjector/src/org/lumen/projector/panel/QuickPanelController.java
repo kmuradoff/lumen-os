@@ -517,8 +517,9 @@ final class QuickPanelController {
         p.add(new NavRow(app, s(R.string.panel_optical_zoom), safe("optical zoom",
                 () -> OpticalZoomPanel.open(app, () -> show(QuickPanel.SECTION_KEYSTONE)))));
         p.add(new TextRow(app, s(R.string.panel_optical_zoom_summary)));
-        // Fit to my screen size (docs/fit_screen/DESIGN.md): only when this build supports it (Z9X: since the owner
-        // decisions O1 / O2 of 2026-10-30, fit/Z9xFitDevice; a fit needs a calibration first), never a disabled row
+        // Fit to my screen size (docs/fit_screen/DESIGN.md): only when this build supports it, never a disabled row
+        // (Z9X: shown after the owner decisions O1 / O2 of 2026-10-30, hidden by the owner 2026-10-31: Z9xFitDevice
+        // SUPPORTED = false, so this row and its summary are not built)
         if (org.lumen.projector.fit.FitDevices.supported(app)) {
             p.add(new NavRow(app, s(R.string.fit_row), safe("fit to screen", () -> {
                 if (snap != null && snap.isTopSpeedGame()) { Notify.show(app, s(R.string.panel_kst_game_mode)); return; }

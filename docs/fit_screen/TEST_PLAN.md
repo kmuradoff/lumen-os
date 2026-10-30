@@ -4,6 +4,11 @@ Date: 2026-10-30. Code: `apps/Z9xProjector/src/org/lumen/projector/fit/` (core, 
 byte-identical HB copies plus `apps/HbProjector/src/org/lumen/projector/fit/HbFitDevice.java`. Design:
 `docs/fit_screen/DESIGN.md`. Nothing in this plan has run on a projector yet.
 
+**2026-10-31: the feature is hidden on both projectors by the owner's decision** (the optical zoom works well, entering
+the screen size is not needed): `Z9xFitDevice.SUPPORTED = false`, `HbFitDevice.SUPPORTED = false`, so no row is built
+and nothing in this plan is to be run. The plan stays for the record. The zoom audit fixes (O1, F1-F7) and the
+279 / 584 getters stay in the Z9X app.
+
 ## 0. What is built, and where it is visible
 
 | Part | State |
@@ -11,7 +16,8 @@ byte-identical HB copies plus `apps/HbProjector/src/org/lumen/projector/fit/HbFi
 | Core (geometry, throw model, planner, run, calibration, storage) | Done. Host test `sh apps/Z9xProjector/test/fit/run.sh`: 221 checks, the 33 tests of DESIGN 11 plus a calibration round trip and storage. Also run by `sh apps/HbProjector/build.sh`. |
 | Screens | Quick panel, keystone page: row "Fit to screen size" (ru "Вписать по размеру полотна") opens the screen size page (diagonal + unit + aspect, or width x height; margin; fit mode; "Fit now"; "Calibrate the zoom"). Calibration: full screen white frame with a middle line, tape value with the arrows. Progress card at the bottom (BACK stops after the running move), result card. 17 languages. |
 | HB adapter | Done. Two new reads, FOCUS 46 getTofDistance and MOTION 2 getMotionDetection (allowed.tsv, stock callers in the rows). HbFeatures `FIT_SCREEN` is **PENDING**: the row is hidden and both reads refuse until H1 below passed and the line is changed to ON. |
-| Z9X adapter | Done since 2026-10-30 night (owner approved O1 and O2): `Z9xFitDevice` has the HB body with the Z9X codes, `SUPPORTED = true`, the row shows; a fit refuses until a calibration exists. Reads 279 / 584 in `GmpfClient` with the HB budgets. Image: lumen-1.0.8-test3 (docs/z9x/parity/TEST_PLAN_1.0.8-test3.md). |
+| Z9X adapter | Done since 2026-10-30 night (owner approved O1 and O2): `Z9xFitDevice` has the HB body with the Z9X codes, `SUPPORTED = true`, the row shows; a fit refuses until a calibration exists. Hidden again 2026-10-31 (owner):
+`SUPPORTED = false` since Z9xProjector 80c44ca4...; lumen-1.0.8-test3 still has the row. Reads 279 / 584 in `GmpfClient` with the HB budgets. Image: lumen-1.0.8-test3 (docs/z9x/parity/TEST_PLAN_1.0.8-test3.md). |
 | Z9X zoom audit fixes in this build | F2 (119 guard in GmpfClient), F5 (stock key timing in the zoom screen), F6, F7 (no zoom restore after auto keystone), and since test3 F1 (153(12,10), IGmpf2 13, IGmpf2 14 as a guarded EXCEPTION), F3 (14 positions), F4 (no half-step machinery). |
 
 ## 1. Rules for every device session

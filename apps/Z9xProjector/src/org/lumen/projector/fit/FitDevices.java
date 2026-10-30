@@ -11,6 +11,6 @@ public final class FitDevices {
 
     public static FitDevice get(Context ctx) { return new Z9xFitDevice(ctx); }
 
-    /** Cheap, main-thread safe: whether the quick panel shows the fit row (Z9X: true since O1 / O2, Lumen OS 1.0.8). */
+    /** Cheap, main-thread safe: whether the quick panel shows the fit row (Z9X: false, hidden by the owner 2026-10-31). */
     public static boolean supported(Context ctx) { return Z9xFitDevice.SUPPORTED; }
 }

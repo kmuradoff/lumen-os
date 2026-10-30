@@ -87,6 +87,12 @@ watching a film, so the HAL probe (docs/z9x/parity/probe.md) has not run.
   "Size 14 of 14", LEFT = IGmpf2 14(0). Fit: `GmpfClient.getTofDistance` (279, 1 s apart, 6 a minute) and
   `getMotionDetection` (584, 80 ms apart, 20 a minute), `fit/Z9xFitDevice` implemented as the HB adapter with the Z9X
   codes and SUPPORTED true; the "Fit to screen size" row shows, a fit refuses until a calibration exists.
+- **Fit to my screen size hidden again** (2026-10-31, owner: the optical zoom works well, entering the screen diagonal
+  is not needed; build 80c44ca4..., previous a2776ebb... kept in `build/apps_v1-1.0.8-test3e/`, not device-tested).
+  `fit/Z9xFitDevice.SUPPORTED` false, so the keystone page builds neither the "Fit to screen size" row nor its summary
+  (no disabled row); the HB too (`HbFitDevice.SUPPORTED` false). The fit/ code stays in the tree. Unchanged: the stock
+  "Fit to screen now" / "Fit to the screen" (curtain fit, 290), the optical zoom screen with the 14 positions
+  (IGmpf2 14 guard of O1), the 279 / 584 getters. The optical zoom summary names the stock curtain fit, so it stays.
 
 # Z9xProjector, next (Lumen OS 1.0.6)
 

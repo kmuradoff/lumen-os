@@ -1,6 +1,9 @@
 # Fit to my screen size: design (Z9X and HB)
 
-Date: 2026-10-30. Status: implemented the same day, not device-tested (see `TEST_PLAN.md`). Code: the core and
+Date: 2026-10-30. Status: HIDDEN on the Z9X and the HB since 2026-10-31 by the owner's decision (the optical zoom
+works well, entering the screen size is not needed): `Z9xFitDevice.SUPPORTED` and `HbFitDevice.SUPPORTED` are false,
+the quick panel row and its summary are not built; the code stays in the tree, never device-tested. Before that:
+implemented 2026-10-30, not device-tested (see `TEST_PLAN.md`). Code: the core and
 screens in `apps/Z9xProjector/src/org/lumen/projector/fit/` (owned by the Z9X app), byte-identical `same:` copies in
 the HB app (devices/goat_elegant/forks.tsv) instead of the HB-first home of 9.4, so no shared FILES entry and no
 Play 6 change; HB adapter `HbFitDevice` (FIT_SCREEN PENDING until TEST_PLAN H1), Z9X adapter `Z9xFitDevice`

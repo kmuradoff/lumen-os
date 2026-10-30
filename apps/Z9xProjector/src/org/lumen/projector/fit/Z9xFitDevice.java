@@ -14,9 +14,11 @@ import java.util.Locale;
 /**
  * Fit to my screen size, the Z9X (G0082) adapter (docs/fit_screen/DESIGN.md 9.2). Z9X only, never shared.
  *
- * SUPPORTED since Lumen OS 1.0.8 (owner 2026-10-30: O1, the zoom fix F1-F4 of docs/fit_screen/Z9X_ZOOM_AUDIT.md, and
- * O2, the reads 279 / 584). The quick panel row shows; a fit still refuses until a calibration exists
- * (FitRunner: fit_e_no_calib; ThrowModel.DEFAULTS is empty), so the first run is "Calibrate the zoom" as designed.
+ * HIDDEN (SUPPORTED = false) by the owner 2026-10-31: the optical zoom works well, entering the screen diagonal /
+ * width x height and the tape calibration are not needed. The quick panel row and its summary are not built; the
+ * code stays in the tree. Before that it was supported for one day (owner 2026-10-30: O1, the zoom fix F1-F4 of
+ * docs/fit_screen/Z9X_ZOOM_AUDIT.md, and O2, the reads 279 / 584); O1 and the 279 / 584 getters stay, the zoom
+ * panel uses the guarded clients. A fit refuses until a calibration exists (FitRunner: fit_e_no_calib).
  *
  * Every lens call goes through the guarded Z9X clients, exactly as the Z9X zoom panel (OpticalZoomPanel, stock
  * ZoomStateView):
@@ -34,8 +36,11 @@ import java.util.Locale;
  */
 final class Z9xFitDevice implements FitDevice {
     static final String TAG = "Z9xFit";
-    /** O1 + O2 approved by the owner 2026-10-30; the HAL methods exist (GmpfClient / Gmpf2Client, Lumen OS 1.0.8). */
-    static final boolean SUPPORTED = true;
+    /**
+     * false: the owner dropped "Fit to screen size" 2026-10-31 (the optical zoom is enough). Was true 2026-10-30 after
+     * O1 + O2; the HAL methods stay (GmpfClient / Gmpf2Client). Every entry asks FitDevices.supported first.
+     */
+    static final boolean SUPPORTED = false;
     /** The verified model: 117 optical 0..12 and 153(12,10) = 1 (zoom audit F8 checks the 1 on the device). */
     private static final int OPTICAL_MAX = 12, LIMIT_TOTAL = 1;
     /**
