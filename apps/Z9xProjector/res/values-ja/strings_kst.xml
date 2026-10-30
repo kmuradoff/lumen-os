@@ -30,4 +30,6 @@
     <string name="zoom_limit_small">これが最小の画面です</string>
     <string name="zoom_refused">プロジェクターがズームを動かしませんでした</string>
     <string name="zoom_unavailable">現在、光学ズームは使えません</string>
+    <string name="zoom_reset_hint">メニュー：ズームをリセット（最大の画面）</string>
+    <string name="zoom_reset_done">ズームをリセットしました</string>
 </resources>

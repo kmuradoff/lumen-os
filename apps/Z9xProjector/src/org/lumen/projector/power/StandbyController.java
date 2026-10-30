@@ -1498,6 +1498,17 @@ public final class StandbyController {
                 + ((bits & MOVE_AF) != 0 ? "AF after moving" : "");
     }
 
+    /**
+     * Lumen 1.0.8 (parity focus item 4): the user set "AF after moving" (587) himself, directly or through
+     * the smart AF switch. A standby marker for it must not restore the old value later. Main thread.
+     */
+    public static void noteUserMoveAf() {
+        if ((sMoveOffByUs & MOVE_AF) == 0) return;
+        sMoveOffByUs &= ~MOVE_AF;
+        writeMoveOff(sMoveOffByUs);
+        Log.i(TAG, "AF after moving set by the user: standby marker cleared");
+    }
+
     private static void writeMoveOff(final int bits) {
         if (sWorker == null) return;
         sWorker.post(() -> {

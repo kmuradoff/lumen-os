@@ -30,4 +30,6 @@
     <string name="zoom_limit_small">Бұл ең кіші сурет</string>
     <string name="zoom_refused">Проектор зумды жылжытпады</string>
     <string name="zoom_unavailable">Оптикалық зум қазір қолжетімсіз</string>
+    <string name="zoom_reset_hint">Мәзір: зумды қалпына келтіру (ең үлкен сурет)</string>
+    <string name="zoom_reset_done">Зум қалпына келтірілді</string>
 </resources>

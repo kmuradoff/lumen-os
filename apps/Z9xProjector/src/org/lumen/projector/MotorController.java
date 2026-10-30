@@ -133,6 +133,20 @@ final class MotorController {
         });
     }
 
+    /**
+     * Overlay closed because an autofocus starts (1.0.8, parity focus item 10): stop only if something may be
+     * moving; a window that only entered 17 leaves without manualFocus(2), because any manualFocus call
+     * interrupts the vendor's running autofocus (the AF itself ends the 17 mode).
+     */
+    void exitForAutofocus() {
+        h.post(() -> {
+            h.removeCallbacks(watchdog);
+            if (moving || flagged()) sendStop();
+            else if (entered) Log.i(TAG, "manual focus closed for an autofocus: no manualFocus(2)");
+            entered = false;
+        });
+    }
+
     /** From other worker threads (keystone, handshake): stop and wait until done. */
     boolean stopAndWait(long timeoutMs) {
         return runAndWait(this::stopNow, timeoutMs);

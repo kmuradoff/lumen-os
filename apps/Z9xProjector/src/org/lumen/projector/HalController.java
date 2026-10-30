@@ -180,6 +180,11 @@ final class HalController {
 
     MotorController motor() { return motor; }
 
+    Context appContext() { return app; }
+
+    /** 1.0.8: the user stopped the AF on the AF card (AfCardOverlay): the busy flag ends now. Any thread. */
+    void noteAfEnded() { afBusyUntil = 0; }
+
     GmpfClient client() { return client; }
 
     Gmpf2Client client2() { return client2; }
@@ -559,6 +564,13 @@ final class HalController {
             while (events.size() > MAX_EVENTS) events.removeFirst();
         }
         boolean handled = false;
+        // Lumen 1.0.8: the AF card (stock AutoMaticFA) opens on 4/8/10/333/334/335 and sends 307(4) after its first
+        // frame; it closes on 5/7/2 (parity focus items 1, 10, 13)
+        try {
+            AfCardOverlay.onFocusEvent(type);
+        } catch (Throwable t) {
+            Log.w(TAG, "AfCardOverlay.onFocusEvent(" + type + "): " + t);
+        }
         // optical zoom: every AK runs XGIMI's zoomReset (106 = AK start, 303 = its walk back failed), and the
         // AK report (116) says whether it was a screen fit (logs/z9x_zoom_103/live_full3.txt)
         try {
@@ -584,9 +596,11 @@ final class HalController {
     private void onFocusEvent(int type, String value) {
         long now = SystemClock.elapsedRealtime();
         switch (type) {
-            case 4: case 8: case 333: case 334: case 335:
+            case 4: case 8: case 10: case 333: case 334: case 335:
                 afBusyUntil = now + AF_BUSY_MS;
-                Ui.toast(app, R.string.toast_af_running);
+                // no toast over the AF card (the vendor's camera measures the card); a toast only when the card
+                // could not be shown (the auto keystone overlay is up, or the window was refused)
+                Ui.main().post(() -> { if (!AfCardOverlay.isShown()) Ui.toast(app, R.string.toast_af_running); });
                 break;
             case 5:
                 afBusyUntil = 0;
@@ -656,6 +670,9 @@ final class HalController {
         if (AkOverlay.isActive()) { Log.i(TAG, "autofocus key ignored: auto keystone overlay active"); return REQ_BUSY; }
         if (!connected) { Ui.toast(app, R.string.toast_not_ready); return REQ_NOT_READY; }
         if (kstInFlight.get() || motor.isMoving()) { Log.i(TAG, "autofocus ignored: keystone or motor busy"); return REQ_BUSY; }
+        // 1.0.8 (parity focus item 10): the focus key closes the manual focus window first, as stock FocusAdjust
+        // does; its exit then sends no manualFocus(2), which would interrupt the AF just started
+        ManualFocusActivity.closeForAutofocus();
         Ui.toast(app, R.string.toast_af);
         hal.post(() -> {
             if (kstInFlight.get() || motor.isMoving() || AkOverlay.isActive()) {
@@ -792,8 +809,11 @@ final class HalController {
         switch (t) {
             case POWER_ON_AF: client.setPowerOnAf(on); break;
             case POWER_ON_AK: client.setPowerOnAk(on); break;
-            case MOVE_AF: client.setMoveAf(on); break;
-            case MOVE_AK:                                      // not on a ceiling mount (FS 2.2)
+            case MOVE_AF:
+                client.setMoveAf(on);
+                Ui.main().post(org.lumen.projector.power.StandbyController::noteUserMoveAf);
+                break;
+            case MOVE_AK:                                      // every mount on G0082 (1.0.8, parity keystone item 2)
                 if (!Hal.setMoveAkChecked(client, on)) Ui.toast(app, R.string.toast_rt_kst_ceiling);
                 break;
             case CURTAIN_FIT: Hal.setCurtainFitCoupled(client, on); break;      // ON also obstacle ON

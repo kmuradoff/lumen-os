@@ -30,4 +30,6 @@
     <string name="zoom_limit_small">가장 작은 화면입니다</string>
     <string name="zoom_refused">프로젝터가 줌을 움직이지 않았습니다</string>
     <string name="zoom_unavailable">지금은 광학 줌을 사용할 수 없습니다</string>
+    <string name="zoom_reset_hint">메뉴: 줌 초기화 (가장 큰 화면)</string>
+    <string name="zoom_reset_done">줌이 초기화되었습니다</string>
 </resources>

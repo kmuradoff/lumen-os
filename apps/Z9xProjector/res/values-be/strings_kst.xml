@@ -30,4 +30,6 @@
     <string name="zoom_limit_small">Гэта самая маленькая карцінка</string>
     <string name="zoom_refused">Праектар не зрушыў зум</string>
     <string name="zoom_unavailable">Аптычны зум зараз недаступны</string>
+    <string name="zoom_reset_hint">Меню: скінуць зум (самая вялікая карцінка)</string>
+    <string name="zoom_reset_done">Зум скінуты</string>
 </resources>

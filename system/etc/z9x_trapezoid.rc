@@ -1,0 +1,26 @@
+# Lumen OS 1.0.8 GPU keystone path of the Z9X (install as /system/etc/init/z9x_trapezoid.rc).
+# Parity report docs/z9x/parity/keystone.md item 13 and docs/z9x/KEYSTONE_STOCK_VS_LUMEN.md, section 4 step 1.
+#
+# Stock: the XGIMI system init reads /vendor/etc/xgimimodelname/<ro.boot.xgimi.modelname>/build.prop (the
+# string is in the stock system/bin/init). The '##trapezoid' block of the G0082 file sets the 7 properties
+# below; the vendor HWC (mtkhwcomposer, HWComposerGLComposite::drawTrapezoid) reads them when it starts and
+# only then draws the software keystone at 3840x2160 on two GOPs, with the XGIMI anti-alias pass and the
+# protected (TEE Keystone) path for DRM video. The LineageOS init does not read that file, so on Lumen 1.0.x
+# none of the 7 was set: the software keystone ran in the 2K geometry, without anti-alias, and DRM video
+# under the real-time keystone showed green and red garbage. Values copied 1:1 from the stock file
+# (z9x-firmware-dump/analysis/vendor/etc/xgimimodelname/G0082/build.prop, lines 79-90).
+#
+# Only the G0082 (Z9X): the action runs only when ro.boot.xgimi.modelname is G0082 (kernel command line, set
+# before early-init). Any other model, the Play 6 included, never runs it.
+# At early-init: before the vendor's hwcomposer (class hal) starts. Only init builtins (setprop): no exec, no
+# wait, nothing that can delay the early boot (PWM watchdog). The vendor and its files are not changed.
+# Rollback without a reflash: none needed for a test, persist.z9x.kst_prepare=0 sends the manual keystone to
+# the DLPC8445 hardware warp only again; removing this file restores the 1.0.7 display path.
+on early-init && property:ro.boot.xgimi.modelname=G0082
+    setprop vendor.xgimi.hwc.aa true
+    setprop vendor.mstar.trapezoid.secure.enable 1
+    setprop vendor.mstar.trapezoid.4K.enable 1
+    setprop vendor.mstar.trapezoid.dual.gop.mode 1
+    setprop vendor.mstar.trapezoid.video.gop 0
+    setprop vendor.mstar.hwc.tcvideo.format 1
+    setprop vendor.mstar.trapezoid.resolution.switch 1

@@ -30,4 +30,6 @@
     <string name="zoom_limit_small">Das ist das kleinste Bild</string>
     <string name="zoom_refused">Der Projektor hat den Zoom nicht bewegt</string>
     <string name="zoom_unavailable">Optischer Zoom ist gerade nicht verfügbar</string>
+    <string name="zoom_reset_hint">Menü: Zoom zurücksetzen (größtes Bild)</string>
+    <string name="zoom_reset_done">Zoom zurückgesetzt</string>
 </resources>
