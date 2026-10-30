@@ -8,7 +8,8 @@
 #   KEYS_DIR   environment, tests only: a key dir in place of the registry's keys_dir
 #
 # For each name: KEY_PK8=<keys_dir>/platform.pk8 KEY_PEM=devices/<codename>/certs/platform.x509.pem, a scratch
-# BUILD_DIR, sh apps/build_apk.sh apps/<name> OUT/<name>.apk; then apksigner verify --print-certs must show the
+# BUILD_DIR, sh apps/build_apk.sh apps/<name> OUT/<name>.apk (an app with a recipe in devices/<codename>/app/, not in
+# compare mode, is first assembled by tools/devices/assemble_app.py into the scratch dir and built from there); then apksigner verify --print-certs must show the
 # device's platform certificate and none of the Z9X or Play 6 ones (rule S1). The app named by hal_app of an
 # aidl-table device also passes tools/devices/check_hal.py --dex on its APK. The private key is read on the Mac
 # only, never copied. Refuses a device without its key (tools/devices/gen_device_keys.sh first): it never falls
@@ -43,9 +44,22 @@ OTHER=$(for c in "$G/apps/sdk/platform.x509.pem" "$G"/tools/sign/testcerts/*.x50
                  "$G"/tools/sign/release_certs/*.x509.pem; do [ -f "$c" ] && certsha "$c"; done)
 W=$(mktemp -d "${TMPDIR:-/tmp}/build_apps.XXXXXX")
 trap 'rm -rf "$W"' EXIT
+# the recipe of an app (devices/<codename>/app/*.layers naming it), unless it is still in compare mode: then the app
+# is built from its assembled tree (docs/architecture/PLAN.md step 3)
+recipe_of() {
+  python3 -B -c 'import sys; sys.path.insert(0, sys.argv[1]); import assemble_app as a
+r = a.find_recipe(sys.argv[2], sys.argv[3], sys.argv[4])
+print(r if r and a.parse(sys.argv[2], r)["identical"] != "allow" else "")' "$H" "$ROOT" "$C" "$1"
+}
 for n in $APPS; do
   [ -d "$ROOT/apps/$n" ] || die "no app dir apps/$n"
-  KEY_PK8=$KEY_PK8 KEY_PEM=$KEY_PEM BUILD_DIR=$W/$n sh "$G/apps/build_apk.sh" "$ROOT/apps/$n" "$OUT/$n.apk" > "$W/$n.log" 2>&1 \
+  SRC=$ROOT/apps/$n
+  RCP=$(recipe_of "$n") || die "$n: cannot read its recipe"
+  if [ -n "$RCP" ]; then
+    python3 -B "$H/assemble_app.py" --root "$ROOT" "$RCP" --out "$W/tree/$n" || die "$n: the recipe $RCP does not assemble"
+    SRC=$W/tree/$n
+  fi
+  KEY_PK8=$KEY_PK8 KEY_PEM=$KEY_PEM BUILD_DIR=$W/$n sh "$G/apps/build_apk.sh" "$SRC" "$OUT/$n.apk" > "$W/$n.log" 2>&1 \
     || { cat "$W/$n.log" >&2; die "$n: build failed"; }
   got=$("$APKSIGNER" verify --print-certs "$OUT/$n.apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
   [ "$got" = "$WANT" ] || die "$n: signed by $got, not the $C platform certificate $WANT"

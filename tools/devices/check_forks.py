@@ -9,7 +9,9 @@
 1. Every device whose forks is not none: rows are copy <TAB> origin <TAB> origin sha256 <TAB> note (the
    header row and '#' lines are skipped, so tools/play6/forks.tsv reads as it is). Both files exist, no copy
    is listed twice, and the origin's sha256 still equals the recorded one (a change means: review it, port
-   what applies, record the new sha256).
+   what applies, record the new sha256). A row whose note starts with 'same:' is a byte-identical copy: the
+   copy's sha256 must also equal the recorded one (an edited copy, or an origin re-recorded without re-copying,
+   is red).
 2. Devices with a check of their own then run it unchanged, with its own arguments: the Play 6 runs
    tools/play6/check_forks.py (check F of docs/play6/SETTINGS_PLAN.md: key set, WIRE_SIZE, overlay config,
    switch fix, FILES coverage, untracked copies), which stays the source of truth. Part 1 repeats its row
@@ -49,6 +51,7 @@ def check_table(root, codename, table, errors, notes):
             errors.append("%s: expected copy, origin, sha256 (tab-separated)" % where)
             continue
         copy, origin, want = p[0], p[1], p[2]
+        same = len(p) >= 4 and p[3].startswith("same:")
         rows += 1
         if copy in seen:
             errors.append("%s: %s listed twice" % (where, copy))
@@ -63,6 +66,11 @@ def check_table(root, codename, table, errors, notes):
         if got != want:
             errors.append("%s: origin %s changed since the fork (sha256 %s, recorded %s): review the change, "
                           "port what applies to %s, then record the new sha256" % (where, origin, got, want, copy))
+        if same:
+            cgot = sha(os.path.join(root, copy))
+            if cgot != want:
+                errors.append("%s: %s is a 'same:' copy but differs from the recorded sha256 (copy %s, recorded %s): "
+                              "copy the origin again, never edit a same copy" % (where, copy, cgot, want))
     notes.append("%s: %s: %d row(s)" % (codename, name, rows))
 
 

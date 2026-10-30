@@ -18,6 +18,10 @@ parameter is checked at its callers only when its helper is itself named call* (
 transact site); a helper with another name (e.g. zh(457)) and an enum field are not checked: keep such
 helpers out of the clients, or review their callers by hand.
 
+EXCEPTIONS (below): a code that is banned everywhere except at one reviewed transact site, the stock caller's own
+rule enforced by a guard: the site must sit in the named method of that client, and that method's body must call
+the named guard before it (one such site per code, every other site of the code fails as banned).
+
 Usage: check_hal_callers.py SRC_ROOT        (SRC_ROOT = Z9xProjector/src)
 """
 import os
@@ -36,11 +40,25 @@ BANNED = {
         583: "gyroscopeCorrection",
         297: "controlZoomMotor (large zoom move)", 283: "zoom (factory move)", 457: "zoom (factory move)",
     },
-    "Gmpf2Client.java": {14: "zoom (large move)", 76: "cleanAllCalibrationData"},
+    "Gmpf2Client.java": {76: "cleanAllCalibrationData"},
 }
-# 153 zoomControl: only the stock home walk (mode 5, steps 10: stock's zoom page MENU reset and auto keystone's
-# zoomReset, GmpfClient.zoomHome, Lumen OS 1.0.4); every other mode stays a large / factory move
-ONLY_ARGS = {"GmpfClient.java": {153: ("ZOOM_CONTROL", "5", "10")}}
+# Guarded exceptions: {client: {code: (method, guard call, rule)}}.
+# IGmpf2 14 SetOpticalZoomLimitStep (BANNED as "zoom (large move)" until Lumen OS 1.0.8; owner O1 2026-10-30, zoom
+# audit F1 in docs/fit_screen/Z9X_ZOOM_AUDIT.md, the HB 189 EXCEPTION row of devices/goat_elegant/research/banned.tsv):
+# only as stock ZoomUtils.setOpticalZoomLimitStep, the current IGmpf2 13 value +- 1 inside [-count, 0] of 153(12,10),
+# only at optical index 0 (a fresh 116 read = 0), only inside the 18(true,2) + 121 zoom session; enforced by
+# GmpfClient.checkZoomLimitStep, which Gmpf2Client.setOpticalZoomLimitStep calls before the transact.
+EXCEPTIONS = {
+    "Gmpf2Client.java": {
+        14: ("setOpticalZoomLimitStep", "GmpfClient.checkZoomLimitStep(",
+             "zoom limit position: 13 value +-1 within [-count, 0], 116 = 0, inside 18(true,2) + 121"),
+    },
+}
+# 153 zoomControl: only the stock home walk (mode 5, steps 10: stock's "restore default picture" and auto keystone's
+# zoomReset, GmpfClient.zoomHome, Lumen OS 1.0.4) and the limit count read (mode 12, steps 10: stock
+# ZoomStateView.getLimitStep, GmpfClient.getZoomLimitTotal, Lumen OS 1.0.8 zoom audit F1); every other mode stays a
+# large / factory move
+ONLY_ARGS = {"GmpfClient.java": {153: {("ZOOM_CONTROL", "5", "10"), ("ZOOM_CONTROL", "12", "10")}}}
 CONST = re.compile(r"\bstatic\s+final\s+int\s+(\w+)\s*=\s*(0x[0-9a-fA-F]+|\d+)\s*;")
 CODE_ARG = re.compile(r"\bcall(?:[A-Z]\w*)?\s*\(\s*([A-Za-z_]\w*|0x[0-9a-fA-F]+|\d+)\s*[,)]")
 METHOD = re.compile(r"^\s*(?:public|protected|private)?\s*(?:static\s+)?(?:final\s+)?"
@@ -125,19 +143,45 @@ def main():
               "code layout): " + ", ".join(unparsed))
         return 1
     banned = []
+    exception_sites = {}
     for f in CLIENTS:
         src = strip_comments(open(os.path.join(hal_dir, f), encoding="utf-8").read())
         consts = {n: int(v, 0) for n, v in CONST.findall(src)}
-        for n, line in enumerate(src.split("\n")):
+        ranges = []
+        bodies = methods(src, ranges)
+        lines = src.split("\n")
+        names = {}
+        for name, bs in bodies.items():
+            for b in bs:
+                first = b.split("\n", 1)[0]
+                for a, z in ranges:
+                    if lines[a] == first and a not in names:
+                        names[a] = (name, z, b)
+                        break
+        for n, line in enumerate(lines):
             for arg in CODE_ARG.findall(line):
                 code = int(arg, 0) if arg[0].isdigit() else consts.get(arg)
-                if code is not None and code in BANNED[f]:
+                if code is not None and code in BANNED.get(f, {}):
                     banned.append("%s:%d sends %d (%s)" % (f, n + 1, code, BANNED[f][code]))
+                exc = EXCEPTIONS.get(f, {}).get(code)
+                if exc is not None:
+                    meth, guard, rule = exc
+                    site = [v for a, v in names.items() if a <= n <= v[1]]
+                    body = site[0][2] if site else ""
+                    pre = body.split(line, 1)[0] if line in body else ""
+                    if not site or site[0][0] != meth or guard not in pre:
+                        banned.append("%s:%d sends %d outside %s after %s (EXCEPTION: %s)" % (f, n + 1, code, meth, guard, rule))
+                    exception_sites.setdefault((f, code), []).append(n + 1)
                 only = ONLY_ARGS.get(f, {}).get(code)
                 if only is not None:
                     m = re.search(r"\bcall\w*\s*\(\s*" + re.escape(arg) + r"\s*,\s*([^,)]+)\s*,\s*([^,)]+)\s*\)", line)
-                    if not m or (arg, m.group(1).strip(), m.group(2).strip()) != only:
-                        banned.append("%s:%d sends %d with arguments other than %s" % (f, n + 1, code, ", ".join(only[1:])))
+                    if not m or (arg, m.group(1).strip(), m.group(2).strip()) not in only:
+                        allowed = " or ".join("(%s)" % ", ".join(o[1:]) for o in sorted(only))
+                        banned.append("%s:%d sends %d with arguments other than %s" % (f, n + 1, code, allowed))
+    for (f, code), sites in sorted(exception_sites.items()):
+        if len(sites) > 1:
+            banned.append("%s sends %d at %d sites (lines %s): one guarded site only"
+                          % (f, code, len(sites), ", ".join(map(str, sites))))
     if banned:
         for b in banned:
             print("check_hal_callers: banned code: " + b)

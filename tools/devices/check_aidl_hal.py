@@ -229,8 +229,10 @@ def check_dex(dex, transport):
     tcls = "L%s;" % rel[:-len(".java")].replace(os.sep, "/")
     tdot = tcls[1:-1].replace("/", ".")
     try:
+        # dexdump prints string constants as they are (not always valid UTF-8): undecodable bytes become U+FFFD,
+        # which no rule pattern contains
         out = subprocess.run([dexdump_tool(), "-d", dex], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             universal_newlines=True)
+                             universal_newlines=True, encoding="utf-8", errors="replace")
     except OSError as e:
         return ["rule 7: dexdump not run: %s" % e]
     if out.returncode != 0 or "Class descriptor" not in out.stdout:
