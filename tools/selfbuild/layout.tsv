@@ -149,6 +149,7 @@ system/etc/z9x_poweroff.rc	overlay/v1/z9x_poweroff.rc
 system/etc/z9x_poweroff.sh	overlay/v1/z9x_poweroff.sh
 system/etc/z9x_setup.rc	overlay/v1/z9x_setup.rc
 system/etc/z9x_speed.rc	overlay/v1/z9x_speed.rc
+system/etc/z9x_trapezoid.rc	overlay/v1/z9x_trapezoid.rc
 system/etc/z9x_uires/init.lineage.atv.scaling.rc	overlay/v1/z9x_uires/init.lineage.atv.scaling.rc
 system/etc/z9x_uires/product_prop.txt	overlay/v1/z9x_uires/product_prop.txt
 system/etc/z9x_uires/test/run.sh	overlay/v1/z9x_uires/test/run.sh
