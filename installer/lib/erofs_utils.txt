@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# sha256 of the erofs-utils 1.9.4 programs in installer/tools/erofs-utils/<platform>/ (made by tools/ota/build_erofs_utils.sh).
+# The installer runs a program only when its sha256 is the one here. <sha256>  <platform>/<file>
+49821b606f66b933d8ed4829c8f4c2e9d67a9b41eafcc478846d45c560c0d212  darwin/mkfs.erofs
+346404c545d2d1d2a5c236b62620f0c28e587a7c4702eb5d97abc91e537b7b72  darwin/fsck.erofs
+774dc2a69a8e83db71bf164a301ea0fbdf55bfe84d02dbf1bfd980625cf72df4  darwin/dump.erofs
+a7f32919043a0d37ac856e96ac4ec2324d8cb8b68989daf06771dc5a23f558c5  linux-aarch64/mkfs.erofs
+23a0554736b99cf42cc3da04e2597934b96597d56aea7454e53ceaa76cfe9d21  linux-aarch64/fsck.erofs
+e944a05fef3b68b3e74386336709da9c900263e506db24018c47989127f9f290  linux-aarch64/dump.erofs
+cbebb98c7dc39469644394fc00e0ffd9b7467735f4410d0bcf3b61d3dc61481e  linux-x86_64/mkfs.erofs
+ed7fc37917eed59ef503faed939e523d01587b67dbb0a30fe9e0cd5c42abcc2f  linux-x86_64/fsck.erofs
+e2586d06a3bf3e006279f4e29dbe32baf3a78ba77df7c015dab32eb71df59f4c  linux-x86_64/dump.erofs

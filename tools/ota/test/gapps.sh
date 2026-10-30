@@ -12,7 +12,8 @@
 # dev/block/mapper/z9x_gapps_b filled by the real gapps_fill.sh from the fake zip (a round trip), metadata/ for
 # the rescue counter and the marker, proc/uptime as a fake clock (it stands still unless a case makes a command
 # 'slow': then each call of it moves the clock on). stubs/ stand in for getprop, setprop, log, timeout, mount
-# (ext4 = copy of the partition directory, overlays recorded), umount, blockdev, chcon and chown. Every case
+# (ext4 = copy of the partition directory; erofs the same, for a partition the case marks as erofs with the file
+# DEV.fs, as the one-pass install's image; overlays recorded), umount, blockdev, chcon and chown. Every case
 # also fails on any output of the boot script. With the real MindTheGapps zip at lineage/gapps/ (a local input only, never
 # copied) the 'allowlist' case also checks the real list against it.
 # Exit status 0 only when every case passes. Never touches anything outside its temp dir.
@@ -97,7 +98,7 @@ cases() {
   if want ok; then
     begin ok; run
     expect_prop sys.z9x.gapps ok; expect_prop sys.z9x.gapps.zip "$ZSHA"; expect_prop ro.com.google.gmsversion 14_test
-    expect_log "ok: $NFILES files of MindTheGapps-14.0.0-arm64-ATV-full-20240523_192016.zip (gmsversion 14_test)"
+    expect_log "ok: $NFILES files of MindTheGapps-14.0.0-arm64-ATV-full-20240523_192016.zip (gmsversion 14_test, ext4)"
     M=$R/mnt/z9x_gapps
     grep -qx "$M ext4 $(part) ro,nosuid,nodev,context=u:object_r:system_file:s0" "$T/mounts" || fail "ext4 mount: $(cat "$T/mounts")"
     grep -qx "blockdev --setro $(part)" "$T/blockdev.log" || fail "the block device was not set read-only"
@@ -113,6 +114,45 @@ cases() {
     [ -f "$M/product/priv-app/PrebuiltGmsCorePano/PrebuiltGmsCorePano.apk" ] || fail "GMS not in the mounted partition"
     [ ! -e "$M/product/priv-app/Katniss" ] && [ ! -e "$M/product/etc/init/gapps.rc" ] || fail "a member outside the list was copied"
     [ ! -e "$R/metadata/z9x_gapps/off" ] || fail "marker written"
+    end
+  fi
+  if want ok_erofs; then
+    # the one-pass install's erofs partition (the same tree; the mount stub accepts erofs for it): mounted as
+    # erofs with context=, checked and overlaid like ext4
+    begin ok_erofs; rmdir "$(part)/lost+found"; echo erofs > "$(part).fs"; run
+    expect_prop sys.z9x.gapps ok; expect_prop sys.z9x.gapps.fs erofs; expect_prop ro.com.google.gmsversion 14_test
+    expect_log "ok: $NFILES files of MindTheGapps-14.0.0-arm64-ATV-full-20240523_192016.zip (gmsversion 14_test, erofs)"
+    grep -qx "$R/mnt/z9x_gapps erofs $(part) ro,nosuid,nodev,context=u:object_r:system_file:s0" "$T/mounts" || fail "erofs mount: $(cat "$T/mounts")"
+    [ "$(grep -c '^mount -t ext4' "$T/mount.log")" = 0 ] || fail "ext4 tried after erofs worked"
+    [ "$(overlays)" = 6 ] || fail "$(overlays) overlays, want 6"
+    end
+  fi
+  if want ok_erofs_no_context; then
+    # a kernel that refuses context= for erofs: mounted without it (the image carries the label itself)
+    begin ok_erofs_no_context; rmdir "$(part)/lost+found"; echo erofs > "$(part).fs"; touch "$T/erofs_noctx"; run
+    expect_prop sys.z9x.gapps ok; expect_prop sys.z9x.gapps.fs erofs
+    grep -qx "$R/mnt/z9x_gapps erofs $(part) ro,nosuid,nodev" "$T/mounts" || fail "erofs mount: $(cat "$T/mounts")"
+    end
+  fi
+  if want ok_ext4_fs_prop; then
+    # an ext4 partition (the 'gapps' fill, every partition made before erofs): erofs is tried and refused first
+    begin ok_ext4_fs_prop; run
+    expect_prop sys.z9x.gapps ok; expect_prop sys.z9x.gapps.fs ext4
+    [ "$(grep -c '^mount -t erofs' "$T/mount.log")" = 2 ] || fail "erofs tries: $(cat "$T/mount.log")"
+    end
+  fi
+  if want bad_mount_erofs_refused; then
+    # neither erofs nor ext4 mounts: bad:mount, nothing else
+    begin bad_mount_erofs_refused; echo erofs > "$(part).fs"; touch "$T/mount_fail_erofs"; run
+    expect_prop sys.z9x.gapps bad:mount; expect_nothing_mounted
+    end
+  fi
+  if want check_ok_erofs; then
+    begin check_ok_erofs; KEEP_OUT=1; rmdir "$(part)/lost+found"; echo erofs > "$(part).fs"; run check
+    [ "$RC" = 0 ] || fail "check exit $RC"
+    [ "$(cat "$T/out")" = "ok: $NFILES files of MindTheGapps-14.0.0-arm64-ATV-full-20240523_192016.zip (erofs)" ] || fail "check said: $(cat "$T/out")"
+    [ ! -s "$T/setprop.log" ] || fail "check set properties: $(cat "$T/setprop.log")"
+    expect_nothing_mounted
     end
   fi
   if want ok_again; then
@@ -325,7 +365,7 @@ cases() {
   if want check_ok; then
     begin check_ok; KEEP_OUT=1; run check
     [ "$RC" = 0 ] || fail "check exit $RC"
-    [ "$(cat "$T/out")" = "ok: $NFILES files of MindTheGapps-14.0.0-arm64-ATV-full-20240523_192016.zip" ] || fail "check said: $(cat "$T/out")"
+    [ "$(cat "$T/out")" = "ok: $NFILES files of MindTheGapps-14.0.0-arm64-ATV-full-20240523_192016.zip (ext4)" ] || fail "check said: $(cat "$T/out")"
     [ ! -s "$T/setprop.log" ] || fail "check set properties: $(cat "$T/setprop.log")"
     [ ! -s "$T/blockdev.log" ] || fail "check changed the read-only flag"
     grep -q "^mount -t ext4 -o ro,nosuid,nodev,context=u:object_r:system_file:s0 $(part) $R/mnt/z9x_gapps_check$" "$T/mount.log" \

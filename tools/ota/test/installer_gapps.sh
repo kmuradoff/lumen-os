@@ -19,13 +19,20 @@
 # does not list the zip, no room in super); a failed format (partition deleted again); a failed fill (no
 # wipe); --remove with the wipe, with --keep-data, from fastboot mode only, with nothing to remove; 'gapps'
 # turning the add-on on again, its 'bad:slow' advice; 'gsf' with the add-on; --help. The full install with
-# --gapps-zip (Lumen OS and Google services in one pass, one wipe): a signed fake image (a throwaway test key),
-# stock on the projector, system and z9x_gapps_<slot> in one fastbootd session without a wipe, the first start on
-# the old data, the fill, then the wipe in fastbootd; also in Russian, with Rooted debugging off (turned on when
-# asked, or later: the next run asks ERASE again and goes on), a fill cut off (the next run formats the partition
-# again first), a Lumen OS that does not start on the old data (fastboot mode after failed starts: wiped there,
-# without Google), the zip refused before anything is written, an image with Google built in. Every case fails on an unexpected adb or
-# fastboot command and on any fastboot erase / -w / flashing / flash.
+# --gapps-zip (Lumen OS and Google services in ONE fastbootd visit, one wipe): a signed fake system image (a real
+# small erofs with the image's z9x_gapps.sh and the test allow-list, a throwaway test key), stock on the projector,
+# the add-on image built on the computer by the installer (the real erofs-utils of installer/tools/erofs-utils;
+# its reference line in lib/gapps_images.txt made by the independent Python writer of tools/ota/gapps_allow.py),
+# then one session: system, z9x_gapps_<slot> created and flashed (the fake fastboot unpacks the erofs image into
+# the partition directory with fsck.erofs), the wipe, and the first start finds Google on (z9x_gapps.sh mounts it
+# as erofs); never adb root, push or a start on the old data. Also in Russian, over an old ext4 partition
+# (resized), no room in super (installed without Google), a failed flash (partition deleted, without Google),
+# fastbootd gone during the flash (nothing erased; the same command again writes everything, the built image
+# reused), an older installer's install waiting for its fill (finished with the flash), and refusals before
+# anything is written: the zip, an image with Google built in, an image older than the erofs support, an image
+# that does not list the zip, no erofs-utils for the computer, an add-on image that is not the checked one.
+# Every case fails on an unexpected adb or fastboot command and on any fastboot erase / -w / flashing, or a
+# flash other than system and z9x_gapps_<slot> (the image the installer built).
 # Exit status 0 only when every case passes. Never touches anything outside its temp dir.
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -48,6 +55,16 @@ ZIP=$(ls "$W/fx/zip/"*.zip); OTHER=$(ls "$W/fx/other/"*.zip)
 NAME=$(basename "$ZIP")
 BID=lumen-1.0.1-20261009fnp
 NFILES=$(awk '$1 !~ /^#/ && $1 !~ /^zip=/ && NF == 3' "$W/fx/allow.txt" | wc -l | tr -d ' ')
+ZSHA=$(sha256sum "$ZIP" | cut -d' ' -f1)
+# the installer's own erofs-utils for this computer, and the reference line of the fake zip's add-on image (the
+# independent Python tar writer of tools/ota/gapps_allow.py + the same mkfs.erofs)
+case "$(uname -s)" in Darwin) EP=darwin ;; *) case "$(uname -m)" in x86_64|amd64) EP=linux-x86_64 ;; *) EP=linux-aarch64 ;; esac ;; esac
+EU=$INST/tools/erofs-utils/$EP
+[ -x "$EU/mkfs.erofs" ] || { echo "no installer/tools/erofs-utils/$EP (build it: tools/ota/build_erofs_utils.sh)"; exit 1; }
+python3 "$HERE/../gapps_allow.py" image "$ZIP" --allow "$W/fx/allow.txt" --mkfs "$EU/mkfs.erofs" --out "$W/ref.img" > "$W/gapps_images.txt" \
+  || { echo "gapps_allow.py image failed"; exit 1; }
+GSHA=$(awk '{ print $4 }' "$W/gapps_images.txt"); GSIZE=$(awk '{ print $5 }' "$W/gapps_images.txt")
+NEED=$(( (GSIZE + 1048575) / 1048576 * 1048576 ))
 
 cat > "$W/bin/adb" <<'EOF'
 #!/bin/sh
@@ -120,13 +137,23 @@ case "$1" in
   create-logical-partition) [ -e "$FB/create_fail" ] && exit 1; [ ! -d "$MAP/$2" ] || exit 1
                             mkdir -p "$MAP/$2"; echo "$3" > "$FB/size.$2" ;;
   resize-logical-partition) [ -d "$MAP/$2" ] || exit 1; echo "$3" > "$FB/size.$2" ;;
-  delete-logical-partition) [ -d "$MAP/$2" ] || exit 1; rm -rf "$MAP/$2" "$FB/size.$2" ;;
+  delete-logical-partition) [ -d "$MAP/$2" ] || exit 1; rm -rf "$MAP/$2" "$MAP/$2.fs" "$FB/size.$2" ;;
   format:ext4) [ -e "$FB/format_fail" ] && exit 1
-               case "$2" in z9x_gapps_*) [ -d "$MAP/$2" ] || exit 1; rm -rf "$MAP/$2"; mkdir -p "$MAP/$2/lost+found" ;; cache) ;; *) exit 1 ;; esac ;;
+               case "$2" in z9x_gapps_*) [ -d "$MAP/$2" ] || exit 1; rm -rf "$MAP/$2" "$MAP/$2.fs"; mkdir -p "$MAP/$2/lost+found" ;; cache) ;; *) exit 1 ;; esac ;;
   --fs-options=casefold,projid) [ "$2 $3" = "format:f2fs userdata" ] || exit 1; rm -rf "$DEV/data"; mkdir -p "$DEV/data/local/tmp"
                                 [ ! -e "$FB/noadb_after_wipe" ] || touch "$FB/noadb" ;;   # USB debugging is off after a wipe
   format:f2fs) [ "$2" = metadata ] || exit 1; rm -rf "$DEV/metadata"; mkdir -p "$DEV/metadata" ;;
-  flash) [ "$2" = system ] && [ -f "$3" ] || exit 1; cp "$FB/props_lumen" "$T/props" ;;   # the next start is Lumen OS
+  flash) case "$2" in
+           system) [ -f "$3" ] || exit 1; cp "$FB/props_lumen" "$T/props" ;;   # the next start is Lumen OS
+           z9x_gapps_*)   # the erofs add-on image: unpacked into the partition directory, marked erofs for the mount stub
+             [ -d "$MAP/$2" ] && [ -f "$3" ] || exit 1
+             [ -e "$FB/gflash_fail" ] && exit 1
+             if [ -e "$FB/drop" ]; then rm -f "$FB/drop"; sh "$FB/boot.sh"; exit 1; fi   # fastbootd ends: the old system starts
+             [ "$(wc -c < "$3" | tr -d ' ')" -le "$(cat "$FB/size.$2")" ] || exit 1
+             rm -rf "$MAP/$2"; "$EU/fsck.erofs" --extract="$MAP/$2" "$3" >/dev/null 2>&1 || exit 1
+             echo erofs > "$MAP/$2.fs" ;;
+           *) exit 1 ;;
+         esac ;;
   reboot) if [ -e "$FB/bootloop" ]; then echo fastboot > "$FB/mode"; else sh "$FB/boot.sh"; fi ;;
   *) echo "UNEXPECTED fastboot $*" >> "$FB/unexpected"; exit 1 ;;
 esac
@@ -180,7 +207,7 @@ partition() {  # a filled partition z9x_gapps_b (the real gapps_fill.sh, as on t
 }
 inst() {  # answers args... -> runs the installer copy; exit status in RC, output in $C/out
   local ans=$1; shift
-  printf '%b' "$ans" | env LUMEN_PLATFORM_TOOLS="$W/bin" PATH="$W/bin:$PATH" FB="$FB" T="$T" DEV="$DEV" STUBS="$W/stubs" FB_SERIAL=$SER \
+  printf '%b' "$ans" | env LUMEN_PLATFORM_TOOLS="$W/bin" PATH="$W/bin:$PATH" FB="$FB" T="$T" DEV="$DEV" STUBS="$W/stubs" FB_SERIAL=$SER EU="$EU" \
     LUMEN_STATE_DIR="$C/state" LUMEN_BACKUP_DIR="$C/backup" LANG="${LANG_CASE:-en_US.UTF-8}" \
     bash "$C/inst/lumen-install.sh" "$@" > "$C/out" 2>&1
   RC=$?
@@ -194,7 +221,8 @@ gprop() { awk -v k="$1" 'index($0, k "=") == 1 { print substr($0, length(k) + 2)
 pushed() { grep -c "^-s $SER push " "$FB/adb.log" | tr -d ' '; }
 end() {
   [ ! -s "$FB/unexpected" ] || fail "unexpected: $(cat "$FB/unexpected")"
-  if grep -v "^-s $SER flash system $C/inst/$IMGN\$" "$FB/fb.log" | grep -qE '(^| )(erase|-w|flashing|set_active|--set-active|flash)( |:|$)' \
+  if grep -v -e "^-s $SER flash system $C/inst/$IMGN\$" -e "^-s $SER flash $P $C/state/gapps/z9x_gapps-[0-9a-f]*\.img\$" "$FB/fb.log" \
+       | grep -qE '(^| )(erase|-w|flashing|set_active|--set-active|flash)( |:|$)' \
      || { [ "$FLASHOK" = 0 ] && grep -q ' flash ' "$FB/fb.log"; }; then fail "forbidden fastboot command: $(cat "$FB/fb.log")"; fi
   if [ "$CFAIL" = 0 ]; then PASS=$((PASS + 1)); echo "ok   $CASE"
   else FAIL=$((FAIL + 1)); echo "FAIL $CASE"; sed 's/^/     | /' "$C/out" | tail -15; fi
@@ -432,104 +460,132 @@ expect_rc 0; expect_out "gapps      Lumen OS without Google: add Google services
 grep -q '^set -u' "$C/out" && fail "--help prints past the header"
 end
 
-# ---------------------------------------------------------------- the full install with --gapps-zip (one pass, one wipe)
-release() {  # [name]: a signed release image next to the installer copy (throwaway test key); stock on the projector
-  local n=${1:-$IMGN}
+# ---------------------------------------------------------------- the full install with --gapps-zip (ONE fastbootd visit, one wipe)
+release() {  # [name] [old|nozip]: a signed release image next to the installer copy (a small real erofs with the
+  # image's z9x_gapps.sh and allow-list; throwaway test key), erofs-utils and lib/gapps_images.txt; stock on the projector
+  local n=${1:-$IMGN} d=$C/sysimg/system/etc/z9x
+  mkdir -p "$d" "$C/inst/tools"
+  cp "$IMGDIR/z9x_gapps.sh" "$d/z9x_gapps.sh"; cp "$W/fx/allow.txt" "$d/gapps_allow.txt"
+  case "${2-}" in
+    old) sed -i.bak '/lumen-gapps-fs:/d' "$d/z9x_gapps.sh"; rm -f "$d/z9x_gapps.sh.bak" ;;   # an image from before erofs
+    nozip) grep -v "^zip=$ZSHA " "$W/fx/allow.txt" > "$d/gapps_allow.txt" ;;
+  esac
+  "$EU/mkfs.erofs" --quiet -T1230768000 "$C/inst/$n" "$C/sysimg" >/dev/null 2>&1 || fail "mkfs.erofs of the test image"
+  cp -R "$INST/tools/erofs-utils" "$C/inst/tools/erofs-utils"
+  cp "$W/gapps_images.txt" "$C/inst/lib/gapps_images.txt"
   cp "$W/keys/k.pem" "$C/inst/certs/ota.x509.pem"
-  printf 'LUMEN-TEST-IMAGE-Z9X' > "$C/inst/$n"
   (cd "$C/inst" && { sha256sum "$n" 2>/dev/null || shasum -a 256 "$n"; } > SHA256SUMS
    openssl dgst -sha256 -sign "$W/keys/k.key" -out SHA256SUMS.sig SHA256SUMS)
   printf '%s\n' ro.boot.xgimi.modelname=G0082 ro.boot.hardware=mt9952 ro.vendor.build.version.incremental=v6.15.58 \
     ro.boot.slot_suffix=_b ro.debuggable=0 sys.boot_completed=1 > "$T/props"
   touch "$FB/noadb_after_wipe"; FLASHOK=1
 }
-ONE="$S getvar all;$S flash system $W/CASE/inst/$IMGN;$S getvar all;$S create-logical-partition $P 536870912;$S format:ext4 $P;$S reboot;"
-one() { printf '%s' "$ONE" | sed "s|/CASE/|/$CASE/|"; }
-filled_wiped() {  # the partition filled and checked before the one wipe in fastbootd; Google on at the last start
-  [ -f "$DEV/dev/block/mapper/$P/MANIFEST" ] || fail "no MANIFEST in the partition"
+GIMG="$W/CASE/state/gapps/z9x_gapps-$(printf '%s' "$ZSHA" | cut -c1-16).img"
+ONE="$S getvar all;$S flash system $W/CASE/inst/$IMGN;$S getvar all;$S create-logical-partition $P $NEED;$S flash $P $GIMG;"
+one() { printf '%s' "$ONE" | sed "s|/CASE/|/$CASE/|g"; }
+FMT="$S --fs-options=casefold,projid format:f2fs userdata;$S format:f2fs metadata;$S format:ext4 cache;$S reboot;"   # the wipe in the same session
+google_on() {  # the one wipe after the add-on in the same session; Google on at the first start, from erofs
   [ "$(grep -c 'format:f2fs userdata' "$FB/fb.log")" = 1 ] || fail "userdata formatted $(grep -c 'format:f2fs userdata' "$FB/fb.log") times"
-  n_fill=$(grep -n "fill.sh fill" "$FB/adb.log" | tail -1 | cut -d: -f1); n_wipe=$(grep -n "reboot fastboot" "$FB/adb.log" | tail -1 | cut -d: -f1)
-  [ -n "$n_fill" ] && [ "$n_fill" -lt "$n_wipe" ] || fail "order: fill $n_fill, fastbootd for the wipe $n_wipe"
-  [ "$(gprop sys.z9x.gapps)" = ok ] || fail "after the last start sys.z9x.gapps=$(gprop sys.z9x.gapps)"
-  grep -qx "step_gapps_fill=done" "$C/state/state" && grep -qx "step_wipe=done" "$C/state/state" && grep -qx "gapps=$NAME" "$C/state/state" \
-    || fail "state: $(cat "$C/state/state")"
+  [ "$(grep -c 'reboot fastboot' "$FB/adb.log")" = 1 ] || fail "fastbootd entered $(grep -c 'reboot fastboot' "$FB/adb.log") times"
+  [ "$(gprop sys.z9x.gapps)" = ok ] || fail "after the first start sys.z9x.gapps=$(gprop sys.z9x.gapps): $(tail -3 "$FB/boot.out")"
+  [ "$(gprop sys.z9x.gapps.fs)" = erofs ] || fail "sys.z9x.gapps.fs=$(gprop sys.z9x.gapps.fs)"
+  [ "$(gprop ro.com.google.gmsversion)" = 14_test ] || fail "gmsversion $(gprop ro.com.google.gmsversion)"
+  grep -qx "step_gapps_flash=done" "$C/state/state" && grep -qx "step_wipe=done" "$C/state/state" && grep -qx "gapps=$NAME" "$C/state/state" \
+    && grep -qx "gapps_img=$GSHA" "$C/state/state" || fail "state: $(cat "$C/state/state")"
+  if grep -qE -- "-s $SER (push|shell sh)" "$FB/adb.log"; then fail "a push or a script on the projector: $(grep -E 'push|shell sh' "$FB/adb.log")"; fi
 }
 
 begin one_pass
 release
 inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
 expect_rc 0
-expect_cmds "$(one)$WIPE"
-expect_out "$NAME, sha256"; expect_out "With --gapps-zip the same session also creates the partition z9x_gapps_b (512 MB)"
-expect_out "the data is wiped after the Google services are in"; expect_out "Lumen OS 1.0.1 started on the old data"
-expect_out "$P: $NFILES files of $NAME"; expect_out "data wiped. The first start takes 2-4 minutes; the setup has a Google sign-in step."
+expect_cmds "$(one)$FMT"
+expect_out "$NAME, sha256"; expect_out "erofs-utils 1.9.4 (tools/erofs-utils, checked)"
+expect_out "the image takes the Google services add-on as erofs"
+expect_out "Google services add-on image: $NFILES files checked"
+expect_out "With --gapps-zip the same session also writes the Google services from $NAME"
+expect_out "writing the Google services into $P"; expect_out "  ✓ $P: $NAME"
+expect_out "written. First start takes 2-4 minutes; the setup screen appears on the projector, with the Google sign-in step."
 expect_out "register the GSF ID first: bash lumen-install.sh gsf"
 [ "$(grep -c 'Type ERASE' "$C/out")" = 1 ] || fail "ERASE asked $(grep -c 'Type ERASE' "$C/out") times"
-n_zip=$(grep -n "$NAME, sha256" "$C/out" | head -1 | cut -d: -f1); n_er=$(grep -n "Type ERASE" "$C/out" | cut -d: -f1)
-[ "$n_zip" -lt "$n_er" ] || fail "the zip was checked after ERASE"
-filled_wiped
+n_img=$(grep -n "Google services add-on image:" "$C/out" | head -1 | cut -d: -f1); n_er=$(grep -n "Type ERASE" "$C/out" | cut -d: -f1)
+n_bk=$(grep -n "Make a backup" "$C/out" | head -1 | cut -d: -f1)
+[ -n "$n_img" ] && [ "$n_img" -lt "$n_bk" ] && [ "$n_bk" -lt "$n_er" ] || fail "order: image $n_img, backup question $n_bk, ERASE $n_er"
+[ "$(sha256sum "$C/state/gapps/"*.img | cut -d' ' -f1)" = "$GSHA" ] || fail "the flashed image is not the reference one"
+[ ! -e "$C/state/gapps/gapps.tar" ] || fail "the tar was left behind"
+google_on
 end
 
 begin one_pass_ru
 release
 LANG_CASE=ru_RU.UTF-8 inst 'нет\nда\nERASE\n' --no-blobs --gapps-zip "$ZIP"
 expect_rc 0
-expect_out "С --gapps-zip в той же сессии создаётся ещё раздел z9x_gapps_b"; expect_out "в настройке есть шаг входа в Google"
+expect_out "образ дополнения с сервисами Google: $NFILES файлов проверено"
+expect_out "С --gapps-zip в той же сессии в раздел z9x_gapps_b"; expect_out "записываю сервисы Google в z9x_gapps_b"
+expect_out "в нём есть шаг входа в Google"
 if grep -q "$(printf '\342\200\224')" "$C/out"; then fail "an em dash in the Russian text"; fi
-filled_wiped
+google_on
 end
 
-begin one_pass_rooted_debugging_turned_on
-release; touch "$FB/root_disabled"
-inst 'no\nyes\nERASE\nyes\n' --no-blobs --gapps-zip "$ZIP"
+begin one_pass_over_old_partition
+partition 536870912; release   # an ext4 add-on of the old 'gapps' fill is there: resized to the image and flashed
+inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
 expect_rc 0
-expect_out "Root debugging is off on the projector"; expect_out "Developer options > Rooted debugging"; expect_out "Is Rooted debugging on now?"
-filled_wiped
+expect_cmds "$S getvar all;$S flash system $C/inst/$IMGN;$S getvar all;$S resize-logical-partition $P $NEED;$S flash $P $(printf '%s' "$GIMG" | sed "s|/CASE/|/$CASE/|");$FMT"
+[ ! -e "$DEV/dev/block/mapper/$P/lost+found" ] || fail "the old ext4 content stayed"
+google_on
 end
 
-begin one_pass_rooted_debugging_later
-release; touch "$FB/root_disabled"
-inst 'no\nyes\nERASE\nno\n' --no-blobs --gapps-zip "$ZIP"
-expect_rc 1; expect_cmds "$(one)"
-expect_out "turn on Rooted debugging (Settings > Device Preferences > Developer options) and run the same command again: it continues here. Nothing was erased."
+begin one_pass_no_room_in_super
+sed -i.bak 's/partition-size:super:0x113400000/partition-size:super:0x7DA00000/' "$FB/getvar"; rm -f "$FB/getvar.bak"
+partition 536870912; release   # an old add-on that does not leave room for the new one: deleted, so the result is plain
+inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
+expect_rc 0
+expect_cmds "$S getvar all;$S flash system $C/inst/$IMGN;$S getvar all;$S delete-logical-partition $P;$FMT"
+expect_out "not enough free space in super for the Google services"; expect_out "Google services can be added later"
+grep -qx "step_gapps_flash=skipped:room" "$C/state/state" && grep -qx "step_wipe=done" "$C/state/state" || fail "state: $(cat "$C/state/state")"
+[ "$(gprop sys.z9x.gapps)" = none ] || fail "sys.z9x.gapps=$(gprop sys.z9x.gapps)"
+end
+
+begin one_pass_flash_fails
+release; touch "$FB/gflash_fail"
+inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
+expect_rc 0
+expect_cmds "$(one)$S delete-logical-partition $P;$FMT"
+expect_out "$P could not be written and was removed again"; expect_out "Google services can be added later"
+grep -qx "step_gapps_flash=skipped:flash" "$C/state/state" || fail "state: $(cat "$C/state/state")"
+[ "$(gprop sys.z9x.gapps)" = none ] || fail "sys.z9x.gapps=$(gprop sys.z9x.gapps)"
+end
+
+begin one_pass_fastbootd_gone
+release; touch "$FB/drop"
+inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
+expect_rc 1
+expect_out "fastbootd ended while $P was being written. Nothing was erased"
 grep -q "format:f2fs userdata" "$FB/fb.log" && fail "wiped"
-: > "$FB/fb.log"
-inst 'no\nERASE\n' --no-blobs --gapps-zip "$ZIP"   # the next run: the same command (backup asked again)
-expect_rc 0; expect_cmds "$WIPE"
-expect_out "Next the installer ERASES ALL DATA"
-filled_wiped
+[ -z "$(sed -n 's/^step_flash=//p' "$C/state/state")" ] || fail "state: $(cat "$C/state/state")"
+: > "$FB/fb.log"; : > "$FB/adb.log"
+sed -i.bak 's/^ro.debuggable=1$/ro.debuggable=0/' "$T/props"; rm -f "$T/props.bak"   # (no calibration snapshot in this fake)
+inst 'no\nERASE\n' --no-blobs --gapps-zip "$ZIP"   # the same command again: Lumen OS on the old data, adb as before
+expect_rc 0
+expect_out "Google services add-on image: built earlier, checked"
+# the partition the first run created is there: resized (to the same size) and written again
+expect_cmds "$(one | sed "s|create-logical-partition $P|resize-logical-partition $P|")$FMT"
+google_on
 end
 
-begin one_pass_fill_cut_off
-release
-cp "$DEV/system/etc/z9x/gapps_allow.txt" "$C/allow.good"
-# the image's list names another hash for one file: the fill stops half way (the partition is not empty then)
-awk 'NF == 3 && $1 !~ /^#/ && !d { $1 = "0000000000000000000000000000000000000000000000000000000000000000"; d = 1 } { print }' \
-  "$C/allow.good" > "$DEV/system/etc/z9x/gapps_allow.txt"
-cp "$DEV/system/etc/z9x/gapps_allow.txt" "$C/inst/lib/gapps_allow.txt"
-inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
-expect_rc 1; expect_out "the Google services were not added"; expect_out "Run the same command again: it continues here. Nothing was erased."
-grep -qx "step_gapps_fill=started" "$C/state/state" || fail "state: $(cat "$C/state/state")"
-cp "$C/allow.good" "$DEV/system/etc/z9x/gapps_allow.txt"; cp "$C/allow.good" "$C/inst/lib/gapps_allow.txt"
-echo stray > "$DEV/dev/block/mapper/$P/stray.apk"
-: > "$FB/fb.log"
-inst 'no\nERASE\n' --no-blobs --gapps-zip "$ZIP"
+begin one_pass_older_installer_waiting
+# an older installer wrote system and an empty ext4 z9x_gapps_b, Lumen OS runs on the old data waiting for the fill
+release; cp "$FB/props_lumen" "$T/props"
+mkdir -p "$DEV/dev/block/mapper/$P/lost+found"; echo 536870912 > "$FB/size.$P"
+printf '%s\n' serial=$SER slot=_b step_check=done step_backup=done step_vbmeta=done image_gms=0 step_flash_system=done \
+  step_flash=done "gapps_plan=$ZSHA" step_gapps_part=done > "$C/state/state"
+inst 'ERASE\n' --no-blobs --gapps-zip "$ZIP"
 expect_rc 0
-expect_cmds "$S getvar all;$S format:ext4 $P;$S reboot;$WIPE"
-expect_out "an earlier fill did not finish: formatting $P again"
-[ ! -e "$DEV/dev/block/mapper/$P/stray.apk" ] || fail "the half-filled content stayed"
-filled_wiped
-end
-
-begin one_pass_no_start_on_old_data
-release; touch "$FB/bootloop"
-inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
-expect_rc 0
-expect_out "Lumen OS did not start on the old data: the projector went to fastboot mode after failed starts. The install finishes without Google services"
-expect_cmds "$(one)$S getvar all;$S --fs-options=casefold,projid format:f2fs userdata;$S format:f2fs metadata;$S format:ext4 cache;$S reboot;"
-grep -q "fill.sh fill" "$FB/adb.log" && fail "filled"
-grep -qx "step_wipe=done" "$C/state/state" && grep -qx "gapps_plan=" "$C/state/state" || fail "state: $(cat "$C/state/state")"
-expect_out "Google services can be added later"
+expect_out "Next the installer writes the Google services (if asked) and ERASES ALL DATA"
+expect_cmds "$S getvar all;$S getvar all;$S resize-logical-partition $P $NEED;$S flash $P $(printf '%s' "$GIMG" | sed "s|/CASE/|/$CASE/|");$FMT"
+expect_out "data wiped. The first start takes 2-4 minutes; the setup has a Google sign-in step."
+google_on
 end
 
 begin one_pass_zip_refused_first
@@ -545,6 +601,43 @@ release lumen-os-1.0.7-system.img
 inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
 expect_rc 1; expect_cmds ""
 expect_out "this image has Google services built in: --gapps-zip is for Lumen OS without Google"
+end
+
+begin one_pass_old_image_refused
+release "" old
+inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
+expect_rc 1; expect_cmds ""
+expect_out "cannot take the Google services in one pass (its add-on support is older than this installer)"
+if grep -q "reboot" "$FB/adb.log"; then fail "restarted: $(cat "$FB/adb.log")"; fi
+end
+
+begin one_pass_image_without_the_zip
+release "" nozip
+inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
+expect_rc 1; expect_cmds ""
+expect_out "does not accept $NAME (not in its gapps_allow.txt)"
+end
+
+begin one_pass_no_erofs_utils
+release; rm -rf "$C/inst/tools/erofs-utils"
+inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
+expect_rc 1; expect_cmds ""
+expect_out "this installer has no erofs-utils for this computer"; expect_out "Nothing was written."
+end
+
+begin one_pass_damaged_erofs_utils
+release; printf 'x' >> "$C/inst/tools/erofs-utils/$EP/mkfs.erofs"
+inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
+expect_rc 1; expect_cmds ""
+expect_out "tools/erofs-utils/$EP/mkfs.erofs is missing or damaged"
+end
+
+begin one_pass_image_not_the_checked_one
+release; awk '{ if ($1 !~ /^#/) $4 = "0000000000000000000000000000000000000000000000000000000000000000"; print }' "$W/gapps_images.txt" > "$C/inst/lib/gapps_images.txt"
+inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
+expect_rc 1; expect_cmds ""
+expect_out "is not the one checked for this release"; expect_out "Nothing was written."
+[ -z "$(ls "$C/state/gapps/" 2>/dev/null | grep '\.img')" ] || fail "an unchecked image was kept: $(ls "$C/state/gapps")"
 end
 
 begin one_pass_refusals

@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS installer only (never in an image): the Google services add-on images the one-pass install
+# (--gapps-zip, XGIMI Z9X) may write into z9x_gapps_<slot>. The installer builds the image on the computer from
+# the user's own MindTheGapps zip (its files checked against lib/gapps_allow.txt) with its own erofs-utils, and
+# writes it only when its sha256 and size are exactly the ones below. The image is deterministic (fixed time,
+# zero UUID, one worker, no compression), so the same zip and erofs-utils give the same image on every computer.
+# A hash of an image is not a Google file. Made by: python3 tools/ota/gapps_allow.py image ZIP (tar written by an
+# independent Python writer, mkfs.erofs of installer/tools/erofs-utils); tools/ota/test/gapps_erofs.sh checks the
+# installer's own bash writer against it. Do NOT put these lines into gapps_allow.txt: images before 1.0.8 read
+# every three-field line inside a zip= block there as a file line.
+#
+# <zip sha256> <erofs-utils version> <profile> <image sha256> <image bytes>
+#   profile plain = mkfs.erofs -b4096 -E noinline_data -T1230768000 -U 00000000-0000-0000-0000-000000000000
+#                   --all-root --workers=1 -Lz9x_gapps --tar=f
+5a3bca8439d568cc205099f863f57d718e8f6dc61da40393175ca555461831d0 1.9.4 plain f56bf362049f77be7cf17b263049f61d42475b393963b687837500b8751389ea 449957888

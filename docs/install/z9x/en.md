@@ -230,7 +230,7 @@ Pick one of the two commands:
 |---|---|
 | `bash lumen-install.sh flash` | `bash lumen-install.sh --gapps-zip MindTheGapps-14.0.0-arm64-ATV-full-20240523_192016.zip` |
 | Windows: `lumen-install.cmd flash` | Windows: `lumen-install.cmd -GappsZip MindTheGapps-14.0.0-arm64-ATV-full-20240523_192016.zip` |
-| about 5 minutes, described below | longer, Lumen OS starts once in between, see [Lumen OS and Google services in one command](#one-pass) |
+| about 5 minutes, described below | about 6 minutes, one visit to fastboot mode, see [Lumen OS and Google services in one command](#one-pass) |
 
 To add Google services later to a Lumen OS that is already installed, see
 [Adding Google services](#google).
@@ -270,46 +270,59 @@ This is way 2: Lumen OS and Google Play, Google Play services, Google voice sear
 TalkBack and the remote in the Google TV phone app, with one data wipe in total. What you get and what
 does not work (Chromecast) is the same as in [Adding Google services](#google).
 
-1. Download the MindTheGapps file named in [Adding Google services](#google), item 1, and put it in the
-   installer folder, next to `lumen-install.sh`. It must be exactly that file, the installer refuses any
-   other.
-2. Do steps 1 to 5 as for a clean install.
-3. Run:
+The whole write happens in ONE visit to fastboot mode: the system, the Google services and the wipe. After
+the vbmeta step you do not need to turn anything on in Lumen OS: no USB debugging, no Rooted debugging.
+The installer builds the Google services partition on your computer before it restarts the projector.
+
+The order is:
+
+1. On the stock system: turn on USB debugging (step 1) and download the files
+   (step 2). Also download the MindTheGapps file named in [Adding Google services](#google),
+   item 1, and put it in the installer folder, next to `lumen-install.sh`. It must be exactly that file,
+   the installer refuses any other.
+2. Fastboot mode, the vbmeta step, back to the stock system once: [step 3](#vbmeta), items 1 to 5.
+3. One command, the projector on the stock system with the cable in:
 
    ```
    bash lumen-install.sh --gapps-zip MindTheGapps-14.0.0-arm64-ATV-full-20240523_192016.zip
    ```
 
    Windows: `lumen-install.cmd -GappsZip MindTheGapps-14.0.0-arm64-ATV-full-20240523_192016.zip`
+   (not yet: see the note below).
 
    Do not add `flash` or another command name, and do not add `--keep-data` or `--wipe=factory-reset`:
    the installer refuses them with `--gapps-zip`. It also refuses an image that already has Google built
    in.
-4. The installer checks the MindTheGapps file before it writes anything. Then it goes on as at a clean
-   install: it checks the image, asks about the vbmeta step, copies the codec and audio files and shows
-   what will be erased. Type `ERASE`.
-5. In fastboot mode it writes the system and the codec and audio files, creates the partition
-   `z9x_gapps_<slot>` and formats it. It does not wipe the data yet.
-6. Lumen OS starts once on your old data (about 5 minutes). USB debugging still works, because the old
-   data keeps it.
-7. The installer needs `adb root` now. If "Rooted debugging" is off, it waits and tells you where to turn
-   it on: Settings > Device Preferences > Developer options > Rooted debugging. If Developer options is
-   not in the menu, open Settings > Device Preferences > About and press OK on Build 7 times. Turn
-   Rooted debugging on and answer `yes` to "Is Rooted debugging on now?": the installer continues.
-8. It copies the Google apps into the partition and checks each one. Then it restarts into fastboot mode
-   again and wipes the data with `format`, the same wipe as a clean install. That is the only wipe.
-9. The first start now has a Google sign-in step. If Google refuses the sign-in, register the projector,
-   see [GSF ID](#gsf).
 
-If the run stops anywhere, fix what the installer says and run the same command again: it continues
-where it stopped.
+What the command does:
 
-If Lumen OS does not start on the old data, the projector goes to fastboot mode by itself after 3 failed
-starts. Then run the same command again: it wipes the data and finishes the install without Google. Add
-them later with the `gapps` step, see [Adding Google services](#google).
+1. It checks the MindTheGapps file, the computer, the projector, the image and the vbmeta step (as
+   step 4) before it writes anything.
+2. It builds the Google services partition on the computer: it takes exactly the listed files out of the
+   MindTheGapps file, checks each one, and makes an image whose checksum must match the one the installer
+   carries. This takes 10 to 30 seconds and needs about 1 GB of free space on the computer for a moment.
+3. It offers the backup (step 5), copies the codec and audio files and shows what will be
+   erased. Type `ERASE`.
+4. One visit to fastboot mode, about 2 minutes, nothing to do for you: the system, the codec and audio
+   files, the Google services partition `z9x_gapps_<slot>`, then the wipe with `format`, the same wipe as
+   a clean install. That is the only wipe.
+5. The projector restarts. The first start is clean and the setup has a Google sign-in step. If Google
+   refuses the sign-in, register the projector, see [GSF ID](#gsf).
 
-If you run the installer without `--gapps-zip` while such an install is not finished, it asks whether to
-finish it without Google.
+If the Google services do not fit into the system storage or cannot be written, the installer removes
+that partition, wipes as usual and finishes without Google. Add them later with the `gapps` step, see
+[Adding Google services](#google).
+
+If fastboot mode ends in the middle (the Z9X leaves it by itself after about 2 minutes, or the cable came
+out), nothing is erased: the projector starts its old system on the old data, USB debugging is still on.
+Run the same command again: it writes everything again in one visit. The Google services image is built
+only once.
+
+> [!NOTE]
+> The one-command install needs a Mac (Apple silicon or Intel) or a Linux computer (x86-64 or ARM64): the
+> installer carries the program that builds the Google services partition (erofs-utils) only for them so
+> far. On Windows, `-GappsZip` stops before anything is written. There, use way 1 and then way 3, or do
+> the install from a Mac or a Linux computer.
 
 ## 7. First start (5 min)
 
@@ -500,11 +513,15 @@ downloaded, Lumen Home shows an "Update ready" badge.
 | gapps | "is not the MindTheGapps file this installer accepts" | Download exactly the file named above. Nothing was written. |
 | gapps | "does not accept this file yet" | Update Lumen OS first. Nothing was written. |
 | gapps | "not enough free space in super" | The system is unchanged. Report it with the installer output. |
-| gapps, `--gapps-zip` | "root debugging is off on the projector" | Settings > Device Preferences > Developer options > Rooted debugging (if Developer options is missing: About > Build, press OK 7 times). In the one-command install the installer waits: turn it on and answer `yes`. Or answer `no` and run the same command again later; nothing is erased. |
+| gapps | "root debugging is off on the projector" | Settings > Device Preferences > Developer options > Rooted debugging (if Developer options is missing: About > Build, press OK 7 times). Then run the same command again; nothing is erased. |
 | `--gapps-zip` | refused together with `--keep-data`, `--wipe=factory-reset` or a command name such as `flash` | The one-command install always wipes the data once and runs as a whole. Run it exactly as in [Lumen OS and Google services in one command](#one-pass). Nothing was written. |
 | `--gapps-zip` | refused because the image has Google built in | Use the image without Google from the release. Nothing was written. |
-| `--gapps-zip` | Lumen OS does not start on the old data | After 3 failed starts the projector goes to fastboot mode. Run the same command again: it wipes the data and finishes without Google. Add them later with `gapps`. |
-| any step | asks whether to finish an unfinished install without Google | You ran the installer without `--gapps-zip` while a one-command install was not finished. Answer `no` and run the command with `--gapps-zip` again to get Google, or `yes` to finish without it. |
+| `--gapps-zip` | "this installer has no erofs-utils for this computer" | The one-command install runs on a Mac or Linux (x86-64, ARM64), not on Windows yet. Use way 1 and then way 3, or another computer. Nothing was written. |
+| `--gapps-zip` | "cannot take the Google services in one pass" or "does not accept" | The image is from another release than the installer. Use the image and the installer of the same release. Nothing was written. |
+| `--gapps-zip` | "is not the one checked for this release" | The Google services image built on your computer differs from the checked one. Report it with the installer output; install with way 1 and add Google later. Nothing was written. |
+| `--gapps-zip` | "fastbootd ended while z9x_gapps... was being written" | Nothing was erased. Wait until the projector has started, then run the same command again. |
+| `--gapps-zip` | "not enough free space in super for the Google services" | The install finished without Google. Report it with the installer output. |
+| any step | asks whether to finish an unfinished install without Google | An install started with an older installer waits for its Google step. Answer `no` and run the command with `--gapps-zip` again to get Google (now in one visit to fastboot mode), or `yes` to finish without it. |
 | updates | "One-time step needed for updates" | The other slot needs the vbmeta step. Do [step 3](#vbmeta) from a computer. |
 | updates | "Protected-video components are missing" | Run `bash lumen-install.sh blobs`, then `bash lumen-install.sh flash --keep-data`. |
 | updates | "This update is for another Lumen OS edition" | The stick holds files for another edition. You need the `update-public-nogms.json` files. |

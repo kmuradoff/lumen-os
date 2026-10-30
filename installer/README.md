@@ -18,6 +18,9 @@ XGIMI Play 6 (G0058, XGIMI firmware V1.7.116). Follow the install guide of your 
 | `lib/blobs_allow.txt` | checksums of the nine MediaTek and XGIMI codec and audio files the `blobs` step accepts (hashes only, no files) |
 | `lib/gapps_allow.txt` | the one MindTheGapps zip the `gapps` step accepts, its official URL, and the files it installs from it (hashes only) |
 | `lib/gapps_fill.sh` | runs on the projector during `gapps` and fills the `z9x_gapps` partition |
+| `lib/gapps_images.txt` | the checksum and size of the Google services image `--gapps-zip` builds from that zip (a hash, no Google file); the installer writes only exactly that image |
+| `lib/erofs_utils.txt` | the checksums of the erofs-utils programs in `tools/erofs-utils` (the installer runs nothing else) |
+| `tools/erofs-utils/<platform>/` | `mkfs.erofs`, `fsck.erofs`, `dump.erofs` of erofs-utils 1.9.4 (GPL-2.0, source and licenses: `SOURCE`, `NOTICE`, `COPYING`, `LICENSES/` there), built by Lumen OS for macOS (universal) and Linux (x86-64, ARM64); they build the Google services image on your computer |
 | `lib/play6/gapps_allow.txt` | XGIMI Play 6: the one MindTheGapps zip (32-bit Android 14 TV) its `gapps` step accepts, its official URL, and the files it installs from it (hashes only) |
 | `lib/play6/gapps_fill.sh`, `lib/play6/lumen-gapps.xml` | XGIMI Play 6: runs on the projector during `gapps` and formats and fills the `lumen_gapps` partition; the Lumen settings it adds for the Google apps |
 | `certs/ota.x509.pem` | the Lumen OS certificate that checks `SHA256SUMS.sig` (XGIMI Z9X) |
@@ -41,6 +44,17 @@ or pass `--platform-tools DIR` (`-PlatformTools DIR`), a folder with adb and fas
 On Windows the installer also warns when it runs from a USB stick or network drive, and when the projector does
 not show up in fastboot mode it looks for a USB device without a driver and explains the Google USB Driver.
 
+## erofs-utils (one-pass install with Google services)
+
+`--gapps-zip` builds the Google services partition on the computer before the projector restarts: the installer
+writes a tar of exactly the listed files of your MindTheGapps zip (each checked by sha256) with owner root and
+the SELinux label on every file, and `mkfs.erofs` turns it into an erofs image. The image is the same bit for bit
+on every computer, so the installer writes it only when its sha256 is the one in `lib/gapps_images.txt`. The
+programs come with the installer (`tools/erofs-utils`, checked against `lib/erofs_utils.txt`, run from a copy in
+`~/.lumen-installer`); `--erofs-utils DIR` (`-ErofsUtils DIR`) uses erofs-utils 1.9.4 from DIR instead. There is
+no Windows build yet: on Windows `-GappsZip` stops before anything is written (install without it, then
+`gapps -Zip FILE`).
+
 ## Commands
 
 `bash lumen-install.sh [options] [command]`. On Windows: `lumen-install.cmd [command] [options]`.
@@ -48,7 +62,7 @@ not show up in fastboot mode it looks for a USB device without a driver and expl
 | Command | What it does | Writes to the projector |
 |---|---|---|
 | none | runs `check`, `backup`, `blobs`, `vbmeta`, `flash` and `verify` in order and resumes where it stopped | yes |
-| none, with `--gapps-zip FILE` | Lumen OS and Google services in one run: checks the zip, writes the system and creates `z9x_gapps_<slot>` in fastbootd, starts Lumen OS once on the old data, fills the partition as root, then the one wipe (`format`); resumes where it stopped | yes, erases data |
+| none, with `--gapps-zip FILE` | Lumen OS and Google services in one run (XGIMI Z9X): checks the zip, builds the Google services partition on the computer (erofs, `tools/erofs-utils`), then ONE fastbootd visit writes the system, `z9x_gapps_<slot>` and wipes the data (`format`); no USB debugging or Rooted debugging needed after the vbmeta step. macOS and Linux (x86-64, ARM64) only for now | yes, erases data |
 | `check` | checks the computer, cable, projector, firmware, the image's signature and checksum, and the vbmeta step | no |
 | `backup` | copies your apps (APK files), photos, videos, downloads and settings lists to `~/Lumen-backup` | no |
 | `blobs` | copies the codec and audio files from your projector, checks them and builds the `z9x_blobs` image | no |
