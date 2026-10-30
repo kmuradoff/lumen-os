@@ -64,12 +64,13 @@ import java.util.Set;
  * <h3>Apply</h3> (one Hal.run task, stock DisplayManager.setGameMode(1) order, research/v62):
  * gate (tvinput still reports a session on that port, read on z9x-game right before queuing; 696
  * getCurrentInputSource == that port, because the vendor keeps game type / state / option per input
- * source and writes them for its current source; 3D off); snapshot 647 and 55 once its layout is
- * known (see {@link #readGameState}; else the quick panel's persisted game mode). The snapshot is
+ * source and writes them for its current source; 3D off); snapshot 647 and 55 (see {@link #readGameState};
+ * when 55 does not fit, the quick panel's persisted game mode). The snapshot is
  * committed on z9x-game BEFORE the second HAL task writes anything (write-ahead, no fsync on z9x-hal).
  * One snapshot slot per HDMI port (prefs keys suffixed "_1" / "_2"): the vendor state is per source,
  * so a console on HDMI 2 is handled while the restore of HDMI 1 still waits for HDMI 1.
- * 648: "120 Hz for consoles" (default on; G0082 support_hfr=true, VERIFIED) moves 0 BASIC to
+ * 648: "120 Hz for consoles" (default OFF since 1.0.8 until a PS5 test, parity game item 2.11; G0082
+ * support_hfr=true, VERIFIED) moves 0 BASIC to
  * 1 BASIC_HFR, so the vendor's EDID offers 120 Hz (UNVERIFIED on the device: what 648(1) does to the
  * EDID; device test). 3 TOP_SPEED never moves to 2 (2/3 need the 207 keystone reset); 2 stays.
  * 1 BASIC_HFR moves to 2 TOP_SPEED_HFR only when the input is >= 100 Hz AND the keystone is known
@@ -108,7 +109,11 @@ public final class GameProfile {
     private static final String KEY_TOP_SPEED = "top_speed";    // bool, default true (no UI yet)
     private static final String KEY_CONSOLE_PORT = "console_port_";  // + port: bool, default false
 
-    /** "120 Hz for consoles": 0 BASIC -> 1 BASIC_HFR while the profile is applied. Default on. */
+    /**
+     * "120 Hz for consoles": 0 BASIC -> 1 BASIC_HFR while the profile is applied. Default off since Lumen 1.0.8
+     * (parity game item 2.11): stock never does this (its HFR comes from the vendor's per-input default) and it
+     * is not tested with a console yet; the owner switches it on by hand for the PS5 test.
+     */
     private static final String KEY_HFR = "hfr_consoles";
     /** G0082 feature.xml support_hfr=true (VERIFIED, research v61/RESULT_display.json). */
     private static final boolean SUPPORT_HFR = true;
@@ -127,13 +132,11 @@ public final class GameProfile {
     private static final String K_PREV_STATE = "prev_state";    // MODE_*: game mode before us
     private static final String K_PREV_PANEL = "prev_panel";    // panel game_mode before us (-1 none)
     private static final String K_ATTEMPTS = "restore_attempts";
-    /** IGmpf2 55 field order learned from a decisive reading (see readGameState). Global. */
-    private static final String K_LAYOUT55 = "layout55";
 
     /** Shared with the quick panel (QuickPanel.PREFS / QuickPanelController.KEY_GAME_MODE): 0 off, 1 on, 2 auto. */
     private static final String PANEL_PREFS = "z9x_panel";
     private static final String PANEL_KEY_GAME_MODE = "game_mode";
-    /** QuickPanelController.KEY_ULTRA_120: last Ultra 120 Hz value set (157 not readable). */
+    /** QuickPanelController.KEY_ULTRA_120: last Ultra 120 Hz value set (the panel syncs it from 157). */
     private static final String PANEL_KEY_ULTRA_120 = "ultra_120";
 
     private static final int MODE_UNKNOWN = -1, MODE_OFF = 0, MODE_ON = 1, MODE_AUTO = 2;
@@ -299,7 +302,7 @@ public final class GameProfile {
 
     /** "120 Hz for consoles" (default on): the profile offers HFR (648 0 -> 1). */
     public static boolean isHfrEnabled(Context c) {
-        return prefs(c).getBoolean(KEY_HFR, true);
+        return prefs(c).getBoolean(KEY_HFR, false);
     }
 
     /** Takes effect at the next apply (an applied profile is not changed). */
@@ -1171,58 +1174,31 @@ public final class GameProfile {
         }
     }
 
-    // ---- IGmpf2 55 (getGameModeProp): field ORDER UNVERIFIED. The research has two candidates:
-    // v61/RESULT_display.json {gameModeOpt, state, type} and the AIDL twin in RESULT_quicksettings.json
-    // {state, type, gameModeOpt}. With 647 = 0/1 the same bytes can fit both (e.g. [0,1,0]), so such a
-    // reading proves nothing. Only a reading with 647 = 2 or 3 tells them apart (state / type are 0/1,
-    // so the option field is unmistakable); the layout learned from it is kept in prefs. Until then 55
-    // is not used (MODE_UNKNOWN: callers fall back to the quick panel's persisted value).
-    private static final int L55_UNKNOWN = 0, L55_STATE_TYPE_OPT = 1, L55_OPT_STATE_TYPE = 2, L55_UNUSABLE = -1;
-    /** Integer.MIN_VALUE = not loaded yet. Written on z9x-hal only. */
-    private volatile int layout55 = Integer.MIN_VALUE;
+    // ---- IGmpf2 55 (getGameModeProp): field order {state, type, opt} VERIFIED on the owner's Z9X 2026-10-30
+    // (Gmpf2Client.getGameModeProp, docs/z9x/parity/probe.md). Lumen 1.0.8-test1 and older learned the order
+    // only from a reading with 647 = 2 / 3; the old "layout55" pref is no longer read. A reply that does not
+    // fit (opt != 647, state / type not 0 / 1) is not used: callers fall back to the panel's persisted value.
+    /** 55 failed in this process (not persisted). Written on z9x-hal only. */
+    private volatile boolean unusable55;
 
-    private static boolean bit(int v) {
-        return v == 0 || v == 1;
-    }
-
-    /** HAL thread: MODE_* from 55 when its layout is known and the reading fits it, else MODE_UNKNOWN. */
+    /** HAL thread: MODE_* from 55 when the reading fits the 647 read just before, else MODE_UNKNOWN. */
     private int readGameState(Gmpf2Client g2, int opt647) {
-        int layout = layout55;
-        if (layout == Integer.MIN_VALUE) layout = layout55 = prefs.getInt(K_LAYOUT55, L55_UNKNOWN);
-        if (layout == L55_UNUSABLE) return MODE_UNKNOWN;
+        if (unusable55) return MODE_UNKNOWN;
         int[] p;
         try {
             p = g2.getGameModeProp();
         } catch (Throwable t) {
-            layout55 = L55_UNUSABLE;                                  // this process only (not persisted)
+            unusable55 = true;
             Log.i(TAG, "55 unreadable (" + t + "): using the persisted value");
             return MODE_UNKNOWN;
         }
-        if (p == null || p.length < 3) return MODE_UNKNOWN;
-        boolean sto = p[2] == opt647 && bit(p[0]) && bit(p[1]);      // {state, type, opt}
-        boolean ost = p[0] == opt647 && bit(p[1]) && bit(p[2]);      // {opt, state, type}
-        String raw = "{" + p[0] + "," + p[1] + "," + p[2] + "} vs 647=" + opt647;
-        if (layout == L55_UNKNOWN) {
-            if (opt647 != 2 && opt647 != 3) return MODE_UNKNOWN;     // ambiguous: wait for a decisive one
-            if (sto == ost) {                                         // neither fits (both cannot here)
-                layout55 = L55_UNUSABLE;
-                Log.i(TAG, "55 = " + raw + ": fits neither layout, NOT trusted (persisted value used)");
-                return MODE_UNKNOWN;
-            }
-            layout = sto ? L55_STATE_TYPE_OPT : L55_OPT_STATE_TYPE;
-            layout55 = layout;
-            prefs.edit().putInt(K_LAYOUT55, layout).apply();
-            Log.i(TAG, "55 = " + raw + ": layout " + (sto ? "{state,type,opt}" : "{opt,state,type}") + " learned");
-        }
-        boolean fits = layout == L55_STATE_TYPE_OPT ? sto : ost;
-        if (!fits) {
-            Log.i(TAG, "55 = " + raw + " does not fit the learned layout: not used");
+        int m = Gmpf2Client.gameModeOf(p, opt647);
+        if (m < 0) {
+            Log.i(TAG, "55 = " + (p == null ? "null" : "{" + p[0] + "," + p[1] + "," + p[2] + "}") + " vs 647="
+                    + opt647 + ": does not fit, not used");
             return MODE_UNKNOWN;
         }
-        int state = layout == L55_STATE_TYPE_OPT ? p[0] : p[1];       // 0 = on, 1 = off (as 57)
-        int type = layout == L55_STATE_TYPE_OPT ? p[1] : p[2];        // 0 manual, 1 auto (as 56)
-        if (type == 1) return MODE_AUTO;
-        return state == 0 ? MODE_ON : MODE_OFF;
+        return m == 2 ? MODE_AUTO : m == 1 ? MODE_ON : MODE_OFF;
     }
 
     // ================================================================== top speed later (main thread)

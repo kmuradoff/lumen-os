@@ -162,7 +162,17 @@ final class ProPicture {
         colorSpace = page.add(new ChoiceRow(app, s(R.string.pro_color_space), csLabels, (row, i) -> safe("cs", () -> {
             if (i < 0 || i >= CS_ORDER.length) return;
             final GmpfClient.ColorSpace cs = CS_ORDER[i];
-            change("112 colour space " + cs, (g, g2) -> g.setColorSpace(cs));
+            final CharSequence title = row.getTitle();
+            change("112 colour space " + cs, (g, g2) -> {
+                // 1.0.8 (parity brightness item 10): stock colorAdjustmentMutexBoost, the 5-segment Boost mode keeps
+                // its colour space (G0082 has no support_boost_color_space; dispcomm.ini LensDispSupportColorSpace {1, 0})
+                if (g2.isBoost()) {
+                    Log.i(TAG, "112 refused: Boost is on");
+                    Notify.show(app, title, s(R.string.boost_blocks_change));
+                    return;
+                }
+                g.setColorSpace(cs);
+            });
         }).run()));
         colorSpace.setCommitDelay(CHOICE_COMMIT_MS);
         colorOpt = page.add(new ToggleRow(app, s(R.string.pro_color_opt), (row, w) -> safe("323", () ->
@@ -177,7 +187,7 @@ final class ProPicture {
         }).run()));
         gamma.setCommitDelay(CHOICE_COMMIT_MS);
         CharSequence[] gv = new CharSequence[9];
-        for (int i = 0; i < gv.length; i++) gv[i] = String.format(Locale.getDefault(), "%.1f", 1.8 + i / 10.0);
+        for (int i = 0; i < gv.length; i++) gv[i] = String.format(Locale.ROOT, "%.1f", 1.8 + i / 10.0);
         gammaValue = page.add(new ChoiceRow(app, s(R.string.pro_gamma_value), gv, (row, i) -> safe("gamma value", () -> {
             if (i < 0 || i > 8) return;
             change("IGmpf2 327 gamma index " + i, (g, g2) -> bool(g2.setGamma(i), "327"));

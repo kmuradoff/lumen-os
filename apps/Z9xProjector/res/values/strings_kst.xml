@@ -32,4 +32,7 @@
     <string name="zoom_limit_small">This is the smallest picture</string>
     <string name="zoom_refused">The projector did not move the zoom</string>
     <string name="zoom_unavailable">Optical zoom is not available now</string>
+    <!-- 2026-10-30 owner: the zoom has its own reset (MENU), "Reset keystone" no longer moves the lens -->
+    <string name="zoom_reset_hint">Menu: reset the zoom (the biggest picture)</string>
+    <string name="zoom_reset_done">Zoom reset</string>
 </resources>

@@ -85,6 +85,9 @@ public final class GmpfClient extends HidlCaller {
     private static final int ZOOM_FINISH = 120;                    // (i32)   -> i32
     private static final int ZOOM_START = 121;                     // (i32)   -> i32
     private static final int ZOOM_CONTROL = 153;                   // (i32 mode, i32 steps) -> i32
+    // fit to my screen size (Lumen OS 1.0.8, owner O2 2026-10-30; fit.Z9xFitDevice), reads only
+    private static final int GET_TOF_DISTANCE = 279;               // ()      -> i32 mm
+    private static final int GET_MOTION_DETECTION = 584;           // ()      -> cb(MsensorDataStruct 14 bytes)
     private static final int TRANSLATION_KST = 141;                // (i32,bool) -> i32
     // AK overlay ack
     private static final int UI_AK_DISPLAY = 146;                  // (i32)   -> void
@@ -97,6 +100,7 @@ public final class GmpfClient extends HidlCaller {
     private static final int SET_HUMAN_DETECT = 152;               // (bool)  -> bool
     private static final int GENERATE_LOGO_BY_TRAPEZOID = 158;     // (i32)   -> i32
     // output timing (Ultra 120 Hz)
+    private static final int GET_OUTPUT_TIMING_INFO = 157;         // ()      -> cb(bool, OutputTimingInfo 40 bytes)
     private static final int SET_OUTPUT_TIMING = 161;              // (i32)   -> bool
     // projection / lamp
     private static final int SET_PROJECTOR_PUT_MODE = 172;         // (u8)    -> void
@@ -117,6 +121,10 @@ public final class GmpfClient extends HidlCaller {
     private static final int SET_SCREEN_ON_OFF = 195;              // (bool)  -> void
     private static final int GET_SCREEN_ON_OFF = 196;              // ()      -> bool
     private static final int CORRECT_KEYSTONE_RESET = 207;         // (u8)    -> void
+    // Lumen OS 1.0.8 stock keystone reset (setIChipReset + setLowConfigureKeyStoneValue), parity keystone item 8
+    private static final int SWITCH_KEYSTONE_MODE = 129;           // (i32, i32) -> bool
+    private static final int GET_CURRENT_KEYSTONE_MODE = 130;      // ()      -> i32
+    private static final int CORRECT_KEYSTONE = 181;               // (u8)    -> i32
     // power diagnostics (read-only)
     private static final int GET_BOOT_REASON = 230;                // ()      -> i8
     // misc
@@ -188,7 +196,8 @@ public final class GmpfClient extends HidlCaller {
     private static final byte FOCUS_STATUS_REMOTE_AF = 44;    // stock FocusUIV2.autoFocus (remote key)
     private static final byte FOCUS_STATUS_UI_READY = 17;     // stock FocusUIV2.start: power-on AF flow
     private static final byte FOCUS_STATUS_AF_CARD_CLOSED = 5;  // FS 2.7: AF card closed -> 307(5) then 307(3)
-    private static final byte FOCUS_STATUS_AF_CARD_DONE = 3;
+    private static final byte FOCUS_STATUS_AF_CARD_DONE = 3;    // also alone: stock AutoMaticFA stop / cancel
+    private static final byte FOCUS_STATUS_AF_UI_OPEN = 4;      // stock AutoMaticFA: the AF card is on screen
     private static final int SYSTEM_UI_STATE_READY = 1;       // stock SystemUI systemUIServicesCompleted
     private static final int BOOT_ANIM_STATE_FINISHED = 2;    // stock bootanimation exit
     private static final int TEMPORARY_SWITCH_AK = 2;         // KeyStoneManager TEMPORARY_SWITCH_AK=2 (FS 2.2)
@@ -523,6 +532,31 @@ public final class GmpfClient extends HidlCaller {
     /** 307 sendFocusStatus(44): remote focus key short press (stock FocusUIV2.autoFocus). */
     public void sendRemoteAutofocus() throws RemoteException { callU8(SEND_FOCUS_STATUS, FOCUS_STATUS_REMOTE_AF); }
 
+    /**
+     * 307 sendFocusStatus(4): our AF card is on screen (Lumen 1.0.8, parity focus item 1). Stock: AutoMaticFA
+     * .initFocusAdjustView posts setAutoFocusCommand("4") once its card view is laid out (systemui
+     * AutoMaticFA.java:234-240); the vendor's camera AF (XLAB_AUTO_FOCUS2 fast_global_focus_wait_UI) waits
+     * about 3 s for it, then ends with EVENT_FLOW_ERR. TSV: W=writeUint8 R=. Caller: AfCardOverlay only.
+     */
+    public void sendAfUiOpen() throws RemoteException { callU8(SEND_FOCUS_STATUS, FOCUS_STATUS_AF_UI_OPEN); }
+
+    /**
+     * 307 sendFocusStatus(5) then (3): our AF card (focusEvent 4/8/10/333/334/335) was closed. Stock:
+     * AutoMaticFA.hideAutoMaticFaView sends "5" then "3" whenever a shown card goes (AutoMaticFA.java:466-470).
+     * TSV: W=writeUint8 R=. Only after a card was shown (caller: AfCardOverlay).
+     */
+    public void sendAfCardClosed() throws RemoteException {
+        callU8(SEND_FOCUS_STATUS, FOCUS_STATUS_AF_CARD_CLOSED);
+        callU8(SEND_FOCUS_STATUS, FOCUS_STATUS_AF_CARD_DONE);
+    }
+
+    /**
+     * 307 sendFocusStatus(3): the user stopped the AF on the card (BACK, LEFT / RIGHT). Stock: AutoMaticFA
+     * newVontrolAf / oldVontrolAf send "3" first, then hide the card (AutoMaticFA.java:491-503).
+     * TSV: W=writeUint8 R=. Caller: AfCardOverlay only.
+     */
+    public void sendAfStop() throws RemoteException { callU8(SEND_FOCUS_STATUS, FOCUS_STATUS_AF_CARD_DONE); }
+
 
     /** 300 manualFocus(17 / 0 / 1 / 2). Returns immediately; the vendor runs the motor itself. */
     public void manualFocus(ManualFocus m) throws RemoteException { callU8(MANUAL_FOCUS, m.wire); }
@@ -612,8 +646,49 @@ public final class GmpfClient extends HidlCaller {
         if (cur == null || !cur.isTopSpeed()) {
             throw new IllegalStateException("correctKeystoneReset only in top-speed game mode (now " + cur + ")");
         }
-        callU8(CORRECT_KEYSTONE_RESET, 0);
+        chipReset();
     }
+
+    /**
+     * Stock keystone reset, chip part (Lumen OS 1.0.8, parity keystone item 8): stock KeyStoneViewModel reset ->
+     * KeyStoneManager.java:254-276 / V3DisplayManager.java:185-190, 318-320 sends 207 correctKeystoneReset(0),
+     * 129 switchKeystoneMode(0,0) when 130 reads 6, then 181 correctKeystone(50) (setLowConfigureKeyStoneValue(50):
+     * the old one-axis value back to the centre). The caller sends the rest of the stock sequence (153(5,10)
+     * zoomHome, IGmpf2 46 doKeystoneRatio(3), 158). Returns the 181 result (logged, success value UNVERIFIED).
+     * TSV 207 W=writeUint8 R=; 129 W=writeInt32,writeInt32 R=readBool; 130 R=readInt32; 181 W=writeUint8 R=readInt32.
+     * Caller: the quick panel's "Restore default picture" row (user action, no confirmation as stock) only.
+     */
+    public int resetKeystoneStock() throws RemoteException {
+        chipReset();
+        HwParcel q = request();
+        q.writeInt8((byte) KEYSTONE_ONE_AXIS_CENTRE);
+        return call(CORRECT_KEYSTONE, q, RET_I32);
+    }
+
+    /**
+     * Corners-only keystone reset of the stock manual keystone screen (2026-10-30, keystone.md item 7): stock
+     * KeyStoneWind MENU > Reset -> KeyStoneManager.setCorrectKeystoneReset (:1497-1500) = setIChipReset: 207(0),
+     * 129(0,0) only when 130 reads 6. No 181, no 153 lens move, no 46: the picture stays as small as the zoom has it.
+     * Caller: ManualKeystonePanel, hold OK (user action) only; it reads 186 back and falls back to 150 -> 185.
+     */
+    public void resetKeystoneCorners() throws RemoteException {
+        chipReset();
+    }
+
+    /** Stock setIChipReset: 207(0), then 129(0,0) only when 130 reads 6 (game.md 2.7, keystone.md item 8). */
+    private void chipReset() throws RemoteException {
+        callU8(CORRECT_KEYSTONE_RESET, 0);
+        int mode = callRetI32(GET_CURRENT_KEYSTONE_MODE);
+        if (mode == KEYSTONE_MODE_LEAVE_ON_RESET) {
+            boolean r = callI32I32RetBool(SWITCH_KEYSTONE_MODE, 0, 0);
+            Log.i(TAG, "keystone reset: 130 read " + mode + ", 129(0,0) -> " + r);
+        }
+    }
+
+    /** 130 value after which stock setIChipReset switches the keystone mode back with 129(0,0). */
+    private static final int KEYSTONE_MODE_LEAVE_ON_RESET = 6;
+    /** 181 argument of stock setLowConfigureKeyStoneValue(50). */
+    private static final int KEYSTONE_ONE_AXIS_CENTRE = 50;
 
 
     /** Picture shift direction for 141 translationKst (FS 2.5): 1 up, 2 down, 3 left, 4 right. */
@@ -873,51 +948,232 @@ public final class GmpfClient extends HidlCaller {
     // Each 119 call is ONE bounded move (zoomUnitStep 16 x 10 = 160 motor steps, ~0.4 s at 400 pps) toward
     // the target, refused (-1) outside [0, opticalMax]; the vendor stops at its limits and the left end
     // sensor, and stores the position (MTK env) after every stop. Index 0 = the biggest picture. NEVER the
-    // other zoom codes (297 controlZoomMotor, 283, 457, IGmpf2 14): large / factory moves. 153 zoomControl only
-    // in its stock mode 5 (zoomHome below, Lumen OS 1.0.4).
+    // other zoom codes (297 controlZoomMotor, 283, 457): large / factory moves. 153 zoomControl only in its stock
+    // mode 5 (zoomHome below, Lumen OS 1.0.4) and the read mode 12 (getZoomLimitTotal, Lumen OS 1.0.8). Since 1.0.8
+    // (zoom audit F1, owner O1 2026-10-30) the limit position beyond index 0 is entered and left as stock with
+    // IGmpf2 14 (Gmpf2Client.setOpticalZoomLimitStep), only through checkZoomLimitStep below.
 
     /**
      * 153 zoomControl(5, 10) -> i32 (Lumen OS 1.0.4): the lens walks home to the biggest picture, past the
-     * reference sensor into its end zone, exactly as stock's zoom page MENU reset and "restore default picture"
-     * (KeyStoneManager.zoomControl(5, 10)) and as auto keystone's zoomReset; afterwards 119 moves are half
-     * steps until the vendor's counter is resynced (OpticalZoomPanel). Only this mode of 153 is used. Inside a
-     * 121 session. TSV W=writeInt32,writeInt32 R=readInt32.
+     * reference sensor into the vendor's limit position (motor -129, m_zoomInLimitPos 1; zoom audit section 1),
+     * exactly as stock's "restore default picture" (KeyStoneManager.zoomControl(5, 10)) and as auto keystone's
+     * zoomReset. Stock leaves that position with IGmpf2 14(0), not with 119 (OpticalZoomPanel). Inside a 121
+     * session. TSV W=writeInt32,writeInt32 R=readInt32.
      */
-    public int zoomHome() throws RemoteException { return callI32I32RetI32(ZOOM_CONTROL, 5, 10); }
+    public int zoomHome() throws RemoteException {
+        int r = callI32I32RetI32(ZOOM_CONTROL, 5, 10);
+        synchronized (ZOOM_LOCK) { sOptCur = -1; sLimCur = LIM_UNKNOWN; }
+        return r;
+    }
+
+    /**
+     * 153 zoomControl(12, 10) -> i32 (Lumen OS 1.0.8, zoom audit F1): the number of zoom "limit" positions beyond
+     * optical index 0, a read (vendor Msrv_Zooming_Control::getZoomLimitTotalStep, libxgimi.str "Get Zoom Limit
+     * Total Step = %d"). Stock caller: ZoomStateView.getLimitStep (V6.15.62 settings jadx ZoomStateView.java:606-609,
+     * read in the constructor :153; OPTICAL_LIMIT_ZOOM_STEP = 12 :63). 1 expected on the Z9X (UNVERIFIED, audit F8;
+     * 1 on the HB with the same zoom.ini). Remembered for the IGmpf2 14 guard inside a session.
+     * TSV W=writeInt32,writeInt32 R=readInt32.
+     */
+    public int getZoomLimitTotal() throws RemoteException {
+        int r = callI32I32RetI32(ZOOM_CONTROL, 12, 10);
+        synchronized (ZOOM_LOCK) { sLimTotal = sZoomSession && r >= 0 && r <= MAX_LIMIT_STEPS ? r : -1; }
+        return r;
+    }
+
+    /**
+     * Optical zoom guard state (zoom audit F2, docs/fit_screen/Z9X_ZOOM_AUDIT.md, as the HB client's 95 guard): 119
+     * is sent only inside a session (IGmpf2 18(true, 2) sent by Gmpf2Client, 121 sent), with a 117 range and a 116
+     * read of this session, as the neighbour of that 116 read; every 119 uses the 116 read up (stock
+     * KeyStoneManager.zoomControl reads getCurrentZoomStep before every setOpticalZoomStep).
+     * Lumen OS 1.0.8 (zoom audit F1, as the HB client's 189 / 190 guard): the 153(12,10) limit count and the last
+     * IGmpf2 13 read of the session. IGmpf2 14 needs both plus a fresh 116 read = 0 (checkZoomLimitStep); 119 is
+     * refused while the lens is in the limit zone (a 13 read that is not 0, or a count > 0 without a 13 read).
+     */
+    private static final Object ZOOM_LOCK = new Object();
+    private static boolean sZoomPrepared, sZoomSession;
+    private static int sOptMin = -1, sOptMax = -1, sOptCur = -1;
+    private static final int LIM_UNKNOWN = Integer.MIN_VALUE;
+    private static int sLimTotal = -1, sLimCur = LIM_UNKNOWN;
+    /** Sanity bound for the 117 optical range (as OpticalZoomPanel.MAX_POSITIONS). */
+    private static final int MAX_OPTICAL_STEP = 64;
+    /** Sanity bound for the 153(12,10) limit count (as OpticalZoomPanel.MAX_LIMIT; 1 expected). */
+    private static final int MAX_LIMIT_STEPS = 4;
+
+    /** Gmpf2Client after it sent 18(enter, 2). */
+    static void noteZoomPrepare(boolean enter) {
+        synchronized (ZOOM_LOCK) {
+            sZoomPrepared = enter;
+            if (!enter) clearZoomReads();
+        }
+    }
+
+    private static void clearZoomReads() {
+        sOptMin = sOptMax = sOptCur = -1;
+        sLimTotal = -1;
+        sLimCur = LIM_UNKNOWN;
+    }
+
+    /** Gmpf2Client after an IGmpf2 13 read: remembered only inside a session. */
+    static void noteZoomLimitRead(int limit) {
+        synchronized (ZOOM_LOCK) { sLimCur = sZoomSession ? limit : LIM_UNKNOWN; }
+    }
+
+    /**
+     * Gmpf2Client right before IGmpf2 14 SetOpticalZoomLimitStep(step): throws (nothing sent) unless inside an
+     * 18(true,2) + 121 session, a 153(12,10) count > 0 and a fresh 13 read are known, a fresh 116 read says optical
+     * index 0, and step is the neighbour of that 13 read inside [-count, 0] (stock ZoomUtils.setOpticalZoomLimitStep:
+     * current +- 1). Uses both reads up, so the next 14 or 119 needs new reads.
+     */
+    static void checkZoomLimitStep(int step) {
+        checkRange("zoom limit step", step, -MAX_LIMIT_STEPS, 0);
+        synchronized (ZOOM_LOCK) {
+            if (!sZoomPrepared || !sZoomSession) throw new IllegalStateException("IGmpf2 14 outside an 18(true,2) + 121 session");
+            if (sLimTotal <= 0 || sLimCur == LIM_UNKNOWN) {
+                throw new IllegalStateException("IGmpf2 14 without a 153(12,10) count and an IGmpf2 13 read");
+            }
+            if (sOptCur != 0) throw new IllegalStateException("IGmpf2 14 away from optical index 0 (116 read " + sOptCur + ")");
+            checkRange("zoom limit step", step, -sLimTotal, 0);
+            if (Math.abs(step - sLimCur) != 1) {
+                throw new IllegalArgumentException("IGmpf2 14(" + step + ") is not next to the 13 position " + sLimCur);
+            }
+            sLimCur = LIM_UNKNOWN;
+            sOptCur = -1;
+        }
+    }
+
+    // ------------------------------------------------------------------ fit to my screen size (Lumen OS 1.0.8, O2), reads only
+    // docs/fit_screen/DESIGN.md 9.3: the sensor reads of the fit, rate-limited here as in the HB client (FOCUS 46 /
+    // MOTION 2 there). Caller: fit.Z9xFitDevice only (3 ToF and 5 motion reads per fit run or calibration).
+    private static final Object SENSOR_LOCK = new Object();
+    private static final long TOF_GAP_MS = 1_000, SENSOR_WINDOW_MS = 60_000, MOTION_GAP_MS = 80;
+    private static final int TOF_PER_WINDOW = 6, MOTION_PER_WINDOW = 20;
+    private static final long[] sTofAt = new long[TOF_PER_WINDOW], sMotionAt = new long[MOTION_PER_WINDOW];
+    private static int sTofNext, sMotionNext;
+    /** IGmpf 584 reply: int16 acc x,y,z @0/2/4, int16 gyro x,y,z @6/8/10, u8 type @12, 1 pad (LumenSensors GmpfStructs). */
+    private static final int MOTION_SIZE = 14;
+
+    /** Rate guard of the two sensor reads: at least gap apart and at most stamps.length per minute. */
+    private static void sensorBudget(String what, long[] stamps, int next, long gapMs) {
+        long now = SystemClock.elapsedRealtime();
+        long last = stamps[(next + stamps.length - 1) % stamps.length];
+        if (last != 0 && now - last < gapMs) throw new IllegalStateException(what + " within " + gapMs + " ms of the last one");
+        long oldest = stamps[next];
+        if (oldest != 0 && now - oldest < SENSOR_WINDOW_MS) {
+            throw new IllegalStateException(what + ": " + stamps.length + " reads in the last minute already");
+        }
+        stamps[next] = now;
+    }
+
+    /**
+     * IGmpf 279 getTofDistance() -> i32 mm: one active ToF measurement (about 0.6 s on the vendor's one gmpf thread,
+     * LumenSensors Z9xSchedule.TOF_MS). Stock callers (V6.15.62 settings jadx): CalibrationTofDialog.java:423,
+     * CalibrationCurtainDialog.java:1196, HallCalibrationDistanceDialog.java:239 (CalibrationManager.getTofDistance
+     * :50 -> ProjectorFocusManagerWrapper.getTofDistance :237-238), KeyStoneManager.getTofDistance :366. Wire:
+     * research/play6/z9x_gmpf_codes.txt:279 (W= R=readInt32). Refused (nothing sent) within 1 s of the last read or
+     * after 6 reads in a minute; never in a loop or a timer.
+     */
+    public int getTofDistance() throws RemoteException {
+        synchronized (SENSOR_LOCK) {
+            sensorBudget("279 getTofDistance", sTofAt, sTofNext, TOF_GAP_MS);
+            sTofNext = (sTofNext + 1) % sTofAt.length;
+        }
+        return callRetI32(GET_TOF_DISTANCE);
+    }
+
+    /**
+     * IGmpf 584 getMotionDetection() -> {acc0, acc1, acc2, gyro0, gyro1, gyro2, type} (MsensorDataStruct, 14 bytes:
+     * int16 x 6 + u8, as LumenSensors GmpfStructs.motion; about 4096 counts per g, the owner's Z9X read z 4092 lying
+     * flat, 2026-10-27). Stock caller: MotionDetectionManagerWrapper.getMotionDetection :37-41
+     * (MotionDetectionManagerService.getMotionDetection). Wire: z9x_gmpf_codes.txt:584 (cb(MsensorDataStruct)).
+     * Axis order and signs UNVERIFIED for the pitch (docs/fit_screen/TEST_PLAN.md). Refused within 80 ms of the
+     * last read or after 20 reads in a minute; the fit reads 5 per run.
+     */
+    public int[] getMotionDetection() throws RemoteException {
+        synchronized (SENSOR_LOCK) {
+            sensorBudget("584 getMotionDetection", sMotionAt, sMotionNext, MOTION_GAP_MS);
+            sMotionNext = (sMotionNext + 1) % sMotionAt.length;
+        }
+        return call(GET_MOTION_DETECTION, request(), r -> {
+            HwBlob b = r.readBuffer(MOTION_SIZE);
+            int[] o = new int[7];
+            for (int i = 0; i < 6; i++) o[i] = b.getInt16(i * 2);
+            o[6] = b.getInt8(12) & 0xff;
+            return o;
+        });
+    }
 
     /** 121 zoomStart(0) -> i32: opens the session (the vendor also takes the motor position here). TSV W=writeInt32 R=readInt32. */
-    public int zoomSessionStart() throws RemoteException { return callI32RetI32(ZOOM_START, 0); }
+    public int zoomSessionStart() throws RemoteException {
+        synchronized (ZOOM_LOCK) { clearZoomReads(); }
+        int r = callI32RetI32(ZOOM_START, 0);
+        synchronized (ZOOM_LOCK) { sZoomSession = true; }
+        return r;
+    }
 
     /** 120 zoomFinish(0) -> i32: closes the session; always after 121, also on errors. TSV W=writeInt32 R=readInt32. */
-    public int zoomSessionFinish() throws RemoteException { return callI32RetI32(ZOOM_FINISH, 0); }
+    public int zoomSessionFinish() throws RemoteException {
+        synchronized (ZOOM_LOCK) {
+            sZoomSession = false;
+            clearZoomReads();
+        }
+        return callI32RetI32(ZOOM_FINISH, 0);
+    }
 
     /**
      * 117 getZoomStepRange() -> {ret, opticalMin, opticalMax, digitalMin, digitalMax}. Only valid inside a
      * 121 session. Struct layout from the native reply code, UNVERIFIED on the device: callers validate.
      */
     public int[] getZoomStepRange() throws RemoteException {
-        return call(GET_ZOOM_STEP_RANGE, request(), r -> {
+        int[] v = call(GET_ZOOM_STEP_RANGE, request(), r -> {
             int ret = r.readInt32();
             HwBlob b = r.readBuffer(16);
             return new int[] {ret, b.getInt32(0), b.getInt32(4), b.getInt32(8), b.getInt32(12)};
         });
+        synchronized (ZOOM_LOCK) {
+            if (sZoomSession && v[1] >= 0 && v[2] > v[1] && v[2] <= MAX_OPTICAL_STEP) {
+                sOptMin = v[1];
+                sOptMax = v[2];
+            } else {
+                sOptMin = sOptMax = -1;
+            }
+        }
+        return v;
     }
 
     /** 116 getCurrentZoomStep2() -> {ret, optical, digital}. Layout UNVERIFIED on the device: callers validate. */
     public int[] getZoomStep() throws RemoteException {
-        return call(GET_CURRENT_ZOOM_STEP2, request(), r -> {
+        int[] v = call(GET_CURRENT_ZOOM_STEP2, request(), r -> {
             int ret = r.readInt32();
             HwBlob b = r.readBuffer(8);
             return new int[] {ret, b.getInt32(0), b.getInt32(4)};
         });
+        synchronized (ZOOM_LOCK) { sOptCur = sZoomSession ? v[1] : -1; }
+        return v;
     }
 
     /**
-     * 119 setOpticalZoomStep(step) -> 0 ok / -1 refused. Callers send only the neighbour of a fresh 116 read
-     * (current +1 smaller, -1 bigger) inside [0, opticalMax], one call in flight, >= 220 ms apart, as stock.
+     * 119 setOpticalZoomStep(step) -> 0 ok / -1 refused. Refused here (nothing sent) unless IGmpf2 18(true, 2) and
+     * 121 were sent, 117 gave a range and 116 a position in this session, step is inside that range and exactly one
+     * away from that 116 read (current +1 smaller, -1 bigger, as stock); each 119 uses the 116 read up (zoom audit F2).
+     * Since 1.0.8 also refused while the lens is in the limit zone: an IGmpf2 13 read of this session that is not 0, or
+     * a 153(12,10) count > 0 without a 13 read (stock sends 14 there, ZoomStateView.setZoom :685-694, :846-853).
      */
     public int setOpticalZoomStep(int step) throws RemoteException {
-        return callI32RetI32(SET_OPTICAL_ZOOM_STEP, checkRange("optical zoom step", step, 0, 64));
+        checkRange("optical zoom step", step, 0, MAX_OPTICAL_STEP);
+        synchronized (ZOOM_LOCK) {
+            if (!sZoomPrepared || !sZoomSession) throw new IllegalStateException("119 outside an 18(true,2) + 121 session");
+            if (sOptMax < 0 || sOptCur < 0) throw new IllegalStateException("119 without a 117 range and a fresh 116 read");
+            checkRange("optical zoom step", step, sOptMin, sOptMax);
+            if (Math.abs(step - sOptCur) != 1) {
+                throw new IllegalArgumentException("119(" + step + ") is not next to the 116 position " + sOptCur);
+            }
+            if ((sLimCur != LIM_UNKNOWN && sLimCur != 0) || (sLimTotal > 0 && sLimCur == LIM_UNKNOWN)) {
+                throw new IllegalStateException("119 while the lens may be in the limit zone (13 read "
+                        + (sLimCur == LIM_UNKNOWN ? "none" : String.valueOf(sLimCur)) + ", count " + sLimTotal + ")");
+            }
+            sOptCur = -1;
+        }
+        return callI32RetI32(SET_OPTICAL_ZOOM_STEP, step);
     }
 
     /**
@@ -977,10 +1233,11 @@ public final class GmpfClient extends HidlCaller {
      * Decoded IGmTvType::stHdmiInfo of 662 getHdmiInfo (research/v62 hdmi-console).
      * Size VERIFIED 16 bytes (proxy 0x1bdbbc transacts 0x296; reply lambda 0x25e580 reads Status
      * then readBuffer(16), no bool before the struct; stub lambda 0x26a910 writeBuffer(..,16)).
-     * Field ORDER is UNVERIFIED: taken from XGIMI's AIDL twin (u32Width, u32Height, bInterlace,
-     * bIsHdmiMode, u32FrameRate) with natural alignment -> offsets 0/4/8/9/12. Frame rate unit
-     * 1/100 Hz (stock compares getHDMIFrameRate() >= 6200). Callers must gate every action on
-     * {@link #plausible()}; {@link #rawHex} is logged for the first device test.
+     * Field order (XGIMI's AIDL twin: u32Width, u32Height, bInterlace, bIsHdmiMode, u32FrameRate at 0/4/8/9/12)
+     * VERIFIED on the owner's Z9X 2026-10-30 with a PS5 on HDMI 1: 3840,2160, b8=0, b9=1, 5990 while the vendor
+     * logged "deviceinfo:3840x2160@59" and "HDMI FrameRate Change 6000 -> 5990". Frame rate unit 1/100 Hz (stock
+     * compares getHDMIFrameRate() >= 6200). Off HDMI it keeps the last signal (b9 = 0). Callers still gate every
+     * action on {@link #plausible()}.
      */
     public static final class HdmiSignal {
         public final int width, height, frameRateCenti;
@@ -1025,13 +1282,52 @@ public final class GmpfClient extends HidlCaller {
     // ------------------------------------------------------------------ v6.2 game module (END)
 
     /**
-     * 161 setOutputTiming(4 on | 6 off): "Ultra 120 Hz". The screen blanks briefly; output drops to
-     * 1080p. Caller must refuse while 3D is on or the HDMI input runs at >= 62 Hz (stock rule, DS);
-     * the HDMI frame rate (662 getHdmiInfo struct) is NOT readable here (layout UNVERIFIED).
-     * Read-back 157 getOutputTimingInfo is NOT implemented (struct layout UNVERIFIED): persist the
-     * last value set. TSV W=writeInt32 R=readBool.
+     * 161 setOutputTiming(4 on | 6 off): "Ultra 120 Hz". The screen blanks briefly (about 4 s); output drops to
+     * 1080p120. Caller must refuse while 3D is on or the HDMI input runs at >= 62 Hz (stock rule, DS; 662 frame
+     * rate, see {@link HdmiSignal}). Read back with {@link #getOutputTimingInfo()}. TSV W=writeInt32 R=readBool.
      */
     public boolean setOutputTiming(OutputTiming t) throws RemoteException { return callI32RetBool(SET_OUTPUT_TIMING, t.wire); }
+
+    /**
+     * Decoded IGmpf::OutputTimingInfo of 157 getOutputTimingInfo (40 bytes: 7 int OutputTimingInfo + 3 int
+     * stDlpSupportTiming). Order VERIFIED on the owner's Z9X 2026-10-30 (docs/z9x/parity/probe.md): every read
+     * matched the vendor's own log line "user_timing_idx = 6,disp_width: 3840,disp_height:2160,curr_timing_idx:6,
+     * curr_hres:3840, curr_vres:2160,vfreq:59" field for field, and Ultra 120 Hz on (161(4)) read
+     * 4,3840,2160,4,1920,1080,120. The last three ints (6,4,7 in every read) are the support table, not used.
+     */
+    public static final class OutputTimingInfo {
+        public final int userTiming, dispWidth, dispHeight, currTiming, currWidth, currHeight, vfreq;
+
+        OutputTimingInfo(HwBlob b) {
+            userTiming = b.getInt32(0);
+            dispWidth = b.getInt32(4);
+            dispHeight = b.getInt32(8);
+            currTiming = b.getInt32(12);
+            currWidth = b.getInt32(16);
+            currHeight = b.getInt32(20);
+            vfreq = b.getInt32(24);
+        }
+
+        /** Stock V3DisplayManager: getOutputTimingInfo().userTiming == 4 is "Ultra 120 Hz on". */
+        public boolean isUltra120() { return userTiming == OutputTiming.ULTRA_120_ON.wire; }
+
+        @Override
+        public String toString() {
+            return "user=" + userTiming + " out=" + currWidth + "x" + currHeight + "@" + vfreq + " timing=" + currTiming;
+        }
+    }
+
+    /**
+     * 157 getOutputTimingInfo(): read-only, no argument (reply lambda 0x25e2f0: Status, readBool, readBuffer(40)).
+     * A false bool or a reply of another size fails only this call. Callers: panel.Snapshot (Ultra 120 Hz row) and
+     * the Ultra 120 Hz read-back after 161.
+     */
+    public OutputTimingInfo getOutputTimingInfo() throws RemoteException {
+        return call(GET_OUTPUT_TIMING_INFO, request(), r -> {
+            if (!r.readBool()) throw new IllegalStateException("157 returned false");
+            return new OutputTimingInfo(r.readBuffer(40));
+        });
+    }
 
     // ------------------------------------------------------------------ sound
     /** 62 getSoundeffect() -> u8 (null if not a known mode). TSV W= R=readUint8. */
@@ -1348,14 +1644,8 @@ public final class GmpfClient extends HidlCaller {
     // method without one). Kept as reference: re-enable a method only together with its caller,
     // and only after a device test where its argument values are marked UNVERIFIED.
     //
-    // /**
-    //  * 307 sendFocusStatus(5) then (3): our AF test card (focusEvent 333/334/335) was closed
-    //  * (FS 2.7, stock FocusUIV2 dapeng branch). TSV: W=writeUint8 R=. Only after a card was shown.
-    //  */
-    // public void sendAfCardClosed() throws RemoteException {
-    //     callU8(SEND_FOCUS_STATUS, FOCUS_STATUS_AF_CARD_CLOSED);
-    //     callU8(SEND_FOCUS_STATUS, FOCUS_STATUS_AF_CARD_DONE);
-    // }
+    // (307 sendFocusStatus(5) then (3), sendAfCardClosed: un-parked in Lumen OS 1.0.8 for AfCardOverlay, see the focus
+    // section.)
     //
     // (121 / 120 zoom session: un-parked in Lumen OS 1.0.2 for the optical zoom, see the 3D / zoom section.)
     //

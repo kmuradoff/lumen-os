@@ -281,17 +281,13 @@ public final class Hal {
     }
 
     /**
-     * 585 real-time keystone. Turning it ON is refused (false, nothing written) while 173 reports a
-     * ceiling mount (1 / 3) or cannot be read (FEATURE_SPEC 2.2). OFF is always written.
+     * 585 real-time keystone, ON and OFF on every mount. Lumen 1.0.8 (parity keystone item 2): 1.0 to 1.0.7
+     * refused ON on a ceiling mount (173 = 1 / 3, the shared FEATURE_SPEC 2.2 rule), but the Z9X stock does
+     * not: G0082 feature.xml unsupported_inversion_functions starts with 1 (real-time keystone supported
+     * when hoisted), so stock KeyStoneViewModel writes 585 whatever the mount and ProjectionViewModel keeps
+     * it on when switching to the ceiling. Always true (the return value stays for the callers).
      */
     public static boolean setMoveAkChecked(GmpfClient g, boolean on) throws Exception {
-        if (on) {
-            GmpfClient.PutMode m = g.getPutMode();                    // 173
-            if (m == null || m == GmpfClient.PutMode.CEILING_FRONT || m == GmpfClient.PutMode.CEILING_REAR) {
-                Log.i(TAG, "585(true) refused: put mode " + m);
-                return false;
-            }
-        }
         g.setMoveAk(on);
         return true;
     }

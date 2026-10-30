@@ -30,4 +30,6 @@
     <string name="zoom_limit_small">هذه أصغر صورة</string>
     <string name="zoom_refused">لم يحرّك جهاز العرض التكبير</string>
     <string name="zoom_unavailable">التكبير البصري غير متاح الآن</string>
+    <string name="zoom_reset_hint">القائمة: إعادة ضبط التكبير (أكبر صورة)</string>
+    <string name="zoom_reset_done">تمت إعادة ضبط التكبير</string>
 </resources>

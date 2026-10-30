@@ -70,7 +70,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Keys: OK = next corner (TL -> TR -> BR -> BL); D-pad = move the selected corner by the stock step
  * in panel units (x 6.0 / y 3.375 = stock user_manu_keystone_step_x/_y, which stock KeyStoneManager
  * adds straight to the 186 coordinates; kept as floats, rounded on send), faster while held (x1, x2
- * after 4 repeats, x4 after 10, x8 after 20, x16 after 40); hold OK (0.8 s) = reset to the full picture (MENU only
+ * after 4 repeats, x4 after 10, x8 after 20, x16 after 40); hold OK (0.8 s) = reset to the full picture, the stock
+ * screen's corners-only reset 207(0) (no lens move, the zoom stays), 150 -> 185 only as the fallback (MENU only
  * switches the view: one stray press must not throw the corners away); BACK = save and exit (back to the
  * quick panel when opened from it). Auto-hide, HOME and screen off also save (the exit runs from
  * onDismissed).
@@ -80,7 +81,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * plus two DB / CRI saves) takes 375-450 ms ("CorrectKeystone use 396 ms"), the 150 check ~1 ms.
  * Stock pays the same per step on the HW warp (KeyStoneWind runs 186 -> 185 -> 150 and four 186 + 150
  * arrow pre-checks synchronously per key); it hides it with 18 setKstPrepare(true) (SW warp preview),
- * which we keep off (see {@link #ensurePrepared}). With the 1.0 acceleration a held key ran the target
+ * which 1.0 to 1.0.7 kept off (see {@link #ensurePrepared}). With the 1.0 acceleration a held key ran the target
  * up to ~0.8 s of travel ahead of the picture: the user released when the PICTURE looked right, the
  * picture then jumped further, the user went back (the log: TL 364 -> 405 -> 337 -> 364). Now a held
  * key never runs the target more than {@link #lead} steps ahead of what the projector shows (single
@@ -99,8 +100,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *          plausible one that 150 rejects (beyond the manual range), opens the card in "reset first"
  *          mode when 150 accepts the full frame: moves are blocked until hold-OK applies it (150 ->
  *          185, then the 186 read-back below).
- *   first 185 of a session (move or reset): stock sends IGmpf2 18 setKstPrepare(true,0) first; OFF
- *          since 1.0 (debug switch persist.z9x.kst_prepare=1, see {@link #ensurePrepared}). The 185
+ *   first 185 of a session (move or reset): stock sends IGmpf2 18 setKstPrepare(true,0) first; ON
+ *          again since 1.0.8 (kill switch persist.z9x.kst_prepare=0, see {@link #ensurePrepared}). The 185
  *          result (success value UNVERIFIED, logged) is followed by up to 3
  *          186 read-backs 80 ms apart compared with what was sent (all logged). No match = "the
  *          projector did not apply the corner": the previous corners are restored when 150 accepts
@@ -501,18 +502,19 @@ public final class ManualKeystonePanel extends Panel {
 
     /**
      * HAL thread: stock notifyKeystone(true,0) before the first 185 of the session (IGmpf2 18).
-     * OFF by default since Lumen 1.0 (user report 2026-10-07): 18(true) switches the vendor to its
-     * real-time SW keystone (HWC GL warp), whose geometry on our GSI differs from the DLPC8445 HW warp
-     * (G0082 trapezoid props are not loaded), so the picture jumped at the first move and jumped back
-     * at exit (18(false) -> HW warp). Without it every 185 goes straight to the HW warp: what the user
-     * aligns is what stays; it also never captures DRM video (the green/red garbage). Debug switch:
-     * persist.z9x.kst_prepare=1 restores the stock call. {@link #prepared} is set only when 18(true)
-     * is really sent: a 18(false) without it resets the warp to the full frame (see the exit).
+     * Lumen 1.0 to 1.0.7 kept it OFF (user report 2026-10-07): 18(true) switches the vendor to its
+     * real-time SW keystone (HWC GL warp), whose geometry on our GSI differed from the DLPC8445 HW warp
+     * because the G0082 trapezoid props were not loaded, so the picture jumped at the first move and
+     * back at exit. 1.0.8 loads them (overlay/v1/z9x_trapezoid.rc, parity keystone item 13), so the stock
+     * call is ON again by default and the vendor's hybrid policy picks HW or SW itself, as stock.
+     * Kill switch: persist.z9x.kst_prepare=0 (HW warp only, the 1.0.7 behaviour). {@link #prepared} is
+     * set only when 18(true) is really sent: a 18(false) without it resets the warp to the full frame
+     * (see the exit).
      */
     private void ensurePrepared(Gmpf2Client g2) {
         if (prepareDecided) return;
         prepareDecided = true;
-        if (!SystemProperties.getBoolean("persist.z9x.kst_prepare", false)) {
+        if (!SystemProperties.getBoolean("persist.z9x.kst_prepare", true)) {
             Log.i(TAG, "18 setKstPrepare not sent (HW warp only; persist.z9x.kst_prepare=0)");
             return;
         }
@@ -747,26 +749,55 @@ public final class ManualKeystonePanel extends Panel {
         });
     }
 
-    /** Hold OK: the full frame through 150 -> 185; the first 185 of the session is read back (186). */
+    /**
+     * Hold OK. The stock manual keystone screen reset (2026-10-30, keystone.md item 7, the same as the HB fork of
+     * hb-t8b): KeyStoneWind MENU > Reset -> setCorrectKeystoneReset = setIChipReset, 207(0) and 129(0,0) if 130 reads
+     * 6 (GmpfClient.resetKeystoneCorners). It resets ONLY the corners: no 153 lens move, no 181, no 46 (the zoom
+     * stays). Then 186 is read back (up to READBACK_TRIES x READBACK_GAP_MS); only when it does not show the full
+     * frame (what 207 restores on the G0082 is UNVERIFIED) does the 1.0.7 path run: the full frame through 150 -> 185
+     * (the first 185 of the session is read back). The full reset with the lens home is the quick panel's
+     * "Restore default picture" row.
+     */
     private void resetToFullFrame(GmpfClient g, Gmpf2Client g2) {
         resetQueued.set(false);
         if (!active || aborted) return;
-        if (abortIfAkBusy("185 reset")) return;
+        if (abortIfAkBusy("keystone reset")) return;
         KstPoint full = KstPoint.fullFrame();
         try {
             long t0 = SystemClock.uptimeMillis();
-            if (!g.checkKeystonePoints(full)) {
-                Log.w(TAG, "reset: 150 rejected the full frame");
-                Notify.show(app, app.getString(R.string.kst_refused), app.getString(R.string.kst_reason_check));
-                return;
+            boolean stockOk = false;
+            try {
+                g.resetKeystoneCorners();                         // 207(0), 129(0,0) only if 130 read 6
+                KstPoint back = null;
+                for (int i = 1; i <= READBACK_TRIES && !stockOk; i++) {
+                    String err = null;
+                    try { back = g.getKeystonePoints(); } catch (Throwable t) { back = null; err = String.valueOf(t.getMessage()); }
+                    stockOk = back != null && near(back, full);
+                    Log.i(TAG, "reset: 207(0) sent; 186 read-back " + i + "/" + READBACK_TRIES + ": "
+                            + (back != null ? back + " raw " + back.raw() : "? " + err) + (stockOk ? " full frame" : " not the full frame"));
+                    if (!stockOk && i < READBACK_TRIES) SystemClock.sleep(READBACK_GAP_MS);
+                }
+            } catch (Throwable t) {
+                Log.w(TAG, "reset: 207 corners reset: " + t);
             }
-            String why = "reset, 150 " + (SystemClock.uptimeMillis() - t0) + " ms";
-            ensurePrepared(g2);                               // 18(true,0) once, only if switched on
-            if (!send185(g, full, why, 0)) {                  // 185 (+ first-time 186 read-back)
-                notApplied(g);
-                return;
+            if (stockOk) {
+                confirmed = true;                                 // the projector shows what the card will draw
+                Log.i(TAG, "reset: stock setIChipReset, corners only (" + (SystemClock.uptimeMillis() - t0) + " ms)");
+            } else {
+                Log.w(TAG, "reset: 186 is not the full frame after 207: full frame through 150 -> 185");
+                if (!g.checkKeystonePoints(full)) {
+                    Log.w(TAG, "reset: 150 rejected the full frame");
+                    Notify.show(app, app.getString(R.string.kst_refused), app.getString(R.string.kst_reason_check));
+                    return;
+                }
+                String why = "reset, 150 " + (SystemClock.uptimeMillis() - t0) + " ms";
+                ensurePrepared(g2);                               // 18(true,0) once, only if switched on
+                if (!send185(g, full, why, 0)) {                  // 185 (+ first-time 186 read-back)
+                    notApplied(g);
+                    return;
+                }
+                Log.i(TAG, "reset: 185 full frame applied");
             }
-            Log.i(TAG, "reset: 185 full frame applied");
             okBase = null;                                    // nothing learned about the new shape yet
             mustCheck = false;
             applied = full;

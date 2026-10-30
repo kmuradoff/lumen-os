@@ -36,6 +36,8 @@ public final class Gmpf2Client extends HidlCaller {
     public static final String IGMPF2 = "xgimi.hardware.gmpf@1.0::IGmpf2";
 
     // ------------------------------------------------ IGmpf2 transaction codes (private, VERIFIED TSV)
+    private static final int GET_CURRENT_ZOOM_LIMIT_STEP = 13; // ()        -> cb(i32, st_ZoomStep 8 bytes)  [1.0.8 zoom limit position]
+    private static final int SET_OPTICAL_ZOOM_LIMIT_STEP = 14; // (i32)     -> i32  [1.0.8, guarded EXCEPTION, apps/check_hal_callers.py]
     private static final int SET_KST_PREPARE = 18;             // (bool,i32) -> bool  [v6.3 manual keystone]
     private static final int GET_DYNAMIC_BLACK_TYPE = 29;      // ()        -> i32
     private static final int SET_DYNAMIC_BLACK_TYPE = 31;      // (i32)     -> bool
@@ -124,12 +126,22 @@ public final class Gmpf2Client extends HidlCaller {
     /** 51 getLensDispMode() -> 1 = Boost. TSV W= R=readInt32. */
     public boolean isBoost() throws RemoteException { need(); return callRetI32(GET_LENS_DISP_MODE) == 1; }
     /**
-     * 52 setLensDispMode(1 Boost | 0 normal). Raises the laser current: keep the stock two-press
-     * confirmation, refuse in 3D and when hot (438, threshold UNVERIFIED). Never the "*ForTest" path.
+     * 52 setLensDispMode(1 Boost | 0 normal). Boost does not raise the laser current: it switches the DLP colour
+     * wheel sequence from 3 to 5 segments (brighter, paler colours; the vendor lowers the current itself when hot,
+     * current.ini LOWPLUMENSCONMAP). Keep the stock two-press confirmation and refuse in 3D, as stock; no
+     * temperature check (stock has none, parity brightness item 8). Never the "*ForTest" path.
      * TSV W=writeInt32 R=readBool.
      */
     public boolean setBoost(boolean on) throws RemoteException { need(); return callI32RetBool(SET_LENS_DISP_MODE, on ? 1 : 0); }
 
+
+    // ------------------------------------------------------------------ keystone reset
+    /**
+     * 46 doKeystoneRatio(3) only: ratio reset, the last step of the stock keystone reset (KeyStoneManager.java:254-276;
+     * stock shows keystone_reset_toast on false). Lumen OS 1.0.8, parity keystone item 8. TSV W=writeInt32 R=readBool.
+     * Caller: the quick panel's "Reset keystone".
+     */
+    public boolean resetKeystoneRatio() throws RemoteException { need(); return callI32RetBool(DO_KEYSTONE_RATIO, 3); }
 
     // ------------------------------------------------------------------ game mode / ALLM
     /** 56 setGameModeType(0 manual | 1 auto). TSV W=writeInt32 R=readBool. Read-back 55 not implemented: persist our value. */
@@ -150,11 +162,12 @@ public final class Gmpf2Client extends HidlCaller {
 
     /**
      * 55 getGameModeProp() -> {state, type, gameModeOpt}. Wire VERIFIED (reply lambda 0x25d820:
-     * Status, readBool, then readBuffer(12)); the field ORDER inside the 12 bytes is UNVERIFIED (AIDL twin
-     * GameModeProp_st: state, type, gameModeOpt at 0/4/8; state 0 = on / 1 = off, type 0 manual / 1 auto).
-     * Read-only. Callers must self-validate before trusting it (opt == 647, state/type in {0,1});
-     * game.GameProfile does, and otherwise falls back to the persisted value. A reply of another size
-     * fails only this call (ReplyException).
+     * Status, readBool, then readBuffer(12)). Field order {state, type, opt} at 0/4/8 (AIDL twin GameModeProp_st)
+     * VERIFIED on the owner's Z9X 2026-10-30 (docs/z9x/parity/probe.md): off HDMI the raw {1,0,0} was logged by
+     * the vendor as "getGameModeProp Type/State/Opt= 0 / 1 / 0"; on HDMI 1 with a PS5 and game mode on, {0,0,0}
+     * with 647 = 0 and {0,0,1} with 647 = 1. state 0 = on / 1 = off (as 57), type 0 manual / 1 auto (as 56).
+     * Read-only. Callers decode it with {@link #gameModeOf}, which still checks opt == 647 and state/type in {0,1}.
+     * A reply of another size fails only this call (ReplyException).
      */
     public int[] getGameModeProp() throws RemoteException {
         need();
@@ -163,6 +176,17 @@ public final class Gmpf2Client extends HidlCaller {
             android.os.HwBlob b = r.readBuffer(12);
             return new int[] {b.getInt32(0), b.getInt32(4), b.getInt32(8)};
         });
+    }
+
+    /**
+     * Game mode of a 55 reply {state, type, opt} (see {@link #getGameModeProp()}): 2 auto (type 1), 1 on (state 0),
+     * 0 off (state 1); -1 when it does not fit (null, opt != the 647 read just before, state or type not 0 / 1).
+     * Not a HAL call.
+     */
+    public static int gameModeOf(int[] p, int opt647) {
+        if (p == null || p.length < 3 || p[2] != opt647 || (p[0] != 0 && p[0] != 1) || (p[1] != 0 && p[1] != 1)) return -1;
+        if (p[1] == 1) return 2;
+        return p[0] == 0 ? 1 : 0;
     }
     // ------------------------------------------------------------------ v6.2 game module (END)
 
@@ -199,10 +223,54 @@ public final class Gmpf2Client extends HidlCaller {
      */
     public boolean setKstPrepareForZoom(boolean enter) throws RemoteException {
         need();
+        if (!enter) GmpfClient.noteZoomPrepare(false);
         HwParcel q = request();
         q.writeBool(enter);
         q.writeInt32(2);
-        return call(SET_KST_PREPARE, q, RET_BOOL);
+        boolean r = call(SET_KST_PREPARE, q, RET_BOOL);
+        if (enter) GmpfClient.noteZoomPrepare(true);   // the 119 guard (zoom audit F2)
+        return r;
+    }
+
+    // ------------------------------------------------------------------ optical zoom limit position (Lumen OS 1.0.8, O1)
+    // Zoom audit F1 (docs/fit_screen/Z9X_ZOOM_AUDIT.md, owner approval O1 2026-10-30): the Z9X vendor has one zoom
+    // "limit" position beyond optical index 0 (G0082 zoom.ini [ZOOM_LIMIT_POSITION] zoomLimitStepEn = 1,
+    // zoomMotorLimitStep = 129), which stock enters and leaves only through these two calls. Stock callers (V6.15.62
+    // settings jadx, com/xgimi/keystone/view/zoommove/zoom/): ZoomUtils.getCurrentZoomLimitStep (ZoomUtils.java:90-94,
+    // GmDisplayManager.GetCurrentZoomLimitStep().getZoomOpticalstep(), read by ZoomStateView.initZoom :509, :526) and
+    // ZoomUtils.setOpticalZoomLimitStep (ZoomUtils.java:103-120: GetCurrentZoomLimitStep() - 1 for key 22 bigger,
+    // + 1 for key 21 smaller -> SetOpticalZoomLimitStep, from ZoomStateView.setZoom :689 smaller and :849 bigger);
+    // DisplayManagerWrapper.java:1219-1231. Wire: research/play6/z9x_gmpf_codes.txt:715-716 (BpHwGmpf2 13 cb(int,
+    // IDisplayType::st_ZoomStep) as IGmpf 116; 14 W=writeInt32 R=readInt32). The guard state lives in GmpfClient
+    // (ZOOM_LOCK, with the 116 / 117 / 153(12,10) reads of the same session).
+
+    /**
+     * IGmpf2 13 GetCurrentZoomLimitStep() -> {ret, limit, digital}: 0 out of the limit zone, -1..-count inside it
+     * (st_ZoomStep {zoomOpticalstep, zoomDigtalstep}, the IGmpf 116 layout). A read; remembered for the 14 and 119
+     * guards when an 18(true,2) + 121 session is open. Callers validate. Layout UNVERIFIED on the Z9X (audit F8).
+     */
+    public int[] getZoomLimitStep() throws RemoteException {
+        need();
+        int[] v = call(GET_CURRENT_ZOOM_LIMIT_STEP, request(), r -> {
+            int ret = r.readInt32();
+            android.os.HwBlob b = r.readBuffer(8);
+            return new int[] {ret, b.getInt32(0), b.getInt32(4)};
+        });
+        GmpfClient.noteZoomLimitRead(v[1]);
+        return v;
+    }
+
+    /**
+     * IGmpf2 14 SetOpticalZoomLimitStep(step) -> i32, the guarded EXCEPTION of apps/check_hal_callers.py (was BANNED
+     * as "zoom (large move)" until O1; the HB device test of the same vendor code, SURVEY_hb-t5b Z1, showed one limit
+     * move = about 130 motor steps to / from the PI sensor). Sent only as stock: the neighbour (+-1) of a fresh 13
+     * read, inside [-count, 0] of a 153(12,10) count, at optical index 0 (a fresh 116 read = 0), inside an
+     * 18(true,2) + 121 session; both reads are used up. GmpfClient.checkZoomLimitStep refuses (nothing sent) otherwise.
+     */
+    public int setOpticalZoomLimitStep(int step) throws RemoteException {
+        need();
+        GmpfClient.checkZoomLimitStep(step);
+        return callI32RetI32(SET_OPTICAL_ZOOM_LIMIT_STEP, step);
     }
 
     /**
@@ -423,8 +491,7 @@ public final class Gmpf2Client extends HidlCaller {
     // /** 192 notifyAutokst(0): a key press cancelled a curtain notice (FS 2.6). Only 0. TSV W=writeInt32 R=readBool. */
     // public boolean notifyAutokstCancelled() throws RemoteException { need(); return callI32RetBool(NOTIFY_AUTOKST, 0); }
     //
-    // /** 46 doKeystoneRatio(3) only: ratio reset (FS 2.5 reset step 5). TSV W=writeInt32 R=readBool. */
-    // public boolean resetKeystoneRatio() throws RemoteException { need(); return callI32RetBool(DO_KEYSTONE_RATIO, 3); }
+    // (46 doKeystoneRatio(3), resetKeystoneRatio: un-parked in Lumen OS 1.0.8 for the stock keystone reset.)
     //
     // (269/270, 283/284, 29/31, 328/329, 330/323, 326/327: un-parked in Lumen OS 1.0.4 for the professional
     // picture settings, see that section.)

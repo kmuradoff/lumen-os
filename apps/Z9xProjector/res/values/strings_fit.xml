@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fit to my screen size (docs/fit_screen/DESIGN.md). Z9X file, copied byte for byte into the HB app (same: rows of
+     devices/goat_elegant/forks.tsv). English base; translations: gsi/apps/i18n/langs/<locale>.txt
+     @projector/strings_fit.xml. -->
+<resources>
+    <!-- Keystone page row and its one-line summary. -->
+    <string name="fit_row">Fit to screen size</string>
+    <string name="fit_row_summary">The zoom is set from the distance to your screen and its size</string>
+    <!-- The screen size page. -->
+    <string name="fit_page_title">Screen size</string>
+    <string name="fit_input">Enter the size as</string>
+    <string name="fit_input_diag">Diagonal</string>
+    <string name="fit_input_wh">Width and height</string>
+    <string name="fit_diagonal">Diagonal</string>
+    <string name="fit_unit">Unit</string>
+    <string name="fit_unit_in">inches</string>
+    <string name="fit_unit_cm">cm</string>
+    <string name="fit_aspect">Aspect ratio</string>
+    <string name="fit_width">Width</string>
+    <string name="fit_height">Height</string>
+    <string name="fit_margin">Margin from the edge</string>
+    <string name="fit_mode">How to fit</string>
+    <string name="fit_mode_inside">Never past the frame</string>
+    <string name="fit_mode_closest">As close as possible</string>
+    <!-- Values: %1$s = a number such as 100 or 221.5 -->
+    <string name="fit_value_in">%1$s in</string>
+    <string name="fit_value_cm">%1$s cm</string>
+    <string name="fit_screen_is">Screen: %1$s × %2$s cm</string>
+    <string name="fit_screen_bad">This size is outside 50 to 500 cm</string>
+    <string name="fit_start">Fit now</string>
+    <string name="fit_calibrate">Calibrate the zoom</string>
+    <string name="fit_calib_none">Not calibrated yet: calibrate once first (a tape measure, about 2 minutes)</string>
+    <string name="fit_calib_done">Calibrated at %1$s m</string>
+    <!-- Before a fit. -->
+    <string name="fit_confirm_msg">The lens will move and the keystone will be corrected automatically. About 20 seconds.</string>
+    <string name="fit_go">Start</string>
+    <!-- Progress card. %1$d / %2$d = moves done / planned. -->
+    <string name="fit_p_distance">Measuring the distance</string>
+    <string name="fit_p_keystone">Correcting the keystone</string>
+    <string name="fit_p_zoom">Zoom: step %1$d of %2$d</string>
+    <string name="fit_p_focus">Focusing</string>
+    <string name="fit_p_back">BACK stops</string>
+    <!-- Result card. -->
+    <string name="fit_done">Done</string>
+    <string name="fit_result_picture">Picture: %1$s × %2$s cm. Screen: %3$s × %4$s cm.</string>
+    <string name="fit_result_gap">Gap: %1$s cm left and right, %2$s cm top and bottom.</string>
+    <string name="fit_result_where">Distance %1$s m, tilt %2$s°, zoom %3$d of %4$d.</string>
+    <string name="fit_advice_further">For an exact fit move the projector %1$s cm further away</string>
+    <string name="fit_advice_closer">For an exact fit move the projector %1$s cm closer</string>
+    <string name="fit_small_screen">The screen is smaller than the smallest picture: move the projector %1$s cm closer</string>
+    <string name="fit_big_screen">The screen is bigger than the biggest picture: move the projector %1$s cm further away</string>
+    <!-- Why a fit or a calibration stopped. -->
+    <string name="fit_e_unsupported">Not available on this projector yet</string>
+    <string name="fit_e_no_screen">Enter the screen size first</string>
+    <string name="fit_e_no_calib">The zoom needs a calibration first</string>
+    <string name="fit_e_mount">Could not read the mounting type</string>
+    <string name="fit_e_distance">The distance is outside 0.5 to 4.8 m</string>
+    <string name="fit_e_unstable">The distance keeps changing: is someone in front of the sensor?</string>
+    <string name="fit_e_pitch">Could not read the tilt</string>
+    <string name="fit_e_pitch_range">The projector is tilted more than 30°</string>
+    <string name="fit_e_keystone">Auto keystone did not run</string>
+    <string name="fit_e_home">The lens did not go back to the start</string>
+    <string name="fit_e_lens">The lens stopped somewhere unexpected: stopped</string>
+    <string name="fit_e_stopped">Stopped at zoom %1$d of %2$d</string>
+    <string name="fit_e_failed">That did not work</string>
+    <!-- Calibration. -->
+    <string name="fit_cal_title">Zoom calibration</string>
+    <string name="fit_cal_intro">Leave the projector where it normally stands. You need a tape measure. About 2 minutes.</string>
+    <string name="fit_cal_kind">Positions to measure</string>
+    <string name="fit_cal_two">2, quick</string>
+    <string name="fit_cal_three">3, with a check</string>
+    <string name="fit_cal_all">All 14</string>
+    <string name="fit_cal_start">Start the calibration</string>
+    <string name="fit_cal_step">Position %1$d of %2$d (zoom %3$d of 14)</string>
+    <string name="fit_cal_measure">Measure the width of the white frame along the middle line, outer edge to outer edge</string>
+    <string name="fit_cal_keys">LEFT / RIGHT 0.1 cm, UP / DOWN 10 cm, OK saves</string>
+    <string name="fit_cal_bad">No zoom position gives this width: check the measurement</string>
+    <string name="fit_cal_saved">Calibration saved</string>
+    <string name="fit_cal_refused">Calibration not accepted</string>
+    <string name="fit_cal_r_range">a measured width is outside what this lens can give</string>
+    <string name="fit_cal_r_order">the picture must get smaller at every position</string>
+    <string name="fit_cal_r_full">the middle position does not match the line through the ends: measure all 14 positions</string>
+</resources>

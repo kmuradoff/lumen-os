@@ -1,3 +1,93 @@
+# Z9xProjector, next (Lumen OS 1.0.8): parity with the stock Z9X (2026-10-30)
+
+From the parity report docs/z9x/parity/README.md (items 1 to 11). Nothing here is device-tested yet; the owner was
+watching a film, so the HAL probe (docs/z9x/parity/probe.md) has not run.
+
+- **Autofocus card** (`AfCardOverlay`, new; focus item 1, 13): the vendor's camera AF needs a test card on screen
+  (event 335 on the Z9X) and waits about 3 s for 307(4), else it ends with EVENT_FLOW_ERR without moving the motor.
+  Lumen showed only a toast, so the AF after the optical zoom often failed. Now a full-screen card (our own artwork,
+  the stock geometry: corner stars and centre rings, no XGIMI logo) opens on events 4 / 8 / 10 / 333 / 334 / 335,
+  307(4) goes out after its first frame, it closes on 5 / 7 / 2 or after 20 s with 307(5) + 307(3), BACK cancels the
+  AF (307(3)), LEFT / RIGHT cancel and open the manual focus. Never over the auto keystone overlay.
+  `GmpfClient`: sendAfUiOpen (307(4)), sendAfCardClosed (un-parked), sendAfStop (307(3)).
+- **Manual focus window as stock** (focus items 9, 10, 11): closes after 3 s (was 8 s) and on any other key; the
+  focus key and every AF start close it first, without manualFocus(2) (it interrupted the AF just started).
+- **Smart autofocus as stock** (focus item 4): one switch sets IGmpf2 91 and IGmpf 587 ("AF after moving"), first on
+  the Focus page after Manual focus; a standby marker no longer restores an old 587 the user changed.
+- **GPU keystone path back on** (keystone item 13): `ManualKeystonePanel` sends the stock 18 setKstPrepare(true/false,0)
+  around the manual keystone again by default (kill switch persist.z9x.kst_prepare=0); overlay/v1/z9x_trapezoid.rc
+  loads the 7 G0082 trapezoid properties the stock init loaded.
+- **Keystone reset as stock** (keystone item 8, game item 2.7): 207(0), 129(0,0) when 130 reads 6, 181(50), 153(5,10)
+  lens home, IGmpf2 46(3), 158(0); the saved zoom position is forgotten. If 186 does not read the full frame
+  afterwards, the 1.0.7 full-frame 185 runs as a safety net. The top-speed game reset adds 130 / 129 too.
+  `GmpfClient.resetKeystoneStock`, `Gmpf2Client.resetKeystoneRatio` (un-parked).
+- **Real-time keystone on the ceiling** (keystone item 2): no longer refused or switched off on a ceiling mount
+  (G0082 supports it when hoisted).
+- **Picture position in the optical zoom** (keystone item 10): OK switches the arrows between size and position
+  (141 shift, real-time keystone paused meanwhile, 158 at the end).
+- **Digital audio format PCM by default** (sound item 19): sent at boot and when ARC appears until the user picks
+  another, as stock (a soundbar without DD / DTS stays silent on AC3 / DTS otherwise).
+- **Boost as stock** (brightness items 8 to 11): no 85 degree refusal (stock has none), a line on what Boost does,
+  colour space and Colour accuracy refused while Boost is on.
+- **Picture** (picture items 2, 3, 4, 12, 13, 26, 28, 34, 37): no grey rows (sliders in AI / Performance, colour
+  temperature in Office, AI contrast outside SDR are open as on stock; a row whose read failed is hidden); Colour
+  accuracy also for HLG and HDR10+; no picture mode change in 3D or game mode; "Reset all picture settings"
+  (IGmpf2 278(0,-8,0)); 3D refused while Original frame rate is on; Ultra 120 Hz row never grey (HDMI refused on press).
+- **Game mode** (game items 2.3, 2.6, 2.11, 2.15 to 2.17): On / Auto refused in 3D and with Dolby Vision, 56 / 57
+  results checked; a confirmation before top speed resets a keystone; aspect ratio moved to the HDMI rows of the
+  Picture page and refused in game mode; "120 Hz for consoles" off by default until a PS5 test.
+- Not done, waiting for the probe: HDMI 1.4 / 2.0 values (game item 2.18), the game row from IGmpf2 55 and the
+  top-speed keystone lock (2.2, 2.13), Ultra 120 Hz from 157 and on HDMI below 62 Hz (picture items 29, 30), the
+  lumens mode slider rule (brightness item 12).
+- New strings (Z9X only): `res/values/strings_parity.xml`, 16 languages in apps/i18n/langs.
+- **After the HAL probe with a PS5 on HDMI 1** (2026-10-30, docs/z9x/parity/probe.md; second 1.0.8 / 108 build
+  5529ab6c..., not device-tested): layouts of IGmpf 157, IGmpf 662 and IGmpf2 55 verified against the vendor's own
+  log lines. `GmpfClient.getOutputTimingInfo` (157, new) and `OutputTimingInfo`; `Gmpf2Client.gameModeOf` (55
+  {state, type, opt}). Snapshot reads 157, 662 and 55. The Ultra 120 Hz row shows 157 (user timing 4) and keeps the
+  stored value in step; on HDMI it is allowed below 62 Hz (662) as stock, refused at 62 Hz and above ("not
+  available for this content") or when 662 is unreadable; 157 is read back after 161; no "not yet tested" line.
+  The game row and tile show the input's mode from 55 when it fits 647 (the chosen value for 10 s while pending);
+  the top-speed keystone / rotation lock needs 55 state on as well; gameModeOn uses 55 as stock. GameProfile
+  decodes 55 with the verified order (no more learning from a 647 = 2 / 3 reading). Fix 2 (EDID) unchanged: 661
+  reads 1 on HDMI 2.0, the 0/1/2 scale Lumen already uses.
+- **Owner feedback on the HB (2026-10-30), approved for the Z9X too** (third 1.0.8 / 108 build 040a250e..., for the
+  test3 image, not device-tested): "Reset keystone" no longer moves the optical zoom (no 153(5,10), the saved zoom
+  position stays; on purpose not stock); MENU in the optical zoom screen resets the zoom instead: 153(5,10) on
+  release, 116 read back for the counter, the saved zoom position forgotten, XGIMI's step mode half-step again,
+  autofocus on close; a hint line under the arrows hint (`zoom_reset_hint`, `zoom_reset_done`, 16 languages).
+  Gamma value (1.8..2.6) and the rotation angle are formatted with `Locale.ROOT`: a point in every language (was
+  "2,2" in Russian).
+- **Stock evidence of the HB (2026-10-30 evening), applied to the Z9X** (fourth 1.0.8 / 108 build d4480b22..., not
+  device-tested): "Reset keystone" is the full stock reset again, 153(5,10) lens home between 181(50) and IGmpf2 46(3)
+  (stock KeyStoneManager.resetKeyStone), the saved zoom position forgotten and half-step mode set
+  (`OpticalZoomPanel.onLensHome`), and no confirmation (stock KeyStoneViewModel RESET_KEYSTONE :555-559 has none).
+  The corners-only reset is the manual keystone screen's hold OK (unchanged). MENU in the optical zoom screen unchanged.
+- **Both keystone resets as stock, as the HB hb-t8b** (2026-10-30 night, keystone items 7 and 8; build 93e3aff3...
+  for test3, previous a214afc7... kept in `build/apps_v1-1.0.8-test3c/`, not device-tested): the full reset row is now
+  "Restore default picture" ("Восстановление экрана", stock reset_key_stone) under the title "More" ("Больше", stock
+  brightness_more_title) at the end of the keystone page, toast "Restored to default picture." ("Экран восстановлен",
+  stock keystone_reset_toast); the sequence is unchanged (207, 130/129, 181(50), 153(5,10), 46(3), 158, no
+  confirmation, 150 -> 185 safety net). The manual keystone screen's hold OK sends the stock corners-only reset
+  (KeyStoneWind MENU > Reset = setCorrectKeystoneReset: 207(0), 129(0,0) when 130 reads 6;
+  `GmpfClient.resetKeystoneCorners`, new, no new HAL code), reads 186 back (3 x 80 ms) and runs the old 150 -> 185
+  full frame only when it is not the full frame; no lens move, the zoom stays. New Z9X-only strings
+  `res/values*/strings_kst_restore.xml` (kst_more, kst_restore, kst_restore_done; 16 languages in apps/i18n/langs,
+  stock XGIMI texts), listed in tools/play6/res_not_shared.txt; the shared panel_reset_keystone (Play 6) is unchanged.
+- **Optical zoom with the stock 14 positions, and fit to my screen size on the Z9X** (2026-10-30 night, owner approval of
+  O1 and O2; zoom audit F1 / F3 / F4 / F6 of docs/fit_screen/Z9X_ZOOM_AUDIT.md; build a2776ebb... for test3, previous
+  93e3aff3... kept in `build/apps_v1-1.0.8-test3d/`, not device-tested). The Z9X lens has the same limit position as the
+  HB (zoom.ini zoomLimitStepEn = 1): `GmpfClient.getZoomLimitTotal` (153(12,10), stock ZoomStateView.getLimitStep),
+  `Gmpf2Client.getZoomLimitStep` (IGmpf2 13) and `Gmpf2Client.setOpticalZoomLimitStep` (IGmpf2 14, was BANNED, now a
+  guarded EXCEPTION in apps/check_hal_callers.py: `GmpfClient.checkZoomLimitStep` allows only the 13 value +- 1 within
+  [-count, 0], only at a fresh 116 = 0, only inside the 18(true,2) + 121 session; 119 is refused in the limit zone).
+  `OpticalZoomPanel` uses the HB fork's position model: "Size N of 14", one press = one stock position (14 at the limit
+  position, 119 elsewhere); the half-step modes, the resync dance, the capped smallest position, the 2nd-bigger refusal,
+  the 153(5,10) home walk on "bigger" and the restore after AK are gone (the old path is described in the class
+  comment); a move whose read-back jumps more than one position stops the screen (one release). MENU: 153(5,10), then
+  "Size 14 of 14", LEFT = IGmpf2 14(0). Fit: `GmpfClient.getTofDistance` (279, 1 s apart, 6 a minute) and
+  `getMotionDetection` (584, 80 ms apart, 20 a minute), `fit/Z9xFitDevice` implemented as the HB adapter with the Z9X
+  codes and SUPPORTED true; the "Fit to screen size" row shows, a fit refuses until a calibration exists.
+
 # Z9xProjector, next (Lumen OS 1.0.6)
 
 - **Bluetooth speakers and headphones play** (`audio/AudioPathReporter`, `source/HdmiVolume.selectSpeakerSink`).

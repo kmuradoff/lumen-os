@@ -95,7 +95,7 @@ public final class ThreeD implements QuickPanel.Extension {
         if (want < OFF || want > TB_2D) return;
         Log.i(TAG, "chosen " + want);
         Hal.run((g, g2) -> {
-            int refusal = apply(g, want);
+            int refusal = apply(g, g2, want);
             if (refusal != 0) {
                 Log.i(TAG, "not switched to " + want + " (" + app.getResources().getResourceEntryName(refusal) + ")");
                 ui(() -> Notify.show(app, refusal));
@@ -123,8 +123,12 @@ public final class ThreeD implements QuickPanel.Extension {
         return fmt == 2 ? SBS : fmt == 3 ? TB : OFF;
     }
 
-    /** 0 = sent; else the string of the reason it was not (nothing sent then, or the vendor said no). */
-    private static int apply(GmpfClient g, int want) throws Exception {
+    /**
+     * 0 = sent; else the string of the reason it was not (nothing sent then, or the vendor said no).
+     * Lumen 1.0.8 (parity picture item 28): refused while "Original frame rate" (IGmpf2 283) is on, as stock
+     * SettingMutexManager.java:228-233 (native_display_not_support_3d).
+     */
+    private static int apply(GmpfClient g, org.lumen.projector.hal.Gmpf2Client g2, int want) throws Exception {
         if (want == OFF) {
             boolean ok = g.set3DMode(GmpfClient.Mode3D.OFF);
             Log.i(TAG, "190 enable3D(1) -> " + ok);
@@ -133,6 +137,9 @@ public final class ThreeD implements QuickPanel.Extension {
         if (!g.isVideoPlaying()) return R.string.panel_3d_need_video;
         if (g.getHdrType() != GmpfClient.HDR_SDR) return R.string.panel_3d_not_now;
         if (g.getPictureModeRaw() == PICTURE_MODE_NO_3D) return R.string.panel_3d_not_now;
+        boolean nativeFps = false;
+        try { nativeFps = g2.getNativeFrameRate(); } catch (Throwable t) { Log.w(TAG, "IGmpf2 283: " + t); }
+        if (nativeFps) return R.string.three_d_native_fps;
         boolean ok;
         switch (want) {
             case SBS: ok = g.set3DMode(GmpfClient.Mode3D.SIDE_BY_SIDE); break;

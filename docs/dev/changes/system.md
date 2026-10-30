@@ -1,3 +1,16 @@
+# Lumen OS 1.0.8: GPU keystone path of the Z9X (2026-10-30)
+
+- `z9x_trapezoid.rc` (system/etc/init, in RCS of tools/lumen_v1.sh): at early-init, only when
+  ro.boot.xgimi.modelname=G0082, sets the 7 properties of the '##trapezoid' block of the stock
+  /vendor/etc/xgimimodelname/G0082/build.prop (vendor.xgimi.hwc.aa true, vendor.mstar.trapezoid.secure.enable 1,
+  .4K.enable 1, .dual.gop.mode 1, .video.gop 0, vendor.mstar.hwc.tcvideo.format 1, .resolution.switch 1). The stock
+  system init loaded that file, LineageOS's does not, so the vendor HWC drew the software keystone in the 2K
+  geometry, without anti-alias and without the protected DRM path (docs/z9x/parity/keystone.md item 13,
+  docs/z9x/KEYSTONE_STOCK_VS_LUMEN.md). Init builtins only, no wait; the vendor is not changed. Preflight locks the
+  exact content. Not device-tested yet: check `dumpsys android.hardware.graphics.composer3.IComposer/default` for
+  "HWC Trapezoid Params ... secure:[1|1]" and a DRM app under real-time keystone. Rollback: remove the file (or
+  persist.z9x.kst_prepare=0 for the manual keystone only).
+
 # 1.0.3: system library slot (2026-10-13)
 
 ## Lumen OS 1.0.4: network adb survives a reboot (2026-10-15)

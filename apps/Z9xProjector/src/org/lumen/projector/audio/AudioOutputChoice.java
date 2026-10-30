@@ -39,8 +39,10 @@ import java.util.List;
  * until it is back), the choice stays.
  *
  * Audio format (stock voice_arc_format_auto_sound_v5, Auto / PCM / Passthrough): XGIMI service MtkAudio sent
- * setParameters("digital_output_format=pcm|bypass|auto"). Sent only after the user chose one (Lumen's HAL runs in
- * "auto" without it), again at boot and when ARC appears. Row shown only with ARC / eARC connected.
+ * setParameters("digital_output_format=pcm|bypass|auto"). Sent at boot, when ARC appears and on a user choice.
+ * Lumen 1.0.8 (parity sound item 19): never chosen = PCM, as stock (XgimiAudio.init wrote PCM when spdif_mode was
+ * empty and sent digital_output_format=pcm, so a soundbar without DD / DTS still played AC3 / DTS films); 1.0.4 to
+ * 1.0.7 sent nothing then and left the HAL in its own mode. Row shown only with ARC / eARC connected.
  *
  * Thread "z9x-audioout" for every AudioManager write. Log tag Z9xAudioOut.
  */
@@ -142,10 +144,15 @@ public final class AudioOutputChoice {
         }
     }
 
-    /** UI index of the stored format; Auto when never chosen (Lumen's HAL default). */
+    /** UI index of the stored format; PCM when never chosen (the stock default, 1.0.8). */
     public static int formatIndex(Context ctx) {
+        return effectiveFormat(ctx).ordinal();
+    }
+
+    /** The stored format, or PCM when never chosen (stock XgimiAudio.init default). */
+    private static Format effectiveFormat(Context ctx) {
         Format f = format(ctx);
-        return f == null ? Format.AUTO.ordinal() : f.ordinal();
+        return f == null ? Format.PCM : f;
     }
 
     /** Rows to show now: Auto, Speaker, then each connected kind once (owner rule: hide, never disable). */
@@ -231,13 +238,13 @@ public final class AudioOutputChoice {
 
     private static void sendFormat(String why) {
         Context app = sApp;
-        Format f = app == null ? null : format(app);
-        if (f == null) return;                                   // never chosen: leave the HAL's own mode
+        if (app == null) return;
+        Format f = effectiveFormat(app);                         // never chosen: PCM, as stock
         try {
             AudioManager am = app.getSystemService(AudioManager.class);
             if (am == null) return;
             am.setParameters("digital_output_format=" + f.wire);
-            Log.i(TAG, "digital_output_format=" + f.wire + " (" + why + ")");
+            Log.i(TAG, "digital_output_format=" + f.wire + (format(app) == null ? " (default)" : "") + " (" + why + ")");
         } catch (Throwable t) {
             Log.w(TAG, "digital_output_format: " + t);
         }

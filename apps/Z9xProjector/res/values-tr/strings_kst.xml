@@ -30,4 +30,6 @@
     <string name="zoom_limit_small">Bu en küçük görüntü</string>
     <string name="zoom_refused">Projektör zoomu hareket ettirmedi</string>
     <string name="zoom_unavailable">Optik zoom şu anda kullanılamıyor</string>
+    <string name="zoom_reset_hint">Menü: yakınlaştırmayı sıfırla (en büyük görüntü)</string>
+    <string name="zoom_reset_done">Yakınlaştırma sıfırlandı</string>
 </resources>

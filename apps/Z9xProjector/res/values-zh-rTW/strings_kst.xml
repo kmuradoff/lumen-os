@@ -30,4 +30,6 @@
     <string name="zoom_limit_small">已是最小畫面</string>
     <string name="zoom_refused">投影機未能調整變焦</string>
     <string name="zoom_unavailable">目前無法使用光學變焦</string>
+    <string name="zoom_reset_hint">選單：重設變焦（最大畫面）</string>
+    <string name="zoom_reset_done">變焦已重設</string>
 </resources>

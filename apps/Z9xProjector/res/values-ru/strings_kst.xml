@@ -30,4 +30,6 @@
     <string name="zoom_limit_small">Это самая маленькая картинка</string>
     <string name="zoom_refused">Проектор не сдвинул зум</string>
     <string name="zoom_unavailable">Оптический зум сейчас недоступен</string>
+    <string name="zoom_reset_hint">Меню: сбросить зум (самая большая картинка)</string>
+    <string name="zoom_reset_done">Зум сброшен</string>
 </resources>

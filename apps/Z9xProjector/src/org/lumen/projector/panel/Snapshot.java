@@ -19,9 +19,10 @@ import org.lumen.projector.hal.GmpfClient;
  *   579 auto flip;
  *   IGmpf2 51 Boost, 287 AI contrast, 321 super resolution, 311 ALLM auto switch, 90 smart AF,
  *   283 original frame rate (Lumen OS 1.0.4, the motion smoothing rule; ProPicture reads its own pages).
- * Deliberately NOT read (FEATURE_SPEC / research verdicts): IGmpf2 55 getGameModeProp (struct
- * UNVERIFIED: the panel shows the last game mode it set), IGmpf 157 getOutputTimingInfo (Ultra
- * 120 Hz: last value set), IGmpf 662 getHdmiInfo, 623 Dolby Vision (unreachable on this SKU).
+ * Lumen 1.0.8 (parity game 2.2 / 2.13, picture 29 / 30; layouts verified on the owner's Z9X 2026-10-30,
+ * docs/z9x/parity/probe.md): IGmpf 157 output timing (Ultra 120 Hz state), IGmpf 662 HDMI signal (Ultra 120 Hz
+ * below 62 Hz), IGmpf2 55 game mode of the current source.
+ * Deliberately NOT read: 623 Dolby Vision (unreachable on this SKU).
  */
 final class Snapshot {
     private static final String TAG = "Z9xPanel";
@@ -36,6 +37,14 @@ final class Snapshot {
     Integer hdmiRange, edid;
     Boolean boost, aiContrast, superRes, is3dTo2d, allm, dtsOn, eye, curtain, obstacle, powerOnAk,
             moveAk, moveAf, powerOnAf, smartAf, autoReverse;
+    /** IGmpf 157: Ultra 120 Hz on (user timing 4); null = read failed. */
+    Boolean ultra120;
+    /** IGmpf 662: the HDMI signal (the last one when no HDMI is on screen); null = read failed. */
+    GmpfClient.HdmiSignal hdmiSignal;
+    /** IGmpf2 55 for the current source, only when it fits 647: 0 off, 1 on, 2 auto (null = unknown). */
+    Integer gameMode55;
+    /** IGmpf2 55 state field on (0) for the current source, only when 55 fits 647 (null = unknown). */
+    Boolean gameActive55;
     /** org.lumen.tvinput: an HDMI TIF session is open (TifHdmiState.read; null = unknown). Not a HAL read. */
     Boolean tifHdmi;
     /** v6.3.1 AudioPathReporter.isActive: output-path reporting is active (DTS can run). Not a plain getter. */
@@ -100,6 +109,11 @@ final class Snapshot {
         s.earc = opt("632", g::getEarc);
         s.hdmiRange = opt("634", g::getHdmiRange);
         s.edid = opt("661", g::getEdidVersion);
+        s.ultra120 = opt("157", () -> {
+            GmpfClient.OutputTimingInfo t = g.getOutputTimingInfo();
+            return t == null ? null : t.isUltra120();
+        });
+        s.hdmiSignal = opt("662", g::getHdmiInfo);
 
         // IGmpf2 connects lazily; if the first read fails the interface is not there: skip the rest.
         s.boost = opt("g2 51", g2::isBoost);
@@ -109,6 +123,14 @@ final class Snapshot {
             s.nativeFps = opt("g2 283", g2::getNativeFrameRate);
             s.allm = opt("g2 311", g2::getAllmAutoSwitch);
             s.smartAf = opt("g2 90", g2::getSmartAutofocus);
+            if (s.gameOption != null) {
+                int[] p = opt("g2 55", g2::getGameModeProp);
+                int m = Gmpf2Client.gameModeOf(p, s.gameOption);
+                if (m >= 0) {
+                    s.gameMode55 = m;
+                    s.gameActive55 = p[0] == 0;
+                }
+            }
         }
         return s;
     }
@@ -137,7 +159,16 @@ final class Snapshot {
         return putMode != null && (putMode == 1 || putMode == 3);
     }
 
+    /**
+     * Top speed really runs: 647 is 2 / 3 and 55 says game mode is on for this source (stock: 55 state on and
+     * option 2 / 3). When 55 is unknown, the option alone (as 1.0.7).
+     */
     boolean isTopSpeedGame() {
-        return gameOption != null && (gameOption == 2 || gameOption == 3);
+        return gameOption != null && (gameOption == 2 || gameOption == 3) && !Boolean.FALSE.equals(gameActive55);
+    }
+
+    /** Stock Ultra 120 Hz rule on HDMI (PictureViewModel: refused at getHDMIFrameRate() >= 6200): 662 plausible and below 62 Hz. */
+    boolean hdmiBelow62Hz() {
+        return hdmiSignal != null && hdmiSignal.plausible() && hdmiSignal.frameRateCenti < 6200;
     }
 }

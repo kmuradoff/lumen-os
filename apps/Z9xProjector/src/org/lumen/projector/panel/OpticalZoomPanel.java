@@ -6,7 +6,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
 import android.os.SystemClock;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -29,49 +28,56 @@ import org.lumen.projector.ui.Panel;
 import org.lumen.projector.ui.Theme;
 
 /**
- * Manual OPTICAL zoom (Z9X zoom lens). A full-screen overlay like the manual keystone (grey grid, a white line
- * on the outermost pixels = the picture edge): RIGHT / UP = bigger, LEFT / DOWN = smaller (held: repeats), BACK = done.
+ * Manual OPTICAL zoom (Z9X zoom lens), stock V6.15.62 ZoomStateView / ZoomUtils / KeyStoneManager logic. A full-screen
+ * overlay like the manual keystone (grey grid, a white line on the outermost pixels = the picture edge): RIGHT / UP =
+ * bigger, LEFT / DOWN = smaller (held: at most one move per 220 ms), MENU = zoom reset, BACK = done.
+ * Lumen OS 1.0.8: OK switches to the picture position (141 shift, see {@link #shiftMode}) and back.
  *
- * Stock calls (V6.15.62 ZoomStateView / KeyStoneManager.zoomControl(0|1, 10)): IGmpf2 18(true, 2), IGmpf 121
- * zoomStart(0), 117 getZoomStepRange (optical 0..12 on the Z9X = 13 positions, as the stock dial), 116 before
- * every move, 119 setOpticalZoomStep(116 + 1 smaller | 116 - 1 bigger), at the end 120 zoomFinish(0) and
- * 18(false, 2). Index 0 = the biggest picture.
+ * Positions as the stock dial (Lumen OS 1.0.8, zoom audit F1 / F3, docs/fit_screen/Z9X_ZOOM_AUDIT.md; owner O1
+ * 2026-10-30; the same model as the HB fork, device-tested there 2026-10-29, SURVEY_hb-t5b Z1): progress 0 = the
+ * biggest picture. limitTotal "limit" positions (153(12,10), stock ZoomStateView.getLimitStep :606-609; 1 expected on
+ * the Z9X, zoom.ini zoomLimitStepEn = 1, zoomMotorLimitStep = 129) beyond optical index 0, then the optical indexes
+ * 0..max (117, 0..12): 14 positions, "Size N of 14".
+ *   progress = limitTotal + IGmpf2 13 (0 or -1..-limitTotal) while 116 = 0, else 116 + limitTotal (initZoom :509-510).
+ * One press (ZoomStateView.setZoom :685-694 smaller, :846-853 bigger):
+ *   smaller: progress < limitTotal -> IGmpf2 14(13 + 1), else 119(116 + 1) (KeyStoneManager.zoomControl(0, 10));
+ *   bigger: progress <= limitTotal -> IGmpf2 14(13 - 1), else 119(116 - 1) (zoomControl(1, 10)).
+ * Every move is one stock position, one motor unit (119 = 160 motor steps, 14 = to / from the PI sensor); both calls
+ * block until the motor stopped, so 116 / 13 read right after a move are final and are shown at once. The clients
+ * refuse a 14 or 119 that is not the neighbour of a fresh read (GmpfClient.checkZoomLimitStep / setOpticalZoomStep).
+ * Session: IGmpf2 18(true, 2) + 121 zoomStart(0) on open, 120 zoomFinish(0) + 18(false, 2) on close; autofocus on
+ * close when the lens moved (ZoomStateView.release, isZoomFocus).
+ * Keys as stock ZoomStateView (zoom audit F5): at most one move per 220 ms for EVERY key down, and every arrow key up
+ * drops the queued moves (stock handler.removeCallbacksAndMessages).
+ * Zoom reset (owner decision 2026-10-30, zoom only): MENU (on release) sends 153(5,10), the lens home, which leaves it
+ * IN the limit position (motor -129, the vendor's m_zoomInLimitPos 1): read back it shows "Size 14 of 14", and the
+ * next "smaller" is one IGmpf2 14(0) as stock. On the Z9X zoom_and_move screen stock MENU runs the FULL resetKeyStone
+ * (setIChipReset, 181(50), 153(5,10); ZoomMoveView.java:576-580); Lumen sends only its zoom part, by the owner
+ * decision (zoom audit F6). The full reset is the quick panel's "Restore default picture".
  *
- * What XGIMI's controller really does (logs/z9x_zoom_103/live_full2.txt, live_full3.txt, 2026-10-14):
- *  - 119 is a RELATIVE move of one unit toward the target ("step = N, m_prevStep = M"), and it BLOCKS until the
- *    motor stopped; 116 read right after it is final. (1.0.3 polled 116 for 700 ms more and dropped keys.)
- *  - index = (motorStep - 80 + dirPos) / 160, 0..12 over 2121 motor steps.
- *  - Full-step mode: one 119 = 160 steps = one index (live_full3 02:21:34..41).
- *  - Half-step mode: after an auto keystone walks the lens to its PI sensor it leaves m_zoomInLimitPos = 1;
- *    then one 119 = 80 steps, the index changes every 2nd move, the first position needs 4 (02:13:49..59), and
- *    the 2nd BIGGER move in a row resets its counter to 0 wherever the lens is ("Reverse Limit Front Just Exit
- *    Pi", 02:14:03.843 harmless near the wide end, 02:21:29.808 at step ~1900 = lens lost). That reset is also
- *    what leaves half-step mode (m_zoomInLimitPos:[0], then 160 per move).
- * So: one 119 per press, presses queued (not dropped), and from index 0 in an unknown mode the first "smaller"
- * press runs the resync (4 x smaller, 2 x bigger, 1 x smaller) so the reset happens < 1 position from the wide
- * end; after a resync the smallest position is not used (the counter is ~110 steps behind the lens). A 2nd
- * bigger move in half-step mode farther out is refused. Every auto keystone (event 106) makes the mode unknown.
- * The user's last position is kept and put back after an auto keystone that re-homed the lens, unless
- * "Fit to the screen" is on or the AK was a screen fit (then the size is XGIMI's by design).
+ * Removed in Lumen OS 1.0.8 (zoom audit F4), kept here as the record of the old code path: up to the 1.0.8 test
+ * builds this panel had no limit position (13 positions, IGmpf2 14 was banned) and treated the lens after an auto
+ * keystone or 153(5,10) as a "half-step mode" (logs/z9x_zoom_103/live_full2.txt, live_full3.txt: each 119 while
+ * m_zoomInLimitPos was 1 ran the vendor's limit error path, 80-step moves, a counter reset on the 2nd bigger move).
+ * It kept MODE_UNKNOWN / HALF / GOOD per boot in prefs (vendor_mode, vendor_mode_boot), ran a resync from index 0
+ * (4 x smaller, 2 x bigger, 1 x smaller, then the smallest position capped off, cap_max), refused a 2nd bigger move in
+ * a row, sent 153(5,10) on "bigger" at index 0 after a resync, and could put a saved index back after an auto
+ * keystone (user_index, RESTORE_AFTER_AK, off since F7). The vendor log shows all of that is the limit position
+ * used the wrong way; stock leaves it with one IGmpf2 14(0). The old prefs keys are no longer read.
+ * Kept for one release as a log-and-stop safety (F4): a bigger move whose read-back jumps more than one position.
  */
 public final class OpticalZoomPanel extends Panel {
     static final String TAG = "Z9xZoom";
 
     private static final String PREFS = "z9x_zoom";
     private static final String K_OPEN = "session_open";
-    private static final String K_MODE = "vendor_mode", K_MODE_BOOT = "vendor_mode_boot", K_CAP = "cap_max";
-    private static final String K_USER = "user_index";
-    static final int MODE_UNKNOWN = 0, MODE_HALF = 1, MODE_GOOD = 2;
 
-    private static final long MIN_STEP_GAP_MS = 220;     // a held key: at most one queued move per 220 ms (stock)
+    private static final long MIN_STEP_GAP_MS = 220;     // at most one move per 220 ms, every key down (stock fastClickTime)
     private static final int MAX_PENDING = 2;            // presses waiting behind the running move
-    private static final int RESYNC_MAX_MOVES = 5;       // half-step mode needs 4 moves for the first position
     private static final long AUTO_HIDE_MS = 60_000;
-    private static final int MAX_POSITIONS = 64;         // sanity bound for opticalMax (the Z9X says 12)
+    private static final int MAX_POSITIONS = 64;         // sanity bound for the 117 optical maximum (the Z9X says 12)
+    private static final int MAX_LIMIT = 4;              // sanity bound for 153(12,10) (1 expected)
     private static final long RECOVER_DELAY_MS = 6_000;
-    /** Put the user's zoom back after an auto keystone that moved it (UNVERIFIED on the device: see onAkReport). */
-    private static final boolean RESTORE_AFTER_AK = true;
-    private static final long RESTORE_DELAY_MS = 2_000;
 
     private static final int WAIT = 0, READY = 1, FAILED = 2;
 
@@ -87,13 +93,23 @@ public final class OpticalZoomPanel extends Panel {
     private final java.util.concurrent.atomic.AtomicBoolean draining = new java.util.concurrent.atomic.AtomicBoolean();
     /** true between 121 and our 120: whoever flips it to false sends the close (enter's end or onDismissed). */
     private final java.util.concurrent.atomic.AtomicBoolean session = new java.util.concurrent.atomic.AtomicBoolean();
-    // HAL thread
-    private int max = -1, cur = -1, start = -1, mode = MODE_UNKNOWN, lastDir;
-    private boolean changedLast;                         // the previous move changed 116 (mode detection)
-    private volatile boolean half, busy;                 // lens between two positions / resync running (UI reads)
-    private volatile int top = -1;                       // highest index we use (max, or max - 1 after a resync)
-    private TextView value, status;
+    // HAL thread writes, UI reads
+    private volatile int max = -1, limitTotal = 0, progress = -1, startProgress = -1;
+    private volatile boolean resetting;                  // MENU zoom reset queued or running (main sets, HAL clears)
+    private boolean resetMoved;                          // HAL thread: a MENU reset moved the lens (autofocus on close)
+    private TextView value, status, hint;
     private SizeBar bar;
+    /**
+     * Lumen OS 1.0.8 (parity keystone item 10): OK switches the arrows between size (the lens) and position (the
+     * picture shift of stock zoom_and_move, PtzViewModel.java:215-262: 141 translationKst(dir, true) as a check,
+     * then 141(dir, false) when it answers 0; real-time keystone paused with 573(2,false) meanwhile). The vendor
+     * moves the picture inside the panel, so it moves only while the picture is smaller than the panel (after a
+     * zoom in or a keystone). No digital zoom (118): G0082 has none. Main thread writes shiftMode.
+     */
+    private volatile boolean shiftMode, shiftInFlight;
+    // HAL thread: a shift moved the picture (158 at the end) / we paused real-time keystone (573(2,true) owed)
+    private boolean shifted, shiftAkPaused;
+    private long lastShiftAt;
 
     private OpticalZoomPanel(Context app, Runnable onBackExit) {
         this.app = app;
@@ -128,30 +144,29 @@ public final class OpticalZoomPanel extends Panel {
     }
 
     /**
-     * HalController.dispatchEvent, main thread: an auto keystone started (106) or XGIMI reported a failed walk
-     * back (303). Every AK walks the lens to the PI sensor (zoomReset:1917, live_full3 02:22:27 / 02:22:58 / 02:23:20)
-     * or at least runs zoomReset: XGIMI's mode is unknown again.
+     * HalController.dispatchEvent, main thread: an auto keystone started (106) or XGIMI reported a failed walk back
+     * (303). The AK walks the lens home into the limit position (zoomReset:1917). Stock keeps no state: the next open
+     * reads 116 and IGmpf2 13 again. Log only.
      */
     public static void onVendorZoomReset(Context ctx, int type) {
-        Context app = ctx.getApplicationContext();
-        Log.i(TAG, "event " + type + ": XGIMI zoom mode unknown again");
-        saveMode(app, MODE_UNKNOWN);
+        Log.i(TAG, "event " + type + ": lens moved by XGIMI (nothing kept, 116 / 13 are read on open)");
     }
 
     /**
-     * HalController.dispatchEvent, main thread: the AK report (event 116 JSON, trigger_type and the rest). A screen
-     * fit (trigger "lckst_curtain" = 272(11) "Fit to screen now") owns the size: forget the user's zoom. Otherwise
-     * put it back if the AK moved the lens. UNVERIFIED: whether 326 / power-on AK ever move the lens (326 at
-     * index 12 did not, 02:21:00 and 02:21:10).
+     * QuickPanelController.resetKeystone, HAL thread, right after its 153(5,10) (stock resetKeyStone): the lens is in
+     * the limit position, the next open shows "Size 14 of 14". Nothing kept since 1.0.8 (no saved zoom, no mode). Log only.
+     */
+    public static void onLensHome(Context ctx) {
+        Log.i(TAG, "keystone reset walked the lens home (limit position; nothing kept)");
+    }
+
+    /**
+     * HalController.dispatchEvent, main thread: the AK report (event 116 JSON). Stock does not put a user zoom back
+     * after an AK (zoom audit F7), and "fit to my screen size" owns the size when it is used. Log only.
      */
     public static void onAkReport(Context ctx, String json) {
-        final Context app = ctx.getApplicationContext();
         boolean fit = json != null && json.contains("\"lckst_curtain\"");
-        int user = userIndex(app);
-        Log.i(TAG, "AK report: screen fit=" + fit + ", user zoom index " + user);
-        if (fit) { setUserIndex(app, -1); return; }
-        if (!RESTORE_AFTER_AK || user <= 0) return;
-        Hal.runDelayed((g, g2) -> restoreAfterAk(app, g, g2, user), RESTORE_DELAY_MS);
+        Log.i(TAG, "AK report: zoom left as XGIMI set it (stock), screen fit=" + fit);
     }
 
     // =================================================================== HAL thread
@@ -163,17 +178,17 @@ public final class OpticalZoomPanel extends Panel {
             session.set(true);
             Log.i(TAG, "enter: 18(true,2) -> " + g2.setKstPrepareForZoom(true) + ", 121(0) -> " + g.zoomSessionStart());
             int[] range = g.getZoomStepRange();
-            int[] step = g.getZoomStep();
+            int lim = g.getZoomLimitTotal();
             Log.i(TAG, "117 -> ret " + range[0] + " optical " + range[1] + ".." + range[2] + " digital " + range[3]
-                    + ".." + range[4] + "; 116 -> ret " + step[0] + " optical " + step[1] + " digital " + step[2]);
-            if (range[1] != 0 || range[2] < 1 || range[2] > MAX_POSITIONS || step[1] < 0 || step[1] > range[2]) {
-                throw new IllegalStateException("unexpected zoom range / step");
+                    + ".." + range[4] + "; 153(12,10) limit positions " + lim);
+            if (range[1] != 0 || range[2] < 1 || range[2] > MAX_POSITIONS) {
+                throw new IllegalStateException("unexpected zoom range");
             }
             max = range[2];
-            top = topIndex(app, max);
-            mode = loadMode(app);
-            cur = start = step[1];
-            Log.i(TAG, "enter: index " + cur + ", XGIMI mode " + modeName(mode) + ", top " + top);
+            if (lim < 0 || lim > MAX_LIMIT) Log.w(TAG, "153(12,10) = " + lim + " not plausible: no limit position used");
+            limitTotal = lim >= 0 && lim <= MAX_LIMIT ? lim : 0;
+            progress = startProgress = readProgress(g, g2);
+            Log.i(TAG, "enter: position " + progress + " of 0.." + (limitTotal + max));
             state = READY;
             ui(this::render);
             if (closed && session.compareAndSet(true, false)) close(app, g, g2);   // dismissed while entering
@@ -184,165 +199,97 @@ public final class OpticalZoomPanel extends Panel {
         }
     }
 
-    /** Runs the queued presses one after another (each 119 blocks until the motor stopped). */
-    private void drain(GmpfClient g) {
+    /** 116 then IGmpf2 13 (both fresh for the client guards), as the stock dial position (initZoom). */
+    private int readProgress(GmpfClient g, Gmpf2Client g2) throws Exception {
+        int cur = g.getZoomStep()[1];
+        int lim = limitTotal > 0 ? g2.getZoomLimitStep()[1] : 0;
+        if (cur < 0 || cur > max || lim > 0 || lim < -limitTotal) {
+            throw new IllegalStateException("116 optical " + cur + ", 13 limit " + lim);
+        }
+        if (cur != 0 && lim != 0) throw new IllegalStateException("limit " + lim + " away from index 0 (" + cur + ")");
+        return cur == 0 ? limitTotal + lim : cur + limitTotal;
+    }
+
+    /** Runs the queued presses one after another (each move blocks until the motor stopped). */
+    private void drain(GmpfClient g, Gmpf2Client g2) {
         do {
             int p;
             while ((p = pending.get()) != 0 && !closed && state == READY) {
                 int dir = Integer.signum(p);
-                if (pending.compareAndSet(p, p - dir)) step(g, dir);
+                if (pending.compareAndSet(p, p - dir)) step(g, g2, dir);
             }
             draining.set(false);
         } while (pending.get() != 0 && !closed && state == READY && draining.compareAndSet(false, true));
     }
 
-    /** One press. dir +1 = smaller, -1 = bigger. */
-    private void step(GmpfClient g, int dir) {
+    /** One press. dir +1 = smaller, -1 = bigger (stock setZoom). */
+    private void step(GmpfClient g, Gmpf2Client g2, int dir) {
         try {
-            int now = g.getZoomStep()[1];
-            if (now < 0 || now > max) throw new IllegalStateException("116 optical " + now);
-            if (dir < 0 && now == 0 && mode == MODE_GOOD) {
-                // after a resync index 0 is ~240 motor steps short of the real widest position (where auto keystone
-                // leaves the lens, owner 2026-10-15): one more "bigger" walks the lens home as stock's MENU reset
+            int now = readProgress(g, g2);          // fresh 116 + 13 for the guards
+            int last = limitTotal + max;
+            if ((dir < 0 && now <= 0) || (dir > 0 && now >= last)) {
                 pending.set(0);
-                long t0 = SystemClock.uptimeMillis();
-                int r = g.zoomHome();
-                int after = g.getZoomStep()[1];
-                Log.i(TAG, "153(5,10) home walk -> " + r + " in " + (SystemClock.uptimeMillis() - t0) + " ms, 116 " + after);
-                mode = MODE_HALF;                           // the vendor's limit flag is set again
-                saveMode(app, mode);
-                lastDir = -1;
-                changedLast = false;
-                half = false;
-                cur = after;
-                ui(() -> { render(); say(R.string.zoom_limit_big); });
-                return;
-            }
-            if ((dir < 0 && now == 0) || (dir > 0 && now >= top)) {
-                pending.set(0);
-                cur = now;
+                progress = now;
                 ui(() -> { render(); say(dir < 0 ? R.string.zoom_limit_big : R.string.zoom_limit_small); });
                 return;
             }
-            if (dir > 0 && now == 0 && mode != MODE_GOOD) {
-                busy = true;
-                ui(() -> say(R.string.zoom_wait));
-                cur = resyncFromStart(app, g, max);
-                mode = MODE_GOOD;
-                top = topIndex(app, max);
-                lastDir = +1;
-                changedLast = true;
-                half = false;
-            } else if (dir < 0 && lastDir < 0 && mode != MODE_GOOD && now >= 2) {
-                // the 2nd bigger move in a row would reset XGIMI's counter here (live_full3 02:21:29.808)
-                Log.w(TAG, "guard: no 2nd bigger move in a row in " + modeName(mode) + " mode at index " + now);
-                pending.set(0);
-                ui(() -> say(R.string.zoom_refused));
-                return;
+            long t0 = SystemClock.uptimeMillis();
+            int r;
+            String what;
+            boolean limitZone = dir > 0 ? now < limitTotal : now <= limitTotal;
+            if (limitZone) {
+                int lim = now - limitTotal;          // 0 or -1..-limitTotal
+                r = g2.setOpticalZoomLimitStep(lim + dir);
+                what = "IGmpf2 14(" + (lim + dir) + ")";
             } else {
-                int[] m = move119(g, now, dir);
-                int after = m[1];
-                if (dir < 0 && after < now - 1) {               // XGIMI reset its counter: the lens is lost
-                    Log.e(TAG, "116 jumped " + now + " -> " + after + " on a bigger move: XGIMI counter reset");
-                    saveMode(app, MODE_UNKNOWN);
-                    setUserIndex(app, -1);
-                    mode = MODE_UNKNOWN;
-                    cur = start;                                // nothing to save, no autofocus
-                    state = FAILED;
-                    ui(() -> { say(R.string.zoom_refused); dismiss(); });
-                    return;
-                }
-                boolean changed = after != now;
-                if (m[0] == 0 && !changed) {
-                    mode = MODE_HALF;                           // a move that did not reach the next index
-                    saveMode(app, mode);
-                } else if (changed && changedLast && lastDir == dir && mode != MODE_GOOD) {
-                    mode = MODE_GOOD;                           // two index changes in a row: 160 per move
-                    saveMode(app, mode);
-                }
-                half = m[0] == 0 && !changed;
-                changedLast = changed;
-                lastDir = dir;
-                cur = after;
-                if (m[0] != 0) { pending.set(0); ui(() -> { render(); say(R.string.zoom_refused); }); return; }
+                int cur = now - limitTotal;
+                r = g.setOpticalZoomStep(cur + dir);
+                what = "119(" + (cur + dir) + ")";
             }
+            int after = readProgress(g, g2);
+            Log.i(TAG, what + " -> " + r + " in " + (SystemClock.uptimeMillis() - t0) + " ms, position " + now + " -> " + after);
+            if (Math.abs(after - now) > 1) {
+                // F4 safety for one release: a move is one position; a jump means XGIMI's counter is not ours
+                Log.e(TAG, "position jumped " + now + " -> " + after + " on one move: stopped");
+                pending.set(0);
+                progress = startProgress = after;           // no autofocus on a lens we do not know
+                state = FAILED;
+                ui(() -> { say(R.string.zoom_refused); dismiss(); });
+                return;
+            }
+            progress = after;
+            if (r != 0) { pending.set(0); ui(() -> { render(); say(R.string.zoom_refused); }); return; }
             ui(this::render);
         } catch (Throwable t) {
             Log.w(TAG, "step failed: " + t);
             pending.set(0);
             ui(() -> say(R.string.zoom_refused));
-        } finally {
-            busy = false;
         }
-    }
-
-    /** One 119 and the 116 right after it (final: 119 returns when the motor stopped). {ret, index after}. */
-    private static int[] move119(GmpfClient g, int from, int dir) throws Exception {
-        long t0 = SystemClock.uptimeMillis();
-        int r = g.setOpticalZoomStep(from + dir);
-        int after = g.getZoomStep()[1];
-        Log.i(TAG, "119(" + (from + dir) + ") -> " + r + " in " + (SystemClock.uptimeMillis() - t0)
-                + " ms, 116 " + from + " -> " + after);
-        return new int[] {r, after};
     }
 
     /**
-     * From index 0 (where an auto keystone leaves the lens) one step smaller, leaving XGIMI in full-step mode.
-     * Inside a 121 session. Returns the index (1). The sequence is the one of live_full2 02:13:49..02:14:04.
+     * MENU: 153(5,10) (the lens home, the biggest picture, in the limit position), then 116 / 13 for the counter
+     * ("Size 14 of 14" expected; zoom audit F6). Inside the 121 session, holding {@code draining} so no move runs at
+     * the same time.
      */
-    private static int resyncFromStart(Context app, GmpfClient g, int max) throws Exception {
-        int idx = 0, moves = 0;
-        while (idx == 0 && moves < RESYNC_MAX_MOVES) {
-            int[] m = move119(g, 0, +1);
-            if (m[0] != 0) throw new IllegalStateException("resync: 119 refused");
-            idx = m[1];
-            moves++;
-        }
-        if (idx != 1) throw new IllegalStateException("resync: index " + idx + " after " + moves + " moves");
-        if (moves == 1) {                                     // 160 per move already (live_full3 02:22:51)
-            Log.i(TAG, "resync: full-step mode, nothing to fix");
-            saveMode(app, MODE_GOOD);
-            return 1;
-        }
-        Log.i(TAG, "resync: half-step mode (" + moves + " moves for one position): two bigger moves reset XGIMI here");
-        int a = move119(g, 1, -1)[1];                         // 271 -> 191, still index 1
-        if (a != 1) throw new IllegalStateException("resync: index " + a + " after the 1st bigger move");
-        int b = move119(g, 1, -1)[1];                         // "Reverse Limit Front Just Exit Pi": counter 0
-        if (b != 0) throw new IllegalStateException("resync: index " + b + " after the 2nd bigger move");
-        saveMode(app, MODE_GOOD);
-        prefs(app).edit().putInt(K_CAP, max - 1).apply();     // counter ~110 steps behind the lens: keep off the end
-        int c = move119(g, 0, +1)[1];                         // the user's step: 160 (+80 backlash)
-        if (c != 1) throw new IllegalStateException("resync: index " + c + " after the user's step");
-        return 1;
-    }
-
-    /** After an AK that re-homed the lens (index 0): back to the user's index, smaller moves only. */
-    private static void restoreAfterAk(Context app, GmpfClient g, Gmpf2Client g2, int user) {
-        if (sOpen != null || AkOverlay.isActive() || Hal.isKeystoneRunning()) { Log.i(TAG, "restore: busy, skipped"); return; }
-        boolean opened = false;
+    private void resetZoom(GmpfClient g, Gmpf2Client g2) {
         try {
-            if (g.getCurtainFit()) { Log.i(TAG, "restore: Fit to the screen is on, the size stays XGIMI's"); return; }
-            setMarker(app, true);
-            Log.i(TAG, "restore: 18(true,2) -> " + g2.setKstPrepareForZoom(true) + ", 121(0) -> " + g.zoomSessionStart());
-            opened = true;
-            int max = g.getZoomStepRange()[2];
-            int now = g.getZoomStep()[1];
-            int goal = Math.min(user, topIndex(app, max));
-            Log.i(TAG, "restore: index " + now + " -> " + goal + ", mode " + modeName(loadMode(app)));
-            if (now != 0 || goal <= 0) return;                // only from the re-homed start, never bigger
-            if (loadMode(app) != MODE_GOOD) now = resyncFromStart(app, g, max);
-            goal = Math.min(user, topIndex(app, max));
-            for (int i = 0; now < goal && i < 2 * max + 4; i++) {
-                int[] m = move119(g, now, +1);
-                if (m[0] != 0) break;
-                now = m[1];
-            }
-            Log.i(TAG, "restore: done at index " + now);
-            if (now > 0) Ui.main().post(() -> Hal.requestAutofocus(app));
+            if (closed || state != READY) return;
+            long t0 = SystemClock.uptimeMillis();
+            int r = g.zoomHome();
+            int after = readProgress(g, g2);
+            Log.i(TAG, "MENU zoom reset: 153(5,10) -> " + r + " in " + (SystemClock.uptimeMillis() - t0)
+                    + " ms, position " + progress + " -> " + after);
+            resetMoved = true;                              // the lens moved: autofocus on close
+            progress = after;
+            ui(() -> { render(); say(R.string.zoom_reset_done); });
         } catch (Throwable t) {
-            Log.w(TAG, "restore failed: " + t);
+            Log.w(TAG, "zoom reset failed: " + t);
+            ui(() -> say(R.string.zoom_refused));
         } finally {
-            if (opened) close(app, g, g2);
+            pending.set(0);
+            resetting = false;
+            draining.set(false);
         }
     }
 
@@ -362,25 +309,94 @@ public final class OpticalZoomPanel extends Panel {
     @Override
     protected boolean onKeyEvent(KeyEvent ev) {
         int code = ev.getKeyCode();
+        if (code == KeyEvent.KEYCODE_MENU) {
+            // zoom reset on release; not while lens moves are queued or running
+            if (ev.getAction() == KeyEvent.ACTION_UP && !ev.isCanceled() && state == READY && !resetting
+                    && pending.get() == 0 && draining.compareAndSet(false, true)) {
+                resetting = true;
+                if (shiftMode) { shiftMode = false; render(); }
+                say(R.string.zoom_wait);
+                Log.i(TAG, "key MENU: zoom reset");
+                if (!Hal.run(this::resetZoom)) {
+                    resetting = false;
+                    draining.set(false);
+                    say(R.string.zoom_refused);
+                }
+            }
+            return true;
+        }
+        if (resetting) return true;                      // the lens is walking home
+        if (code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER) {
+            // OK: size <-> position (1.0.8); not while lens moves are queued or running
+            if (ev.getAction() == KeyEvent.ACTION_UP && state == READY && pending.get() == 0 && !draining.get()) {
+                shiftMode = !shiftMode;
+                Log.i(TAG, "OK: " + (shiftMode ? "position (shift)" : "size (zoom)"));
+                render();
+            }
+            return true;
+        }
+        if (shiftMode) return onShiftKey(ev, code);
         boolean bigger = code == KeyEvent.KEYCODE_DPAD_RIGHT || code == KeyEvent.KEYCODE_DPAD_UP;
         boolean smaller = code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_DOWN;
-        if (!bigger && !smaller) {
-            return code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER;   // OK: nothing
-        }
+        if (!bigger && !smaller) return false;
         if (ev.getAction() == KeyEvent.ACTION_UP) {
-            if (ev.getEventTime() - ev.getDownTime() > 500) pending.set(0);   // a held key stops at once (stock)
+            pending.set(0);                              // stock: any key up drops the queued moves (audit F5)
             return true;
         }
         if (ev.getAction() != KeyEvent.ACTION_DOWN || state != READY) return true;
         long now = SystemClock.uptimeMillis();
-        if (ev.getRepeatCount() > 0 && now - lastKeyAt < MIN_STEP_GAP_MS) return true;
+        if (now - lastKeyAt < MIN_STEP_GAP_MS) return true;   // every key down, as stock fastClickTime (audit F5)
         lastKeyAt = now;
         int dir = bigger ? -1 : +1;
         int p = pending.updateAndGet(x -> Integer.signum(x) == -dir ? dir
                 : Math.max(-MAX_PENDING, Math.min(MAX_PENDING, x + dir)));
         Log.i(TAG, "key " + (bigger ? "bigger" : "smaller") + " repeat " + ev.getRepeatCount() + ", queued " + p);
-        if (draining.compareAndSet(false, true) && !Hal.run((g, g2) -> drain(g))) draining.set(false);
+        if (draining.compareAndSet(false, true) && !Hal.run(this::drain)) draining.set(false);
         return true;
+    }
+
+    /** Position mode: one 141 step per press (a held key repeats every MIN_STEP_GAP_MS at most). Main thread. */
+    private boolean onShiftKey(KeyEvent ev, int code) {
+        final GmpfClient.ShiftDir d = code == KeyEvent.KEYCODE_DPAD_UP ? GmpfClient.ShiftDir.UP
+                : code == KeyEvent.KEYCODE_DPAD_DOWN ? GmpfClient.ShiftDir.DOWN
+                : code == KeyEvent.KEYCODE_DPAD_LEFT ? GmpfClient.ShiftDir.LEFT
+                : code == KeyEvent.KEYCODE_DPAD_RIGHT ? GmpfClient.ShiftDir.RIGHT : null;
+        if (d == null) return false;
+        if (ev.getAction() != KeyEvent.ACTION_DOWN || state != READY || shiftInFlight
+                || SystemClock.uptimeMillis() - lastShiftAt < MIN_STEP_GAP_MS) return true;
+        shiftInFlight = true;
+        if (!Hal.run((g, g2) -> shiftStep(g, d))) shiftInFlight = false;
+        return true;
+    }
+
+    /** HAL thread: 141(dir, true); when it answers 0 (possible), 141(dir, false). -1 = at the edge. */
+    private void shiftStep(GmpfClient g, GmpfClient.ShiftDir d) {
+        try {
+            if (state != READY || closed) return;
+            if (!shiftAkPaused && !shifted) shiftAkPaused = ManualKeystonePanel.pauseRealtime(app, g, "zoom shift");
+            int check = g.shiftPicture(d, true);
+            int r = check == 0 ? g.shiftPicture(d, false) : check;
+            Log.i(TAG, "141(" + d + ") check " + check + " -> " + r);
+            if (check == 0 && r != -1) shifted = true;
+            ui(() -> { if (check != 0) say(R.string.zs_edge); else if (status != null) status.setText(""); });
+        } catch (Throwable t) {
+            Log.w(TAG, "shift step failed: " + t);
+            ui(() -> say(R.string.zs_refused));
+        } finally {
+            lastShiftAt = SystemClock.uptimeMillis();
+            shiftInFlight = false;
+        }
+    }
+
+    /** HAL thread, at the close: 158(0) after a shift, 573(2,true) if the shift paused real-time keystone. */
+    private void endShift(GmpfClient g) {
+        if (shifted) {
+            try { Log.i(TAG, "158(0) after a shift -> " + g.regenerateBootLogo()); } catch (Throwable t) { Log.w(TAG, "158: " + t); }
+        }
+        if (shiftAkPaused) {
+            shiftAkPaused = false;
+            ManualKeystonePanel.resumeRealtime(app, g, "zoom shift");
+        }
     }
 
     @Override
@@ -396,10 +412,10 @@ public final class OpticalZoomPanel extends Panel {
         if (sOpen == this) sOpen = null;
         // a session still entering is closed by the end of enter(); an open one here (queued behind the moves)
         if ((state == READY || state == FAILED) && !Hal.run((g, g2) -> {
-            boolean moved = cur >= 0 && cur != start;
-            if (moved) setUserIndex(app, cur);
+            boolean moved = progress >= 0 && progress != startProgress;
+            endShift(g);
             if (session.compareAndSet(true, false)) close(app, g, g2);
-            if (moved) ui(() -> Hal.requestAutofocus(app));
+            if (moved || resetMoved) ui(() -> Hal.requestAutofocus(app));
         })) {
             Log.w(TAG, "close not queued: left to the connect hook");
         }
@@ -452,7 +468,9 @@ public final class OpticalZoomPanel extends Panel {
         card.addView(bar, blp);
         value = text(c, c.getString(R.string.zoom_wait), 30, Theme.TEXT_DIM);
         card.addView(value);
-        card.addView(text(c, c.getString(R.string.zoom_hint), 30, Theme.TEXT_DIM));
+        hint = text(c, c.getString(R.string.zs_hint_size), 30, Theme.TEXT_DIM);
+        card.addView(hint);
+        card.addView(text(c, c.getString(R.string.zoom_reset_hint), 26, Theme.TEXT_DIM));
         status = text(c, "", 28, Theme.TEXT_DIM);
         card.addView(status);
         root.addView(card, new FrameLayout.LayoutParams(Theme.px(c, 900), ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -470,13 +488,15 @@ public final class OpticalZoomPanel extends Panel {
         return t;
     }
 
-    /** Bar (left small, right big) and "Size N of M" (M = the positions we use); a half segment between two. */
+    /** Bar (left small, right big) and "Size N of M" over all stock positions (the limit one included, M = 14). */
     private void render() {
-        if (value == null || state != READY || top < 0) return;
-        int c = Math.min(cur, top);
-        value.setText(app.getString(R.string.zoom_position, top - c + 1, top + 1));
-        bar.set(top - c, top, half && lastDir > 0);
-        if (!busy) status.setText("");
+        if (value == null || state != READY || max < 0 || progress < 0) return;
+        if (hint != null) hint.setText(app.getString(shiftMode ? R.string.zs_hint_shift : R.string.zs_hint_size));
+        int last = limitTotal + max;
+        int p = Math.min(progress, last);
+        value.setText(app.getString(R.string.zoom_position, last - p + 1, last + 1));
+        bar.set(last - p, last);
+        if (!resetting) status.setText("");
     }
 
     private void say(int res) {
@@ -491,43 +511,6 @@ public final class OpticalZoomPanel extends Panel {
         return app.createDeviceProtectedStorageContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
-    private static int bootCount(Context app) {
-        try { return Settings.Global.getInt(app.getContentResolver(), Settings.Global.BOOT_COUNT, -1); }
-        catch (Throwable t) { return -1; }
-    }
-
-    /** XGIMI's mode as last seen in this boot (gmpf_main keeps it in memory; a reboot makes it unknown). */
-    private static int loadMode(Context app) {
-        try {
-            SharedPreferences p = prefs(app);
-            return p.getInt(K_MODE_BOOT, -2) == bootCount(app) ? p.getInt(K_MODE, MODE_UNKNOWN) : MODE_UNKNOWN;
-        } catch (Throwable t) { return MODE_UNKNOWN; }
-    }
-
-    private static void saveMode(Context app, int mode) {
-        try { prefs(app).edit().putInt(K_MODE, mode).putInt(K_MODE_BOOT, bootCount(app)).apply(); }
-        catch (Throwable t) { Log.w(TAG, "mode: " + t); }
-    }
-
-    /** max, or the lower cap a resync left in this boot. */
-    private static int topIndex(Context app, int max) {
-        try {
-            SharedPreferences p = prefs(app);
-            int cap = p.getInt(K_MODE_BOOT, -2) == bootCount(app) ? p.getInt(K_CAP, -1) : -1;
-            return cap > 0 && cap < max ? cap : max;
-        } catch (Throwable t) { return max; }
-    }
-
-    private static int userIndex(Context app) {
-        try { return prefs(app).getInt(K_USER, -1); } catch (Throwable t) { return -1; }
-    }
-
-    private static void setUserIndex(Context app, int i) {
-        try { prefs(app).edit().putInt(K_USER, i).apply(); } catch (Throwable t) { Log.w(TAG, "user index: " + t); }
-    }
-
-    private static String modeName(int m) { return m == MODE_GOOD ? "full-step" : m == MODE_HALF ? "half-step" : "unknown"; }
-
     private static boolean marker(Context app) {
         try { return prefs(app).getBoolean(K_OPEN, false); } catch (Throwable t) { return false; }
     }
@@ -539,23 +522,18 @@ public final class OpticalZoomPanel extends Panel {
 
     /** One segment per lens position, filled up to the current one; left = smaller, right = bigger. */
     private static final class SizeBar extends View {
-        private final Paint on = new Paint(Paint.ANTI_ALIAS_FLAG), off = new Paint(Paint.ANTI_ALIAS_FLAG),
-                mid = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint on = new Paint(Paint.ANTI_ALIAS_FLAG), off = new Paint(Paint.ANTI_ALIAS_FLAG);
         private int pos = -1, last = 0;
-        private boolean half;
 
         SizeBar(Context c) {
             super(c);
             on.setColor(Theme.TEXT);
             off.setColor(0x40FFFFFF);
-            mid.setColor(0x99FFFFFF);
         }
 
-        /** {@code halfBelow}: the lens stopped between this position and the next smaller one. */
-        void set(int position, int lastPos, boolean halfBelow) {
+        void set(int position, int lastPos) {
             pos = position;
             last = lastPos;
-            half = halfBelow;
             invalidate();
         }
 
@@ -568,8 +546,7 @@ public final class OpticalZoomPanel extends Panel {
             for (int i = 0; i < n; i++) {
                 float x = i * (seg + gap);
                 float sh = h * (0.45f + 0.55f * i / Math.max(1, n - 1));
-                Paint p = i < pos ? on : i == pos ? (half ? mid : on) : off;
-                c.drawRoundRect(x, h - sh, x + seg, h, r, r, p);
+                c.drawRoundRect(x, h - sh, x + seg, h, r, r, i <= pos ? on : off);
             }
         }
     }

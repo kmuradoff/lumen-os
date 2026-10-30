@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0.8: the stock parity fixes of the Z9X (docs/z9x/parity/README.md). Z9X only (not a shared file of
+     apps/common/projector). English base; translations: gsi/apps/i18n/langs/<locale>.txt @projector/strings_parity.xml. -->
+<resources>
+    <!-- Brightness page, under the Boost hint: what Boost gives and costs (stock boost_title / boost_close_desc). -->
+    <string name="boost_effect">Boost makes the picture brighter, but colors look paler. The color space stays as it is.</string>
+    <!-- Notification: color space or Color accuracy chosen while Boost is on (stock lumenLevelBoost rule). -->
+    <string name="boost_blocks_change">Turn off Boost and try again</string>
+    <!-- Notification: picture mode or aspect ratio chosen while game mode is on (stock gameModeBasic rule). -->
+    <string name="blocked_game">Not available while game mode is on</string>
+    <!-- Notification: game mode turned on while Dolby Vision content plays. -->
+    <string name="game_blocked_dv">Game mode is not available with Dolby Vision content</string>
+    <!-- Confirmation before the top-speed game mode when a keystone correction is set. -->
+    <string name="game_top_speed_confirm">Top speed turns keystone correction off and resets the picture to the full frame. Switch?</string>
+    <!-- Picture page: the stock Reset all picture settings row and its confirmation. -->
+    <string name="picture_reset_all">Reset all picture settings</string>
+    <string name="picture_reset_all_msg">Picture mode, basic and professional settings go back to their defaults. Continue?</string>
+    <!-- 3D refused while Original frame rate is on (stock native_display_not_support_3d). -->
+    <string name="three_d_native_fps">Turn off Original frame rate first</string>
+</resources>
