@@ -6,6 +6,20 @@
     gapps_allow.py gen ZIP --url URL       print the block of one MindTheGapps zip (to append to the list)
     gapps_allow.py check ALLOW [ZIP...]    check the list's format and rules; for each local ZIP given, that
                                            its block is exactly what 'gen' makes of it
+    gapps_allow.py image ZIP [--allow ALLOW] [--mkfs MKFS] [--out IMG] [--keep]
+                                           build the erofs add-on image of ZIP the way the one-pass install
+                                           (--gapps-zip) does, and print its installer/lib/gapps_images.txt line
+    gapps_allow.py image-check IMAGES      the format of installer/lib/gapps_images.txt (zip sha256s also in
+                                           the allow-list)
+
+'image' writes the tar with Python's tarfile (an independent writer: tools/ota/test/gapps_erofs.sh checks the
+installer's own bash / PowerShell writers against the image it makes): root './' and every parent directory
+0755, the allow-listed files of the zip sorted by path 0644 (each checked by sha256 and size), MANIFEST last
+(byte for byte what installer/lib/gapps_fill.sh writes), every entry uid / gid 0, user root, mtime 1230768000,
+PAX SCHILY.xattr.security.selinux=u:object_r:system_file:s0. Then mkfs.erofs (default: this computer's
+installer/tools/erofs-utils build) with the 'plain' profile (EROFS_PLAIN below), fsck.erofs, and every file
+read back with dump.erofs. The image itself contains Google's files: it stays on this computer (deleted
+unless --keep), only its line is published.
 
 The user downloads the zip himself (no Google file is in any Lumen OS release); 'lumen-install gapps --zip'
 accepts only a zip whose sha256 has a block here and copies only that block's files into z9x_gapps<slot>,
@@ -173,6 +187,123 @@ def check(path, zips=(), nogms=None):
     return errs
 
 
+EROFS_VER = "1.9.4"
+EROFS_PLAIN = ["-b4096", "-E", "noinline_data", "-T1230768000", "-U", "00000000-0000-0000-0000-000000000000",
+               "--all-root", "--workers=1", "-Lz9x_gapps"]
+LABEL = "u:object_r:system_file:s0\x00"
+MTIME = 1230768000
+IMAGES_RE = re.compile(r"([0-9a-f]{64}) ([0-9]+\.[0-9]+(?:\.[0-9]+)?) (plain) ([0-9a-f]{64}) ([1-9][0-9]*)")
+
+
+def erofs_dir():
+    import platform
+    sysname, mach = platform.system(), platform.machine()
+    sub = {"Darwin": "darwin"}.get(sysname) or {"x86_64": "linux-x86_64", "amd64": "linux-x86_64",
+                                                 "aarch64": "linux-aarch64", "arm64": "linux-aarch64"}.get(mach)
+    return os.path.join(GSI, "installer", "tools", "erofs-utils", sub or "none")
+
+
+def manifest(head, lines):
+    return ("# Lumen OS: Google services add-on (lumen-install gapps). z9x_gapps.sh checks it at every start\n"
+            "# against /system/etc/z9x/gapps_allow.txt: do not edit.\n"
+            + " ".join(head.split()[:2]) + "\n" + "\n".join(lines) + "\n").encode()
+
+
+def write_tar(zpath, allow, out):
+    """the add-on tree of ZIP (its block in ALLOW) as the tar mkfs.erofs --tar=f reads -> (zip sha256, lines)."""
+    import io
+    import tarfile
+    h = hashlib.sha256()
+    with open(zpath, "rb") as f:
+        for b in iter(lambda: f.read(1 << 20), b""):
+            h.update(b)
+    bl = blocks(allow)
+    if h.hexdigest() not in bl:
+        raise ValueError(f"{zpath}: sha256 {h.hexdigest()} has no block in {allow}")
+    head, lines = bl[h.hexdigest()]
+    files = [FILE_RE.fullmatch(l).groups() for l in lines]
+
+    def ti(name, typ, size=0, mode=0o644):
+        i = tarfile.TarInfo(name)
+        i.type, i.size, i.mode, i.uid, i.gid, i.uname, i.gname, i.mtime = typ, size, mode, 0, 0, "root", "root", MTIME
+        i.pax_headers = {"SCHILY.xattr.security.selinux": LABEL}
+        return i
+    dirs = sorted({p.rsplit("/", k)[0] for _, _, p in files for k in range(1, p.count("/") + 1)})
+    z = zipfile.ZipFile(zpath)
+    with tarfile.open(out, "w", format=tarfile.PAX_FORMAT) as t:
+        t.addfile(ti(".", tarfile.DIRTYPE, mode=0o755))
+        for d in dirs:
+            t.addfile(ti(d, tarfile.DIRTYPE, mode=0o755))
+        for sha, size, p in sorted(files, key=lambda x: x[2]):
+            data = z.read("system/" + p)
+            if hashlib.sha256(data).hexdigest() != sha or len(data) != int(size):
+                raise ValueError(f"{zpath}: system/{p} differs from the allow-list")
+            t.addfile(ti(p, tarfile.REGTYPE, len(data)), io.BytesIO(data))
+        mf = manifest(head, lines)
+        t.addfile(ti("MANIFEST", tarfile.REGTYPE, len(mf)), io.BytesIO(mf))
+    return h.hexdigest(), head, lines
+
+
+def image(zpath, allow, tools, out, keep=False):
+    """-> the gapps_images.txt line of ZIP (the image built, checked, deleted unless keep)."""
+    import subprocess
+    mkfs, fsck, dump = (os.path.join(tools, p + ".erofs") for p in ("mkfs", "fsck", "dump"))
+    v = subprocess.run([mkfs, "--version"], capture_output=True, text=True).stdout.split()
+    if EROFS_VER not in v:
+        raise ValueError(f"{mkfs}: not erofs-utils {EROFS_VER}: {' '.join(v[:4])}")
+    tar = out + ".tar"
+    try:
+        zsha, head, lines = write_tar(zpath, allow, tar)
+        if os.path.exists(out):
+            os.remove(out)
+        r = subprocess.run([mkfs] + EROFS_PLAIN + ["--tar=f", out, tar], capture_output=True, text=True)
+        if r.returncode:
+            raise ValueError(f"mkfs.erofs: {r.stdout}{r.stderr}")
+    finally:
+        if os.path.exists(tar):
+            os.remove(tar)
+    try:
+        r = subprocess.run([fsck, out], capture_output=True, text=True)
+        if r.returncode:
+            raise ValueError(f"fsck.erofs: {r.stdout}{r.stderr}")
+        want = {p: a for a, _, p in (FILE_RE.fullmatch(l).groups() for l in lines)}
+        want["MANIFEST"] = hashlib.sha256(manifest(head, lines)).hexdigest()
+        for p, a in want.items():
+            got = hashlib.sha256(subprocess.run([dump, "--cat", "--path=/" + p, out], capture_output=True).stdout).hexdigest()
+            if got != a:
+                raise ValueError(f"{p}: read back from the image, sha256 {got}")
+        h = hashlib.sha256()
+        with open(out, "rb") as f:
+            for b in iter(lambda: f.read(1 << 20), b""):
+                h.update(b)
+        return f"{zsha} {EROFS_VER} plain {h.hexdigest()} {os.path.getsize(out)}"
+    finally:
+        if not keep and os.path.exists(out):
+            os.remove(out)
+
+
+def image_check(path, allow):
+    errs, seen = [], set()
+    try:
+        bl = blocks(allow)
+    except (OSError, ValueError) as e:
+        return [str(e)]
+    for i, raw in enumerate(open(path, encoding="utf-8"), 1):
+        line = raw.rstrip("\n")
+        if not line.strip() or line.startswith("#"):
+            continue
+        m = IMAGES_RE.fullmatch(line)
+        if not m:
+            errs.append(f"{path}:{i}: bad line")
+            continue
+        if m.group(1) not in bl:
+            errs.append(f"{path}:{i}: zip {m.group(1)[:16]}... has no block in {allow}")
+        if m.group(1, 2, 3) in seen:
+            errs.append(f"{path}:{i}: zip, erofs-utils and profile listed twice")
+        seen.add(m.group(1, 2, 3))
+    return errs
+
+
 def main(a):
     if a[:1] == ["gen"] and len(a) == 4 and a[2] == "--url":
         print("\n".join(gen(a[1], a[3])))
@@ -185,6 +316,27 @@ def main(a):
         bl = blocks(a[1])
         print(f"gapps_allow ok: {len(bl)} zip(s), " + ", ".join(f"{len(v[1])} files" for v in bl.values())
               + (f"; {len(a) - 2} local zip(s) match" if len(a) > 2 else ""))
+    elif a[:1] == ["image"] and len(a) >= 2:
+        opt = {"--allow": os.path.join(GSI, "installer", "lib", "gapps_allow.txt"), "--mkfs": None, "--out": None}
+        rest, keep, i = a[2:], False, 0
+        while i < len(rest):
+            if rest[i] == "--keep":
+                keep, i = True, i + 1
+            elif rest[i] in opt and i + 1 < len(rest):
+                opt[rest[i]], i = rest[i + 1], i + 2
+            else:
+                sys.exit(__doc__)
+        tools = os.path.dirname(opt["--mkfs"]) if opt["--mkfs"] else erofs_dir()
+        out = opt["--out"] or os.path.join(os.environ.get("TMPDIR", "/tmp"), "z9x_gapps-check.img")
+        print(image(a[1], opt["--allow"], tools, out, keep))
+    elif a[:1] == ["image-check"] and len(a) in (2, 3):
+        allow = a[2] if len(a) == 3 else os.path.join(GSI, "installer", "lib", "gapps_allow.txt")
+        errs = image_check(a[1], allow)
+        for e in errs:
+            print("ERROR " + e)
+        if errs:
+            sys.exit(1)
+        print("gapps_images ok")
     else:
         sys.exit(__doc__)
 

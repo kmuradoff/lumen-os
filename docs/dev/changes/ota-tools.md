@@ -1,3 +1,16 @@
+# Google services in one fastbootd visit (2026-10-30, docs/install/ONE_VISIT_GAPPS.md)
+
+- `image/z9x_gapps.sh`: mounts the partition as erofs (with `context=system_file`, then without), then ext4 (the
+  'gapps' fill and every older partition); `sys.z9x.gapps.fs=erofs|ext4`; `check` prints the type. The header
+  line `# lumen-gapps-fs: erofs ext4` tells the installer that the image takes an erofs add-on.
+- `gapps_allow.py image ZIP` / `image-check`: the reference image of a zip (independent Python tar writer +
+  the installer's mkfs.erofs) and its line in `installer/lib/gapps_images.txt`.
+- Installer `--gapps-zip` (Z9X): builds that erofs image on the computer (own tar writer, `installer/tools/erofs-utils`
+  checked against `installer/lib/erofs_utils.txt`, `tools/ota/build_erofs_utils.sh`), then ONE fastbootd session:
+  system, z9x_blobs, z9x_gapps_<slot> (create / resize + flash), wipe. No start on the old data, no adb root.
+- Tests: `test/gapps.sh` erofs cases (mount stub: `-t erofs` for a partition marked `DEV.fs`), `test/gapps_erofs.sh`,
+  `test/installer_ps1_gapps.sh`, `test/installer_gapps.sh` one-pass cases rewritten.
+
 # Publishing guard: one local list, commit identities (2026-10-10)
 
 - `check_publish.py`: `~/.config/lumen/personal_patterns` (local, mode 600, never published) is the one list

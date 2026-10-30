@@ -4,9 +4,11 @@
 # at post-fs-data, like z9x_blobs.sh: default mount namespace, before zygote-start, so PackageManager and
 # SystemConfig see the add-on at their first scan). Only Lumen OS without Google (ro.z9x.gms=0) uses it.
 #
-# The user's own Google services add-on lives in the logical partition z9x_gapps<slot> in super (ext4, made
-# by the installer's 'gapps --zip FILE' from the user's own MindTheGapps download; no Google file is in any
-# Lumen OS image or release). Not in /data, so it survives factory resets; a PARTIAL VAB payload (the only
+# The user's own Google services add-on lives in the logical partition z9x_gapps<slot> in super, made from the
+# user's own MindTheGapps download (no Google file is in any Lumen OS image or release): erofs built on the
+# computer by the installer's one-pass install (--gapps-zip) and flashed in fastbootd, or ext4 filled on the
+# projector by 'gapps --zip FILE' (installer/lib/gapps_fill.sh; also every partition made before erofs). Both
+# are accepted, with the same checks; sys.z9x.gapps.fs says which one was mounted. Not in /data, so it survives factory resets; a PARTIAL VAB payload (the only
 # kind make_ota.py builds) keeps every partition it does not list, renamed to the target slot, so it
 # survives Lumen OS updates (the same mechanism as z9x_blobs).
 #   boot (the rc):
@@ -19,9 +21,11 @@
 #       the slot and build that failed: after an update that did not start (the OTA gate rolls back at its
 #       4th attempt, after the marker) or a 'rescue' with another build, the other slot or build keeps its
 #       Google services;
-#    3. the block device read-only, then the partition mounted read-only at /mnt/z9x_gapps (ext4, every file
-#       labelled system_file as MindTheGapps' own installer does, nosuid, nodev; exec stays allowed: APKs
-#       keep native code that is mapped straight from the APK);
+#    3. the block device read-only, then the partition mounted read-only at /mnt/z9x_gapps: erofs with
+#       context=system_file, erofs without it (the image carries the same label on every inode), then ext4
+#       with context=system_file (every file labelled system_file as MindTheGapps' own installer does);
+#       nosuid, nodev; exec stays allowed: APKs keep native code that is mapped straight from the APK. The
+#       kernel refuses the wrong type at once by its magic number, so the extra tries cost nothing;
 #    4. checked against /system/etc/z9x/gapps_allow.txt: MANIFEST names one allow-listed zip and its file
 #       lines are exactly that zip's lines; each file is there, a regular file of its size (metadata only:
 #       hashing ~450 MB would take seconds while init waits; the installer hashed each one); nothing else is
@@ -38,14 +42,18 @@
 #       after filling the partition): prints 'ok: ...' (exit 0) or the problem (exit 1); no property, no
 #       overlay, no marker, the block device's read-only flag untouched.
 # Result: sys.z9x.gapps = ok | none | skip | off | bad:<why> (allow, config, mkdir, mount, manifest, zip,
-# path, missing, size, entry, overlay, slow), sys.z9x.gapps.zip = the zip's sha256.
+# path, missing, size, entry, overlay, slow), sys.z9x.gapps.zip = the zip's sha256, sys.z9x.gapps.fs =
+# erofs | ext4 (with ok).
+# The installer reads the next line from the image (dump.erofs) before it builds an erofs add-on: keep it.
+# lumen-gapps-fs: erofs ext4
 # Any failure: the system starts without Google services, never a boot loop. Never writes a partition; the
 # only file it writes is the marker. Bounded (init waits for this exec and the vendor PWM watchdog reboots
 # when early-boot is late, margin ~7 s): it reads only the partition's metadata (about 60 entries, one stat
 # per listed file), the overlay mounts only look up directories: about 60 short processes, roughly 0.2 s.
 # One time budget for the whole boot run, BUDGET (2 s), checked from /proc/uptime (a shell read, no
-# process) before the mount, before every find and before every overlay: over it, bad:slow. With the ext4
-# mount's own 2 s and each tree listing's 1 s timeout the worst case is about 3 s. 'check' has no budget.
+# process) before the mount, before every find and before every overlay: over it, bad:slow. With the
+# mount's own 2 s (each try) and each tree listing's 1 s timeout the worst case is about 3 s (a refused type
+# returns at once). 'check' has no budget.
 TAG=z9x_gapps
 R=${Z9X_ROOT:-}        # empty on the projector; tools/ota/test/gapps.sh points it at a temp dir
 MODE=${1:-boot}
@@ -137,7 +145,11 @@ mkdir -p "$M" || fail bad:mkdir "$M"
 if [ "$MODE" = boot ]; then blockdev --setro "$dev" 2>/dev/null || say "cannot set $dev read-only"; fi
 budget mount
 MOUNTED=1
-timeout 2 mount -t ext4 -o ro,nosuid,nodev,context=$CTX "$dev" "$M" 2>/dev/null || fail bad:mount "$dev"
+# erofs (the one-pass install), then ext4 (the 'gapps' fill and every partition made before erofs)
+if timeout 2 mount -t erofs -o ro,nosuid,nodev,context=$CTX "$dev" "$M" 2>/dev/null; then fs=erofs
+elif timeout 2 mount -t erofs -o ro,nosuid,nodev "$dev" "$M" 2>/dev/null; then fs=erofs
+elif timeout 2 mount -t ext4 -o ro,nosuid,nodev,context=$CTX "$dev" "$M" 2>/dev/null; then fs=ext4
+else fail bad:mount "$dev"; fi
 
 mf=$M/MANIFEST
 [ -f "$mf" ] && [ ! -L "$mf" ] || fail bad:manifest "no MANIFEST"
@@ -182,7 +194,7 @@ dh=$(timeout 1 find "$M" -mindepth 1 -type d ! -path "$M/lost+found" 2>/dev/null
 
 if [ "$MODE" = check ]; then
   undo
-  echo "ok: $n files of $zn"
+  echo "ok: $n files of $zn ($fs)"
   exit 0
 fi
 
@@ -202,6 +214,7 @@ ov "$M/system/app" /system/app
 ov "$M/system/etc/permissions" /system/etc/permissions
 if [ -n "$gv" ]; then setprop ro.com.google.gmsversion "$gv" 2>/dev/null || say "ro.com.google.gmsversion not set"; fi
 setprop sys.z9x.gapps.zip "$z"
+setprop sys.z9x.gapps.fs "$fs"
 setprop sys.z9x.gapps ok
-say "ok: $n files of $zn (gmsversion $gv)"
+say "ok: $n files of $zn (gmsversion $gv, $fs)"
 exit 0

@@ -117,6 +117,11 @@
 #     stops the preflight with a clear message (the sha256 to pin when the file is there) only while SYSLIB=1;
 #     SYSLIB=0 keeps the base's libraries (1.0.2 and older).
 #
+#   - 1.0.8: overlay/v1/z9x_trapezoid.rc (system/etc/init, via RCS) sets the 7 '##trapezoid' properties of the
+#     stock /vendor/etc/xgimimodelname/G0082/build.prop at early-init, only when ro.boot.xgimi.modelname=G0082
+#     (the stock system init loaded that file, LineageOS's does not): the vendor HWC then draws the software
+#     keystone at 4K with anti-alias and the protected DRM path, as stock (docs/z9x/parity/keystone.md item 13).
+#     Preflight locks its exact content.
 # Kept from v6.5 (same checks as z9x_v65.sh): keylayouts (STB_POWER WAKE, factory remotes POWER),
 # Generic.kl (base + key 142), idc, z9x_audio (click curve), z9x_setup.rc (byte-identical, C25),
 # z9x_nui, z9x_bootinfo, z9x_poweroff, z9x_diag (passive), the MTK Codec2 store plugin (6 stock libs,
@@ -300,7 +305,8 @@ KL=(Vendor_0001_Product_0001 Vendor_000d_Product_3838 Vendor_000d_Product_3839 V
 IDC=(Vendor_000d_Product_3838 Vendor_000d_Product_3839 Vendor_000d_Product_3840 Vendor_000d_Product_3841
      Vendor_000d_Product_3842 Vendor_000d_Product_3843 Vendor_1d5a_Product_c081 Vendor_26e3_Product_af02)
 # init files of ours (overlay/v1) -> system/etc/init; z9x_power*.rc of L-PROJECTOR are added on top
-RCS=(z9x_base.rc z9x_audio.rc z9x_setup.rc z9x_poweroff.rc z9x_nui.rc z9x_bootinfo.rc z9x_speed.rc z9x_adb_net.rc)
+RCS=(z9x_base.rc z9x_audio.rc z9x_setup.rc z9x_poweroff.rc z9x_nui.rc z9x_bootinfo.rc z9x_speed.rc z9x_adb_net.rc
+     z9x_trapezoid.rc)
 SCRIPTS=(z9x_diag.sh z9x_poweroff.sh z9x_nui.sh z9x_bootinfo.sh)
 # OTA plumbing of L-OTA (tools/ota/image/HANDOFF.md section 1), byte-identical
 OTA_RC=z9x_ota.rc; OTA_SH=z9x_ota.sh; OTA_UV=update_verifier.rc; OTA_PERM=z9x-updater-default-permissions.xml
@@ -502,6 +508,14 @@ preflight() {
   # ---- z9x_speed.rc: exactly the swappiness write
   [ "$(nocomment "$V1/z9x_speed.rc")" = "$(printf '%s\n' 'on property:sys.boot_completed=1' ' write /proc/sys/vm/swappiness 100')" ] \
     || die "z9x_speed.rc: unexpected content (only vm.swappiness 100; E2 stays commented out)"
+  # ---- z9x_trapezoid.rc (1.0.8, parity keystone item 13): exactly the 7 stock G0082 '##trapezoid' setprops,
+  # at early-init, only on ro.boot.xgimi.modelname=G0082 (never another model, never an exec or a wait)
+  [ "$(nocomment "$V1/z9x_trapezoid.rc")" = "$(printf '%s\n' 'on early-init && property:ro.boot.xgimi.modelname=G0082' \
+       ' setprop vendor.xgimi.hwc.aa true' ' setprop vendor.mstar.trapezoid.secure.enable 1' \
+       ' setprop vendor.mstar.trapezoid.4K.enable 1' ' setprop vendor.mstar.trapezoid.dual.gop.mode 1' \
+       ' setprop vendor.mstar.trapezoid.video.gop 0' ' setprop vendor.mstar.hwc.tcvideo.format 1' \
+       ' setprop vendor.mstar.trapezoid.resolution.switch 1')" ] \
+    || die "z9x_trapezoid.rc: unexpected content (only the 7 G0082 trapezoid setprops at early-init, G0082 only)"
   # ---- z9x_setup.rc byte-identical to v6.5
   [ "$(sha256 "$V1/z9x_setup.rc")" = "$SETUPRC_SHA" ] || die "z9x_setup.rc differs from overlay/v65 (must stay byte-identical, C25)"
   # ---- z9x_bootinfo (v6.5, unchanged rules)
@@ -1033,12 +1047,17 @@ gapps_preflight() {
   # overlays, and their undo
   um=$(grep -v '^[[:space:]]*#' "$OTAIMG/$GAPPS_SH" | grep -oE '(^|[^A-Za-z0-9_.:-])u?mount +[^;&|)]*' \
     | sed -E -e 's/^[^a-z]//' -e 's/ *2>\/dev\/null.*//' -e 's/[[:space:]]+$//' | sort -u) || true
+  # (2026-10-30: erofs, with and without context=, then ext4: the one-pass install's image and the older fill)
   [ "$um" = "$(printf '%s\n' 'mount -t ext4 -o ro,nosuid,nodev,context=$CTX "$dev" "$M"' \
+      'mount -t erofs -o ro,nosuid,nodev,context=$CTX "$dev" "$M"' 'mount -t erofs -o ro,nosuid,nodev "$dev" "$M"' \
       'mount -t overlay overlay -o "ro,lowerdir=$1:$R$2" "$R$2"' 'umount "$M"' 'umount "$t"' | sort -u)" ] \
     || die "$GAPPS_SH: unexpected mounts: $um"
-  grep -qE '^timeout [1-5] mount -t ext4 -o ro,' "$OTAIMG/$GAPPS_SH" && grep -qF 'blockdev --setro "$dev"' "$OTAIMG/$GAPPS_SH" \
+  [ -z "$(grep -v '^[[:space:]]*#' "$OTAIMG/$GAPPS_SH" | grep -E 'mount -t (ext4|erofs)' | grep -vE '(^|if |elif )timeout [1-5] mount -t (ext4|erofs) -o ro,')" ] \
+    && grep -qE '(^|if |elif )timeout [1-5] mount -t ext4 -o ro,' "$OTAIMG/$GAPPS_SH" && grep -qF 'blockdev --setro "$dev"' "$OTAIMG/$GAPPS_SH" \
     && grep -qF 'CTX=u:object_r:system_file:s0' "$OTAIMG/$GAPPS_SH" \
-    || die "$GAPPS_SH: the partition must be mounted read-only (system_file, timeout <= 5 s) after blockdev --setro"
+    || die "$GAPPS_SH: the partition must be mounted read-only (system_file, timeout <= 5 s on every mount) after blockdev --setro"
+  grep -q '^# lumen-gapps-fs: erofs ext4$' "$OTAIMG/$GAPPS_SH" \
+    || die "$GAPPS_SH: needs its line '# lumen-gapps-fs: erofs ext4' (the installer's --gapps-zip reads it)"
   # one time budget for the whole boot run (the PWM watchdog margin is ~7 s): at most 3 s, checked before the
   # mount; every tree listing has a timeout
   b=$(sed -n 's/^BUDGET=\([0-9][0-9]*\)[[:space:]].*/\1/p' "$OTAIMG/$GAPPS_SH")
@@ -1046,8 +1065,8 @@ gapps_preflight() {
     && [ -z "$(grep -v '^[[:space:]]*#' "$OTAIMG/$GAPPS_SH" | grep -E '\$\(find "\$M" ' )" ] \
     || die "$GAPPS_SH: needs its time budget (BUDGET <= 300 centiseconds, 'budget mount') and timeouts on its tree listings"
   [ "$(grep -v '^[[:space:]]*#' "$OTAIMG/$GAPPS_SH" | grep -oE 'setprop [^ ]+' | sort -u)" = \
-    "$(printf '%s\n' 'setprop ro.com.google.gmsversion' 'setprop sys.z9x.gapps' 'setprop sys.z9x.gapps.zip' | sort -u)" ] \
-    || die "$GAPPS_SH: setprop only of sys.z9x.gapps, sys.z9x.gapps.zip and ro.com.google.gmsversion"
+    "$(printf '%s\n' 'setprop ro.com.google.gmsversion' 'setprop sys.z9x.gapps' 'setprop sys.z9x.gapps.fs' 'setprop sys.z9x.gapps.zip' | sort -u)" ] \
+    || die "$GAPPS_SH: setprop only of sys.z9x.gapps, sys.z9x.gapps.zip, sys.z9x.gapps.fs and ro.com.google.gmsversion"
   w=$(grep -v '^[[:space:]]*#' "$OTAIMG/$GAPPS_SH" | grep -oE '[^2]>[[:space:]]*[^ &|;)]+' | grep -v '/dev/null' \
     | sed -E 's/^.>[[:space:]]*//' | sort -u) || true
   [ "$w" = '"$OFF"' ] || die "$GAPPS_SH: it may write only its marker \$OFF (got: $w)"

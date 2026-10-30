@@ -113,6 +113,14 @@ of each member into its own path, each checked by sha256, then `MANIFEST`), runs
 `z9x_gapps.sh check`, and then wipes the data like `flash` (not with `--keep-data`). `gapps --remove` deletes
 the partition (also from fastboot mode) with the same wipe.
 
+Since 2026-10-30 (owner decision, docs/install/ONE_VISIT_GAPPS.md) the full install with `--gapps-zip` builds
+the partition on the computer instead: an erofs image of the same tree (root, 0755 / 0644, `system_file` on
+every inode, the same MANIFEST), bit for bit the one `installer/lib/gapps_images.txt` names, flashed into
+`z9x_gapps_<slot>` in the same fastbootd session as system and before the one wipe. `z9x_gapps.sh` mounts erofs
+(with `context=`, then without), then ext4, with the same checks; `sys.z9x.gapps.fs` says which. The installer
+reads the line `# lumen-gapps-fs: erofs ext4` of the image's `z9x_gapps.sh` before it builds an erofs add-on:
+keep it in every image.
+
 | Source | Image path | Mode | Label |
 |---|---|---|---|
 | `z9x_gapps.sh` | `system/etc/z9x/z9x_gapps.sh` | 0755 | system_file |

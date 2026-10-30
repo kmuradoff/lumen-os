@@ -43,8 +43,13 @@
 #   --zip FILE          'gapps': the MindTheGapps zip you downloaded;  --remove  'gapps': take them out
 #   --gapps-zip FILE    the full install (no command) with Google services in one pass and ONE data wipe:
 #                       the MindTheGapps zip the guide names for this projector. Not with --keep-data or
-#                       --wipe=factory-reset. Lumen OS starts once on the old data, the Google apps are filled in
-#                       as root (Developer options > Rooted debugging; the installer waits for it), then the wipe
+#                       --wipe=factory-reset. XGIMI Z9X: the Google services partition is built on this computer
+#                       (erofs, tools/erofs-utils) before the restart, then ONE fastbootd visit writes system, the
+#                       Google services and wipes the data; no USB debugging or Rooted debugging needed after it.
+#                       XGIMI Play 6: Lumen OS starts once on the old data and the Google apps are filled in as root
+#   --erofs-utils DIR   use mkfs.erofs, fsck.erofs and dump.erofs (erofs-utils 1.9.4) in DIR instead of the
+#                       installer's own tools/erofs-utils: for a computer it ships none for. The image built with
+#                       them must still be bit for bit the checked one (lib/gapps_images.txt)
 #   --ip ADDR[:PORT]    the XGIMI Play 6's Wi-Fi address (port 5555 if not given): it has no USB debugging
 #   --device z9x|play6  which projector (default: the one this download is for, or an unfinished install)
 #   --platform-tools DIR  use the adb and fastboot in DIR (Platform-Tools 35 or newer, with mke2fs and
@@ -58,7 +63,8 @@
 # call has a time limit: a call that hangs stops the installer with a message instead of waiting for ever.
 #
 # XGIMI Z9X, what it writes, ever: system_<slot>, z9x_blobs_<slot> (create/resize/flash), z9x_gapps_<slot>
-# ('gapps': create/resize/format, filled over adb as root, delete), and formats userdata, metadata and cache. It may
+# (--gapps-zip: create/resize/flash of the erofs image built here; 'gapps': create/resize/format, filled over adb as
+# root; delete), and formats userdata, metadata and cache. It may
 # delete only *-cow leftovers and XGIMI's unused product_<slot> and system_ext_<slot>. Every other
 # partition name is refused by fb_allowed(). 'rescue' may also finish
 # ('snapshot-update merge') or cancel ('snapshot-update cancel') an unfinished Lumen OS update of the
@@ -330,7 +336,7 @@ fb_allowed() {  # action partition -> 0 if the installer may touch it
   case "$1:$2" in
     flash:system|flash:"system$s") return 0 ;;
     flash:"z9x_blobs$s"|create:"z9x_blobs$s"|resize:"z9x_blobs$s") return 0 ;;
-    create:"z9x_gapps$s"|resize:"z9x_gapps$s"|format:"z9x_gapps$s"|delete:"z9x_gapps$s") return 0 ;;
+    create:"z9x_gapps$s"|resize:"z9x_gapps$s"|format:"z9x_gapps$s"|delete:"z9x_gapps$s"|flash:"z9x_gapps$s") return 0 ;;
     delete:*-cow) return 0 ;;
     delete:"product$s"|delete:"system_ext$s") return 0 ;;
     format:userdata|format:metadata|format:cache) return 0 ;;
@@ -690,6 +696,7 @@ cmd_flash() {
   [ "$(state_get step_vbmeta)" = done ] || cmd_vbmeta
   check_vbmeta_effective "$(prop ro.boot.slot_suffix)"
   if [ "$BLOBS" = partition ] && [ "$(state_get step_blobs)" != done ]; then cmd_blobs; fi
+  [ -z "$GAPPS_WITH" ] || z9x_gapps_prepare   # everything slow before fastbootd (its ~2 minute limit)
   local slot S blobs="" p
   slot=$(state_get slot); S=$slot
   [ "$BLOBS" = partition ] && blobs=$(state_get blobs_img)
@@ -718,13 +725,12 @@ untouched." \
 стоковой системы, Lumen OS их не использует; стоковая система в другом слоте сохраняет свои) и
 остатки обновлений *-cow. Калибровка XGIMI, второй слот, vendor и boot не затрагиваются."; echo
     if [ -n "$GAPPS_WITH" ]; then
-      t "With --gapps-zip the same session also creates the partition z9x_gapps$S ($((GZ_PART / 1048576)) MB) for
-$GZ_NAME and does not wipe yet: Lumen OS starts once on the old data, the installer copies the
-Google apps into that partition as root (Rooted debugging), and only then erases the data, once." \
-        "С --gapps-zip в той же сессии создаётся ещё раздел z9x_gapps$S ($((GZ_PART / 1048576)) МБ) для
-$GZ_NAME, а данные пока не стираются: Lumen OS один раз загружается на старых данных, установщик
-копирует приложения Google в этот раздел с правами root (отладка суперпользователем) и только потом
-стирает данные, один раз."; echo
+      t "With --gapps-zip the same session also writes the Google services from $GZ_NAME into the
+partition z9x_gapps$S ($(( (GI_SIZE + 1048575) / 1048576 )) MB, the image just built on this computer), before the wipe. All in one
+visit to fastbootd: the first start is clean and its setup has the Google sign-in step." \
+        "С --gapps-zip в той же сессии в раздел z9x_gapps$S ($(( (GI_SIZE + 1048575) / 1048576 )) МБ, образ только что собран на
+компьютере) записываются ещё сервисы Google из $GZ_NAME, до очистки. Всё за один заход в
+fastbootd: первый запуск чистый, и в его настройке есть шаг входа в Google."; echo
     fi
     printf '%s ' "$(t "Type ERASE to continue:" "Введите ERASE, чтобы продолжить:")"
     read -r a
@@ -733,8 +739,9 @@ $GZ_NAME, а данные пока не стираются: Lumen OS один р
   fi
   # --gapps-zip: the Google services of this write (z9x_gapps_finish completes them); any other write forgets
   # what an earlier one-pass install left saved
-  if [ -n "$GAPPS_WITH" ] || [ -n "$(state_get gapps_plan)$(state_get step_gapps_part)$(state_get step_gapps_fill)" ]; then
-    state_set gapps_plan "$GZ_SHA"; state_set step_gapps_part ""; state_set step_gapps_fill ""
+  if [ -n "$GAPPS_WITH" ] || [ -n "$(state_get gapps_plan)$(state_get step_gapps_part)$(state_get step_gapps_fill)$(state_get step_gapps_flash)" ]; then
+    state_set gapps_plan "$GZ_SHA"; state_set gapps_img "$GI_SHA"
+    state_set step_gapps_part ""; state_set step_gapps_fill ""; state_set step_gapps_flash ""
     [ -z "$GAPPS_WITH" ] || state_set step_wipe ""
   fi
   try_root && calib_snapshot before
@@ -769,11 +776,9 @@ $GZ_NAME, а данные пока не стираются: Lumen OS один р
     else fb_do create "z9x_blobs$S" "$BLOB_SIZE"; fi || warn "z9x_blobs$S"
     fb_do flash "z9x_blobs$S" "$blobs" && ok "z9x_blobs$S" || warn "$(t "codec and audio files not written: no sound and no protected video until 'blobs' + 'flash --keep-data'" "файлы кодеков и звука не записаны: не будет звука и защищённого видео до 'blobs' + 'flash --keep-data'")"
   fi
-  if [ -n "$(state_get gapps_plan)" ]; then z9x_gapps_add "$S" || state_set gapps_plan ""; fi
+  if [ -n "$GAPPS_WITH" ]; then z9x_gapps_write "$S" || state_set gapps_plan ""; fi
   if [ "$KEEP_DATA" = 0 ]; then
-    if [ "$(state_get step_gapps_part)" = done ]; then
-      say "$(t "the data is wiped after the Google services are in (after the first start)" "данные стираются после того, как сервисы Google будут добавлены (после первого запуска)")"
-    elif [ "$WIPE" = format ]; then
+    if [ "$WIPE" = format ]; then
       say "$(t "wiping data (format userdata, metadata, cache)" "очистка данных (format userdata, metadata, cache)")"
       fb_do format userdata || { fb reboot; die "$(t "the wipe failed: the projector starts Lumen OS on the old data; do Settings > Device > Reset instead" "очистка не удалась: проектор загрузит Lumen OS на старых данных; сделайте Настройки > Устройство > Сброс")"; }
       fb_do format metadata || warn "format metadata"
@@ -785,8 +790,8 @@ $GZ_NAME, а данные пока не стираются: Lumen OS один р
   fi
   fb reboot >/dev/null 2>&1
   state_set step_flash done
-  if [ "$(state_get step_gapps_part)" = done ]; then
-    ok "$(t "written. Lumen OS now starts once on the old data (2-4 minutes); keep the cable in." "записано. Сейчас Lumen OS один раз загрузится на старых данных (2–4 минуты); кабель не вынимайте.")"
+  if [ "$(state_get step_gapps_flash)" = done ]; then
+    ok "$(t "written. First start takes 2-4 minutes; the setup screen appears on the projector, with the Google sign-in step." "записано. Первый запуск 2–4 минуты; на проекторе появится экран настройки, в нём есть шаг входа в Google.")"
     return 0
   fi
   ok "$(t "written. First start takes 2-4 minutes; the setup screen appears on the projector." "записано. Первый запуск 2–4 минуты; на проекторе появится экран настройки.")"
@@ -1286,23 +1291,184 @@ cmd_gapps() {
 }
 
 # ------------------------------------------------------------------ XGIMI Z9X: Lumen OS and Google services in one pass (--gapps-zip FILE)
-# The full install with the Google services add-on and ONE data wipe. The partition is filled on the projector
-# as 'gapps' does it (gapps_fill.sh as root, then the image's own z9x_gapps.sh 'check'), not built on the
-# computer: an image made here would need e2fsdroid for root-owned files, which Platform-Tools do not carry. The
-# first start after a wipe has no USB debugging, so the order is:
-#   1. before anything is written: the zip (gapps_zipcheck) and the image without Google (image_gms=0);
-#   2. 'flash', the same fastbootd session: system (+ z9x_blobs), then z9x_gapps_<slot> created or resized to the
-#      allow-list's part= size and formatted (z9x_gapps_add), and NO wipe there. Not enough room in super, or a
-#      failed create or format: Google is left out and the session wipes as a clean install does;
-#   3. Lumen OS starts once on the old data (USB debugging and this computer's key carry over, as with
-#      --wipe=factory-reset), adb root (Rooted debugging off: root_setting_wait), the zip pushed, gapps_fill.sh
-#      fills, z9x_gapps.sh 'check' must say ok (z9x_gapps_fill);
-#   4. fastbootd again: the wipe of 'flash' (fb_wipe); the first start after it sets Google up.
-# State: gapps_plan (the zip's sha256, saved when ERASE is typed), step_gapps_part, step_gapps_fill (started |
-# done), step_wipe (empty until 4). A fill that started and did not finish formats the partition again first. A
-# Lumen OS that does not start on the old data goes to fastboot mode after 3 failed starts (z9x_rescue.sh): the
-# next run then wipes there and finishes without Google. A run without --gapps-zip asks to finish without Google.
+# The full install with the Google services add-on in ONE fastbootd visit and ONE data wipe (owner decision
+# 2026-10-30, docs/install/ONE_VISIT_GAPPS.md): no start on the old data, no USB debugging or Rooted debugging
+# after the stock vbmeta step. The partition z9x_gapps_<slot> is not filled on the projector: it is built HERE as
+# an erofs image (gi_build) and flashed like z9x_blobs. mkfs.erofs --tar=f takes owner, mode and SELinux label of
+# every entry from the tar, and the installer writes that tar itself (gi_tar), so neither root nor e2fsdroid is
+# needed. The image's z9x_gapps.sh mounts erofs or ext4 (the 'gapps' fill below) with the same checks.
+#   1. before anything is written: the zip (gapps_zipcheck), the image without Google (image_gms=0) and able to
+#      use an erofs add-on of this zip (gi_image_ok: dump.erofs reads its z9x_gapps.sh and gapps_allow.txt), then
+#      the add-on image built and checked (gi_build; about 10 s, ~1 GB free space for a moment);
+#   2. one ERASE question, then one fastbootd session: system (+ z9x_blobs), z9x_gapps_<slot> created or resized
+#      to the image (rounded up to 1 MiB) and flashed (z9x_gapps_write), then the wipe of 'flash', reboot. Not
+#      enough room in super, or a failed create / resize / flash: the partition is deleted and the install
+#      finishes without Google (warned; 'gapps --zip FILE' adds them later). The wipe stays the last step: a
+#      failure before it leaves the data as it was.
+#   3. the first start is clean and its setup has the Google sign-in step.
+# fastbootd that goes away in the middle (its ~2 minute limit, the cable): the projector starts by itself on the
+# old data, where USB debugging and this computer's key still are, so the same command simply runs 'flash'
+# again (the image built here is reused after a sha256 check).
+# State: gapps_plan (the zip's sha256), gapps_img (the add-on image's sha256), step_gapps_flash (done |
+# skipped:<why>), step_wipe. An install started by an older installer (Lumen OS on the old data waiting for the
+# fill: step_gapps_part=done, no step_wipe) is finished by z9x_gapps_finish: the same flash in fastbootd, then
+# the wipe.
 GZ_SHA=""; GZ_NAME=""; GZ_PART=""
+EU_VER=1.9.4               # erofs-utils of tools/erofs-utils (tools/ota/build_erofs_utils.sh in the Lumen OS tree)
+EU_OPT=${LUMEN_EROFS_UTILS:-}   # --erofs-utils DIR
+EU_DIR=""
+GI_IMG=""; GI_SHA=""; GI_SIZE=""; GI_READY=0
+GI_LABEL=u:object_r:system_file:s0
+GI_MTIME=1230768000        # one fixed time for every inode (compact inodes, the same image everywhere)
+
+eu_plat() {  # this computer's folder in tools/erofs-utils (nothing: none is shipped for it)
+  case "$(uname -s)" in
+    Darwin) echo darwin ;;
+    Linux) case "$(uname -m)" in x86_64|amd64) echo linux-x86_64 ;; aarch64|arm64) echo linux-aarch64 ;; esac ;;
+  esac
+}
+eu_setup() {  # mkfs.erofs, fsck.erofs, dump.erofs: our own (tools/erofs-utils), checked against lib/erofs_utils.txt, run from a
+  # copy in the state folder (executable, without a browser's quarantine flag; checked again on every run)
+  [ -z "$EU_DIR" ] || return 0
+  local plat src sums d p want v
+  if [ -n "$EU_OPT" ]; then
+    d=$(cd "$EU_OPT" 2>/dev/null && pwd) && [ -x "$d/mkfs.erofs" ] && [ -x "$d/fsck.erofs" ] && [ -x "$d/dump.erofs" ] \
+      || die "$(t "--erofs-utils $EU_OPT: no mkfs.erofs, fsck.erofs and dump.erofs there. Nothing was written." "--erofs-utils $EU_OPT: там нет mkfs.erofs, fsck.erofs и dump.erofs. Ничего не записано.")"
+    v=$("$d/mkfs.erofs" --version 2>/dev/null | head -n 1 | awk '{ print $NF }')
+    [ "$v" = "$EU_VER" ] || die "$(t "--erofs-utils $EU_OPT: erofs-utils '$v', this installer needs $EU_VER (the add-on image must be bit for bit the checked one). Nothing was written." "--erofs-utils $EU_OPT: erofs-utils '$v', установщику нужна $EU_VER (образ дополнения должен совпасть с проверенным побайтно). Ничего не записано.")"
+    EU_DIR=$d; ok "erofs-utils $EU_VER (--erofs-utils $d)"; return 0
+  fi
+  plat=$(eu_plat); src=$HERE/tools/erofs-utils; sums=$HERE/lib/erofs_utils.txt
+  if [ -z "$plat" ] || [ ! -f "$sums" ] || ! grep -q " $plat/mkfs.erofs\$" "$sums" || [ ! -d "$src/$plat" ]; then
+    die "$(t "this installer has no erofs-utils for this computer ($(uname -s) $(uname -m)), and the one-pass install with Google services needs them. Install without --gapps-zip and add Google services later (gapps --zip FILE), or use a Mac or a Linux x86-64 / ARM64 computer. Nothing was written." "у установщика нет erofs-utils для этого компьютера ($(uname -s) $(uname -m)), а установке с сервисами Google за один заход они нужны. Установите без --gapps-zip и добавьте сервисы Google позже (gapps --zip ФАЙЛ) или используйте Mac либо Linux x86-64 / ARM64. Ничего не записано.")"
+  fi
+  d=$STATE_DIR/erofs-utils-$EU_VER/$plat
+  mkdir -p "$d" || die "mkdir $d"
+  for p in mkfs fsck dump; do
+    want=$(awk -v f="$plat/$p.erofs" '$2 == f { print $1 }' "$sums")
+    [ -n "$want" ] || die "internal: lib/erofs_utils.txt has no $plat/$p.erofs"
+    [ -f "$d/$p.erofs" ] && [ "$(sha256 "$d/$p.erofs")" = "$want" ] && continue
+    [ -f "$src/$plat/$p.erofs" ] && [ "$(sha256 "$src/$plat/$p.erofs")" = "$want" ] \
+      || die "$(t "tools/erofs-utils/$plat/$p.erofs is missing or damaged (sha256 differs): download the installer again. Nothing was written." "tools/erofs-utils/$plat/$p.erofs нет или он повреждён (другой sha256): скачайте установщик заново. Ничего не записано.")"
+    cat "$src/$plat/$p.erofs" > "$d/$p.erofs.new" && chmod 755 "$d/$p.erofs.new" && mv "$d/$p.erofs.new" "$d/$p.erofs" \
+      || die "$(t "cannot copy $p.erofs to $d" "не удаётся скопировать $p.erofs в $d")"
+    [ "$(sha256 "$d/$p.erofs")" = "$want" ] || die "internal: $d/$p.erofs"
+  done
+  v=$("$d/mkfs.erofs" --version 2>/dev/null | head -n 1 | awk '{ print $NF }')
+  [ "$v" = "$EU_VER" ] || die "$(t "mkfs.erofs of tools/erofs-utils/$plat does not run on this computer. Install without --gapps-zip and add Google services later (gapps --zip FILE). Nothing was written." "mkfs.erofs из tools/erofs-utils/$plat не запускается на этом компьютере. Установите без --gapps-zip и добавьте сервисы Google позже (gapps --zip ФАЙЛ). Ничего не записано.")"
+  EU_DIR=$d
+  ok "erofs-utils $EU_VER (tools/erofs-utils, $(t "checked" "проверены"))"
+}
+
+# the tar for mkfs.erofs --tar=f, written here byte by byte (bash 3.2, no Python): every entry a PAX header with its
+# SELinux label (SCHILY.xattr.security.selinux, as tools/patch_tar.py writes it for the system image) and a ustar
+# header: owner root (0 / 0), the fixed time, mode 0755 (directories) or 0644 (files)
+gi_nul() { [ "$1" -gt 0 ] && head -c "$1" /dev/zero; return 0; }
+gi_fld() { printf '%s' "$1"; gi_nul $(( $2 - ${#1} )); }
+gi_hdr() {  # name mode size type: one 512-byte ustar header
+  local sz mt sum
+  [ ${#1} -le 99 ] || die "internal: tar name longer than 99 characters: $1"
+  sz=$(printf '%011o' "$3"); mt=$(printf '%011o' "$GI_MTIME")
+  # the checksum: every byte of the header, the checksum field counted as 8 spaces (NUL bytes add nothing)
+  sum=$(printf '%s' "$1$2${GI_Z7}${GI_Z7}$sz$mt$4ustar00rootroot${GI_Z7}${GI_Z7}" | od -An -v -tu1 | awk '{ for (i = 1; i <= NF; i++) s += $i } END { print s + 256 }')
+  gi_fld "$1" 100; gi_fld "$2" 8; gi_fld "$GI_Z7" 8; gi_fld "$GI_Z7" 8; gi_fld "$sz" 12; gi_fld "$mt" 12
+  gi_fld "$(printf '%06o' "$sum")" 7; printf ' %s' "$4"; gi_nul 100
+  printf 'ustar'; gi_nul 1; printf '00'; gi_fld root 32; gi_fld root 32; gi_fld "$GI_Z7" 8; gi_fld "$GI_Z7" 8; gi_nul 167
+}
+GI_Z7=0000000
+gi_entry() {  # name mode size type: the PAX header with the label, then the entry's own header
+  local body="SCHILY.xattr.security.selinux=$GI_LABEL" l n
+  # record "<n> <body>NUL<newline>": n counts its own digits
+  l=${#body}; n=$((l + 4)); n=$((l + 3 + ${#n})); n=$((l + 3 + ${#n}))
+  gi_hdr ././@PaxHeader 0000644 "$n" x
+  printf '%s %s' "$n" "$body"; printf '\0\n'; gi_nul $(( 512 - n ))
+  gi_hdr "$1" "$2" "$3" "$4"
+}
+gi_unzip() {  # zip member: one member to stdout
+  if command -v unzip >/dev/null 2>&1; then unzip -p "$1" "$2"
+  else python3 -I -c 'import shutil, sys, zipfile; shutil.copyfileobj(zipfile.ZipFile(sys.argv[1]).open(sys.argv[2]), sys.stdout.buffer)' "$1" "$2"; fi
+}
+sha256_in() { if command -v sha256sum >/dev/null 2>&1; then sha256sum | cut -d' ' -f1; else shasum -a 256 | cut -d' ' -f1; fi; }
+gi_lines() { awk -v z="zip=$1" '$1 ~ /^zip=/ { on = ($1 == z); next } on && NF == 3 && $1 !~ /^#/ { print $1, $2, $3 }' "$HERE/lib/gapps_allow.txt"; }
+gi_tar() {  # zip out: the add-on's tree as a tar, laid out exactly as lib/gapps_fill.sh fills the ext4 partition
+  local zip=$1 out=$2 w lines d h s p mf
+  w=$(dirname "$out")
+  lines=$(gi_lines "$GZ_SHA")
+  [ -n "$lines" ] || die "internal: no files for $GZ_NAME in lib/gapps_allow.txt"
+  { echo "# Lumen OS: Google services add-on (lumen-install gapps). z9x_gapps.sh checks it at every start"
+    echo "# against /system/etc/z9x/gapps_allow.txt: do not edit."
+    gapps_line "$GZ_SHA" | cut -d' ' -f1,2
+    echo "$lines"; } > "$w/MANIFEST"
+  (
+    gi_entry ./ 0000755 0 5   # the image root: without this entry it would be 0777 and unlabelled
+    for d in $(printf '%s\n' "$lines" | awk '{ p = $3; while (sub(/\/[^\/]*$/, "", p)) print p }' | LC_ALL=C sort -u); do
+      gi_entry "$d/" 0000755 0 5
+    done
+    printf '%s\n' "$lines" | LC_ALL=C sort -k3,3 | while read -r h s p; do
+      case "$p" in ''|/*|*/|*//*|*..*|*[!A-Za-z0-9_@+./-]*) echo "bad path $p" > "$w/bad"; exit 1 ;; esac
+      gi_unzip "$zip" "system/$p" > "$w/file" 2>/dev/null || { echo "unzip system/$p" > "$w/bad"; exit 1; }
+      [ "$(sha256 "$w/file")" = "$h" ] && [ "$(wc -c < "$w/file" | tr -d ' ')" = "$s" ] || { echo "sha256 of $p" > "$w/bad"; exit 1; }
+      gi_entry "$p" 0000644 "$s" 0; cat "$w/file"; gi_nul $(( (512 - s % 512) % 512 ))
+    done || exit 1
+    mf=$(wc -c < "$w/MANIFEST" | tr -d ' ')
+    gi_entry MANIFEST 0000644 "$mf" 0; cat "$w/MANIFEST"; gi_nul $(( (512 - mf % 512) % 512 ))
+    gi_nul 1024
+  ) > "$out"
+}
+gi_image_ok() {  # the Lumen OS image to be written can use an erofs add-on of this zip (read with our dump.erofs)
+  local s
+  s=$("$EU_DIR/dump.erofs" --cat --path=/system/etc/z9x/z9x_gapps.sh "$IMG" 2>/dev/null) || s=""
+  printf '%s\n' "$s" | grep -q '^# lumen-gapps-fs:.* erofs' \
+    || die "$(t "$(basename "$IMG") cannot take the Google services in one pass (its add-on support is older than this installer): use the image of the same release as this installer. Nothing was written." "$(basename "$IMG") не может принять сервисы Google за один заход (его поддержка дополнения старше этого установщика): используйте образ того же выпуска, что и установщик. Ничего не записано.")"
+  s=$("$EU_DIR/dump.erofs" --cat --path=/system/etc/z9x/gapps_allow.txt "$IMG" 2>/dev/null) || s=""
+  printf '%s\n' "$s" | grep -q "^zip=$GZ_SHA " \
+    || die "$(t "$(basename "$IMG") does not accept $GZ_NAME (not in its gapps_allow.txt): use the image of the same release as this installer. Nothing was written." "$(basename "$IMG") не принимает $GZ_NAME (его нет в gapps_allow.txt образа): используйте образ того же выпуска, что и установщик. Ничего не записано.")"
+  ok "$(t "the image takes the Google services add-on as erofs" "образ принимает дополнение с сервисами Google как erofs")"
+}
+gi_build() {  # zip: the add-on image in $STATE_DIR/gapps, built and checked; sets GI_IMG, GI_SHA, GI_SIZE
+  local zip=$1 ref w img kb lines h s p got
+  ref=$(awk -v z="$GZ_SHA" -v v="$EU_VER" '$1 == z && $2 == v && $3 == "plain" { print; exit }' "$HERE/lib/gapps_images.txt" 2>/dev/null)
+  [ -n "$ref" ] || die "$(t "lib/gapps_images.txt names no checked add-on image of $GZ_NAME for erofs-utils $EU_VER: download the installer again. Nothing was written." "в lib/gapps_images.txt нет проверенного образа дополнения из $GZ_NAME для erofs-utils $EU_VER: скачайте установщик заново. Ничего не записано.")"
+  GI_SHA=$(printf '%s\n' "$ref" | awk '{ print $4 }'); GI_SIZE=$(printf '%s\n' "$ref" | awk '{ print $5 }')
+  case "$GI_SIZE" in ''|*[!0-9]*) die "internal: lib/gapps_images.txt size" ;; esac
+  w=$STATE_DIR/gapps; img=$w/z9x_gapps-$(printf '%s' "$GZ_SHA" | cut -c1-16).img
+  GI_IMG=$img
+  if [ -f "$img" ] && [ "$(wc -c < "$img" | tr -d ' ')" = "$GI_SIZE" ] && [ "$(sha256 "$img")" = "$GI_SHA" ]; then
+    ok "$(t "Google services add-on image: built earlier, checked" "образ дополнения с сервисами Google: собран раньше, проверен") ($(( (GI_SIZE + 1048575) / 1048576 )) $(t MB МБ))"
+    return 0
+  fi
+  rm -rf "${w:?}"; mkdir -p "$w" || die "mkdir $w"
+  kb=$(df -k "$w" | awk 'NR == 2 { print $4 }')
+  [ "${kb:-0}" -ge $(( GI_SIZE / 1024 * 2 + 65536 )) ] \
+    || die "$(t "not enough free space on this computer for the Google services add-on image: $((GI_SIZE * 2 / 1048576 + 64)) MB needed in $w for a moment. Nothing was written." "на компьютере мало места для образа дополнения с сервисами Google: в $w ненадолго нужно $((GI_SIZE * 2 / 1048576 + 64)) МБ. Ничего не записано.")"
+  say "$(t "building the Google services add-on image from $GZ_NAME (erofs, each file checked; about 10-30 s)" "собираю образ дополнения с сервисами Google из $GZ_NAME (erofs, каждый файл проверяется; 10–30 секунд)")"
+  if ! gi_tar "$zip" "$w/gapps.tar"; then
+    die "$(t "the zip does not hold the expected files ($(cat "$w/bad" 2>/dev/null)): download it again. Nothing was written." "в архиве не те файлы ($(cat "$w/bad" 2>/dev/null)): скачайте его заново. Ничего не записано.")"
+  fi
+  rm -f "$w/file"
+  "$EU_DIR/mkfs.erofs" -b4096 -E noinline_data -T"$GI_MTIME" -U 00000000-0000-0000-0000-000000000000 --all-root --workers=1 \
+    -Lz9x_gapps --tar=f "$img.part" "$w/gapps.tar" > "$w/mkfs.log" 2>&1 \
+    || { rm -f "$w/gapps.tar" "$img.part"; die "$(t "mkfs.erofs failed" "mkfs.erofs не сработал"): $(tail -n 3 "$w/mkfs.log" | tr '\n' ' '). $(t 'Nothing was written.' 'Ничего не записано.')"; }
+  rm -f "$w/gapps.tar"
+  "$EU_DIR/fsck.erofs" "$img.part" > "$w/fsck.log" 2>&1 || { rm -f "$img.part"; die "fsck.erofs: $(tail -n 3 "$w/fsck.log" | tr '\n' ' '). $(t 'Nothing was written.' 'Ничего не записано.')"; }
+  # every file read back out of the image
+  lines=$(gi_lines "$GZ_SHA")
+  while read -r h s p; do
+    got=$("$EU_DIR/dump.erofs" --cat --path="/$p" "$img.part" 2>/dev/null | sha256_in)
+    [ "$got" = "$h" ] || { rm -f "$img.part"; die "$(t "$p read back from the add-on image differs. Nothing was written." "$p, прочитанный из образа дополнения, не совпал. Ничего не записано.")"; }
+  done <<EOF
+$lines
+EOF
+  [ "$("$EU_DIR/dump.erofs" --cat --path=/MANIFEST "$img.part" 2>/dev/null | sha256_in)" = "$(sha256 "$w/MANIFEST")" ] \
+    || { rm -f "$img.part"; die "$(t "MANIFEST read back from the add-on image differs. Nothing was written." "MANIFEST, прочитанный из образа дополнения, не совпал. Ничего не записано.")"; }
+  got=$(sha256 "$img.part")
+  if [ "$got" != "$GI_SHA" ] || [ "$(wc -c < "$img.part" | tr -d ' ')" != "$GI_SIZE" ]; then
+    rm -f "$img.part"
+    die "$(t "the add-on image built here (sha256 $(printf '%s' "$got" | cut -c1-16)...) is not the one checked for this release ($(printf '%s' "$GI_SHA" | cut -c1-16)...): Google services are not written. Install without --gapps-zip and add them later (gapps --zip FILE). Nothing was written." "собранный здесь образ дополнения (sha256 $(printf '%s' "$got" | cut -c1-16)...) не тот, что проверен для этого выпуска ($(printf '%s' "$GI_SHA" | cut -c1-16)...): сервисы Google не записываются. Установите без --gapps-zip и добавьте их позже (gapps --zip ФАЙЛ). Ничего не записано.")"
+  fi
+  mv "$img.part" "$img"
+  ok "$(t "Google services add-on image" "образ дополнения с сервисами Google"): $(printf '%s\n' "$lines" | grep -c .) $(t "files checked" "файлов проверено"), $(( (GI_SIZE + 1048575) / 1048576 )) $(t MB МБ), sha256 $(printf '%s' "$GI_SHA" | cut -c1-16)..."
+}
 
 z9x_gapps_plan() {  # --gapps-zip, before anything else: the zip, and that the install saved here can take it
   local plan
@@ -1310,125 +1476,80 @@ z9x_gapps_plan() {  # --gapps-zip, before anything else: the zip, and that the i
   gapps_zipcheck "$GAPPS_WITH"
   plan=$(state_get gapps_plan)
   if [ "$(state_get step_flash)" = done ]; then
-    if [ "$(state_get step_gapps_part)" != done ] || { [ -n "$(state_get step_wipe)" ] && [ "$(state_get step_gapps_fill)" != done ]; }; then
+    # an older installer's install waiting for its fill (z9x_gapps_finish completes it), or this one-pass install done
+    if ! { [ "$(state_get step_gapps_part)" = done ] && [ -z "$(state_get step_wipe)" ]; } \
+       && [ "$(state_get step_gapps_flash)" != done ] && [ "$(state_get step_gapps_fill)" != done ]; then
       die "$(t "Lumen OS was installed here without Google services. To add them: bash lumen-install.sh gapps --zip FILE. For a new install: bash lumen-install.sh reset first. Nothing was written." "Lumen OS здесь уже установлена без сервисов Google. Добавить их: bash lumen-install.sh gapps --zip ФАЙЛ. Для новой установки сначала: bash lumen-install.sh reset. Ничего не записано.")"
     fi
     [ -z "$plan" ] || [ "$plan" = "$GZ_SHA" ] || die "$(t "this install was started with another MindTheGapps file: use the same file. Nothing was erased." "эта установка начата с другим файлом MindTheGapps: укажите тот же файл. Ничего не стёрто.")"
   fi
 }
-z9x_gapps_add() {  # slot, fastbootd after system: z9x_gapps_<slot> made and formatted for the plan; 1 = left out (warned)
-  local p=z9x_gapps$1 part free cur=0 why
-  part=$(gapps_field "$(gapps_line "$(state_get gapps_plan)")" part)
+z9x_gapps_prepare() {  # before the ERASE question: erofs-utils, the image takes the add-on, the add-on image built
+  [ "$GI_READY" = 0 ] || return 0
+  [ -n "$IMG" ] && [ -f "$IMG" ] || find_image
+  [ "$(state_get image_gms)" = 0 ] || die "$(t "this image has Google services built in: --gapps-zip is for Lumen OS without Google. Nothing was written." "в этом образе сервисы Google уже встроены: --gapps-zip нужен для Lumen OS без Google. Ничего не записано.")"
+  eu_setup
+  gi_image_ok
+  gi_build "$GAPPS_WITH"
+  GI_READY=1
+}
+z9x_gapps_write() {  # slot, fastbootd after system (+ z9x_blobs): z9x_gapps_<slot> sized to the image and flashed;
+  # 1 = left out (warned; the partition is deleted, so the system starts plainly without Google)
+  local p=z9x_gapps$1 need free cur=0 why
+  need=$(( (GI_SIZE + 1048575) / 1048576 * 1048576 ))
   why=$(t "the install goes on without Google services (add them later: gapps --zip FILE)" "установка продолжается без сервисов Google (добавить их позже: gapps --zip ФАЙЛ)")
   GV=$(fb getvar all 2>&1)   # system and z9x_blobs have their new sizes now
   free=$(super_free)
   if printf '%s\n' "$GV" | grep -q "partition-size:$p:"; then cur=$(( $(gv_size "$p") )); fi
-  if [ -z "$part" ] || [ $(( free + cur )) -lt "$part" ]; then
-    warn "$(t "not enough free space in super for the Google services ($(( (free + cur) / 1048576 )) MB): $why" "в super мало места для сервисов Google ($(( (free + cur) / 1048576 )) МБ): $why")"
-    return 1
+  if [ $(( free + cur )) -lt "$need" ]; then
+    [ "$cur" -gt 0 ] && fb_do delete "$p" >/dev/null 2>&1
+    warn "$(t "not enough free space in super for the Google services ($(( (free + cur) / 1048576 )) MB, $((need / 1048576)) MB needed): $why" "в super мало места для сервисов Google ($(( (free + cur) / 1048576 )) МБ, нужно $((need / 1048576)) МБ): $why")"
+    state_set step_gapps_flash skipped:room; return 1
   fi
-  say "$(t "creating $p ($((part / 1048576)) MB) for the Google services" "создаю $p ($((part / 1048576)) МБ) для сервисов Google")"
-  if [ "$cur" -gt 0 ]; then fb_do resize "$p" "$part"; else fb_do create "$p" "$part"; fi \
-    || { warn "$(t "$p could not be created: $why" "$p создать не удалось: $why")"; return 1; }
-  if ! fb_do format "$p"; then
+  say "$(t "writing the Google services into $p ($((need / 1048576)) MB, about 20 s)" "записываю сервисы Google в $p ($((need / 1048576)) МБ, около 20 секунд)")"
+  if [ "$cur" -gt 0 ]; then fb_do resize "$p" "$need"; else fb_do create "$p" "$need"; fi \
+    || { fb_do delete "$p" >/dev/null 2>&1; warn "$(t "$p could not be created: $why" "$p создать не удалось: $why")"; state_set step_gapps_flash skipped:create; return 1; }
+  if ! fb_do flash "$p" "$GI_IMG"; then
+    # fastbootd gone (its time limit, the cable): nothing is erased, the projector starts on the old data with USB
+    # debugging, and the same command writes everything again in one visit
+    z9x_in_fastboot || die "$(t "fastbootd ended while $p was being written. Nothing was erased: the projector starts on its old data, USB debugging still on. Run the same command again: it writes everything again in one visit." "fastbootd завершился во время записи $p. Ничего не стёрто: проектор загрузится на старых данных, отладка по USB по-прежнему включена. Запустите ту же команду ещё раз: она снова запишет всё за один заход.")"
     fb_do delete "$p" >/dev/null 2>&1
-    warn "$(t "$p could not be formatted and was removed again: $why" "$p не удалось отформатировать, раздел удалён: $why")"
-    return 1
+    warn "$(t "$p could not be written and was removed again: $why" "$p записать не удалось, раздел удалён: $why")"
+    state_set step_gapps_flash skipped:flash; return 1
   fi
-  state_set step_gapps_part done
+  state_set step_gapps_flash done; state_set gapps "$GZ_NAME"; state_set gapps_img "$GI_SHA"
+  ok "$p: $GZ_NAME"
 }
 z9x_in_fastboot() { [ -n "$SERIAL" ] && fastboot devices 2>/dev/null | awk '{print $1}' | grep -qx "$SERIAL"; }
-z9x_root_wait() {  # adb root over USB; Rooted debugging off: waits for the user; else STOP (the next run continues here)
-  local out
-  while :; do
-    [ "$(prop ro.debuggable)" = 1 ] || die "$(t "adb root is not possible on this system (Lumen OS is a userdebug build: is it really Lumen OS?). Nothing was erased." "adb root на этой системе невозможен (Lumen OS собрана как userdebug: точно ли это Lumen OS?). Ничего не стёрто.")"
-    [ "$(adbs shell id -u 2>/dev/null | tr -d '\r')" = 0 ] && return 0
-    out=$(adbs root 2>&1)
-    case "$out" in *"disabled by system setting"*) root_setting_wait || root_setting_stop; continue ;; esac
-    sleep 3; adbs wait-for-device
-    [ "$(adbs shell id -u 2>/dev/null | tr -d '\r')" = 0 ] && return 0
-    die "$(t "adb root did not work ($out). Run the same command again: it continues here. Nothing was erased." "adb root не сработал ($out). Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто.")"
-  done
-}
-z9x_gapps_fill() {  # step 3: Lumen OS on the old data, root, fill, check; 1 = Google left out (the wipe follows anyway)
-  local slot p o
-  slot=$(state_get slot); p=z9x_gapps$slot
-  say "$(t "waiting for Lumen OS to start on the old data (up to 5 minutes)" "жду, пока Lumen OS загрузится на старых данных (до 5 минут)")"
-  if ! boot_wait; then
-    if z9x_in_fastboot; then
-      warn "$(t "Lumen OS did not start on the old data: the projector went to fastboot mode after failed starts. The install finishes without Google services (add them later: gapps --zip FILE)." "Lumen OS не загрузилась на старых данных: после неудачных запусков проектор ушёл в режим fastboot. Установка завершается без сервисов Google (добавить их позже: gapps --zip ФАЙЛ).")"
-      return 1
-    fi
-    die "$(t "Lumen OS did not come back over USB within 5 minutes. If Lumen OS is on the screen: cable in, debugging allowed on the screen? Run the same command again: it continues here. If the projector restarts again and again: after 3 failed starts it goes to fastboot mode by itself; then run the same command again: it wipes the data and finishes without Google services. Nothing was erased." "Lumen OS не вернулась по USB за 5 минут. Если на экране Lumen OS: кабель вставлен, отладка на экране разрешена? Запустите ту же команду снова: установка продолжится с этого места. Если проектор перезагружается снова и снова: после 3 неудачных запусков он сам уходит в режим fastboot; тогда запустите ту же команду снова: она сотрёт данные и завершит установку без сервисов Google. Ничего не стёрто.")"
-  fi
-  [ "$(prop ro.z9x.gms)" = 0 ] || die "$(t "the projector does not run the Lumen OS without Google that was written (ro.z9x.gms='$(prop ro.z9x.gms)'). Nothing was erased." "на проекторе не та Lumen OS без Google, что была записана (ro.z9x.gms='$(prop ro.z9x.gms)'). Ничего не стёрто.")"
-  ok "$(t "Lumen OS $(prop ro.z9x.version) started on the old data" "Lumen OS $(prop ro.z9x.version) загрузилась на старых данных")"
-  z9x_root_wait
-  if ! adbs shell cat /system/etc/z9x/gapps_allow.txt 2>/dev/null | tr -d '\r' | grep -q "^zip=$GZ_SHA "; then
-    warn "$(t "this Lumen OS does not accept $GZ_NAME: the install finishes without Google services" "эта Lumen OS не принимает $GZ_NAME: установка завершается без сервисов Google")"
-    return 1
-  fi
-  if [ "$(state_get step_gapps_fill)" = started ]; then
-    # a fill of an earlier run did not finish: the partition must be empty again (gapps_fill.sh fills only that)
-    say "$(t "an earlier fill did not finish: formatting $p again" "прошлое заполнение не завершилось: снова форматирую $p")"
-    fbd_enter "$slot"
-    fb_do format "$p" || { fb reboot >/dev/null 2>&1; die "$(t "$p could not be formatted. Run the same command again. Nothing was erased." "$p отформатировать не удалось. Запустите ту же команду снова. Ничего не стёрто.")"; }
-    fb reboot >/dev/null 2>&1
-    boot_wait || die "$(t "the projector did not come back over USB within 5 minutes. Run the same command again: it continues here. Nothing was erased." "проектор не вернулся по USB за 5 минут. Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто.")"
-    z9x_root_wait
-  fi
-  gapps_push_fill
-  o=$(gapps_sh pre "$GZ_SHA" "$(wc -c < "$GAPPS_WITH" | tr -d ' ')")
-  case "$o" in "OK pre "*) ;; *) adbs shell rm -rf "$GAPPS_DIR" >/dev/null 2>&1; die "$(t "the projector is not ready" "проектор не готов"): ${o#FAIL }. $(t "Nothing was erased." "Ничего не стёрто.")" ;; esac
-  say "$(t "copying $GZ_NAME to the projector (about a minute)" "копирую $GZ_NAME на проектор (около минуты)")"
-  adbs push "$GAPPS_WITH" "$GAPPS_DIR/gapps.zip" >/dev/null 2>&1 \
-    || { adbs shell rm -rf "$GAPPS_DIR" >/dev/null 2>&1; die "$(t "adb push of the zip failed. Run the same command again: it continues here. Nothing was erased." "adb push архива не удался. Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто.")"; }
-  say "$(t "copying the Google apps into $p and checking each one (1 to 2 minutes)" "копирую приложения Google в $p и проверяю каждое (1–2 минуты)")"
-  state_set step_gapps_fill started
-  o=$(gapps_sh fill "$GZ_SHA")
-  case "$o" in
-    "OK fill "*) ;;
-    *) adbs shell rm -rf "$GAPPS_DIR" >/dev/null 2>&1
-       die "$(t "the Google services were not added" "сервисы Google не добавлены"): ${o#FAIL }. $(t "Run the same command again: it continues here. Nothing was erased." "Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто.")" ;;
-  esac
-  o=$(adbs shell sh /system/etc/z9x/z9x_gapps.sh check 2>&1 | tr -d '\r')
-  adbs shell rm -rf "$GAPPS_DIR" /metadata/z9x_gapps >/dev/null 2>&1
-  case "$o" in
-    "ok: "*) ok "$p: ${o#ok: }" ;;
-    *) die "$(t "the projector's own check of $p failed" "собственная проверка $p на проекторе не прошла"): $o. $(t "Run the same command again: it continues here. Nothing was erased." "Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто.")" ;;
-  esac
-  state_set gapps "$GZ_NAME"
-  state_set step_gapps_fill done
-}
-z9x_gapps_finish() {  # after 'flash' with --gapps-zip: step 3 (unless done), then the one data wipe
+z9x_gapps_finish() {  # an install of an older installer that waits on the old data for its fill: the add-on flashed
+  # as erofs in fastbootd (with --gapps-zip), then the one data wipe there
   local slot a
   slot=$(state_get slot)
-  if [ "$(state_get step_gapps_fill)" != done ] && [ -n "$(state_get gapps_plan)" ]; then
-    if [ -z "$GAPPS_WITH" ]; then
-      say "$(t "this install was started with Google services (--gapps-zip), and they are not in yet" "эта установка начата с сервисами Google (--gapps-zip), и они ещё не добавлены")"
-      ask "$(t "Finish the install without Google services? (Adding them later with 'gapps' wipes the data once more.)" "Завершить установку без сервисов Google? (Если добавить их позже через 'gapps', данные сотрутся ещё раз.)")" \
-        || die "$(t "run the same command again with --gapps-zip FILE: it continues there. Nothing was erased." "запустите ту же команду снова с --gapps-zip ФАЙЛ: установка продолжится с того же места. Ничего не стёрто.")"
-      state_set gapps_plan ""
-    elif ! z9x_gapps_fill; then
-      state_set gapps_plan ""
-    fi
+  if [ -z "$GAPPS_WITH" ]; then
+    say "$(t "this install was started with Google services (--gapps-zip), and they are not in yet" "эта установка начата с сервисами Google (--gapps-zip), и они ещё не добавлены")"
+    ask "$(t "Finish the install without Google services? (Adding them later with 'gapps' wipes the data once more.)" "Завершить установку без сервисов Google? (Если добавить их позже через 'gapps', данные сотрутся ещё раз.)")" \
+      || die "$(t "run the same command again with --gapps-zip FILE: it continues there. Nothing was erased." "запустите ту же команду снова с --gapps-zip ФАЙЛ: установка продолжится с того же места. Ничего не стёрто.")"
+    state_set gapps_plan ""
+  else
+    FORCE_HASH=1 check_image
+    z9x_gapps_prepare
   fi
-  # the one data wipe of this install, in fastbootd (where the projector may already wait after failed starts);
-  # a later run than the one where ERASE was typed asks again
   if [ "$ERASE_NOW" != 1 ]; then
     echo
-    t "Lumen OS is written. Next the installer ERASES ALL DATA on the projector (apps, accounts, settings,
-files) in fastbootd, as at a clean install." "Lumen OS записана. Дальше установщик СТИРАЕТ ВСЕ ДАННЫЕ проектора (приложения, аккаунты, настройки,
-файлы) в fastbootd, как при чистой установке."; echo
+    t "Lumen OS is written. Next the installer writes the Google services (if asked) and ERASES ALL DATA on the
+projector (apps, accounts, settings, files) in fastbootd, as at a clean install." "Lumen OS записана. Дальше установщик записывает сервисы Google (если они выбраны) и СТИРАЕТ ВСЕ ДАННЫЕ
+проектора (приложения, аккаунты, настройки, файлы) в fastbootd, как при чистой установке."; echo
     printf '%s ' "$(t "Type ERASE to continue:" "Введите ERASE, чтобы продолжить:")"
     read -r a
     [ "$a" = ERASE ] || die "$(t "cancelled, nothing was erased" "отменено, ничего не стёрто")"
     ERASE_NOW=1
   fi
   if z9x_in_fastboot; then fbd_check "$slot"; else fbd_enter "$slot"; fi
+  if [ -n "$GAPPS_WITH" ]; then z9x_gapps_write "$slot" || state_set gapps_plan ""; fi
   fb_wipe
   fb reboot >/dev/null 2>&1
-  if [ "$(state_get step_gapps_fill)" = done ]; then
+  state_set step_gapps_part ""; state_set step_gapps_fill ""
+  if [ "$(state_get step_gapps_flash)" = done ]; then
     ok "$(t "data wiped. The first start takes 2-4 minutes; the setup has a Google sign-in step." "данные стёрты. Первый запуск 2–4 минуты; в настройке есть шаг входа в Google.")"
   else
     ok "$(t "data wiped. The first start takes 2-4 minutes; the setup screen appears on the projector." "данные стёрты. Первый запуск 2–4 минуты; на проекторе появится экран настройки.")"
@@ -2756,6 +2877,7 @@ cmd_all() {
   if [ -n "$GAPPS_WITH" ] && [ "$(state_get image_gms)" != 0 ]; then
     die "$(t "this image has Google services built in: --gapps-zip is for Lumen OS without Google. Nothing was written." "в этом образе сервисы Google уже встроены: --gapps-zip нужен для Lumen OS без Google. Ничего не записано.")"
   fi
+  [ -z "$GAPPS_WITH" ] || [ "$(state_get step_flash)" = done ] || z9x_gapps_prepare   # before the backup question: a refusal comes first
   if [ "$(state_get step_backup)" != done ]; then
     if ask "$(t "Make a backup of your apps and files first (recommended)?" "Сначала сделать копию ваших приложений и файлов (рекомендуется)?")"; then cmd_backup; else state_set step_backup skipped; fi
   fi
@@ -2765,7 +2887,7 @@ cmd_all() {
   if [ "$(state_get step_gapps_part)" = done ] && [ -z "$(state_get step_wipe)" ]; then z9x_gapps_finish; fi
   [ "$(state_get step_verify)" = done ] || cmd_verify
   echo
-  if [ "$(state_get image_gms)" = 0 ] && [ "$(state_get step_gapps_fill)" != done ]; then
+  if [ "$(state_get image_gms)" = 0 ] && [ "$(state_get step_gapps_fill)" != done ] && [ "$(state_get step_gapps_flash)" != done ]; then
     t "Done. On the projector: choose the language, Wi-Fi and the rest of the setup. Install apps from a
 USB stick: Lumen Home > Apps > Install from USB. Google services can be added later: 'gapps' (guide)." "Готово. На проекторе выберите язык, Wi-Fi и пройдите настройку. Приложения ставятся с
 USB-накопителя: Lumen Home > Приложения > Установить с USB. Сервисы Google можно добавить позже: 'gapps' (инструкция)."; echo
@@ -2801,6 +2923,8 @@ while [ $# -gt 0 ]; do
     --device=*) DEVICE_OPT=${1#*=} ;;
     --platform-tools) PT_OPT=${2-}; shift ;;
     --platform-tools=*) PT_OPT=${1#*=} ;;
+    --erofs-utils) EU_OPT=${2-}; shift ;;
+    --erofs-utils=*) EU_OPT=${1#*=} ;;
     -h|--help) awk 'NR == 1 { next } /^set -u$/ { exit } { print }' "$0"; exit 0 ;;
     -*) die "unknown option $1" ;;
     *) if [ "$CMD" = stick ] && [ -z "$STICK" ]; then STICK=$1; else CMD=$1; fi ;;

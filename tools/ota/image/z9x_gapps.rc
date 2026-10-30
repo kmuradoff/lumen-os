@@ -5,7 +5,7 @@
 # See z9x_gapps.sh: the user's own Google services add-on in z9x_gapps<slot>, checked and overlaid.
 # exec at post-fs-data, like z9x_blobs.rc (default mount namespace): before zygote-start, so PackageManager
 # and SystemConfig see the add-on at their first scan. Without the partition: three getprops and a test
-# (sys.z9x.gapps=none). With it: one read-only ext4 mount, ~25 metadata-only finds, six overlay mounts:
+# (sys.z9x.gapps=none). With it: one read-only mount (erofs, else ext4), ~25 metadata-only finds, six overlay mounts:
 # about 60 short processes, roughly 0.2 s. One 2 s budget for the whole run (bad:slow when used up), so at
 # most about 3 s with the mount's own timeout (the PWM watchdog margin is ~7 s).
 on post-fs-data

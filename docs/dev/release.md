@@ -132,7 +132,8 @@ stick (the updater's "Install from a USB stick" reads `update-stable.json` there
   (`lumen-os-<ver>-installer.zip`, the name the install guide gives; made from the exported repository's
   `installer/` folder, whose `release.conf` must say `VERSION=<ver>`: the working tree's installer may be
   held back, docs/repo/README.md "Held files"), the GPL source of the
-  AirPlay app as a plain `.zip`. Nothing of the Google edition (image, OTA zip, `update-public.json`,
+  AirPlay app as a plain `.zip`, and the erofs-utils source tarball `erofs-utils-1.9.4.tar.gz` plus
+  `lz4-1.10.0.tar.gz` as they are (GPL: the installer zip carries their programs, see below). Nothing of the Google edition (image, OTA zip, `update-public.json`,
   `update-stable.json`): `check_release_assets.py` refuses it.
   A zip asset may not contain another archive or image (zip, tar, gz, xz, img, payload.bin, ...: refused
   by name and by magic bytes); a zip with `payload.bin` or OTA metadata is checked as an OTA whatever
@@ -156,5 +157,16 @@ stick (the updater's "Install from a USB stick" reads `update-stable.json` there
   `z9x_gapps_<slot>` across updates and `z9x_gapps.sh` refuses a zip its image does not list), and every
   payload must stay PARTIAL (it keeps `z9x_gapps_<slot>` like `z9x_blobs_<slot>`). A new MindTheGapps zip
   gets a new block (`python3 tools/ota/gapps_allow.py gen ZIP --url URL`), never a replaced one.
+- **erofs-utils in the installer zip (one-pass `--gapps-zip`).** `installer/tools/` is not in git, so the
+  installer zip gets `installer/tools/erofs-utils/` (darwin, linux-x86_64, linux-aarch64; later windows-x64)
+  from `bash tools/ota/build_erofs_utils.sh` (docker / colima for Linux) on the release computer. The sha256 of
+  every program is in git: `installer/lib/erofs_utils.txt` (the installer runs nothing else). Before the
+  release: `bash tools/ota/test/gapps_erofs.sh` (the installer's builder gives the image of
+  `installer/lib/gapps_images.txt` from the real zip) on each platform's programs that the release computer
+  can run, and `python3 tools/ota/gapps_allow.py image-check installer/lib/gapps_images.txt`. A new MindTheGapps
+  block in `gapps_allow.txt` also needs its line in `gapps_images.txt` (`python3 tools/ota/gapps_allow.py image
+  ZIP`), and a new erofs-utils version new lines for every zip (the image bytes depend on the version). The image
+  itself contains Google's files: it never leaves the release computer, only its hash is published. The zip
+  check refuses archives inside: the tarballs above are assets of their own, never inside the installer zip.
 - Test on the owner's projector first (W5 in PLAN.md): updater "verify only", then the full update with
   the owner present, the rollback drill (`ro.z9x.ota.test_fail=1`), then a delta.

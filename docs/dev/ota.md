@@ -34,7 +34,7 @@ GitHub Releases (kmuradoff/lumen-os, latest)          Projector, running slot B
 | Boot rescue | `tools/ota/image/z9x_rescue.{rc,sh}` (1.0.1) | 3 starts in a row without boot_completed ▶ fastbootd for `lumen-install rescue` |
 | Host tests | `tools/ota/test/run.sh`, `installer_rescue.sh`, `blobs.sh`, `installer_blobs.sh`, `public_members.sh` | gate + rescue with stubbed getprop/setprop/boot HAL; installer `rescue` with a fake fastboot; z9x_blobs.sh, installer `blobs`/`check` and the public image members with made-up files |
 | Public-image codec + audio files | `tools/ota/image/z9x_blobs.{rc,sh}`, `blobs_allow.txt`, `xgimi_compat_public.rc` | bind-mount the user's own MediaTek / XGIMI files from `z9x_blobs_<slot>` (`tools/lumen_v1.sh VARIANT=public`, HANDOFF.md section 2) |
-| Google services add-on (public images) | `tools/ota/image/z9x_gapps.{rc,sh}`, `gapps_allow.txt`, `z9x-gapps-sysconfig.xml`, `tools/ota/gapps_allow.py`; installer `gapps` + `installer/lib/gapps_fill.sh` | on Lumen OS without Google: check and overlay (read-only) the user's own MindTheGapps files from `z9x_gapps_<slot>` at post-fs-data (HANDOFF.md section 2b) |
+| Google services add-on (public images) | `tools/ota/image/z9x_gapps.{rc,sh}`, `gapps_allow.txt`, `z9x-gapps-sysconfig.xml`, `tools/ota/gapps_allow.py`; installer `gapps` + `installer/lib/gapps_fill.sh` (ext4, filled on the projector), installer `--gapps-zip` + `installer/lib/gapps_images.txt` + `installer/tools/erofs-utils` (erofs, built on the computer, `tools/ota/build_erofs_utils.sh`) | on Lumen OS without Google: check and overlay (read-only) the user's own MindTheGapps files from `z9x_gapps_<slot>` at post-fs-data (HANDOFF.md section 2b) |
 | Props | `tools/ota/image/ota_props.txt` | `ro.product.ab_ota_partitions` (static copy set, no vbmeta), `ro.z9x.build_id`, `ro.z9x.version_code`, `ro.z9x.keys`, `ro.z9x.ota.gate` |
 | Payload tools | `tools/ota/make_ota.py`, `sign_payload.py`, `make_manifest.py`, `verify_manifest.py`, `build_otatools.sh` | partial system-only VABC payload, split signing, signed manifest |
 | Keys | `docs/keys.md` | `ota` (+ spare `ota_next`) in `otacerts.zip` |
@@ -91,8 +91,14 @@ manifest does not list), leaving a public install without sound and secure video
 a partial payload keeps them, a non-partial one would delete them (the system then starts without Google
 services, `sys.z9x.gapps=none`). Every image a published update leads to must still list the user's zip in
 `gapps_allow.txt` (never remove a `zip=` block): otherwise `z9x_gapps.sh` refuses the partition
-(`bad:zip`). The partition (512 MiB) also takes that much room in super away from the update's snapshot,
-which then uses more of the COW space in /data.
+(`bad:zip`). The partition takes its room in super away from the update's snapshot, which then uses more of
+the COW space in /data: 512 MiB (part= of `gapps_allow.txt`) for the ext4 partition of `gapps`, the image size
+rounded up to 1 MiB (430 MiB for the published zip, `installer/lib/gapps_images.txt`) for the erofs partition
+the one-pass install (`--gapps-zip`) builds on the computer and flashes. The payload keeps either one block for
+block, the file system inside does not matter. Since 1.0.8 `z9x_gapps.sh` mounts erofs, then ext4, so every
+image an update leads to must keep that (its `# lumen-gapps-fs: erofs ext4` line; the installer refuses
+`--gapps-zip` with an image without it). An update or rollback to an image before 1.0.8 meets an erofs
+partition with an ext4-only script: `bad:mount`, the system starts without Google services, no boot loop.
 
 ## The updater
 
@@ -257,9 +263,15 @@ rescue across editions, gsf, verify), `python3 tools/ota/check_release_assets.py
 edition images, packages and manifests refused). The Google services add-on: `sh tools/ota/test/gapps.sh`
 (z9x_gapps.sh after the real gapps_fill.sh, every refusal, the all-or-nothing overlays, the 'off' marker of
 one slot and build (an OTA rollback keeps the add-on), the 2 s time budget on a fake clock, 'check'; sh, dash,
-ksh; the allow-list against a local MindTheGapps zip when there is one), `bash tools/ota/test/installer_gapps.sh`
-(installer `gapps`: install with and without the wipe, refusals, the same add-on already on, --remove, the
-round trip through the projector's scripts). Both use made-up files only (gapps_fixture.py).
+ksh; the allow-list against a local MindTheGapps zip when there is one; erofs and ext4 partitions),
+`bash tools/ota/test/installer_gapps.sh` (installer `gapps`: install with and without the wipe, refusals, the same
+add-on already on, --remove, the round trip through the projector's scripts; the one-pass `--gapps-zip`: one
+fastbootd session with the erofs image, its failures and refusals). Both use made-up files only
+(gapps_fixture.py). `bash tools/ota/test/gapps_erofs.sh` (the installer's own erofs image builder against the
+independent writer of `gapps_allow.py image`, owner / modes / labels, the kernel rule, `z9x_gapps.sh check` on
+the result; also with the real MindTheGapps zip when it is in lineage/gapps/) and
+`bash tools/ota/test/installer_ps1_gapps.sh` (the Windows installer parses, its tar writer gives the same image;
+needs pwsh or its docker image).
 
 ## What the first update into slot A needs (the owner's projector)
 

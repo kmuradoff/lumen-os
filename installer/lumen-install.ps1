@@ -5,6 +5,7 @@
 #   lumen-install.cmd [command] [-Image FILE] [-Serial S] [-KeepData] [-Wipe format|factory-reset]
 #                     [-Lang en|ru] [-Blobs partition|embedded] [-NoBlobs] [-UnsignedImage] [-Zip FILE] [-Remove]
 #                     [-Ip ADDRESS[:PORT]] [-Device z9x|play6] [-Path FOLDER] [-GappsZip FILE] [-PlatformTools DIR]
+#                     [-ErofsUtils DIR]
 #   commands: (none = continue) check | backup | blobs | vbmeta | flash | verify | gsf | rescue | gapps | status | reset
 #   XGIMI Play 6 (-Ip: its Wi-Fi address; it has no USB debugging): (none) | check | backup | flash | verify |
 #   rescue | stick -Path E:\ | gapps | gsf | status | reset. 'flash' writes system in fastboot mode over the A-to-A
@@ -18,13 +19,18 @@
 #   -Image: required when several lumen-os-*-system.img lie next to the installer (with and without Google).
 #   gsf: only when Google services are there (built in, or added with 'gapps').
 #   -GappsZip FILE: the full install (no command) with Google services in one pass and ONE data wipe (not with
-#   -KeepData or -Wipe factory-reset): Lumen OS starts once on the old data, the Google apps are filled in as root
-#   (Developer options > Rooted debugging; the installer waits for it), then the wipe.
+#   -KeepData or -Wipe factory-reset). XGIMI Z9X: the Google services partition is built on this computer (erofs,
+#   tools\erofs-utils) before the restart, then ONE fastbootd visit writes system, the Google services and wipes the
+#   data; no USB debugging or Rooted debugging needed after it. Needs tools\erofs-utils\windows-x64 (not in this
+#   installer yet: until then -GappsZip stops before anything is written; install without it, then gapps -Zip FILE).
+#   XGIMI Play 6: Lumen OS starts once on the old data, the Google apps are filled in as root.
+#   -ErofsUtils DIR: mkfs.erofs.exe, fsck.erofs.exe, dump.erofs.exe of erofs-utils 1.9.4 in DIR instead of
+#   tools\erofs-utils (the image built must still be bit for bit the checked one, lib\gapps_images.txt).
 #
 # rescue: Lumen OS that no longer starts goes to fastboot mode by itself after 3 failed starts in a row;
 # 'rescue' waits for it there and writes system (+ z9x_blobs) again WITHOUT wiping data (no adb needed).
-# Writes only system_<slot>, z9x_blobs_<slot>, z9x_gapps_<slot> ('gapps': create/resize/format/delete, filled
-# over adb root), and formats userdata/metadata/cache. Deletes only *-cow
+# Writes only system_<slot>, z9x_blobs_<slot>, z9x_gapps_<slot> (-GappsZip: create/resize/flash of the erofs image
+# built here; 'gapps': create/resize/format/delete, filled over adb root), and formats userdata/metadata/cache. Deletes only *-cow
 # leftovers and XGIMI's unused product_<slot>/system_ext_<slot>. 'rescue' may also finish or cancel an
 # unfinished Lumen OS update of the slot it repairs (fastboot snapshot-update merge|cancel) and never
 # formats anything. NEVER vbmeta (your manual step), boot, vendor, persist, xgimi*, misc, frp, the
@@ -41,7 +47,7 @@
 param([string]$Command = "", [string]$Image = "", [string]$Serial = "", [switch]$KeepData,
       [string]$Wipe = "format", [string]$Lang = "", [string]$Blobs = "", [switch]$NoBlobs, [switch]$UnsignedImage,
       [string]$Zip = "", [switch]$Remove, [string]$Ip = "", [string]$Device = "", [string]$Path = "",
-      [string]$GappsZip = "", [string]$PlatformTools = "")
+      [string]$GappsZip = "", [string]$PlatformTools = "", [string]$ErofsUtils = "")
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
@@ -358,7 +364,7 @@ function Fb-Allowed($act, $part) {
   if ($script:Projector -eq "play6") { return (@("flash:system", "create:lumen_gapps", "resize:lumen_gapps", "delete:lumen_gapps") -ccontains "${act}:$part") }
   $s = State-Get slot
   $ok = @("flash:system", "flash:z9x_blobs$s", "create:z9x_blobs$s", "resize:z9x_blobs$s",
-          "create:z9x_gapps$s", "resize:z9x_gapps$s", "format:z9x_gapps$s", "delete:z9x_gapps$s",
+          "create:z9x_gapps$s", "resize:z9x_gapps$s", "format:z9x_gapps$s", "delete:z9x_gapps$s", "flash:z9x_gapps$s",
           "delete:product$s", "delete:system_ext$s", "format:userdata", "format:metadata", "format:cache")
   return ($ok -contains "${act}:$part") -or ($act -eq "delete" -and $part -like "*-cow")
 }
@@ -681,6 +687,7 @@ function Cmd-Flash {
   if ($KeepData) { Edition-Guard flash }
   if ((State-Get step_vbmeta) -ne "done") { Cmd-Vbmeta }
   if ($Blobs -eq "partition" -and (State-Get step_blobs) -ne "done") { Cmd-Blobs }
+  if ($GappsZip) { Z9x-Gapps-Prepare }   # everything slow before fastbootd (its ~2 minute limit)
   $S = State-Get slot
   $blobImg = if ($Blobs -eq "partition") { State-Get blobs_img } else { "" }
   $sl = $S.TrimStart('_')
@@ -691,15 +698,16 @@ function Cmd-Flash {
   else {
     Write-Host (T "Writing Lumen OS to slot $sl and then ERASING ALL DATA (apps, accounts, settings, files). On slot $sl XGIMI's product$S and system_ext$S partitions are DELETED (parts of the stock system that Lumen OS does not use; the stock system on the other slot keeps its own), plus any *-cow update leftovers. XGIMI calibration, the other slot, vendor and boot stay untouched." "Записываю Lumen OS в слот $sl, затем СТИРАЮ ВСЕ ДАННЫЕ (приложения, аккаунты, настройки, файлы). В слоте $sl УДАЛЯЮТСЯ разделы XGIMI product$S и system_ext$S (части стоковой системы, Lumen OS их не использует; стоковая система в другом слоте сохраняет свои) и остатки обновлений *-cow. Калибровка XGIMI, второй слот, vendor и boot не затрагиваются.")
     if ($GappsZip) {
-      Write-Host (T "With -GappsZip the same session also creates the partition z9x_gapps$S ($([math]::Floor($script:GzPart / 1MB)) MB) for $($script:GzName) and does not wipe yet: Lumen OS starts once on the old data, the installer copies the Google apps into that partition as root (Rooted debugging), and only then erases the data, once." "С -GappsZip в той же сессии создаётся ещё раздел z9x_gapps$S ($([math]::Floor($script:GzPart / 1MB)) МБ) для $($script:GzName), а данные пока не стираются: Lumen OS один раз загружается на старых данных, установщик копирует приложения Google в этот раздел с правами root (отладка суперпользователем) и только потом стирает данные, один раз.")
+      $gmb = [math]::Ceiling($script:GiSize / 1MB)
+      Write-Host (T "With -GappsZip the same session also writes the Google services from $($script:GzName) into the partition z9x_gapps$S ($gmb MB, the image just built on this computer), before the wipe. All in one visit to fastbootd: the first start is clean and its setup has the Google sign-in step." "С -GappsZip в той же сессии в раздел z9x_gapps$S ($gmb МБ, образ только что собран на компьютере) записываются ещё сервисы Google из $($script:GzName), до очистки. Всё за один заход в fastbootd: первый запуск чистый, и в его настройке есть шаг входа в Google.")
     }
     if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
     $script:EraseNow = $true
   }
-  # -GappsZip: the Google services of this write (Z9x-Gapps-Finish completes them); any other write forgets what an
-  # earlier one-pass install left saved
-  if ($GappsZip -or (State-Get gapps_plan) -or (State-Get step_gapps_part) -or (State-Get step_gapps_fill)) {
-    State-Set gapps_plan $script:GzSha; State-Set step_gapps_part ""; State-Set step_gapps_fill ""
+  # -GappsZip: the add-on of this write; any other write forgets what an earlier one-pass install left saved
+  if ($GappsZip -or (State-Get gapps_plan) -or (State-Get step_gapps_part) -or (State-Get step_gapps_fill) -or (State-Get step_gapps_flash)) {
+    State-Set gapps_plan $script:GzSha; State-Set gapps_img $script:GiSha
+    State-Set step_gapps_part ""; State-Set step_gapps_fill ""; State-Set step_gapps_flash ""
     if ($GappsZip) { State-Set step_wipe "" }
   }
   if (Try-Root) { Calib-Snapshot before }
@@ -726,11 +734,9 @@ function Cmd-Flash {
     if ($gv -match "partition-size:z9x_blobs${S}:") { $null = Fb-Do resize "z9x_blobs$S" $BlobSize } else { $null = Fb-Do create "z9x_blobs$S" $BlobSize }
     if (Fb-Do flash "z9x_blobs$S" $blobImg) { Ok "z9x_blobs$S" } else { Warn (T "codec and audio files not written: no sound and no protected video until 'blobs' + 'flash -KeepData'" "файлы кодеков и звука не записаны: не будет звука и защищённого видео до 'blobs' + 'flash -KeepData'") }
   }
-  if (State-Get gapps_plan) { if (-not (Z9x-Gapps-Add $S)) { State-Set gapps_plan "" } }
+  if ($GappsZip) { if (-not (Z9x-Gapps-Write $S)) { State-Set gapps_plan "" } }
   if (-not $KeepData) {
-    if ((State-Get step_gapps_part) -eq "done") {
-      Say (T "the data is wiped after the Google services are in (after the first start)" "данные стираются после того, как сервисы Google будут добавлены (после первого запуска)")
-    } elseif ($Wipe -eq "format") {
+    if ($Wipe -eq "format") {
       Say (T "wiping data (format userdata, metadata, cache)" "очистка данных (format userdata, metadata, cache)")
       if (-not (Fb-Do format userdata)) { Fb reboot | Out-Null; Die (T "the wipe failed: do Settings > Device > Reset on the projector instead" "очистка не удалась: сделайте сброс в настройках проектора") }
       $null = Fb-Do format metadata
@@ -740,7 +746,7 @@ function Cmd-Flash {
   }
   Fb reboot | Out-Null
   State-Set step_flash done
-  if ((State-Get step_gapps_part) -eq "done") { Ok (T "written. Lumen OS now starts once on the old data (2-4 minutes); keep the cable in." "записано. Сейчас Lumen OS один раз загрузится на старых данных (2–4 минуты); кабель не вынимайте."); return }
+  if ((State-Get step_gapps_flash) -eq "done") { Ok (T "written. First start takes 2-4 minutes; the setup screen appears on the projector, with the Google sign-in step." "записано. Первый запуск 2–4 минуты; на проекторе появится экран настройки, в нём есть шаг входа в Google."); return }
   Ok (T "written. First start takes 2-4 minutes; the setup screen appears on the projector." "записано. Первый запуск 2–4 минуты; на проекторе появится экран настройки.")
   if ($Wipe -eq "factory-reset" -and -not $KeepData) { Say (T "Now on the projector: Settings > Device preferences > Reset > Factory reset." "Теперь на проекторе: Настройки > Настройки устройства > Сброс.") }
 }
@@ -1086,13 +1092,200 @@ function Cmd-Gapps {
 }
 
 # ------------------------------------------------------------------ XGIMI Z9X: Lumen OS and Google services in one pass (-GappsZip FILE)
-# See lumen-install.sh, same section: the zip checked first; in the 'flash' session system (+ z9x_blobs), then
-# z9x_gapps_<slot> created or resized and formatted, and NO wipe there (no room or a failure: Google left out, the
-# session wipes as a clean install does); Lumen OS starts once on the old data (USB debugging carries over), adb root
-# (Rooted debugging off: Root-Setting-Wait), gapps_fill.sh fills, z9x_gapps.sh 'check'; fastbootd again: Fb-Wipe.
-# Filled on the projector, not built here: an image made on this computer would need e2fsdroid (root-owned files).
-# State: gapps_plan, step_gapps_part, step_gapps_fill (started | done), step_wipe (empty until the wipe).
+# See lumen-install.sh, same section: ONE fastbootd visit and ONE wipe (owner decision 2026-10-30). Before anything is
+# written: the zip, the image (without Google, able to take an erofs add-on of this zip: read with our dump.erofs),
+# then the add-on image built HERE (Gi-Build: our own tar writer with owner root, modes 0755/0644 and the SELinux
+# label on every entry, mkfs.erofs of tools\erofs-utils, fsck.erofs, every file read back, the image's sha256 against
+# lib\gapps_images.txt). One ERASE question, then one fastbootd session: system (+ z9x_blobs), z9x_gapps_<slot>
+# created or resized to the image and flashed (Z9x-Gapps-Write), the wipe, reboot. No room or a failed write: the
+# partition is deleted and the install finishes without Google. fastbootd gone during the write: nothing erased,
+# the same command again writes everything. No adb root, no start on the old data.
+# State: gapps_plan, gapps_img, step_gapps_flash (done | skipped:<why>), step_wipe. An older installer's install that
+# waits on the old data for its fill (step_gapps_part=done, no step_wipe): Z9x-Gapps-Finish flashes the add-on in
+# fastbootd and wipes there.
 $script:GzSha = ""; $script:GzName = ""; $script:GzPart = [int64]0; $script:GzZip = ""
+$EuVer = "1.9.4"
+$script:EuDir = ""; $script:EuErr = ""
+$script:GiImg = ""; $script:GiSha = ""; $script:GiSize = [int64]0; $script:GiReady = $false
+$GiLabel = "u:object_r:system_file:s0"; $GiMtime = [int64]1230768000
+
+function Eu-Plat { if ([Environment]::Is64BitOperatingSystem) { return "windows-x64" }; return "" }
+function Eu-Run($exe, [string[]]$argv, $outFile) {  # one of our erofs programs; its stdout into outFile as bytes ($null: dropped); exit code
+  $psi = New-Object Diagnostics.ProcessStartInfo
+  $psi.FileName = $exe; $psi.UseShellExecute = $false; $psi.CreateNoWindow = $true
+  $psi.RedirectStandardOutput = $true; $psi.RedirectStandardError = $true
+  $psi.Arguments = (@($argv | ForEach-Object { '"' + ("$_" -replace '"', '\"') + '"' }) -join " ")
+  $psi.EnvironmentVariables["CYGWIN"] = "nodosfilewarning"
+  try { $p = [Diagnostics.Process]::Start($psi) } catch { $script:EuErr = "$_"; return 255 }
+  $err = $p.StandardError.ReadToEndAsync()
+  if ($outFile) { $fs = [IO.File]::Create($outFile); $p.StandardOutput.BaseStream.CopyTo($fs); $fs.Close() }
+  else { $null = $p.StandardOutput.ReadToEnd() }
+  $p.WaitForExit()
+  $script:EuErr = $err.Result
+  return $p.ExitCode
+}
+function Eu-Version($dir) {
+  $tmp = Join-Path $StateDir "eu-version.txt"
+  if ((Eu-Run (Join-Path $dir "mkfs.erofs.exe") @("--version") $tmp) -ne 0) { return "" }
+  $v = ((Get-Content -LiteralPath $tmp -TotalCount 1) -split " ")[-1]; Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue
+  return "$v".Trim()
+}
+function Eu-Setup {  # mkfs/fsck/dump.erofs: our own (tools\erofs-utils), checked against lib\erofs_utils.txt, run from a copy in the state folder
+  if ($script:EuDir) { return }
+  New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
+  if ($ErofsUtils) {
+    $d = (Resolve-Path -LiteralPath $ErofsUtils -ErrorAction SilentlyContinue).Path
+    if (-not $d -or -not (Test-Path (Join-Path $d "mkfs.erofs.exe")) -or -not (Test-Path (Join-Path $d "fsck.erofs.exe")) -or -not (Test-Path (Join-Path $d "dump.erofs.exe"))) {
+      Die (T "-ErofsUtils ${ErofsUtils}: no mkfs.erofs.exe, fsck.erofs.exe and dump.erofs.exe there. Nothing was written." "-ErofsUtils ${ErofsUtils}: там нет mkfs.erofs.exe, fsck.erofs.exe и dump.erofs.exe. Ничего не записано.")
+    }
+    $v = Eu-Version $d
+    if ($v -ne $EuVer) { Die (T "-ErofsUtils ${ErofsUtils}: erofs-utils '$v', this installer needs $EuVer (the add-on image must be bit for bit the checked one). Nothing was written." "-ErofsUtils ${ErofsUtils}: erofs-utils '$v', установщику нужна $EuVer (образ дополнения должен совпасть с проверенным побайтно). Ничего не записано.") }
+    $script:EuDir = $d; Ok "erofs-utils $EuVer (-ErofsUtils $d)"; return
+  }
+  $plat = Eu-Plat; $src = Join-Path (Join-Path $Here "tools") "erofs-utils"; $sums = Join-Path $Here "lib\erofs_utils.txt"
+  $lines = @(); if (Test-Path -LiteralPath $sums) { $lines = @(Get-Content -LiteralPath $sums | Where-Object { $_ -match "^[0-9a-f]{64}  $plat/" }) }
+  if (-not $plat -or -not ($lines | Where-Object { $_ -like "*  $plat/mkfs.erofs.exe" }) -or -not (Test-Path -LiteralPath (Join-Path $src $plat))) {
+    Die (T "this installer has no erofs-utils for this computer (Windows $env:PROCESSOR_ARCHITECTURE), and the one-pass install with Google services needs them. Install without -GappsZip and add Google services later (gapps -Zip FILE), or use a Mac or a Linux x86-64 / ARM64 computer. Nothing was written." "у установщика нет erofs-utils для этого компьютера (Windows $env:PROCESSOR_ARCHITECTURE), а установке с сервисами Google за один заход они нужны. Установите без -GappsZip и добавьте сервисы Google позже (gapps -Zip ФАЙЛ) или используйте Mac либо Linux x86-64 / ARM64. Ничего не записано.")
+  }
+  $d = Join-Path (Join-Path $StateDir "erofs-utils-$EuVer") $plat
+  New-Item -ItemType Directory -Force -Path $d | Out-Null
+  foreach ($l in $lines) {   # every listed file of this platform (the programs and the DLLs they need)
+    $want = $l.Substring(0, 64); $rel = $l.Substring(66); $f = Split-Path -Leaf $rel
+    $dst = Join-Path $d $f
+    if ((Test-Path -LiteralPath $dst) -and (Sha256 $dst) -eq $want) { continue }
+    $from = Join-Path $src ($rel -replace "/", "\")
+    if (-not (Test-Path -LiteralPath $from) -or (Sha256 $from) -ne $want) { Die (T "tools\erofs-utils\$($rel -replace '/', '\') is missing or damaged (sha256 differs): download the installer again. Nothing was written." "tools\erofs-utils\$($rel -replace '/', '\') нет или он повреждён (другой sha256): скачайте установщик заново. Ничего не записано.") }
+    [IO.File]::WriteAllBytes($dst, [IO.File]::ReadAllBytes($from))   # a plain copy: no 'downloaded from the internet' mark
+    if ((Sha256 $dst) -ne $want) { Die "internal: $dst" }
+  }
+  if ((Eu-Version $d) -ne $EuVer) { Die (T "mkfs.erofs of tools\erofs-utils\$plat does not run on this computer. Install without -GappsZip and add Google services later (gapps -Zip FILE). Nothing was written." "mkfs.erofs из tools\erofs-utils\$plat не запускается на этом компьютере. Установите без -GappsZip и добавьте сервисы Google позже (gapps -Zip ФАЙЛ). Ничего не записано.") }
+  $script:EuDir = $d
+  Ok "erofs-utils $EuVer (tools\erofs-utils, $(T 'checked' 'проверены'))"
+}
+
+# the tar for mkfs.erofs --tar=f, written here (as lumen-install.sh gi_tar): every entry a PAX header with its SELinux
+# label and a ustar header with owner root (0/0), the fixed time, mode 0755 (directories) or 0644 (files)
+function Gi-Hdr($fs, $name, $mode, $size, $type) {
+  if ($name.Length -gt 99) { Die "internal: tar name longer than 99 characters: $name" }
+  $enc = [Text.Encoding]::ASCII
+  $h = New-Object byte[] 512
+  $put = { param($s, $off) $b = $enc.GetBytes($s); [Array]::Copy($b, 0, $h, $off, $b.Length) }
+  & $put $name 0; & $put $mode 100; & $put "0000000" 108; & $put "0000000" 116
+  & $put ([Convert]::ToString([int64]$size, 8).PadLeft(11, '0')) 124
+  & $put ([Convert]::ToString($GiMtime, 8).PadLeft(11, '0')) 136
+  & $put "        " 148; & $put $type 156
+  & $put "ustar" 257; & $put "00" 263; & $put "root" 265; & $put "root" 297; & $put "0000000" 329; & $put "0000000" 337
+  $sum = 0; foreach ($x in $h) { $sum += $x }
+  & $put ([Convert]::ToString($sum, 8).PadLeft(6, '0')) 148; $h[154] = 0; $h[155] = 32
+  $fs.Write($h, 0, 512)
+}
+function Gi-Entry($fs, $name, $mode, $size, $type) {
+  $body = "SCHILY.xattr.security.selinux=$GiLabel"
+  $l = $body.Length; $n = $l + 4; $n = $l + 3 + "$n".Length; $n = $l + 3 + "$n".Length   # the record counts its own digits
+  Gi-Hdr $fs "././@PaxHeader" "0000644" $n "x"
+  $rec = [byte[]]([Text.Encoding]::ASCII.GetBytes("$n $body") + [byte[]](0, 10))
+  $fs.Write($rec, 0, $rec.Length); $fs.Write((New-Object byte[] (512 - $n)), 0, 512 - $n)
+  Gi-Hdr $fs $name $mode $size $type
+}
+function Gi-Pad($fs, [int64]$size) { $pad = [int]((512 - ($size % 512)) % 512); if ($pad) { $fs.Write((New-Object byte[] $pad), 0, $pad) } }
+function Gi-Lines($sha) {  # the zip's file lines of lib\gapps_allow.txt as "sha256 size path"
+  $out = @(); $on = $false
+  foreach ($raw in (Get-Content (Join-Path $Here "lib\gapps_allow.txt"))) {
+    $w = @("$raw".Trim() -split "\s+")
+    if ($w[0] -like "zip=*") { $on = ($w[0] -eq "zip=$sha"); continue }
+    if ($on -and $w.Count -eq 3 -and -not $w[0].StartsWith("#")) { $out += ($w -join " ") }
+  }
+  return ,$out
+}
+function Gi-Tar($zipPath, $out) {  # the add-on's tree as a tar, laid out exactly as lib\gapps_fill.sh fills the ext4 partition; "" or why not
+  $lines = Gi-Lines $script:GzSha
+  if ($lines.Count -eq 0) { Die "internal: no files for $($script:GzName) in lib\gapps_allow.txt" }
+  $dirs = New-Object 'System.Collections.Generic.HashSet[string]'
+  foreach ($ln in $lines) { $p = ($ln -split " ")[2]; while ($p.Contains("/")) { $p = $p.Substring(0, $p.LastIndexOf("/")); $null = $dirs.Add($p) } }
+  $dl = [string[]]@($dirs); [Array]::Sort($dl, [StringComparer]::Ordinal)
+  $files = [string[]]@($lines | ForEach-Object { ($_ -split " ")[2] }); [Array]::Sort($files, [StringComparer]::Ordinal)
+  $byPath = @{}; foreach ($ln in $lines) { $w = $ln -split " "; $byPath[$w[2]] = $w }
+  $zl = Gapps-Line $script:GzSha
+  $mf = [Text.Encoding]::ASCII.GetBytes("# Lumen OS: Google services add-on (lumen-install gapps). z9x_gapps.sh checks it at every start`n# against /system/etc/z9x/gapps_allow.txt: do not edit.`n" +
+    ((("$zl" -split " ")[0..1]) -join " ") + "`n" + ($lines -join "`n") + "`n")
+  [IO.File]::WriteAllBytes((Join-Path (Split-Path -Parent $out) "MANIFEST"), $mf)
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $z = [IO.Compression.ZipFile]::OpenRead($zipPath)
+  $fs = [IO.File]::Create($out)
+  $tmp = Join-Path (Split-Path -Parent $out) "file"
+  try {
+    Gi-Entry $fs "./" "0000755" 0 "5"   # the image root: without this entry it would be 0777 and unlabelled
+    foreach ($d in $dl) { Gi-Entry $fs "$d/" "0000755" 0 "5" }
+    foreach ($p in $files) {
+      if ($p -notmatch '^[A-Za-z0-9_@+.-]+(/[A-Za-z0-9_@+.-]+)+$' -or $p -match '(^|/)\.\.(/|$)') { return "bad path $p" }
+      $e = $z.GetEntry("system/$p"); if (-not $e) { return "no system/$p in the zip" }
+      [IO.Compression.ZipFileExtensions]::ExtractToFile($e, $tmp, $true)
+      $w = $byPath[$p]
+      if ((Sha256 $tmp) -ne $w[0] -or (Get-Item -LiteralPath $tmp).Length -ne [int64]$w[1]) { return "sha256 of $p" }
+      Gi-Entry $fs $p "0000644" ([int64]$w[1]) "0"
+      $in = [IO.File]::OpenRead($tmp); $in.CopyTo($fs); $in.Close(); Gi-Pad $fs ([int64]$w[1])
+    }
+    Gi-Entry $fs "MANIFEST" "0000644" $mf.Length "0"; $fs.Write($mf, 0, $mf.Length); Gi-Pad $fs $mf.Length
+    $fs.Write((New-Object byte[] 1024), 0, 1024)
+  } finally { $fs.Close(); $z.Dispose(); Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue }
+  return ""
+}
+function Gi-Cat($img, $path, $out) { return ((Eu-Run (Join-Path $script:EuDir "dump.erofs.exe") @("--cat", "--path=$path", $img) $out) -eq 0) }
+function Gi-Image-Ok {  # the Lumen OS image to be written can use an erofs add-on of this zip (read with our dump.erofs)
+  $tmp = Join-Path $StateDir "image-file.txt"; $leaf = Split-Path -Leaf $script:Image
+  $ok1 = (Gi-Cat $script:Image "/system/etc/z9x/z9x_gapps.sh" $tmp) -and (@(Get-Content -LiteralPath $tmp) | Where-Object { $_ -match '^# lumen-gapps-fs:.* erofs' })
+  if (-not $ok1) { Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue; Die (T "$leaf cannot take the Google services in one pass (its add-on support is older than this installer): use the image of the same release as this installer. Nothing was written." "$leaf не может принять сервисы Google за один заход (его поддержка дополнения старше этого установщика): используйте образ того же выпуска, что и установщик. Ничего не записано.") }
+  $ok2 = (Gi-Cat $script:Image "/system/etc/z9x/gapps_allow.txt" $tmp) -and (@(Get-Content -LiteralPath $tmp) | Where-Object { $_ -like "zip=$($script:GzSha) *" })
+  Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue
+  if (-not $ok2) { Die (T "$leaf does not accept $($script:GzName) (not in its gapps_allow.txt): use the image of the same release as this installer. Nothing was written." "$leaf не принимает $($script:GzName) (его нет в gapps_allow.txt образа): используйте образ того же выпуска, что и установщик. Ничего не записано.") }
+  Ok (T "the image takes the Google services add-on as erofs" "образ принимает дополнение с сервисами Google как erofs")
+}
+function Gi-Build {  # the add-on image in the state folder, built and checked; sets GiImg, GiSha, GiSize
+  $nw = T "Nothing was written." "Ничего не записано."
+  $ref = $null; $imf = Join-Path $Here "lib\gapps_images.txt"
+  if (Test-Path -LiteralPath $imf) { $ref = Get-Content -LiteralPath $imf | Where-Object { $w = @("$_".Trim() -split "\s+"); $w.Count -eq 5 -and $w[0] -eq $script:GzSha -and $w[1] -eq $EuVer -and $w[2] -eq "plain" } | Select-Object -First 1 }
+  if (-not $ref) { Die (T "lib\gapps_images.txt names no checked add-on image of $($script:GzName) for erofs-utils ${EuVer}: download the installer again. $nw" "в lib\gapps_images.txt нет проверенного образа дополнения из $($script:GzName) для erofs-utils ${EuVer}: скачайте установщик заново. $nw") }
+  $w = @("$ref".Trim() -split "\s+"); $script:GiSha = $w[3]; $script:GiSize = [int64]$w[4]
+  $mb = [math]::Ceiling($script:GiSize / 1MB)
+  $wd = Join-Path $StateDir "gapps"; $img = Join-Path $wd "z9x_gapps-$($script:GzSha.Substring(0, 16)).img"
+  $script:GiImg = $img
+  if ((Test-Path -LiteralPath $img) -and (Get-Item -LiteralPath $img).Length -eq $script:GiSize -and (Sha256 $img) -eq $script:GiSha) {
+    Ok ((T "Google services add-on image: built earlier, checked" "образ дополнения с сервисами Google: собран раньше, проверен") + " ($mb $(T 'MB' 'МБ'))"); return
+  }
+  Remove-Item -Recurse -Force -LiteralPath $wd -ErrorAction SilentlyContinue
+  New-Item -ItemType Directory -Force -Path $wd | Out-Null
+  $free = (New-Object IO.DriveInfo ([IO.Path]::GetPathRoot((Resolve-Path -LiteralPath $wd).Path))).AvailableFreeSpace
+  $needB = $script:GiSize * 2 + 64MB
+  if ($free -lt $needB) { Die (T "not enough free space on this computer for the Google services add-on image: $([math]::Ceiling($needB / 1MB)) MB needed in $wd for a moment. $nw" "на компьютере мало места для образа дополнения с сервисами Google: в $wd ненадолго нужно $([math]::Ceiling($needB / 1MB)) МБ. $nw") }
+  Say (T "building the Google services add-on image from $($script:GzName) (erofs, each file checked; about 10-30 s)" "собираю образ дополнения с сервисами Google из $($script:GzName) (erofs, каждый файл проверяется; 10–30 секунд)")
+  $tar = Join-Path $wd "gapps.tar"
+  $why = Gi-Tar $script:GzZip $tar
+  if ($why) { Remove-Item -LiteralPath $tar -ErrorAction SilentlyContinue; Die (T "the zip does not hold the expected files (${why}): download it again. $nw" "в архиве не те файлы (${why}): скачайте его заново. $nw") }
+  $part = "$img.part"
+  $rc = Eu-Run (Join-Path $script:EuDir "mkfs.erofs.exe") @("-b4096", "-E", "noinline_data", "-T$GiMtime", "-U", "00000000-0000-0000-0000-000000000000", "--all-root", "--workers=1", "-Lz9x_gapps", "--tar=f", $part, $tar) $null
+  Remove-Item -LiteralPath $tar -ErrorAction SilentlyContinue
+  if ($rc -ne 0) { Remove-Item -LiteralPath $part -ErrorAction SilentlyContinue; Die ((T "mkfs.erofs failed" "mkfs.erofs не сработал") + ": $($script:EuErr.Trim()). $nw") }
+  if ((Eu-Run (Join-Path $script:EuDir "fsck.erofs.exe") @($part) $null) -ne 0) { Remove-Item -LiteralPath $part -ErrorAction SilentlyContinue; Die "fsck.erofs: $($script:EuErr.Trim()). $nw" }
+  # every file read back out of the image
+  $tmp = Join-Path $wd "readback"
+  $lines = Gi-Lines $script:GzSha
+  foreach ($ln in ($lines + @("MANIFEST"))) {
+    if ($ln -eq "MANIFEST") { $p = "MANIFEST"; $want = Sha256 (Join-Path $wd "MANIFEST") } else { $x = $ln -split " "; $p = $x[2]; $want = $x[0] }
+    if (-not (Gi-Cat $part "/$p" $tmp) -or (Sha256 $tmp) -ne $want) {
+      Remove-Item -LiteralPath $part, $tmp -ErrorAction SilentlyContinue
+      Die (T "$p read back from the add-on image differs. $nw" "$p, прочитанный из образа дополнения, не совпал. $nw")
+    }
+  }
+  Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue
+  $got = Sha256 $part
+  if ($got -ne $script:GiSha -or (Get-Item -LiteralPath $part).Length -ne $script:GiSize) {
+    Remove-Item -LiteralPath $part -ErrorAction SilentlyContinue
+    Die (T "the add-on image built here (sha256 $($got.Substring(0, 16))...) is not the one checked for this release ($($script:GiSha.Substring(0, 16))...): Google services are not written. Install without -GappsZip and add them later (gapps -Zip FILE). $nw" "собранный здесь образ дополнения (sha256 $($got.Substring(0, 16))...) не тот, что проверен для этого выпуска ($($script:GiSha.Substring(0, 16))...): сервисы Google не записываются. Установите без -GappsZip и добавьте их позже (gapps -Zip ФАЙЛ). $nw")
+  }
+  Move-Item -LiteralPath $part -Destination $img -Force
+  Ok ((T "Google services add-on image" "образ дополнения с сервисами Google") + ": $($lines.Count) $(T 'files checked' 'файлов проверено'), $mb $(T 'MB' 'МБ'), sha256 $($script:GiSha.Substring(0, 16))...")
+}
+
 function Z9x-Gapps-Plan {  # -GappsZip, before anything else: the zip, and that the install saved here can take it
   if (-not (Test-Path -LiteralPath $GappsZip)) { Die (T "no file $GappsZip" "нет файла $GappsZip") }
   $script:GzZip = (Resolve-Path -LiteralPath $GappsZip).Path
@@ -1105,106 +1298,75 @@ function Z9x-Gapps-Plan {  # -GappsZip, before anything else: the zip, and that 
   Ok "$($script:GzName), sha256 $($script:GzSha.Substring(0,16))..."
   $plan = State-Get gapps_plan
   if ((State-Get step_flash) -eq "done") {
-    if ((State-Get step_gapps_part) -ne "done" -or ((State-Get step_wipe) -and (State-Get step_gapps_fill) -ne "done")) {
+    # an older installer's install waiting for its fill (Z9x-Gapps-Finish completes it), or this one-pass install done
+    $legacy = ((State-Get step_gapps_part) -eq "done" -and -not (State-Get step_wipe))
+    if (-not $legacy -and (State-Get step_gapps_flash) -ne "done" -and (State-Get step_gapps_fill) -ne "done") {
       Die (T "Lumen OS was installed here without Google services. To add them: lumen-install.cmd gapps -Zip FILE. For a new install: lumen-install.cmd reset first. Nothing was written." "Lumen OS здесь уже установлена без сервисов Google. Добавить их: lumen-install.cmd gapps -Zip ФАЙЛ. Для новой установки сначала: lumen-install.cmd reset. Ничего не записано.")
     }
     if ($plan -and $plan -ne $script:GzSha) { Die (T "this install was started with another MindTheGapps file: use the same file. Nothing was erased." "эта установка начата с другим файлом MindTheGapps: укажите тот же файл. Ничего не стёрто.") }
   }
 }
-function Z9x-Gapps-Add($S) {  # fastbootd after system: z9x_gapps_<slot> made and formatted for the plan; $false = left out (warned)
-  $p = "z9x_gapps$S"
-  $part = [int64]0; $pt = Gapps-Field (Gapps-Line (State-Get gapps_plan)) "part"; if ($pt) { $part = [int64]$pt }
-  $why = T "the install goes on without Google services (add them later: gapps -Zip FILE)" "установка продолжается без сервисов Google (добавить их позже: gapps -Zip ФАЙЛ)"
-  $gv = Fb getvar all   # system and z9x_blobs have their new sizes now
-  $free = Super-Free $gv; $cur = [int64]0
-  $have = Gv-Size $gv $p; if ($null -ne $have) { $cur = $have }
-  if ($part -le 0 -or ($free + $cur) -lt $part) { Warn ((T "not enough free space in super for the Google services ($([math]::Floor(($free + $cur) / 1MB)) MB): " "в super мало места для сервисов Google ($([math]::Floor(($free + $cur) / 1MB)) МБ): ") + $why); return $false }
-  Say (T "creating $p ($([math]::Floor($part / 1MB)) MB) for the Google services" "создаю $p ($([math]::Floor($part / 1MB)) МБ) для сервисов Google")
-  $made = if ($cur -gt 0) { Fb-Do resize $p $part } else { Fb-Do create $p $part }
-  if (-not $made) { Warn ((T "$p could not be created: " "$p создать не удалось: ") + $why); return $false }
-  if (-not (Fb-Do format $p)) { $null = Fb-Do delete $p; Warn ((T "$p could not be formatted and was removed again: " "$p не удалось отформатировать, раздел удалён: ") + $why); return $false }
-  State-Set step_gapps_part done
-  return $true
+function Z9x-Gapps-Prepare {  # before the ERASE question: erofs-utils, the image takes the add-on, the add-on image built
+  if ($script:GiReady) { return }
+  if (-not $script:Image -or -not (Test-Path -LiteralPath $script:Image)) { Find-Image }
+  if ((State-Get image_gms) -ne "0") { Die (T "this image has Google services built in: -GappsZip is for Lumen OS without Google. Nothing was written." "в этом образе сервисы Google уже встроены: -GappsZip нужен для Lumen OS без Google. Ничего не записано.") }
+  Eu-Setup
+  Gi-Image-Ok
+  Gi-Build
+  $script:GiReady = $true
 }
 function Z9x-In-Fastboot {
   if (-not $script:Serial) { return $false }
   return (@(Pt-Fastboot devices 2>$null | ForEach-Object { ("$_".Trim() -split "\s+")[0] }) -ccontains $script:Serial)
 }
-function Z9x-Root-Wait {  # adb root over USB; Rooted debugging off: waits for the user; else STOP (the next run continues here)
-  while ($true) {
-    if ((Prop ro.debuggable) -ne "1") { Die (T "adb root is not possible on this system (Lumen OS is a userdebug build: is it really Lumen OS?). Nothing was erased." "adb root на этой системе невозможен (Lumen OS собрана как userdebug: точно ли это Lumen OS?). Ничего не стёрто.") }
-    if (((Adb shell id -u) | Out-String).Trim() -eq "0") { return }
-    $out = (Pt-Adb -s $script:Serial root 2>&1) | Out-String   # both streams: the refusal text decides
-    if ($out -match "disabled by system setting") { if (-not (Root-Setting-Wait)) { Root-Setting-Stop }; continue }
-    Start-Sleep 3; Adb wait-for-device | Out-Null
-    if (((Adb shell id -u) | Out-String).Trim() -eq "0") { return }
-    Die (T "adb root did not work ($($out.Trim())). Run the same command again: it continues here. Nothing was erased." "adb root не сработал ($($out.Trim())). Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто.")
+function Z9x-Gapps-Write($S) {  # fastbootd after system (+ z9x_blobs): z9x_gapps_<slot> sized to the image and flashed;
+  # $false = left out (warned; the partition is deleted, so the system starts plainly without Google)
+  $p = "z9x_gapps$S"
+  $need = [int64]([math]::Ceiling($script:GiSize / 1MB) * 1MB)
+  $why = T "the install goes on without Google services (add them later: gapps -Zip FILE)" "установка продолжается без сервисов Google (добавить их позже: gapps -Zip ФАЙЛ)"
+  $gv = Fb getvar all   # system and z9x_blobs have their new sizes now
+  $free = Super-Free $gv; $cur = [int64]0
+  $have = Gv-Size $gv $p; if ($null -ne $have) { $cur = $have }
+  if (($free + $cur) -lt $need) {
+    if ($cur -gt 0) { $null = Fb-Do delete $p }
+    Warn ((T "not enough free space in super for the Google services ($([math]::Floor(($free + $cur) / 1MB)) MB, $([math]::Floor($need / 1MB)) MB needed): " "в super мало места для сервисов Google ($([math]::Floor(($free + $cur) / 1MB)) МБ, нужно $([math]::Floor($need / 1MB)) МБ): ") + $why)
+    State-Set step_gapps_flash "skipped:room"; return $false
   }
-}
-function Z9x-Gapps-Fill {  # Lumen OS on the old data, root, fill, check; $false = Google left out (the wipe follows anyway)
-  $slot = State-Get slot; $p = "z9x_gapps$slot"
-  $again = T "Run the same command again: it continues here. Nothing was erased." "Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто."
-  Say (T "waiting for Lumen OS to start on the old data (up to 5 minutes)" "жду, пока Lumen OS загрузится на старых данных (до 5 минут)")
-  if (-not (Boot-Wait)) {
-    if (Z9x-In-Fastboot) {
-      Warn (T "Lumen OS did not start on the old data: the projector went to fastboot mode after failed starts. The install finishes without Google services (add them later: gapps -Zip FILE)." "Lumen OS не загрузилась на старых данных: после неудачных запусков проектор ушёл в режим fastboot. Установка завершается без сервисов Google (добавить их позже: gapps -Zip ФАЙЛ).")
-      return $false
-    }
-    Die (T "Lumen OS did not come back over USB within 5 minutes. If Lumen OS is on the screen: cable in, debugging allowed on the screen? Run the same command again: it continues here. If the projector restarts again and again: after 3 failed starts it goes to fastboot mode by itself; then run the same command again: it wipes the data and finishes without Google services. Nothing was erased." "Lumen OS не вернулась по USB за 5 минут. Если на экране Lumen OS: кабель вставлен, отладка на экране разрешена? Запустите ту же команду снова: установка продолжится с этого места. Если проектор перезагружается снова и снова: после 3 неудачных запусков он сам уходит в режим fastboot; тогда запустите ту же команду снова: она сотрёт данные и завершит установку без сервисов Google. Ничего не стёрто.")
+  Say (T "writing the Google services into $p ($([math]::Floor($need / 1MB)) MB, about 20 s)" "записываю сервисы Google в $p ($([math]::Floor($need / 1MB)) МБ, около 20 секунд)")
+  $made = if ($cur -gt 0) { Fb-Do resize $p $need } else { Fb-Do create $p $need }
+  if (-not $made) { $null = Fb-Do delete $p; Warn ((T "$p could not be created: " "$p создать не удалось: ") + $why); State-Set step_gapps_flash "skipped:create"; return $false }
+  if (-not (Fb-Do flash $p $script:GiImg)) {
+    # fastbootd gone (its time limit, the cable): nothing is erased, the projector starts on the old data with USB
+    # debugging, and the same command writes everything again in one visit
+    if (-not (Z9x-In-Fastboot)) { Die (T "fastbootd ended while $p was being written. Nothing was erased: the projector starts on its old data, USB debugging still on. Run the same command again: it writes everything again in one visit." "fastbootd завершился во время записи $p. Ничего не стёрто: проектор загрузится на старых данных, отладка по USB по-прежнему включена. Запустите ту же команду ещё раз: она снова запишет всё за один заход.") }
+    $null = Fb-Do delete $p
+    Warn ((T "$p could not be written and was removed again: " "$p записать не удалось, раздел удалён: ") + $why)
+    State-Set step_gapps_flash "skipped:flash"; return $false
   }
-  if ((Prop ro.z9x.gms) -ne "0") { Die (T "the projector does not run the Lumen OS without Google that was written (ro.z9x.gms='$(Prop ro.z9x.gms)'). Nothing was erased." "на проекторе не та Lumen OS без Google, что была записана (ro.z9x.gms='$(Prop ro.z9x.gms)'). Ничего не стёрто.") }
-  Ok (T "Lumen OS $(Prop ro.z9x.version) started on the old data" "Lumen OS $(Prop ro.z9x.version) загрузилась на старых данных")
-  Z9x-Root-Wait
-  $al = @((Adb shell cat /system/etc/z9x/gapps_allow.txt) | ForEach-Object { "$_".TrimEnd("`r") })
-  if (-not ($al | Where-Object { $_ -like "zip=$($script:GzSha) *" })) { Warn (T "this Lumen OS does not accept $($script:GzName): the install finishes without Google services" "эта Lumen OS не принимает $($script:GzName): установка завершается без сервисов Google"); return $false }
-  if ((State-Get step_gapps_fill) -eq "started") {
-    # a fill of an earlier run did not finish: the partition must be empty again (gapps_fill.sh fills only that)
-    Say (T "an earlier fill did not finish: formatting $p again" "прошлое заполнение не завершилось: снова форматирую $p")
-    $null = Fbd-Enter $slot
-    if (-not (Fb-Do format $p)) { Fb reboot | Out-Null; Die ((T "$p could not be formatted. " "$p отформатировать не удалось. ") + $again) }
-    Fb reboot | Out-Null
-    if (-not (Boot-Wait)) { Die ((T "the projector did not come back over USB within 5 minutes. " "проектор не вернулся по USB за 5 минут. ") + $again) }
-    Z9x-Root-Wait
-  }
-  Gapps-Push-Fill
-  $o = Gapps-Sh pre $script:GzSha (Get-Item -LiteralPath $script:GzZip).Length
-  if (-not $o.StartsWith("OK pre ")) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "the projector is not ready" "проектор не готов") + ": " + ($o -replace "^FAIL ", "") + ". " + (T "Nothing was erased." "Ничего не стёрто.")) }
-  Say (T "copying $($script:GzName) to the projector (about a minute)" "копирую $($script:GzName) на проектор (около минуты)")
-  Adb push $script:GzZip "$GappsDir/gapps.zip" | Out-Null
-  if ($LASTEXITCODE -ne 0) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "adb push of the zip failed. " "adb push архива не удался. ") + $again) }
-  Say (T "copying the Google apps into $p and checking each one (1 to 2 minutes)" "копирую приложения Google в $p и проверяю каждое (1–2 минуты)")
-  State-Set step_gapps_fill started
-  $o = Gapps-Sh fill $script:GzSha
-  if (-not $o.StartsWith("OK fill ")) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "the Google services were not added" "сервисы Google не добавлены") + ": " + ($o -replace "^FAIL ", "") + ". " + $again) }
-  $c = ((Adb shell sh /system/etc/z9x/z9x_gapps.sh check) | Out-String).Trim()
-  Adb shell rm -rf $GappsDir /metadata/z9x_gapps | Out-Null
-  if (-not $c.StartsWith("ok: ")) { Die ((T "the projector's own check of $p failed" "собственная проверка $p на проекторе не прошла") + ": $c. " + $again) }
-  Ok "${p}: $($c.Substring(4))"
-  State-Set gapps $script:GzName
-  State-Set step_gapps_fill done
+  State-Set step_gapps_flash done; State-Set gapps $script:GzName; State-Set gapps_img $script:GiSha
+  Ok "${p}: $($script:GzName)"
   return $true
 }
-function Z9x-Gapps-Finish {  # after 'flash' with -GappsZip: the fill (unless done), then the one data wipe
+function Z9x-Gapps-Finish {  # an install of an older installer that waits on the old data for its fill: the add-on flashed
+  # as erofs in fastbootd (with -GappsZip), then the one data wipe there
   $slot = State-Get slot
-  if ((State-Get step_gapps_fill) -ne "done" -and (State-Get gapps_plan)) {
-    if (-not $GappsZip) {
-      Say (T "this install was started with Google services (-GappsZip), and they are not in yet" "эта установка начата с сервисами Google (-GappsZip), и они ещё не добавлены")
-      if (-not (Ask (T "Finish the install without Google services? (Adding them later with 'gapps' wipes the data once more.)" "Завершить установку без сервисов Google? (Если добавить их позже через 'gapps', данные сотрутся ещё раз.)"))) { Die (T "run the same command again with -GappsZip FILE: it continues there. Nothing was erased." "запустите ту же команду снова с -GappsZip ФАЙЛ: установка продолжится с того же места. Ничего не стёрто.") }
-      State-Set gapps_plan ""
-    } elseif (-not (Z9x-Gapps-Fill)) { State-Set gapps_plan "" }
-  }
-  # the one data wipe of this install, in fastbootd (where the projector may already wait after failed starts);
-  # a later run than the one where ERASE was typed asks again
+  if (-not $GappsZip) {
+    Say (T "this install was started with Google services (-GappsZip), and they are not in yet" "эта установка начата с сервисами Google (-GappsZip), и они ещё не добавлены")
+    if (-not (Ask (T "Finish the install without Google services? (Adding them later with 'gapps' wipes the data once more.)" "Завершить установку без сервисов Google? (Если добавить их позже через 'gapps', данные сотрутся ещё раз.)"))) { Die (T "run the same command again with -GappsZip FILE: it continues there. Nothing was erased." "запустите ту же команду снова с -GappsZip ФАЙЛ: установка продолжится с того же места. Ничего не стёрто.") }
+    State-Set gapps_plan ""
+  } else { Check-Image -Force; Z9x-Gapps-Prepare }
   if (-not $script:EraseNow) {
     Write-Host ""
-    Write-Host (T "Lumen OS is written. Next the installer ERASES ALL DATA on the projector (apps, accounts, settings, files) in fastbootd, as at a clean install." "Lumen OS записана. Дальше установщик СТИРАЕТ ВСЕ ДАННЫЕ проектора (приложения, аккаунты, настройки, файлы) в fastbootd, как при чистой установке.")
+    Write-Host (T "Lumen OS is written. Next the installer writes the Google services (if asked) and ERASES ALL DATA on the projector (apps, accounts, settings, files) in fastbootd, as at a clean install." "Lumen OS записана. Дальше установщик записывает сервисы Google (если они выбраны) и СТИРАЕТ ВСЕ ДАННЫЕ проектора (приложения, аккаунты, настройки, файлы) в fastbootd, как при чистой установке.")
     if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") { Die (T "cancelled, nothing was erased" "отменено, ничего не стёрто") }
     $script:EraseNow = $true
   }
   $gv = if (Z9x-In-Fastboot) { Fbd-Check $slot } else { Fbd-Enter $slot }
+  if ($GappsZip) { if (-not (Z9x-Gapps-Write $slot)) { State-Set gapps_plan "" } }
   Fb-Wipe $gv
   Fb reboot | Out-Null
-  if ((State-Get step_gapps_fill) -eq "done") { Ok (T "data wiped. The first start takes 2-4 minutes; the setup has a Google sign-in step." "данные стёрты. Первый запуск 2–4 минуты; в настройке есть шаг входа в Google.") }
+  State-Set step_gapps_part ""; State-Set step_gapps_fill ""
+  if ((State-Get step_gapps_flash) -eq "done") { Ok (T "data wiped. The first start takes 2-4 minutes; the setup has a Google sign-in step." "данные стёрты. Первый запуск 2–4 минуты; в настройке есть шаг входа в Google.") }
   else { Ok (T "data wiped. The first start takes 2-4 minutes; the setup screen appears on the projector." "данные стёрты. Первый запуск 2–4 минуты; на проекторе появится экран настройки.") }
 }
 
@@ -2300,13 +2462,14 @@ function Cmd-All {
   if ($GappsZip) { Z9x-Gapps-Plan }
   if ((State-Get step_check) -ne "done") { Cmd-Check }
   if ($GappsZip -and (State-Get image_gms) -ne "0") { Die (T "this image has Google services built in: -GappsZip is for Lumen OS without Google. Nothing was written." "в этом образе сервисы Google уже встроены: -GappsZip нужен для Lumen OS без Google. Ничего не записано.") }
+  if ($GappsZip -and (State-Get step_flash) -ne "done") { Z9x-Gapps-Prepare }   # before the backup question: a refusal comes first
   if ((State-Get step_backup) -ne "done") { if (Ask (T "Make a backup of your apps and files first (recommended)?" "Сначала сделать копию ваших приложений и файлов (рекомендуется)?")) { Cmd-Backup } else { State-Set step_backup skipped } }
   if ($Blobs -eq "partition" -and (State-Get step_blobs) -ne "done") { Cmd-Blobs }
   if ((State-Get step_vbmeta) -ne "done") { Cmd-Vbmeta }
   if ((State-Get step_flash) -ne "done") { Cmd-Flash }
   if ((State-Get step_gapps_part) -eq "done" -and -not (State-Get step_wipe)) { Z9x-Gapps-Finish }
   if ((State-Get step_verify) -ne "done") { Cmd-Verify }
-  if ((State-Get image_gms) -eq "0" -and (State-Get step_gapps_fill) -ne "done") {
+  if ((State-Get image_gms) -eq "0" -and (State-Get step_gapps_fill) -ne "done" -and (State-Get step_gapps_flash) -ne "done") {
     Write-Host (T "Done. Finish the setup on the projector. Install apps from a USB stick: Lumen Home > Apps > Install from USB. Google services can be added later: 'gapps' (guide)." "Готово. Завершите настройку на проекторе. Приложения ставятся с USB-накопителя: Lumen Home > Приложения > Установить с USB. Сервисы Google можно добавить позже: 'gapps' (инструкция).")
   } else {
     Write-Host (T "Done. Finish the setup on the projector. For Google sign-in register the GSF ID first: lumen-install.cmd gsf" "Готово. Завершите настройку на проекторе. Для входа в Google сначала зарегистрируйте GSF ID: lumen-install.cmd gsf")
