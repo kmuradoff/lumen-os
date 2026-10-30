@@ -612,6 +612,9 @@ public final class Hal {
             Log.i(TAG, "autofocus ignored: a long call (keystone) runs or the focus motor moves");
             return REQ_BUSY;
         }
+        // ported from the Z9X 1.0.8 (parity focus item 10): the focus key closes the manual focus window first,
+        // as stock FocusAdjust does; its exit then sends no manualFocus(2), which would interrupt the AF
+        ManualFocusActivity.closeForAutofocus();
         Ui.toast(app, R.string.toast_af);
         worker().post(() -> {
             if (!sConnected || LONG_IN_FLIGHT.get() || MotorController.isMovingNow() || AkOverlay.isActive()) {
@@ -747,6 +750,7 @@ public final class Hal {
         long now = SystemClock.elapsedRealtime();
         switch (type) {
             case 4: case 8: case 333: case 334: case 335:
+                ManualFocusActivity.closeForAutofocus();           // stock: an AF start closes the manual focus window
                 sAfBusyUntil = now + AF_BUSY_MS;
                 if (app != null) Ui.toast(app, R.string.toast_af_running);
                 break;

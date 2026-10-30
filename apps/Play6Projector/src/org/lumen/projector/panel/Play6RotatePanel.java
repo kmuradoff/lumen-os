@@ -231,7 +231,7 @@ public final class Play6RotatePanel extends Panel {
         float t;
         synchronized (lock) { t = undo ? opened : cur + pending; }
         float a = Math.round(t * 10f) / 10f;
-        value.setText(String.format(Locale.getDefault(), "%+.1f°", a == 0f ? 0f : a));
+        value.setText(String.format(Locale.ROOT, "%+.1f°", a == 0f ? 0f : a));
         status.setText("");
     }
 
@@ -281,7 +281,7 @@ public final class Play6RotatePanel extends Panel {
     private void render() {
         if (value == null || state != READY) return;
         float a = Math.round(cur * 10f) / 10f;
-        value.setText(String.format(Locale.getDefault(), "%+.1f°", a == 0f ? 0f : a));
+        value.setText(String.format(Locale.ROOT, "%+.1f°", a == 0f ? 0f : a));
         status.setText("");
     }
 
