@@ -15,8 +15,11 @@ import android.view.WindowManager;
  * (shared activity_manual_focus.xml) and keys; it is opened only while the Hal facade is ready (start gate
  * open, IGmpf connected), else "not ready".
  * onResume -> manualFocus(17); DPAD_LEFT DOWN (repeat 0) -> start(1), DPAD_RIGHT -> start(0),
- * repeats -> feed, UP -> stop; any other key DOWN -> stop first, then BACK/OK/DPAD_CENTER close;
- * onPause / onStop / focus loss -> stop; closes itself after 8 s without keys.
+ * repeats -> feed, UP -> stop; any other key DOWN -> stop first, then close (the volume keys pass
+ * through); onPause / onStop / focus loss -> stop; closes itself after 3 s without keys.
+ * Ported from the Z9X 1.0.8 (parity focus items 10, 11): "any other key closes" as stock FocusAdjust (every
+ * key but LEFT / RIGHT / BACK and service keys hides it); an autofocus start (focus key, vendor AF start
+ * event) closes it through {@link #closeForAutofocus} without manualFocus(2).
  * All motor work goes through MotorController (its own thread p6-motor).
  */
 public final class ManualFocusActivity extends Activity {
@@ -24,8 +27,13 @@ public final class ManualFocusActivity extends Activity {
     /** Stock FocusAdjust: closes 3 s after opening and after each key up (audit 2026-10-24, A12). */
     private static final long IDLE_CLOSE_MS = 3_000;
 
+    /** The window on screen (main thread), for {@link #closeForAutofocus}. */
+    private static ManualFocusActivity sOpen;
+
     private MotorController motor;
     private long lastKeyAt;
+    /** Closing because an autofocus starts: leave the 17 mode without manualFocus(2). */
+    private boolean closingForAf;
     private final Runnable idleCheck = new Runnable() {
         @Override public void run() {
             long last = Math.max(lastKeyAt, motor == null ? 0 : motor.lastActivity());
@@ -53,6 +61,19 @@ public final class ManualFocusActivity extends Activity {
         }
     }
 
+    /**
+     * Main thread: an autofocus starts (focus key, vendor AF start event). Closes the window if it is open,
+     * as stock (FocusAdjust code 2099, FocusUIV2 AF events hide it). True when a window was closed.
+     */
+    static boolean closeForAutofocus() {
+        ManualFocusActivity a = sOpen;
+        if (a == null || a.isFinishing()) return false;
+        Log.i(TAG, "closed: an autofocus starts");
+        a.closingForAf = true;
+        a.finish();
+        return true;
+    }
+
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -72,6 +93,8 @@ public final class ManualFocusActivity extends Activity {
         if (motor == null) return;
         if (!Hal.isReady()) { Ui.toast(this, R.string.toast_not_ready); finish(); return; }
         lastKeyAt = SystemClock.elapsedRealtime();
+        sOpen = this;
+        closingForAf = false;
         motor.enter();                                            // manualFocus(17)
         Ui.main().removeCallbacks(idleCheck);
         Ui.main().postDelayed(idleCheck, IDLE_CLOSE_MS);
@@ -80,7 +103,11 @@ public final class ManualFocusActivity extends Activity {
     @Override
     protected void onPause() {
         Ui.main().removeCallbacks(idleCheck);
-        if (motor != null) motor.exit();                          // stop (and leave the 17 mode)
+        if (sOpen == this) sOpen = null;
+        if (motor != null) {
+            if (closingForAf) motor.exitForAutofocus();          // no 2: it would interrupt the AF
+            else motor.exit();                                    // stop (and leave the 17 mode)
+        }
         super.onPause();
         if (!isFinishing()) finish();                             // an overlay never stays in the background
     }
@@ -112,33 +139,18 @@ public final class ManualFocusActivity extends Activity {
             }
             return true;
         }
-        if (action == KeyEvent.ACTION_DOWN) {
-            motor.stop();                                         // any other key: stop first
-            switch (code) {
-                case KeyEvent.KEYCODE_BACK:
-                case KeyEvent.KEYCODE_DPAD_CENTER:
-                case KeyEvent.KEYCODE_ENTER:
-                case KeyEvent.KEYCODE_NUMPAD_ENTER:
-                case KeyEvent.KEYCODE_BUTTON_A:
-                case KeyEvent.KEYCODE_ESCAPE:
-                    finish();
-                    return true;
-                default:
-                    break;
-            }
-        } else if (action == KeyEvent.ACTION_UP) {
-            switch (code) {
-                case KeyEvent.KEYCODE_BACK:
-                case KeyEvent.KEYCODE_DPAD_CENTER:
-                case KeyEvent.KEYCODE_ENTER:
-                case KeyEvent.KEYCODE_NUMPAD_ENTER:
-                case KeyEvent.KEYCODE_BUTTON_A:
-                case KeyEvent.KEYCODE_ESCAPE:
-                    return true;
-                default:
-                    break;
-            }
+        switch (code) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+            case KeyEvent.KEYCODE_VOLUME_MUTE:
+                return super.dispatchKeyEvent(ev);                // volume keys keep working
+            default:
+                break;
         }
-        return super.dispatchKeyEvent(ev);                        // e.g. volume keys keep working
+        if (action == KeyEvent.ACTION_DOWN) {
+            motor.stop();                                         // any other key: stop first, then close
+            if (!isFinishing()) finish();
+        }
+        return true;                                              // its UP stays here too
     }
 }
