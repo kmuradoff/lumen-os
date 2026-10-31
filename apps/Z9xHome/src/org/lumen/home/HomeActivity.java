@@ -118,6 +118,8 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     private final double[] mLoc = new double[2];
     private long mLastKey;
     private boolean mOkDown, mOkLong;
+    /** downTime of the OK press whose DOWN this activity saw; an UP of any other press is not ours. */
+    private long mOkDownTime = -1;
     private long mCreateAt;
     private boolean mFullyDrawn;
     private int mBuiltW;
@@ -304,6 +306,8 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         super.onWindowFocusChanged(hasFocus);
         if (mSafeMode) return;
         if (Gfx.SKY_YIELD) mSky.setHeld(!hasFocus, SKY_YIELD_MS);
+        // a press that began here and ends in another window (the quick panel, ...) is not finished here
+        if (!hasFocus) resetOk();
     }
 
     @Override
@@ -929,6 +933,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         mLastKey = SystemClock.uptimeMillis();
         try {
             if (mPanel.isOpen()) {
+                resetOk(); // the context panel owns the keys: no OK press of the page continues under it
                 if (mPanel.onKey(k, e)) return true;
                 return super.dispatchKeyEvent(e);
             }
@@ -944,19 +949,22 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
                 if (e.getAction() == KeyEvent.ACTION_DOWN) {
                     if (e.getRepeatCount() == 0) {
                         mOkDown = true;
+                        mOkDownTime = e.getDownTime();
                         mOkLong = false;
                         mMain.postDelayed(mLongPress, LONG_PRESS_MS);
-                    } else if (!mOkLong && (e.isLongPress() || e.getEventTime() - e.getDownTime() >= LONG_PRESS_MS)) {
+                    } else if (mOkDown && e.getDownTime() == mOkDownTime && !mOkLong && (e.isLongPress() || e.getEventTime() - e.getDownTime() >= LONG_PRESS_MS)) {
                         mMain.removeCallbacks(mLongPress);
                         mOkLong = true;
                         onLongOk();
                     }
                 } else if (e.getAction() == KeyEvent.ACTION_UP) {
-                    mMain.removeCallbacks(mLongPress);
+                    // only the UP of a press whose DOWN reached this activity: an OK that went DOWN in a
+                    // window that closed on it (a quick panel row opening the zoom screen, a context panel
+                    // item) must not click the tile under the focus here (log 2026-10-31 14:54:47)
+                    boolean ours = mOkDown && e.getDownTime() == mOkDownTime;
                     boolean wasLong = mOkLong;
-                    mOkDown = false;
-                    mOkLong = false;
-                    if (!wasLong && !e.isCanceled()) routeKey(KeyEvent.KEYCODE_DPAD_CENTER, e);
+                    resetOk();
+                    if (ours && !wasLong && !e.isCanceled()) routeKey(KeyEvent.KEYCODE_DPAD_CENTER, e);
                 }
                 return true;
             }
@@ -969,6 +977,14 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             return true;
         }
         return super.dispatchKeyEvent(e);
+    }
+
+    /** Forgets the OK press in progress (focus lost, context panel open, press finished). */
+    private void resetOk() {
+        if (mMain != null) mMain.removeCallbacks(mLongPress);
+        mOkDown = false;
+        mOkLong = false;
+        mOkDownTime = -1;
     }
 
     private void routeKey(int k, KeyEvent e) {

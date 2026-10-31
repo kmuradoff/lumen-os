@@ -19,7 +19,10 @@ import android.view.View;
  * #B2FFFFFF; focused = white rounded background (radius 24), title #E5000000, value #99000000; no
  * scale. Disabled rows are drawn at 40 % and are not focusable.
  *
- * Keys: DPAD_CENTER / ENTER -> {@link #onActivate()}; DPAD_LEFT / RIGHT -> {@link #onStep(int, int)}
+ * Keys: DPAD_CENTER / ENTER -> {@link #onActivate()} on the release of a press whose DOWN this row got
+ * (2026-10-31: a row that opens another window on the DOWN, the optical zoom or the manual keystone, let
+ * the UP of the same press reach the window below, Lumen Home, which clicked its focused tile and
+ * replaced the new screen; a whole press now stays in one window); DPAD_LEFT / RIGHT -> {@link #onStep(int, int)}
  * (repeat count passed). UP / DOWN are left to the framework focus search (ScrollView keeps the
  * focused row visible). Subclasses draw their right-hand part in {@link #drawRight}.
  *
@@ -46,6 +49,8 @@ public abstract class Row extends View {
     private boolean mirrored;
     /** Running line for a title that does not fit, while the row has the focus (Marquee). */
     private final Marquee titleMarquee = new Marquee();
+    /** downTime of the OK press whose DOWN reached this row, -1 when none: only its UP activates. */
+    private long okDownTime = -1;
 
     protected Row(Context c, CharSequence title) {
         super(c);
@@ -116,7 +121,14 @@ public abstract class Row extends View {
     @Override
     protected void onFocusChanged(boolean gainFocus, int direction, Rect previouslyFocusedRect) {
         super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
+        if (!gainFocus) okDownTime = -1;                    // the press began on this row, it ends elsewhere
         invalidate();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasWindowFocus) {
+        super.onWindowFocusChanged(hasWindowFocus);
+        if (!hasWindowFocus) okDownTime = -1;
     }
 
     /** True when this row is laid out right-to-left (RTL locale, supportsRtl). */
@@ -193,11 +205,9 @@ public abstract class Row extends View {
             case KeyEvent.KEYCODE_DPAD_CENTER:
             case KeyEvent.KEYCODE_ENTER:
             case KeyEvent.KEYCODE_NUMPAD_ENTER:
-                if (ev.getRepeatCount() == 0 && onActivate()) {
-                    playSoundEffect(android.view.SoundEffectConstants.CLICK);
-                    return true;
-                }
-                return ev.getRepeatCount() > 0 || super.onKeyDown(keyCode, ev);
+                // only noted here; the row acts on the UP of this press (onKeyUp). Held repeats: nothing.
+                if (ev.getRepeatCount() == 0) okDownTime = ev.getDownTime();
+                return true;
             case KeyEvent.KEYCODE_DPAD_LEFT:                   // mirrored in RTL
                 return onStep(isRtl() ? 1 : -1, ev.getRepeatCount()) || super.onKeyDown(keyCode, ev);
             case KeyEvent.KEYCODE_DPAD_RIGHT:
@@ -212,8 +222,16 @@ public abstract class Row extends View {
         switch (keyCode) {
             case KeyEvent.KEYCODE_DPAD_CENTER:
             case KeyEvent.KEYCODE_ENTER:
-            case KeyEvent.KEYCODE_NUMPAD_ENTER:
-                return true;                                  // never a second (click) action
+            case KeyEvent.KEYCODE_NUMPAD_ENTER: {
+                // the release of the press this row saw go down; a lone UP (its DOWN went to another
+                // window or row) and a canceled press do nothing. Never View's own click.
+                boolean ours = okDownTime != -1 && ev.getDownTime() == okDownTime;
+                okDownTime = -1;
+                if (ours && rowEnabled && !ev.isCanceled() && onActivate()) {
+                    playSoundEffect(android.view.SoundEffectConstants.CLICK);
+                }
+                return true;
+            }
             default:
                 return super.onKeyUp(keyCode, ev);
         }

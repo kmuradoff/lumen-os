@@ -339,6 +339,7 @@ final class RecentsView extends FrameLayout {
         private ValueAnimator anim;
         private float f;                    // focus 0..1
         private boolean longFired;
+        private long okDownTime = -1;          // downTime of the OK press this card saw go down
 
         CardView(Context c, RecentsModel.Card d) {
             super(c);
@@ -390,6 +391,7 @@ final class RecentsView extends FrameLayout {
             if (isOk(code)) {
                 if (ev.getRepeatCount() == 0) {
                     longFired = false;
+                    okDownTime = ev.getDownTime();
                     ev.startTracking();
                 }
                 return true;
@@ -409,8 +411,11 @@ final class RecentsView extends FrameLayout {
 
         @Override public boolean onKeyUp(int code, KeyEvent ev) {
             if (isOk(code)) {
-                boolean go = !longFired && !ev.isCanceled() && (ev.getFlags() & KeyEvent.FLAG_LONG_PRESS) == 0;
+                // 2026-10-31: only the UP of a press whose DOWN this card got (never one begun in another window)
+                boolean go = !longFired && !ev.isCanceled() && (ev.getFlags() & KeyEvent.FLAG_LONG_PRESS) == 0
+                        && okDownTime != -1 && ev.getDownTime() == okDownTime;
                 longFired = false;
+                okDownTime = -1;
                 if (go) {
                     playSoundEffect(android.view.SoundEffectConstants.CLICK);
                     listener.onOpen(data);

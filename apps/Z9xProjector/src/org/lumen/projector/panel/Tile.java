@@ -80,6 +80,10 @@ final class Tile extends View {
     private final ValueAnimator focusAnim = ValueAnimator.ofFloat(0f, 1f);
     private ValueAnimator pressAnim;
     private boolean pressing;
+    // 2026-10-31: the action runs once the press-in has played AND the OK of the press that started it is
+    // released here, so a tile that opens another window (Input) never leaves the UP to the window below
+    private long okDownTime = -1;         // downTime of the press in progress, -1 when none
+    private boolean okUp, pressedIn;
 
     Tile(Context c, String section, int iconRes, CharSequence label, boolean wide, Runnable action) {
         super(c);
@@ -136,6 +140,7 @@ final class Tile extends View {
     @Override
     protected void onFocusChanged(boolean gain, int direction, Rect prev) {
         super.onFocusChanged(gain, direction, prev);
+        if (!gain) abortPress();
         float target = gain ? 1f : 0f;
         focusAnim.cancel();
         if (!isAttachedToWindow() || Math.abs(focusF - target) < 0.001f) {
@@ -159,6 +164,7 @@ final class Tile extends View {
     protected void onDetachedFromWindow() {
         // Page switches remove the tile: end every animation in a clean resting state.
         focusAnim.cancel();
+        okDownTime = -1;
         if (pressAnim != null) pressAnim.cancel();
         pressing = false;
         press = 1f;
@@ -168,9 +174,20 @@ final class Tile extends View {
     }
 
     @Override
+    public void onWindowFocusChanged(boolean hasWindowFocus) {
+        super.onWindowFocusChanged(hasWindowFocus);
+        if (!hasWindowFocus) abortPress();
+    }
+
+    @Override
     public boolean onKeyDown(int keyCode, KeyEvent ev) {
         if (isOk(keyCode)) {
-            if (ev.getRepeatCount() == 0 && !pressing) pressAndRun();
+            if (ev.getRepeatCount() == 0 && !pressing) {
+                okDownTime = ev.getDownTime();
+                okUp = false;
+                pressedIn = false;
+                pressAndRun();
+            }
             return true;
         }
         return super.onKeyDown(keyCode, ev);
@@ -178,8 +195,38 @@ final class Tile extends View {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent ev) {
-        if (isOk(keyCode)) return true;                    // never a second (click) action
+        if (isOk(keyCode)) {                               // never View's own click
+            if (okDownTime != -1 && ev.getDownTime() == okDownTime && !okUp) {
+                if (ev.isCanceled()) {
+                    abortPress();
+                } else {
+                    okUp = true;
+                    maybeRun();
+                }
+            }
+            return true;
+        }
         return super.onKeyUp(keyCode, ev);
+    }
+
+    /** Runs the action when the press-in ended and the OK was released (whichever comes last). */
+    private void maybeRun() {
+        if (okDownTime == -1 || !okUp || !pressedIn) return;
+        okDownTime = -1;
+        try {
+            if (action != null) action.run();
+        } catch (Throwable t) {
+            Log.e(TAG, "tile " + section + " failed", t);
+        }
+        springBack();
+    }
+
+    /** A press that will not be released here (focus moved, window lost, canceled): no action, spring back. */
+    private void abortPress() {
+        if (okDownTime == -1) return;
+        okDownTime = -1;
+        if (pressAnim != null) pressAnim.cancel();
+        if (pressing) springBack();
     }
 
     private static boolean isOk(int keyCode) {
@@ -199,12 +246,8 @@ final class Tile extends View {
             @Override public void onAnimationCancel(android.animation.Animator a) { cancelled = true; }
             @Override public void onAnimationEnd(android.animation.Animator a) {
                 if (cancelled) return;
-                try {
-                    if (action != null) action.run();
-                } catch (Throwable t) {
-                    Log.e(TAG, "tile " + section + " failed", t);
-                }
-                springBack();
+                pressedIn = true;
+                maybeRun();                                // or later, on the OK release
             }
         });
         pressAnim = down;
