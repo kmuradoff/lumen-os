@@ -282,6 +282,8 @@ public final class OverlayHost {
     private final class PanelRoot extends FrameLayout {
         private final Panel panel;
         private boolean backDown;
+        /** downTime of the OK press whose DOWN reached this window, -1 when none (see dispatchKeyEvent). */
+        private long okDownTime = -1;
         private boolean hadFocus;
         private final Runnable focusLostCheck = new Runnable() {
             @Override public void run() {
@@ -314,6 +316,7 @@ public final class OverlayHost {
                 }
                 return true;
             }
+            if (isOkKey(code) && !okOfThisWindow(ev)) return true;
             try {
                 if (panel.onKeyEvent(ev)) return true;
             } catch (Throwable t) {
@@ -341,9 +344,34 @@ public final class OverlayHost {
             }
         }
 
+        /**
+         * 2026-10-31: the rest of an OK press that went DOWN in another window (the held repeats and the UP
+         * of the row press that opened this panel, log 14:54:47) never reaches the panel: its OK toggles
+         * and confirmations that act on the UP (optical zoom size / position, zoom shift, fit width) only
+         * see presses that began here.
+         */
+        private boolean okOfThisWindow(KeyEvent ev) {
+            int a = ev.getAction();
+            if (a == KeyEvent.ACTION_DOWN) {
+                if (ev.getRepeatCount() == 0) {
+                    okDownTime = ev.getDownTime();
+                    return true;
+                }
+                return ev.getDownTime() == okDownTime;
+            }
+            if (a == KeyEvent.ACTION_UP) {
+                boolean ours = okDownTime != -1 && ev.getDownTime() == okDownTime;
+                okDownTime = -1;
+                if (!ours) Log.i(TAG, "OK up of a press begun elsewhere: dropped (" + panel.getClass().getSimpleName() + ")");
+                return ours;
+            }
+            return true;
+        }
+
         @Override
         public void onWindowFocusChanged(boolean hasFocus) {
             super.onWindowFocusChanged(hasFocus);
+            if (!hasFocus) okDownTime = -1;
             if (hasFocus) {
                 hadFocus = true;
                 removeCallbacks(focusLostCheck);
@@ -360,5 +388,10 @@ public final class OverlayHost {
             removeCallbacks(focusLostCheck);
             super.onDetachedFromWindow();
         }
+    }
+
+    private static boolean isOkKey(int code) {
+        return code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER
+                || code == KeyEvent.KEYCODE_NUMPAD_ENTER;
     }
 }
