@@ -1115,6 +1115,6 @@ fit_cal_r_order=映像は位置ごとに小さくなる必要があります
 fit_cal_r_full=中央の位置が両端を結ぶ線に乗りません：14 か所すべてを測定してください
 
 @projector/strings_kst_restore.xml
-kst_more=そのほか
-kst_restore=デフォルトの画面を復元
-kst_restore_done=画面に復元
+kst_more=その他
+kst_restore=元の画面に戻す
+kst_restore_done=元の画面に戻しました

@@ -1121,6 +1121,6 @@ fit_cal_r_order=l’immagine deve rimpicciolire a ogni posizione
 fit_cal_r_full=la posizione centrale non cade sulla linea tra gli estremi: misura tutte le 14 posizioni
 
 @projector/strings_kst_restore.xml
-kst_more=Altro
-kst_restore=Ripristino dello schermo
-kst_restore_done=Valori predefiniti ripristinati
+kst_more=Ulteriori opzioni
+kst_restore=Torna all’immagine originale
+kst_restore_done=Immagine originale ripristinata

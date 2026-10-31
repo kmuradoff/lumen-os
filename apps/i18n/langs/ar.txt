@@ -1132,6 +1132,6 @@ fit_cal_r_order=يجب أن تصغر الصورة في كل موضع
 fit_cal_r_full=الموضع الأوسط لا يقع على الخط بين الطرفين: قِس المواضع الـ 14 كلها
 
 @projector/strings_kst_restore.xml
-kst_more=المزيد
-kst_restore=استعادة الصورة الافتراضية
-kst_restore_done=تمت استعادة الصورة الافتراضية
+kst_more=أخرى
+kst_restore=العودة إلى الصورة الأصلية
+kst_restore_done=عادت الصورة إلى وضعها الأصلي

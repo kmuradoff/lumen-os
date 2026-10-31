@@ -1121,6 +1121,6 @@ fit_cal_r_order=l’image doit rapetisser à chaque position
 fit_cal_r_full=la position du milieu ne tombe pas sur la ligne entre les extrémités : mesurez les 14 positions
 
 @projector/strings_kst_restore.xml
-kst_more=Plus
-kst_restore=Rétablir l’écran par défaut
-kst_restore_done=Rétablissement de l’écran par défaut
+kst_more=Autres
+kst_restore=Revenir à l’image d’origine
+kst_restore_done=Image d’origine rétablie

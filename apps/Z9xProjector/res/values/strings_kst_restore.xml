@@ -2,12 +2,12 @@
 <!-- Lumen OS 1.0.8 (2026-10-30): the stock keystone page's last section on the Z9X (docs/z9x/parity/keystone.md items 7
      and 8, as the HB hb-t8b). Z9X only: not a shared file of apps/common/projector (the shared panel_reset_keystone of
      strings_panel.xml stays for the Play 6) and not copied to the HB (it has its own strings_hb.xml). English base, texts
-     of the stock XGIMI resources; translations: gsi/apps/i18n/langs/<locale>.txt @projector/strings_kst_restore.xml. -->
+     written by Lumen (clean-room rewrite 2026-10-31; the stock resources only told us the meaning); translations: gsi/apps/i18n/langs/<locale>.txt @projector/strings_kst_restore.xml. -->
 <resources>
-    <!-- Keystone page: the stock section title "More" (brightness_more_title). -->
-    <string name="kst_more">More</string>
-    <!-- Keystone page: the full reset row (stock reset_key_stone): corners, zoom lens home (biggest picture). -->
-    <string name="kst_restore">Restore Default Picture</string>
-    <!-- Notification after it (stock keystone_reset_toast). -->
-    <string name="kst_restore_done">Restored to default picture.</string>
+    <!-- Keystone page: the section title at the place of the stock "More" section. -->
+    <string name="kst_more">Other</string>
+    <!-- Keystone page: the full reset row (at the place of the stock one): corners, zoom lens home (biggest picture). -->
+    <string name="kst_restore">Reset picture to original</string>
+    <!-- Notification after it (as stock shows one). -->
+    <string name="kst_restore_done">Picture reset to original</string>
 </resources>

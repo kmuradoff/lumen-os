@@ -1118,6 +1118,6 @@ fit_cal_r_order=das Bild muss mit jeder Position kleiner werden
 fit_cal_r_full=die mittlere Position liegt nicht auf der Linie zwischen den Enden: alle 14 Positionen messen
 
 @projector/strings_kst_restore.xml
-kst_more=Mehr
-kst_restore=Standardprojektionsfläche wiederherstellen
-kst_restore_done=Auf dem Projektionsbildschirm wiederhergestellt
+kst_more=Weiteres
+kst_restore=Bild auf Ausgangszustand
+kst_restore_done=Bild auf Ausgangszustand gesetzt

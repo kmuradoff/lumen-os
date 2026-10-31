@@ -1115,6 +1115,6 @@ fit_cal_r_order=화면은 위치마다 작아져야 합니다
 fit_cal_r_full=가운데 위치가 양 끝을 잇는 선에 맞지 않습니다: 14곳을 모두 측정하세요
 
 @projector/strings_kst_restore.xml
-kst_more=더 보기
-kst_restore=화면 복원
-kst_restore_done=화면으로 복원
+kst_more=기타
+kst_restore=원래 화면으로 되돌리기
+kst_restore_done=원래 화면으로 되돌렸습니다
