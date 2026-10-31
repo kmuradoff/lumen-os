@@ -45,8 +45,14 @@ import org.lumen.projector.ui.Theme;
  * Every move is one stock position, one motor unit (119 = 160 motor steps, 14 = to / from the PI sensor); both calls
  * block until the motor stopped, so 116 / 13 read right after a move are final and are shown at once. The clients
  * refuse a 14 or 119 that is not the neighbour of a fresh read (GmpfClient.checkZoomLimitStep / setOpticalZoomStep).
- * Session: IGmpf2 18(true, 2) + 121 zoomStart(0) on open, 120 zoomFinish(0) + 18(false, 2) on close; autofocus on
- * close when the lens moved (ZoomStateView.release, isZoomFocus).
+ * Session: IGmpf2 18(true, 2) + 121 zoomStart(0) on open, 120 zoomFinish(0) + 18(false, 2) on close.
+ * Autofocus on close (2026-10-31, stock-verified): only when the OPTICAL step (116) read at close differs from the
+ * one read at open, as stock ZoomStateView.release / isZoomFocus (Z9X jadx ZoomStateView.java:1228-1236, the same in
+ * HB newsettings :1389-1418): isOpticalCurStep is 116 taken in initZoom (:466), compared with a fresh 116 on close,
+ * and when they differ zoom_direct_trigger_af (default true) starts the autofocus at once; there is no user switch.
+ * The limit position (IGmpf2 13) does not count: Size 1 <-> 2 of 14 leaves 116 at 0, so no AF (stock). A MENU reset
+ * that brings the lens back to the same 116 starts no AF either (the old resetMoved flag is gone). If either 116 read
+ * fails, no AF.
  * Keys as stock ZoomStateView (zoom audit F5): at most one move per 220 ms for EVERY key down, and every arrow key up
  * drops the queued moves (stock handler.removeCallbacksAndMessages).
  * Zoom reset (owner decision 2026-10-30, zoom only): MENU (on release) sends 153(5,10), the lens home, which leaves it
@@ -97,8 +103,9 @@ public final class OpticalZoomPanel extends Panel {
     private final java.util.concurrent.atomic.AtomicBoolean session = new java.util.concurrent.atomic.AtomicBoolean();
     // HAL thread writes, UI reads
     private volatile int max = -1, limitTotal = 0, progress = -1, startProgress = -1;
+    /** HAL thread: 116 optical step read at open (stock isOpticalCurStep); -1 = unknown, no AF on close. */
+    private int startOptical = -1;
     private volatile boolean resetting;                  // MENU zoom reset queued or running (main sets, HAL clears)
-    private boolean resetMoved;                          // HAL thread: a MENU reset moved the lens (autofocus on close)
     private TextView value, status, hint;
     private SizeBar bar;
     /**
@@ -190,7 +197,8 @@ public final class OpticalZoomPanel extends Panel {
             if (lim < 0 || lim > MAX_LIMIT) Log.w(TAG, "153(12,10) = " + lim + " not plausible: no limit position used");
             limitTotal = lim >= 0 && lim <= MAX_LIMIT ? lim : 0;
             progress = startProgress = readProgress(g, g2);
-            Log.i(TAG, "enter: position " + progress + " of 0.." + (limitTotal + max));
+            startOptical = readOptical(g);
+            Log.i(TAG, "enter: position " + progress + " of 0.." + (limitTotal + max) + ", 116 optical " + startOptical);
             state = READY;
             ui(this::render);
             if (closed && session.compareAndSet(true, false)) close(app, g, g2);   // dismissed while entering
@@ -210,6 +218,17 @@ public final class OpticalZoomPanel extends Panel {
         }
         if (cur != 0 && lim != 0) throw new IllegalStateException("limit " + lim + " away from index 0 (" + cur + ")");
         return cur == 0 ? limitTotal + lim : cur + limitTotal;
+    }
+
+    /** 116 optical step alone (stock KeyStoneManager.getCurOpticalCurZoomStep), -1 when the read fails. */
+    private int readOptical(GmpfClient g) {
+        try {
+            int cur = g.getZoomStep()[1];
+            return cur >= 0 && cur <= max ? cur : -1;
+        } catch (Throwable t) {
+            Log.w(TAG, "116 read: " + t);
+            return -1;
+        }
     }
 
     /** Runs the queued presses one after another (each move blocks until the motor stopped). */
@@ -254,7 +273,8 @@ public final class OpticalZoomPanel extends Panel {
                 // F4 safety for one release: a move is one position; a jump means XGIMI's counter is not ours
                 Log.e(TAG, "position jumped " + now + " -> " + after + " on one move: stopped");
                 pending.set(0);
-                progress = startProgress = after;           // no autofocus on a lens we do not know
+                progress = startProgress = after;
+                startOptical = -1;                          // no autofocus on a lens we do not know
                 state = FAILED;
                 ui(() -> { say(R.string.zoom_refused); dismiss(); });
                 return;
@@ -282,7 +302,6 @@ public final class OpticalZoomPanel extends Panel {
             int after = readProgress(g, g2);
             Log.i(TAG, "MENU zoom reset: 153(5,10) -> " + r + " in " + (SystemClock.uptimeMillis() - t0)
                     + " ms, position " + progress + " -> " + after);
-            resetMoved = true;                              // the lens moved: autofocus on close
             progress = after;
             ui(() -> { render(); say(R.string.zoom_reset_done); });
         } catch (Throwable t) {
@@ -418,10 +437,14 @@ public final class OpticalZoomPanel extends Panel {
         boolean queued = ready && Hal.run((g, g2) -> {
             boolean af = false;
             try {
-                boolean moved = progress >= 0 && progress != startProgress;
+                // stock isZoomFocus: a fresh 116 against the one read at open, before the session closes
+                int endOptical = startOptical >= 0 ? readOptical(g) : -1;
+                boolean opticalChanged = startOptical >= 0 && endOptical >= 0 && endOptical != startOptical;
+                Log.i(TAG, "close: 116 optical " + startOptical + " -> " + endOptical
+                        + (opticalChanged ? ": autofocus" : ": no autofocus"));
                 endShift(g);
                 if (session.compareAndSet(true, false)) close(app, g, g2);
-                af = moved || resetMoved;
+                af = opticalChanged;
             } finally {
                 final boolean runAf = af;
                 if (runAf || back) ui(() -> afterClose(runAf, back));
@@ -435,7 +458,8 @@ public final class OpticalZoomPanel extends Panel {
      * Main thread, after the close went out. 2026-10-31 (HB video, 16:06:51): BACK after a lens move reopened the
      * quick panel, then the autofocus card of the stock close AF dismissed it for good. Now the AF goes first and
      * the quick panel (its row) comes back only when the AF card closed, or after AF_START_WAIT_MS when no card
-     * came (AfCardOverlay.runAfterCard). Without a lens move, or when the AF was refused, the panel comes back now.
+     * came (AfCardOverlay.runAfterCard). Without an optical step change, or when the AF was refused, the panel comes
+     * back now.
      */
     private void afterClose(boolean af, boolean back) {
         int r = af ? Hal.requestAutofocus(app) : -1;
