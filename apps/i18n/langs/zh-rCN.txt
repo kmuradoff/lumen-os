@@ -1116,6 +1116,6 @@ fit_cal_r_order=画面必须在每个位置逐渐变小
 fit_cal_r_full=中间位置不在两端之间的连线上：请测量全部 14 个位置
 
 @projector/strings_kst_restore.xml
-kst_more=更多
-kst_restore=恢复默认画面
-kst_restore_done=已恢复至默认画面
+kst_more=其他
+kst_restore=恢复原始画面
+kst_restore_done=已恢复原始画面

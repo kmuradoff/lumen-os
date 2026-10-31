@@ -1118,6 +1118,6 @@ fit_cal_r_order=әр келесі күйде сурет кішірек болу�
 fit_cal_r_full=ортаңғы күй шеткі күйлердің арасындағы сызыққа сәйкес келмейді: барлық 14 күйді өлшеңіз
 
 @projector/strings_kst_restore.xml
-kst_more=Тағы
-kst_restore=Экранды қалпына келтіру
-kst_restore_done=Экран қалпына келтірілді
+kst_more=Басқа
+kst_restore=Бастапқы суретті қайтару
+kst_restore_done=Сурет бастапқы күйіне қайтарылды

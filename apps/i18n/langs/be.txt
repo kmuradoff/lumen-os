@@ -1124,6 +1124,6 @@ fit_cal_r_order=на кожным наступным становішчы выя
 fit_cal_r_full=сярэдняе становішча не кладзецца на лінію паміж крайнімі: змерайце ўсе 14 становішчаў
 
 @projector/strings_kst_restore.xml
-kst_more=Больш
-kst_restore=Аднаўленне экрана
-kst_restore_done=Экран адноўлены
+kst_more=Іншае
+kst_restore=Вярнуць першапачатковую выяву
+kst_restore_done=Выява вернута да першапачатковай

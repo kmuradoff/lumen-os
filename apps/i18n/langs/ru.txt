@@ -966,6 +966,6 @@ fit_cal_r_order=на каждом следующем положении карт
 fit_cal_r_full=среднее положение не ложится на линию между крайними: измерьте все 14 положений
 
 @projector/strings_kst_restore.xml
-kst_more=Больше
-kst_restore=Восстановление экрана
-kst_restore_done=Экран восстановлен
+kst_more=Прочее
+kst_restore=Вернуть исходное изображение
+kst_restore_done=Изображение возвращено к исходному

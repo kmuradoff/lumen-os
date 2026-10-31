@@ -1124,6 +1124,6 @@ fit_cal_r_order=obraz musi zmniejszać się z każdą pozycją
 fit_cal_r_full=środkowa pozycja nie leży na linii między skrajnymi: zmierz wszystkie 14 pozycji
 
 @projector/strings_kst_restore.xml
-kst_more=Więcej
-kst_restore=Przywracanie ekranu
-kst_restore_done=Przywrócone na ekran
+kst_more=Inne
+kst_restore=Przywróć pierwotny obraz
+kst_restore_done=Przywrócono pierwotny obraz

@@ -1118,6 +1118,6 @@ fit_cal_r_order=görüntü her konumda küçülmeli
 fit_cal_r_full=orta konum uçlar arasındaki çizgiye oturmuyor: 14 konumun tümünü ölçün
 
 @projector/strings_kst_restore.xml
-kst_more=Daha Fazla
-kst_restore=Varsayılan Görüntüyü Geri Yükle
-kst_restore_done=Varsayılan görüntü geri yüklendi
+kst_more=Diğer
+kst_restore=Özgün görüntüye dön
+kst_restore_done=Özgün görüntüye dönüldü

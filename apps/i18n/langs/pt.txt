@@ -1121,6 +1121,6 @@ fit_cal_r_order=a imagem deve ficar menor a cada posição
 fit_cal_r_full=a posição do meio não fica na linha entre as pontas: meça todas as 14 posições
 
 @projector/strings_kst_restore.xml
-kst_more=Mais
-kst_restore=Restauro do ecrã
-kst_restore_done=Restaurado no ecrã
+kst_more=Outros
+kst_restore=Voltar à imagem original
+kst_restore_done=Imagem original restaurada
