@@ -2043,6 +2043,8 @@ The Wi-Fi network is erased too: this computer cannot reach the projector again 
       there)
         p6_log "light first start: the old data is still there"
         warn "$(t "the projector still has its old data: XGIMI's recovery did not carry out the erase request. The installer erases the data the earlier way: Android's factory reset on Lumen OS." "на проекторе всё ещё старые данные: recovery XGIMI не выполнило запрос на стирание. Установщик сотрёт данные прежним способом: сбросом Android на Lumen OS.")"
+        # from here on the earlier way: its messages ("Nothing was erased.") and a resumed run go straight to boot1
+        state_set step_bcb ignored
         play6_boot1
         return 0 ;;
       gone) ok "$(t "data erased (the check file written before the write is gone)" "данные стёрты (проверочного файла, записанного до записи, нет)")"

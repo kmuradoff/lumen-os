@@ -607,6 +607,8 @@ expect_out "the projector still has its old data: XGIMI's recovery did not carry
 expect_out "Lumen OS 1.1.0 started ($SER, $ADDR)"; expect_out "asking Android for its factory reset"
 [ -e "$FB/wiped" ] || fail "the fake projector was not wiped"
 [ "$(state step_wipe)" = requested ] || fail "step_wipe=$(state step_wipe)"
+# from the fallback on, the earlier way: its messages ("Nothing was erased.") and a resumed run go straight to boot1
+[ "$(state step_bcb)" = ignored ] || fail "step_bcb=$(state step_bcb)"
 end
 
 begin install_light_start_not_seen

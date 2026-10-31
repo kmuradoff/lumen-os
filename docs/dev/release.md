@@ -129,9 +129,9 @@ stick (the updater's "Install from a USB stick" reads `update-stable.json` there
   `python3 tools/ota/check_publish.py <repo>` (0 blocked). The pre-push hook runs it on every push.
 - Release assets: `lumen-os-<ver>-nogms-system.img`, the `-nogms-` OTA zips + `-payload_metadata.bin`,
   `update-public-nogms.json` + `.sig`, `SHA256SUMS` + `.sig`, the installer zip
-  (`lumen-os-<ver>-installer.zip`, the name the install guide gives; made from the exported repository's
-  `installer/` folder, whose `release.conf` must say `VERSION=<ver>`: the working tree's installer may be
-  held back, docs/repo/README.md "Held files"), the GPL source of the
+  (`lumen-os-[<token>-]<ver>-installer.zip`, the name the install guide gives; made for the image with
+  `tools/ota/pack_installer.sh` from the exported repository's `installer/` folder, never the working
+  tree's: see "The installer zip" below), the GPL source of the
   AirPlay app as a plain `.zip`, and the erofs-utils source tarball `erofs-utils-1.9.4.tar.gz` plus
   `lz4-1.10.0.tar.gz` as they are (GPL: the installer zip carries their programs, see below). Nothing of the Google edition (image, OTA zip, `update-public.json`,
   `update-stable.json`): `check_release_assets.py` refuses it.
@@ -170,3 +170,45 @@ stick (the updater's "Install from a USB stick" reads `update-stable.json` there
   check refuses archives inside: the tarballs above are assets of their own, never inside the installer zip.
 - Test on the owner's projector first (W5 in PLAN.md): updater "verify only", then the full update with
   the owner present, the rollback drill (`ro.z9x.ota.test_fail=1`), then a delta.
+
+## The installer zip (every release and pre-release, every projector)
+
+The installer accepts an image only when three strings are equal: the version in the image's file name
+(`lumen-os-<ver>-nogms-system.img`, `lumen-os-<token>-<ver>-nogms-system.img` for another projector, e.g.
+`play6`), `VERSION` in the zip's `installer/release.conf`, and the image's own version property
+(`ro.z9x.version` on the Z9X, `ro.lumen.version` on the Play 6, read with debugfs / dump.erofs when the user
+has them). So the zip is made for one image, never reused from another release, never edited by hand:
+
+```
+# after SHA256SUMS + SHA256SUMS.sig are next to the image; --installer defaults to ~/lumen-os/installer
+bash tools/ota/pack_installer.sh <dir>/lumen-os-play6-1.0.7-kst1-nogms-system.img <outdir> \
+     [--installer ~/lumen-os/installer] [--erofs-utils <programs of tools/ota/build_erofs_utils.sh>]
+# -> <outdir>/lumen-os-play6-1.0.7-kst1-installer.zip, release.conf VERSION=1.0.7-kst1 DEVICE=play6
+#    (Z9X: lumen-os-<ver>-installer.zip, BLOBS=partition VERSION=<ver>, no DEVICE)
+# a zip that exists already (also one downloaded from GitHub) is checked against its image with
+bash tools/ota/pack_installer.sh --check <zip> <image>
+```
+
+The script writes `VERSION` / `DEVICE` / `BLOBS` itself and then checks the pair; any mismatch deletes the zip:
+the zip name, `VERSION`, `DEVICE` (and `BLOBS=partition` for the Z9X), the image's version property, a Play 6
+image being a release build (`ro.adb.secure=1`), the image's line in `SHA256SUMS`, `SHA256SUMS.sig` against the
+certificate inside the zip, and nothing under `installer/tools` but `erofs-utils` (never Google's
+Platform-Tools). Run `--check` again on the exact files right before `gh release create` or an asset upload.
+Host test: `bash tools/ota/test/pack_installer.sh`.
+
+**Pre-release / test build of the Play 6** (a changed binary or driver on top of a release image:
+`tools/play6/swap_sf_into_image.sh`, `tools/play6/aic/add_aic_to_image.sh`): the image gets its own version
+`<release>-<mark>`, e.g. 1.0.7-kst1, with `--version`; `ro.lumen.version_code` stays the release's. Then it is
+named, signed and packed for that version:
+
+```
+bash tools/play6/swap_sf_into_image.sh <rel>/lumen-os-play6-1.0.7-nogms-system.img \
+     <pre>/lumen-os-play6-1.0.7-kst1-nogms-system.img kst1 <surfaceflinger> --version 1.0.7-kst1
+# SHA256SUMS + .sig in <pre> with the Play 6 OTA key, then
+bash tools/ota/pack_installer.sh <pre>/lumen-os-play6-1.0.7-kst1-nogms-system.img <pre>
+```
+
+The image tools (and `tools/play6/release_image.sh`) refuse an output named like a release image for a version
+the image does not carry (`tools/play6/image_version.sh`). Why: play6-1.0.7-kst1 (2026-10-29) shipped the 1.0.7
+installer zip next to an image named 1.0.7-kst1 that holds `ro.lumen.version=1.0.7`, and the installer refused
+it.

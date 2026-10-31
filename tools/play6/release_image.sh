@@ -6,7 +6,9 @@
 #   tools/play6/release_image.sh IN.img VERSION OUT.img
 #     IN.img   play6/tN/system_play6_tN.img (the build the owner tested on the device)
 #     VERSION  x.y.z, the version the installer checks (installer/release.conf VERSION = ro.lumen.version)
-#     OUT.img  e.g. build/release/play6-beta1/lumen-os-play6-VERSION-nogms-system.img (the installer's name)
+#     OUT.img  e.g. build/release/play6-beta1/lumen-os-play6-VERSION-nogms-system.img (the installer's name;
+#              an OUT named lumen-os-play6-<v>-nogms-system.img with <v> other than VERSION is refused)
+# The installer zip for OUT, after SHA256SUMS + .sig: tools/ota/pack_installer.sh OUT.img OUTDIR (docs/release.md).
 #
 # Changes (Mac, debugfs of Homebrew e2fsprogs; the vendor fstab mounts system without verity, so the stale AVB
 # footer is never read):
@@ -27,6 +29,8 @@ D=$E2/debugfs
 [ -x "$D" ] || die "needs e2fsprogs (brew install e2fsprogs)"
 [ -s "$IN" ] || die "no $IN"
 echo "$VER" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || die "VERSION must be x.y.z, not $VER"
+. "$(dirname "$0")/image_version.sh"
+iv_check_out_name "$OUT" "$VER" || exit 1
 IFS=. read -r MA MI PA <<< "$VER"
 VCODE=$((MA * 10000 + MI * 100 + PA))
 T=$(mktemp -d "${TMPDIR:-/tmp}/p6rel.XXXXXX")
