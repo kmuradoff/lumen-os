@@ -133,6 +133,9 @@ git clone --recurse-submodules https://github.com/kmuradoff/lumen-os.git
 
 ## Thanks
 
+Special thanks to [@Avalone-s](https://github.com/Avalone-s) and [@SAAndrevv](https://github.com/SAAndrevv),
+who helped make this project happen.
+
 To the LineageOS, UxPlay, android-airplay-server and MindTheGapps projects, and to everyone who tests
 Lumen OS and reports back.
 
