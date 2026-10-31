@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS for the XGIMI Play 6, DIAG images only (tools/play6/add_diag_to_image.sh, compose.sh --diag; never in a
+# release image): a boot timing record, /system/etc/xgimi/play6_boottiming.sh. It answers one question: is this
+# boot late? (BOOTLOOP_INVESTIGATION.md H1: the Play 6 switches itself off when the vendor's projector parts come
+# up too late.)
+#   marks: the uptime at which init reaches each stage (one tiny oneshot per stage, pure shell, nothing waits)
+#   watch: from 'on init', every 0.5 s in the first minute: new /proc/boottime lines, new kernel modules, new
+#          /sys/class/pwm chips, every init.svc.* change (the vendor projector services gmpf_main, gmpfHw,
+#          trapezoidServer, midaemon, bootvideo...) and a few boot props, each with its uptime
+# It keeps the record in /dev/lumen_p6_timing (tmpfs) and copies it next to the USB-stick boot log
+# (z9x_earlylog: <stick>/lumen_os_diag_logs/early/boot_N/timing.txt) while that stick is mounted.
+# Read-only towards the system: no setprop, no service control, no write outside those two folders.
+# Started, not exec'd: init never waits. Domain u:r:su:s0 exists only on userdebug (like z9x_earlylog).
+on init
+    start p6_timing_watch
+
+on post-fs-data
+    start p6_timing_pfd
+
+on zygote-start
+    start p6_timing_zyg
+
+on early-boot
+    start p6_timing_eb
+
+on boot
+    start p6_timing_boot
+
+on property:sys.boot_completed=1
+    start p6_timing_done
+
+service p6_timing_watch /system/bin/sh /system/etc/xgimi/play6_boottiming.sh watch
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service p6_timing_pfd /system/bin/sh /system/etc/xgimi/play6_boottiming.sh mark post-fs-data
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service p6_timing_zyg /system/bin/sh /system/etc/xgimi/play6_boottiming.sh mark zygote-start
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service p6_timing_eb /system/bin/sh /system/etc/xgimi/play6_boottiming.sh mark early-boot
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service p6_timing_boot /system/bin/sh /system/etc/xgimi/play6_boottiming.sh mark boot
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service p6_timing_done /system/bin/sh /system/etc/xgimi/play6_boottiming.sh mark boot_completed
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled
