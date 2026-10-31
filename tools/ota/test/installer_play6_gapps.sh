@@ -25,16 +25,19 @@
 # room in super (nothing created); a failed fill (no wipe, Google stays off); a failed push; a projector left
 # in fastboot mode by an earlier run; --remove with the wipe, with --keep-data, with nothing to remove; the
 # status (on, none, off, broken); gsf with and without Google; Z9X untouched (the Z9X allow-list and fill
-# script are not used). The full install with --gapps-zip (Lumen OS and Google services in one pass, one wipe):
-# a signed fake image (a throwaway test key), stock on the projector, 'flash system' then lumen_gapps in the same
-# fastboot session, the first start on the old data, the fill, one factory reset; also in Russian, over Google of
+# script are not used). The full install with --gapps-zip (Lumen OS and Google services in one pass):
+# a signed fake image (a throwaway test key), stock on the projector, 'flash system', lumen_gapps and the erase
+# request in misc in the same fastboot session (the fake recovery erases /data and /cache before the start, the
+# projector is off Wi-Fi until the user joins it again), the light first start, the fill, one factory reset;
+# with the erase request refused by fastboot mode the earlier way (the first start on the old data); a run that
+# finishes without Google right after the light first start (no reset); also in Russian, over Google of
 # an earlier install still in use (the 'off' restart), the zip refused before anything is written, Rooted debugging
 # off (adb root says "disabled by system setting": turned on when asked, or not: STOP, then the next run goes on
 # from there), a run without --gapps-zip that finishes without Google, the refusals (with a command, with
 # --keep-data, with --wipe=factory-reset, an install saved here without Google), no room for both in super.
 # Every case fails on an unexpected adb or fastboot command, on a fastboot format, erase,
-# -w, flashing, set_active, oem, boot or flash, and on a logical-partition command for any partition but
-# lumen_gapps.
+# -w, flashing, set_active, oem, boot or flash (but system and the 2048-byte erase request in misc), and on a
+# logical-partition command for any partition but lumen_gapps.
 # Exit status 0 only when every case passes. Never touches anything outside its temp dir.
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -113,11 +116,13 @@ cat > "$W/bin/adb" <<'EOF'
 case "$1" in start-server|kill-server) exit 0 ;; esac   # the installer's own adb server (port 5038)
 echo "$*" >> "$FB/adb.log"
 mode=$(cat "$FB/mode")
-up() { case "$mode" in stock|lumen) return 0 ;; *) return 1 ;; esac; }
+up() { case "$mode" in stock|lumen) [ ! -e "$FB/net_down" ] ;; *) return 1 ;; esac; }
 state() { grep -qxF "$1" "$FB/connected" || { echo missing; return; }; if up; then echo device; else echo offline; fi; }
 case "$1" in
   version) echo "Android Debug Bridge version 1.0.41"; echo "Version 35.0.2-12147458"; exit 0 ;;
-  connect) if up && [ "$2" = "$ADDR" ]; then grep -qxF "$2" "$FB/connected" || echo "$2" >> "$FB/connected"; echo "connected to $2"; exit 0; fi
+  connect) # net_down with a number: Wi-Fi comes back after that many more connect attempts (the user joins Wi-Fi)
+           if [ -s "$FB/net_down" ]; then n=$(cat "$FB/net_down"); if [ "$n" -le 1 ]; then rm -f "$FB/net_down"; else echo $((n - 1)) > "$FB/net_down"; fi; fi
+           if up && [ "$2" = "$ADDR" ]; then grep -qxF "$2" "$FB/connected" || echo "$2" >> "$FB/connected"; echo "connected to $2"; exit 0; fi
            echo "failed to connect to '$2'"; exit 1 ;;
   disconnect) grep -vxF "$2" "$FB/connected" > "$FB/c.tmp"; mv "$FB/c.tmp" "$FB/connected"; exit 0 ;;
   devices) echo "List of devices attached"; exit 0 ;;
@@ -151,6 +156,9 @@ case "$1" in
       "id -u") [ -e "$FB/root" ] && echo 0 || echo 2000 ;;
       "settings get system xgimi_ota_update") echo null ;;
       "pidof org.lumen.projector"|"pidof org.lumen.projector org.z9x.projector") echo 1234 ;;
+      "for d in /sys/bus/usb/devices/*;"*) printf '%s\n' "usb1 1d6b:0002 09" "3-1 0e8d:7663 ff" "1-1 0951:1666 08" ;;
+      "logcat -d -v brief 2>/dev/null | grep -E "*) printf '%s\n' "D/gmpf_main(  311): powerEvent:type{POWER_BATTERY_LEVEL},val{80}" "D/gmpf_main(  311): IsAdapterPowered:1" ;;
+      "grep ' /mnt/media_rw/' /proc/mounts") echo "/dev/block/vold/public:8,1 /mnt/media_rw/1234-ABCD vfat rw 0 0" ;;
       "rm -rf /data/local/tmp/lumen-gapps") rm -rf "$DEV/data/local/tmp/lumen-gapps" ;;
       "mkdir -p /data/local/tmp/lumen-gapps") mkdir -p "$DEV/data/local/tmp/lumen-gapps" ;;
       "sh /data/local/tmp/lumen-gapps/fill.sh "*) shift; run_dev "$@" ;;
@@ -189,8 +197,16 @@ case "$1" in
                             : > "$P"; echo "$3" > "$FB/size" ;;
   resize-logical-partition) [ "$2" = lumen_gapps ] && [ -e "$P" ] || exit 1; echo "$3" > "$FB/size" ;;
   delete-logical-partition) [ "$2" = lumen_gapps ] && [ -e "$P" ] || exit 1; rm -rf "$P" "$FB/size" ;;
-  flash) [ "$2" = system ] && [ -f "$3" ] || exit 1; cp "$FB/props_lumen" "$T/base_props" ;;   # the next start is Lumen OS
-  reboot) sh "$FB/boot.sh" ;;
+  flash) case "$2" in
+           system) [ -f "$3" ] || exit 1; cp "$FB/props_lumen" "$T/base_props" ;;   # the next start is Lumen OS
+           misc) [ "$(wc -c < "$3" | tr -d ' ')" = 2048 ] && [ ! -e "$FB/misc_fail" ] || exit 1; touch "$FB/bcb" ;;   # the erase request
+           *) exit 1 ;;
+         esac ;;
+  reboot) if [ -e "$FB/bcb" ]; then   # XGIMI's recovery erases /data and /cache first; the Wi-Fi network is gone with it
+            rm -rf "$DEV/data" "$DEV/cache" "$FB/bcb"; mkdir -p "$DEV/data/local/tmp" "$DEV/cache"; touch "$FB/wiped_bcb"
+            cat "$FB/rejoin_after" > "$FB/net_down" 2>/dev/null || echo 20 > "$FB/net_down"
+          fi
+          sh "$FB/boot.sh" ;;
   *) echo "UNEXPECTED fastboot $*" >> "$FB/unexpected"; exit 1 ;;
 esac
 exit 0
@@ -277,7 +293,7 @@ state() { sed -n "s/^$1=//p" "$C/state/play6/state" 2>/dev/null | tail -1; }
 pushed() { grep -c " push " "$FB/adb.log" | tr -d ' '; }
 end() {
   [ ! -s "$FB/unexpected" ] || fail "unexpected: $(cat "$FB/unexpected")"
-  if grep -v "^-s $SER flash system $C/inst/$IMGN\$" "$FB/fb.log" | grep -qE '(^| )(format|erase|-w|flashing|set_active|--set-active|oem|boot|snapshot-update|flash)( |:|$)' \
+  if grep -v -e "^-s $SER flash system $C/inst/$IMGN\$" -e "^-s $SER flash misc $C/state/play6/bcb.bin\$" "$FB/fb.log" | grep -qE '(^| )(format|erase|-w|flashing|set_active|--set-active|oem|boot|snapshot-update|flash)( |:|$)' \
      || { [ "$FLASHOK" = 0 ] && grep -q ' flash ' "$FB/fb.log"; }; then
     fail "forbidden fastboot command: $(cat "$FB/fb.log")"
   fi
@@ -532,6 +548,7 @@ release() {  # [stock]: a signed release image next to the installer copy (throw
   FLASHOK=1
 }
 ONE="ERASE\n\n\n"   # ERASE, cable in, cable out
+FRESH="yes\n\n"     # Lumen OS seen after the erase before the first start; Enter: Wi-Fi joined, debugging on
 filled() {  # the partition holds the allow-listed files, the next start mounts it, one factory reset
   [ "$(cd "$DEV/dev/block/mapper/lumen_gapps" 2>/dev/null && find . -type f | wc -l | tr -d ' ')" = $((NFILES + 2)) ] || fail "files in the partition"
   [ -e "$FB/wiped" ] || fail "not wiped"
@@ -543,13 +560,16 @@ filled() {  # the partition holds the allow-listed files, the next start mounts 
 
 begin one_pass
 release stock
-inst "no\n${ONE}yes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+inst "no\n${ONE}${FRESH}yes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
 expect_rc 0; BROADCAST=1
-[ "$(cmds)" = "$S getvar all;$S flash system $C/inst/$IMGN;$S getvar all;$S create-logical-partition lumen_gapps $PART;$S reboot;" ] \
+[ "$(cmds)" = "$S getvar all;$S flash system $C/inst/$IMGN;$S getvar all;$S create-logical-partition lumen_gapps $PART;$S flash misc $C/state/play6/bcb.bin;$S reboot;" ] \
   || fail "fastboot commands: $(cmds)"
 expect_out "$ZNAME, sha256 ${ZSHA:0:16}"; expect_out "With --gapps-zip the same fastboot session also creates the partition lumen_gapps"
 expect_out "creating lumen_gapps ($((PART / 1048576)) MB)"; expect_out "lumen_gapps: $NFILES files of $ZNAME"
+# the light first start on clean data, then debugging on again for the fill, then one factory reset
+expect_out "the projector is off Wi-Fi: the data was erased"; expect_out "Lumen OS runs on clean data. To copy the Google apps in"
 expect_out "asking Android for its factory reset"; expect_out "Google services are in: after joining Wi-Fi"
+[ -e "$FB/wiped_bcb" ] || fail "not erased before the first start"
 expect_no_out "Root debugging is off"
 [ "$(grep -c 'Type ERASE' "$C/out")" = 1 ] || fail "ERASE asked $(grep -c 'Type ERASE' "$C/out") times"
 n_zip=$(grep -n "sha256 ${ZSHA:0:16}" "$C/out" | head -1 | cut -d: -f1); n_er=$(grep -n "Type ERASE" "$C/out" | cut -d: -f1)
@@ -561,7 +581,7 @@ end
 
 begin one_pass_ru
 release stock
-LANG_CASE=ru_RU.UTF-8 inst "нет\n${ONE}да\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+LANG_CASE=ru_RU.UTF-8 inst "нет\n${ONE}да\n\nда\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
 expect_rc 0; BROADCAST=1
 expect_out "С --gapps-zip в той же сессии fastboot создаётся ещё раздел lumen_gapps"; expect_out "сервисы Google добавлены"
 if grep -q "$(printf '\342\200\224')" "$C/out"; then fail "an em dash in the Russian text"; fi
@@ -571,7 +591,7 @@ end
 begin one_pass_over_google_in_use
 release; partition   # Lumen OS with Google added earlier: lumen_gapps of the right size, mounted at every start
 [ "$(gprop sys.lumen.gapps)" = "mounted:$NDIRS" ] || fail "setup: sys.lumen.gapps=$(gprop sys.lumen.gapps)"
-inst "no\n${ONE}yes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+inst "no\n${ONE}${FRESH}yes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
 expect_rc 0; BROADCAST=1
 expect_out "lumen_gapps is there ($((PART / 1048576)) MB)"; expect_out "turning them off for one restart"
 n_off=$(grep -n "fill.sh off" "$FB/adb.log" | cut -d: -f1); n_fill=$(grep -n "fill.sh fill" "$FB/adb.log" | cut -d: -f1)
@@ -597,7 +617,7 @@ end
 
 begin one_pass_rooted_debugging_turned_on
 release stock; touch "$FB/root_disabled"
-inst "no\n${ONE}yes\nyes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+inst "no\n${ONE}${FRESH}yes\nyes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
 expect_rc 0; BROADCAST=1
 expect_out "Root debugging is off on the projector"; expect_out "Developer options > Rooted debugging"
 expect_out "press Build 7 times"; expect_out "Is Rooted debugging on now?"
@@ -606,25 +626,27 @@ end
 
 begin one_pass_rooted_debugging_later
 release stock; touch "$FB/root_disabled"
-inst "no\n${ONE}no\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+inst "no\n${ONE}${FRESH}no\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
 expect_rc 1
-expect_out "turn on Rooted debugging (Settings > Device Preferences > Developer options) and run the same command again: it continues here. Nothing was erased."
+expect_out "turn on Rooted debugging (Settings > Device Preferences > Developer options) and run the same command again: it continues here."
+expect_no_out "Nothing was erased."   # the data was erased before the first start
 [ ! -e "$FB/wiped" ] || fail "wiped"; [ "$(state step_boot1)" = done ] || fail "no first start saved"
 [ "$(state step_gapps_part)" = done ] && [ -z "$(state step_gapps_fill)" ] && [ -z "$(state step_wipe)" ] || fail "state: $(cat "$C/state/play6/state")"
 : > "$FB/fb.log"
 inst "ERASE\nyes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"   # the next run: the same command, Rooted debugging on now
 expect_rc 0; BROADCAST=1; expect_cmds ""
 expect_no_out "Root debugging is off"; expect_out "lumen_gapps: $NFILES files of $ZNAME"
+expect_out "The Google apps are copied in. Next, Android's factory reset ERASES the projector once more"
 filled
 end
 
 begin one_pass_finished_without_google
 release stock; touch "$FB/root_disabled"
-inst "no\n${ONE}no\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+inst "no\n${ONE}${FRESH}no\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
 expect_rc 1
 inst "no\n" --ip 192.0.2.50   # without --gapps-zip: not now
 expect_rc 1; expect_out "run the same command again with --gapps-zip FILE"; [ ! -e "$FB/wiped" ] || fail "wiped"
-inst "yes\nERASE\nyes\n" --ip 192.0.2.50   # finish without Google
+inst "yes\nERASE\nyes\n" --ip 192.0.2.50   # finish without Google: the clean system is reset once (the fill had begun)
 expect_rc 0; BROADCAST=1
 expect_out "this install was started with Google services (--gapps-zip), and they are not in yet"
 [ -e "$FB/wiped" ] || fail "not wiped"; [ -z "$(state gapps_plan)" ] || fail "plan kept"
@@ -649,6 +671,30 @@ mkdir -p "$C/state/play6"; printf '%s\n' "serial=$SER" "ip=$ADDR" step_check=don
 inst '' --ip 192.0.2.50 --gapps-zip "$ZIP"
 expect_rc 1; expect_out "Lumen OS was installed here without Google services. To add them: bash lumen-install.sh gapps --zip FILE"
 expect_cmds ""
+end
+
+begin one_pass_finished_without_google_right_after_light_start
+# after the light first start the projector never comes back on Wi-Fi: the run stops; the next run without
+# --gapps-zip finishes without Google, with no factory reset at all (the data was erased before the first start)
+release stock; echo 1000 > "$FB/rejoin_after"
+inst "no\n${ONE}${FRESH}" --ip 192.0.2.50 --gapps-zip "$ZIP"
+expect_rc 1; expect_out "To finish without Google services: run it without --gapps-zip."
+: > "$FB/adb.log"
+inst "yes\n" --ip 192.0.2.50
+expect_rc 0
+expect_out "Finish the install without Google services?"
+[ -z "$(state gapps_plan)" ] && [ "$(state step_wipe)" = requested ] || fail "state: $(cat "$C/state/play6/state")"
+grep -q "am broadcast" "$FB/adb.log" && fail "a factory reset"
+end
+
+begin one_pass_light_start_refused_by_fastboot
+# fastboot mode refuses the erase request: the earlier way, the first start on the old data, the fill, one reset
+release stock; touch "$FB/misc_fail"
+inst "no\n${ONE}yes\n" --ip 192.0.2.50 --gapps-zip "$ZIP"
+expect_rc 0; BROADCAST=1
+expect_out "fastboot mode did not take the erase request"; expect_out "Lumen OS 1.0.5 started"
+[ ! -e "$FB/wiped_bcb" ] || fail "erased by the request"
+filled
 end
 
 begin one_pass_no_room_for_both
