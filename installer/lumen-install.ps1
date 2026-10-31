@@ -1795,6 +1795,8 @@ function Play6-Boot-Fresh {  # the start after the write: XGIMI's recovery erase
     if ($mk -eq "there") {
       P6-Log "light first start: the old data is still there"
       Warn (T "the projector still has its old data: XGIMI's recovery did not carry out the erase request. The installer erases the data the earlier way: Android's factory reset on Lumen OS." "на проекторе всё ещё старые данные: recovery XGIMI не выполнило запрос на стирание. Установщик сотрёт данные прежним способом: сбросом Android на Lumen OS.")
+      # from here on the earlier way: its messages ("Nothing was erased.") and a resumed run go straight to Boot1
+      State-Set step_bcb ignored
       Play6-Boot1
       return
     } elseif ($mk -eq "gone") { Ok (T "data erased (the check file written before the write is gone)" "данные стёрты (проверочного файла, записанного до записи, нет)"); State-Set step_wipe done }

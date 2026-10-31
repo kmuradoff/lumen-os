@@ -4,15 +4,26 @@
 # Play 6 system image, the way tools/play6/aic/add_aic_to_image.sh edits one: debugfs, nothing else changes except
 # ro.lumen.build_id (gets "-TAG"). Mode, owner and SELinux label are copied from the binary it replaces.
 #
-#   tools/play6/swap_sf_into_image.sh IN.img OUT.img TAG SURFACEFLINGER
+#   tools/play6/swap_sf_into_image.sh IN.img OUT.img TAG SURFACEFLINGER [--version VER]
 #     TAG  short build mark, e.g. kst1
+#     --version VER  also set ro.lumen.version=VER (ro.lumen.version_code stays): VER is IN's version x.y.z or,
+#                    for a pre-release, x.y.z-<mark>, e.g. 1.0.7-kst1. The installer checks that the image
+#                    name, its release.conf VERSION and ro.lumen.version are one string, so a pre-release named
+#                    lumen-os-play6-1.0.7-kst1-nogms-system.img needs --version 1.0.7-kst1.
+# An OUT named like a release image (lumen-os-play6-<v>-nogms-system.img) must carry <v> as ro.lumen.version,
+# or nothing is written. The installer zip for it: tools/ota/pack_installer.sh OUT.img OUTDIR.
 # Checks afterwards: the file reads back equal, mode/owner/label as before, e2fsck clean. Writes OUT.img and
 # OUT.img.sha256.
 set -euo pipefail
 die() { echo "swap_sf_into_image: ERROR: $*" >&2; exit 1; }
-IN=${1:?usage: swap_sf_into_image.sh IN.img OUT.img TAG SURFACEFLINGER}; OUT=${2:?OUT.img}; TAG=${3:?TAG}
-SF=${4:?SURFACEFLINGER}
+IN=${1:?usage: swap_sf_into_image.sh IN.img OUT.img TAG SURFACEFLINGER [--version VER]}; OUT=${2:?OUT.img}
+TAG=${3:?TAG}; SF=${4:?SURFACEFLINGER}; shift 4
+NEWVER=""
+while [ $# -gt 0 ]; do
+  case "$1" in --version) NEWVER=${2:?--version VER}; shift 2 ;; *) die "unknown argument $1" ;; esac
+done
 echo "$TAG" | grep -Eq '^[a-z0-9]+$' || die "TAG must be lower case letters and digits, not $TAG"
+. "$(dirname "$0")/image_version.sh"
 E2=${E2FS:-/opt/homebrew/opt/e2fsprogs/sbin}
 [ -x "$E2/debugfs" ] || E2=/sbin
 D=$E2/debugfs
@@ -29,8 +40,11 @@ BIN=/system/bin/surfaceflinger
 grep -qx 'ro.lumen.device=play6' "$T/product.prop" || die "$IN is not a Play 6 image"
 OLD_ID=$(sed -n 's/^ro\.lumen\.build_id=//p' "$T/product.prop")
 [ -n "$OLD_ID" ] || die "no ro.lumen.build_id in $IN"
-grep -v '^ro\.lumen\.build_id=' "$T/product.prop" > "$T/product.new"
-echo "ro.lumen.build_id=$OLD_ID-$TAG" >> "$T/product.new"
+OLDVER=$(sed -n 's/^ro\.lumen\.version=//p' "$T/product.prop" | tail -1)
+VER=$(iv_new_version "$OLDVER" "$NEWVER") || exit 1
+iv_check_out_name "$OUT" "$VER" || exit 1
+grep -v -E '^ro\.lumen\.(build_id|version)=' "$T/product.prop" > "$T/product.new"
+{ echo "ro.lumen.version=$VER"; echo "ro.lumen.build_id=$OLD_ID-$TAG"; } >> "$T/product.new"
 
 attrs() {  # attrs IMAGE PATH -> "MODE UID GID LABEL"
   local st m u g l
@@ -76,5 +90,5 @@ done
 mv "$OUT.part" "$OUT"
 if command -v shasum >/dev/null; then shasum -a 256 "$OUT"; else sha256sum "$OUT"; fi \
   | sed "s#  .*#  $(basename "$OUT")#" > "$OUT.sha256"
-echo "swap_sf_into_image: $OUT, build id $OLD_ID-$TAG, surfaceflinger $BM $BU:$BG $BL"
+echo "swap_sf_into_image: $OUT, ro.lumen.version=$VER, build id $OLD_ID-$TAG, surfaceflinger $BM $BU:$BG $BL"
 cat "$OUT.sha256"

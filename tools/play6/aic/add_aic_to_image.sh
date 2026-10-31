@@ -6,12 +6,17 @@
 # is never read). Used for the AIC pre-release on top of the published play6-1.0.6 image while the build laptop
 # was away; tools/play6/compose.sh puts the same files into a fresh build.
 #
-#   tools/play6/aic/add_aic_to_image.sh IN.img OUT.img TAG [--diag]
+#   tools/play6/aic/add_aic_to_image.sh IN.img OUT.img TAG [--diag] [--version VER]
 #     TAG     short build mark, e.g. aic1: ro.lumen.build_id gets "-TAG" and ro.lumen.p6.aic=TAG is added
 #     --diag  also the test builds' boot logger and escape (tools/play6/compose.sh --diag): z9x_earlylog writes a
 #             boot log to a USB stick from 'on init' on (and the previous boot's pstore), earlylog_usb.sh loads
 #             the Play 6 USB host modules for it, lumen_escape reboots into fastbootd when the boot does not
 #             complete. ro.lumen.diag=1 is added. Never for a regular release.
+#     --version VER  also set ro.lumen.version=VER (ro.lumen.version_code stays): IN's version x.y.z or, for a
+#             pre-release, x.y.z-<mark> (e.g. 1.0.7-aic3). The installer checks that the image name, its
+#             release.conf VERSION and ro.lumen.version are one string.
+# An OUT named like a release image (lumen-os-play6-<v>-nogms-system.img) must carry <v> as ro.lumen.version,
+# or nothing is written. The installer zip for it: tools/ota/pack_installer.sh OUT.img OUTDIR.
 #
 # Adds (root, the labels the base gives such files):
 #   /system/etc/aic8800/modules/*.ko, /system/etc/aic8800/firmware/*     0644 system_file   (dirs 0755)
@@ -23,9 +28,18 @@
 # modes, owner, labels, e2fsck clean. Writes OUT.img and OUT.img.sha256.
 set -euo pipefail
 die() { echo "add_aic_to_image: ERROR: $*" >&2; exit 1; }
-IN=${1:?usage: add_aic_to_image.sh IN.img OUT.img TAG [--diag]}; OUT=${2:?OUT.img}; TAG=${3:?TAG}
-DIAG=0; [ "${4:-}" = --diag ] && DIAG=1
+IN=${1:?usage: add_aic_to_image.sh IN.img OUT.img TAG [--diag] [--version VER]}; OUT=${2:?OUT.img}; TAG=${3:?TAG}
+shift 3
+DIAG=0; NEWVER=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --diag) DIAG=1; shift ;;
+    --version) NEWVER=${2:?--version VER}; shift 2 ;;
+    *) die "unknown argument $1" ;;
+  esac
+done
 echo "$TAG" | grep -Eq '^[a-z0-9]+$' || die "TAG must be lower case letters and digits, not $TAG"
+. "$(dirname "$0")/../image_version.sh"
 G=$(cd "$(dirname "$0")/../../.." && pwd)
 A=$G/build/play6/aic
 E2=${E2FS:-/opt/homebrew/opt/e2fsprogs/sbin}
@@ -44,8 +58,11 @@ grep -qx 'ro.lumen.device=play6' "$T/product.prop" || die "$IN is not a Play 6 i
 grep -q '^ro.lumen.p6.aic=' "$T/product.prop" && die "$IN already has the AIC files"
 OLD_ID=$(sed -n 's/^ro\.lumen\.build_id=//p' "$T/product.prop")
 [ -n "$OLD_ID" ] || die "no ro.lumen.build_id in $IN"
-grep -v '^ro\.lumen\.build_id=' "$T/product.prop" > "$T/product.new"
-{ echo "ro.lumen.build_id=$OLD_ID-$TAG"; echo "ro.lumen.p6.aic=$TAG"; [ $DIAG = 1 ] && echo "ro.lumen.diag=1"; } >> "$T/product.new"
+OLDVER=$(sed -n 's/^ro\.lumen\.version=//p' "$T/product.prop" | tail -1)
+VER=$(iv_new_version "$OLDVER" "$NEWVER") || exit 1
+iv_check_out_name "$OUT" "$VER" || exit 1
+grep -v -E '^ro\.lumen\.(build_id|version)=' "$T/product.prop" > "$T/product.new"
+{ echo "ro.lumen.version=$VER"; echo "ro.lumen.build_id=$OLD_ID-$TAG"; echo "ro.lumen.p6.aic=$TAG"; [ $DIAG = 1 ] && echo "ro.lumen.diag=1"; } >> "$T/product.new"
 
 cp "$IN" "$OUT.part"
 CMDS=$T/cmds
@@ -112,5 +129,5 @@ done < "$LIST"
 "$E2/e2fsck" -fn "$OUT.part" >/dev/null 2>&1 || die "e2fsck found problems"
 mv "$OUT.part" "$OUT"
 shasum -a 256 "$OUT" | sed "s#  .*#  $(basename "$OUT")#" > "$OUT.sha256"
-echo "add_aic_to_image: $OUT ($(stat -f %z "$OUT") bytes), build id $OLD_ID-$TAG, $(wc -l < "$LIST" | tr -d ' ') files"
+echo "add_aic_to_image: $OUT ($(stat -f %z "$OUT") bytes), ro.lumen.version=$VER, build id $OLD_ID-$TAG, $(wc -l < "$LIST" | tr -d ' ') files"
 cat "$OUT.sha256"
