@@ -80,6 +80,8 @@ public final class OpticalZoomPanel extends Panel {
     private static final long RECOVER_DELAY_MS = 6_000;
 
     private static final int WAIT = 0, READY = 1, FAILED = 2;
+    /** BACK exit with a close AF: the quick panel comes back at the latest this long after the AF request (no card). */
+    private static final long AF_START_WAIT_MS = 5_000;
 
     private static OpticalZoomPanel sOpen;
 
@@ -410,16 +412,40 @@ public final class OpticalZoomPanel extends Panel {
         closed = true;
         pending.set(0);
         if (sOpen == this) sOpen = null;
+        final boolean back = backExit && onBackExit != null;
         // a session still entering is closed by the end of enter(); an open one here (queued behind the moves)
-        if ((state == READY || state == FAILED) && !Hal.run((g, g2) -> {
-            boolean moved = progress >= 0 && progress != startProgress;
-            endShift(g);
-            if (session.compareAndSet(true, false)) close(app, g, g2);
-            if (moved || resetMoved) ui(() -> Hal.requestAutofocus(app));
-        })) {
-            Log.w(TAG, "close not queued: left to the connect hook");
+        boolean ready = state == READY || state == FAILED;
+        boolean queued = ready && Hal.run((g, g2) -> {
+            boolean af = false;
+            try {
+                boolean moved = progress >= 0 && progress != startProgress;
+                endShift(g);
+                if (session.compareAndSet(true, false)) close(app, g, g2);
+                af = moved || resetMoved;
+            } finally {
+                final boolean runAf = af;
+                if (runAf || back) ui(() -> afterClose(runAf, back));
+            }
+        });
+        if (ready && !queued) Log.w(TAG, "close not queued: left to the connect hook");
+        if (back && !queued) Ui.main().post(onBackExit);
+    }
+
+    /**
+     * Main thread, after the close went out. 2026-10-31 (HB video, 16:06:51): BACK after a lens move reopened the
+     * quick panel, then the autofocus card of the stock close AF dismissed it for good. Now the AF goes first and
+     * the quick panel (its row) comes back only when the AF card closed, or after AF_START_WAIT_MS when no card
+     * came (AfCardOverlay.runAfterCard). Without a lens move, or when the AF was refused, the panel comes back now.
+     */
+    private void afterClose(boolean af, boolean back) {
+        int r = af ? Hal.requestAutofocus(app) : -1;
+        if (!back) return;
+        if (af && r == Hal.REQ_OK) {
+            Log.i(TAG, "BACK exit: quick panel after the AF card");
+            Hal.runAfterAutofocus(onBackExit, AF_START_WAIT_MS);
+        } else {
+            onBackExit.run();
         }
-        if (backExit && onBackExit != null) Ui.main().post(onBackExit);
     }
 
     private void fail(String why) {

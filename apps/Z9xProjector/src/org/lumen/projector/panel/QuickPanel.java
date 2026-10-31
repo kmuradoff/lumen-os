@@ -142,6 +142,23 @@ public final class QuickPanel {
     }
 
     /**
+     * 2026-10-31: a screen that has to close the quick panel (the autofocus card) takes this first and runs it when
+     * it is gone: it reopens the panel at the same page with the focus on the same row (the tile grid when the
+     * panel was on the grid or on a page below a section page). Null when the quick panel is not the panel shown.
+     * MAIN thread.
+     */
+    public static Runnable restorer() {
+        QuickPanelController c = sCtl;
+        if (c == null) return null;
+        try {
+            return c.restorer();
+        } catch (Throwable t) {
+            Log.e(TAG, "restorer failed", t);
+            return null;
+        }
+    }
+
+    /**
      * Adds rows to a section page (SECTION_FOCUS, SECTION_KEYSTONE, SECTION_LAMP, SECTION_PICTURE,
      * SECTION_SOUND, SECTION_PROJECTION_MODE, SECTION_GAME, SECTION_EYE, SECTION_GENERAL). The rows
      * go after the panel's own rows, in registration order. MAIN thread; call once per process

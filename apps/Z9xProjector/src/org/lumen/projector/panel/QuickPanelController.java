@@ -210,6 +210,15 @@ final class QuickPanelController {
     }
 
     void show(String section) {
+        show(section, null);
+    }
+
+    /**
+     * Opens {@code section}'s page with the focus on {@code focusRow} (a row of that page), or on its first row
+     * when null or gone. 2026-10-31 owner: BACK from the optical zoom / manual keystone / rotation screen comes
+     * back to the row that opened it, not to the first row ("Auto keystone now", which the next OK ran).
+     */
+    private void show(String section, View focusRow) {
         String key = QuickPanel.SECTION_PROJECTION.equals(section) ? QuickPanel.SECTION_KEYSTONE : section;
         if (QuickPanel.SECTION_INPUT.equals(key)) {
             if (setupDone("input")) SourceOverlay.toggle(app);
@@ -223,7 +232,7 @@ final class QuickPanelController {
         Page target = key == null ? null : pages.get(key);
         if (target != null) {
             grid.remember(key);                              // BACK from the page lands on its tile
-            target.setInitialFocus(-1);
+            target.setInitialFocus(focusRow == null ? -1 : target.rows().indexOf(focusRow));
         }
         OverlayHost host = OverlayHost.get(app);
         if (panel != null && panel.isShowing() && host.current() == panel) {
@@ -318,7 +327,47 @@ final class QuickPanelController {
      * back here: to {@code backToSection}'s page, or to the tile grid when null.
      */
     private void openManualKeystone(String backToSection) {
-        ManualKeystonePanel.open(app, () -> show(backToSection));
+        ManualKeystonePanel.open(app, backToRow(backToSection));
+    }
+
+    /**
+     * BACK action of a screen that replaces the quick panel, opened by the focused row of {@code section}'s page
+     * (called while that row has the focus, i.e. from its OK): reopens the page with the focus on that row.
+     */
+    private Runnable backToRow(String section) {
+        Page p = section == null ? null : pages.get(section);
+        View from = null;
+        if (p != null) {
+            for (View v : p.rows()) {
+                if (v.isFocused()) { from = v; break; }
+            }
+        }
+        final View row = from;
+        return () -> show(section, row);
+    }
+
+    /**
+     * 2026-10-31 (QuickPanel.restorer): reopens the panel where it is now, the section page with its focused row,
+     * or the tile grid (it keeps its last tile) for the grid and for pages pushed from a section page (equalizer).
+     * Null when the quick panel is not the panel shown.
+     */
+    Runnable restorer() {
+        if (panel == null || !panel.isShowing() || OverlayHost.get(app).current() != panel) return null;
+        Page top = panel.currentPage();
+        String section = null;
+        for (Map.Entry<String, Page> e : pages.entrySet()) {
+            if (e.getValue() == top) { section = e.getKey(); break; }
+        }
+        View from = null;
+        if (section != null) {
+            for (View v : top.rows()) {
+                if (v.isFocused()) { from = v; break; }
+            }
+        }
+        final String sec = section;
+        final View row = from;
+        Log.i(TAG, "restorer: " + (sec == null ? "tile grid" : sec + (row == null ? "" : ", focused row")));
+        return () -> show(sec, row);
     }
 
     private Page page(String key, int titleRes) {
@@ -515,7 +564,7 @@ final class QuickPanelController {
         // Lumen OS 1.0.2: the zoom lens (OpticalZoomPanel replaces the panel; BACK comes back here). Back in 1.0.4
         // (owner, 2026-10-14: the optical zoom is what he wants, the digital ZoomShiftPanel is not shown).
         p.add(new NavRow(app, s(R.string.panel_optical_zoom), safe("optical zoom",
-                () -> OpticalZoomPanel.open(app, () -> show(QuickPanel.SECTION_KEYSTONE)))));
+                () -> OpticalZoomPanel.open(app, backToRow(QuickPanel.SECTION_KEYSTONE)))));
         p.add(new TextRow(app, s(R.string.panel_optical_zoom_summary)));
         // Fit to my screen size (docs/fit_screen/DESIGN.md): only when this build supports it, never a disabled row
         // (Z9X: shown after the owner decisions O1 / O2 of 2026-10-30, hidden by the owner 2026-10-31: Z9xFitDevice
@@ -530,7 +579,7 @@ final class QuickPanelController {
         // Lumen OS 1.0.4: picture rotation (stock RotateWind)
         p.add(new NavRow(app, s(R.string.rot_title), safe("rotation", () -> {
             if (snap != null && snap.isTopSpeedGame()) { Notify.show(app, s(R.string.panel_kst_game_mode)); return; }
-            RotatePanel.open(app, () -> show(QuickPanel.SECTION_KEYSTONE));        // replaces the quick panel
+            RotatePanel.open(app, backToRow(QuickPanel.SECTION_KEYSTONE));        // replaces the quick panel
         })));
         p.add(new HeaderRow(app, s(R.string.panel_image_correction_settings)));
         rtKst = p.add(new ToggleRow(app, s(R.string.panel_rt_keystone), (row, w) -> safe("585", () ->

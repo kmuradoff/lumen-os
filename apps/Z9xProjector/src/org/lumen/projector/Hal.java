@@ -208,6 +208,15 @@ public final class Hal {
         return HalController.get(ctx).requestAutofocus();
     }
 
+    /**
+     * Runs {@code r} once the autofocus card closed (not when LEFT / RIGHT on it opened the manual focus window),
+     * or after {@code startWaitMs} when no card came up (the AF never started). Main thread. 2026-10-31: the
+     * optical zoom's BACK exit reopens the quick panel this way after its close AF.
+     */
+    public static void runAfterAutofocus(Runnable r, long startWaitMs) {
+        AfCardOverlay.runAfterCard(r, startWaitMs);
+    }
+
     /** Auto keystone now (326), or fit to screen (272 with 11) when {@code fit}. Main thread. Returns REQ_*. */
     public static int requestKeystone(Context ctx, boolean fit) {
         return HalController.get(ctx).requestKeystone(fit);

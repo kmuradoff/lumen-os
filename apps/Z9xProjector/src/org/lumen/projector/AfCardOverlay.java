@@ -40,6 +40,9 @@ import org.lumen.projector.ui.OverlayHost;
  * 20 s, by BACK (cancel) or LEFT / RIGHT (cancel, then manual focus); every other key except the volume
  * keys cancels too (stock oldVontrolAf). Never shown over the auto keystone overlay (the vendor AK draws its
  * own pattern and runs its own AF). Notification cards are held back while it is up (camera).
+ * 2026-10-31 (HB video): a quick panel the card had to close comes back (same page, same row) once the card
+ * closed; a caller may also queue one action for then (runAfterCard: the optical zoom's BACK exit). Nothing comes
+ * back after LEFT / RIGHT (the manual focus window opens), and no other overlay is ever restored.
  * Main thread only; the HAL calls run on HalController's "z9x-hal" thread.
  */
 final class AfCardOverlay {
@@ -55,6 +58,15 @@ final class AfCardOverlay {
     private static int sToken;
     private static long sShownAt;
     private static final Runnable TIMEOUT = () -> close("timeout", false, false);
+    /** Runs once the card closed: the quick panel the card dismissed, or the action of runAfterCard. Main thread. */
+    private static Runnable sAfter;
+    private static final Runnable AFTER_NO_CARD = () -> {
+        Runnable r = sAfter;
+        sAfter = null;
+        if (r == null || sShown) return;
+        Log.i(TAG, "no AF card came up: running the queued action now");
+        runAfter(r);
+    };
 
     private AfCardOverlay() {}
 
@@ -64,6 +76,31 @@ final class AfCardOverlay {
     /** Events that open the card (stock FocusUIV2.onProjectorFocusEventAfCall). */
     static boolean isOpenEvent(int type) {
         return type == 4 || type == 8 || type == 10 || type == 333 || type == 334 || type == 335;
+    }
+
+    /**
+     * Main thread: {@code r} runs once the next (or the current) card closed, or after {@code startWaitMs} when no
+     * card came up. Replaces an action queued before. Not run when the card closes with LEFT / RIGHT (manual focus).
+     */
+    static void runAfterCard(Runnable r, long startWaitMs) {
+        Ui.main().removeCallbacks(AFTER_NO_CARD);
+        sAfter = r;
+        if (r != null && !sShown) Ui.main().postDelayed(AFTER_NO_CARD, startWaitMs);
+    }
+
+    /** Main thread: runs a queued action unless an overlay or the AK took the screen meanwhile. */
+    private static void runAfter(Runnable r) {
+        HalController hc = HalController.peek();
+        if (hc == null) return;
+        if (AkOverlay.isActive() || OverlayHost.get(hc.appContext()).current() != null) {
+            Log.i(TAG, "queued action dropped: the screen is taken");
+            return;
+        }
+        try {
+            r.run();
+        } catch (Throwable t) {
+            Log.w(TAG, "queued action: " + t);
+        }
     }
 
     /** MAIN thread, from HalController.dispatchEvent, before any other handling of the event. */
@@ -89,10 +126,18 @@ final class AfCardOverlay {
         WindowManager.LayoutParams lp = OverlayHost.fullscreenParams(true);
         lp.setTitle("Z9xAfCard");
         OverlayHost host = OverlayHost.get(app);
+        // a quick panel shown now comes back after the card (a queued runAfterCard action wins)
+        Runnable restore = sAfter == null ? org.lumen.projector.panel.QuickPanel.restorer() : null;
         host.dismissAll(false);                               // no panel over the card (camera)
         if (!host.addStatic(sCard, lp)) {
             Log.e(TAG, "event " + type + ": card window could not be added, vendor will time out");
+            if (restore != null) Ui.main().post(() -> runAfter(restore));
             return;
+        }
+        Ui.main().removeCallbacks(AFTER_NO_CARD);
+        if (restore != null) {
+            sAfter = restore;
+            Log.i(TAG, "quick panel closed for the card: it comes back after it");
         }
         sShown = true;
         sOpenSent = false;
@@ -156,9 +201,13 @@ final class AfCardOverlay {
                 Log.w(TAG, "sendFocusStatus on close: " + t);
             }
         });
+        final Runnable after = sAfter;
+        sAfter = null;
         if (manual && app != null) {
             final Context c = app;
             Ui.main().postDelayed(() -> ManualFocusActivity.open(c), 150);
+        } else if (after != null) {
+            Ui.main().post(() -> runAfter(after));
         }
     }
 
