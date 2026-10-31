@@ -93,6 +93,12 @@ watching a film, so the HAL probe (docs/z9x/parity/probe.md) has not run.
   (no disabled row); the HB too (`HbFitDevice.SUPPORTED` false). The fit/ code stays in the tree. Unchanged: the stock
   "Fit to screen now" / "Fit to the screen" (curtain fit, 290), the optical zoom screen with the 14 positions
   (IGmpf2 14 guard of O1), the 279 / 584 getters. The optical zoom summary names the stock curtain fit, so it stays.
+- **Panel back on AF end without a card** (2026-10-31, HB af2 test, `AfAfter` new, `AfCardOverlay`): an AF that
+  needs no test card (on the HB: a lens move that ends at optical step 0) ends in about 1.4 s with events 12, 5 and
+  18 `AF_Success_Into_Adjust` and no 335, so the quick panel queued by the optical zoom's BACK exit waited the whole
+  5 s fallback. The queued action now runs on the card close OR on an AF end event (5 / 7 / 2 / 18) with no card up,
+  whichever comes first, and only once; the 5 s fallback only when neither came. Shared with the HB (no fork).
+  Host test `test/afcard`. Not device-tested on the Z9X.
 
 # Z9xProjector, next (Lumen OS 1.0.6)
 
