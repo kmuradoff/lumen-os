@@ -22,9 +22,11 @@ What is different from the Z9X:
 - For the write itself the projector is connected to the computer with a USB A-to-A cable, only when the
   installer asks. While that cable is in, the Play 6 does not start, so it comes out right after the
   write.
-- The projector's own fastboot mode cannot erase the data. So Lumen OS first starts once on your old
-  data, then the installer asks Android for its own factory reset, and XGIMI's recovery erases the data,
-  as Settings > Reset would.
+- The projector's own fastboot mode cannot erase the data itself. So, in the same visit to fastboot mode,
+  the installer leaves an erase request for XGIMI's recovery (the same one Settings > Reset leaves): the
+  recovery erases the data before Lumen OS starts for the first time. That first start is then a light one
+  on clean data. The Play 6 switches itself off when its projector drivers come up too late, and the first
+  start on the old stock data was the heaviest start of all.
 - Lumen OS for the Play 6 comes without Google. You can add Google Play and Google sign-in from your own
   download, together with the install or later, see below.
 
@@ -35,7 +37,7 @@ What is different from the Z9X:
 | | What you get | Data wiped | How |
 |---|---|---|---|
 | 1 | **Clean Lumen OS without Google** | once | `bash lumen-install.sh --ip ADDRESS`, [step 4](#play6-install) |
-| 2 | **Lumen OS and Google services in one command** | once | `bash lumen-install.sh --ip ADDRESS --gapps-zip ...`, [Lumen OS and Google services in one command](#play6-one-pass) |
+| 2 | **Lumen OS and Google services in one command** | once, plus a reset of the clean system | `bash lumen-install.sh --ip ADDRESS --gapps-zip ...`, [Lumen OS and Google services in one command](#play6-one-pass) |
 | 3 | **Google services later**, on an installed Lumen OS | once more | the `gapps` step, [Google services](#play6-google) |
 
 Steps 1 to 3 are the same for 1 and 2. If you already know you want Google Play, take 2: you set the
@@ -52,7 +54,8 @@ projector up only once.
   V1.7.116 has no driver for that chip, so on stock Wi-Fi and Bluetooth stop working. If you already did and
   Wi-Fi is gone: install Lumen OS 1.0.7 or newer (use a USB Ethernet adapter for now). Lumen OS detects this
   chip and loads its own driver, so Wi-Fi and Bluetooth work.
-- Its power adapter, connected for the whole install.
+- Its power adapter, connected for the whole install, and the battery at 50 % or more. The installer reads
+  both when stock lets it and refuses below that; otherwise it asks you.
 - A Wi-Fi network that the projector and the computer are both in. A guest network that keeps devices
   apart does not work.
 - A computer with macOS or Linux. There is a Windows 10/11 installer, but it has not been tested yet.
@@ -60,7 +63,10 @@ projector up only once.
   itself, checks them and uses only that copy, on its own adb port, with a time limit on every step. Without
   internet, see the Z9X guide, [What you need](../z9x/en.md#what-you-need).
 - A USB A-to-A cable (plain USB-A on both ends).
-- A USB stick: for SystemUI Tuner now, and as the stock restore stick if you ever need it.
+- A USB stick formatted FAT32: for SystemUI Tuner now, in the projector's USB port at every power-on of the
+  install, and as the stock restore stick if you ever need it. The Play 6 starts reliably with a FAT32 stick
+  in its port. With a USB Ethernet adapter, a hub or the A-to-A cable in the port at power-on it may not
+  start at all.
 - 4 GB of free space on the computer.
 
 On Windows, run `lumen-install.cmd` instead of `bash lumen-install.sh`, with `-Ip` instead of `--ip` and
@@ -142,10 +148,21 @@ unless it gets a new address. At the end you should see lines like these:
 
 ```
 ✓ XGIMI Play 6 XXXXXXXXXXXX (192.168.x.y:5555), firmware v1.7.116, system: XGIMI stock
+✓ this unit: serial XXXXXXXXXXXX (XHN), model G0058, firmware v1.7.116
+✓ Wi-Fi and Bluetooth chip: MediaTek MT7663 (0e8d:7663)
+✓ battery 80 %, power adapter connected
 ✓ SHA256SUMS signature: Lumen OS key for the XGIMI Play 6
 ✓ edition: Lumen OS without Google
 ✓ check passed; nothing was written
 ```
+
+The check also looks at this unit before anything is written: the serial (XHN or XHF), the Wi-Fi and
+Bluetooth chip (MediaTek on the first batch, AIC on newer ones), the battery and the power adapter, and what
+is in the USB port. It writes all of it to `~/.lumen-installer/play6/install.log`. On a newer batch (serial
+XHF or the AIC chip) it warns that the V1.7.116 stick restore must never be used on that projector and asks
+before it goes on. If a USB Ethernet adapter or another device that is not a USB stick is in the port, it
+asks you to take it out (if that adapter is the projector's only network, keep it until the installer asks
+for the A-to-A cable, and do not put it back before Lumen Home shows).
 
 If the installer prints `STOP`, look up its message in [Something went wrong](#play6-problems).
 
@@ -168,20 +185,26 @@ For the clean install, the installer runs the check, offers a backup of your app
 about a minute per GB), and then:
 
 1. It shows what will be erased and what stays. Type `ERASE`.
-2. "Take the USB stick out of the projector's USB port ... connect that port to this computer with the
-   USB A-to-A cable." Do that and press Enter. Keep the power adapter connected.
+2. "Take the USB stick (or whatever is in it) out of the projector's USB port and connect that port to
+   this computer with the USB A-to-A cable." Do that and press Enter. Keep the power adapter connected.
 3. The installer restarts the projector into fastboot mode over Wi-Fi (about 30 seconds; the picture may
-   go dark), checks it there and writes the system (about a minute). Do not unplug the cable or the power
-   now.
-4. "Written. Unplug the A-to-A cable from the projector NOW." Unplug it and press Enter. If the picture
-   does not come back within a minute, press the power button. A USB stick in the port helps the Play 6
-   power on.
-5. Lumen OS starts for the first time on your old data (up to 10 minutes). The installer finds it over
-   Wi-Fi. If the projector asks "Allow USB debugging?", tick "Always allow from this computer" and press
-   OK.
-6. The installer asks Android for its factory reset. The projector restarts into XGIMI's recovery, which
-   erases the data in a few minutes, and then starts Lumen OS clean.
-7. When the projector shows Lumen OS again, answer `yes` to "Do you see Lumen Home?".
+   go dark), checks it there, writes the system (about a minute) and then the erase request for XGIMI's
+   recovery. Do not unplug the cable or the power now.
+4. "Written. Unplug the A-to-A cable from the projector NOW." Unplug it, put ONLY your FAT32 stick into
+   the port and press Enter. If the picture does not come back within a minute, press the power button.
+5. XGIMI's recovery erases the data (a few minutes; the picture may stay dark or show XGIMI's logo), then
+   Lumen OS starts for the first time, on clean data (up to 15 minutes in all). The Wi-Fi network is erased
+   too, so the computer loses the projector here: that is expected.
+6. When the projector shows Lumen OS, answer `yes` to "Do you see Lumen OS?". The installer checks for about
+   a minute that the projector is no longer on Wi-Fi with its old data, and finishes.
+
+If the projector does not come back, answer `no`: the installer prints what to do, see
+[If the projector does not come back](#play6-noboot).
+
+If fastboot mode refuses the erase request, or the projector comes back with its old data (the recovery did
+not carry the request out), the installer says so and erases the data the earlier way: Lumen OS starts once
+on the old data, then Android's factory reset. The installer then finds Lumen OS over Wi-Fi; if the
+projector asks "Allow USB debugging?", tick "Always allow from this computer" and press OK.
 
 If the installer stops anywhere, fix what it says and run the same command again: it continues where it
 stopped. If the projector is still in fastboot mode on the cable at that point, it continues there.
@@ -195,7 +218,8 @@ stopped. If the projector is still in fastboot mode on the cable at that point, 
 > go on. The proven way is way 1, then way 3.
 
 This is way 2: Lumen OS with Google Play, Google Play services, the Google sign-in for TVs and the remote
-in the Google TV phone app, with one data wipe in total. What you get and what is left out is the same as
+in the Google TV phone app. Your data is erased once, before the first start; the clean system is reset once
+more after the Google apps are in. What you get and what is left out is the same as
 in [Google services](#play6-google).
 
 1. Download the MindTheGapps file named in [Google services](#play6-google), item 1, and put it in the
@@ -215,16 +239,18 @@ in [Google services](#play6-google).
 4. The installer checks the MindTheGapps file before it writes anything. Then it shows what will be
    erased. Type `ERASE`.
 5. Connect the A-to-A cable when asked, as at a clean install. In fastboot mode the installer writes the
-   system and creates the partition `lumen_gapps`, in the same session.
-6. Unplug the cable when the installer says so. Lumen OS starts once on your old data. Wi-Fi and
-   debugging carry over.
-7. The installer needs `adb root` now. If "Rooted debugging" is off, it waits and tells you where to turn
-   it on: Settings > Device Preferences > Developer options > Rooted debugging. Turn it on and answer
-   `yes` to "Is Rooted debugging on now?": the installer continues.
+   system, creates the partition `lumen_gapps` and leaves the erase request, in the same session.
+6. Unplug the cable when the installer says so and put ONLY the FAT32 stick into the port. XGIMI's recovery
+   erases the data, then Lumen OS starts on clean data. Answer `yes` to "Do you see Lumen OS?".
+7. The Wi-Fi network was erased, so the installer needs debugging again. On the projector: join Wi-Fi
+   (Settings > Network & Internet), press OK on Build 7 times (Settings > Device Preferences > About), then
+   in Developer options turn on USB debugging and Rooted debugging. Press Enter. Allow the computer when the
+   projector asks ("Always allow from this computer", OK).
 8. It copies the Google apps to the projector and checks them (2 to 4 minutes). If Google services from
-   an earlier install are still on the projector, it restarts the projector once first.
-9. Then it asks Android for its factory reset. That is the only wipe. The first start after it sets the
-   Google services up.
+   an earlier install are still on the projector, it restarts the projector once first. If "Rooted
+   debugging" is still off, it waits: turn it on and answer `yes`.
+9. Then it asks Android for its factory reset of the clean system. The first start after it sets the Google
+   services up.
 10. When the projector shows Lumen OS again, answer `yes` to "Do you see Lumen Home?".
 
 After that, join Wi-Fi and sign in, as in [Google services](#play6-google): Settings > Accounts > Add
@@ -233,8 +259,9 @@ account. If Google refuses the sign-in, register the projector, see [GSF ID](#pl
 If the run stops anywhere, fix what the installer says and run the same command again: it continues
 where it stopped.
 
-If Lumen OS does not start on the old data, run the same command again: it wipes the data and finishes
-the install without Google. Add them later with the `gapps` step, see [Google services](#play6-google).
+If the projector does not come back on Wi-Fi after step 7, run the same command again: it continues there.
+To finish without Google, run it without `--gapps-zip`: the data is already erased, so nothing more is
+erased. Add Google later with the `gapps` step, see [Google services](#play6-google).
 
 If you run the installer without `--gapps-zip` while such an install is not finished, it asks whether to
 finish it without Google.
@@ -243,7 +270,7 @@ finish it without Google.
 
 ## 5. First start: join Wi-Fi
 
-The factory reset erased everything, the Wi-Fi network too. Lumen OS starts clean. If it shows a setup,
+XGIMI's recovery erased everything, the Wi-Fi network too. Lumen OS starts clean. If it shows a setup,
 follow it. Otherwise Lumen Home opens directly: then, with the remote, open Settings > Network & Internet
 and join your Wi-Fi. The language is in Settings > Device Preferences > Language.
 
@@ -356,6 +383,10 @@ bash lumen-install.sh --ip 192.168.x.y gapps --remove
 | any step | "did not allow this computer" | The projector asks whether this computer may use debugging. Tick "Always allow from this computer", press OK and run the same command again. |
 | check | "XGIMI firmware ... is not supported" | Older: let stock update itself to V1.7.116. Newer (V1.8.x, shown as RG0058V1.8xxx): Lumen OS does not support it yet. Do not install V1.7.116 from a stick: on newer Play 6 units Wi-Fi and Bluetooth stop working. Nothing was done. |
 | check | "this projector is not supported" | This guide is only for the Play 6 (G0058). Nothing was done. |
+| check | "the battery is at ... %" or "the projector runs on its battery" | Connect the power adapter, charge to at least 50 % and run the installer again. Nothing was written. |
+| check | "could not read the battery level and the power adapter" | Answer `yes` only if the adapter is connected and the projector shows 50 % or more. |
+| check | "a USB device that is not a USB stick is in the projector's USB port" | Take it out (a USB Ethernet adapter, a hub). If it is the projector's only network, answer `yes`: keep it until the installer asks for the A-to-A cable, then leave it out until Lumen Home shows. |
+| check | "This XGIMI Play 6 is from a newer batch" | Read the warning: never use the V1.7.116 stick restore on this projector. Answer `yes` to install. |
 | check | "the device at ... is an XGIMI Z9X" | Use the [Z9X guide](../z9x/en.md): the Z9X installs over the cable, without `--ip`. |
 | check | "this download of the installer is for the XGIMI Z9X" | Download the Play 6 release, see [step 2](#play6-files). |
 | check | "is an XGIMI Z9X image", "SHA256SUMS is not signed with the Lumen OS key for the XGIMI Play 6" or "checksum mismatch" | Wrong or damaged files. Download the Play 6 release files again, from GitHub only. |
@@ -367,6 +398,9 @@ bash lumen-install.sh --ip 192.168.x.y gapps --remove
 | flash | "system was not written completely" | Keep the cable in and run the installer again right away: it writes the system again. |
 | flash | "neither in fastboot mode on the cable nor reachable over Wi-Fi" | Unplug the A-to-A cable and press the power button; a USB stick in the port helps it power on. When XGIMI's system is back, run the installer again. If the picture stays dark, do the [stock restore](#play6-stock). |
 | flash | The power went off during the write | The projector cannot start: do the [stock restore](#play6-stock), then install again. |
+| flash | "fastboot mode did not take the erase request" | Nothing to do: the installer erases the data the earlier way after the first start. |
+| first start | You answer `no` to "Do you see Lumen OS?" | Follow [If the projector does not come back](#play6-noboot), then run the same command again. |
+| first start | "the projector still has its old data" | The recovery did not carry out the erase request. Nothing to do: the installer erases the data the earlier way. Report it with the installer output. |
 | first start | "Lumen OS did not answer over Wi-Fi within 10 minutes" | Is the cable out? Press the power button; a USB stick in the port helps it power on. If Lumen Home is on the screen, look up its address (Settings > Network & Internet) and run the installer again with `--ip ADDRESS`. Your data is still there. |
 | first start | "the projector still runs XGIMI's system" or "still runs the Lumen OS ... it had before" | The write did not take effect. Nothing was erased. Run the installer again with the A-to-A cable at hand: it writes the system again. If it happens again, report it. |
 | first start | "! ... the image names its version differently from its release" | Nothing to do: the image was checked before the write and the install goes on. Report it, so that the next release is fixed. |
@@ -375,7 +409,7 @@ bash lumen-install.sh --ip 192.168.x.y gapps --remove
 | gapps, wipe | "root debugging is off on the projector" | Settings > Device Preferences > Developer options > Rooted debugging: turn it on, then run the same command again. Nothing was written. |
 | `--gapps-zip` | Rooted debugging is off, the installer waits | Settings > Device Preferences > Developer options > Rooted debugging: turn it on and answer `yes`. Or answer `no` and run the same command again later; nothing is erased. |
 | `--gapps-zip` | refused together with `--keep-data` or a command name such as `flash` | The one-command install always wipes the data once and runs as a whole. Run it exactly as in [Lumen OS and Google services in one command](#play6-one-pass). Nothing was written. |
-| `--gapps-zip` | Lumen OS does not start on the old data | Run the same command again: it wipes the data and finishes without Google. Add them later with `gapps`. |
+| `--gapps-zip` | the projector does not come back on Wi-Fi after the light first start | Join Wi-Fi and turn debugging on as the installer says, then run the same command again. Or run it without `--gapps-zip` to finish without Google (nothing more is erased). |
 | any step | asks whether to finish an unfinished install without Google | You ran the installer without `--gapps-zip` while a one-command install was not finished. Answer `no` and run the command with `--gapps-zip` again to get Google, or `yes` to finish without it. |
 | wipe | "after 'adb root' the projector did not answer" | Allow debugging on the projector if it asks ("Always allow from this computer", OK) and run the installer again. Nothing was erased. |
 | wipe | "the factory reset of an earlier run has already erased the data" | Join Wi-Fi and turn debugging on (step 6), then run the installer again with `--ip ADDRESS`: it sees that the data is erased and finishes. |
@@ -389,6 +423,26 @@ bash lumen-install.sh --ip 192.168.x.y gapps --remove
 | gapps | "not enough free space in super" | Nothing was written in super. Report it with the installer output. |
 | gapps | "the Google services were not added" or "the Google services are off" | Run the same `gapps --zip` command again. Until then Lumen OS starts without Google services; your data is still there. |
 | later | The projector does not power on | Unplug the A-to-A cable. Put a USB stick in the port and press the power button. |
+
+<a name="play6-noboot"></a>
+
+### If the projector does not come back
+
+The installer prints these steps when you answer `no` after a start, with the way back for your batch:
+
+1. In the USB port: ONLY a FAT32 USB stick. No A-to-A cable, no USB Ethernet adapter, no hub.
+2. Pull the power adapter, wait 30 seconds, plug it in again, then press the power button once. Do NOT hold
+   the button while plugging in: that starts the stock restore. The first start after the erase can take up
+   to 15 minutes. If it switches off again after the XGIMI logo, repeat this 3 to 5 times: on some units
+   Lumen OS came up only after a few attempts.
+3. Note what you see: the XGIMI logo and then fully off (after how many seconds), the logo or the Lumen
+   animation over and over, or XGIMI's recovery screen.
+4. To find the cause we need the boot log: ask for the Lumen OS diagnostic build (GitHub issues of the
+   project or the 4PDA topic). It writes the boot log to the FAT32 stick (folder `lumen_os_diag_logs`).
+   Send that folder together with the installer log `~/.lumen-installer/play6/install.log`.
+5. Back to stock erases everything, and the right way depends on the batch: serial XHN with a MediaTek
+   chip: the V1.7.116 `.bin` from a FAT32 stick, see [Back to stock](#play6-stock). Serial XHF or the AIC
+   chip (it came with V1.8.x): do NOT use that `.bin`, ask XGIMI support for its firmware.
 
 The Play 6's progress is kept in `~/.lumen-installer/play6/`. `bash lumen-install.sh status` shows it and
 `bash lumen-install.sh --device play6 reset` forgets it. Neither touches the projector. For a report,
@@ -464,14 +518,15 @@ exactly like this:
 | Partition | What happens |
 |---|---|
 | `system` | replaced by Lumen OS, written in fastboot mode |
-| `userdata`, `cache` | erased once by Android's factory reset, which XGIMI's recovery carries out |
-| `misc` | Android leaves the factory reset command for XGIMI's recovery there, as Settings > Reset does; the installer never writes it |
+| `userdata`, `cache` | erased by XGIMI's recovery before the first start (with Google in one command: once more after the Google apps are in) |
+| `misc` | only its first 2 KB, the recovery's command block: the installer writes the erase request there in fastboot mode, the same 2 KB that Android's factory reset (Settings > Reset) writes, and the recovery clears it again; nothing else in misc |
 | `lumen_gapps` | only with [Google services](#play6-google): created in super in fastboot mode, then formatted and filled on the projector; `gapps --remove` deletes it |
 | vendor, boot, recovery, dtbo, MBOOT, MPOOL, tvconfig, tvservice, cusdata, project_id, tvcertificate, xgimi*, upgrade, calibration | never changed |
 
 The installer never runs `fastboot -w`, `erase`, `format` or `flashing` on the Play 6, and no other
-`flash` than system. Besides that it only creates, resizes or deletes the partition `lumen_gapps`, for
-Google services. Every partition write goes through an allow-list in the script.
+`flash` than system and the 2 KB erase request in misc (its bytes are checked before the write; never with
+`--keep-data`). Besides that it only creates, resizes or deletes the partition `lumen_gapps`, for Google
+services. Every partition write goes through an allow-list in the script.
 
 Lumen OS is licensed under Apache-2.0, the AirPlay receiver under GPL-3.0. No XGIMI, MediaTek or Google
 software is in the release files.

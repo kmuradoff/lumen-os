@@ -82,10 +82,10 @@ XGIMI Play 6 (it has no USB debugging: `--ip ADDRESS` is its Wi-Fi address, save
 | Command | What it does | Writes to the projector |
 |---|---|---|
 | none | runs `check`, `backup` (asked) and `flash` in order and resumes where it stopped | yes |
-| none, with `--gapps-zip FILE` | Lumen OS and Google services in one run: checks the zip, writes the system and creates `lumen_gapps` in the same fastboot session, starts Lumen OS once on the old data, adds the Google apps as root, then Android's factory reset (the one wipe); resumes where it stopped | yes, erases data |
-| `check` | connects over Wi-Fi, checks the computer, projector, firmware, and the image's release version (from its name, against `release.conf`), signature and checksum | no |
+| none, with `--gapps-zip FILE` | Lumen OS and Google services in one run: checks the zip, writes the system, creates `lumen_gapps` and leaves the erase request in the same fastboot session; after the light first start on clean data the user turns debugging on again, the installer adds the Google apps as root, then Android's factory reset of the clean system; resumes where it stopped | yes, erases data |
+| `check` | connects over Wi-Fi, checks the computer, projector, firmware, and the image's release version (from its name, against `release.conf`), signature and checksum; the pre-checks: Wi-Fi and Bluetooth chip, serial batch, battery and power adapter (refuses below 50 % or on battery), what is in the USB port; all logged in `~/.lumen-installer/play6/install.log` | no |
 | `backup` | as for the Z9X, over Wi-Fi, to `~/Lumen-backup/play6-<date>` | no |
-| `flash` | asks for the A-to-A cable, writes the system in fastboot mode, waits for the first start of Lumen OS, then asks Android for its factory reset, which erases all data | yes, erases data |
+| `flash` | asks for the A-to-A cable, writes the system and the erase request for XGIMI's recovery in one fastboot session; the recovery erases all data before the first start of Lumen OS (if the request is refused or not carried out: the first start on the old data, then Android's factory reset) | yes, erases data |
 | `flash --keep-data` | repair: writes the system again and keeps the data | yes |
 | `verify` | later, after joining Wi-Fi and turning debugging on again: checks the clean install | only if you agree to a wipe |
 | `rescue` | the projector waits in fastboot mode on the cable: writes the system again, keeps the data (Lumen OS only: a projector this computer last saw on stock is refused) | yes |
@@ -123,16 +123,21 @@ It never touches vbmeta, boot, vendor, dtbo, mboot, persist, xgimi*, tvconfig, m
 slot, and never runs `fastboot -w` or `fastboot erase`, which hang the Z9X at boot. Every partition
 write goes through an allow-list in the script.
 
-On the XGIMI Play 6 it writes `system` and nothing else: no create, resize, delete, format, erase or
-`-w` of its own (`fastboot flash system` itself fits the logical `system` partition in `super` to the image, as
-every fastboot write of a logical partition does). The data is erased by Android's own factory reset, which the installer asks for as root over adb on
-the first start of Lumen OS and which XGIMI's recovery carries out, as Settings > Reset does. Vendor,
-boot, recovery, MBOOT, the env partition, calibration and factory data are never written.
+On the XGIMI Play 6 it writes `system` and the first 2 KiB of `misc` and nothing else: no create, resize, delete,
+format, erase or `-w` of its own (`fastboot flash system` itself fits the logical `system` partition in `super` to
+the image, as every fastboot write of a logical partition does). The 2 KiB are the erase request for XGIMI's
+recovery (`boot-recovery`, `--wipe_data`), byte for byte what Android's factory reset writes there; the installer
+checks them against a pinned sha256 before the write and never writes them with `--keep-data`. XGIMI's recovery
+then erases userdata and cache before the first start of Lumen OS, as Settings > Reset does, and clears the
+request. If fastboot mode refuses it or the recovery does not carry it out, the data is erased the earlier way:
+Android's own factory reset, asked for as root over adb on the first start of Lumen OS. Vendor, boot, recovery,
+MBOOT, the env partition (MPOOL), calibration and factory data are never written.
 
 ## For developers
 
 Mock tests: `tools/ota/test/installer_rescue.sh`, `installer_blobs.sh`, `installer_edition.sh`,
 `installer_gapps.sh`, `installer_profiles.sh` (lib/devices.conf, and the Z9X command logs compared byte for
-byte with `tools/ota/test/golden/installer_z9x/`) and `installer_play6.sh` (a fake Play 6 over Wi-Fi and in
-fastbootd). The `--blobs=embedded` and `--unsigned-image` options are only for maintainers'
+byte with `tools/ota/test/golden/installer_z9x/`), `installer_play6.sh` (a fake Play 6 over Wi-Fi and in
+fastbootd), `installer_play6_gapps.sh`, and the PowerShell host tests `installer_ps1_gapps.sh` and
+`installer_ps1_play6.sh` (the Play 6 erase request and pre-checks give the same results in both scripts). The `--blobs=embedded` and `--unsigned-image` options are only for maintainers'
 own test builds, see `docs/dev/release.md`.
