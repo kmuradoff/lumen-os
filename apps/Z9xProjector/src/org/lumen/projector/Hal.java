@@ -210,8 +210,9 @@ public final class Hal {
 
     /**
      * Runs {@code r} once the autofocus card closed (not when LEFT / RIGHT on it opened the manual focus window),
-     * or after {@code startWaitMs} when no card came up (the AF never started). Main thread. 2026-10-31: the
-     * optical zoom's BACK exit reopens the quick panel this way after its close AF.
+     * or once the AF ended without a card (vendor events 5 / 7 / 2 / 18), or after {@code startWaitMs} when neither
+     * came (the AF never started), whichever is first, only once. Main thread. 2026-10-31: the optical zoom's BACK
+     * exit reopens the quick panel this way after its close AF.
      */
     public static void runAfterAutofocus(Runnable r, long startWaitMs) {
         AfCardOverlay.runAfterCard(r, startWaitMs);
