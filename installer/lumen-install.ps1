@@ -361,7 +361,11 @@ function Slow-Drive-Warn($folder) {  # Windows: the installer or the image on a 
 function Fb-Allowed($act, $part) {
   # XGIMI Play 6: system, and the Google services add-on partition lumen_gapps ('gapps': create, resize, delete;
   # it is formatted and filled on the projector). Single slot; never format, erase or another flash.
-  if ($script:Projector -eq "play6") { return (@("flash:system", "create:lumen_gapps", "resize:lumen_gapps", "delete:lumen_gapps") -ccontains "${act}:$part") }
+  # misc: only the 2 KiB erase request for XGIMI's recovery (P6-Bcb-Write checks its bytes before the write).
+  if ($script:Projector -eq "play6") {
+    if ("${act}:$part" -ceq "flash:misc" -and $script:P6BcbOk) { return $true }
+    return (@("flash:system", "create:lumen_gapps", "resize:lumen_gapps", "delete:lumen_gapps") -ccontains "${act}:$part")
+  }
   $s = State-Get slot
   $ok = @("flash:system", "flash:z9x_blobs$s", "create:z9x_blobs$s", "resize:z9x_blobs$s",
           "create:z9x_gapps$s", "resize:z9x_gapps$s", "format:z9x_gapps$s", "delete:z9x_gapps$s", "flash:z9x_gapps$s",
@@ -1485,13 +1489,28 @@ function Release-Guard {  # the image of this download belongs to one projector 
 # ------------------------------------------------------------------ XGIMI Play 6 (see lumen-install.sh, section 'XGIMI Play 6')
 # adb runs over Wi-Fi only ($script:AdbT = ADDR:PORT): the projector's one USB-A port is a host port under Android.
 # fastbootd is reached with 'adb reboot fastboot' sent over Wi-Fi and a USB A-to-A cable in that port; the projector
-# does not start while that cable is in, so it goes in only for the write. Steps: check -> backup (asked) -> write
-# (fastbootd, system only) -> boot1 (first start on the old data) -> wipe (Android's own factory reset as root over
-# adb, carried out by XGIMI's recovery) -> verify (optional, later). Progress: $StateDir\play6\state.
+# does not start while that cable is in, so it goes in only for the write. Steps: check (with the pre-checks: Wi-Fi
+# chip, serial, firmware, power, the USB port; logged in $StateDir\play6\install.log) -> backup (asked) -> write
+# (fastbootd: system, then the erase request for XGIMI's recovery in misc, the same 2 KiB that Android's factory reset
+# writes there) -> boot_fresh (the recovery erases userdata and cache BEFORE the first start, so that first start is a
+# light one on clean data) -> verify (optional, later). The earlier way stays as the fallback, and for -KeepData and
+# installs begun by an older installer: boot1 (first start on the old data) -> wipe (Android's own factory reset as
+# root over adb). Progress: $StateDir\play6\state.
 $P6App = "org.lumen.projector"                      # the projector app of the image (1.0.8 and later)
 $P6AppOld = "org.z9x.projector"                    # its name up to 1.0.7 (status of an older install)
 $P6Tuner = "com.zacharee1.systemuituner"          # installed on stock to turn debugging on; a wipe removes it
 $P6Marker = "/data/local/tmp/lumen-install-wipe"  # written before the wipe; a real wipe removes it
+# the erase request (struct bootloader_message, 2048 bytes): "boot-recovery" at 0, the arguments at 64, zeros elsewhere
+# (lumen-install.sh, P6_BCB_ARGS: what Android's factory reset writes at offset 0 of misc, without --locale)
+$P6BcbArgs = "recovery`n--wipe_data`n--reason=lumen-install`n"
+$P6BcbSha = "aa5a031e5dcedc6346b920fd73cc9ccf623ec0a795f31c246f77fd6c26ef16fc"
+$P6MinBattery = 50                                 # percent, before any write and before the erase
+# no double quotes in these: PowerShell 5.1 does not pass them to adb.exe intact
+$P6UsbCmd = 'for d in /sys/bus/usb/devices/*; do [ -f $d/idVendor ] || continue; echo ${d##*/} $(cat $d/idVendor):$(cat $d/idProduct) $(cat $d/*:1.0/bInterfaceClass 2>/dev/null | head -n 1); done'
+$P6PwrCmd = "logcat -d -v brief 2>/dev/null | grep -E 'POWER_BATTERY_LEVEL|IsAdapterPowered|AdapterOut|AdapterInsert|P6Battery' | tail -n 50"
+$P6MntCmd = "grep ' /mnt/media_rw/' /proc/mounts"
+$script:P6BcbOk = $false    # set only while P6-Bcb-Write writes its checked erase request into misc
+$script:P6PreDone = $false  # the pre-checks of this run are done
 function P6-LProp { return ($script:Prof["LUMEN_PROP"] -split " ", 2)[0] }
 function P6-LVal { return ($script:Prof["LUMEN_PROP"] -split " ", 2)[1] }
 function P6-Name { return $script:Prof["NAME"] }
@@ -1616,6 +1635,195 @@ function Play6-Device {  # connected: firmware, single slot, stock or Lumen OS; 
   State-Set serial $script:Serial; State-Set ip $script:AdbT; State-Set vendor $vend
   Ok "$nm $($script:Serial) ($($script:AdbT)), $(T 'firmware' 'прошивка') $vend, $(T 'system' 'система'): $ver"
 }
+# ------------------------------------------------------------------ XGIMI Play 6: pre-checks, log, erase request, help
+function P6-LogPath { return (Join-Path $script:SD "install.log") }
+function P6-Log($m) {
+  try {
+    New-Item -ItemType Directory -Force -Path $script:SD | Out-Null
+    Add-Content -LiteralPath (P6-LogPath) -Value ("{0} {1}" -f (Get-Date -Format "yyyyMMdd-HHmmss"), $m) -Encoding UTF8
+  } catch { }
+}
+function P6-Chip-Name($id) {  # vid:pid -> the Wi-Fi and Bluetooth chip it is, or ""
+  if ($id -ceq "0e8d:7663") { return "MediaTek MT7663 ($id)" }
+  if ($id -ceq "0e8d:7961") { return "MediaTek MT7961 ($id)" }
+  if ($id -clike "0e8d:*") { return "MediaTek ($id)" }
+  if ($id -ceq "368b:8d90" -or $id -ceq "368b:8d91") { return "AIC8800 ($id)" }
+  return ""
+}
+function P6-Usb-Parse($text) {  # "<name> <vid>:<pid> <class>" lines -> Chip, ChipId, Stick, Other (lumen-install.sh p6_usb_parse)
+  $r = @{ Chip = ""; ChipId = ""; Stick = $false; Other = "" }
+  foreach ($l in @("$text" -split "`r?`n")) {
+    $f = @($l.Trim() -split "\s+")
+    if ($f.Count -lt 2 -or -not $f[1]) { continue }
+    $id = $f[1]; $cls = if ($f.Count -ge 3) { $f[2] } else { "" }
+    if ($id -clike "1d6b:*") { continue }   # root hubs
+    $n = P6-Chip-Name $id
+    if ($n) { $r.Chip = $n; $r.ChipId = $id; continue }
+    if ($cls -ceq "08") { $r.Stick = $true } else { $r.Other = ("$($r.Other) $id").Trim() }   # 08: mass storage
+  }
+  return $r
+}
+function P6-Power-Parse($text) {  # XGIMI's power log -> Lvl (percent), Ad ("1" adapter, "0" battery), "" when it does not tell
+  $r = @{ Lvl = ""; Ad = "" }
+  foreach ($l in @("$text" -split "`r?`n")) {
+    if ($l -cmatch 'POWER_BATTERY_LEVEL[^0-9]*([0-9]+)') { $r.Lvl = $Matches[1] }
+    elseif ($l -cmatch 'P6Battery: read level=([0-9]+)') { $r.Lvl = $Matches[1] }
+    if ($l -cmatch 'IsAdapterPowered:1|AdapterInsert|adapter=true') { $r.Ad = "1" }
+    if ($l -cmatch 'IsAdapterPowered:0|AdapterOut|adapter=false') { $r.Ad = "0" }
+  }
+  return $r
+}
+function P6-Usb-Scan { $script:P6Usb = ((Adb shell $P6UsbCmd) | Out-String).Trim(); $script:P6U = P6-Usb-Parse $script:P6Usb }
+function P6-Prechecks {  # before any write, on the running system over adb: which unit, its power and its USB port (logged)
+  if ($script:P6PreDone) { return }
+  $nm = P6-Name; $min = $P6MinBattery; $fw1 = P6-Fw-First
+  $ser = "$($script:Serial)"; $pre = if ($ser.Length -ge 3) { $ser.Substring(0, 3) } else { $ser }
+  $model = Prop ro.boot.xgimi.modelname; $fw = Prop ro.vendor.build.version.incremental; $disp = Prop ro.build.display.id
+  P6-Usb-Scan; $u = $script:P6U
+  $pw = P6-Power-Parse ((Adb shell $P6PwrCmd) | Out-String); $lvl = $pw.Lvl; $ad = $pw.Ad
+  $fs = ""
+  foreach ($l in @(((Adb shell $P6MntCmd) | Out-String) -split "`r?`n")) { $f = @($l.Trim() -split "\s+"); if ($f.Count -ge 3) { $fs = $f[2]; break } }
+  State-Set chip $(if ($u.ChipId) { $u.ChipId } else { "unknown" }); State-Set serial_prefix $pre
+  $dt = if ($disp) { " ($disp)" } else { "" }
+  P6-Log ("pre-check: serial $ser ($pre), model $model, firmware $fw$dt, chip $(if ($u.Chip) { $u.Chip } else { 'unknown' }), battery $(if ($lvl) { $lvl } else { '?' }), adapter $(if ($ad) { $ad } else { '?' }), usb [" + (($script:P6Usb -split "`r?`n") -join ";") + "], stick $(if ($fs) { $fs } else { '-' })")
+  Ok "$(T 'this unit' 'этот аппарат'): $(T 'serial' 'серийный номер') $ser ($pre), $(T 'model' 'модель') $model, $(T 'firmware' 'прошивка') $fw$dt"
+  if ($u.Chip) { Ok "$(T 'Wi-Fi and Bluetooth chip' 'чип Wi-Fi и Bluetooth'): $($u.Chip)" }
+  else { Warn ((T "the Wi-Fi and Bluetooth chip was not found in the USB list" "чип Wi-Fi и Bluetooth не найден в списке USB") + " (" + ((@($script:P6Usb -split "`r?`n") | ForEach-Object { $f = @($_.Trim() -split "\s+"); if ($f.Count -ge 2) { $f[1] } }) -join " ") + ")") }
+  # power: an erase or a write cut off by an empty battery leaves the projector without a system
+  if ($lvl -and [int]$lvl -lt $min) {
+    P6-Log "pre-check: refused, battery $lvl"
+    Die (T "the battery is at $lvl %: charge it to at least $min % with the power adapter connected, then run the installer again. A write or an erase cut off by an empty battery leaves the projector without a system. Nothing was written." "заряд аккумулятора $lvl %: зарядите его хотя бы до $min % с подключённым блоком питания и запустите установщик снова. Если запись или стирание оборвутся из-за разряженного аккумулятора, проектор останется без системы. Ничего не записано.")
+  }
+  if ($ad -eq "0") {
+    P6-Log "pre-check: refused, on battery"
+    Die (T "the projector runs on its battery: connect its power adapter and keep it connected for the whole install, then run the installer again. Nothing was written." "проектор работает от аккумулятора: подключите блок питания и не отключайте его всю установку, затем запустите установщик снова. Ничего не записано.")
+  }
+  if ($lvl -and $ad -eq "1") { Ok (T "battery $lvl %, power adapter connected" "аккумулятор $lvl %, блок питания подключён") }
+  else {
+    Say ((T "the installer could not read the battery level and the power adapter on this system" "установщик не смог прочитать заряд и блок питания на этой системе") + $(if ($lvl) { " ($lvl %)" } else { "" }))
+    if (-not (Ask (T "Is the power adapter connected, and does the projector show a battery level of $min % or more?" "Блок питания подключён, и проектор показывает заряд $min % или больше?"))) { Die (T "connect the power adapter and charge the projector to at least $min %, then run the installer again. Nothing was written." "подключите блок питания и зарядите проектор хотя бы до $min %, затем запустите установщик снова. Ничего не записано.") }
+    P6-Log "pre-check: power confirmed by the user"
+  }
+  # the newer batch: the first-batch stock .bin kills its Wi-Fi and Bluetooth
+  if ($pre -ceq "XHF" -or $u.ChipId -clike "368b:*") {
+    Write-Host ""
+    Write-Host (T "This $nm is from a newer batch (serial XHF... or the AIC Wi-Fi chip; it came with firmware V1.8.x). Lumen OS brings its own Wi-Fi and Bluetooth driver for it; this is newer and less tested than on the first batch. NEVER roll this projector back with the $fw1 .bin from a USB stick: that firmware has no driver for its chip, and Wi-Fi and Bluetooth then stop working on stock. The way back to stock for this batch is a V1.8.x firmware from XGIMI support." "Этот $nm из новой партии (серийный номер XHF... или чип Wi-Fi AIC; с завода на нём была прошивка V1.8.x). Lumen OS ставит для него свой драйвер Wi-Fi и Bluetooth; это новее и проверено меньше, чем на первой партии. НИКОГДА не откатывайте этот проектор прошивкой .bin $fw1 с флешки: в ней нет драйвера для его чипа, и на стоке перестают работать Wi-Fi и Bluetooth. Вернуться на сток с этой партией можно только прошивкой V1.8.x от поддержки XGIMI.")
+    if (-not (Ask (T "Install Lumen OS on this projector?" "Ставить Lumen OS на этот проектор?"))) { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
+    P6-Log "pre-check: newer batch confirmed by the user"
+  }
+  # what is in the USB port at power-on matters: a FAT32 stick is good, a USB Ethernet adapter or an A-to-A cable is not
+  if ($u.Other) {
+    $o = $u.Other
+    Warn (T "a USB device that is not a USB stick is in the projector's USB port: $o (a USB Ethernet adapter, a hub or another device). With it in, the $nm may not power on." "в USB-порту проектора устройство, которое не флешка: $o (адаптер USB Ethernet, хаб или другое устройство). С ним $nm может не включиться.")
+    if (Ask (T "Is this device the projector's only connection to your network (a USB Ethernet adapter)?" "Это устройство единственное подключение проектора к сети (адаптер USB Ethernet)?")) {
+      Say (T "Keep it in for now. When the installer asks for the A-to-A cable, take it out, and do not put it back before Lumen OS shows its home screen." "Пока оставьте его. Когда установщик попросит кабель A–A, выньте его и не вставляйте обратно, пока Lumen OS не покажет главный экран.")
+      P6-Log "pre-check: other USB device kept as the network: $o"
+    } else {
+      $null = Read-Host (T "Take it out of the projector's USB port now and press Enter" "Выньте его из USB-порта проектора и нажмите Enter")
+      P6-Usb-Scan
+      if ($script:P6U.Other) { Die (T "the USB device $($script:P6U.Other) is still in the projector's USB port. Take it out and run the installer again. Nothing was written." "устройство USB $($script:P6U.Other) всё ещё в USB-порту проектора. Выньте его и запустите установщик снова. Ничего не записано.") }
+      Ok (T "no other device in the USB port now" "другого устройства в USB-порту больше нет")
+      P6-Log "pre-check: other USB device removed"
+    }
+  }
+  if ($u.Stick -and $fs -and $fs -cne "vfat") { Warn (T "the USB stick in the projector is not FAT32 (${fs}): use a FAT32 stick, the $nm starts reliably with it" "флешка в проекторе не FAT32 (${fs}): возьмите флешку FAT32, с ней $nm включается надёжно") }
+  Say (T "At every power-on during the install keep ONLY a FAT32 USB stick in the projector's USB port: no USB Ethernet adapter, no hub; the A-to-A cable goes in only while the installer writes." "При каждом включении во время установки в USB-порту проектора должна быть ТОЛЬКО флешка FAT32: без адаптера USB Ethernet и без хаба; кабель A–A вставляется только на время записи.")
+  $script:P6PreDone = $true
+}
+function P6-Noboot-Help {  # the projector did not come back after a start: what to do, and the way back for its batch
+  $nm = P6-Name; $fw1 = P6-Fw-First; $chip = State-Get chip; $pre = State-Get serial_prefix; $lp = P6-LogPath
+  P6-Log "no start reported (serial $pre, chip $(if ($chip) { $chip } else { '?' }))"
+  Write-Host ""
+  Write-Host (T "If the projector does not come back:" "Если проектор не возвращается:")
+  Write-Host (T "  1. In its USB port: ONLY a FAT32 USB stick. No A-to-A cable, no USB Ethernet adapter, no hub." "  1. В его USB-порту ТОЛЬКО флешка FAT32. Без кабеля A–A, без адаптера USB Ethernet, без хаба.")
+  Write-Host (T "  2. Pull the power adapter, wait 30 seconds, plug it in again, then press the power button once (do NOT hold it while plugging in: that starts the stock restore). The first start after the erase can take up to 15 minutes. If it switches off again after the XGIMI logo, repeat this 3 to 5 times: on some units Lumen OS came up only after a few attempts." "  2. Выньте блок питания, подождите 30 секунд, вставьте снова и нажмите кнопку питания один раз (НЕ держите её при подключении питания: так начинается откат на сток). Первый запуск после стирания может занять до 15 минут. Если после логотипа XGIMI он снова выключается, повторите это 3-5 раз: на некоторых аппаратах Lumen OS поднималась только после нескольких попыток.")
+  Write-Host (T "  3. Note what you see: the XGIMI logo and then fully off (after how many seconds), the logo or the Lumen animation over and over, or XGIMI's recovery screen." "  3. Запишите, что видно: логотип XGIMI и полное выключение (через сколько секунд), логотип или анимация Lumen по кругу, или экран recovery XGIMI.")
+  Write-Host (T "  4. To find the cause we need the boot log: ask for the Lumen OS diagnostic build (the project's GitHub issues or the 4PDA topic). It writes the boot log to the FAT32 stick (folder lumen_os_diag_logs). Send that folder together with this installer's log: $lp" "  4. Чтобы найти причину, нужен журнал загрузки: попросите диагностическую сборку Lumen OS (issues проекта на GitHub или тема на 4PDA). Она пишет журнал загрузки на флешку FAT32 (папка lumen_os_diag_logs). Пришлите эту папку вместе с журналом установщика: $lp")
+  Write-Host (T "  5. Back to stock (erases everything): guide, section '$nm', 'Back to stock'." "  5. Откат на сток (стирает всё): инструкция, раздел «${nm}», «Откат на сток».")
+  $c = if ($chip) { $chip } else { "?" }
+  if ($pre -ceq "XHF" -or $chip -clike "368b:*") { Write-Host (T "     This projector (serial $pre, chip $c) is from the newer batch: do NOT use the $fw1 .bin, on this unit it kills Wi-Fi and Bluetooth; ask XGIMI support for its V1.8.x firmware." "     Этот проектор (серийный номер $pre, чип $c) из новой партии: НЕ используйте .bin $fw1, на нём он убивает Wi-Fi и Bluetooth; попросите у поддержки XGIMI прошивку V1.8.x.") }
+  elseif ($chip -clike "0e8d:*") { Write-Host (T "     This projector (serial $pre, MediaTek chip $chip): the $fw1 .bin from a FAT32 stick." "     Этот проектор (серийный номер $pre, чип MediaTek $chip): .bin $fw1 с флешки FAT32.") }
+  else { Write-Host (T "     Serial XHN and a MediaTek Wi-Fi chip (0e8d): the $fw1 .bin from a FAT32 stick. Serial XHF or an AIC chip (368b): do NOT use that .bin, ask XGIMI support." "     Серийный номер XHN и чип Wi-Fi MediaTek (0e8d): .bin $fw1 с флешки FAT32. Серийный номер XHF или чип AIC (368b): этот .bin НЕ используйте, обратитесь в поддержку XGIMI.") }
+  Write-Host ""
+}
+function P6-Marker-Write {  # the check file for 'verify' (a real wipe removes /data/local/tmp); $false = not written
+  $tok = "lumen-$(Get-Date -Format 'yyyyMMddHHmmss')-$PID"
+  Adb shell "echo $tok > $P6Marker" | Out-Null
+  if (((Adb shell cat $P6Marker) | Out-String).Trim() -cne $tok) { return $false }
+  State-Set wipe_marker $tok
+  return $true
+}
+function P6-Bcb-Bytes {  # the erase request, 2048 bytes (see $P6BcbArgs)
+  $b = New-Object byte[] 2048
+  $c = [Text.Encoding]::ASCII.GetBytes("boot-recovery"); [Array]::Copy($c, 0, $b, 0, $c.Length)
+  $a = [Text.Encoding]::ASCII.GetBytes($P6BcbArgs); [Array]::Copy($a, 0, $b, 64, $a.Length)
+  return ,$b
+}
+function P6-Bcb-Write {  # fastbootd, system written: the erase request into misc; $false = not written (then the earlier way)
+  New-Item -ItemType Directory -Force -Path $script:SD | Out-Null
+  $f = Join-Path $script:SD "bcb.bin"
+  [IO.File]::WriteAllBytes($f, (P6-Bcb-Bytes))
+  if ((Get-Item -LiteralPath $f).Length -ne 2048 -or (Sha256 $f) -ne $P6BcbSha) { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue; P6-Fb-Stop "internal: the erase request is not the known one." }
+  Say (T "writing the erase request for XGIMI's recovery (2 KB in misc, what Android's factory reset writes there)" "записываю запрос на стирание для recovery XGIMI (2 КБ в misc, то же, что пишет сброс Android)")
+  $script:P6BcbOk = $true
+  try { $ok = Fb-Do flash misc $f } finally { $script:P6BcbOk = $false }
+  Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue
+  if ($ok) { State-Set step_bcb done; P6-Log "erase request written"; return $true }
+  State-Set step_bcb failed; P6-Log "erase request refused by fastbootd"
+  Warn (T "fastboot mode did not take the erase request. Lumen OS then starts once on the old data, and the installer erases the data afterwards with Android's factory reset (the way of earlier versions)." "режим fastboot не принял запрос на стирание. Тогда Lumen OS один раз запустится на старых данных, а установщик потом сотрёт данные сбросом Android (как в прежних версиях).")
+  return $false
+}
+function P6-Ne($l) {  # en|ru: "Nothing was erased." for the earlier way; "" after the erase before the first start
+  if ((State-Get step_bcb) -eq "done") { return "" }
+  if ($l -eq "ru") { return "Ничего не стёрто." } else { return "Nothing was erased." }
+}
+function Play6-Boot-Fresh {  # the start after the write: XGIMI's recovery erases the data, then the first, light start of Lumen OS
+  if (-not $script:AdbT) { $script:AdbT = State-Get ip }
+  Write-Host ""
+  Write-Host (T "The projector now starts XGIMI's recovery, which erases the data (a few minutes; the picture may stay dark or show XGIMI's logo), and then starts Lumen OS for the first time, on clean data (up to 15 minutes in all). The Wi-Fi network is erased too: this computer cannot reach the projector again until you join Wi-Fi on it." "Сейчас проектор запускает recovery XGIMI, которое стирает данные (несколько минут; изображения может не быть или виден логотип XGIMI), а затем впервые запускает Lumen OS на чистых данных (всего до 15 минут). Сеть Wi-Fi тоже стирается: компьютер снова увидит проектор, только когда вы подключите его к Wi-Fi.")
+  P6-Log "light first start: waiting for the user"
+  if (-not (Ask (T "Wait for Lumen OS on the projector (its first screen or Lumen Home, up to 15 minutes). Do you see Lumen OS? (XGIMI's own setup: answer no)" "Дождитесь Lumen OS на проекторе (первый экран или Lumen Home, до 15 минут). Lumen OS на экране? (если видна настройка XGIMI, ответьте нет)"))) {
+    P6-Log "light first start: not seen"
+    P6-Noboot-Help
+    Die (T "when Lumen OS shows, run the same command again: it continues here. Nothing else was written." "когда появится Lumen OS, запустите ту же команду снова: установка продолжится с этого места. Больше ничего не записано.")
+  }
+  # erased: the projector is off Wi-Fi now. Still answering with the old data: the recovery did not take the request.
+  Say (T "checking that the old data is gone (up to a minute)" "проверяю, что старых данных больше нет (до минуты)")
+  if ($script:AdbT -and (Wifi-Connect 60)) {
+    P6-Identity
+    $mk = P6-Marker
+    if ($mk -eq "there") {
+      P6-Log "light first start: the old data is still there"
+      Warn (T "the projector still has its old data: XGIMI's recovery did not carry out the erase request. The installer erases the data the earlier way: Android's factory reset on Lumen OS." "на проекторе всё ещё старые данные: recovery XGIMI не выполнило запрос на стирание. Установщик сотрёт данные прежним способом: сбросом Android на Lumen OS.")
+      Play6-Boot1
+      return
+    } elseif ($mk -eq "gone") { Ok (T "data erased (the check file written before the write is gone)" "данные стёрты (проверочного файла, записанного до записи, нет)"); State-Set step_wipe done }
+    else { Warn (T "the check file could not be read: 'verify' checks the erase later" "проверочный файл прочитать не удалось: 'verify' проверит стирание позже"); State-Set step_wipe requested }
+  } else {
+    Ok (T "the projector is off Wi-Fi: the data was erased, the Wi-Fi network with it" "проектора нет в Wi-Fi: данные стёрты, сеть Wi-Fi вместе с ними")
+    State-Set step_wipe requested
+    $script:WipedNow = $true
+  }
+  P6-Log "light first start: done (step_wipe=$(State-Get step_wipe))"
+  State-Set step_boot1 done
+}
+function P6-Gapps-Fresh-Fill {  # one pass after the light first start: debugging on again, the Google apps in, then one more reset
+  $nm = P6-Name
+  if (-not $GappsZip) { P6-Gapps-Fill-Step; return }   # asks whether to finish without Google
+  Write-Host ""
+  Write-Host (T "Lumen OS runs on clean data. To copy the Google apps in, the installer needs debugging again. On the projector, with the remote:" "Lumen OS работает на чистых данных. Чтобы скопировать приложения Google, установщику снова нужна отладка. На проекторе пультом:")
+  Write-Host (T "  1. Settings > Network & Internet: join your Wi-Fi (the same network as this computer)." "  1. «Настройки > Сеть и Интернет»: подключитесь к своему Wi-Fi (той же сети, что и компьютер).")
+  Write-Host (T "  2. Settings > Device Preferences > About: press OK on Build 7 times." "  2. «Настройки > Настройки устройства > Об устройстве»: нажмите OK на «Сборка» 7 раз.")
+  Write-Host (T "  3. Settings > Device Preferences > Developer options: turn on USB debugging (on the $nm this is debugging over the network) and Rooted debugging." "  3. «Настройки > Настройки устройства > Для разработчиков»: включите «Отладка по USB» (на $nm это отладка по сети) и «Отладка суперпользователем».")
+  Write-Host (T "When the projector asks `"Allow USB debugging?`", tick `"Always allow from this computer`" and press OK." "Когда проектор спросит «Разрешить отладку по USB?», отметьте «Всегда разрешать с этого компьютера» и нажмите OK.")
+  $null = Read-Host (T "Press Enter when this is done" "Когда всё готово, нажмите Enter")
+  if (-not $script:AdbT) { $script:AdbT = State-Get ip }
+  if (-not (Wifi-Connect 600)) { Die ((P6-NoConn 600) + " " + (T "Run the same command again: it continues here. To finish without Google services: run it without -GappsZip." "Запустите ту же команду снова: установка продолжится с этого места. Чтобы завершить без сервисов Google, запустите её без -GappsZip.")) }
+  # the fill is followed by Android's factory reset (Play6-Install): the first start after it sets Google up.
+  # The check file of the erase before the first start must not count for that reset.
+  State-Set step_wipe ""; State-Set wipe_marker ""; $script:EraseNow = $true
+  P6-Gapps-Fill-Step
+}
 function Read-Hex($f, $off, $n) {  # n bytes of file f at off, as lower-case hex ("" when the file is shorter)
   $fs = [IO.File]::OpenRead($f)
   try {
@@ -1711,6 +1919,7 @@ function Play6-Check {
   Check-Tools
   if (-not (Play6-Adb 60)) { Die (P6-NoConn) }
   Play6-Device
+  P6-Prechecks
   $free = (Get-PSDrive -Name (Get-Item -LiteralPath $HOME).PSDrive.Name -ErrorAction SilentlyContinue).Free
   if ($free -and $free -lt 4GB) { Warn (T "less than 4 GB free on this computer" "на компьютере свободно меньше 4 ГБ") }
   Play6-Check-Image
@@ -1784,7 +1993,7 @@ function P6-Room($gv, $gapps) {  # the image must fit into super next to the oth
 function P6-Cable-Out {  # after 'fastboot reboot': the projector does not start while the computer's cable is in
   $nm = P6-Name
   Write-Host ""
-  Write-Host (T "Written. Unplug the A-to-A cable from the projector NOW: the $nm does not start while it is connected. Put any USB stick into its USB port instead (it helps the $nm power on; do NOT hold the power button, that starts the stock restore). If the picture does not come back within a minute, press the power button once." "Записано. Сейчас выньте кабель A–A из проектора: пока он подключён, $nm не загружается. Вставьте вместо него в USB-порт любую флешку (с ней $nm включается надёжнее; кнопку питания НЕ держите, иначе начнётся откат на сток). Если через минуту изображения нет, нажмите кнопку питания один раз.")
+  Write-Host (T "Written. Unplug the A-to-A cable from the projector NOW: the $nm does not start while it is connected. Put ONLY a FAT32 USB stick into its USB port instead (it helps the $nm power on; no USB Ethernet adapter, no hub; do NOT hold the power button, that starts the stock restore). If the picture does not come back within a minute, press the power button once." "Записано. Сейчас выньте кабель A–A из проектора: пока он подключён, $nm не загружается. Вставьте вместо него в USB-порт ТОЛЬКО флешку FAT32 (с ней $nm включается надёжнее; без адаптера USB Ethernet и без хаба; кнопку питания НЕ держите, иначе начнётся откат на сток). Если через минуту изображения нет, нажмите кнопку питания один раз.")
   $null = Read-Host (T "Press Enter when the cable is out" "Когда кабель вынут, нажмите Enter")
 }
 function Play6-Write {  # check, confirmation, cable, fastbootd, write system, restart (resumes in fastbootd)
@@ -1795,6 +2004,7 @@ function Play6-Write {  # check, confirmation, cable, fastbootd, write system, r
     if ((State-Get step_flash_system) -eq "done") {   # fastboot said OKAY, the restart was not sent
       if ($GappsZip) { State-Set gapps_plan $script:P6gSha }
       if ((State-Get gapps_plan) -and (State-Get step_gapps_part) -ne "done") { $null = Play6-Fbd-Check; P6-Gapps-Add }
+      if (-not $KeepData -and (State-Get wipe_plan) -eq "bcb" -and -not (State-Get step_bcb)) { $null = Play6-Fbd-Check; $null = P6-Bcb-Write }
       Ok (T "system is already written; restarting the projector" "system уже записан; перезагружаю проектор")
       Fb reboot | Out-Null
       State-Set step_flash done
@@ -1809,28 +2019,33 @@ function Play6-Write {  # check, confirmation, cable, fastbootd, write system, r
       Die (P6-NoConn)
     }
     Play6-Device
+    P6-Prechecks
   }
   Play6-Check-Image -Force
   Write-Host ""
   if ($KeepData) {
     Write-Host (T "Writing Lumen OS to the system partition of the $nm WITHOUT erasing data (a repair). XGIMI's firmware stays untouched: vendor, boot, recovery, MBOOT, calibration and factory data." "Записываю Lumen OS в раздел system $nm БЕЗ стирания данных (ремонт). Прошивка XGIMI не затрагивается: vendor, boot, recovery, MBOOT, калибровка и заводские данные.")
     if ((Read-Host (T "Type WRITE to continue" "Введите WRITE, чтобы продолжить")) -cne "WRITE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
+    State-Set wipe_plan keep
   } else {
-    Write-Host (T "Writing Lumen OS to the system partition of the $nm, then ERASING ALL DATA (apps, accounts, settings, files, Wi-Fi networks) with Android's factory reset after the first start. XGIMI's firmware stays untouched: vendor, boot, recovery, MBOOT, calibration and factory data. The $nm has only one system: if the write is cut off by a power loss, the way back is the USB stick restore (guide, 'Back to stock'). Keep the power adapter connected." "Записываю Lumen OS в раздел system $nm, затем СТИРАЮ ВСЕ ДАННЫЕ (приложения, аккаунты, настройки, файлы, сети Wi-Fi) сбросом Android к заводским настройкам после первого запуска. Прошивка XGIMI не затрагивается: vendor, boot, recovery, MBOOT, калибровка и заводские данные. Система у $nm одна: если запись оборвётся из-за отключения питания, вернуть проектор можно только восстановлением с флешки (инструкция, «Откат на сток»). Блок питания держите подключённым.")
+    Write-Host (T "Writing Lumen OS to the system partition of the $nm and ERASING ALL DATA (apps, accounts, settings, files, Wi-Fi networks). In the same visit to fastboot mode the installer leaves an erase request for XGIMI's recovery: it erases the data before Lumen OS starts for the first time, as Settings > Reset does, so that first start is a light one on clean data. XGIMI's firmware stays untouched: vendor, boot, recovery, MBOOT, calibration and factory data. The $nm has only one system: if the write is cut off by a power loss, the way back is the USB stick restore (guide, 'Back to stock'). Keep the power adapter connected." "Записываю Lumen OS в раздел system $nm и СТИРАЮ ВСЕ ДАННЫЕ (приложения, аккаунты, настройки, файлы, сети Wi-Fi). В том же заходе в режим fastboot установщик оставляет запрос на стирание для recovery XGIMI: оно стирает данные до первого запуска Lumen OS, как сброс из настроек, поэтому первый запуск лёгкий, на чистых данных. Прошивка XGIMI не затрагивается: vendor, boot, recovery, MBOOT, калибровка и заводские данные. Система у $nm одна: если запись оборвётся из-за отключения питания, вернуть проектор можно только восстановлением с флешки (инструкция, «Откат на сток»). Блок питания держите подключённым.")
     if ($GappsZip) {
-      Write-Host (T "With -GappsZip the same fastboot session also creates the partition $P6Gapps ($([math]::Floor($script:P6gPart / 1MB)) MB) for $($script:P6gName). After the first start on the old data the installer copies the Google apps into it as root (Rooted debugging), and only then erases the data, once." "С -GappsZip в той же сессии fastboot создаётся ещё раздел $P6Gapps ($([math]::Floor($script:P6gPart / 1MB)) МБ) для $($script:P6gName). После первого запуска на старых данных установщик копирует в него приложения Google с правами root (отладка суперпользователем) и только потом стирает данные, один раз.")
+      Write-Host (T "With -GappsZip the same fastboot session also creates the partition $P6Gapps ($([math]::Floor($script:P6gPart / 1MB)) MB) for $($script:P6gName). After the first start on clean data you join Wi-Fi and turn debugging on, the installer copies the Google apps in as root (Rooted debugging) and then resets the clean system once more, so that the next start sets Google up." "С -GappsZip в той же сессии fastboot создаётся ещё раздел $P6Gapps ($([math]::Floor($script:P6gPart / 1MB)) МБ) для $($script:P6gName). После первого запуска на чистых данных вы подключаете Wi-Fi и включаете отладку, установщик копирует приложения Google с правами root (отладка суперпользователем) и ещё раз сбрасывает чистую систему, чтобы следующий запуск настроил Google.")
     }
     if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") { Die (T "cancelled, nothing was written" "отменено, ничего не записано") }
     $script:EraseNow = $true
     State-Set erase_ok (Get-Date -Format "yyyyMMdd-HHmmss")
+    State-Set wipe_plan bcb
   }
   # -GappsZip: the Google services of this install (P6-Gapps-Fill-Step adds them after the first start). A new write
   # takes this run's choice; a write resumed in fastboot mode keeps the saved one unless -GappsZip is given.
   if (-not $infb -or $GappsZip -or $KeepData) { State-Set gapps_plan $script:P6gSha }
   if (-not $infb) {
-    foreach ($k in @("step_fastboot", "step_flash_system", "step_flash", "step_boot1", "step_wipe", "step_verify", "wipe_marker", "step_gapps_part", "step_gapps_fill")) { State-Set $k "" }
+    foreach ($k in @("step_fastboot", "step_flash_system", "step_flash", "step_boot1", "step_wipe", "step_verify", "wipe_marker", "step_gapps_part", "step_gapps_fill", "step_bcb")) { State-Set $k "" }
+    # the proof for 'verify' and for the light first start: /data/local/tmp does not survive the erase
+    if (-not $KeepData -and -not (P6-Marker-Write)) { Die (T "could not write the check file $P6Marker on the projector. Nothing was written." "не удалось записать проверочный файл $P6Marker на проектор. Ничего не записано.") }
     Write-Host ""
-    Write-Host (T "Take the USB stick out of the projector's USB port, if one is in, and connect that port to this computer with the USB A-to-A cable. Keep the power adapter connected." "Выньте флешку из USB-порта проектора, если она там, и соедините этот порт с компьютером кабелем USB A–A. Блок питания оставьте подключённым.")
+    Write-Host (T "Take the USB stick (or whatever is in it) out of the projector's USB port and connect that port to this computer with the USB A-to-A cable. Keep the power adapter connected." "Выньте флешку (или то, что там вставлено) из USB-порта проектора и соедините этот порт с компьютером кабелем USB A–A. Блок питания оставьте подключённым.")
     $null = Read-Host (T "Press Enter when the cable is in" "Когда кабель вставлен, нажмите Enter")
     Say (T "restarting into fastboot mode (about 30 seconds)" "перезагрузка в режим fastboot (около 30 секунд)")
     # saved first: a restart that happens although adb reports an error (the Wi-Fi connection drops with it) is still
@@ -1850,12 +2065,13 @@ function Play6-Write {  # check, confirmation, cable, fastbootd, write system, r
   if (-not (Fb-Do flash system $script:Image)) { Die (T "system was not written completely. The projector stays in fastboot mode: keep the cable in and run the installer again, it writes system again." "system записан не полностью. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите установщик снова, он запишет system ещё раз.") }
   State-Set step_flash_system done
   if (State-Get gapps_plan) { P6-Gapps-Add }
+  if (-not $KeepData -and (State-Get wipe_plan) -eq "bcb") { $null = P6-Bcb-Write }
   Fb reboot | Out-Null
   State-Set step_flash done
   P6-Cable-Out
 }
 function P6-Write-Again {  # the write did not take effect: the next run (or 'flash') writes system again from the start
-  foreach ($k in @("step_fastboot", "step_flash_system", "step_flash")) { State-Set $k "" }
+  foreach ($k in @("step_fastboot", "step_flash_system", "step_flash", "step_bcb")) { State-Set $k "" }
 }
 function Play6-Boot1 {  # the first start of Lumen OS on the old data: Wi-Fi and debugging carry over from stock
   $nm = P6-Name
@@ -1864,6 +2080,7 @@ function Play6-Boot1 {  # the first start of Lumen OS on the old data: Wi-Fi and
   Say (T "waiting for Lumen OS over Wi-Fi (the first start takes up to 10 minutes)" "жду Lumen OS по Wi-Fi (первый запуск занимает до 10 минут)")
   if (-not (Wifi-Connect 600)) {
     if ($script:P6St -match "unauthorized") { Die (T "Lumen OS runs, but it did not allow this computer within 10 minutes. On the projector: allow debugging from this computer, tick `"Always allow from this computer`" and press OK; then run the installer again. Nothing was erased; your data is still there." "Lumen OS работает, но проектор за 10 минут не разрешил отладку с этого компьютера. На проекторе разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK, затем запустите установщик снова. Ничего не стёрто, данные на месте.") }
+    P6-Noboot-Help
     Die (T "Lumen OS did not answer over Wi-Fi within 10 minutes. Is the A-to-A cable out of the projector? The $nm does not start while it is in. If the picture stays dark: unplug the cable and press the power button; a USB stick in the projector's USB port helps the $nm start. If Lumen Home is on the screen: look up its address in Settings > Network & Internet and run the installer again with -Ip ADDRESS. Nothing else was changed; your data is still there." "Lumen OS не ответила по Wi-Fi за 10 минут. Кабель A–A вынут из проектора? Пока он вставлен, $nm не загружается. Если изображения нет, выньте кабель и нажмите кнопку питания; флешка в USB-порту помогает $nm загрузиться. Если на экране Lumen Home, посмотрите адрес в «Настройки > Сеть и Интернет» и запустите установщик снова с -Ip АДРЕС. Больше ничего не изменено, данные на месте.")
   }
   P6-Identity
@@ -1925,15 +2142,16 @@ function Play6-Wipe {  # Android's own factory reset on the first Lumen OS start
   }
   if (-not $script:EraseNow) {
     Write-Host ""
-    Write-Host (T "Lumen OS runs on the old data. Next, Android's factory reset ERASES ALL DATA on the projector (apps, accounts, settings, files, Wi-Fi networks). XGIMI's recovery carries it out, as for Settings > Reset." "Lumen OS работает на старых данных. Дальше сброс Android к заводским настройкам СТИРАЕТ ВСЕ ДАННЫЕ проектора (приложения, аккаунты, настройки, файлы, сети Wi-Fi). Его выполняет recovery XGIMI, как при сбросе из настроек.")
+    if ((State-Get step_bcb) -eq "done" -and (State-Get step_gapps_fill) -eq "done") {
+      Write-Host (T "The Google apps are copied in. Next, Android's factory reset ERASES the projector once more (Wi-Fi network too), so that the next start sets Google up. XGIMI's recovery carries it out." "Приложения Google скопированы. Дальше сброс Android к заводским настройкам ещё раз СТИРАЕТ проектор (сеть Wi-Fi тоже), чтобы следующий запуск настроил Google. Его выполняет recovery XGIMI.")
+    } else {
+      Write-Host (T "Lumen OS runs on the old data. Next, Android's factory reset ERASES ALL DATA on the projector (apps, accounts, settings, files, Wi-Fi networks). XGIMI's recovery carries it out, as for Settings > Reset." "Lumen OS работает на старых данных. Дальше сброс Android к заводским настройкам СТИРАЕТ ВСЕ ДАННЫЕ проектора (приложения, аккаунты, настройки, файлы, сети Wi-Fi). Его выполняет recovery XGIMI, как при сбросе из настроек.")
+    }
     if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") { Die (T "cancelled, nothing was erased" "отменено, ничего не стёрто") }
     $script:EraseNow = $true
   }
   # the proof for 'verify': /data/local/tmp does not survive a real wipe
-  $tok = "lumen-$(Get-Date -Format 'yyyyMMddHHmmss')-$PID"
-  Adb shell "echo $tok > $P6Marker" | Out-Null
-  if (((Adb shell cat $P6Marker) | Out-String).Trim() -cne $tok) { Die (T "could not write the check file $P6Marker on the projector; nothing was erased" "не удалось записать проверочный файл $P6Marker на проектор; ничего не стёрто") }
-  State-Set wipe_marker $tok
+  if (-not (P6-Marker-Write)) { Die (T "could not write the check file $P6Marker on the projector; nothing was erased" "не удалось записать проверочный файл $P6Marker на проектор; ничего не стёрто") }
   $rc = P6-Root
   if ($rc -eq 2) { Die (T "after 'adb root' the projector did not answer over Wi-Fi again within a minute (adbd restarts with it). If the projector asks: allow debugging from this computer, tick `"Always allow from this computer`" and press OK. Then run the installer again. Nothing was erased." "после 'adb root' проектор не ответил по Wi-Fi снова за минуту (adbd при этом перезапускается). Если проектор спрашивает, разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK. Затем запустите установщик снова. Ничего не стёрто.") }
   if ($rc -ne 0) {
@@ -1960,7 +2178,7 @@ function Play6-Wipe {  # Android's own factory reset on the first Lumen OS start
   Write-Host ""
   Write-Host (T "The projector restarts into XGIMI's recovery, which erases the data (a few minutes), then starts Lumen OS clean. The Wi-Fi network is erased too." "Проектор перезагружается в recovery XGIMI, которое стирает данные (несколько минут), и затем запускает чистую Lumen OS. Сеть Wi-Fi тоже стирается.")
   if (Ask (T "Wait for Lumen Home on the projector (up to 10 minutes). Do you see Lumen Home?" "Дождитесь Lumen Home на проекторе (до 10 минут). Lumen Home на экране?")) { Ok (T "Lumen OS started clean" "Lumen OS запустилась начисто") }
-  else { Warn (T "Press the power button once. If the picture stays dark for 10 more minutes: guide, section '$nm', 'Something went wrong'." "Нажмите кнопку питания один раз. Если ещё 10 минут изображения нет: инструкция, раздел «${nm}», «Если что-то пошло не так».") }
+  else { Warn (T "Press the power button once. If the picture stays dark for 10 more minutes: guide, section '$nm', 'Something went wrong'." "Нажмите кнопку питания один раз. Если ещё 10 минут изображения нет: инструкция, раздел «${nm}», «Если что-то пошло не так».") ; P6-Noboot-Help }
 }
 function Play6-Verify($secs) {  # over Wi-Fi, after the wipe (the user joined Wi-Fi and turned debugging on again)
   $nm = P6-Name
@@ -2000,10 +2218,18 @@ function Play6-Verify($secs) {  # over Wi-Fi, after the wipe (the user joined Wi
   if ((Adb shell dumpsys media.audio_policy) -match "Output") { Ok (T "audio outputs present" "аудиовыходы есть") } else { Warn (T "no audio outputs listed" "аудиовыходы не найдены") }
   State-Set step_verify done
 }
-function Play6-Install {  # write, first start, wipe: each step once, continued where it stopped
+function Play6-Install {  # write (with the erase request), first start, wipe: each step once, continued where it stopped
   if ((State-Get step_flash) -ne "done") { Play6-Write }
-  if ((State-Get step_boot1) -ne "done") { Play6-Boot1 }
-  if (-not (State-Get step_wipe) -and (State-Get gapps_plan) -and (State-Get step_gapps_fill) -ne "done") { P6-Gapps-Fill-Step }
+  if ((State-Get step_boot1) -ne "done") {
+    # the erase request in misc: XGIMI's recovery erases before the first start. Without it (-KeepData, refused by
+    # fastboot mode, or an install begun by an older installer): the first start on the old data, the wipe after it
+    if (-not $KeepData -and (State-Get step_bcb) -eq "done") { Play6-Boot-Fresh } else { Play6-Boot1 }
+  }
+  if ((State-Get gapps_plan) -and (State-Get step_gapps_fill) -ne "done") {
+    $w = State-Get step_wipe
+    if (-not $w) { P6-Gapps-Fill-Step }                                                                 # on the old data, as before
+    elseif (($w -eq "requested" -or $w -eq "done") -and (State-Get step_bcb) -eq "done") { P6-Gapps-Fresh-Fill }   # on clean data
+  }
   if (-not (State-Get step_wipe)) { if ($KeepData) { State-Set step_wipe keep } else { Play6-Wipe } }
 }
 function Play6-Done {
@@ -2401,23 +2627,23 @@ function P6-Root-Wait {  # adb root over Wi-Fi; Rooted debugging off: waits for 
   while ($true) {
     $rc = P6-Root
     if ($rc -eq 0) { return }
-    if ($rc -eq 3) { if (-not (Root-Setting-Wait)) { Root-Setting-Stop }; continue }
-    if ($rc -eq 2) { Die (T "after 'adb root' the projector did not answer over Wi-Fi again within a minute (adbd restarts with it). If the projector asks: allow debugging from this computer, tick `"Always allow from this computer`" and press OK. Then run the same command again: it continues here. Nothing was erased." "после 'adb root' проектор не ответил по Wi-Fi снова за минуту (adbd при этом перезапускается). Если проектор спрашивает, разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK. Затем запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто.") }
-    Die (T "adb root is not possible on this system (Lumen OS is a userdebug build: is it really Lumen OS?). Nothing was erased." "adb root на этой системе невозможен (Lumen OS собрана как userdebug: точно ли это Lumen OS?). Ничего не стёрто.")
+    if ($rc -eq 3) { if (-not (Root-Setting-Wait)) { Die (T "turn on Rooted debugging (Settings > Device Preferences > Developer options) and run the same command again: it continues here. $(P6-Ne en)" "включите отладку суперпользователем (Настройки > Настройки устройства > Для разработчиков) и запустите ту же команду снова: установка продолжится с этого места. $(P6-Ne ru)") }; continue }
+    if ($rc -eq 2) { Die (T "after 'adb root' the projector did not answer over Wi-Fi again within a minute (adbd restarts with it). If the projector asks: allow debugging from this computer, tick `"Always allow from this computer`" and press OK. Then run the same command again: it continues here. $(P6-Ne en)" "после 'adb root' проектор не ответил по Wi-Fi снова за минуту (adbd при этом перезапускается). Если проектор спрашивает, разрешите отладку с этого компьютера, отметьте «Всегда разрешать с этого компьютера» и нажмите OK. Затем запустите ту же команду снова: установка продолжится с этого места. $(P6-Ne ru)") }
+    Die (T "adb root is not possible on this system (Lumen OS is a userdebug build: is it really Lumen OS?). $(P6-Ne en)" "adb root на этой системе невозможен (Lumen OS собрана как userdebug: точно ли это Lumen OS?). $(P6-Ne ru)")
   }
 }
 function P6-Gapps-Fill-Step {  # on the first start (old data): lumen_gapps filled as root; Google left out: plan cleared
   $nm = P6-Name
-  $again = T "Run the same command again: it continues here. Nothing was erased." "Запустите ту же команду снова: установка продолжится с этого места. Ничего не стёрто."
+  $again = T "Run the same command again: it continues here. $(P6-Ne en)" "Запустите ту же команду снова: установка продолжится с этого места. $(P6-Ne ru)"
   if (-not $GappsZip) {
     Say (T "this install was started with Google services (-GappsZip), and they are not in yet" "эта установка начата с сервисами Google (-GappsZip), и они ещё не добавлены")
-    if (-not (Ask (T "Finish the install without Google services? (Adding them later with 'gapps' erases the data once more.)" "Завершить установку без сервисов Google? (Если добавить их позже через 'gapps', данные сотрутся ещё раз.)"))) { Die (T "run the same command again with -GappsZip FILE: it continues there. Nothing was erased." "запустите ту же команду снова с -GappsZip ФАЙЛ: установка продолжится с того же места. Ничего не стёрто.") }
+    if (-not (Ask (T "Finish the install without Google services? (Adding them later with 'gapps' erases the data once more.)" "Завершить установку без сервисов Google? (Если добавить их позже через 'gapps', данные сотрутся ещё раз.)"))) { Die (T "run the same command again with -GappsZip FILE: it continues there. $(P6-Ne en)" "запустите ту же команду снова с -GappsZip ФАЙЛ: установка продолжится с того же места. $(P6-Ne ru)") }
     State-Set gapps_plan ""; return
   }
   if (-not $script:AdbT) { $script:AdbT = State-Get ip }
-  if (-not (Wifi-Connect 120)) { Die ((P6-NoConn 120) + " " + (T "Nothing was erased." "Ничего не стёрто.")) }
+  if (-not (Wifi-Connect 120)) { Die ((P6-NoConn 120) + " " + (T "$(P6-Ne en)" "$(P6-Ne ru)")) }
   P6-Identity
-  if ((Prop (P6-LProp)) -cne (P6-LVal)) { Die (T "the projector does not run Lumen OS for the $nm. Nothing was erased." "на проекторе не Lumen OS для $nm. Ничего не стёрто.") }
+  if ((Prop (P6-LProp)) -cne (P6-LVal)) { Die (T "the projector does not run Lumen OS for the $nm. $(P6-Ne en)" "на проекторе не Lumen OS для $nm. $(P6-Ne ru)") }
   $v = Prop sys.lumen.gapps
   if (-not $v -or $v -eq "none") {
     Warn (T "this Lumen OS shows no $P6Gapps (sys.lumen.gapps='$v'): the install finishes without Google services; add them later: gapps -Zip FILE" "эта Lumen OS не видит $P6Gapps (sys.lumen.gapps='$v'): установка завершается без сервисов Google; добавить их позже: gapps -Zip ФАЙЛ")
@@ -2430,17 +2656,17 @@ function P6-Gapps-Fill-Step {  # on the first start (old data): lumen_gapps fill
     P6-Gapps-Push
     $o = Gapps-Sh off $script:P6gSha
     Adb shell rm -rf $GappsDir | Out-Null
-    if (-not $o.StartsWith("OK off")) { Die ((T "the projector is not ready" "проектор не готов") + ": " + ($o -replace "^FAIL ", "") + ". " + (T "Nothing was erased." "Ничего не стёрто.")) }
+    if (-not $o.StartsWith("OK off")) { Die ((T "the projector is not ready" "проектор не готов") + ": " + ($o -replace "^FAIL ", "") + ". " + (T "$(P6-Ne en)" "$(P6-Ne ru)")) }
     Adb reboot | Out-Null
     for ($i = 0; (P6-Alive) -and $i -lt 60; $i += 5) { Start-Sleep 5 }   # until it goes away
     Pt-Adb disconnect $script:AdbT 2>&1 | Out-Null
-    P6-Wait-Lumen (T "Nothing was erased." "Ничего не стёрто.")
+    P6-Wait-Lumen (T "$(P6-Ne en)" "$(P6-Ne ru)")
     P6-Root-Wait
-    if ((Prop sys.lumen.gapps) -ne "off") { Die (T "the projector did not leave $P6Gapps unmounted (sys.lumen.gapps=$(Prop sys.lumen.gapps)). Restart it and run the same command again. Nothing was erased." "проектор не оставил $P6Gapps неподключённым (sys.lumen.gapps=$(Prop sys.lumen.gapps)). Перезагрузите его и запустите ту же команду снова. Ничего не стёрто.") }
+    if ((Prop sys.lumen.gapps) -ne "off") { Die (T "the projector did not leave $P6Gapps unmounted (sys.lumen.gapps=$(Prop sys.lumen.gapps)). Restart it and run the same command again. $(P6-Ne en)" "проектор не оставил $P6Gapps неподключённым (sys.lumen.gapps=$(Prop sys.lumen.gapps)). Перезагрузите его и запустите ту же команду снова. $(P6-Ne ru)") }
   }
   P6-Gapps-Push
   $o = Gapps-Sh pre $script:P6gSha (Get-Item -LiteralPath $script:P6gZip).Length
-  if (-not $o.StartsWith("OK pre ")) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "the projector is not ready" "проектор не готов") + ": " + ($o -replace "^FAIL ", "") + ". " + (T "Nothing was erased." "Ничего не стёрто.")) }
+  if (-not $o.StartsWith("OK pre ")) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "the projector is not ready" "проектор не готов") + ": " + ($o -replace "^FAIL ", "") + ". " + (T "$(P6-Ne en)" "$(P6-Ne ru)")) }
   Say (T "copying $($script:P6gName) to the projector over Wi-Fi (a few minutes)" "копирую $($script:P6gName) на проектор по Wi-Fi (несколько минут)")
   Adb push $script:P6gZip "$GappsDir/gapps.zip" | Out-Null
   if ($LASTEXITCODE -ne 0) { Adb shell rm -rf $GappsDir | Out-Null; Die ((T "adb push of the zip failed. " "adb push архива не удался. ") + $again) }

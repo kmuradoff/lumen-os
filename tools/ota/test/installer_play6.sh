@@ -17,7 +17,11 @@
 #   am broadcast  FACTORY_RESET: logged; as root (unless reset_noop) the projector goes to its recovery and
 #                 the data is erased (marker and apps gone, provisioning flags 0)
 #   fastboot      devices / getvar all (the Play 6 layout, made from lib/devices.conf) / flash system /
-#                 reboot (-> lumen when system was written, with props.written if there; else back to the old system)
+#                 flash misc (kept as misc.bin; misc_fail: refused) / reboot (-> lumen when system was written,
+#                 with props.written if there; else back to the old system; after flash misc, unless bcb_ignored,
+#                 XGIMI's recovery erases the data first: marker and apps gone, off Wi-Fi (net_down, or back after
+#                 rejoin_after more connect attempts))
+#   pre-checks    shell: the USB device list ($FB/usb), XGIMI's power log ($FB/power), the mounted stick ($FB/mounts)
 # Fake date, df, sleep, debugfs (the image's build.prop files) and diskutil (the restore stick) make it repeatable.
 # Cases: detection and refusals (unknown model, another MT5889 model, a Z9X over Wi-Fi, a second slot),
 # firmware (both versions pass, others stop with the message), the address (none, mDNS), image checks (Z9X
@@ -36,9 +40,14 @@
 # (a Z9X download stays the Z9X with a Play 6 install saved), backup over Wi-Fi, Russian texts, and a
 # later flash over super with the Google services add-on lumen_gapps (passes, its space counted; any other
 # extra partition refused). 'gapps' and 'gsf' themselves: tools/ota/test/installer_play6_gapps.sh.
+# The light first start (2026-10-31): system and the 2 KiB erase request in misc in one fastboot visit, XGIMI's
+# recovery erases before the first start; the earlier way as the fallback (misc refused, the request not carried
+# out, --keep-data, an install begun by an older installer); the pre-checks (battery, adapter, chip, serial batch,
+# the USB port, the stick's file system) and the help when the projector does not come back.
 # Every case: the fastboot log never holds a format, erase, -w, flashing, set_active, oem, boot,
-# snapshot-update, *-logical-partition or a flash of anything but system, and adb never sends the factory
-# reset unless the case expects it.
+# snapshot-update, *-logical-partition or a flash of anything but system and misc; misc only ever gets the
+# 2048 bytes of the erase request (never with --keep-data); and adb never sends the factory reset unless the
+# case expects it.
 # Exit status 0 only when every case passes. Never touches anything outside its temp dir.
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -81,6 +90,8 @@ state() {  # target -> device | unauthorized | offline | missing
 case "$1" in
   version) echo "Android Debug Bridge version 1.0.41"; echo "Version 35.0.2-12147458"; exit 0 ;;
   connect)
+    # net_down with a number: Wi-Fi comes back after that many more connect attempts (the user joins Wi-Fi)
+    if [ -s "$FB/net_down" ]; then n=$(cat "$FB/net_down"); if [ "$n" -le 1 ]; then rm -f "$FB/net_down"; else echo $((n - 1)) > "$FB/net_down"; fi; fi
     if up && [ "$2" = "$(cat "$FB/addr")" ]; then
       grep -qxF "$2" "$FB/connected" && { echo "already connected to $2"; exit 0; }
       echo "$2" >> "$FB/connected"; echo "connected to $2"; exit 0
@@ -140,6 +151,9 @@ case "$1" in
           touch "$FB/wiped"
         fi ;;
       "pidof org.lumen.projector"|"pidof org.lumen.projector org.z9x.projector") [ "$mode" = lumen ] && echo 1234 ;;
+      "for d in /sys/bus/usb/devices/*;"*) cat "$FB/usb" 2>/dev/null ;;
+      "logcat -d -v brief 2>/dev/null | grep -E "*) cat "$FB/power" 2>/dev/null ;;
+      "grep ' /mnt/media_rw/' /proc/mounts") cat "$FB/mounts" 2>/dev/null ;;
       "pm path "*) grep -qxF "$3" "$FB/packages3" && echo "package:/data/app/$3-1/base.apk" ;;
       "pm list packages -3") sed 's/^/package:/' "$FB/packages3" ;;
       "dumpsys media.audio_policy") echo "Outputs:" ;;
@@ -163,8 +177,18 @@ case "$1 ${2-}" in
   "getvar all") cat "$FB/getvar" >&2 ;;
   "flash system") [ -e "$FB/flash_fail" ] && { echo "FAILED (remote: 'write failed')" >&2; exit 1; }
                   touch "$FB/flashed"; echo "Writing 'system' OKAY" >&2 ;;
+  "flash misc") cp "$3" "$FB/misc.bin"; [ -e "$FB/misc_fail" ] && { echo "FAILED (remote: 'partition not found')" >&2; exit 1; }
+                touch "$FB/bcb"; echo "Writing 'misc' OKAY" >&2 ;;
   "reboot "*) if [ -e "$FB/flashed" ] && [ ! -e "$FB/no_effect" ]; then echo lumen > "$FB/mode"; [ ! -f "$FB/props.written" ] || cp "$FB/props.written" "$FB/props.lumen"
               else cat "$FB/before_fastboot" > "$FB/mode" 2>/dev/null || echo stock > "$FB/mode"; fi
+              # the erase request: XGIMI's recovery erases the data (Wi-Fi too) before the system starts
+              # (bcb_ignored: MBOOT or the recovery does not act on it, the old data stays)
+              if [ -e "$FB/bcb" ] && [ ! -e "$FB/bcb_ignored" ]; then
+                rm -f "$FB/marker" "$FB/bcb" "$FB/root"; : > "$FB/packages3"
+                printf '%s\n' "device_provisioned 1" "user_setup_complete 1" "tv_user_setup_complete 1" > "$FB/settings"
+                cat "$FB/rejoin_after" > "$FB/net_down" 2>/dev/null || : > "$FB/net_down"
+                touch "$FB/wiped_bcb"
+              fi
               rm -f "$FB/flashed" ;;
   *) echo "UNEXPECTED fastboot $*" >> "$FB/unexpected"; exit 1 ;;
 esac
@@ -248,7 +272,7 @@ sign() {  # dir key: SHA256SUMS of the images in dir, signed with the key
    openssl dgst -sha256 -sign "$W/keys/$2.key" -out SHA256SUMS.sig SHA256SUMS)
 }
 begin() {
-  CASE=$1; CFAIL=0; BROADCAST=0
+  CASE=$1; CFAIL=0; BROADCAST=0; KEEP=0
   C=$W/$1; rm -rf "$C"; mkdir -p "$C/inst/certs/play6" "$C/fb" "$C/state" "$C/backup"
   FB=$C/fb
   cp "$INST/lumen-install.sh" "$C/inst/"; cp -R "$INST/lib" "$C/inst/"
@@ -272,6 +296,10 @@ begin() {
   printf '%s\n' com.zacharee1.systemuituner com.example.player > "$FB/packages3"
   echo stock > "$FB/mode"; echo "$ADDR" > "$FB/addr"
   : > "$FB/connected"; : > "$FB/adb.log"; : > "$FB/fb.log"
+  # the pre-checks: an MT7663 unit with a FAT32 stick in its port, 80 % and the adapter in (XGIMI's power daemon log)
+  printf '%s\n' "usb1 1d6b:0002 09" "usb3 1d6b:0002 09" "3-1 0e8d:7663 ff" "1-1 0951:1666 08" > "$FB/usb"
+  printf '%s\n' "D/gmpf_main(  311): powerEvent:type{POWER_BATTERY_LEVEL},val{80}" "D/gmpf_main(  311): IsAdapterPowered:1" > "$FB/power"
+  echo "/dev/block/vold/public:8,1 /mnt/media_rw/1234-ABCD vfat rw,dirsync 0 0" > "$FB/mounts"
 }
 inst() {  # answers args... -> the installer copy; exit status in RC, output in $C/out
   local ans=$1; shift
@@ -296,7 +324,14 @@ end() {
   if grep -qE '(^| )(format|erase|-w|flashing|set_active|--set-active|oem|boot|snapshot-update|[a-z]+-logical-partition)( |:|$)' "$FB/fb.log"; then
     fail "forbidden fastboot command: $(cat "$FB/fb.log")"
   fi
-  if grep -E '(^| )flash ' "$FB/fb.log" | grep -vqE '^-s [A-Z0-9]+ flash system '; then fail "a flash of something but system: $(cat "$FB/fb.log")"; fi
+  if grep -E '(^| )flash ' "$FB/fb.log" | grep -vqE '^-s [A-Z0-9]+ flash (system|misc) '; then fail "a flash of something but system and misc: $(cat "$FB/fb.log")"; fi
+  # misc: only the 2 KiB erase request, byte for byte, and never with --keep-data
+  if grep -qE '(^| )flash misc ' "$FB/fb.log"; then
+    [ "$(wc -c < "$FB/misc.bin" | tr -d ' ')" = 2048 ] && [ "$(od -An -tx1 -v "$FB/misc.bin" | tr -d ' \n')" = "$BCB_HEX" ] \
+      || fail "misc got something else than the erase request: $(od -c "$FB/misc.bin" | head -5)"
+    [ "$KEEP" = 0 ] || fail "the erase request with --keep-data"
+    [ ! -e "$C/state/play6/bcb.bin" ] || fail "the erase request file was left behind"
+  fi
   if [ "$BROADCAST" = 0 ] && grep -q 'am broadcast' "$FB/adb.log"; then fail "factory reset sent: $(grep 'am broadcast' "$FB/adb.log")"; fi
   if grep -q 'am broadcast' "$FB/adb.log" && [ "$(grep -c 'am broadcast' "$FB/adb.log")" != 1 ]; then fail "more than one factory reset"; fi
   if grep 'am broadcast' "$FB/adb.log" | grep -vq -- '--user 0 '; then fail "factory reset without --user 0"; fi
@@ -304,7 +339,10 @@ end() {
   else FAIL=$((FAIL + 1)); echo "FAIL $CASE"; [ ! -f "$C/out" ] || sed 's/^/     | /' "$C/out" | tail -15; fi
 }
 S="-s $SER"
-WRITE_CMDS="$S getvar all;$S flash system inst/$IMGN;$S reboot;"
+# the erase request as Android's factory reset writes it: "boot-recovery" at 0, the arguments at 64, zeros elsewhere
+BCB_HEX=$( { printf 'boot-recovery'; head -c 51 /dev/zero; printf 'recovery\n--wipe_data\n--reason=lumen-install\n'; head -c $((2048 - 64 - 44)) /dev/zero; } | od -An -tx1 -v | tr -d ' \n')
+WRITE_CMDS="$S getvar all;$S flash system inst/$IMGN;$S flash misc state/play6/bcb.bin;$S reboot;"
+WRITE_KEEP="$S getvar all;$S flash system inst/$IMGN;$S reboot;"
 STOP_CMDS="$S getvar all;$S reboot;"
 
 # ------------------------------------------------------------------ check, detection, firmware
@@ -511,17 +549,44 @@ end
 
 # ------------------------------------------------------------------ the whole install
 begin install_all
+# the light first start (2026-10-31): system and the erase request in one fastboot visit, XGIMI's recovery erases
+# the data before Lumen OS starts for the first time; no factory reset over adb, no adb root
+inst 'no\nERASE\n\n\nyes\n' --ip 192.0.2.50
+expect_rc 0
+expect_cmds "$WRITE_CMDS"
+expect_out "check passed"; expect_out "Type ERASE to continue"
+expect_out "this unit: serial $SER (P6T), model $MODEL, firmware $FW2"; expect_out "Wi-Fi and Bluetooth chip: MediaTek MT7663 (0e8d:7663)"
+expect_out "battery 80 %, power adapter connected"; expect_out "keep ONLY a FAT32 USB stick in the projector's USB port"
+expect_out "it erases the data before Lumen OS starts for the first time"
+expect_out "Take the USB stick (or whatever is in it) out of the projector's USB port"; expect_out "Press Enter when the cable is in."
+expect_out "writing system (about 1 minute)"; expect_out "writing the erase request for XGIMI's recovery"
+expect_out "Unplug the A-to-A cable from the projector NOW"; expect_out "Put ONLY a FAT32 USB stick into its USB port"
+expect_out "The projector now starts XGIMI's recovery, which erases the data"; expect_out "Do you see Lumen OS?"
+expect_out "the projector is off Wi-Fi: the data was erased, the Wi-Fi network with it"
+expect_out "Done. On the projector: Settings > Network & Internet: join your Wi-Fi."
+expect_no_out "asking Android for its factory reset"
+[ "$(grep -c 'Type ERASE' "$C/out")" = 1 ] || fail "ERASE asked $(grep -c 'Type ERASE' "$C/out") times"
+# the check file goes on the stock data before the write: the erase removes it ('verify' proves the erase with it)
+[ "$(writes)" = "-s $ADDR shell echo $(state wipe_marker) > /data/local/tmp/lumen-install-wipe;-s $ADDR reboot fastboot;" ] \
+  || fail "adb writes: $(writes)"
+[ -e "$FB/wiped_bcb" ] || fail "the fake projector was not erased by its recovery"
+for k in step_check step_flash_system step_flash step_boot1 step_bcb; do [ "$(state $k)" = done ] || fail "state $k=$(state $k)"; done
+[ "$(state step_wipe)" = requested ] && [ "$(state wipe_plan)" = bcb ] || fail "step_wipe=$(state step_wipe) wipe_plan=$(state wipe_plan)"
+[ -n "$(state erase_ok)" ] && [ -n "$(state step_fastboot)" ] || fail "state erase_ok / step_fastboot"
+grep -q "pre-check: serial $SER (P6T), model $MODEL" "$C/state/play6/install.log" && grep -q "light first start: done" "$C/state/play6/install.log" \
+  || fail "install.log: $(cat "$C/state/play6/install.log" 2>/dev/null)"
+end
+
+begin install_all_fallback_misc_refused
+# fastboot mode refuses the erase request: the first start runs on the old data and Android's factory reset follows
+touch "$FB/misc_fail"
 inst 'no\nERASE\n\n\nyes\n' --ip 192.0.2.50
 expect_rc 0; BROADCAST=1
 expect_cmds "$WRITE_CMDS"
-expect_out "check passed"; expect_out "Type ERASE to continue"
-expect_out "Take the USB stick out of the projector's USB port"; expect_out "Press Enter when the cable is in."
-expect_out "writing system (about 1 minute)"; expect_out "Unplug the A-to-A cable from the projector NOW"
+expect_out "fastboot mode did not take the erase request"
 expect_out "Lumen OS 1.1.0 started ($SER, $ADDR)"; expect_out "asking Android for its factory reset"
 expect_out "The projector restarts into XGIMI's recovery, which erases the data"
-expect_out "Done. On the projector: Settings > Network & Internet: join your Wi-Fi."
-[ "$(grep -c 'Type ERASE' "$C/out")" = 1 ] || fail "ERASE asked $(grep -c 'Type ERASE' "$C/out") times"
-[ "$(writes)" = "-s $ADDR reboot fastboot;-s $ADDR shell echo $(state wipe_marker) > /data/local/tmp/lumen-install-wipe;-s $ADDR root;-s $ADDR shell am broadcast --user 0 -a android.intent.action.FACTORY_RESET -p android --receiver-foreground --es android.intent.extra.REASON lumen-install;" ] \
+[ "$(writes)" = "-s $ADDR shell echo $(state wipe_marker) > /data/local/tmp/lumen-install-wipe;-s $ADDR reboot fastboot;-s $ADDR shell echo $(state wipe_marker) > /data/local/tmp/lumen-install-wipe;-s $ADDR root;-s $ADDR shell am broadcast --user 0 -a android.intent.action.FACTORY_RESET -p android --receiver-foreground --es android.intent.extra.REASON lumen-install;" ] \
   || fail "adb writes: $(writes)"
 # order: the wipe only after the first start was seen; root before the reset
 n_boot=$(grep -n "shell getprop ro.lumen.device" "$FB/adb.log" | tail -1 | cut -d: -f1)
@@ -529,16 +594,52 @@ n_root=$(grep -n " root$" "$FB/adb.log" | cut -d: -f1); n_bc=$(grep -n "am broad
 [ "$n_boot" -lt "$n_root" ] && [ "$n_root" -lt "$n_bc" ] || fail "order: lumen check $n_boot, root $n_root, broadcast $n_bc"
 adb_has "disconnect $ADDR" || fail "no adb disconnect"
 [ -e "$FB/wiped" ] || fail "the fake projector was not wiped"
-for k in step_check step_flash_system step_flash step_boot1; do [ "$(state $k)" = done ] || fail "state $k=$(state $k)"; done
+[ "$(state step_bcb)" = failed ] && [ "$(state step_wipe)" = requested ] || fail "state: $(cat "$C/state/play6/state")"
+end
+
+begin install_all_fallback_recovery_ignores_request
+# the request is in misc, but the projector comes back with its old data (MBOOT or the recovery did not act on it):
+# the check file is still there, so the installer erases the earlier way
+touch "$FB/bcb_ignored"
+inst 'no\nERASE\n\n\nyes\nyes\n' --ip 192.0.2.50
+expect_rc 0; BROADCAST=1
+expect_out "the projector still has its old data: XGIMI's recovery did not carry out the erase request"
+expect_out "Lumen OS 1.1.0 started ($SER, $ADDR)"; expect_out "asking Android for its factory reset"
+[ -e "$FB/wiped" ] || fail "the fake projector was not wiped"
 [ "$(state step_wipe)" = requested ] || fail "step_wipe=$(state step_wipe)"
-[ -n "$(state erase_ok)" ] && [ -n "$(state step_fastboot)" ] || fail "state erase_ok / step_fastboot"
+end
+
+begin install_light_start_not_seen
+# the projector does not come back after the write: what to do, and the next run asks again
+inst 'no\nERASE\n\n\nno\n' --ip 192.0.2.50
+expect_rc 1
+expect_out "If the projector does not come back:"; expect_out "ONLY a FAT32 USB stick"; expect_out "repeat this 3 to 5 times"
+expect_out "ask for the Lumen OS diagnostic build"; expect_out "lumen_os_diag_logs"; expect_out "$C/state/play6/install.log"
+expect_out "This projector (serial P6T, MediaTek chip 0e8d:7663): the V1.7.116 .bin from a FAT32 stick."
+expect_out "when Lumen OS shows, run the same command again: it continues here"
+[ -z "$(state step_boot1)" ] || fail "step_boot1=$(state step_boot1)"
+: > "$FB/fb.log"
+inst 'yes\n'
+expect_rc 0; expect_cmds ""; expect_out "the projector is off Wi-Fi: the data was erased"
+[ "$(state step_boot1)" = done ] && [ "$(state step_wipe)" = requested ] || fail "state: $(cat "$C/state/play6/state")"
+end
+
+begin install_light_start_aic_help
+# the newer batch: confirmed at the pre-check, and the help never names the V1.7.116 .bin as its way back
+printf '%s\n' "usb1 1d6b:0002 09" "3-1 368b:8d91 ff" "1-1 0951:1666 08" > "$FB/usb"
+inst 'yes\nno\nERASE\n\n\nno\n' --ip 192.0.2.50
+expect_rc 1
+expect_out "Wi-Fi and Bluetooth chip: AIC8800 (368b:8d91)"; expect_out "This $NAME is from a newer batch"
+expect_out "NEVER roll this projector back with the V1.7.116 .bin"
+expect_out "This projector (serial P6T, chip 368b:8d91) is from the newer batch: do NOT use the V1.7.116 .bin"
 end
 
 begin install_all_ru
 LANG_CASE=ru_RU.UTF-8 inst 'нет\nERASE\n\n\nда\n' --ip 192.0.2.50
-expect_rc 0; BROADCAST=1
-expect_out "Выньте флешку из USB-порта проектора"; expect_out "Сейчас выньте кабель A–A из проектора"
-expect_out "Проектор перезагружается в recovery XGIMI"; expect_out "подключитесь к своему Wi-Fi"
+expect_rc 0
+expect_out "Выньте флешку (или то, что там вставлено) из USB-порта проектора"; expect_out "Сейчас выньте кабель A–A из проектора"
+expect_out "чип Wi-Fi и Bluetooth: MediaTek MT7663"; expect_out "ТОЛЬКО флешка FAT32"
+expect_out "Сейчас проектор запускает recovery XGIMI"; expect_out "подключитесь к своему Wi-Fi"
 if grep -q '—' "$C/out"; then fail "an em dash in the Russian text"; fi
 end
 
@@ -558,9 +659,11 @@ expect_no_out "Google account"
 end
 
 begin flash_keep_data
+KEEP=1
 inst 'WRITE\n\n\n' --ip 192.0.2.50 --keep-data flash
 expect_rc 0
-expect_cmds "$WRITE_CMDS"
+expect_cmds "$WRITE_KEEP"
+grep -q "lumen-install-wipe" "$FB/adb.log" && fail "a check file with --keep-data"
 expect_out "WITHOUT erasing data"; expect_out "Done. Lumen OS runs on the $NAME with your data kept."
 expect_no_out "Type ERASE"
 [ "$(state step_wipe)" = keep ] || fail "step_wipe=$(state step_wipe)"
@@ -654,7 +757,7 @@ end
 
 # ------------------------------------------------------------------ the first start
 begin boot1_allow_prompt_once
-echo 3 > "$FB/auth.lumen"
+echo 3 > "$FB/auth.lumen"; touch "$FB/misc_fail"
 inst 'no\nERASE\n\n\nyes\n' --ip 192.0.2.50
 expect_rc 0; BROADCAST=1
 [ "$(grep -c 'allow debugging from this computer' "$C/out")" = 1 ] || fail "allow prompt $(grep -c 'allow debugging from this computer' "$C/out") times"
@@ -673,29 +776,39 @@ expect_out "the projector answers at a new address: 192.0.2.77:5555"
 end
 
 begin boot1_write_without_effect
-touch "$FB/no_effect"
+# the earlier way (no erase request): a write without effect is found before any wipe
+touch "$FB/no_effect" "$FB/misc_fail"
 inst 'no\nERASE\n\n\n' --ip 192.0.2.50
 expect_rc 1; expect_out "the projector still runs XGIMI's system: the write did not take effect"
 expect_out "Run the installer again with the A-to-A cable at hand: it writes system again."
-grep -q "lumen-install-wipe" "$FB/adb.log" && fail "the check file was written"
-[ -z "$(state step_flash)$(state step_flash_system)$(state step_fastboot)" ] || fail "the write is still marked done: $(cat "$C/state/play6/state")"
-# the next run writes again (no dead end), then goes on to the first start and the wipe
-rm -f "$FB/no_effect"; : > "$FB/fb.log"
+grep -q "am broadcast" "$FB/adb.log" && fail "a factory reset was sent"
+[ -z "$(state step_flash)$(state step_flash_system)$(state step_fastboot)$(state step_bcb)" ] || fail "the write is still marked done: $(cat "$C/state/play6/state")"
+# the next run writes again (no dead end), then goes on to the light first start
+rm -f "$FB/no_effect" "$FB/misc_fail"; : > "$FB/fb.log"
 inst 'ERASE\n\n\nyes\n'
-expect_rc 0; BROADCAST=1
-expect_cmds "$WRITE_CMDS"; expect_out "Lumen OS 1.1.0 started"
+expect_rc 0
+expect_cmds "$WRITE_CMDS"; expect_out "the projector is off Wi-Fi: the data was erased"
 [ "$(state step_wipe)" = requested ] || fail "step_wipe=$(state step_wipe)"
 end
 
+begin light_start_write_without_effect
+# the erase request is carried out, but the write did not take effect: stock comes back clean (XGIMI's setup), the
+# user answers no; nothing in the installer claims Lumen OS
+touch "$FB/no_effect"
+inst 'no\nERASE\n\n\nno\n' --ip 192.0.2.50
+expect_rc 1; expect_out "If the projector does not come back:"
+[ -z "$(state step_boot1)" ] || fail "step_boot1=$(state step_boot1)"
+end
+
 begin boot1_old_lumen_still_runs
-# a reinstall over Lumen OS 1.0.0 whose write did not take effect: the old version still runs
-setp lumen ro.lumen.version 1.0.0; echo lumen > "$FB/mode"; touch "$FB/no_effect"
+# a reinstall over Lumen OS 1.0.0 whose write did not take effect: the old version still runs (the earlier way)
+setp lumen ro.lumen.version 1.0.0; echo lumen > "$FB/mode"; touch "$FB/no_effect" "$FB/misc_fail"
 sed 's/^ro.lumen.version=.*/ro.lumen.version=1.1.0/' "$FB/props.lumen" > "$FB/props.written"
 inst 'no\nERASE\n\n\n' --ip 192.0.2.50
 expect_rc 1; expect_out "system: Lumen OS 1.0.0"
 expect_out "the projector still runs the Lumen OS 1.0.0 it had before: the write did not take effect. Nothing was erased."
 [ -z "$(state step_flash)" ] || fail "step_flash=$(state step_flash)"
-grep -q "lumen-install-wipe" "$FB/adb.log" && fail "the check file was written"
+grep -q "am broadcast" "$FB/adb.log" && fail "a factory reset was sent"
 rm -f "$FB/no_effect"; : > "$FB/fb.log"
 inst 'ERASE\n\n\nyes\n'
 expect_rc 0; BROADCAST=1; expect_cmds "$WRITE_CMDS"; expect_out "Lumen OS 1.1.0 started"
@@ -704,7 +817,7 @@ end
 begin boot1_image_names_its_version_differently
 # the release image calls itself play6-1.1.0 (compose.sh's test format): checked before the write, so the install
 # goes on with a warning instead of a STOP that every run would repeat
-setp lumen ro.lumen.version play6-1.1.0
+setp lumen ro.lumen.version play6-1.1.0; touch "$FB/misc_fail"
 TPATH="$W/nodbg:/usr/bin:/bin" inst 'no\nERASE\n\n\nyes\n' --ip 192.0.2.50
 expect_rc 0; BROADCAST=1
 expect_out "Lumen OS 'play6-1.1.0' runs, and this installer download is for 1.1.0: the image names its version differently"
@@ -718,6 +831,7 @@ echo lumen > "$FB/mode"; touch "$FB/net_down"
 inst '\n'
 expect_rc 1; expect_out "Lumen OS did not answer over Wi-Fi within 10 minutes"; expect_out "your data is still there"
 expect_out "Is the A-to-A cable out of the projector? The $NAME does not start while it is in."
+expect_out "If the projector does not come back:"
 end
 
 begin boot1_not_allowed
@@ -737,6 +851,99 @@ printf 'adb-%s-AbCdEf\t_adb._tcp\t192.0.2.77:5555\n' "$SER" > "$FB/mdns"
 inst 'ERASE\nyes\n' --ip 192.0.2.50
 expect_rc 0; BROADCAST=1
 expect_out "the projector answers at a new address: 192.0.2.77:5555"
+end
+
+# ------------------------------------------------------------------ the pre-checks (before any write; logged)
+begin precheck_battery_low_refused
+printf '%s\n' "D/gmpf_main(  311): powerEvent:type{POWER_BATTERY_LEVEL},val{31}" "D/gmpf_main(  311): IsAdapterPowered:1" > "$FB/power"
+inst '' --ip 192.0.2.50 check
+expect_rc 1; expect_out "the battery is at 31 %: charge it to at least 50 %"; expect_out "Nothing was written."
+grep -q "pre-check: refused, battery 31" "$C/state/play6/install.log" || fail "not logged"
+end
+
+begin precheck_on_battery_refused
+printf '%s\n' "D/gmpf_main(  311): powerEvent:type{POWER_BATTERY_LEVEL},val{90}" "D/gmpf_main(  311): powerEvent:type{POWER_ADPATER},val{AdapterOut}" > "$FB/power"
+inst '' --ip 192.0.2.50 check
+expect_rc 1; expect_out "the projector runs on its battery: connect its power adapter"
+end
+
+begin precheck_power_unknown_asks
+: > "$FB/power"
+inst 'yes\n' --ip 192.0.2.50 check
+expect_rc 0; expect_out "could not read the battery level and the power adapter"; expect_out "check passed"
+inst 'no\n' --ip 192.0.2.50 check
+expect_rc 1; expect_out "connect the power adapter and charge the projector to at least 50 %"
+end
+
+begin precheck_lumen_battery_log
+# Lumen OS (an upgrade with --keep-data): its projector app logs the battery too
+echo lumen > "$FB/mode"; printf '%s\n' "I/P6Battery( 900): P6Battery: read level=64 adapter=true source=3" > "$FB/power"
+inst '' --ip 192.0.2.50 check
+expect_rc 0; expect_out "battery 64 %, power adapter connected"
+end
+
+begin precheck_usb_ethernet_removed
+printf '%s\n' "usb1 1d6b:0002 09" "3-1 0e8d:7663 ff" "1-1 0bda:8153 ff" > "$FB/usb"
+# taken out only after the installer's second look: still there, it stops; the next run sees the port clean
+printf '%s\n' "usb1 1d6b:0002 09" "3-1 0e8d:7663 ff" > "$C/usb2"
+inst 'no\n\n' --ip 192.0.2.50 check
+expect_rc 1; expect_out "a USB device that is not a USB stick is in the projector's USB port: 0bda:8153"
+expect_out "the USB device 0bda:8153 is still in the projector's USB port"
+cp "$C/usb2" "$FB/usb"
+inst '' --ip 192.0.2.50 check
+expect_rc 0; expect_no_out "not a USB stick"
+end
+
+begin precheck_usb_ethernet_is_the_network
+printf '%s\n' "usb1 1d6b:0002 09" "3-1 368b:8d91 ff" "1-1 0bda:8153 ff" > "$FB/usb"
+inst 'yes\nyes\n' --ip 192.0.2.50 check
+expect_rc 0
+expect_out "Keep it in for now. When the installer asks for the A-to-A cable, take it out"
+grep -q "other USB device kept as the network: 0bda:8153" "$C/state/play6/install.log" || fail "not logged"
+end
+
+begin precheck_xhf_serial_warns
+setp stock ro.serialno XHF4TEST0001
+inst 'no\n' --ip 192.0.2.50 check
+expect_rc 1; expect_out "This $NAME is from a newer batch"; expect_out "cancelled, nothing was written"
+end
+
+begin precheck_stick_not_fat32
+echo "/dev/block/vold/public:8,1 /mnt/media_rw/ABCD-1234 exfat rw 0 0" > "$FB/mounts"
+inst '' --ip 192.0.2.50 check
+expect_rc 0; expect_out "the USB stick in the projector is not FAT32 (exfat)"
+end
+
+begin resume_written_bcb_pending
+# system written and the restart not sent, with the erase request planned: it goes in before the restart
+mkdir -p "$C/state/play6"
+printf '%s\n' "serial=$SER" "ip=$ADDR" step_check=done step_backup=skipped step_fastboot=20261013-115900 step_flash_system=done wipe_plan=bcb wipe_marker=lumen-1-1 > "$C/state/play6/state"
+touch "$FB/flashed"; echo fastboot > "$FB/mode"
+inst '\nyes\n'
+expect_rc 0
+expect_cmds "$S getvar all;$S flash misc state/play6/bcb.bin;$S reboot;"
+expect_out "the projector is off Wi-Fi: the data was erased"
+[ "$(state step_bcb)" = done ] || fail "step_bcb=$(state step_bcb)"
+end
+
+begin resume_older_install_keeps_earlier_way
+# an install begun by an older installer (written, no erase request): the first start on the old data, then the reset
+mkdir -p "$C/state/play6"
+printf '%s\n' "serial=$SER" "ip=$ADDR" step_check=done step_backup=skipped step_fastboot=x step_flash_system=done step_flash=done > "$C/state/play6/state"
+echo lumen > "$FB/mode"
+inst 'ERASE\nyes\n'
+expect_rc 0; BROADCAST=1; expect_cmds ""
+expect_out "Lumen OS 1.1.0 started"; expect_out "Lumen OS runs on the old data. Next, Android's factory reset ERASES ALL DATA"
+end
+
+begin verify_after_light_start
+# after the light first start: the user joined Wi-Fi and turned debugging on; the check file of the stock data is gone
+inst 'no\nERASE\n\n\nyes\n' --ip 192.0.2.50
+expect_rc 0
+rm -f "$FB/net_down"
+inst '' verify
+expect_rc 0; expect_out "data erased (the check file from before the factory reset is gone)"; expect_out "no apps from before"
+[ "$(state step_wipe)" = done ] && [ "$(state step_verify)" = done ] || fail "state: $(cat "$C/state/play6/state")"
 end
 
 # ------------------------------------------------------------------ fastboot mode not reached
@@ -926,19 +1133,21 @@ end
 
 # ------------------------------------------------------------------ rescue
 begin rescue_saved_serial
+KEEP=1
 mkdir -p "$C/state/play6"; printf '%s\n' "serial=$SER" "ip=$ADDR" > "$C/state/play6/state"
 echo lumen > "$FB/before_fastboot"; echo fastboot > "$FB/mode"
 inst 'WRITE\n\n' --device play6 rescue
 expect_rc 0
-expect_cmds "$WRITE_CMDS"
+expect_cmds "$WRITE_KEEP"
 expect_out "RESCUE ($NAME)"; expect_no_out "Type this serial"; expect_out "your data is kept"
 [ -z "$(writes)" ] || fail "adb wrote: $(writes)"
 end
 
 begin rescue_needs_typed_serial
+KEEP=1
 echo lumen > "$FB/before_fastboot"; echo fastboot > "$FB/mode"
 inst "WRITE\n$SER\n\n" --device play6 rescue
-expect_rc 0; expect_out "In fastboot mode: $SER. Type this serial"; expect_cmds "$WRITE_CMDS"
+expect_rc 0; expect_out "In fastboot mode: $SER. Type this serial"; expect_cmds "$WRITE_KEEP"
 end
 
 begin rescue_wrong_typed_serial
@@ -957,11 +1166,12 @@ expect_out "Nothing was written."; expect_cmds "$S reboot;"
 end
 
 begin rescue_after_cut_off_write
+KEEP=1
 # the same projector after a write that was cut off (fastboot mode was reached): rescue writes
 mkdir -p "$C/state/play6"; printf '%s\n' "serial=$SER" "ip=$ADDR" dev_lumen=0 step_check=done step_fastboot=x > "$C/state/play6/state"
 echo stock > "$FB/before_fastboot"; echo fastboot > "$FB/mode"
 inst 'WRITE\n\n' --device play6 rescue
-expect_rc 0; expect_cmds "$WRITE_CMDS"
+expect_rc 0; expect_cmds "$WRITE_KEEP"
 end
 
 begin rescue_not_confirmed
@@ -990,9 +1200,10 @@ gapps_part() {  # size: the add-on partition lumen_gapps in super, as 'gapps' le
 begin flash_keep_data_with_gapps
 # a later Lumen OS over an install with Google services: the known layout plus lumen_gapps passes, only system is written
 echo lumen > "$FB/mode"; gapps_part 213909504
+KEEP=1
 inst 'WRITE\n\n\n' --ip 192.0.2.50 --keep-data flash
 expect_rc 0
-expect_cmds "$WRITE_CMDS"
+expect_cmds "$WRITE_KEEP"
 expect_out "fastboot mode: $NAME $SER"
 end
 
@@ -1108,7 +1319,7 @@ end
 
 begin help_lists_play6
 bash "$INST/lumen-install.sh" --help > "$C/out" 2>&1; RC=$?
-expect_rc 0; expect_out "stick DIR"; expect_out "What it writes on the Play 6: 'system'; 'gapps' also creates, resizes or deletes"
+expect_rc 0; expect_out "stick DIR"; expect_out "What it writes on the Play 6: 'system'; the 2 KiB erase request at the start of misc"
 end
 
 echo "installer play6: $PASS passed, $FAIL failed"
