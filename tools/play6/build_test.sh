@@ -291,7 +291,8 @@ IN=(
 [ "$OTA" = 1 ] && IN+=("$G/build/play6/Play6Updater.apk" "$G/build/play6/LumenBridge_updater.apk" "$G/overlay/play6/lumen_recovery.rc" "$G/overlay/play6/lumen_recovery.sh"
   "$G/build/play6/lumen_play6_ota.x509")
 [ -n "$DIAG" ] && IN+=("$G/overlay/debug/z9x_earlylog.rc" "$G/overlay/debug/z9x_earlylog.sh" "$G/overlay/play6/earlylog_usb.sh"
-  "$G/overlay/debug/lumen_escape.rc" "$G/overlay/debug/lumen_escape.sh")
+  "$G/overlay/debug/lumen_escape.rc" "$G/overlay/debug/lumen_escape.sh"
+  "$G/overlay/play6/play6_boottiming.rc" "$G/overlay/play6/play6_boottiming.sh")
 BS=$G/build/play6/signed/base
 # AIC8800D80X2 Wi-Fi/BT modules and firmware (tools/play6/aic/BUILD.md; binaries in build/play6/aic, not in git):
 # pinned by tools/play6/aic/SHA256SUMS, checked here and again by compose.sh on the build laptop
