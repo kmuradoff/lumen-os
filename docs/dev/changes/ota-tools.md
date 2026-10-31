@@ -1,3 +1,26 @@
+# Play 6: light first start and pre-checks (2026-10-31, docs/play6/BOOTLOOP_INVESTIGATION.md, owner "Да!!")
+
+- Installer, Play 6 profile only (lumen-install.sh and lumen-install.ps1 the same): `p6_bcb_write` /
+  `P6-Bcb-Write` writes the 2048-byte erase request (bootloader_message: `boot-recovery`, `recovery\n--wipe_data\n
+  --reason=lumen-install\n`, sha256 pinned as `P6_BCB_SHA`) into `misc` in the same fastbootd visit as `system`
+  (and `lumen_gapps`); `fb_allowed` lets `flash misc` through only while it does. `play6_boot_fresh`: the user
+  confirms Lumen OS on the screen, a one-minute probe over Wi-Fi tells erased (off Wi-Fi) from not erased (the
+  check file of the stock data still there: the earlier way, boot1 + root FACTORY_RESET). The check file goes
+  on the stock data before the write. `--keep-data`, a refused request (`step_bcb=failed`) and installs begun
+  by an older installer (no `step_bcb`) keep the earlier way. `--gapps-zip`: after the light first start the
+  user joins Wi-Fi and turns debugging and Rooted debugging on (`p6_gapps_fresh_fill`), then the fill and one
+  root factory reset of the clean system.
+- Pre-checks before any write (`p6_prechecks`, in `check` and before the write): USB devices from
+  /sys/bus/usb/devices (MediaTek 0e8d vs AIC 368b:8d90/8d91, a stick = interface class 08, anything else in the
+  port is asked about), serial prefix, firmware, battery and adapter from XGIMI's power daemon log (refused
+  below 50 % or on battery, asked when the log does not tell), the stick's file system. Logged in
+  `~/.lumen-installer/play6/install.log`. `p6_noboot_help`: what to do when the projector does not come back,
+  with the way back per batch.
+- Commands sent to the projector hold no double quote (PowerShell 5.1 passes them to adb.exe mangled).
+- Tests: `test/installer_play6.sh` (115: the light first start, both fallbacks, the pre-checks, the help, misc
+  only ever gets the exact 2048 bytes and never with --keep-data), `test/installer_play6_gapps.sh` (42),
+  new `test/installer_ps1_play6.sh` (26: same bytes and same parsing in both scripts). Not run on a projector.
+
 # Google services in one fastbootd visit (2026-10-30, docs/install/ONE_VISIT_GAPPS.md)
 
 - `image/z9x_gapps.sh`: mounts the partition as erofs (with `context=system_file`, then without), then ext4 (the
