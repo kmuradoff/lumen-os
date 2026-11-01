@@ -2,6 +2,8 @@
 
 English | [Русский](README.ru.md)
 
+[![Support the project](https://img.shields.io/badge/💖_Support-Lumen_OS-ff69b4?style=for-the-badge)](#-support-the-project)
+
 Android TV 14 for XGIMI projectors, built on LineageOS 21.
 
 ## Supported projectors
@@ -139,22 +141,38 @@ who helped make this project happen.
 To the LineageOS, UxPlay, android-airplay-server and MindTheGapps projects, and to everyone who tests
 Lumen OS and reports back.
 
-## Support the project
+## 💖 Support the project
 
-Lumen OS is free and open source. If it is useful to you, you can help.
+<div align="center">
 
-**Goal: a build computer (Beelink HX series), about $1,300.** Building Lumen OS images takes hours on the machines we have now; a powerful mini PC will let us build and test new versions and new projectors much faster. Every donation, by card or in crypto, goes to this one goal.
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Smiling%20Face%20with%20Hearts.png" alt="Love" width="80" />
 
-| Way | Link or address |
-|---|---|
-| Any bank card (Leobank moneybox) | [Donate to the moneybox](https://send.leobank.az/moneybox/W8IoNRjea6) |
-| Russian bank cards and SBP (CloudTips) | [Donate via CloudTips](https://pay.cloudtips.ru/p/723aaba1) |
-| USDT on TRON (TRC20) only | `TRjBAWuPa7WjdsATNkgwy955imhobH6sQV`<br><img src="docs/repo/support/usdt-trc20.png" width="140" alt="USDT TRC20 QR"> |
-| TON, and USDT on TON | `UQA2yAApJyyZ_vOYwrM6E0K2hwmn_35Y7m68UbCN6Y_A1L6x`<br><img src="docs/repo/support/ton.png" width="140" alt="TON QR"> |
+**If Lumen OS gave your projector a second life, please consider supporting it!**
 
-Check the network before you send. USDT sent to the TRON address over another network (ERC20, BEP20) is lost.
+Every donation goes to one goal: **a build computer (Beelink HX series), about $1,300.**<br>
+Today one image takes hours to build; a powerful mini PC means faster updates and more projectors.
 
-Thank you.
+<br>
+
+### 💳 Donate by card
+
+[![Any bank card](https://img.shields.io/badge/💳_Any_card-Moneybox-ff69b4?style=for-the-badge)](https://send.leobank.az/moneybox/W8IoNRjea6)
+[![Russian cards and SBP](https://img.shields.io/badge/🇷🇺_Russian_cards_·_SBP-CloudTips-0f9d58?style=for-the-badge)](https://pay.cloudtips.ru/p/723aaba1)
+
+<br>
+
+### 🪙 Or send crypto
+
+| Currency | Network | Address | QR |
+|:--------:|:-------:|:--------|:--:|
+| **USDT** | TRC20 (TRON only) | `TRjBAWuPa7WjdsATNkgwy955imhobH6sQV` | <img src="docs/repo/support/usdt-trc20.png" width="110" alt="USDT TRC20 QR"> |
+| **TON**, **USDT** | TON | `UQA2yAApJyyZ_vOYwrM6E0K2hwmn_35Y7m68UbCN6Y_A1L6x` | <img src="docs/repo/support/ton.png" width="110" alt="TON QR"> |
+
+Check the network before you send: USDT sent to the TRON address over ERC20 or BEP20 is lost.
+
+**Thank you!** 🙏
+
+</div>
 
 ## License
 

@@ -2,6 +2,8 @@
 
 [English](README.md) | Русский
 
+[![Поддержать проект](https://img.shields.io/badge/💖_Поддержать-Lumen_OS-ff69b4?style=for-the-badge)](#-поддержать-проект)
+
 Android TV 14 для проекторов XGIMI на основе LineageOS 21.
 
 ## Какие проекторы подходят
@@ -138,22 +140,38 @@ git clone --recurse-submodules https://github.com/kmuradoff/lumen-os.git
 Спасибо проектам LineageOS, UxPlay, android-airplay-server и MindTheGapps, а также всем, кто
 тестирует Lumen OS и пишет в теме на 4PDA.
 
-## Поддержать проект
+## 💖 Поддержать проект
 
-Lumen OS бесплатная, код открыт. Если она вам пригодилась, можно помочь.
+<div align="center">
 
-**Цель: компьютер для сборки (Beelink HX series), около $1 300.** Сборка образов Lumen OS на нынешних машинах занимает часы; мощный мини-ПК позволит гораздо быстрее собирать и проверять новые версии и новые проекторы. Все пожертвования, картой или криптой, идут на эту одну цель.
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Smiling%20Face%20with%20Hearts.png" alt="Спасибо" width="80" />
 
-| Способ | Ссылка или адрес |
-|---|---|
-| Любой банковской картой (копилка Leobank) | [Пополнить копилку](https://send.leobank.az/moneybox/W8IoNRjea6) |
-| Карты российских банков и СБП (CloudTips) | [Поддержать через CloudTips](https://pay.cloudtips.ru/p/723aaba1) |
-| USDT только в сети TRON (TRC20) | `TRjBAWuPa7WjdsATNkgwy955imhobH6sQV`<br><img src="docs/repo/support/usdt-trc20.png" width="140" alt="QR USDT TRC20"> |
-| TON и USDT в сети TON | `UQA2yAApJyyZ_vOYwrM6E0K2hwmn_35Y7m68UbCN6Y_A1L6x`<br><img src="docs/repo/support/ton.png" width="140" alt="QR TON"> |
+**Если Lumen OS подарила вашему проектору вторую жизнь, поддержите проект!**
 
-Проверьте сеть перед отправкой. USDT, отправленные на адрес TRON через другую сеть (ERC20, BEP20), пропадут.
+Все пожертвования идут на одну цель: **компьютер для сборки (Beelink HX series), около $1 300.**<br>
+Сейчас один образ собирается часами; мощный мини-ПК значит более быстрые обновления и больше проекторов.
 
-Спасибо.
+<br>
+
+### 💳 Картой
+
+[![Любой банковской картой](https://img.shields.io/badge/💳_Любая_карта-Копилка-ff69b4?style=for-the-badge)](https://send.leobank.az/moneybox/W8IoNRjea6)
+[![Карты РФ и СБП](https://img.shields.io/badge/🇷🇺_Карты_РФ_·_СБП-CloudTips-0f9d58?style=for-the-badge)](https://pay.cloudtips.ru/p/723aaba1)
+
+<br>
+
+### 🪙 Или криптой
+
+| Валюта | Сеть | Адрес | QR |
+|:------:|:----:|:------|:--:|
+| **USDT** | TRC20 (только TRON) | `TRjBAWuPa7WjdsATNkgwy955imhobH6sQV` | <img src="docs/repo/support/usdt-trc20.png" width="110" alt="QR USDT TRC20"> |
+| **TON**, **USDT** | TON | `UQA2yAApJyyZ_vOYwrM6E0K2hwmn_35Y7m68UbCN6Y_A1L6x` | <img src="docs/repo/support/ton.png" width="110" alt="QR TON"> |
+
+Проверьте сеть перед отправкой: USDT, отправленные на адрес TRON через ERC20 или BEP20, пропадут.
+
+**Спасибо!** 🙏
+
+</div>
 
 ## Лицензия
 
