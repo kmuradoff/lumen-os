@@ -143,6 +143,8 @@ Lumen OS and reports back.
 
 Lumen OS is free and open source. If it is useful to you, you can support the work by card or in crypto.
 
+**Moneybox: a build computer (Beelink HX series), goal 2,200 AZN.** Building Lumen OS images takes hours on the machines we have now. A powerful mini PC will let us build and test new versions and new projectors much faster: [send.leobank.az/moneybox/W8IoNRjea6](https://send.leobank.az/moneybox/W8IoNRjea6)
+
 Card (Russian bank cards and SBP): [pay.cloudtips.ru/p/723aaba1](https://pay.cloudtips.ru/p/723aaba1)
 
 | Network | Address | QR |

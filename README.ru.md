@@ -142,6 +142,8 @@ git clone --recurse-submodules https://github.com/kmuradoff/lumen-os.git
 
 Lumen OS бесплатная, код открыт. Если она вам пригодилась, проект можно поддержать картой или криптой.
 
+**Копилка на компьютер для сборки (Beelink HX series), цель 2 200 ₼.** Сборка образов Lumen OS на нынешних машинах занимает часы. Мощный мини-ПК позволит гораздо быстрее собирать и проверять новые версии и новые проекторы: [send.leobank.az/moneybox/W8IoNRjea6](https://send.leobank.az/moneybox/W8IoNRjea6)
+
 Картой (карты российских банков, СБП): [pay.cloudtips.ru/p/723aaba1](https://pay.cloudtips.ru/p/723aaba1)
 
 | Сеть | Адрес | QR |
