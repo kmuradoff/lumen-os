@@ -140,16 +140,16 @@ git clone --recurse-submodules https://github.com/kmuradoff/lumen-os.git
 
 ## Поддержать проект
 
-Lumen OS бесплатная, код открыт. Если она вам пригодилась, проект можно поддержать картой или криптой.
+Lumen OS бесплатная, код открыт. Если она вам пригодилась, можно помочь.
 
-**Копилка на компьютер для сборки (Beelink HX series), цель 2 200 ₼.** Сборка образов Lumen OS на нынешних машинах занимает часы. Мощный мини-ПК позволит гораздо быстрее собирать и проверять новые версии и новые проекторы: [send.leobank.az/moneybox/W8IoNRjea6](https://send.leobank.az/moneybox/W8IoNRjea6)
+**Цель: компьютер для сборки (Beelink HX series), около $1 300.** Сборка образов Lumen OS на нынешних машинах занимает часы; мощный мини-ПК позволит гораздо быстрее собирать и проверять новые версии и новые проекторы. Все пожертвования, картой или криптой, идут на эту одну цель.
 
-Картой (карты российских банков, СБП): [pay.cloudtips.ru/p/723aaba1](https://pay.cloudtips.ru/p/723aaba1)
-
-| Сеть | Адрес | QR |
-|---|---|---|
-| USDT только в сети TRON (TRC20) | `TRjBAWuPa7WjdsATNkgwy955imhobH6sQV` | <img src="docs/repo/support/usdt-trc20.png" width="140" alt="QR USDT TRC20"> |
-| TON и USDT в сети TON | `UQA2yAApJyyZ_vOYwrM6E0K2hwmn_35Y7m68UbCN6Y_A1L6x` | <img src="docs/repo/support/ton.png" width="140" alt="QR TON"> |
+| Способ | Ссылка или адрес |
+|---|---|
+| Любой банковской картой (копилка Leobank) | [Пополнить копилку](https://send.leobank.az/moneybox/W8IoNRjea6) |
+| Карты российских банков и СБП (CloudTips) | [Поддержать через CloudTips](https://pay.cloudtips.ru/p/723aaba1) |
+| USDT только в сети TRON (TRC20) | `TRjBAWuPa7WjdsATNkgwy955imhobH6sQV`<br><img src="docs/repo/support/usdt-trc20.png" width="140" alt="QR USDT TRC20"> |
+| TON и USDT в сети TON | `UQA2yAApJyyZ_vOYwrM6E0K2hwmn_35Y7m68UbCN6Y_A1L6x`<br><img src="docs/repo/support/ton.png" width="140" alt="QR TON"> |
 
 Проверьте сеть перед отправкой. USDT, отправленные на адрес TRON через другую сеть (ERC20, BEP20), пропадут.
 

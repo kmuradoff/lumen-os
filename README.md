@@ -141,16 +141,16 @@ Lumen OS and reports back.
 
 ## Support the project
 
-Lumen OS is free and open source. If it is useful to you, you can support the work by card or in crypto.
+Lumen OS is free and open source. If it is useful to you, you can help.
 
-**Moneybox: a build computer (Beelink HX series), goal 2,200 AZN.** Building Lumen OS images takes hours on the machines we have now. A powerful mini PC will let us build and test new versions and new projectors much faster: [send.leobank.az/moneybox/W8IoNRjea6](https://send.leobank.az/moneybox/W8IoNRjea6)
+**Goal: a build computer (Beelink HX series), about $1,300.** Building Lumen OS images takes hours on the machines we have now; a powerful mini PC will let us build and test new versions and new projectors much faster. Every donation, by card or in crypto, goes to this one goal.
 
-Card (Russian bank cards and SBP): [pay.cloudtips.ru/p/723aaba1](https://pay.cloudtips.ru/p/723aaba1)
-
-| Network | Address | QR |
-|---|---|---|
-| USDT on TRON (TRC20) only | `TRjBAWuPa7WjdsATNkgwy955imhobH6sQV` | <img src="docs/repo/support/usdt-trc20.png" width="140" alt="USDT TRC20 QR"> |
-| TON, and USDT on TON | `UQA2yAApJyyZ_vOYwrM6E0K2hwmn_35Y7m68UbCN6Y_A1L6x` | <img src="docs/repo/support/ton.png" width="140" alt="TON QR"> |
+| Way | Link or address |
+|---|---|
+| Any bank card (Leobank moneybox) | [Donate to the moneybox](https://send.leobank.az/moneybox/W8IoNRjea6) |
+| Russian bank cards and SBP (CloudTips) | [Donate via CloudTips](https://pay.cloudtips.ru/p/723aaba1) |
+| USDT on TRON (TRC20) only | `TRjBAWuPa7WjdsATNkgwy955imhobH6sQV`<br><img src="docs/repo/support/usdt-trc20.png" width="140" alt="USDT TRC20 QR"> |
+| TON, and USDT on TON | `UQA2yAApJyyZ_vOYwrM6E0K2hwmn_35Y7m68UbCN6Y_A1L6x`<br><img src="docs/repo/support/ton.png" width="140" alt="TON QR"> |
 
 Check the network before you send. USDT sent to the TRON address over another network (ERC20, BEP20) is lost.
 
