@@ -2,7 +2,14 @@
 
 English | [Русский](README.ru.md)
 
-[![Support the project](https://img.shields.io/badge/💖_Support-Lumen_OS-ff69b4?style=for-the-badge)](#-support-the-project)
+<p align="center">
+  <a href="#-support-the-project"><img src="docs/repo/support/banner-en.svg" width="100%" alt="Support Lumen OS: every donation goes to a faster build computer"></a>
+</p>
+<p align="center">
+  <a href="https://send.leobank.az/moneybox/W8IoNRjea6"><img src="https://img.shields.io/badge/💳_Any_card-Donate-ff3d8b?style=for-the-badge" alt="Donate by any card"></a>
+  <a href="https://pay.cloudtips.ru/p/723aaba1"><img src="https://img.shields.io/badge/🇷🇺_Russian_cards_·_SBP-Donate-0f9d58?style=for-the-badge" alt="Donate with a Russian card or SBP"></a>
+  <a href="#-support-the-project"><img src="https://img.shields.io/badge/🪙_USDT_·_TON-Crypto-6d4dff?style=for-the-badge" alt="Donate in crypto"></a>
+</p>
 
 Android TV 14 for XGIMI projectors, built on LineageOS 21.
 
@@ -25,6 +32,11 @@ another projector and any XGIMI firmware it does not know.
   planned as an add-on that you make from your own MindTheGapps download.
 
 More projectors will come later.
+
+> [!TIP]
+> **Lumen OS is free: no ads, no tracking, nothing to buy.** It is built in spare time on a slow computer, where one
+> image takes hours. If it gave your projector a second life, please [💖 support the project](#-support-the-project):
+> every donation goes to a faster build computer, so updates and new projectors come sooner.
 
 <p>
 <img src="docs/screenshots/en_01_projector.jpg" width="49%" alt="Projector settings in Lumen Home">

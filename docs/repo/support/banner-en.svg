@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 230" width="1280" height="230" role="img" aria-label="Support Lumen OS: every donation goes to a faster build computer">
+  <title>Support Lumen OS: every donation goes to a faster build computer</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff3d8b"/>
+      <stop offset="0.55" stop-color="#c13cff"/>
+      <stop offset="1" stop-color="#6d4dff"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="card"><rect x="0" y="0" width="1280" height="230" rx="28"/></clipPath>
+    <style>
+      .heart { transform-box: fill-box; transform-origin: center; animation: beat 1.3s ease-in-out infinite; }
+      @keyframes beat { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.16); } 28% { transform: scale(1); } 42% { transform: scale(1.1); } 70% { transform: scale(1); } }
+      .shine { animation: sweep 3.6s ease-in-out infinite; }
+      @keyframes sweep { 0% { transform: translateX(-500px) skewX(-20deg); } 60%, 100% { transform: translateX(1600px) skewX(-20deg); } }
+      .btn { transform-box: fill-box; transform-origin: center; animation: nudge 2.6s ease-in-out infinite; }
+      @keyframes nudge { 0%, 70%, 100% { transform: scale(1); } 78% { transform: scale(1.07); } 86% { transform: scale(1); } }
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    </style>
+  </defs>
+  <g clip-path="url(#card)">
+    <rect width="1280" height="230" fill="url(#bg)"/>
+    <circle cx="1200" cy="-30" r="170" fill="#fff" opacity="0.07"/>
+    <circle cx="70" cy="250" r="120" fill="#fff" opacity="0.06"/>
+    <rect class="shine" x="0" y="-40" width="180" height="310" fill="url(#shine)"/>
+  </g>
+  <g transform="translate(128 112)">
+    <path class="heart" fill="#fff" d="M0,-26 C-13,-52 -62,-50 -62,-12 C-62,20 -28,42 0,66 C28,42 62,20 62,-12 C62,-50 13,-52 0,-26 Z"/>
+  </g>
+  <text x="236" y="92" fill="#fff" font-size="42" font-weight="800">Lumen OS is free. Help it grow!</text>
+  <text x="238" y="138" fill="#fff" fill-opacity="0.92" font-size="23" font-weight="500">Every donation goes to a faster build computer:</text>
+  <text x="238" y="170" fill="#fff" fill-opacity="0.92" font-size="23" font-weight="500">updates and new projectors come sooner.</text>
+  <g class="btn">
+    <rect x="1030" y="80" width="220" height="72" rx="36" fill="#fff"/>
+    <text x="1140" y="127" fill="#d1307a" font-size="30" font-weight="800" text-anchor="middle">Support ❯</text>
+  </g>
+</svg>

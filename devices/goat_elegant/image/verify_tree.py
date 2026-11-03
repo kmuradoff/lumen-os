@@ -2,8 +2,8 @@
 # Compare the composed HB image (mounted) with the base image (mounted), entry by entry: type, owner, group,
 # mode, file content (sha256), link target, SELinux label, file capability. Run as root by compose_hb.sh step 6:
 #   python3 -I verify_tree.py BASE_MOUNT NEW_MOUNT TAG [IN]
-# TAG hb-VARIANT-stick|adb[-diag]: the USB-stick logger z9x_earlylog.{rc,sh} is expected only with "-diag" (and in
-# t1, which always carried it); hb_netadb.rc only on a stick image.
+# TAG hb-VARIANT-stick|adb|release[-diag]: the USB-stick logger z9x_earlylog.{rc,sh} is expected only with "-diag"
+# (and in t1, which always carried it); hb_netadb.rc only on a stick image; release: adb secured (see RELEASE).
 # Allowed differences, and nothing else: the debloat (removed), the .capex -> .apex swap, the added files of
 # compose_hb.sh step 3, and the appended /system/product/etc/build.prop. Directory sizes and times are ignored.
 # With IN (the composer's input folder, t2 and later): also the Lumen files of step 3d, each byte-identical to its
@@ -34,6 +34,7 @@ if DIAG:
 if "stick" in parts:
     ADDED["system/etc/init/hb_netadb.rc"] = ("u:object_r:system_file:s0", 0o644)
 CHANGED = {"system/product/etc/build.prop"}
+RELEASE = "release" in parts
 SOURCE = {}      # added or replaced path -> the staged file it must equal
 SIGNED = {}      # base_signed path -> new sha256
 PINNED = {}      # added path -> sha256 (files not staged from the Mac, read on the build server)
@@ -175,6 +176,25 @@ if IN and "system/etc/init/hb_media.rc" in n and "system/product/etc/build.prop"
     else:
         notes.append("c2: hb_media.rc binds %s (sha256 %s...) over /apex/com.android.vndk.v33/lib, gate prop set"
                      % (C2_LIB, C2_SHA[:8]))
+if RELEASE:
+    # release (compose_hb.sh --release): adb secured and the USB port a host port; within one build.prop the last
+    # line of a key wins, and the product build.prop is read after system and system_ext
+    last = {}
+    for line in open(n["system/product/etc/build.prop"], encoding="utf-8", errors="replace").read().split("\n"):
+        if "=" in line and not line.startswith("#"):
+            k, v = line.split("=", 1)
+            last[k] = v
+    want = {"ro.adb.secure": "1", "persist.sys.usb.config": "none", "service.adb.tcp.port": "5555"}
+    for k, v in want.items():
+        if last.get(k) != v:
+            errors.append("release: product build.prop %s=%s, must be %s" % (k, last.get(k), v))
+    for k in ("ro.logd.auditd", "persist.logd.size"):
+        if k in last:
+            errors.append("release: product build.prop still has the test line %s" % k)
+    for r in ("system/etc/init/hb_netadb.rc", "system/etc/init/z9x_earlylog.rc"):
+        if r in n:
+            errors.append("release: %s is in the image" % r)
+    notes.append("release: ro.adb.secure=1, persist.sys.usb.config=none, no hb_netadb.rc, no boot logger")
 for c in capex:
     a = c[:-6] + ".apex"
     if a in n:

@@ -2,7 +2,14 @@
 
 [English](README.md) | Русский
 
-[![Поддержать проект](https://img.shields.io/badge/💖_Поддержать-Lumen_OS-ff69b4?style=for-the-badge)](#-поддержать-проект)
+<p align="center">
+  <a href="#-поддержать-проект"><img src="docs/repo/support/banner-ru.svg" width="100%" alt="Поддержать Lumen OS: все донаты идут на быстрый компьютер для сборки"></a>
+</p>
+<p align="center">
+  <a href="https://send.leobank.az/moneybox/W8IoNRjea6"><img src="https://img.shields.io/badge/💳_Любая_карта-Поддержать-ff3d8b?style=for-the-badge" alt="Поддержать любой картой"></a>
+  <a href="https://pay.cloudtips.ru/p/723aaba1"><img src="https://img.shields.io/badge/🇷🇺_Карты_РФ_·_СБП-Поддержать-0f9d58?style=for-the-badge" alt="Поддержать картой РФ или через СБП"></a>
+  <a href="#-поддержать-проект"><img src="https://img.shields.io/badge/🪙_USDT_·_TON-Крипта-6d4dff?style=for-the-badge" alt="Поддержать криптой"></a>
+</p>
 
 Android TV 14 для проекторов XGIMI на основе LineageOS 21.
 
@@ -25,6 +32,12 @@ Android TV 14 для проекторов XGIMI на основе LineageOS 21.
   ставить отдельным дополнением, которое вы делаете сами из своего файла MindTheGapps.
 
 Другие проекторы добавятся позже.
+
+> [!TIP]
+> **Lumen OS бесплатна: без рекламы, без слежки, ничего не нужно покупать.** Я делаю её в свободное время на слабом
+> компьютере, один образ собирается часами. Если Lumen OS подарила вашему проектору вторую жизнь,
+> [💖 поддержите проект](#-поддержать-проект): все донаты идут на быстрый компьютер для сборки, и обновления
+> с новыми проекторами выйдут быстрее.
 
 <p>
 <img src="docs/screenshots/en_01_projector.jpg" width="49%" alt="Настройки проектора в Lumen Home">

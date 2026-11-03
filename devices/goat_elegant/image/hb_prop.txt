@@ -1,4 +1,5 @@
-# Lumen OS on the XGIMI Z9X HB (goat_elegant, G0130), FIRST-BOOT TEST builds only (never a release). Appended to
+# Lumen OS on the XGIMI Z9X HB (goat_elegant, G0130), all builds; compose_hb.sh --release drops the test lines
+# (ro.adb.secure=0 and the two logd lines) and secures adb instead. Appended to
 # /system/product/etc/build.prop by compose_hb.sh; init reads that file last, so these lines win over the base and
 # the vendor. compose_hb.sh adds ro.lumen.version, ro.lumen.build_id and, with --usb-adb, persist.sys.usb.config=adb.
 # Comment lines are dropped when appended.

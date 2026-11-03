@@ -41,7 +41,7 @@
 # run_on_builder.sh) from the Mac, which stages OUT/in first. Inputs are read only; everything is written under
 # OUT/<TAG>. OUT is $LUMEN_IMAGE_DIR (compose.sh sets it to ~/<remote_dir> of image.conf), default ~/hb-out.
 #
-#   bash ~/hb-out/in/compose_hb.sh VARIANT [--usb-adb] [--diag]
+#   bash ~/hb-out/in/compose_hb.sh VARIANT [--usb-adb | --release] [--diag]
 #   VARIANT  t1, t2, ...: ro.lumen.version=hb-VARIANT; t1 is the bare image above, every later one the Lumen one
 #   --diag     adds the USB-stick boot logger of the test builds, overlay/debug/z9x_earlylog.{rc,sh} (the same files
 #              as the Z9X DIAG and Play 6 --diag images; init domain su: userdebug only). Output TAG gets "-diag".
@@ -51,6 +51,11 @@
 #              load_bpf_programs on (before zygote). While the port is in device mode it reads no USB stick.
 #              Output TAG hb-VARIANT-adb. Without it: TAG hb-VARIANT-stick, the port stays a host port (stock mtp
 #              default) for the USB-stick logger, and adbd is started at boot for network adb (hb_netadb.rc).
+#   --release  the public image (as tools/play6/release_image.sh does for the Play 6): no hb_netadb.rc, and the test
+#              lines of hb_prop.txt (ro.adb.secure=0, ro.logd.auditd=false, persist.logd.size) are replaced by
+#              ro.adb.secure=1 and persist.sys.usb.config=none. The vendor's init.mt9660.usb.rc then keeps the USB
+#              port a host port (USB sticks work) and stops adbd; adb runs only after the user turns debugging on,
+#              and every new computer has to be allowed on screen. Output TAG hb-VARIANT-release.
 #
 # Environment (all optional; recorded in BUILD_INFO.txt):
 #   LUMEN_IMAGE_DIR    OUT, see above
@@ -68,17 +73,21 @@
 # no AVB footer (vbmeta must have verity and verification disabled, see README.md), plus .sha256 and a build log.
 set -euo pipefail
 die() { echo "ERROR: $*" >&2; exit 1; }
-V=${1:?usage: compose_hb.sh VARIANT [--usb-adb] [--diag]}; shift
-USBADB=0; DIAG=0
+V=${1:?usage: compose_hb.sh VARIANT [--usb-adb | --release] [--diag]}; shift
+USBADB=0; DIAG=0; REL=0
 for a in "$@"; do
   case $a in
     --usb-adb) USBADB=1 ;;
+    --release) REL=1 ;;
     --diag) DIAG=1 ;;
     *) die "unknown option $a" ;;
   esac
 done
 case $V in t[0-9]*) ;; *) die "VARIANT must look like t1, t2, ..." ;; esac
-TAG=hb-$V-stick; [ $USBADB = 1 ] && TAG=hb-$V-adb
+[ $USBADB = 1 ] && [ $REL = 1 ] && die "--usb-adb and --release do not go together"
+TAG=hb-$V-stick; [ $USBADB = 1 ] && TAG=hb-$V-adb; [ $REL = 1 ] && TAG=hb-$V-release
+[ $DIAG = 1 ] && [ $REL = 1 ] && die "a release image carries no boot logger (--diag)"
+[ "$V" = t1 ] && [ $REL = 1 ] && die "t1 is the bare first-boot image, never a release"
 [ $DIAG = 1 ] && TAG=$TAG-diag
 LUMEN=1; [ "$V" = t1 ] && LUMEN=0      # t1 stays the bare first-boot image, byte for byte as recorded
 [ "$V" = t1 ] && DIAG=1                # t1 carried the logger (its TAG unchanged; verify_tree.py knows)
@@ -448,7 +457,7 @@ fi
 inst 0644 "$IN/lumen_escape.rc" "$S/etc/init/lumen_escape.rc"
 inst 0755 "$IN/lumen_escape.sh" "$S/etc/xgimi/lumen_escape.sh"
 #   3c. network adb on the stick variant only (the USB port stays a host port there)
-[ $USBADB = 1 ] || inst 0644 "$IN/hb_netadb.rc" "$S/etc/init/hb_netadb.rc"
+[ $USBADB = 1 ] || [ $REL = 1 ] || inst 0644 "$IN/hb_netadb.rc" "$S/etc/init/hb_netadb.rc"
 
 #   3d. t2+: the Lumen part (tools/play6/compose.sh steps 0c, 3, 3a to 3d and 4, the Play 6 choices)
 if [ $LUMEN = 1 ]; then
@@ -638,7 +647,14 @@ PROPS=$T/props_added.txt
 { echo
   if [ $LUMEN = 1 ]; then echo "# ---- Lumen OS HB test build ($TAG), devices/goat_elegant/image/compose_hb.sh"
   else echo "# ---- Lumen OS HB first-boot test ($TAG), devices/goat_elegant/image/compose_hb.sh"; fi
-  grep -v '^#' "$IN/hb_prop.txt" | sed '/^$/d'
+  if [ $REL = 1 ]; then
+    # release: the test lines of hb_prop.txt out, adb secured (see --release above)
+    grep -v '^#' "$IN/hb_prop.txt" | sed '/^$/d' | grep -v -E '^(ro\.adb\.secure=0|ro\.logd\.auditd=false|persist\.logd\.size=.*)$'
+    echo "ro.adb.secure=1"
+    echo "persist.sys.usb.config=none"
+  else
+    grep -v '^#' "$IN/hb_prop.txt" | sed '/^$/d'
+  fi
   echo "ro.lumen.version=hb-$V"
   echo "ro.lumen.build_id=$BUILD_ID"
   if [ $LUMEN = 1 ]; then
@@ -651,6 +667,14 @@ PROPS=$T/props_added.txt
   [ $USBADB = 1 ] && echo "persist.sys.usb.config=adb"
   true; } > "$PROPS"
 sudo grep -q '^ro.build.characteristics=emulator$' "$S/product/etc/build.prop" || die "props: the base product build.prop changed (characteristics)"
+if [ $REL = 1 ]; then
+  for l in ro.adb.secure=1 persist.sys.usb.config=none service.adb.tcp.port=5555; do
+    grep -qx "$l" "$PROPS" || die "props: release lacks $l"
+  done
+  for l in ro.adb.secure=0 persist.sys.usb.config=adb ro.logd.auditd=false; do
+    grep -qx "$l" "$PROPS" && die "props: release still has the test line $l"
+  done
+fi
 sudo sh -c "cat '$PROPS' >> '$S/product/etc/build.prop'"
 echo "props: $(grep -c = "$PROPS") lines appended to /system/product/etc/build.prop"
 
