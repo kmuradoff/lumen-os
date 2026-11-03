@@ -306,6 +306,11 @@ public final class Rows {
             add("surround", R.string.r_surround, surround(s.surroundMode));
             add("audio_devices", R.string.r_audio_devices, s.audioDevices);
             add("arc", R.string.r_arc, arc(s));
+            add("arc_device", R.string.r_arc_device, arcDevice(s));
+            add("arc_theirs", R.string.r_arc_theirs, s.arcLink == null ? null : sads(s.arcSads));
+            add("arc_ours", R.string.r_arc_ours, s.arcOurs == null ? null
+                    : s(R.string.v_hdmi_n, s.arcPort) + ": " + sads(s.arcOurs));
+            add("arc_formats", R.string.r_arc_formats, arcFormats(s.arcFormats));
             add("spdif", R.string.r_spdif, s.spdifType == null ? null
                     : s.spdifType == 0 ? s(R.string.v_none) : s(R.string.v_present_type, s.spdifType));
             add("audio_delay", R.string.r_audio_delay, s.audioDelay == null ? null : s(R.string.v_ms, s.audioDelay));
@@ -323,6 +328,55 @@ public final class Rows {
         }
         if (s.arcSupport != null && s.arcSupport != 0) b.append(", ").append(s(R.string.v_support_n, s.arcSupport));
         return b.toString();
+    }
+
+    /** The CEC audio system on the ARC port: "LG SOUND BAR, HDMI ARC, HDMI 1, CEC 5, 1.0.0.0". */
+    private String arcDevice(Snapshot s) {
+        if (s.arcDeviceName == null && s.arcLink == null) return null;
+        List<String> k = new ArrayList<>();
+        if (s.arcDeviceName != null) k.add(s.arcDeviceName.isEmpty() ? "?" : s.arcDeviceName);
+        if (s.arcLink != null) k.add(s.arcLink);
+        if (s.arcDevicePort > 0) k.add(s(R.string.v_hdmi_n, s.arcDevicePort));
+        if (s.arcDeviceLogical >= 0) k.add("CEC " + s.arcDeviceLogical);
+        if (s.arcDevicePhysical >= 0) {
+            int a = s.arcDevicePhysical;
+            k.add(((a >> 12) & 15) + "." + ((a >> 8) & 15) + "." + ((a >> 4) & 15) + "." + (a & 15));
+        }
+        return String.join(", ", k);
+    }
+
+    /** Short Audio Descriptors: "PCM, 2 ch, 32-192 kHz, 16/20/24 bit; Dolby Digital, 6 ch, 32/44.1/48 kHz, up to 640 kbit/s". */
+    private String sads(List<Edid.Sad> list) {
+        if (list == null) return null;
+        if (list.isEmpty()) return s(R.string.v_none);
+        List<String> out = new ArrayList<>();
+        for (Edid.Sad x : list) {
+            StringBuilder b = new StringBuilder(x.formatName());
+            if (x.atmos()) b.append(" Atmos");
+            b.append(", ").append(s(R.string.v_channels, x.channels));
+            String r = x.rates();
+            if (!r.isEmpty()) b.append(", ").append(s(R.string.v_sad_khz, r));
+            if (x.format == 1) {
+                String bits = x.lpcmBits();
+                if (!bits.isEmpty()) b.append(", ").append(s(R.string.v_sad_bits, bits));
+            } else if (x.maxKbps() > 0) {
+                b.append(", ").append(s(R.string.v_sad_kbps, x.maxKbps()));
+            }
+            out.add(b.toString());
+        }
+        return String.join("; ", out);
+    }
+
+    /** "Dolby Digital, DTS|8" (Collector) -> "Dolby Digital, DTS, up to 8 ch". */
+    private String arcFormats(String v) {
+        if (v == null) return null;
+        int bar = v.indexOf('|');
+        if (bar < 0) return v;
+        try {
+            return v.substring(0, bar) + ", " + s(R.string.v_max_channels, Integer.parseInt(v.substring(bar + 1)));
+        } catch (NumberFormatException e) {
+            return v.substring(0, bar);
+        }
     }
 
     private String audioFormat(Parse.AudioThread a) {

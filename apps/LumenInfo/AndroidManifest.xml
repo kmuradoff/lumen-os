@@ -14,12 +14,15 @@
   /data/app by an earlier adb install (PackageManager drops a data copy older than the system one).
   Version 0.3 (versionCode 3, 2026-11-01): the extra read-only vendor getters allowed
   (devices/goat_elegant/research/allowed_lumeninfo.tsv); an adb install -r replaces the 0.2 of the image.
+  Version 0.4 (versionCode 4, 2026-11-03): the device on the ARC / eARC port, both directions (Audio page): its
+  CEC name and addresses, the Short Audio Descriptors it reported, the encodings Android may send it, and the
+  audio block of our own EDID on that port.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.lumen.info"
     android:sharedUserId="android.uid.system"
-    android:versionCode="3"
-    android:versionName="0.3">
+    android:versionCode="4"
+    android:versionName="0.4">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
 

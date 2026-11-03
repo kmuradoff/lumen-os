@@ -385,12 +385,26 @@ public final class Edid {
     }
 
     private Sad sad(int p) {
+        return sadOf(u(p), u(p + 1), u(p + 2));
+    }
+
+    /**
+     * One CTA-861 Short Audio Descriptor from its 3 bytes, the form an EDID audio block, a CEC
+     * &lt;Report Short Audio Descriptor&gt; and Android's AudioDescriptor STANDARD_EDID all use. Null for a
+     * reserved format code 0 or a short array.
+     */
+    public static Sad sad(byte[] b, int off) {
+        if (b == null || off < 0 || b.length - off < 3) return null;
+        Sad s = sadOf(b[off] & 0xff, b[off + 1] & 0xff, b[off + 2] & 0xff);
+        return s.format == 0 ? null : s;
+    }
+
+    private static Sad sadOf(int b0, int b1, int b2) {
         Sad s = new Sad();
-        int b0 = u(p);
         s.format = (b0 >> 3) & 0x0f;
         s.channels = (b0 & 7) + 1;
-        s.ratesMask = u(p + 1) & 0x7f;
-        s.byte3 = u(p + 2);
+        s.ratesMask = b1 & 0x7f;
+        s.byte3 = b2;
         if (s.format == 15) s.extFormat = s.byte3 >> 3;
         return s;
     }

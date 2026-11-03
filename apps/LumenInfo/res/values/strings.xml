@@ -210,4 +210,12 @@
     <string name="v_screen_zoom">centre %1$d, horizontal %2$d, vertical %3$d</string>
     <string name="v_hw_port">chip port %1$d</string>
     <string name="v_phys_addr">address %1$s</string>
+    <string name="r_arc_device">ARC device</string>
+    <string name="r_arc_theirs">It reports</string>
+    <string name="r_arc_ours">We report</string>
+    <string name="r_arc_formats">Android may send it</string>
+    <string name="v_sad_khz">%1$s kHz</string>
+    <string name="v_sad_bits">%1$s bit</string>
+    <string name="v_sad_kbps">up to %1$d kbit/s</string>
+    <string name="v_max_channels">up to %1$d ch</string>
 </resources>

@@ -61,6 +61,15 @@ public final class Snapshot implements Cloneable {
     public Parse.AudioThread audio;     // the playing output (audio_flinger), null when all are in standby
     public Parse.AudioThread primary;   // the primary output (even in standby)
     public String audioDevices;         // AudioManager outputs: "Speaker, HDMI ARC"
+    // ---- the device on the ARC / eARC port: what it tells us and what we tell it
+    public String arcDeviceName;        // CEC audio system on the ARC port (HdmiControlManager), "LG SOUND BAR"
+    public int arcDeviceLogical = -1, arcDevicePort = -1, arcDevicePhysical = -1, arcDeviceVendor = -1;
+    public String arcLink;              // "HDMI ARC" / "HDMI eARC": the AudioDeviceInfo Android sees
+    public List<Edid.Sad> arcSads;      // its Short Audio Descriptors (AudioDeviceInfo descriptors, from CEC / eARC)
+    public String arcFormats;           // the encodings Android may send it, with the most channels
+    public int arcPort = -1;            // the HDMI port with ARC (HdmiPortInfo)
+    public List<Edid.Sad> arcOurs;      // what we tell it: the audio block of our EDID on that port (built-in file)
+    public String arcOursFile;
     public Integer surroundMode;        // Settings.Global encoded_surround_output
 
     // ---- system

@@ -8,6 +8,12 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.HdrConversionMode;
+import android.hardware.hdmi.HdmiControlManager;
+import android.hardware.hdmi.HdmiDeviceInfo;
+import android.hardware.hdmi.HdmiPortInfo;
+import android.media.AudioDescriptor;
+import android.media.AudioFormat;
+import android.media.AudioProfile;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
@@ -534,6 +540,102 @@ public final class Collector {
         } catch (Throwable t) {
             w.surroundMode = null;
         }
+        arcDevice();
+    }
+
+    /**
+     * The device on the ARC / eARC port, both directions: the CEC audio system there (name, addresses) and the
+     * Short Audio Descriptors it reported (the framework asks them over CEC, eARC brings them in its capability
+     * data; AudioDeviceInfo keeps them as STANDARD_EDID descriptors), plus the encodings Android may send it. What
+     * we tell it is the audio block of our own EDID on that port (Rows, from the built-in file). Read only.
+     */
+    private void arcDevice() {
+        w.arcPort = -1;
+        w.arcDeviceName = null;
+        w.arcDeviceLogical = w.arcDevicePort = w.arcDevicePhysical = w.arcDeviceVendor = -1;
+        try {
+            HdmiControlManager m = app.getSystemService(HdmiControlManager.class);
+            if (m != null) {
+                List<HdmiPortInfo> ports = m.getPortInfo();
+                if (ports != null) for (HdmiPortInfo p : ports) if (p != null && p.isArcSupported()) { w.arcPort = p.getId(); break; }
+                List<HdmiDeviceInfo> list = m.getConnectedDevices();
+                if (list != null) for (HdmiDeviceInfo d : list) {
+                    if (d == null || !d.isCecDevice() || d.getDeviceType() != HdmiDeviceInfo.DEVICE_AUDIO_SYSTEM) continue;
+                    w.arcDeviceName = d.getDisplayName();
+                    w.arcDeviceLogical = d.getLogicalAddress();
+                    w.arcDevicePort = d.getPortId();
+                    w.arcDevicePhysical = d.getPhysicalAddress();
+                    w.arcDeviceVendor = d.getVendorId();
+                    break;
+                }
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "arc device: " + t);
+        }
+        w.arcOurs = null;
+        w.arcOursFile = null;
+        if (w.arcPort > 0 && vendorAvailable && w.edidVersion != null) {
+            loadIni();
+            int ver = w.edidVersion == Hb.EDID_20 ? Hb.EDID_20 : Hb.EDID_14;
+            String f = Hb.edidFile(ini, w.arcPort, ver);
+            Edid e = edid(f);
+            if (e != null && e.valid) {
+                w.arcOurs = e.audio;
+                w.arcOursFile = new File(f).getName();
+            }
+        }
+        w.arcLink = null;
+        w.arcSads = null;
+        w.arcFormats = null;
+        try {
+            AudioManager am = app.getSystemService(AudioManager.class);
+            AudioDeviceInfo arc = null;
+            for (AudioDeviceInfo i : am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+                if (i.getType() == AudioDeviceInfo.TYPE_HDMI_EARC) { arc = i; break; }
+                if (i.getType() == AudioDeviceInfo.TYPE_HDMI_ARC && arc == null) arc = i;
+            }
+            if (arc == null) return;
+            w.arcLink = arc.getType() == AudioDeviceInfo.TYPE_HDMI_EARC ? "HDMI eARC" : "HDMI ARC";
+            List<Edid.Sad> sads = new ArrayList<>();
+            List<String> seen = new ArrayList<>();
+            for (AudioDescriptor d : arc.getAudioDescriptors()) {
+                if (d.getStandard() != AudioDescriptor.STANDARD_EDID) continue;
+                byte[] b = d.getDescriptor();
+                String key = Arrays.toString(b);
+                if (seen.contains(key)) continue;   // the framework may list one descriptor more than once
+                seen.add(key);
+                Edid.Sad s = Edid.sad(b, 0);
+                if (s != null) sads.add(s);
+            }
+            w.arcSads = sads;
+            List<String> enc = new ArrayList<>();
+            int maxCh = 0;
+            for (AudioProfile p : arc.getAudioProfiles()) {
+                String n = encodingName(p.getFormat());
+                if (n != null && !enc.contains(n)) enc.add(n);
+                for (int mask : p.getChannelMasks()) maxCh = Math.max(maxCh, Integer.bitCount(mask));
+            }
+            if (!enc.isEmpty()) w.arcFormats = String.join(", ", enc) + (maxCh > 0 ? "|" + maxCh : "");
+        } catch (Throwable t) {
+            Log.w(TAG, "arc descriptors: " + t);
+        }
+    }
+
+    private static String encodingName(int f) {
+        switch (f) {
+            case AudioFormat.ENCODING_PCM_16BIT: case AudioFormat.ENCODING_PCM_FLOAT:
+            case AudioFormat.ENCODING_PCM_24BIT_PACKED: case AudioFormat.ENCODING_PCM_32BIT: return "PCM";
+            case AudioFormat.ENCODING_AC3: return "Dolby Digital";
+            case AudioFormat.ENCODING_E_AC3: return "Dolby Digital Plus";
+            case AudioFormat.ENCODING_E_AC3_JOC: return "Dolby Atmos (DD+)";
+            case AudioFormat.ENCODING_DOLBY_TRUEHD: return "Dolby TrueHD";
+            case AudioFormat.ENCODING_DOLBY_MAT: return "Dolby MAT";
+            case AudioFormat.ENCODING_DTS: return "DTS";
+            case AudioFormat.ENCODING_DTS_HD: return "DTS-HD";
+            case AudioFormat.ENCODING_DTS_UHD_P1: return "DTS:X";
+            case AudioFormat.ENCODING_AAC_LC: return "AAC";
+            default: return null;
+        }
     }
 
     private static String deviceName(int type) {
@@ -556,20 +658,7 @@ public final class Collector {
 
     // ---------------------------------------------------------------- built-in EDID files
     private void readPorts() {
-        if (!iniTried) {
-            iniTried = true;
-            ini = Parse.ini(Dumps.file(Hb.VENDOR_INI, 256 * 1024));
-            if (ini.isEmpty()) ini = null;
-            File dir = new File(Hb.EDID_DIR);
-            String[] names = dir.list();
-            List<String> files = new ArrayList<>();
-            if (names != null) {
-                Arrays.sort(names);
-                for (String n : names) if (Hb.isEdidFileName(n)) files.add(n);
-            }
-            w.builtinFiles = files;
-            w.iniRead = ini != null;
-        }
+        loadIni();
         if (!vendorAvailable) return;   // not an HB: these folders mean nothing elsewhere
         Integer v = w.edidVersion;
         if (v == null) v = opt(HbGmpf::edidVersion);
@@ -586,6 +675,24 @@ public final class Collector {
             ports.add(port);
         }
         w.ports = ports;
+    }
+
+    /** The vendor ini and the list of built-in EDID files, read once. */
+    private void loadIni() {
+        if (!iniTried) {
+            iniTried = true;
+            ini = Parse.ini(Dumps.file(Hb.VENDOR_INI, 256 * 1024));
+            if (ini.isEmpty()) ini = null;
+            File dir = new File(Hb.EDID_DIR);
+            String[] names = dir.list();
+            List<String> files = new ArrayList<>();
+            if (names != null) {
+                Arrays.sort(names);
+                for (String n : names) if (Hb.isEdidFileName(n)) files.add(n);
+            }
+            w.builtinFiles = files;
+            w.iniRead = ini != null;
+        }
     }
 
     /** Decoded built-in file, cached; null when it cannot be read. Collector thread. */

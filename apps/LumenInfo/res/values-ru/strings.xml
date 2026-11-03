@@ -204,4 +204,12 @@
     <string name="v_screen_zoom">центр %1$d, по горизонтали %2$d, по вертикали %3$d</string>
     <string name="v_hw_port">порт чипа %1$d</string>
     <string name="v_phys_addr">адрес %1$s</string>
+    <string name="r_arc_device">Устройство ARC</string>
+    <string name="r_arc_theirs">Оно сообщает</string>
+    <string name="r_arc_ours">Проектор сообщает</string>
+    <string name="r_arc_formats">Android может отправить</string>
+    <string name="v_sad_khz">%1$s кГц</string>
+    <string name="v_sad_bits">%1$s бит</string>
+    <string name="v_sad_kbps">до %1$d кбит/с</string>
+    <string name="v_max_channels">до %1$d кан.</string>
 </resources>

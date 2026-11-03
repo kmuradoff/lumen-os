@@ -52,6 +52,7 @@ public final class InfoTest {
         edidReal(data);
         edidSynthetic(data);
         edidBroken(data);
+        cecSads();
         vic();
         parsers(data);
         hbFacts();
@@ -69,6 +70,22 @@ public final class InfoTest {
         byte[] b = new byte[h.length() / 2];
         for (int i = 0; i < b.length; i++) b[i] = (byte) Integer.parseInt(h.substring(2 * i, 2 * i + 2), 16);
         return b;
+    }
+
+    /** CEC / AudioDescriptor SADs as the LG SOUND BAR on the HB's ARC port reported them (2026-11-03). */
+    static void cecSads() {
+        Edid.Sad p = Edid.sad(new byte[] {0x09, 0x7f, 0x07}, 0);
+        eq(1, p.format, "sad pcm format");
+        eq(2, p.channels, "sad pcm channels");
+        eq("32/44.1/48/88.2/96/176.4/192", p.rates(), "sad pcm rates");
+        eq("16/20/24", p.lpcmBits(), "sad pcm bits");
+        Edid.Sad d = Edid.sad(new byte[] {0x15, 0x07, 0x50}, 0);
+        eq(2, d.format, "sad ac3 format");
+        eq(6, d.channels, "sad ac3 channels");
+        eq("32/44.1/48", d.rates(), "sad ac3 rates");
+        eq(640, d.maxKbps(), "sad ac3 kbps");
+        ok(Edid.sad(new byte[] {0x00, 0x00, 0x00}, 0) == null, "sad reserved format 0 refused");
+        ok(Edid.sad(new byte[] {0x09, 0x7f}, 0) == null, "sad short array refused");
     }
 
     static void edidReal(Path data) throws IOException {
