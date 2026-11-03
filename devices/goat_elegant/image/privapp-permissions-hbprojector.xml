@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS on the Z9X HB: /system/etc/permissions/privapp-permissions-hbprojector.xml (0644, root:root, system_file).
+     org.lumen.projector (apps/HbProjector) lives in /system/priv-app/HbProjector, persistent, sharedUserId
+     android.uid.system, signed with the goat_elegant platform key (PROJECTOR_DESIGN.md D5). Every permission it
+     requests that framework-res defines with the privileged flag is listed (the rule of tools/play6/check_privapp.py,
+     read on the base framework-res.apk of build/goat_elegant/base_platform, 2026-10-29), so an enforcing
+     ro.control_privapp_permissions does not stop the boot. -->
+<permissions>
+    <privapp-permissions package="org.lumen.projector">
+        <permission name="android.permission.BLUETOOTH_PRIVILEGED" />
+        <permission name="android.permission.CHANGE_COMPONENT_ENABLED_STATE" />
+        <permission name="android.permission.FORCE_STOP_PACKAGES" />
+        <permission name="android.permission.HDMI_CEC" />
+        <permission name="android.permission.MEDIA_CONTENT_CONTROL" />
+        <permission name="android.permission.MODIFY_AUDIO_ROUTING" />
+        <permission name="android.permission.PACKAGE_USAGE_STATS" />
+        <permission name="android.permission.READ_DREAM_STATE" />
+        <permission name="android.permission.REAL_GET_TASKS" />
+        <permission name="android.permission.REBOOT" />
+        <permission name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+        <permission name="android.permission.START_TASKS_FROM_RECENTS" />
+        <permission name="android.permission.WRITE_DREAM_STATE" />
+        <permission name="android.permission.WRITE_SECURE_SETTINGS" />
+    </privapp-permissions>
+</permissions>

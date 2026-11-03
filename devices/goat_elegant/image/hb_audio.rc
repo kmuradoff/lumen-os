@@ -1,0 +1,30 @@
+# Lumen OS on the XGIMI Z9X HB (goat_elegant, G0130), test builds from t3 on: the UI click volume (installed as
+# /system/etc/init/hb_audio.rc by compose_hb.sh). The HB copy of the Z9X fix overlay/v1/z9x_audio.rc. From t7 also the
+# audio policy (below).
+#
+# The HB vendor engine config gives the 'system' volume group (AUDIO_STREAM_SYSTEM, usage ASSISTANCE_SONIFICATION =
+# key clicks) FULL_SCALE_VOLUME_CURVE on SPEAKER and HEADSET, as the Z9X vendor does, so clicks always play at 0 dB
+# whatever the volume is. /system/etc/xgimi/hb_audio_policy_engine_stream_volumes.xml is a copy of the HB vendor's
+# /vendor/etc/audio_policy_engine_stream_volumes.xml (sha256 76581d77...25fb) in which ONLY those two refs say "MM",
+# the vendor's own media curve (audio_policy_engine_default_stream_volumes.xml, reference MM). compose_hb.sh checks
+# both: the staged copy and the vendor file differ in exactly those two lines. Live-tested on the HB (2026-10-29).
+#
+# The vendor's /vendor/etc/audio_policy_engine_configuration.xml pulls the file in with
+# <xi:include href="audio_policy_engine_stream_volumes.xml"/>, resolved against the including document's path, so the
+# bind mount below is what the audio policy engine reads. The vendor partition itself is not modified.
+# post-fs-data runs before 'on boot', where audioserver (class core) starts. The action runs only while
+# ro.lumen.hb.clickcurve=1 (hb_lumen_prop.txt, product build.prop), so an image without that line keeps the vendor
+# curve. Init builtin only.
+on post-fs-data && property:ro.lumen.hb.clickcurve=1
+    mount none /system/etc/xgimi/hb_audio_policy_engine_stream_volumes.xml /vendor/etc/audio_policy_engine_stream_volumes.xml bind
+
+# t7: the audio policy (T7_NOTES.md). The HB vendor /vendor/etc/audio_policy_configuration.xml (sha256 d4783b3e...d077)
+# declares a devicePort of the XGIMI-only type AUDIO_DEVICE_OUT_USB_SUB ("XGIMI SUB Out"). The AOSP 14 parser rejects
+# the whole file ("APM::Serializer: deserialize: bad type 00000000", "Could not load audio policy ... -22") and
+# audioserver falls back to AudioPolicyConfig::setDefault: one module, Speaker only, so Bluetooth A2DP, HDMI ARC /
+# eARC, SPDIF, USB audio and the remote microphone have no route (hb-t6, RESULTS_hb-t6.md 4.2). The Z9X fix, HB copy
+# (overlay/xgimi_compat.rc part 3): /system/etc/xgimi/hb_audio_policy_configuration.xml is the vendor file without
+# that port and its route, every other line byte-identical (compose_hb.sh checks it with hb_audio_policy_check.py).
+# The xi:includes resolve against /vendor/etc, as above. Gated on ro.lumen.hb.audiopolicy=1 (hb_lumen_prop.txt).
+on post-fs-data && property:ro.lumen.hb.audiopolicy=1
+    mount none /system/etc/xgimi/hb_audio_policy_configuration.xml /vendor/etc/audio_policy_configuration.xml bind

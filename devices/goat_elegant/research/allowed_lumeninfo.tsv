@@ -1,0 +1,32 @@
+# allowed_lumeninfo.tsv: the gmpf getters LumenInfo (apps/LumenInfo, org.lumen.info) may send on the Z9X HB
+# (goat_elegant) in addition to its rows of allowed.tsv. Design decision 2026-11-01 ("Lumen Info - разрешаю", the
+# list of the design notes "Чего нет"). A separate file because allowed.tsv is HbProjector's exact list (rule 6 of
+# tools/devices/check_aidl_hal.py: every row there must be a Call of HbProjector). Read only by the LumenInfo host
+# test (apps/LumenInfo/test): every row must be a row of core.Hb.PLAN and of aidl_codes.tsv with the same method
+# and signature, none a BANNED / REVIEW row of banned.tsv, none in allowed.tsv, and every PLAN row must be in
+# allowed.tsv or here. DISPLAY 26 isPlayingHDRVideo of the maintainer's list is NOT here: banned.tsv has it BANNED
+# (P6-NoteA, Z9X IGmpf 194 forbidden); it stays out until its own decision.
+#
+# Read-only proof per row: the signature (aidl_codes.tsv) has no setter shape (only a port / device selector or the
+# DISPLAY 103 source + picture mode as arguments, a value or an out-struct back); the stock callers only read the
+# value; the stock wire is the Java proxy xgimi/hardware/gmpf/I<Name>$Stub$Proxy of SystemUI release 838
+# (research/hb_stock_decompiled/SystemUI_release_838/sources/xgimi/hardware/gmpf/), which LumenInfo copies.
+# Structs: research/hb_stock_decompiled/SystemUI_release_838/sources/xgimi/hardware/gmpf/IGmTvType/ and IDisplayType/
+# readFromParcel; decoded by apps/LumenInfo/src/org/lumen/info/core/HalStructs.java.
+# Arguments LumenInfo sends: HDMI port 1 / 2 (TV 70, TV 153), device 2 = HDMI ARC (GmAudio 33 / 34; stock
+# com.xgimi.device.GmAudioManager.EN_AUDIO_ARC = 2), source 0..2 + picture mode 0..40 (DISPLAY 145, as DISPLAY 103).
+# service	code	method	signature	reason
+GmTvManager	51	getHdrEnable	boolean()	HDR switch state; proxy writes token only, reads boolean; stock gmuiapi V3GmTvManager.getHdrEnable (GlobalConfig api3:544) reads it; setter is hdrEnable(boolean), not sent
+GmTvManager	70	getHdmiConnectStatus	boolean(byte)	cable on an HDMI port; proxy writeByte(port), reads boolean; stock GmTvManagerWrapper.getHdmiConnectStatus (SystemUI middle:333)
+GmTvManager	106	getSignalStatus	int()	signal state code; proxy reads int; stock V3GmTvManager.getSignalStatus (SystemUI api3:540), GmDisplayManager.getSignalStatus (shutdown:4706)
+GmTvManager	122	getVideoInfo	boolean(stVideoInfo)	out struct width/height/frameRate/bHdmiOrDvi/videoType; proxy writes token only, reads boolean then flag + stVideoInfo.readFromParcel; stock gmuiapi GmTvManager.getVideoInfo (SystemUI manager:742) reads the fields
+GmTvManager	135	isHdrVividPlaying	boolean()	HDR Vivid playing flag; proxy reads boolean; stock MiddlewareManager (newsettings:268) via GmDisplayManager.isHdrVividPlaying
+GmTvManager	153	getHdmiHwConfig	stHdmiHwCfg(int)	port hardware config hwPortId/cecEnable/arcEnable/physicalAddr; proxy writeInt(port), readTypedObject(stHdmiHwCfg); no stock caller outside the proxy, read-only by shape (no set counterpart in aidl_codes.tsv)
+DisplayManager	31	getScreenResolution	ScreenResolution()	digital zoom/shift state Center/Horizontal/verticality; proxy readTypedObject(ScreenResolution); stock KeyStoneManager.getScreenResolution (newsettings keystone:220) reads Center
+DisplayManager	57	getOutputTimingInfo	boolean(OutputTimingInfo)	out struct user_timing_idx/disp_width/disp_height/curr_timing_idx/curr_hres/curr_vres/vfreq; proxy reads boolean then flag + struct; stock GmTrapzoidUtils (newsettings utils:96), V3DisplayManager.isHighFrameRateOn / getOutputTiming (newsettings api3:247/259)
+DisplayManager	145	getColorSpaceInfo	boolean(int, int, ColorSpaceInfo_st)	out struct colorSpaceType/colorSpaceLevel for (source, picture mode); proxy writeInt x2, reads boolean then flag + struct; stock V3DisplayManager.getColorSpaceInfo (newsettings api3:578-593)
+GmAudioManager	13	getAudioDelay	int()	audio delay ms; proxy reads int; stock GmAudioManagerWrapper.getAudioDelay (SystemUI middle:64)
+GmAudioManager	28	getARCType	byte()	ARC output type, 0 = none; proxy reads byte; stock GimiAudioService (XgimiService common:450/459/530) tests > 0
+GmAudioManager	29	getSpdifType	byte()	S/PDIF output type, 0 = none; proxy reads byte; stock GimiAudioService (XgimiService common:397/453/462/535) tests > 0
+GmAudioManager	33	isAudioDeviceConnected	boolean(byte)	device connected; proxy writeByte(device), reads boolean; stock VoiceHelper.setAudioDevice isAudioDeviceConnected((byte) 2) (newsettings voice:78)
+GmAudioManager	34	getAudioDeviceSupportType	byte(byte)	support type of a device; proxy writeByte(device), reads byte; stock GmAudioManagerWrapper.getAudioDeviceSupportType (SystemUI middle:148)

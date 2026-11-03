@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The keys HbFeatures reads, with the values of the stock G0130 feature.xml
+     (live/mnt/vendor/xgimiconfig/G0130/feature/feature.xml on the build server). -->
+<features>
+        <feature key="support_kst_adjust_type" value="2"/>
+        <feature key="support_3D" value="0"/>
+        <feature key="support_screen_zoom" value="0"/>
+        <feature key="display_gamemode_version" value="3"/>
+        <feature key="support_brightness_boost" value="2"/>
+        <feature key="support_eye_protect_brightness_mode" value="true"/>
+        <feature key="support_optical_zoom" value="true"/>
+        <feature key="support_Adaptived_AK" value="5"/>
+        <feature key="support_dts_effect" value="false"/>
+</features>

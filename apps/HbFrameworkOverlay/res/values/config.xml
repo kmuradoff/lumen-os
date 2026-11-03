@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB (goat_elegant) power-key values, hb-t5. HB copy of the three KEYCODE_POWER items of
+     apps/Z9xFrameworkKeysOverlay/res/values/config.xml (that file is not touched; the CEC, assistant and cached
+     process values there are not power keys and stay out). Device test of hb-t4, 2026-10-29: "the remote's POWER
+     key does nothing". The BLE remote (000d:3841) power key is KEYCODE_STB_POWER and reaches org.lumen.projector
+     through res/xml/global_keys.xml; these values only serve KEYCODE_POWER (the KEY_POWER the vendor power HAL
+     injects on a wake from STR, a phone remote app's POWER, KEYCODE_TV_POWER on a leanback TV), so a stray
+     POWER cannot bypass Lumen's power policy, as on the Z9X:
+       config_shortPressOnPowerBehavior 0  SHORT_PRESS_POWER_NOTHING while awake (from a real sleep POWER still wakes)
+       config_longPressOnPowerBehavior  1  LONG_PRESS_POWER_GLOBAL_ACTIONS
+       config_globalActionsList            power, restart
+     Names and types as in the Lineage 21 frameworks/base/core/res/res/values/config.xml (see the Z9X file). -->
+<resources>
+    <integer name="config_shortPressOnPowerBehavior">0</integer>
+    <integer name="config_longPressOnPowerBehavior">1</integer>
+    <string-array name="config_globalActionsList" translatable="false">
+        <item>power</item>
+        <item>restart</item>
+    </string-array>
+</resources>

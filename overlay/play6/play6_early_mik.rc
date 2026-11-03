@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS for the XGIMI Play 6 (G0058, MT5889), DIAG images only for now (tools/play6/add_diag_to_image.sh,
+# compose.sh --diag; docs/play6/FIRST_BOOT_CUTOFF.md 2.1): load the vendor's projector driver chain early.
+# MBOOT arms a 60 s hardware watchdog; only gmpf_main's DrvWdt thread takes it over, with 30 attempts once a
+# second from about 12 s of kernel time, and it needs /dev/mik!wdt, i.e. mik.ko. The vendor loads mik.ko at
+# early-boot, which on a first boot on fresh /data comes only after keystore2 and odsign (about 31 s). Here the
+# same modules, in the same order as /vendor/etc/init/init.fusion.rc:28-49 (kheaders ... mik), are loaded at
+# late-fs, as early as on stock (about 6 s). The vendor's own insmod at early-boot then just reports
+# "File exists" and init goes on. USB host, bootvideo, ldm, Mali, fbdev, dtv_driver, devnode stay on the vendor's
+# early-boot. Only insmod and /proc/boottime marks: same init domain as the vendor rc, no SELinux change.
+# Guarded by the model so that no other projector ever runs it (devices are kept apart).
+on late-fs && property:ro.boot.xgimi.modelname=G0058
+    write /proc/boottime "lumen mik chain start"
+    insmod /vendor/lib/modules/kheaders.ko
+    insmod /vendor/lib/modules/kdrv_platform.ko
+    insmod /vendor/lib/modules/kdrv_xc.ko
+    insmod /vendor/lib/modules/kdrv_alg.ko
+    insmod /vendor/lib/modules/kdrv_dolby_vision.ko
+    insmod /vendor/lib/modules/libdmdbraslia.ko
+    insmod /vendor/lib/modules/utpa2k.ko
+    insmod /vendor/lib/modules/iniparser.ko
+    insmod /vendor/lib/modules/hdcp1x.ko
+    insmod /vendor/lib/modules/hdcp2x.ko
+    insmod /vendor/lib/modules/xcker.ko
+    insmod /vendor/lib/modules/mwgifker.ko
+    insmod /vendor/lib/modules/misck.ko
+    insmod /vendor/lib/modules/mik.ko
+    write /proc/boottime "lumen mik chain end"

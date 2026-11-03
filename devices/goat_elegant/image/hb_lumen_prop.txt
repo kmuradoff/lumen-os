@@ -1,0 +1,69 @@
+# Lumen OS on the XGIMI Z9X HB (goat_elegant, G0130), test builds from t2 on (the image with the Lumen apps).
+# Appended by compose_hb.sh after hb_prop.txt to /system/product/etc/build.prop, which init reads last: a key set
+# here replaces the value of an earlier partition (property_service "Overriding previous property"). compose_hb.sh
+# adds the version lines itself: ro.lumen.version=hb-VARIANT, ro.lumen.version_code, ro.lumen.build_id,
+# ro.build.display.id=Lumen OS hb-VARIANT (<build id>) and ro.lineage.display.version=hb-VARIANT (kmuradoff), the
+# About rows as the Z9X image writes them (tools/lumen_v1.sh); Z9xLineagePlatformOverlay gives their titles.
+# Comment lines are dropped when appended.
+#
+# identity, as the Play 6 image does it (overlay/play6/product_prop.txt): without a model the base shows its own
+# "AOSP TV on ARM" (stock HB says "XGIMI TV"); Lumen Setup and Home read the model for the device name
+ro.product.model=XGIMI Z9X HB
+bluetooth.device.default_name=XGIMI Z9X HB
+# Bluetooth class of device of the Z9X and Play 6 images: Audio/Video, video display and loudspeaker (the base
+# product build.prop says 90,2,12, the goldfish emulator's smartphone value)
+bluetooth.device.class_of_device=44,4,60
+#
+# t3: the UI click volume follows the media volume (hb_audio.rc bind-mounts the HB copy of the vendor
+# audio_policy_engine_stream_volumes.xml with the 'system' group's SPEAKER and HEADSET refs on MM)
+ro.lumen.hb.clickcurve=1
+# t3: Russian by default. hb_prop.txt (t1) says en-US over the vendor's zh-CN; this later line wins (init keeps the
+# last value of a key). persist.sys.locale here is only the default: a language chosen in Setup or Settings is
+# stored in /data and stays.
+ro.product.locale=ru-RU
+persist.sys.locale=ru-RU
+# t7: sleep = STR, as stock HB (research/woble_wake.md 3.3: stock POWER -> XgimiWindowManagerDomestic.reallyGoToSleep
+# -> PowerManager.goToSleep, ro.vendor.mstar.str.enable=user_mode, the projector suspends to RAM, it never shuts
+# down). t5b / t6 had the StrGate kill switch 0: lamp-only standby, then a real power-off after 30 min, so every wake
+# was a 40-60 s cold boot. The wake sources are armed by the kernel itself (hb-t6 read only, /sys/mtk_pm/wakeup_source:
+# bt-gpio, ir0, keypad0, cec0, voice, wifi-gpio, mute-gpio = 1, the dtbo "mediatek,pm" table); a BLE remote / wake.sh
+# wake from power-off is proven (wake source 44 = bt-gpio), from STR it is the manual test of T7_NOTES.md. 1 = StrGate
+# default: lamp off, then Android sleep and STR at once; no power-off window. A USB host on the cable still blocks STR
+# (then lamp-only standby, CPU awake, no power-off), so the builder's adb cable keeps the HB reachable.
+persist.z9x.allow_str=1
+# t7: no boot-dark power-off on the HB. StandbyController powers a projector off again when it rebooted by itself while
+# dark (a Z9X PM51 reset, boot_reason 0xF1 / 0xD1, wake source "(null)"); stock HB has no such path, and the hb-t6
+# boot after flashing (an ordinary reboot) already read 0xD1 and "(null)", so those Z9X markers do not mean a reset
+# here. An STR that ends in a reset boots normally, as stock.
+persist.z9x.bootdark=0
+# t7: the audio policy (hb_audio.rc binds the HB copy of the vendor audio_policy_configuration.xml without the
+# XGIMI-only AUDIO_DEVICE_OUT_USB_SUB port, so the framework parses it: Bluetooth, ARC / eARC, SPDIF, USB, remote mic)
+ro.lumen.hb.audiopolicy=1
+# t7: the stock value of the digital audio format marker (stock getprop: pcm, set at boot by XgimiService
+# MtkAudio.init when spdif_mode is empty). No HB vendor file reads it (only the stock system libxgimiaudiopolicy.so,
+# not in Lumen); the HAL mode itself follows setParameters("digital_output_format=..."), which Lumen's projector app
+# sends (T7_NOTES.md). Kept for getprop parity with stock.
+vendor.xgimi.system.audio.digital_output_format=pcm
+# t8: LE privacy off, the Z9X line (overlay/z9x_build_prop.txt line 5, also set at early-boot by overlay/v1/z9x_base.rc).
+# hb-t7b log 2026-10-30 17:15 (~/hb_session/logs_rc_1715/btsnoop): after a reboot the stack sent 49 LE Extended Create
+# Connection (0x2043) to the bonded remote <mac> with own_address_type=1 (random, a private address), each
+# CONNECTION_FAILED_ESTABLISHMENT after about 330 ms; the XGIMI BLE remote only answers the HB's public address
+# <mac>, so it had to be paired again by hand. With this line the stack uses own_address_type=0 (public).
+# Only the build.prop line, no rc setprop: this file is loaded by init before any rc trigger, and Bluetooth reads the flag
+# when system_server enables the adapter, long after that. Stock HB sets nothing (its libbluetooth_jni.so reads the same
+# property with the AOSP default, privacy on); why the stock remote still reconnected is not traced.
+bluetooth.core.gap.le.privacy.enabled=false
+# t8: no pseudo-locales in the language lists. TvSettings (LanguagePickerFragment -> LocaleStore.getLevelLocales) lists
+# framework-res supported_locales, which has en-XA ("[Ƥšéûðö-Åççéñţš one two]") and ar-XB, and shows those two whenever
+# Settings.Global development_settings_enabled=1 (it is 1 on the HB, survey_hb-t5b/settings.txt). LocalePicker
+# .getSupportedLocales keeps only the ids this regex finds (Pattern.asPredicate, find()); ro.localization.locale_filter is
+# localization_prop, readable by every coredomain app. A NEGATIVE filter on purpose: LocalePicker.updateLocales tests the
+# same regex against Locale.toString() ("ru_RU"), so an allow-list would drop the user's own locale there.
+ro.localization.locale_filter=^(?!en-XA$|ar-XB$)
+# t8d: Lumen OS without Google, the Z9X mark (tools/lumen_v1.sh GMS=0 writes the same line; a Google edition has none).
+# The unchanged Z9X Google services add-on reads it: /system/etc/z9x/z9x_gapps.sh acts only with ro.z9x.gms=0 (else
+# sys.z9x.gapps=skip), installer/lib/gapps_fill.sh refuses to fill without it (T8D_NOTES.md). No HB app reads it.
+ro.z9x.gms=0
+# t10: MediaTek's VNDK libstagefright_foundation.so over the GSI copy in /apex/com.android.vndk.v33/lib (hb_media.rc),
+# so the vendor codec2 plugin libcodec2.MTK.so loads: c2.mtk.* decoders and IInterTunnel (HDMI sideband)
+ro.lumen.hb.c2foundation=1

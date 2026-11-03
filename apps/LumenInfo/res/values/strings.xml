@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- LumenInfo (org.lumen.info), English. Own wording (clean room). -->
+<resources>
+    <string name="app_name">Signal Info</string>
+    <string name="app_subtitle">What the projector receives, plays and outputs</string>
+
+    <string name="sec_video">Video</string>
+    <string name="sec_audio">Audio</string>
+    <string name="sec_hdmi">HDMI inputs</string>
+    <string name="sec_system">System</string>
+    <string name="sec_overlay">Overlay</string>
+
+    <string name="na">not available</string>
+    <string name="none_playing">nothing playing</string>
+    <string name="on">on</string>
+    <string name="off">off</string>
+    <string name="yes">yes</string>
+    <string name="no">no</string>
+    <string name="unknown">unknown</string>
+
+    <!-- video -->
+    <string name="r_source">Source</string>
+    <string name="r_app">App on screen</string>
+    <string name="r_signal">HDMI signal</string>
+    <string name="r_decoder">Video decoder</string>
+    <string name="r_format">Video format</string>
+    <string name="r_resolution">Video resolution</string>
+    <string name="r_framerate">Frame rate</string>
+    <string name="r_display">Output to panel</string>
+    <string name="r_modes">Panel modes</string>
+    <string name="r_hdr_in">HDR of the picture</string>
+    <string name="r_hdr_out">HDR the output accepts</string>
+    <string name="r_hdr_policy">HDR conversion</string>
+    <string name="r_match_rate">Match frame rate</string>
+    <string name="r_color_space">Colour space (picture setting)</string>
+    <string name="r_range">HDMI range</string>
+    <string name="r_allm">Low latency request (ALLM)</string>
+    <string name="r_layer">Video layer</string>
+    <string name="r_last_decoder">Last decoder session</string>
+
+    <string name="v_android">Android (apps)</string>
+    <string name="v_hdmi_n">HDMI %1$d</string>
+    <string name="v_no_signal">no signal</string>
+    <string name="v_dvi">DVI</string>
+    <string name="v_decoder_hw">hardware</string>
+    <string name="v_decoder_sw">software</string>
+    <string name="v_decoder_secure">protected</string>
+    <string name="v_decoder_used_by">used by %1$s</string>
+    <string name="v_decoder_idle">not in use</string>
+    <string name="v_by_name">(from the decoder name)</string>
+    <string name="v_app_vote">%1$s Hz (set by the app)</string>
+    <string name="v_native">Native</string>
+    <string name="v_range_auto">auto</string>
+    <string name="v_range_full">full (0-255)</string>
+    <string name="v_range_limited">limited (16-235)</string>
+    <string name="v_hdr_passthrough">pass through</string>
+    <string name="v_hdr_unsupported">not supported by this device</string>
+    <string name="v_hdr_system">chosen by the system</string>
+    <string name="v_hdr_force">always %1$s</string>
+    <string name="v_match_never">never</string>
+    <string name="v_match_seamless">only seamless</string>
+    <string name="v_match_always">always</string>
+    <string name="v_sdr_only">SDR only</string>
+    <string name="v_layer_sideband">hardware path (SIDEBAND)</string>
+    <string name="v_up_to_nits">up to %1$s nits</string>
+    <string name="v_root_only">readable only with root, not shown</string>
+
+    <!-- audio -->
+    <string name="r_audio_out">Audio output</string>
+    <string name="r_audio_format">Audio format</string>
+    <string name="r_audio_mode">Audio mode</string>
+    <string name="r_audio_type">Output type</string>
+    <string name="r_surround">Surround setting</string>
+    <string name="r_audio_devices">Connected outputs</string>
+    <string name="v_pcm">PCM (decoded)</string>
+    <string name="v_passthrough">passthrough (bitstream)</string>
+    <string name="v_offload">hardware decoding (offload)</string>
+    <string name="v_standby">silent (standby)</string>
+    <string name="v_surround_auto">auto</string>
+    <string name="v_surround_never">never</string>
+    <string name="v_surround_always">always</string>
+    <string name="v_surround_manual">manual</string>
+    <string name="v_channels">%1$d ch</string>
+
+    <!-- system -->
+    <string name="r_cpu">CPU load</string>
+    <string name="r_cpu_temp">CPU temperature</string>
+    <string name="r_sys_temp">Projector temperature</string>
+    <string name="r_governor">CPU governor and clock</string>
+    <string name="r_memory">Memory</string>
+    <string name="r_net">Connection</string>
+    <string name="r_link">Link speed</string>
+    <string name="r_signal_level">Wi-Fi signal</string>
+    <string name="r_rx">Download now</string>
+    <string name="r_time">Time</string>
+    <string name="r_device">Device</string>
+    <string name="r_lumen">Lumen OS</string>
+    <string name="r_android">Android</string>
+    <string name="v_mem">%1$s free of %2$s</string>
+    <string name="v_offline">offline</string>
+    <string name="v_link_rx">%1$d Mbit/s (receive %2$d)</string>
+    <string name="v_link">%1$d Mbit/s</string>
+    <string name="v_cores">%1$d cores</string>
+
+    <!-- HDMI page -->
+    <string name="r_edid_version">EDID offered to sources</string>
+    <string name="r_port_file">HDMI %1$d: built-in EDID</string>
+    <string name="r_port_edid">HDMI %1$d: what it announces</string>
+    <string name="v_file_guess">(name assumed, the vendor list was not readable)</string>
+    <string name="v_edid_unreadable">file not readable</string>
+    <string name="hdmi_note">The projector has no readable copy of the EDID loaded in the receiver. Shown is the built-in vendor file for the selected EDID version; both HDMI inputs use the same version.</string>
+    <string name="btn_export_port">Save HDMI %1$d EDID to Download</string>
+    <string name="btn_details_port">HDMI %1$d EDID in detail</string>
+    <string name="btn_switch_edid">Offer EDID %1$s instead</string>
+    <string name="btn_builtin">All built-in EDID files</string>
+    <string name="switch_title">Change the EDID?</string>
+    <string name="switch_text">Sources on both HDMI inputs will see EDID %1$s. The picture of a connected source may go dark for a few seconds while it reconnects. Only the vendor\'s own EDID files are used.</string>
+    <string name="switch_ok">Change</string>
+    <string name="switch_done">EDID %1$s is now offered</string>
+    <string name="switch_failed">The projector did not accept the change</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="export">Save to Download</string>
+    <string name="exported">Saved: %1$s</string>
+    <string name="export_failed">Could not save the file</string>
+    <string name="builtin_title">Built-in EDID files</string>
+    <string name="not_hb">The projector services are not reachable on this device, so HDMI details are not available.</string>
+
+    <!-- EDID detail -->
+    <string name="e_monitor">Name</string>
+    <string name="e_vendor">Maker and product</string>
+    <string name="e_version">EDID version</string>
+    <string name="e_date">Made</string>
+    <string name="e_week">week %1$d of %2$d</string>
+    <string name="e_model_year">model year %1$d</string>
+    <string name="e_checksum">Checksums</string>
+    <string name="e_ok">correct</string>
+    <string name="e_bad">wrong in block %1$s</string>
+    <string name="e_preferred">Preferred timing</string>
+    <string name="e_range">Range limits</string>
+    <string name="e_hdmi">HDMI level</string>
+    <string name="e_phys">Physical address</string>
+    <string name="e_tmds">Max TMDS clock</string>
+    <string name="e_frl">Max FRL rate</string>
+    <string name="e_deep_color">Deep colour</string>
+    <string name="e_420">YCbCr 4:2:0</string>
+    <string name="e_features">Features</string>
+    <string name="e_modes">Video modes</string>
+    <string name="e_native">native</string>
+    <string name="e_hdmi_vics">Extra 4K modes</string>
+    <string name="e_hdr">HDR</string>
+    <string name="e_hdr_lum">HDR luminance</string>
+    <string name="e_dv">Dolby Vision</string>
+    <string name="e_dv_value">version %1$d</string>
+    <string name="e_hdr10p">HDR10+</string>
+    <string name="e_colorimetry">Colorimetry</string>
+    <string name="e_audio">Audio formats</string>
+    <string name="e_speakers">Speakers</string>
+    <string name="e_latency">Latency video / audio</string>
+    <string name="e_other">Other blocks</string>
+    <string name="e_invalid">not a valid EDID: %1$s</string>
+    <string name="e_raw">Raw bytes</string>
+    <string name="e_file">File</string>
+    <string name="e_none">none</string>
+
+    <!-- overlay settings -->
+    <string name="o_show">Show overlay</string>
+    <string name="o_layout">Layout</string>
+    <string name="o_layout_video">video</string>
+    <string name="o_layout_full">full</string>
+    <string name="o_corner">Corner</string>
+    <string name="o_corner_tl">top left</string>
+    <string name="o_corner_tr">top right</string>
+    <string name="o_corner_bl">bottom left</string>
+    <string name="o_corner_br">bottom right</string>
+    <string name="o_size">Text size</string>
+    <string name="o_size_s">small</string>
+    <string name="o_size_m">medium</string>
+    <string name="o_size_l">large</string>
+    <string name="o_hint">The overlay stays over any app and over HDMI. It takes no remote keys. You can also switch it with the notification or the quick tile.</string>
+    <string name="o_title_video">Signal info</string>
+    <string name="o_title_full">Signal info (full)</string>
+
+    <string name="notif_channel">Overlay</string>
+    <string name="notif_text">The signal overlay is on</string>
+    <string name="notif_layout">Layout</string>
+    <string name="notif_hide">Hide</string>
+    <string name="tile_label">Signal overlay</string>
+    <!-- 2026-11-01: rows of the extra vendor getters -->
+    <string name="r_output">Output timing (chip)</string>
+    <string name="r_video_info">Video (chip report)</string>
+    <string name="r_signal_status">Signal status code</string>
+    <string name="r_hdr_switch">HDR switch (picture settings)</string>
+    <string name="r_screen_zoom">Digital zoom and shift</string>
+    <string name="r_arc">HDMI ARC</string>
+    <string name="r_spdif">S/PDIF (optical)</string>
+    <string name="r_audio_delay">Audio delay</string>
+    <string name="r_port_cable">HDMI %1$d: cable</string>
+    <string name="r_port_hw">HDMI %1$d: port</string>
+    <string name="v_none">none</string>
+    <string name="v_present_type">present (type %1$d)</string>
+    <string name="v_connected">connected</string>
+    <string name="v_not_connected">not connected</string>
+    <string name="v_support_n">support %1$d</string>
+    <string name="v_ms">%1$d ms</string>
+    <string name="v_type_n">type %1$d</string>
+    <string name="v_panel">panel %1$s</string>
+    <string name="v_high_frame_rate">high frame rate</string>
+    <string name="v_hdr_vivid_playing">HDR Vivid playing</string>
+    <string name="v_screen_zoom">centre %1$d, horizontal %2$d, vertical %3$d</string>
+    <string name="v_hw_port">chip port %1$d</string>
+    <string name="v_phys_addr">address %1$s</string>
+</resources>

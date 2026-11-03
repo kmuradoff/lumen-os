@@ -67,17 +67,34 @@ if once boot 15; then env_run mark boot; fi
 if [ "\$(cat "\$R/complete")" = 1 ] && once done 30; then setp sys.boot_completed 1; env_run mark boot_completed; fi
 exit 0
 EOF
+  # logcat: a ring buffer that keeps only the last 6 s; logd up from 6 s; gmpf's DrvWdt retries once a second
+  # from 12 s (retry=0..29, then the final fail at 42 s) and an MI3 heartbeat error every second from 13 s
+  cat > "$R/bin/logcat" <<EOF
+#!/bin/bash
+read -r u _ < "$R/proc/uptime"; ui=\${u%.*}
+[ "\$ui" -ge 6 ] || { echo "logcat: Unable to open log device" >&2; exit 1; }
+echo "\$*" > "$R/logcat_args"
+echo "--------- beginning of main"
+s=\$((ui - 6)); [ \$s -lt 6 ] && s=6
+for t in \$(seq \$s \$ui); do
+  [ "\$*" = "-d -v uptime -s DrvWdt:* MI3:*" ] || echo "\$(printf '%11s' \$t.000)   100   100 I Other   : not asked for"
+  if [ \$t -ge 12 ] && [ \$t -le 41 ]; then echo "\$(printf '%11s' \$t.000)   265   348 I DrvWdt  : WDT secondaryInit fail, retry=\$((t - 12))"; fi
+  [ \$t = 42 ] && echo "\$(printf '%11s' \$t.000)   265   348 I DrvWdt  : WDT secondaryInit fail"
+  [ \$t -ge 13 ] && echo "\$(printf '%11s' \$t.000)   265   349 E MI3     : _MI_WDT_SendHeartBeat failed"
+done
+exit 0
+EOF
   chmod +x "$R/bin/"*
   find "$R" -type f -o -type d | sort > "$R/before.txt"
 }
 run_watch() {
-  PATH="$R/bin:$PATH" P6T_SLEEP="$R/bin/sleep" P6T_PROC="$R/proc" P6T_SYS="$R/sys" P6T_DIR="$R/dev/lumen_p6_timing" P6T_STICK="$R/stick" \
+  PATH="$R/bin:$PATH" P6T_SLEEP="$R/bin/sleep" P6T_LOGCAT="$R/bin/logcat" P6T_PROC="$R/proc" P6T_SYS="$R/sys" P6T_DIR="$R/dev/lumen_p6_timing" P6T_STICK="$R/stick" \
     ${P6T_SH:-/bin/sh} "$SCRIPT" watch > "$R/out.txt" 2>&1
 }
 new_files() {  # files created by the script outside its two places and the stubs' own bookkeeping
   find "$R" -type f -o -type d | sort | comm -13 "$R/before.txt" - \
     | grep -v -e "^$R/dev/lumen_p6_timing" -e "^$R/stick/lumen_os_diag_logs" -e "^$R/done_" -e "^$R/props.n" \
-         -e "^$R/out.txt$" -e "^$R/sys/module/mik$" -e "^$R/sys/class/pwm/pwmchip0$"
+         -e "^$R/out.txt$" -e "^$R/logcat_args$" -e "^$R/sys/module/mik$" -e "^$R/sys/class/pwm/pwmchip0$"
 }
 
 echo "== case 1: stick with an older boot and this boot's folder"
@@ -105,11 +122,21 @@ check "same record in /dev" 'cmp -s "$F" "$R/dev/lumen_p6_timing/timing.txt"'
 check "build id in header" 'grep -q "build=lumen-play6-1.0.7-20261024-aic-diag1 \[ro.boottime.init\]: \[1024793830\]" "$F"'
 check "no stray files" '[ -z "$(new_files)" ]'
 check "no temp file left on stick" '[ -z "$(find "$R/stick" -name "*.new")" ]'
+W=$R/stick/lumen_os_diag_logs/early/boot_2/drvwdt.txt
+check "drvwdt.txt in this boot's folder" '[ -s "$W" ]'
+check "logcat asked for DrvWdt and MI3 only" '[ "$(cat "$R/logcat_args")" = "-d -v uptime -s DrvWdt:* MI3:*" ]'
+check "all 30 retry lines kept though the buffer rotated" '[ "$(grep -c "DrvWdt  : WDT secondaryInit fail, retry=" "$W")" = 30 ]'
+check "retry=0 at 12 s and retry=29 at 41 s" 'grep -q "^ *12.000 .*retry=0$" "$W" && grep -q "^ *41.000 .*retry=29$" "$W"'
+check "final fail line once" '[ "$(grep -c "WDT secondaryInit fail$" "$W")" = 1 ]'
+check "no line twice" '[ -z "$(grep -v "^#" "$W" | sort | uniq -d)" ]'
+check "no logcat banner" '! grep -q "^---------" "$W"'
+check "same lines in /dev" 'cmp -s "$W" "$R/dev/lumen_p6_timing/drvwdt.txt"'
 rm -rf "$R"
 
 echo "== case 2: stick, but no folder of this boot (earlylog full or failed)"
 setup other 1; run_watch
 check "fallback file after 30 s" '[ -s "$R/stick/lumen_os_diag_logs/timing_1c2d3e4f-0000-1111-2222-333344445555.txt" ]'
+check "drvwdt fallback file next to it" '[ -s "$R/stick/lumen_os_diag_logs/drvwdt_1c2d3e4f-0000-1111-2222-333344445555.txt" ]'
 check "no timing.txt in other boots" '[ -z "$(find "$R/stick/lumen_os_diag_logs/early" -name timing.txt)" ]'
 check "no stray files" '[ -z "$(new_files)" ]'
 rm -rf "$R"
@@ -117,6 +144,7 @@ rm -rf "$R"
 echo "== case 3: no stick"
 setup none 1; run_watch
 check "record only in /dev" '[ -s "$R/dev/lumen_p6_timing/timing.txt" ] && [ -z "$(find "$R/stick" -type f)" ]'
+check "drvwdt only in /dev" 'grep -q "retry=0$" "$R/dev/lumen_p6_timing/drvwdt.txt"'
 check "no stray files" '[ -z "$(new_files)" ]'
 rm -rf "$R"
 
@@ -124,7 +152,17 @@ echo "== case 4: the boot never completes"
 setup match 0; run_watch
 F=$R/stick/lumen_os_diag_logs/early/boot_2/timing.txt
 check "stops at 870 s" 'grep -qE "^87[0-9]\.[0-9]+ watch end$" "$F"'
+W=$R/stick/lumen_os_diag_logs/early/boot_2/drvwdt.txt
+check "no DrvWdt dump after 180 s" '[ -z "$(awk "!/^#/ && \$1 + 0 > 184" "$W")" ]'
 check "boot_completed is -" 'grep -q " boot_completed=-$" "$F"'
+check "no stray files" '[ -z "$(new_files)" ]'
+rm -rf "$R"
+
+echo "== case 5: the drvwdt cap"
+setup match 0; P6T_WDT_MAX=20; export P6T_WDT_MAX; run_watch; unset P6T_WDT_MAX
+W=$R/stick/lumen_os_diag_logs/early/boot_2/drvwdt.txt
+check "at most 20 lines (header included)" '[ "$(wc -l < "$W" | tr -d " ")" -le 20 ] && [ "$(wc -l < "$W" | tr -d " ")" -ge 15 ]'
+check "the earliest lines are the ones kept" 'grep -q "retry=0$" "$W"'
 check "no stray files" '[ -z "$(new_files)" ]'
 rm -rf "$R"
 

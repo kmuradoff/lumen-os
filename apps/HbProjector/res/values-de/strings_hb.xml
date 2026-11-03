@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB only labels, hb-t8b keys only, Lumen's own wording (clean-room rewrite 2026-10-31) of values-de; the other HB keys fall back to English -->
+<resources>
+    <!-- hb-t8b (2026-10-30): HB keystone and picture labels at the places of the stock rows; texts
+         written by Lumen (clean-room rewrite 2026-10-31): stock strings only told us the meaning -->
+    <string name="kst_restore_hb">Bild auf Ausgangszustand</string>
+    <string name="kst_restore_done_hb">Bild auf Ausgangszustand gesetzt</string>
+    <string name="kst_settings_hb">Trapez-Optionen</string>
+    <string name="kst_enhancement_hb">Zusätzliche Korrektur</string>
+    <string name="kst_size_position_hb">Bildgröße und Lage</string>
+    <string name="more_hb">Weiteres</string>
+    <string name="kst_projection_type_hb">Projektionsart</string>
+    <string name="kst_manual_hb">Ecken von Hand einstellen</string>
+    <string name="kst_precise_hb">Ecken fein einstellen</string>
+    <string name="pro_contrast_hb">Kontrast</string>
+    <string name="pro_gamma_index_hb">Gamma</string>
+    <string name="pro_dyn_black_hb">Schwarz verstärken</string>
+    <string name="pro_clarity_hb">Detailtreue</string>
+    <string name="pro_noise_hb">Rauschfilter</string>
+    <string name="pro_reset_default_hb">Auf Standardwerte setzen</string>
+    <string name="pro_wb_2pt_hb">Weißabgleich mit 2 Punkten</string>
+    <string name="pro_wb_11pt_hb">Weißabgleich mit 11 Punkten</string>
+    <string name="pro_segmentation_hb">Graustufe</string>
+    <string name="pro_src_media_hb">Video aus Apps und Dateien</string>
+    <string name="pro_off_hb">Aus</string>
+    <string name="pro_weak_hb">Niedrig</string>
+    <string name="pro_medium_hb">Mittel</string>
+    <string name="pro_strong_hb">Hoch</string>
+    <string name="pro_auto_hb">Auto</string>
+</resources>

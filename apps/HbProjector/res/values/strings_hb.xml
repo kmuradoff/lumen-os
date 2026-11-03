@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB only labels; English and Russian first, other
+     languages fall back to English. -->
+<resources>
+    <string name="panel_move_ak_hb">Auto keystone after moving</string>
+    <string name="tg_move_ak_hb">Auto keystone after moving</string>
+    <!-- area projection: stock newsettings dialog_title_switch_to_hoist / dialog_desc_switch_to_hoist -->
+    <string name="hb_proj_hoist_title">Use the ceiling mount position?</string>
+    <string name="hb_proj_hoist_desc">Use this when the projector is mounted upside down on the ceiling in front of the screen. The picture is flipped. Some functions are not supported on a ceiling mount (they depend on the model).</string>
+    <!-- area projection: stock SystemUI CurtainGuideDialog (dialog_adapt_curtain_*) -->
+    <string name="hb_curtain_guide_title">Screen alignment</string>
+    <string name="hb_curtain_guide_desc">Move the projector so that the picture goes a little beyond all four edges of the screen, then start the correction.</string>
+    <string name="hb_curtain_guide_btn">Start auto keystone</string>
+    <!-- AREA picture (2026-10-30): stock HB picture rows -->
+    <string name="panel_ct_standard_hb">Standard</string>
+    <string name="panel_ct_movie_hb">Movie</string>
+    <string name="panel_picture_reset_msg_hb">All settings of this picture mode, the professional ones too, go back to their defaults. Continue?</string>
+    <string name="panel_picture_reset_all_hb">Reset all picture modes</string>
+    <string name="panel_picture_reset_all_msg_hb">The settings of every picture mode go back to their defaults. Continue?</string>
+    <string name="pro_dynamic_black_off_hb">%1$s turns off dynamic black enhancement</string>
+    <!-- hb-t8b (2026-10-30): HB keystone and picture labels at the places of the stock rows; texts
+         written by Lumen (clean-room rewrite 2026-10-31): stock strings only told us the meaning -->
+    <string name="kst_restore_hb">Reset picture to original</string>
+    <string name="kst_restore_done_hb">Picture reset to original</string>
+    <string name="kst_settings_hb">Keystone options</string>
+    <string name="kst_enhancement_hb">Correction extras</string>
+    <string name="kst_size_position_hb">Picture size and position</string>
+    <string name="more_hb">Other</string>
+    <string name="kst_projection_type_hb">Projection Type</string>
+    <string name="kst_manual_hb">Adjust corners by hand</string>
+    <string name="kst_precise_hb">Fine corner adjustment</string>
+    <string name="pro_contrast_hb">Contrast</string>
+    <string name="pro_gamma_index_hb">Gamma</string>
+    <string name="pro_dyn_black_hb">Dynamic black boost</string>
+    <string name="pro_clarity_hb">Detail</string>
+    <string name="pro_noise_hb">Noise filter</string>
+    <string name="pro_reset_default_hb">Reset to defaults</string>
+    <string name="pro_wb_2pt_hb">White balance, 2 points</string>
+    <string name="pro_wb_11pt_hb">White balance, 11 points</string>
+    <string name="pro_segmentation_hb">Gray Level</string>
+    <string name="pro_src_media_hb">Video from apps and files</string>
+    <string name="pro_off_hb">Off</string>
+    <string name="pro_weak_hb">Low</string>
+    <string name="pro_medium_hb">Mid</string>
+    <string name="pro_strong_hb">High</string>
+    <string name="pro_auto_hb">Automatic</string>
+</resources>

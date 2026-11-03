@@ -12,7 +12,9 @@
 #          round through its optional device hook (/system/etc/xgimi/earlylog_usb.sh; design decision,
 #          applied 2026-10-13); overlay/debug/lumen_escape.{rc,sh}: a boot that does not complete reboots
 #          into fastbootd; and overlay/play6/play6_boottiming.{rc,sh}: the uptime of each boot stage and of the
-#          vendor services / modules / pwm chips, written next to the stick log (2026-10-31)
+#          vendor services / modules / pwm chips, written next to the stick log (2026-10-31), with the early
+#          DrvWdt / MI3 log; overlay/play6/play6_early_mik.rc: the vendor's projector driver chain at late-fs
+#          (diag only until a Play 6 has booted with it, 2026-11-01)
 # --usb-adb persist.sys.usb.config=adb: the vendor's init.mt5889.usb.rc then starts adbd and switches the
 #          one USB-A port to device mode (usb_otg_agent device), so adb works over the A-A cable from
 #          early-boot on, before Wi-Fi, and `adb reboot fastboot` leads straight to the next flash. While it
@@ -46,7 +48,7 @@
 #   this script, dexpreopt_play6.sh check_privapp.py base_export.sh   [tools/play6];
 #           lumen_checks.py apkinfo.py   [tools/lumen, used read only]
 #   with --diag: z9x_earlylog.rc z9x_earlylog.sh lumen_escape.rc lumen_escape.sh [overlay/debug],
-#           earlylog_usb.sh play6_boottiming.rc play6_boottiming.sh [overlay/play6]
+#           earlylog_usb.sh play6_boottiming.rc play6_boottiming.sh play6_early_mik.rc [overlay/play6]
 #   with --gms: gms/{members.txt,lumen-gapps.xml,gms.tsv,system/...}   [build/play6/gms: sign_play6.py gms]
 # Output: ext4 (the Play 6 kernel has no erofs), packed by the base build's own build_image with the
 # base's image_info (same fs_config, file_contexts, reserve, hashtree footer).
@@ -89,7 +91,7 @@ NEED="Play6FrameworkOverlay.apk Play6TvSettingsOverlay.apk Play6Projector.apk Z9
 [ $OTA = 1 ] && NEED="$NEED Play6Updater.apk LumenBridge_updater.apk lumen_recovery.rc lumen_recovery.sh lumen_play6_ota.x509"
 [ $DEXPREOPT = 1 ] && NEED="$NEED dexpreopt_play6.sh lumen_checks.py"
 if has_exp 2 || has_exp 3; then NEED="$NEED play6_perf.rc"; fi
-[ $DIAG = 1 ] && NEED="$NEED z9x_earlylog.rc z9x_earlylog.sh earlylog_usb.sh lumen_escape.rc lumen_escape.sh play6_boottiming.rc play6_boottiming.sh"
+[ $DIAG = 1 ] && NEED="$NEED z9x_earlylog.rc z9x_earlylog.sh earlylog_usb.sh lumen_escape.rc lumen_escape.sh play6_boottiming.rc play6_boottiming.sh play6_early_mik.rc"
 [ $GMS = 1 ] && NEED="$NEED gms/members.txt gms/lumen-gapps.xml gms/gms.tsv"
 [ $GMS = 1 ] || [ ! -e "$IN/gms" ] || die "$IN/gms exists but this is not a --gms build: Google files never go into the no-Google image"
 for f in $NEED; do
@@ -384,6 +386,7 @@ if [ $DIAG = 1 ]; then
   install -m 0755 "$IN/lumen_escape.sh" "$S/etc/xgimi/lumen_escape.sh"
   install -m 0644 "$IN/play6_boottiming.rc" "$S/etc/init/play6_boottiming.rc"
   install -m 0755 "$IN/play6_boottiming.sh" "$S/etc/xgimi/play6_boottiming.sh"
+  install -m 0644 "$IN/play6_early_mik.rc" "$S/etc/init/play6_early_mik.rc"
 fi
 
 # 5a. the Google test edition (--gms only). The MindTheGapps installer's way

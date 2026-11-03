@@ -1,0 +1,36 @@
+# allowed_lumensensors.tsv: the complete list of gmpf calls Lumen Sensors (apps/LumenSensors, org.lumen.sensors) may send
+# on the X50 (G0111, X50 Ultra, mt9681, stock v1.2.64). Every row is a Call of apps/LumenSensors/src/org/lumen/sensors/
+# hal/X50Gmpf.java and every Call a row (rule 6 of tools/devices/check_aidl_hal.py, which the app's test/run.sh runs on
+# that file with research/aidl_codes.tsv and devices/goat_elegant/research/banned.tsv: none is BANNED or REVIEW there).
+# All are getters with the read-only shape of aidl_codes.tsv (no argument but a sensor index / fan id, a value or an
+# out struct back), each one the X50 twin of a read the Z9X app already makes (GmpfAllowlist) and read on the X50 on
+# 2026-11-01 (sensors_map.tsv, status verified; raw replies as host test fixtures).
+# Stock citations: the X50's own decompiled settings app (builder ~/devices/g0111_mt9681/work/dec/release_838_newsettings,
+# com/xgimi/gmpf/api/<Name>.java:<line> = the stock wrapper that reads it; the wire is xgimi/hardware/gmpf/I<Name>$Stub$Proxy
+# there). HB lists: devices/goat_elegant/research/allowed.tsv (HbProjector) and allowed_lumeninfo.tsv (LumenInfo).
+# NOT here, on purpose: GmFactoryManager 128 getCurHwCurrent (laser currents: BANNED on the HB, R-factory-svc) and
+# ProjectorFocusManager 50 getAmbientLight (banned on the Z9X / HB, the path may run the camera): decision pending.
+# Also not here: ProjectorFocusManager 46 getTofDistance (an active measurement, not verified on the X50) and
+# PowerManager 20 getPowerSupplyVoltage (not verified).
+# service	code	method	signature	reason
+-	0x00FFFFFF	getInterfaceVersion	int()	meta: version guard before the first call on each interface (must be 1)
+-	0x00FFFFFE	getInterfaceHash	String()	meta: hash guard (must be 715affd032170b4d256c28c9bbc3c6cbaf5de492)
+DisplayManager	28	getScreenOnOff	boolean()	light gate; stock wrapper com/xgimi/gmpf/api/DisplayManager.java:268; HB allowed.tsv; read on the X50 2026-11-01 (false, light off)
+TemperatureManager	6	getSystemTemperature	byte()	stock TemperatureManager.java:54 (System info); HB allowed.tsv; X50 read 30 / 29
+TemperatureManager	7	getTemperatureFromSensor	byte(byte)	sensor index 1..8, 10..12 only; stock TemperatureManager.java:58, SysInfoRepository (air 1, DMD 2, red 5, green 4); X50 read 26 30 0 28 29 28 0 0 0 28 25
+TemperatureManager	12	isTempUltraHigh	boolean()	stock TemperatureManager.java:78; Z9X twin IGmpf2 241 in GmpfAllowlist; X50 read false
+TemperatureManager	3	getFanMode	byte()	stock TemperatureManager.java:42; Z9X twin IGmpf 435; X50 read 14 (meaning unknown, shown raw)
+TemperatureManager	5	getFanRotationRate	int(byte)	fan 0 / 1 only; stock TemperatureManager.java:50; Z9X twin IGmpf 437; X50 read 60, 60
+DisplayManager	7	getDlpLumensLevel	byte()	stock DisplayManager.java:184; HB allowed.tsv; X50 read 10
+DisplayManager	5	getDlpLumensMode	byte()	stock DisplayManager.java:176; HB allowed.tsv; X50 read 24 (meaning unknown, shown raw)
+DisplayManager	152	getLensDispMode	int()	Boost; stock DisplayManager.java:764; Z9X twin IGmpf2 51; X50 read 0
+DisplayManager	178	getDispLumensLevel	int()	light power 0..1000; stock DisplayManager.java:868; Z9X twin IGmpf2 25; X50 read 1000
+DisplayManager	176	getLightUsageInfo	String()	once per start; stock DisplayManager.java:860; Z9X twin IGmpf2 27; X50 read JSON, 3 lights, usage_time 0
+DisplayManager	57	getOutputTimingInfo	boolean(OutputTimingInfo)	stock DisplayManager.java:384; HB allowed_lumeninfo.tsv; X50 read 3840x2160 60
+DisplayManager	179	getDispOutputFps	int()	stock DisplayManager.java:880; Z9X twin IGmpf2 22; X50 read 60
+GmTvManager	4	getCurrentInputSource	int()	stock com/xgimi/gmpf/api/GmTvManager.java:133; HB allowed.tsv; X50 read 2 (HDMI 2)
+GmTvManager	78	getHdrType	int()	stock GmTvManager.java:437; HB allowed.tsv; X50 read 0
+GmTvManager	38	getHdmiInfo	stHdmiInfo()	HDMI input only; stock GmTvManager.java:269; HB allowed.tsv; X50 read 3840x2160 60.00 HDMI
+GmTvManager	122	getVideoInfo	boolean(stVideoInfo)	media input only; stock GmTvManager.java:613; HB allowed_lumeninfo.tsv; X50 read 3840x2160 60.00
+MotionDetectionManager	2	getMotionDetection	MsensorDataStruct()	stock com/xgimi/gmpf/api/MotionDetectionManager.java:31; HB allowed.tsv; X50 read acc 10 -7 -4129, ang -11 -10 -1
+ProjectorFocusManager	59	getFocusMotorCurrentStep	int()	stock com/xgimi/gmpf/api/ProjectorFocusManager.java:299; Z9X twin IGmpf 266; X50 read 933, 933

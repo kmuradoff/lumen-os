@@ -556,15 +556,40 @@ public final class SensorsTest {
             files = st.filter(f -> f.toString().endsWith(".java")).sorted().collect(Collectors.toList());
         }
         yes("source tree found (" + files.size() + " files)", files.size() >= 30);
-        int creators = 0, readerMakers = 0;
+        int creators = 0, readerMakers = 0, x50Creators = 0, x50Clients = 0;
         for (Path f : files) {
             String rel = root.relativize(f).toString().replace('\\', '/');
             if (rel.equals("org/lumen/sensors/hal/HidlCaller.java")) continue;
             String t = new String(Files.readAllBytes(f), StandardCharsets.UTF_8);
             boolean hal = rel.startsWith("org/lumen/sensors/hal/"), z9x = rel.startsWith("org/lumen/sensors/z9x/");
-            for (String bad : new String[] {"callRet", "callU8", "callI32", "callBool", "transact(", "HwBinder"}) {
+            boolean x50 = rel.startsWith("org/lumen/sensors/x50/");
+            boolean x50hal = rel.equals("org/lumen/sensors/hal/X50Gmpf.java")
+                    || rel.equals("org/lumen/sensors/hal/X50Structs.java");
+            for (String bad : new String[] {"callRet", "callU8", "callI32", "callBool", "HwBinder"}) {
                 eq(rel + ": no " + bad, 0, count(t, bad));
             }
+            // the one AIDL transact of the X50 client (its own rules: X50Test and check_aidl_hal.py)
+            eq(rel + ": transact( only once, in hal/X50Gmpf", rel.equals("org/lumen/sensors/hal/X50Gmpf.java") ? 1 : 0,
+                    count(t, "transact("));
+            if (x50 || x50hal) {
+                for (String name : new String[] {"org.lumen.sensors.z9x", "Z9xProfile.", "Z9xSchedule.", "Z9xHalSource(",
+                        "Z9xGmpfReader", "GmpfAllowlist.", "GmpfStructs.", "HidlCaller", "HwParcel"}) {
+                    eq(rel + ": X50 code names no " + name, 0, count(t, name));
+                }
+            } else {
+                for (String name : new String[] {"X50Gmpf", "X50Structs", "X50HalSource", "X50Schedule"}) {
+                    eq(rel + ": no " + name + " outside the X50 files", 0, count(t, name));
+                }
+            }
+            if (count(t, "new X50HalSource(") > 0) {
+                x50Creators++;
+                yes(rel + ": only X50Profile creates the X50 source", rel.endsWith("x50/X50Profile.java"));
+            }
+            if (count(t, "new X50Gmpf(") > 0) {
+                x50Clients++;
+                yes(rel + ": only X50HalSource creates the X50 client", rel.endsWith("x50/X50HalSource.java"));
+            }
+            if (x50) continue;
             if (hal || z9x) {
                 eq(rel + ": .call( only in Z9xGmpfReader.tx", rel.endsWith("hal/Z9xGmpfReader.java") ? 1 : 0,
                         count(t, ".call("));
@@ -588,6 +613,8 @@ public final class SensorsTest {
         }
         eq("HAL source created in one place", 1, creators);
         eq("reader created in one place", 1, readerMakers);
+        eq("X50 source created in one place", 1, x50Creators);
+        eq("X50 client created in one place", 1, x50Clients);
     }
 
     /**
@@ -625,8 +652,9 @@ public final class SensorsTest {
         yes("HUD window is a trusted overlay", service.contains("p.setTrustedOverlay();"));
         yes("manifest asks for INTERNAL_SYSTEM_WINDOW",
                 manifest.contains("<uses-permission android:name=\"android.permission.INTERNAL_SYSTEM_WINDOW\" />"));
-        yes("manifest version 0.3",
-                manifest.contains("android:versionCode=\"3\"") && manifest.contains("android:versionName=\"0.3\""));
+        yes("manifest version 0.4",
+                manifest.contains("android:versionCode=\"4\"") && manifest.contains("android:versionName=\"0.4\""));
+        eq("manifest: no sharedUserId (refused on the X50)", 0, count(manifest, "android:sharedUserId"));
         yes("HUD invalidates on a publish only on a change", hud.contains("if (changed) invalidate();"));
         eq("HUD opacity is the setting itself", 1, count(hud, "Math.round(255 * opacityPct / 100f)"));
     }

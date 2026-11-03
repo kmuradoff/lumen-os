@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS for the XGIMI Z9X HB (goat_elegant, G0130): static RRO on framework-res ("android").
+     hb-t5 (the device test of hb-t4, 2026-10-29: "the remote's POWER key does nothing"): hb-t4 had no framework key
+     overlay at all (/system/product/overlay held TvFrameworkOverlay, the Lineage product RROs and
+     Z9xLineagePlatformOverlay only), so the global keys were TvFrameworkOverlay's: KEYCODE_STB_POWER (the BLE
+     remote's power key, "key 113 STB_POWER WAKE" in the overlay/v1 key layout the image installs) went to the
+     focused window, where Lumen Home ignores it, instead of org.lumen.projector/.KeyReceiver -> power.PowerKey
+     (short press = sleep, long press = power menu); the gear key (KEYCODE_SETTINGS) went to LineageParts' atv
+     KeyHandler, which opened TvSettings (live log 18:58:40, KeyHandler.launchTarget android.settings.SETTINGS).
+     res/xml/global_keys.xml and res/layout/shutdown_dialog.xml are the synced copies of apps/common/overlay
+     (sh apps/common/sync.sh apps/HbFrameworkOverlay keys), the same files as the Z9X and Play 6 overlays.
+     res/values/config.xml: the Z9X KEYCODE_POWER items (short press nothing, long press power menu, power and
+     restart); every user power key of this image is KEYCODE_STB_POWER, which global_keys.xml routes. Priority 2001: ordered after TvFrameworkOverlay (0) and the Lineage product RRO, so its
+     global_keys.xml wins as a whole. Install: /system/product/overlay/HbFrameworkOverlay.apk (0644), built and
+     signed with the goat_elegant platform key by tools/devices/build_apps.sh (device.conf apps). No code,
+     no permissions. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.lumen.overlay.hb"
+    android:versionCode="1"
+    android:versionName="hb-t5">
+    <overlay
+        android:targetPackage="android"
+        android:isStatic="true"
+        android:priority="2001" />
+    <application android:hasCode="false" />
+</manifest>

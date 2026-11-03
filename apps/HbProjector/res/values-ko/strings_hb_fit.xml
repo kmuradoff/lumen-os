@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB hb-t7: the fit-to-screen hint window at the place of the stock one (HB SystemUI auxiliary_curtain_alignment
+     window). Texts written by Lumen (clean-room rewrite 2026-10-31): the stock
+     strings only told us the meaning. Shown as btn1 + the OK key + btn2. The feature is hidden on the HB
+     (HbFitDevice.SUPPORTED false); CurtainAlignOverlay still references these keys. -->
+<resources>
+    <string name="hb_fit_guide_title">스크린에 맞추기</string>
+    <string name="hb_fit_guide_desc">화면이 스크린의 각 가장자리를 조금씩 넘도록 프로젝터를 놓으세요.</string>
+    <string name="hb_fit_guide_btn1">준비되면</string>
+    <string name="hb_fit_guide_btn2">키를 눌러 계속하세요</string>
+</resources>

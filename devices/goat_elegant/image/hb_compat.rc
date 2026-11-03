@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS on the XGIMI Z9X HB (goat_elegant, G0130), first-boot test builds: XGIMI's vendor partition is never
+# modified; its app folders are hidden with bind mounts before the package scan. Same reason as the Play 6's
+# play6_compat.rc part 1: XGIMI system apps under android.uid.system signed with XGIMI's platform key abort
+# PackageManager ("Signature mismatch on system package ... for shared user") on a framework signed with another
+# key. The HB vendor ships 6 apps in /vendor/app and 29 in /vendor/priv-app, and 30 of these 35 declare
+# sharedUserId android.uid.system (aapt2 dump xmltree of work/fs/vendor); none is needed to boot.
+# /system/etc/empty_dir is created by compose_hb.sh.
+on post-fs-data
+    mount none /system/etc/empty_dir /vendor/app bind
+    mount none /system/etc/empty_dir /vendor/priv-app bind

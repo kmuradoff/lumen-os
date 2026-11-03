@@ -1,0 +1,16 @@
+# Recipe of the Z9X HB projector app, read by tools/devices/assemble_app.py.
+# The HB app is the Z9X app minus the Z9X-only files below, plus the HB layer (apps/HbProjector: the real forks,
+# each with a row in devices/goat_elegant/forks.tsv, and the HB-only files). The Z9X folder is only read.
+app       HbProjector
+base      apps/Z9xProjector
+# Z9X-only: the report screen, 3D, the Z9X fit adapter, the HIDL transport (the HB is AIDL), the 1.0.8 import
+drop      src/org/lumen/projector/report/
+drop      src/org/lumen/projector/display/ThreeD.java
+drop      src/org/lumen/projector/fit/Z9xFitDevice.java
+drop      src/org/lumen/projector/hal/HidlCaller.java
+drop      src/org/lumen/common/LumenImport.java
+# Z9X-only strings of the keystone page's last section (the HB has its own, strings_hb.xml)
+drop      res/values*/strings_kst_restore.xml
+top       apps/HbProjector
+# never part of an app tree: build output, APKs, notes
+skip      build/ *.apk CHANGES*.md README*.md SYNCED.txt .DS_Store

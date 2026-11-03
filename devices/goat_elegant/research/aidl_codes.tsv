@@ -1,0 +1,1160 @@
+# service	code	method	signature	ndk_proxy_args	kind	source
+AudioCallback	1	audioEvent	void(int, String)	int, std::string const&	callback	ndk+java
+AudioCallback	16777214	getInterfaceHash	String()	std::string*	meta	java
+AudioCallback	16777215	getInterfaceVersion	int()	int*	meta	java
+ConfigManager	1	getProductName	String()	std::string*	method	ndk+java
+ConfigManager	2	getIchipProduct	byte()	signed char*	method	ndk+java
+ConfigManager	3	getUpdateBinName	String()	std::string*	method	ndk+java
+ConfigManager	4	getUpdateOtaName	String()	std::string*	method	ndk+java
+ConfigManager	5	getGmuiVersion	String()	std::string*	method	ndk+java
+ConfigManager	6	getXgimiApiVersion	int()	int*	method	ndk+java
+ConfigManager	7	getSocType	byte()	signed char*	method	ndk+java
+ConfigManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+ConfigManager	16777215	getInterfaceVersion	int()	int*	meta	java
+DataBaseManager	1	getDbInt	int(String)	std::string const&, int*	method	ndk+java
+DataBaseManager	2	updateDbInt	int(String, int)	std::string const&, int, int*	method	ndk+java
+DataBaseManager	3	getDbString	String(String)	std::string const&, std::string*	method	ndk+java
+DataBaseManager	4	updateDbString	int(String, String)	std::string const&, std::string const&, int*	method	ndk+java
+DataBaseManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+DataBaseManager	16777215	getInterfaceVersion	int()	int*	meta	java
+DisplayCallback	1	displayEvent	void(int, String)	int, std::string const&	callback	ndk+java
+DisplayCallback	16777214	getInterfaceHash	String()	std::string*	meta	java
+DisplayCallback	16777215	getInterfaceVersion	int()	int*	meta	java
+DisplayManager	1	setDisplayCallback	void(IDisplayCallback)	std::shared_ptr<IDisplayCallback> const&	method	ndk+java
+DisplayManager	2	setProjectorPutMode	void(byte)	signed char	method	ndk+java
+DisplayManager	3	getProjectorPutMode	byte()	signed char*	method	ndk+java
+DisplayManager	4	setDlpLumensMode	void(byte)	signed char	method	ndk+java
+DisplayManager	5	getDlpLumensMode	byte()	signed char*	method	ndk+java
+DisplayManager	6	setDlpLumensLevel	void(byte)	signed char	method	ndk+java
+DisplayManager	7	getDlpLumensLevel	byte()	signed char*	method	ndk+java
+DisplayManager	8	setDlpLumensComponent_RGB_Level	void(stDisplayRgB)	IDisplayType::stDisplayRgB const&	method	ndk+java
+DisplayManager	9	getDlpLumensComponent_RGB_Level	stDisplayRgB()	IDisplayType::stDisplayRgB*	method	ndk+java
+DisplayManager	10	isVideoPlaying	boolean()	bool*	method	ndk+java
+DisplayManager	11	correctKeystone	int(byte)	signed char, int*	method	ndk+java
+DisplayManager	12	getCorrectKeystone	byte()	signed char*	method	ndk+java
+DisplayManager	13	correctKeystonePiont	int(stDisplayKeyStone)	IDisplayType::stDisplayKeyStone const&, int*	method	ndk+java
+DisplayManager	14	getCorrectKeystonePiont	stDisplayKeyStone()	IDisplayType::stDisplayKeyStone*	method	ndk+java
+DisplayManager	15	setCorrectKeystoneFullPiont	boolean(byte, KstPoint)	signed char, IDisplayType::KstPoint const&, bool*	method	ndk+java
+DisplayManager	16	getCorrectKeystoneFullPiont	KstPoint(byte)	signed char, IDisplayType::KstPoint*	method	ndk+java
+DisplayManager	17	getCorrectKeystonePointOffset	KstPointOffset(byte)	signed char, IDisplayType::KstPointOffset*	method	ndk+java
+DisplayManager	18	correctKeystoneAngle	int(int, int)	int, int, int*	method	ndk+java
+DisplayManager	19	getCorrectKeystoneAngle	IKeystoneAngle()	IKeystoneAngle*	method	ndk+java
+DisplayManager	20	correctKeystonePiontMode	void(stDisplayKeyStoneInfo, byte)	IDisplayType::stDisplayKeyStoneInfo const&, signed char	method	ndk+java
+DisplayManager	21	getcorrectKeystonePiontModeArry	PointCoordinate[](byte)	signed char, std::vector<IDisplayType::PointCoordinate>*	method	ndk+java
+DisplayManager	22	enable3D	boolean(byte)	signed char, bool*	method	ndk+java
+DisplayManager	23	enable3DTo2D	boolean(byte)	signed char, bool*	method	ndk+java
+DisplayManager	24	getCurrent3DFormat	byte()	signed char*	method	ndk+java
+DisplayManager	25	is3DTo2DEnabled	boolean()	bool*	method	ndk+java
+DisplayManager	26	isPlayingHDRVideo	boolean()	bool*	method	ndk+java
+DisplayManager	27	setScreenOnOff	void(boolean)	bool	method	ndk+java
+DisplayManager	28	getScreenOnOff	boolean()	bool*	method	ndk+java
+DisplayManager	29	setScreenResolution	int(ScreenResolution)	IDisplayType::ScreenResolution const&, int*	method	ndk+java
+DisplayManager	30	setScreenZoomfactor	void(byte)	signed char	method	ndk+java
+DisplayManager	31	getScreenResolution	ScreenResolution()	IDisplayType::ScreenResolution*	method	ndk+java
+DisplayManager	32	getScreenZoomfactor	byte()	signed char*	method	ndk+java
+DisplayManager	33	setScreenMute	void(byte)	signed char	method	ndk+java
+DisplayManager	34	setSensitivity	void(byte)	signed char	method	ndk+java
+DisplayManager	35	getSensitivity	byte()	signed char*	method	ndk+java
+DisplayManager	36	testPattern	void(byte, byte)	signed char, signed char	method	ndk+java
+DisplayManager	37	getDlpImageVersion	String()	std::string*	method	ndk+java
+DisplayManager	38	correctKeystoneReset	void(byte)	signed char	method	ndk+java
+DisplayManager	39	externDisplay	String(String, String, String, String)	std::string const&, std::string const&, std::string const&, std::string const&, std::string*	method	ndk+java
+DisplayManager	40	enableUnifomityGain	int(int)	int, int*	method	ndk+java
+DisplayManager	41	resetUnifomityGain	int(int)	int, int*	method	ndk+java
+DisplayManager	42	setUnifomityGain	int(stColorUniformity)	IDisplayType::stColorUniformity const&, int*	method	ndk+java
+DisplayManager	43	getUnifomityGain	IUnifomityGain()	IUnifomityGain*	method	ndk+java
+DisplayManager	44	setDlpXPRMode	void(boolean)	bool	method	ndk+java
+DisplayManager	45	getDlpXPRMode	boolean()	bool*	method	ndk+java
+DisplayManager	46	setUniformityResult	int(int)	int, int*	method	ndk+java
+DisplayManager	47	getUniformityResult	int()	int*	method	ndk+java
+DisplayManager	48	is3DFormatSupported	boolean(byte)	signed char, bool*	method	ndk+java
+DisplayManager	49	setOutputTiming	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	50	getOutputTiming	int(int)	int, int*	method	ndk+java
+DisplayManager	51	correctKeystoneEx	int(byte)	signed char, int*	method	ndk+java
+DisplayManager	52	correctKeystonePiontEx	int(stDisplayKeyStone)	IDisplayType::stDisplayKeyStone const&, int*	method	ndk+java
+DisplayManager	53	correctKeystoneFullPiontEx	int(KstPoint)	IDisplayType::KstPoint const&, int*	method	ndk+java
+DisplayManager	54	correctKeystoneAngleEx	int(int, int)	int, int, int*	method	ndk+java
+DisplayManager	55	setScreenResolutionEx	int(ScreenResolution)	IDisplayType::ScreenResolution const&, int*	method	ndk+java
+DisplayManager	56	generateLogoByTrapezoid	int(int)	int, int*	method	ndk+java
+DisplayManager	57	getOutputTimingInfo	boolean(OutputTimingInfo)	IDisplayType::OutputTimingInfo*, bool*	method	ndk+java
+DisplayManager	58	getDlpRgbFromINI	stDisplayRgB(int)	int, IDisplayType::stDisplayRgB*	method	ndk+java
+DisplayManager	59	setALOnOff	int(boolean)	bool, int*	method	ndk+java
+DisplayManager	60	getALOnOff	boolean()	bool*	method	ndk+java
+DisplayManager	61	setHumanDetectOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+DisplayManager	62	getHumanDetectOnOff	boolean()	bool*	method	ndk+java
+DisplayManager	63	zoomControl	int(int, int)	int, int, int*	method	ndk+java
+DisplayManager	64	checkTrapezoidCoordinate	boolean(KstPoint)	IDisplayType::KstPoint const&, bool*	method	ndk+java
+DisplayManager	65	userCalibration	int(int, int)	int, int, int*	method	ndk+java
+DisplayManager	66	setHumanDetectScreenOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+DisplayManager	67	getHumanDetectScreenOnOff	boolean()	bool*	method	ndk+java
+DisplayManager	68	uiAkDisplay	void(int)	int	method	ndk+java
+DisplayManager	69	getDlpReduceCurrentFlag	int()	int*	method	ndk+java
+DisplayManager	70	setDlpReduceCurrentFlag	void(int)	int	method	ndk+java
+DisplayManager	71	SetDLPRomInvalidate	void(int)	int	method	ndk+java
+DisplayManager	72	translationKst	int(int, boolean)	int, bool, int*	method	ndk+java
+DisplayManager	73	dumpInfo	String()	std::string*	method	ndk+java
+DisplayManager	74	setOverLapOnOff	void(boolean)	bool	method	ndk+java
+DisplayManager	75	getOverLapOnOff	boolean()	bool*	method	ndk+java
+DisplayManager	76	setGameModeOption	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	77	getGameModeOption	int()	int*	method	ndk+java
+DisplayManager	78	translationKstEx	int(int, boolean, float)	int, bool, float, int*	method	ndk+java
+DisplayManager	79	isDispReady	boolean()	bool*	method	ndk+java
+DisplayManager	80	getAllZoomStep	ZoomMaxStep()	IDisplayType::ZoomMaxStep*	method	ndk+java
+DisplayManager	81	getCurrentZoomStep	int(int)	int, int*	method	ndk+java
+DisplayManager	82	setGameModeOptionForSource2	boolean(int, int)	int, int, bool*	method	ndk+java
+DisplayManager	83	getGameModeOptionForSource2	int(int)	int, int*	method	ndk+java
+DisplayManager	84	getCurrentKeystoneMode	int()	int*	method	ndk+java
+DisplayManager	85	switchKeystoneMode	boolean(int, int)	int, int, bool*	method	ndk+java
+DisplayManager	86	setScreenAndDoorOnOff	void(boolean, boolean)	bool, bool	method	ndk+java
+DisplayManager	87	setLightOnOff	int(int)	int, int*	method	ndk+java
+DisplayManager	88	fastTrapezoidCorrect	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	89	setKstAdjustType	boolean(int, boolean)	int, bool, bool*	method	ndk+java
+DisplayManager	90	getKstAdjustType	int()	int*	method	ndk+java
+DisplayManager	91	setLumensAdjState	boolean(int, int)	int, int, bool*	method	ndk+java
+DisplayManager	92	getLumensAdjState	int(int)	int, int*	method	ndk+java
+DisplayManager	93	zoomStart	int(int)	int, int*	method	ndk+java
+DisplayManager	94	zoomFinish	int(int)	int, int*	method	ndk+java
+DisplayManager	95	setOpticalZoomStep	int(int)	int, int*	method	ndk+java
+DisplayManager	96	setDigitalZoomStep	int(int)	int, int*	method	ndk+java
+DisplayManager	97	getZoomStepRange	int(st_ZoomStepRange)	IDisplayType::st_ZoomStepRange*, int*	method	ndk+java
+DisplayManager	98	getCurrentZoomStep2	int(st_ZoomStep)	IDisplayType::st_ZoomStep*, int*	method	ndk+java
+DisplayManager	99	uiHeartBeatSet	byte(String, int, int)	std::string const&, int, int, signed char*	method	ndk+java
+DisplayManager	100	uiHeartBeatDo	byte(String)	std::string const&, signed char*	method	ndk+java
+DisplayManager	101	setHumanDetectOnOffEx	boolean(boolean, boolean)	bool, bool, bool*	method	ndk+java
+DisplayManager	102	switchDispColorSpace	int(int)	int, int*	method	ndk+java
+DisplayManager	103	getDispColorSpace	int(int, int)	int, int, int*	method	ndk+java
+DisplayManager	104	setLowPowerLumensConfig	boolean(int, int)	int, int, bool*	method	ndk+java
+DisplayManager	105	getLowPowerLumensConfig	int(int)	int, int*	method	ndk+java
+DisplayManager	106	setLumensModeAndLevelByUser	boolean(int, CustomerLumensLvl_st)	int, IDisplayType::CustomerLumensLvl_st const&, bool*	method	ndk+java
+DisplayManager	107	getLumensLevelByUser	boolean(int, UserLumensLevel_st)	int, IDisplayType::UserLumensLevel_st*, bool*	method	ndk+java
+DisplayManager	108	startAutoColor	boolean()	bool*	method	ndk+java
+DisplayManager	109	getAutoColorIsRunning	boolean()	bool*	method	ndk+java
+DisplayManager	110	getAutoColorStatus	boolean()	bool*	method	ndk+java
+DisplayManager	111	getAutoColorCalibrationStatus	boolean()	bool*	method	ndk+java
+DisplayManager	112	startAutoColorCalibration	boolean()	bool*	method	ndk+java
+DisplayManager	113	startAutoColorCalibrationCheck	boolean()	bool*	method	ndk+java
+DisplayManager	114	setAutoColorDefault	boolean()	bool*	method	ndk+java
+DisplayManager	115	setAutoColorCalibration	boolean()	bool*	method	ndk+java
+DisplayManager	116	setUserLumensModeAndLevel	boolean(int, UserLumensLvlCfg_st)	int, IDisplayType::UserLumensLvlCfg_st const&, bool*	method	ndk+java
+DisplayManager	117	getUserLumensLevel	boolean(int, boolean, boolean, UserLumensLvlInfo_st)	int, bool, bool, IDisplayType::UserLumensLvlInfo_st*, bool*	method	ndk+java
+DisplayManager	118	dispWhiteBalance	boolean(int, XGIMI_RGB_LED, int)	int, IDisplayType::XGIMI_RGB_LED const&, int, bool*	method	ndk+java
+DisplayManager	119	setRequestWBInfo	boolean(int, WBInfo_st)	int, IDisplayType::WBInfo_st const&, bool*	method	ndk+java
+DisplayManager	120	setWBSampleData	boolean(int, int, ColorCoordinate_st)	int, int, IDisplayType::ColorCoordinate_st const&, bool*	method	ndk+java
+DisplayManager	121	isSupportDlpLumensMode	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	122	getAutoColorCalibrationData	String()	std::string*	method	ndk+java
+DisplayManager	123	restoreLumensMode	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	124	setLowPowerByLumensLvl	boolean(int, int)	int, int, bool*	method	ndk+java
+DisplayManager	125	getLowPowerByLumensLvl	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	126	setHumanDetectMode	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	127	getHumanDetectMode	int()	int*	method	ndk+java
+DisplayManager	128	isSupportCCB	boolean()	bool*	method	ndk+java
+DisplayManager	129	getCalcLightAndColorPoint	boolean(int, int, double[], ColorPoint_st[])	int, int, std::vector<double>*, std::vector<IDisplayType::ColorPoint_st>*, bool*	method	ndk+java
+DisplayManager	130	setColorEnhance	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	131	upgradeDispImage	boolean(int, String, int, String, String)	int, std::string const&, int, std::string const&, std::string const&, bool*	method	ndk+java
+DisplayManager	132	getDispImageUpgradeState	DispImageUpgradeState(int)	int, IDisplayType::DispImageUpgradeState*	method	ndk+java
+DisplayManager	133	getColorEnhance	int()	int*	method	ndk+java
+DisplayManager	134	setALOnType	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	135	getALOnType	int()	int*	method	ndk+java
+DisplayManager	136	setColorEnhanceType	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	137	getColorEnhanceType	int()	int*	method	ndk+java
+DisplayManager	138	setDolbyDefaultMode	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	139	getDolbyDefaultMode	int()	int*	method	ndk+java
+DisplayManager	140	setHighColorGamutMode	boolean(int, int, int, int, boolean)	int, int, int, int, bool, bool*	method	ndk+java
+DisplayManager	141	getHighColorGamutMode	int(int, int, int, boolean)	int, int, int, bool, int*	method	ndk+java
+DisplayManager	142	correctKeystoneFloatArray	boolean(PointCoordinateFloat_st[], int)	std::vector<IDisplayType::PointCoordinateFloat_st> const&, int, bool*	method	ndk+java
+DisplayManager	143	recoverLumensMode	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	144	setColorSpaceType	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	145	getColorSpaceInfo	boolean(int, int, ColorSpaceInfo_st)	int, int, IDisplayType::ColorSpaceInfo_st*, bool*	method	ndk+java
+DisplayManager	146	setGameModeState	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	147	setGameModeType	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	148	getGameModeProp	boolean(GameModeProp_st)	IDisplayType::GameModeProp_st*, bool*	method	ndk+java
+DisplayManager	149	setWBCompensateParam	boolean(String)	std::string const&, bool*	method	ndk+java
+DisplayManager	150	setAEOnOff	int(boolean)	bool, int*	method	ndk+java
+DisplayManager	151	setLensDispMode	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	152	getLensDispMode	int()	int*	method	ndk+java
+DisplayManager	153	setFluorescent	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	154	getFluorescent	int()	int*	method	ndk+java
+DisplayManager	155	setHightColorGamutFlag	boolean(int, int)	int, int, bool*	method	ndk+java
+DisplayManager	156	getHightColorGamutFlag	int(int)	int, int*	method	ndk+java
+DisplayManager	157	doKeystoneRatio	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	158	getIrisStep	int(byte, int)	signed char, int, int*	method	ndk+java
+DisplayManager	159	setDualLightMode	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	160	getDualLightMode	int()	int*	method	ndk+java
+DisplayManager	161	setRequestWBInfo2	boolean(int, int, WBInfo_st, String)	int, int, IDisplayType::WBInfo_st const&, std::string const&, bool*	method	ndk+java
+DisplayManager	162	setTempColorMonitorState	boolean(boolean, boolean, int)	bool, bool, int, bool*	method	ndk+java
+DisplayManager	163	setEnergyConMode	int(int, int)	int, int, int*	method	ndk+java
+DisplayManager	164	getWhiteBalanceHalVersion	String()	std::string*	method	ndk+java
+DisplayManager	165	execUniformCommand	String(String, String, String, String)	std::string const&, std::string const&, std::string const&, std::string const&, std::string*	method	ndk+java
+DisplayManager	166	setDispContrastEnhanceLvl	int(int)	int, int*	method	ndk+java
+DisplayManager	167	getDispContrastEnhanceLvl	int()	int*	method	ndk+java
+DisplayManager	168	setScreenOnOffWithAction	boolean(boolean, int)	bool, int, bool*	method	ndk+java
+DisplayManager	169	getPixelReprotWindow	boolean(int, int, int, int, stColorInfo_t)	int, int, int, int, IDisplayType::stColorInfo_t*, bool*	method	ndk+java
+DisplayManager	170	setActuatorParam	int(String)	std::string const&, int*	method	ndk+java
+DisplayManager	171	getActuatorParam	String(boolean)	bool, std::string*	method	ndk+java
+DisplayManager	172	setDynamicBlackType	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	173	setDynamicBlackLevel	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	174	getDynamicBlackType	int()	int*	method	ndk+java
+DisplayManager	175	getDynamicBlackLevel	int()	int*	method	ndk+java
+DisplayManager	176	getLightUsageInfo	String()	std::string*	method	ndk+java
+DisplayManager	177	setDispLumensLevel	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	178	getDispLumensLevel	int()	int*	method	ndk+java
+DisplayManager	179	getDispOutputFps	int()	int*	method	ndk+java
+DisplayManager	180	setCurtainState	boolean(boolean)	bool, bool*	method	ndk+java
+DisplayManager	181	checkCurtainState	boolean()	bool*	method	ndk+java
+DisplayManager	182	checkAngleTrapezoidCoordinate	boolean(int, int)	int, int, bool*	method	ndk+java
+DisplayManager	183	setFreerunEnable	boolean(boolean)	bool, bool*	method	ndk+java
+DisplayManager	184	setDynamicBlackTypeEx	boolean(int, boolean)	int, bool, bool*	method	ndk+java
+DisplayManager	185	setKstPrepare	boolean(boolean, int)	bool, int, bool*	method	ndk+java
+DisplayManager	186	checkMultiTrapezoidCoordinate	boolean(PointCoordinate[], KstGridState, boolean[])	std::vector<IDisplayType::PointCoordinate> const&, IDisplayType::KstGridState const&, std::vector<bool>*, bool*	method	ndk+java
+DisplayManager	187	MultiCorrectKeystone	int(PointCoordinate[], KstGridState)	std::vector<IDisplayType::PointCoordinate> const&, IDisplayType::KstGridState const&, int*	method	ndk+java
+DisplayManager	188	GetMultiCorrectKeystone	void(PointCoordinate[], KstGridState)	std::vector<IDisplayType::PointCoordinate>*, IDisplayType::KstGridState*	method	ndk+java
+DisplayManager	189	SetOpticalZoomLimitStep	int(int)	int, int*	method	ndk+java
+DisplayManager	190	GetCurrentZoomLimitStep	int(st_ZoomStep)	IDisplayType::st_ZoomStep*, int*	method	ndk+java
+DisplayManager	191	SetBrightnessBoostForTest	boolean(boolean)	bool, bool*	method	ndk+java
+DisplayManager	192	getVibrantHDRXCoeff	double()	double*	method	ndk+java
+DisplayManager	193	setVibrantHDRXCoeff	boolean(double)	double, bool*	method	ndk+java
+DisplayManager	194	set3DSaveStatus	boolean(boolean)	bool, bool*	method	ndk+java
+DisplayManager	195	get3DSaveStatus	boolean()	bool*	method	ndk+java
+DisplayManager	196	get3DSavedType	int()	int*	method	ndk+java
+DisplayManager	197	dlpDebug	String(String, String, String, String)	std::string const&, std::string const&, std::string const&, std::string const&, std::string*	method	ndk+java
+DisplayManager	198	setWhitebalanceTestMode	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	199	getWhitebalanceTestMode	int()	int*	method	ndk+java
+DisplayManager	200	setTemperatureTestMode	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	201	getTemperatureTestMode	int()	int*	method	ndk+java
+DisplayManager	202	PreGoToShutdown	boolean(int, int)	int, int, bool*	method	ndk+java
+DisplayManager	203	getRainbowReductionStatus	int()	int*	method	ndk+java
+DisplayManager	204	getRainbowReductionLevel	int()	int*	method	ndk+java
+DisplayManager	205	setRainbowReductionStatus	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	206	setRainbowReductionLevel	boolean(int)	int, bool*	method	ndk+java
+DisplayManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+DisplayManager	16777215	getInterfaceVersion	int()	int*	meta	java
+FactoryCallback	1	factoryEvent	void(int, String)	int, std::string const&	callback	ndk+java
+FactoryCallback	16777214	getInterfaceHash	String()	std::string*	meta	java
+FactoryCallback	16777215	getInterfaceVersion	int()	int*	meta	java
+GmAudioManager	1	setAudioCallback	void(IAudioCallback)	std::shared_ptr<IAudioCallback> const&	method	ndk+java
+GmAudioManager	2	setAudioOutput	void(byte)	signed char	method	ndk+java
+GmAudioManager	3	getAudioOutput	byte()	signed char*	method	ndk+java
+GmAudioManager	4	setMute	void(byte, boolean)	signed char, bool	method	ndk+java
+GmAudioManager	5	getMute	boolean(byte)	signed char, bool*	method	ndk+java
+GmAudioManager	6	setSoundeffect	void(byte)	signed char	method	ndk+java
+GmAudioManager	7	getSoundeffect	byte()	signed char*	method	ndk+java
+GmAudioManager	8	setAutoSoundeffect	void(byte)	signed char	method	ndk+java
+GmAudioManager	9	getAmpVersion	String()	std::string*	method	ndk+java
+GmAudioManager	10	setAudioDelay	void(int)	int	method	ndk+java
+GmAudioManager	11	setVideoDelay	void(int)	int	method	ndk+java
+GmAudioManager	12	getVideoDelay	int()	int*	method	ndk+java
+GmAudioManager	13	getAudioDelay	int()	int*	method	ndk+java
+GmAudioManager	14	setDeviceConnectionState	void(byte, byte)	signed char, signed char	method	ndk+java
+GmAudioManager	15	SetPEQEnable	int(boolean)	bool, int*	method	ndk+java
+GmAudioManager	16	SetPEQ	int(int, int, int, int)	int, int, int, int, int*	method	ndk+java
+GmAudioManager	17	SetVolumeDb	int(int, int)	int, int, int*	method	ndk+java
+GmAudioManager	18	SetPreScale	int(int, int)	int, int, int*	method	ndk+java
+GmAudioManager	19	SetDRCEnable	int(boolean)	bool, int*	method	ndk+java
+GmAudioManager	20	SetDRC	int(int, int, int, int, int, int, int)	int, int, int, int, int, int, int, int*	method	ndk+java
+GmAudioManager	21	SetHPF	int(boolean, int, int, int)	bool, int, int, int, int*	method	ndk+java
+GmAudioManager	22	setDtsEffectsEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	23	getDtsEffectsEnable	boolean()	bool*	method	ndk+java
+GmAudioManager	24	setVolumeBalanceEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	25	getVolumeBalanceEnable	boolean()	bool*	method	ndk+java
+GmAudioManager	26	isAudioCertificationVersion	boolean()	bool*	method	ndk+java
+GmAudioManager	27	enableAudioCertificationVersion	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	28	getARCType	byte()	signed char*	method	ndk+java
+GmAudioManager	29	getSpdifType	byte()	signed char*	method	ndk+java
+GmAudioManager	30	syncOutputDevice	void(int)	int	method	ndk+java
+GmAudioManager	31	setAudioDeviceSwitchMode	boolean(byte)	signed char, bool*	method	ndk+java
+GmAudioManager	32	getAudioDeviceSwitchMode	byte()	signed char*	method	ndk+java
+GmAudioManager	33	isAudioDeviceConnected	boolean(byte)	signed char, bool*	method	ndk+java
+GmAudioManager	34	getAudioDeviceSupportType	byte(byte)	signed char, signed char*	method	ndk+java
+GmAudioManager	35	setEnableRemoteVoice	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	36	getEnableRemoteVoice	boolean()	bool*	method	ndk+java
+GmAudioManager	37	setRemoteVoiceMute	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	38	getRemoteVoiceMute	boolean()	bool*	method	ndk+java
+GmAudioManager	39	setSoundProcessType	boolean(int)	int, bool*	method	ndk+java
+GmAudioManager	40	getSoundProcessType	int()	int*	method	ndk+java
+GmAudioManager	41	setDtsTruBassEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	42	getDtsTruBassEnable	boolean()	bool*	method	ndk+java
+GmAudioManager	43	setDtsTruSurroundEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	44	getDtsTruSurroundEnable	boolean()	bool*	method	ndk+java
+GmAudioManager	45	setDtsTruVolumeEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	46	getDtsTruVolumeEnable	boolean()	bool*	method	ndk+java
+GmAudioManager	47	setDtsDialogClarityEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	48	getDtsDialogClarityEnable	boolean()	bool*	method	ndk+java
+GmAudioManager	49	setDolbySurroundEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	50	getDolbySurroundEnable	boolean()	bool*	method	ndk+java
+GmAudioManager	51	startRemoteVoiceRecord	boolean(int)	int, bool*	method	ndk+java
+GmAudioManager	52	stopRemoteVoiceRecord	boolean()	bool*	method	ndk+java
+GmAudioManager	53	getRemoteVoiceRecordFilePath	String()	std::string*	method	ndk+java
+GmAudioManager	54	setRemoteVoiceTestResult	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	55	getRemoteVoiceTestResult	boolean()	bool*	method	ndk+java
+GmAudioManager	56	setDolbyVolumeLeveler	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	57	getDolbyVolumeLeveler	boolean()	bool*	method	ndk+java
+GmAudioManager	58	setDolbySurroundVirtual	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	59	getDolbySurroundVirtual	boolean()	bool*	method	ndk+java
+GmAudioManager	60	setDolbyAc4De	boolean(int)	int, bool*	method	ndk+java
+GmAudioManager	61	getDolbyAc4De	int()	int*	method	ndk+java
+GmAudioManager	62	setDolbyDialogEnhancer	boolean(int)	int, bool*	method	ndk+java
+GmAudioManager	63	getDolbyDialogEnhancer	int()	int*	method	ndk+java
+GmAudioManager	64	setPlaybackSceneState	boolean(byte)	signed char, bool*	method	ndk+java
+GmAudioManager	65	getPlaybackSceneState	byte()	signed char*	method	ndk+java
+GmAudioManager	66	getSyncImageSoundEffects	boolean()	bool*	method	ndk+java
+GmAudioManager	67	setSyncImageSoundEffects	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	68	setAutoSoundEffectsModeAndProcess	boolean(int, int)	int, int, bool*	method	ndk+java
+GmAudioManager	69	resetPluginFarFieldVoiceModule	boolean(int)	int, bool*	method	ndk+java
+GmAudioManager	70	getAudioSpectrum	boolean(int, long[])	int, std::vector<long long>*, bool*	method	ndk+java
+GmAudioManager	71	setDtsDrc	boolean(int)	int, bool*	method	ndk+java
+GmAudioManager	72	getDtsDrc	int()	int*	method	ndk+java
+GmAudioManager	73	SetXgimiPathVolumeDb	int(int, int)	int, int, int*	method	ndk+java
+GmAudioManager	74	setOpticalFiberLedOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+GmAudioManager	75	setGamingSoundEffectMode	boolean(int)	int, bool*	method	ndk+java
+GmAudioManager	76	getGamingSoundEffectMode	int()	int*	method	ndk+java
+GmAudioManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+GmAudioManager	16777215	getInterfaceVersion	int()	int*	meta	java
+GmFactoryManager	1	setFactoryCallback	void(IFactoryCallback)	std::shared_ptr<IFactoryCallback> const&	method	ndk+java
+GmFactoryManager	2	setEnvironment	byte(String, String)	std::string const&, std::string const&, signed char*	method	ndk+java
+GmFactoryManager	3	getEnvironment	String(String)	std::string const&, std::string*	method	ndk+java
+GmFactoryManager	4	setCommonCmd	String(String, String, String, String)	std::string const&, std::string const&, std::string const&, std::string const&, std::string*	method	ndk+java
+GmFactoryManager	5	setMacAddress	void(String)	std::string const&	method	ndk+java
+GmFactoryManager	6	getMacAddress	String()	std::string*	method	ndk+java
+GmFactoryManager	7	setSerialNumber	void(String)	std::string const&	method	ndk+java
+GmFactoryManager	8	getSerialNumber	String()	std::string*	method	ndk+java
+GmFactoryManager	9	setModelName	void(String)	std::string const&	method	ndk+java
+GmFactoryManager	10	getModelName	String()	std::string*	method	ndk+java
+GmFactoryManager	11	setCustomerId	void(String)	std::string const&	method	ndk+java
+GmFactoryManager	12	getCustomerId	String()	std::string*	method	ndk+java
+GmFactoryManager	13	setBuildInTestTotal	void(byte)	signed char	method	ndk+java
+GmFactoryManager	14	getBuildInTestTotal	byte()	signed char*	method	ndk+java
+GmFactoryManager	15	setCurrentBuildInTestCount	void(byte)	signed char	method	ndk+java
+GmFactoryManager	16	getCurrentBuildInTestCount	byte()	signed char*	method	ndk+java
+GmFactoryManager	17	getMucVersion	String()	std::string*	method	ndk+java
+GmFactoryManager	18	getHdmiDebug	boolean()	bool*	method	ndk+java
+GmFactoryManager	19	setHdmiDebug	byte(boolean)	bool, signed char*	method	ndk+java
+GmFactoryManager	20	getDlpDuty	byte()	signed char*	method	ndk+java
+GmFactoryManager	21	setDlpDuty	boolean(byte)	signed char, bool*	method	ndk+java
+GmFactoryManager	22	getDlpLook	byte()	signed char*	method	ndk+java
+GmFactoryManager	23	setDlpLook	boolean(byte)	signed char, bool*	method	ndk+java
+GmFactoryManager	24	adjustFocusControl	boolean(byte)	signed char, bool*	method	ndk+java
+GmFactoryManager	25	setFanDuty	byte(byte)	signed char, signed char*	method	ndk+java
+GmFactoryManager	26	dlpWhiteBalance	boolean(int, stWbRgb)	int, IFactoryType::stWbRgb const&, bool*	method	ndk+java
+GmFactoryManager	27	getDlpDutyRgb	stDutyRgb()	IFactoryType::stDutyRgb*	method	ndk+java
+GmFactoryManager	28	dlpCCAOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+GmFactoryManager	29	dlpCCIOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+GmFactoryManager	30	getDlpWhiteBalance	stWbRgb(int)	int, IFactoryType::stWbRgb*	method	ndk+java
+GmFactoryManager	31	getDlpCCAOnOff	boolean()	bool*	method	ndk+java
+GmFactoryManager	32	getDlpCCIOnOff	boolean()	bool*	method	ndk+java
+GmFactoryManager	33	setFocusModuleTest	void(byte)	signed char	method	ndk+java
+GmFactoryManager	34	setUSBMode	void(byte, byte)	signed char, signed char	method	ndk+java
+GmFactoryManager	35	getUSBMode	byte(byte)	signed char, signed char*	method	ndk+java
+GmFactoryManager	36	setPowerOnMode	void(byte)	signed char	method	ndk+java
+GmFactoryManager	37	getPowerOnMode	byte()	signed char*	method	ndk+java
+GmFactoryManager	38	isHwBatteryIn	boolean()	bool*	method	ndk+java
+GmFactoryManager	39	setEnforceOnNextBoot	void(boolean)	bool	method	ndk+java
+GmFactoryManager	40	saveAFCalibrationData	String()	std::string*	method	ndk+java
+GmFactoryManager	41	getAFCalibrationData	String()	std::string*	method	ndk+java
+GmFactoryManager	42	getTOFCalibrationStatus	String()	std::string*	method	ndk+java
+GmFactoryManager	43	saveSixDirectionMode	void(byte)	signed char	method	ndk+java
+GmFactoryManager	44	getSixDirectionMode	byte()	signed char*	method	ndk+java
+GmFactoryManager	45	savePowerOnAKFlag	void(boolean)	bool	method	ndk+java
+GmFactoryManager	46	getPowerOnAKFlag	boolean()	bool*	method	ndk+java
+GmFactoryManager	47	setActuatorOff	boolean(boolean)	bool, bool*	method	ndk+java
+GmFactoryManager	48	getActuatorOff	boolean()	bool*	method	ndk+java
+GmFactoryManager	49	setWhiteBalanceFlag	void(byte)	signed char	method	ndk+java
+GmFactoryManager	50	getWhiteBalanceFlag	byte()	signed char*	method	ndk+java
+GmFactoryManager	51	setDlpSplash	boolean(boolean, byte)	bool, signed char, bool*	method	ndk+java
+GmFactoryManager	52	testImgSharpnessChange	String(int)	int, std::string*	method	ndk+java
+GmFactoryManager	53	getLensTorqueTestCnt	int()	int*	method	ndk+java
+GmFactoryManager	54	setLensTorqueTestCnt	int(int)	int, int*	method	ndk+java
+GmFactoryManager	55	getLensTorqueTestErrType1Cnt	int()	int*	method	ndk+java
+GmFactoryManager	56	setLensTorqueTestErrType1Cnt	int(int)	int, int*	method	ndk+java
+GmFactoryManager	57	getLensTorqueTestErrType2Cnt	int()	int*	method	ndk+java
+GmFactoryManager	58	setLensTorqueTestErrType2Cnt	int(int)	int, int*	method	ndk+java
+GmFactoryManager	59	getActivation	boolean()	bool*	method	ndk+java
+GmFactoryManager	60	setActivation	int(boolean)	bool, int*	method	ndk+java
+GmFactoryManager	61	getAppCrashBoxShowEnabled	boolean()	bool*	method	ndk+java
+GmFactoryManager	62	setAppCrashBoxShowEnabled	int(boolean)	bool, int*	method	ndk+java
+GmFactoryManager	63	getValidModelNames	String()	std::string*	method	ndk+java
+GmFactoryManager	64	getFocusEmptyStep	String()	std::string*	method	ndk+java
+GmFactoryManager	65	setFactoryFirmwareTime	boolean(String)	std::string const&, bool*	method	ndk+java
+GmFactoryManager	66	getFactoryFirmwareTime	String()	std::string*	method	ndk+java
+GmFactoryManager	67	getBrightnessNonLine	int(int)	int, int*	method	ndk+java
+GmFactoryManager	68	setBrightnessNonLine	boolean(int, int)	int, int, bool*	method	ndk+java
+GmFactoryManager	69	getContrastNonLine	int(int)	int, int*	method	ndk+java
+GmFactoryManager	70	setContrastNonLine	boolean(int, int)	int, int, bool*	method	ndk+java
+GmFactoryManager	71	getSaturationNonLine	int(int)	int, int*	method	ndk+java
+GmFactoryManager	72	setSaturationNonLine	boolean(int, int)	int, int, bool*	method	ndk+java
+GmFactoryManager	73	getSharpnessNonLine	int(int)	int, int*	method	ndk+java
+GmFactoryManager	74	setSharpnessNonLine	boolean(int, int)	int, int, bool*	method	ndk+java
+GmFactoryManager	75	getHueNonLine	int(int)	int, int*	method	ndk+java
+GmFactoryManager	76	setHueNonLine	boolean(int, int)	int, int, bool*	method	ndk+java
+GmFactoryManager	77	setPanelSwing	boolean(int)	int, bool*	method	ndk+java
+GmFactoryManager	78	getPanelSwing	int()	int*	method	ndk+java
+GmFactoryManager	79	setWatchDog	boolean(boolean)	bool, bool*	method	ndk+java
+GmFactoryManager	80	getWatchDog	boolean()	bool*	method	ndk+java
+GmFactoryManager	81	setColorTempNonLine	boolean(int, int)	int, int, bool*	method	ndk+java
+GmFactoryManager	82	getColorTempNonLine	int(int)	int, int*	method	ndk+java
+GmFactoryManager	83	setPanelSsc	boolean(stPanelSsc)	IFactoryType::stPanelSsc const&, bool*	method	ndk+java
+GmFactoryManager	84	getPanelSsc	stPanelSsc()	IFactoryType::stPanelSsc*	method	ndk+java
+GmFactoryManager	85	setMiulSsc	boolean(stMiulSsc)	IFactoryType::stMiulSsc const&, bool*	method	ndk+java
+GmFactoryManager	86	getMiulSsc	stMiulSsc()	IFactoryType::stMiulSsc*	method	ndk+java
+GmFactoryManager	87	writeNdefBytes	boolean(byte[], int)	std::vector<unsigned char> const&, int, bool*	method	ndk+java
+GmFactoryManager	88	readNdefBytes	boolean(byte[], int)	std::vector<unsigned char>*, int, bool*	method	ndk+java
+GmFactoryManager	89	getTypecVersion	String()	std::string*	method	ndk+java
+GmFactoryManager	90	setBurninTime	boolean(String)	std::string const&, bool*	method	ndk+java
+GmFactoryManager	91	getBurninTime	String()	std::string*	method	ndk+java
+GmFactoryManager	92	setKeyFactoryTest	void(boolean)	bool	method	ndk+java
+GmFactoryManager	93	setFactoryBurninStep	void(String)	std::string const&	method	ndk+java
+GmFactoryManager	94	getFactoryBurninStep	String()	std::string*	method	ndk+java
+GmFactoryManager	95	setFactoryMode	boolean(int, boolean)	int, bool, bool*	method	ndk+java
+GmFactoryManager	96	getFactoryMode	int()	int*	method	ndk+java
+GmFactoryManager	97	getErrlogPath	String()	std::string*	method	ndk+java
+GmFactoryManager	98	setDoorSubdivisionLevel	void(int)	int	method	ndk+java
+GmFactoryManager	99	getDoorSubdivisionLevel	int()	int*	method	ndk+java
+GmFactoryManager	100	setFocusSubdivisionLevel	void(int)	int	method	ndk+java
+GmFactoryManager	101	getFocusSubdivisionLevel	int()	int*	method	ndk+java
+GmFactoryManager	102	setZoomSubdivisionLevel	void(int)	int	method	ndk+java
+GmFactoryManager	103	getZoomSubdivisionLevel	int()	int*	method	ndk+java
+GmFactoryManager	104	setAutoBurninMode	boolean(boolean)	bool, bool*	method	ndk+java
+GmFactoryManager	105	getAutoBurninMode	boolean()	bool*	method	ndk+java
+GmFactoryManager	106	factoryControlMotor	boolean(int, int)	int, int, bool*	method	ndk+java
+GmFactoryManager	107	getApertureParaString	String()	std::string*	method	ndk+java
+GmFactoryManager	108	getFilterParaString	String()	std::string*	method	ndk+java
+GmFactoryManager	109	setLensFilterState	boolean(int, int, int)	int, int, int, bool*	method	ndk+java
+GmFactoryManager	110	getLensFilterState	int(int)	int, int*	method	ndk+java
+GmFactoryManager	111	setLensIrisLevel	boolean(int, int)	int, int, bool*	method	ndk+java
+GmFactoryManager	112	getLensIrisLevel	int()	int*	method	ndk+java
+GmFactoryManager	113	setWBSampleExtInfo	boolean(int, int, int)	int, int, int, bool*	method	ndk+java
+GmFactoryManager	114	setWBVerifySampleData	boolean(WBVerifySampleInfo, ColorCoordinate_st)	IFactoryType::WBVerifySampleInfo const&, IDisplayType::ColorCoordinate_st const&, bool*	method	ndk+java
+GmFactoryManager	115	setLensWhiteBalanceFlag	boolean(int)	int, bool*	method	ndk+java
+GmFactoryManager	116	getLensWhiteBalanceFlag	int()	int*	method	ndk+java
+GmFactoryManager	117	getDispOemInfo	boolean(byte, int, int, byte[], byte[])	signed char, int, int, std::vector<unsigned char>*, std::vector<unsigned char>*, bool*	method	ndk+java
+GmFactoryManager	118	checkTofStructureTightness	String()	std::string*	method	ndk+java
+GmFactoryManager	119	factoryControlTof	boolean(int)	int, bool*	method	ndk+java
+GmFactoryManager	120	getTofXtalkParaString	String(int)	int, std::string*	method	ndk+java
+GmFactoryManager	121	factoryControlRadar	boolean(int)	int, bool*	method	ndk+java
+GmFactoryManager	122	getRadarParaString	String()	std::string*	method	ndk+java
+GmFactoryManager	123	getCaliPicPath	String(int)	int, std::string*	method	ndk+java
+GmFactoryManager	124	getTofRectangularCoordinate	boolean(PointCoordinate, PointCoordinate)	IDisplayType::PointCoordinate*, IDisplayType::PointCoordinate*, bool*	method	ndk+java
+GmFactoryManager	125	factoryGetDeviceVersion	String()	std::string*	method	ndk+java
+GmFactoryManager	126	controlWBDevice	String(int, String)	int, std::string const&, std::string*	method	ndk+java
+GmFactoryManager	127	delErrlogPath	boolean()	bool*	method	ndk+java
+GmFactoryManager	128	getCurHwCurrent	boolean(XGIMI_RGB_LED)	IDisplayType::XGIMI_RGB_LED*, bool*	method	ndk+java
+GmFactoryManager	129	agingStart	boolean(boolean)	bool, bool*	method	ndk+java
+GmFactoryManager	130	getTofStructureTightnessResult	String()	std::string*	method	ndk+java
+GmFactoryManager	131	getFactAgingPantiltPositionCfg	String()	std::string*	method	ndk+java
+GmFactoryManager	132	setWbConfigs	String(String)	std::string const&, std::string*	method	ndk+java
+GmFactoryManager	133	getMotorAgeingCnt	int(int)	int, int*	method	ndk+java
+GmFactoryManager	134	GetDlpDuty	boolean(stDutyInfo, int)	IFactoryType::stDutyInfo*, int, bool*	method	ndk+java
+GmFactoryManager	135	SetMIoTDeviceID	boolean(String)	std::string const&, bool*	method	ndk+java
+GmFactoryManager	136	GetMIoTDeviceID	String()	std::string*	method	ndk+java
+GmFactoryManager	137	SetMIoTKey	boolean(String)	std::string const&, bool*	method	ndk+java
+GmFactoryManager	138	GetMIoTKey	String()	std::string*	method	ndk+java
+GmFactoryManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+GmFactoryManager	16777215	getInterfaceVersion	int()	int*	meta	java
+GmTvCallback	1	gmTvEvent	void(int, String)	int, std::string const&	callback	ndk+java
+GmTvCallback	16777214	getInterfaceHash	String()	std::string*	meta	java
+GmTvCallback	16777215	getInterfaceVersion	int()	int*	meta	java
+GmTvManager	1	setGmTvCallback	void(IGmTvCallback)	std::shared_ptr<IGmTvCallback> const&	method	ndk+java
+GmTvManager	2	hdrEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	3	switchInputSource	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	4	getCurrentInputSource	int()	int*	method	ndk+java
+GmTvManager	5	setContrast	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	6	getContrast	int(int)	int, int*	method	ndk+java
+GmTvManager	7	setBrightness	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	8	getBrightness	int(int)	int, int*	method	ndk+java
+GmTvManager	9	setSaturation	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	10	getSaturation	int(int)	int, int*	method	ndk+java
+GmTvManager	11	setSharpness	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	12	getSharpness	int(int)	int, int*	method	ndk+java
+GmTvManager	13	setHue	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	14	getHue	int(int)	int, int*	method	ndk+java
+GmTvManager	15	setColorTemperature	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	16	getColorTemperature	int(int)	int, int*	method	ndk+java
+GmTvManager	17	setColorTempRedGain	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	18	getColorTempRedGain	int(int)	int, int*	method	ndk+java
+GmTvManager	19	setColorTempGreenGain	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	20	getColorTempGreenGain	int(int)	int, int*	method	ndk+java
+GmTvManager	21	setColorTempBlueGain	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	22	getColorTempBlueGain	int(int)	int, int*	method	ndk+java
+GmTvManager	23	setColorTempRedOffset	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	24	getColorTempRedOffset	int(int)	int, int*	method	ndk+java
+GmTvManager	25	setColorTempGreenOffset	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	26	getColorTempGreenOffset	int(int)	int, int*	method	ndk+java
+GmTvManager	27	setColorTempBlueOffset	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	28	getColorTempBlueOffset	int(int)	int, int*	method	ndk+java
+GmTvManager	29	set3DNR	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	30	get3DNR	int(int)	int, int*	method	ndk+java
+GmTvManager	31	setMemcLevel	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	32	getMemcLevel	int(int)	int, int*	method	ndk+java
+GmTvManager	33	setPictureMode	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	34	getPictureMode	int(int)	int, int*	method	ndk+java
+GmTvManager	35	setAspectRatio	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	36	getAspectRatio	int()	int*	method	ndk+java
+GmTvManager	37	detectInputSource	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	38	getHdmiInfo	stHdmiInfo()	IGmTvType::stHdmiInfo*	method	ndk+java
+GmTvManager	39	getEdidVersion	int()	int*	method	ndk+java
+GmTvManager	40	setEdidVersion	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	41	setDisplayArea	boolean(int, int, int, int)	int, int, int, int, bool*	method	ndk+java
+GmTvManager	42	resetPqSettings	int(int)	int, int*	method	ndk+java
+GmTvManager	43	setHsyPictureMode	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	44	setDlcLevel	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	45	setUcdLevel	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	46	setVideoMute	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	47	setVideoUnmute	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	48	getVideoMuteStatus	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	49	getUcdLevel	int(int)	int, int*	method	ndk+java
+GmTvManager	50	setHdrEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	51	getHdrEnable	boolean()	bool*	method	ndk+java
+GmTvManager	52	setCecWakeUp	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	53	getCecWakeUpState	boolean()	bool*	method	ndk+java
+GmTvManager	54	setWowWakeUp	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	55	getWowWakeUp	boolean()	bool*	method	ndk+java
+GmTvManager	56	setWolWakeUp	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	57	getWolWakeUp	boolean()	bool*	method	ndk+java
+GmTvManager	58	getWakeUpSource	int()	int*	method	ndk+java
+GmTvManager	59	gmTvDumpInfo	String()	std::string*	method	ndk+java
+GmTvManager	60	isKstSupport	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	61	setGameModeOptionForSource	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	62	getGameModeOptionForSource	int(int)	int, int*	method	ndk+java
+GmTvManager	63	setHdmiRange	boolean(byte)	signed char, bool*	method	ndk+java
+GmTvManager	64	getHdmiRange	byte()	signed char*	method	ndk+java
+GmTvManager	65	setEARCEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	66	getEARCEnableState	boolean()	bool*	method	ndk+java
+GmTvManager	67	setCecLogicAddress	boolean(byte)	signed char, bool*	method	ndk+java
+GmTvManager	68	clearCecLogicAddress	boolean()	bool*	method	ndk+java
+GmTvManager	69	setCecEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	70	getHdmiConnectStatus	boolean(byte)	signed char, bool*	method	ndk+java
+GmTvManager	71	setARCEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	72	sendCecTxMsg	boolean(stCecFrameDescription)	IGmTvType::stCecFrameDescription const&, bool*	method	ndk+java
+GmTvManager	73	setDolbyVisionTmax	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	74	setDolbyVisionPicMode	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	75	getDolbyVisionPicMode	int()	int*	method	ndk+java
+GmTvManager	76	getDolbyVisionTmaxSize	int()	int*	method	ndk+java
+GmTvManager	77	getDolbyVisionTmaxGain	int()	int*	method	ndk+java
+GmTvManager	78	getHdrType	int()	int*	method	ndk+java
+GmTvManager	79	getEARCStatus	int()	int*	method	ndk+java
+GmTvManager	80	setDVContrast	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	81	getDVContrast	int(int)	int, int*	method	ndk+java
+GmTvManager	82	setDVBrightness	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	83	getDVBrightness	int(int)	int, int*	method	ndk+java
+GmTvManager	84	setDVSaturation	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	85	getDVSaturation	int(int)	int, int*	method	ndk+java
+GmTvManager	86	setDVSharpness	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	87	getDVSharpness	int(int)	int, int*	method	ndk+java
+GmTvManager	88	setDVHue	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	89	getDVHue	int(int)	int, int*	method	ndk+java
+GmTvManager	90	setDVColorTemperature	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	91	getDVColorTemperature	int(int)	int, int*	method	ndk+java
+GmTvManager	92	setDVColorTempRedGain	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	93	getDVColorTempRedGain	int(int)	int, int*	method	ndk+java
+GmTvManager	94	setDVColorTempGreenGain	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	95	getDVColorTempGreenGain	int(int)	int, int*	method	ndk+java
+GmTvManager	96	setDVColorTempBlueGain	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	97	getDVColorTempBlueGain	int(int)	int, int*	method	ndk+java
+GmTvManager	98	setDVColorTempRedOffset	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	99	getDVColorTempRedOffset	int(int)	int, int*	method	ndk+java
+GmTvManager	100	setDVColorTempGreenOffset	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	101	getDVColorTempGreenOffset	int(int)	int, int*	method	ndk+java
+GmTvManager	102	setDVColorTempBlueOffset	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	103	getDVColorTempBlueOffset	int(int)	int, int*	method	ndk+java
+GmTvManager	104	setDV3DNR	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	105	getDV3DNR	int(int)	int, int*	method	ndk+java
+GmTvManager	106	getSignalStatus	int()	int*	method	ndk+java
+GmTvManager	107	setAisrLevel	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	108	getAisrLevel	int()	int*	method	ndk+java
+GmTvManager	109	setShortCutKeyValue	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	110	getShortCutKeyValue	int()	int*	method	ndk+java
+GmTvManager	111	getWakeupMode	int()	int*	method	ndk+java
+GmTvManager	112	getHsyPictureModeEnable	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	113	setTvDynamicContrastEnable	boolean(int, boolean)	int, bool, bool*	method	ndk+java
+GmTvManager	114	getTvDynamicContrastEnable	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	115	setTvGammaLevel	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	116	getTvGammaLevel	int(int)	int, int*	method	ndk+java
+GmTvManager	117	setHsyColorModel	boolean(int, int, byte[])	int, int, std::vector<unsigned char> const&, bool*	method	ndk+java
+GmTvManager	118	getHsyColorModel	boolean(int, int, byte[])	int, int, std::vector<unsigned char>*, bool*	method	ndk+java
+GmTvManager	119	setHsyPictureModeEnable	boolean(int, boolean)	int, bool, bool*	method	ndk+java
+GmTvManager	120	setAisrType	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	121	getAisrType	int()	int*	method	ndk+java
+GmTvManager	122	getVideoInfo	boolean(stVideoInfo)	IGmTvType::stVideoInfo*, bool*	method	ndk+java
+GmTvManager	123	setImaxState	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	124	switchDisplayImax	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	125	setImaxVideoTag	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	126	getImaxState	int(int)	int, int*	method	ndk+java
+GmTvManager	127	isImaxVideoPlaying	boolean()	bool*	method	ndk+java
+GmTvManager	128	doImaxVideoAction	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	129	setAllmEnable	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	130	getAllmEnableState	boolean()	bool*	method	ndk+java
+GmTvManager	131	getAllmStatus	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	132	getImaxType	int()	int*	method	ndk+java
+GmTvManager	133	setHdrVividState	boolean(int, int, int)	int, int, int, bool*	method	ndk+java
+GmTvManager	134	getHdrVividState	int(int, int)	int, int, int*	method	ndk+java
+GmTvManager	135	isHdrVividPlaying	boolean()	bool*	method	ndk+java
+GmTvManager	136	setVividVideoTag	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	137	switchDisplayVivid	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	138	enableAiPq	boolean(int, boolean)	int, bool, bool*	method	ndk+java
+GmTvManager	139	getAiPqEnableStatus	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	140	setFFMState	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	141	getFFMState	int(int)	int, int*	method	ndk+java
+GmTvManager	142	isFFMPlaying	boolean()	bool*	method	ndk+java
+GmTvManager	143	setFFMVideoTag	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	144	switchDisplayFFM	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	145	setVRRModeEnable	int(int, int)	int, int, int*	method	ndk+java
+GmTvManager	146	getVRREnableState	int(int)	int, int*	method	ndk+java
+GmTvManager	147	setGamePictureMode	int(int, int)	int, int, int*	method	ndk+java
+GmTvManager	148	getGamePictureMode	int(int)	int, int*	method	ndk+java
+GmTvManager	149	setDarkBoostOnoff	int(boolean, int, int)	bool, int, int, int*	method	ndk+java
+GmTvManager	150	getDarkBoostState	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	151	getDisplayArea	boolean(stDisplayArea)	IGmTvType::stDisplayArea*, bool*	method	ndk+java
+GmTvManager	152	getDeviceListTotal	int[](int)	int, std::vector<int>*	method	ndk+java
+GmTvManager	153	getHdmiHwConfig	stHdmiHwCfg(int)	int, IGmTvType::stHdmiHwCfg*	method	ndk+java
+GmTvManager	154	setCustomized3DLut	boolean(String)	std::string const&, bool*	method	ndk+java
+GmTvManager	155	getCustomized3DLut	String()	std::string*	method	ndk+java
+GmTvManager	156	toggleAIContrast	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	157	getAIContrastStatus	int(int)	int, int*	method	ndk+java
+GmTvManager	158	setAIContrastLevel	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	159	getAIContrastLevel	int(int)	int, int*	method	ndk+java
+GmTvManager	160	toggleFDBoost	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	161	getFDBoostStatus	int(int)	int, int*	method	ndk+java
+GmTvManager	162	toggleAutoMode	boolean(int, boolean)	int, bool, bool*	method	ndk+java
+GmTvManager	163	getExtDecInfo	int(String)	std::string const&, int*	method	ndk+java
+GmTvManager	164	ResetPictureToDefault	boolean(int, int, int)	int, int, int, bool*	method	ndk+java
+GmTvManager	165	setOneOfMultiPointWB	boolean(int, stOneOfMultiPointWB)	int, IGmTvType::stOneOfMultiPointWB const&, bool*	method	ndk+java
+GmTvManager	166	getOneOfMultiPointWB	boolean(int, stOneOfMultiPointWB)	int, IGmTvType::stOneOfMultiPointWB*, bool*	method	ndk+java
+GmTvManager	167	setInputRect	boolean(stInputRect)	IGmTvType::stInputRect const&, bool*	method	ndk+java
+GmTvManager	168	getInputRect	boolean(stInputRect)	IGmTvType::stInputRect*, bool*	method	ndk+java
+GmTvManager	169	setPictureSplicing	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	170	getPictureSplicingState	boolean()	bool*	method	ndk+java
+GmTvManager	171	restoreWinByAspRatio	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	172	setAmdFreeSyncState	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	173	getAmdFreeSyncState	boolean()	bool*	method	ndk+java
+GmTvManager	174	ToggleHDRDyToneMapping	boolean(int, int)	int, int, bool*	method	ndk+java
+GmTvManager	175	GetHDRDyToneMappingStatus	int(int)	int, int*	method	ndk+java
+GmTvManager	176	ApplyTvParams	int(String)	std::string const&, int*	method	ndk+java
+GmTvManager	177	DispSettingsExport	String(int, String)	int, std::string const&, std::string*	method	ndk+java
+GmTvManager	178	DispSettingsImport	int(int, String, String)	int, std::string const&, std::string const&, int*	method	ndk+java
+GmTvManager	179	getElderColorTone	int()	int*	method	ndk+java
+GmTvManager	180	setElderColorTone	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	181	getElderColorLevel	int()	int*	method	ndk+java
+GmTvManager	182	setElderColorLevel	boolean(int)	int, bool*	method	ndk+java
+GmTvManager	183	DispCali	stRspDispCali(stReqDispCali)	IGmTvType::stReqDispCali const&, IGmTvType::stRspDispCali*	method	ndk+java
+GmTvManager	184	ApplyDispCali	int(byte[])	std::vector<unsigned char> const&, int*	method	ndk+java
+GmTvManager	185	SetScreenMetaData	int(stScreenMeta)	IGmTvType::stScreenMeta const&, int*	method	ndk+java
+GmTvManager	186	GetScreenMetaData	int(stScreenMeta)	IGmTvType::stScreenMeta*, int*	method	ndk+java
+GmTvManager	187	GetParamInfo	stRspDispParamInfo(stReqDispParamInfo)	IGmTvType::stReqDispParamInfo const&, IGmTvType::stRspDispParamInfo*	method	ndk+java
+GmTvManager	188	GetParamsInfo	stRspDispParamsInfo(stReqDispParamsInfo)	IGmTvType::stReqDispParamsInfo const&, IGmTvType::stRspDispParamsInfo*	method	ndk+java
+GmTvManager	189	SetParamDirectHW	stRspSetDispParamDirectHW(stReqSetDispParamDirectHW)	IGmTvType::stReqSetDispParamDirectHW const&, IGmTvType::stRspSetDispParamDirectHW*	method	ndk+java
+GmTvManager	190	GetParamDirectHW	stRspGetDispParamDirectHW(stReqGetDispParamDirectHW)	IGmTvType::stReqGetDispParamDirectHW const&, IGmTvType::stRspGetDispParamDirectHW*	method	ndk+java
+GmTvManager	191	setHGiGMode	boolean(boolean)	bool, bool*	method	ndk+java
+GmTvManager	192	getHGiGMode	boolean()	bool*	method	ndk+java
+GmTvManager	193	getInstalled3DLutCubeList	String()	std::string*	method	ndk+java
+GmTvManager	194	GetTvParams	String(String)	std::string const&, std::string*	method	ndk+java
+GmTvManager	195	CreateNewCustomImageMode	int(int)	int, int*	method	ndk+java
+GmTvManager	196	DeleteCustomImageMode	int(int)	int, int*	method	ndk+java
+GmTvManager	197	SwitchCustomImageModeMapping	int(int, int)	int, int, int*	method	ndk+java
+GmTvManager	198	GetCustomImageModeMapping	int(int)	int, int*	method	ndk+java
+GmTvManager	199	SetIrisLevel	int(int)	int, int*	method	ndk+java
+GmTvManager	200	GetIrisLevel	int()	int*	method	ndk+java
+GmTvManager	201	setPictureModeJson	int(int, String, int)	int, std::string const&, int, int*	method	ndk+java
+GmTvManager	202	getPictureModeJson	stRspPictureModeJson(int, int)	int, int, IGmTvType::stRspPictureModeJson*	method	ndk+java
+GmTvManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+GmTvManager	16777215	getInterfaceVersion	int()	int*	meta	java
+Gmpf	1	disconnectAudioManager	void(int)	int	method	ndk+java
+Gmpf	2	setAudioListener	void(int, IAudioCallback)	int, std::shared_ptr<IAudioCallback> const&	method	ndk+java
+Gmpf	3	disconnectConfigManager	void(int)	int	method	ndk+java
+Gmpf	4	getDispImageUpgradeState_generates	void(boolean, DispImageUpgradeState)	bool, IDisplayType::DispImageUpgradeState const&	method	ndk+java
+Gmpf	5	checkTrapezoidCoordinate	boolean(KstPoint)	IDisplayType::KstPoint const&, bool*	method	ndk+java
+Gmpf	6	disconnectDisplayManager	void(int)	int	method	ndk+java
+Gmpf	7	testPatternWithCallingPid	void(byte, byte, int)	signed char, signed char, int	method	ndk+java
+Gmpf	8	setDisplayListener	void(int, IDisplayCallback)	int, std::shared_ptr<IDisplayCallback> const&	method	ndk+java
+Gmpf	9	disconnectMusicPlayerManager	void(int)	int	method	ndk+java
+Gmpf	10	setMusicPlayerListener	void(int, IMusicPlayerCallback)	int, std::shared_ptr<IMusicPlayerCallback> const&	method	ndk+java
+Gmpf	11	disconnectPowerManager	void(int)	int	method	ndk+java
+Gmpf	12	setPowerListener	void(int, IPowerCallback)	int, std::shared_ptr<IPowerCallback> const&	method	ndk+java
+Gmpf	13	disconnectProjectorFocusManager	void(int)	int	method	ndk+java
+Gmpf	14	setProjectorFocusListener	void(int, IProjectorFocusCallback)	int, std::shared_ptr<IProjectorFocusCallback> const&	method	ndk+java
+Gmpf	15	disconnectSystemManager	void(int)	int	method	ndk+java
+Gmpf	16	setSystemListener	void(int, ISystemCallback)	int, std::shared_ptr<ISystemCallback> const&	method	ndk+java
+Gmpf	17	disconnectTemperatureManager	void(int)	int	method	ndk+java
+Gmpf	18	setTemperatureListener	void(int, ITemperatureCallback)	int, std::shared_ptr<ITemperatureCallback> const&	method	ndk+java
+Gmpf	19	disconnectFactoryManager	void(int)	int	method	ndk+java
+Gmpf	20	getFactoryModelName	String()	std::string*	method	ndk+java
+Gmpf	21	setFactoryListener	void(int, IFactoryCallback)	int, std::shared_ptr<IFactoryCallback> const&	method	ndk+java
+Gmpf	22	disconnectDataBaseManager	void(int)	int	method	ndk+java
+Gmpf	23	disconnectMotionDetectionManager	void(int)	int	method	ndk+java
+Gmpf	24	setMotionDetectionListener	void(int, IMotionDetectionCallback)	int, std::shared_ptr<IMotionDetectionCallback> const&	method	ndk+java
+Gmpf	25	switchInputSourceWithCallingPid	boolean(int, int)	int, int, bool*	method	ndk+java
+Gmpf	26	disconnectGmTvManager	void(int)	int	method	ndk+java
+Gmpf	27	setGmTvListener	void(int, IGmTvCallback)	int, std::shared_ptr<IGmTvCallback> const&	method	ndk+java
+Gmpf	16777214	getInterfaceHash	String()	std::string*	meta	java
+Gmpf	16777215	getInterfaceVersion	int()	int*	meta	java
+Gmpf2	1	dumpSysInfo	String()	std::string*	method	ndk+java
+Gmpf2	16777214	getInterfaceHash	String()	std::string*	meta	java
+Gmpf2	16777215	getInterfaceVersion	int()	int*	meta	java
+MotionDetectionCallback	1	motionDetectionEvent	void(int, String)	int, std::string const&	callback	ndk+java
+MotionDetectionCallback	16777214	getInterfaceHash	String()	std::string*	meta	java
+MotionDetectionCallback	16777215	getInterfaceVersion	int()	int*	meta	java
+MotionDetectionManager	1	setMotionDetectionCallback	void(IMotionDetectionCallback)	std::shared_ptr<IMotionDetectionCallback> const&	method	ndk+java
+MotionDetectionManager	2	getMotionDetection	MsensorDataStruct()	IMotionType::MsensorDataStruct*	method	ndk+java
+MotionDetectionManager	3	gyroscopeCorrection	boolean()	bool*	method	ndk+java
+MotionDetectionManager	4	setAngTriggerAF	boolean(boolean)	bool, bool*	method	ndk+java
+MotionDetectionManager	5	getAngTriggerAF	boolean()	bool*	method	ndk+java
+MotionDetectionManager	6	setAccTriggerAK	boolean(boolean)	bool, bool*	method	ndk+java
+MotionDetectionManager	7	getAccTriggerAK	boolean()	bool*	method	ndk+java
+MotionDetectionManager	8	setAutoReverse	boolean(boolean)	bool, bool*	method	ndk+java
+MotionDetectionManager	9	getAutoReverse	boolean()	bool*	method	ndk+java
+MotionDetectionManager	10	motionSensorAdjustReset	boolean()	bool*	method	ndk+java
+MotionDetectionManager	11	gyroscopeCorrectionForFactory	boolean()	bool*	method	ndk+java
+MotionDetectionManager	12	getMotionSensorAdjustDataForFactory	String()	std::string*	method	ndk+java
+MotionDetectionManager	13	getRotateMatrix	IRotateMatrix(double[], boolean)	std::vector<double> const&, bool, IRotateMatrix*	method	ndk+java
+MotionDetectionManager	14	motionDetectionTest	String(int, String, String, String)	int, std::string const&, std::string const&, std::string const&, std::string*	method	ndk+java
+MotionDetectionManager	15	temporarySwitchTrigger	boolean(int, boolean)	int, bool, bool*	method	ndk+java
+MotionDetectionManager	16	switchState	boolean(int, boolean)	int, bool, bool*	method	ndk+java
+MotionDetectionManager	17	getState	boolean(int)	int, bool*	method	ndk+java
+MotionDetectionManager	18	getMotionAdjustData	MsensorAdjustDataStruct(int)	int, IMotionType::MsensorAdjustDataStruct*	method	ndk+java
+MotionDetectionManager	19	getMotionTemperature	String(int)	int, std::string*	method	ndk+java
+MotionDetectionManager	20	setSwitchModeTriggerAK	boolean(boolean)	bool, bool*	method	ndk+java
+MotionDetectionManager	21	getSwitchModeTriggerAK	boolean()	bool*	method	ndk+java
+MotionDetectionManager	22	MotionSensorReverseAdjustForFactory	boolean()	bool*	method	ndk+java
+MotionDetectionManager	23	getMotionSensorReverseAdjustDataForFactory	String()	std::string*	method	ndk+java
+MotionDetectionManager	24	setMotionACalEnable	boolean(boolean)	bool, bool*	method	ndk+java
+MotionDetectionManager	25	getMotionAttitude	boolean(stAttitudeInfo)	IMotionType::stAttitudeInfo*, bool*	method	ndk+java
+MotionDetectionManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+MotionDetectionManager	16777215	getInterfaceVersion	int()	int*	meta	java
+MusicPlayerCallback	1	musicplayerEvent	void(int, int, int)	int, int, int	callback	ndk+java
+MusicPlayerCallback	16777214	getInterfaceHash	String()	std::string*	meta	java
+MusicPlayerCallback	16777215	getInterfaceVersion	int()	int*	meta	java
+MusicPlayerManager	1	setMusicPlayerCallback	void(IMusicPlayerCallback)	std::shared_ptr<IMusicPlayerCallback> const&	method	ndk+java
+MusicPlayerManager	2	setMusicPlayerMode	void(byte)	signed char	method	ndk+java
+MusicPlayerManager	3	getMusicPlayerMode	byte()	signed char*	method	ndk+java
+MusicPlayerManager	4	syncMusicPlayerStatus	void(byte)	signed char	method	ndk+java
+MusicPlayerManager	5	setMusicPlayerPriority	void(byte)	signed char	method	ndk+java
+MusicPlayerManager	6	getMusicPlayerPriority	byte()	signed char*	method	ndk+java
+MusicPlayerManager	7	setMusicPlayerAutoPlay	void(boolean)	bool	method	ndk+java
+MusicPlayerManager	8	isBootSounderMode	boolean()	bool*	method	ndk+java
+MusicPlayerManager	9	getMusicPlayerAutoPlay	boolean()	bool*	method	ndk+java
+MusicPlayerManager	10	setLightType	boolean(int)	int, bool*	method	ndk+java
+MusicPlayerManager	11	getLightType	int()	int*	method	ndk+java
+MusicPlayerManager	12	setSystemVolume	boolean(int)	int, bool*	method	ndk+java
+MusicPlayerManager	13	setBootSounderMode	int(int)	int, int*	method	ndk+java
+MusicPlayerManager	14	getTouchInfo	String()	std::string*	method	ndk+java
+MusicPlayerManager	15	setMachineKeySwitch	boolean(boolean)	bool, bool*	method	ndk+java
+MusicPlayerManager	16	getMachineKeySwitch	boolean()	bool*	method	ndk+java
+MusicPlayerManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+MusicPlayerManager	16777215	getInterfaceVersion	int()	int*	meta	java
+PowerCallback	1	powerEvent	void(int, String)	int, std::string const&	callback	ndk+java
+PowerCallback	16777214	getInterfaceHash	String()	std::string*	meta	java
+PowerCallback	16777215	getInterfaceVersion	int()	int*	meta	java
+PowerManager	1	setPowerCallback	void(IPowerCallback)	std::shared_ptr<IPowerCallback> const&	method	ndk+java
+PowerManager	2	goToBootCompleted	boolean(int)	int, bool*	method	ndk+java
+PowerManager	3	isAdapterPowered	boolean()	bool*	method	ndk+java
+PowerManager	4	isBatteryChargedFull	boolean()	bool*	method	ndk+java
+PowerManager	5	getBatteryLevel	byte()	signed char*	method	ndk+java
+PowerManager	6	goToSleep	void(int, int)	int, int	method	ndk+java
+PowerManager	7	getStandbyStage	int()	int*	method	ndk+java
+PowerManager	8	setStandbyStage	int(int)	int, int*	method	ndk+java
+PowerManager	9	setTravelMode	void(int)	int	method	ndk+java
+PowerManager	10	getTravelMode	int()	int*	method	ndk+java
+PowerManager	11	getBootReason	byte()	signed char*	method	ndk+java
+PowerManager	12	wakeUp	int(int)	int, int*	method	ndk+java
+PowerManager	13	getPowerMode	int()	int*	method	ndk+java
+PowerManager	14	getCopowerDeviceType	int()	int*	method	ndk+java
+PowerManager	15	getCopowerBatteryLevel	byte()	signed char*	method	ndk+java
+PowerManager	16	getCopowerDeviceIsPairing	boolean()	bool*	method	ndk+java
+PowerManager	17	setCopowerDevicePairing	void(boolean)	bool	method	ndk+java
+PowerManager	18	setAutoEcoMode	boolean(boolean)	bool, bool*	method	ndk+java
+PowerManager	19	getAutoEcoMode	boolean()	bool*	method	ndk+java
+PowerManager	20	getPowerSupplyVoltage	float()	float*	method	ndk+java
+PowerManager	21	setIdleStandby	boolean(int)	int, bool*	method	ndk+java
+PowerManager	22	getIdleStandby	int()	int*	method	ndk+java
+PowerManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+PowerManager	16777215	getInterfaceVersion	int()	int*	meta	java
+ProjectorFocusCallback	1	focusEvent	void(int, String)	int, std::string const&	callback	ndk+java
+ProjectorFocusCallback	16777214	getInterfaceHash	String()	std::string*	meta	java
+ProjectorFocusCallback	16777215	getInterfaceVersion	int()	int*	meta	java
+ProjectorFocusManager	1	setFocusCallback	void(IProjectorFocusCallback)	std::shared_ptr<IProjectorFocusCallback> const&	method	ndk+java
+ProjectorFocusManager	2	manualFocus	void(byte)	signed char	method	ndk+java
+ProjectorFocusManager	3	autoFocus	void(byte)	signed char	method	ndk+java
+ProjectorFocusManager	4	powerOnAFEnable	void(boolean)	bool	method	ndk+java
+ProjectorFocusManager	5	isPowerOnAFEnabled	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	6	focusAutoCompensateEnable	void(boolean)	bool	method	ndk+java
+ProjectorFocusManager	7	isFocusAutoCompensateEnable	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	8	sendFocusStatus	void(byte)	signed char	method	ndk+java
+ProjectorFocusManager	9	calculteCharacteristicPoints	boolean(byte)	signed char, bool*	method	ndk+java
+ProjectorFocusManager	10	factoryCalibration	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	11	calculteCoordinates	KstPoint()	IDisplayType::KstPoint*	method	ndk+java
+ProjectorFocusManager	12	startCalibration	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	13	finishCalibration	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	14	photo	boolean(int, boolean)	int, bool, bool*	method	ndk+java
+ProjectorFocusManager	15	setCalibrationStatus	void(int)	int	method	ndk+java
+ProjectorFocusManager	16	getCalibrationStatus	int()	int*	method	ndk+java
+ProjectorFocusManager	17	setFinalCheckStatus	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	18	getFinalCheckStatus	int()	int*	method	ndk+java
+ProjectorFocusManager	19	calibrationCheck	int()	int*	method	ndk+java
+ProjectorFocusManager	20	specialAutoFocus	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	21	akMotorReset	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	22	checkMotor	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	23	setCameraAE	boolean(boolean)	bool, bool*	method	ndk+java
+ProjectorFocusManager	24	openCamera	CameraBufInfo()	IProjectorFocusType::CameraBufInfo*	method	ndk+java
+ProjectorFocusManager	25	readCamera	int()	int*	method	ndk+java
+ProjectorFocusManager	26	closeCamera	byte(CameraBufInfo)	IProjectorFocusType::CameraBufInfo const&, signed char*	method	ndk+java
+ProjectorFocusManager	27	autoKst	byte()	signed char*	method	ndk+java
+ProjectorFocusManager	28	controlZoomMotor	boolean(byte)	signed char, bool*	method	ndk+java
+ProjectorFocusManager	29	getCameraNum	int()	int*	method	ndk+java
+ProjectorFocusManager	30	openTargetCamera	CameraInfo(int)	int, IProjectorFocusType::CameraInfo*	method	ndk+java
+ProjectorFocusManager	31	readTargetCamera	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	32	closeTargetCamera	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	33	setProjScreenAdp	void(boolean)	bool	method	ndk+java
+ProjectorFocusManager	34	getProjScreenAdp	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	35	setProjCurtainAdp	void(boolean)	bool	method	ndk+java
+ProjectorFocusManager	36	getProjCurtainAdp	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	37	setDoorMachineState	void(byte)	signed char	method	ndk+java
+ProjectorFocusManager	38	getDoorParaString	String(byte)	signed char, std::string*	method	ndk+java
+ProjectorFocusManager	39	kstUserCalibrate	void(int)	int	method	ndk+java
+ProjectorFocusManager	40	setFocusPPS	void(int)	int	method	ndk+java
+ProjectorFocusManager	41	getFocusPPS	int()	int*	method	ndk+java
+ProjectorFocusManager	42	setZoomPPS	void(int)	int	method	ndk+java
+ProjectorFocusManager	43	getZoomPPS	int()	int*	method	ndk+java
+ProjectorFocusManager	44	setDoorPPS	void(int)	int	method	ndk+java
+ProjectorFocusManager	45	getDoorPPS	int()	int*	method	ndk+java
+ProjectorFocusManager	46	getTofDistance	int()	int*	method	ndk+java
+ProjectorFocusManager	47	setTurboLightOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+ProjectorFocusManager	48	getTurboLightOnOff	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	49	getXlabProcRunState	int(int)	int, int*	method	ndk+java
+ProjectorFocusManager	50	getAmbientLight	int()	int*	method	ndk+java
+ProjectorFocusManager	51	resetTargetCamera	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	52	isCustomFocusCalibration	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	53	newAutoKst	byte(int)	int, signed char*	method	ndk+java
+ProjectorFocusManager	54	cameraDetection	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	55	tofPowerOnOff	void(boolean)	bool	method	ndk+java
+ProjectorFocusManager	56	setTofWorkMode	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	57	setDoorBurin	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	58	cameraFactorySwitch	boolean(boolean)	bool, bool*	method	ndk+java
+ProjectorFocusManager	59	getFocusMotorCurrentStep	int()	int*	method	ndk+java
+ProjectorFocusManager	60	setUserCalculateKeyValue	void(int)	int	method	ndk+java
+ProjectorFocusManager	61	getUserCalculateAngle	boolean(stUserCalKeyOffset)	IProjectorFocusType::stUserCalKeyOffset*, bool*	method	ndk+java
+ProjectorFocusManager	62	checkSighalStrength	String()	std::string*	method	ndk+java
+ProjectorFocusManager	63	checkCenterStandardDeviation	String()	std::string*	method	ndk+java
+ProjectorFocusManager	64	checkCenterAverageValue	String()	std::string*	method	ndk+java
+ProjectorFocusManager	65	checkFlatness	String()	std::string*	method	ndk+java
+ProjectorFocusManager	66	checkBadPoint	String()	std::string*	method	ndk+java
+ProjectorFocusManager	67	checkFOV	boolean(position_t[])	std::vector<IProjectorFocusType::position_t>*, bool*	method	ndk+java
+ProjectorFocusManager	68	syncTofImage	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	69	getTofImageInfo	boolean(int, tofImageInfo_t)	int, IProjectorFocusType::tofImageInfo_t*, bool*	method	ndk+java
+ProjectorFocusManager	70	checkLightLeakage	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	71	checkTimeDomainDataStd	String()	std::string*	method	ndk+java
+ProjectorFocusManager	72	checkTimeDomainDataRange	String()	std::string*	method	ndk+java
+ProjectorFocusManager	73	checkAllTofTestItem	String()	std::string*	method	ndk+java
+ProjectorFocusManager	74	setLightSourceOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+ProjectorFocusManager	75	setPictureAdjustEnableAutoColor	void(boolean)	bool	method	ndk+java
+ProjectorFocusManager	76	getPictureAdjustEnableAutoColor	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	77	getFovTestFlag	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	78	setFovTestFlag	boolean(boolean)	bool, bool*	method	ndk+java
+ProjectorFocusManager	79	getFaceTofFlag	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	80	setFaceTofFlag	boolean(boolean)	bool, bool*	method	ndk+java
+ProjectorFocusManager	81	getAkTofExtrinsic	String()	std::string*	method	ndk+java
+ProjectorFocusManager	82	getTofBitErrorResult	String()	std::string*	method	ndk+java
+ProjectorFocusManager	83	kstUserCalibrateManually	void(int, float, float)	int, float, float	method	ndk+java
+ProjectorFocusManager	84	getAFCaliPreStatus	int()	int*	method	ndk+java
+ProjectorFocusManager	85	setPowerOnAFUseDistance	boolean(boolean)	bool, bool*	method	ndk+java
+ProjectorFocusManager	86	getPowerOnAFUseDistance	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	87	isUserFocusCalibAngleValid	int()	int*	method	ndk+java
+ProjectorFocusManager	88	setTiltShiftMove	boolean(int, float)	int, float, bool*	method	ndk+java
+ProjectorFocusManager	89	setTiltShiftSpeed	void(int, int)	int, int	method	ndk+java
+ProjectorFocusManager	90	getTiltShiftSpeed	int(int)	int, int*	method	ndk+java
+ProjectorFocusManager	91	caliTiltShiftPosition	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	92	getTiltShiftCalibrationData	String(int)	int, std::string*	method	ndk+java
+ProjectorFocusManager	93	setShiftProfessionalMode	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	94	getShiftProfessionalMode	int()	int*	method	ndk+java
+ProjectorFocusManager	95	getTiltShiftSelfTestInfo	String()	std::string*	method	ndk+java
+ProjectorFocusManager	96	getTiltShiftCurPositionInfo	String()	std::string*	method	ndk+java
+ProjectorFocusManager	97	getTiltShiftMoveStatus	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	98	getTiltShiftMovePositionPercentage	String(int)	int, std::string*	method	ndk+java
+ProjectorFocusManager	99	getTiltShiftCtrlStatus	int(int)	int, int*	method	ndk+java
+ProjectorFocusManager	100	cleanAllCalibrationData	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	101	doAligningPhotoScreen	int(String)	std::string const&, int*	method	ndk+java
+ProjectorFocusManager	102	doProImgFusionOverlap	boolean(int, KstPoint)	int, IDisplayType::KstPoint const&, bool*	method	ndk+java
+ProjectorFocusManager	103	setPrjImgMainLocation	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	104	setTiltShiftKstAlgInfo	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	105	setTiltShiftCompensation	boolean()	bool*	method	ndk+java
+ProjectorFocusManager	106	judgeTiltShiftPosXlabFuncEnable	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	107	executeNimbleOpticalPos	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	108	updateNimbleOpticalPos	boolean(int, String)	int, std::string const&, bool*	method	ndk+java
+ProjectorFocusManager	109	createNimbleOpticalPos	boolean(int, String)	int, std::string const&, bool*	method	ndk+java
+ProjectorFocusManager	110	deleteNimbleOpticalPos	boolean(int)	int, bool*	method	ndk+java
+ProjectorFocusManager	111	getNimbleOpticalPosList	String()	std::string*	method	ndk+java
+ProjectorFocusManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+ProjectorFocusManager	16777215	getInterfaceVersion	int()	int*	meta	java
+SystemCallback	1	systemEvent	void(int, String)	int, std::string const&	callback	ndk+java
+SystemCallback	2	nuiEvent	void(int, String, String)	int, std::string const&, std::string const&	callback	ndk+java
+SystemCallback	3	onGmpfCalled	void(String, String)	std::string const&, std::string const&	callback	ndk+java
+SystemCallback	16777214	getInterfaceHash	String()	std::string*	meta	java
+SystemCallback	16777215	getInterfaceVersion	int()	int*	meta	java
+SystemManager	1	setSystemCallback	void(ISystemCallback)	std::shared_ptr<ISystemCallback> const&	method	ndk+java
+SystemManager	2	setDeviceName	void(String)	std::string const&	method	ndk+java
+SystemManager	3	getDeviceName	String()	std::string*	method	ndk+java
+SystemManager	4	getModelName	String()	std::string*	method	ndk+java
+SystemManager	5	enablePowerOnMusic	void(boolean)	bool	method	ndk+java
+SystemManager	6	isPowerOnMusicEnabled	boolean()	bool*	method	ndk+java
+SystemManager	7	resetToDefault	void(byte)	signed char	method	ndk+java
+SystemManager	8	goToShutdown	void(byte)	signed char	method	ndk+java
+SystemManager	9	getBootWizard	boolean()	bool*	method	ndk+java
+SystemManager	10	setBootWizard	void(boolean)	bool	method	ndk+java
+SystemManager	11	getTotalStorageSize	int()	int*	method	ndk+java
+SystemManager	12	setUSBUpdateBinFlag	void(int)	int	method	ndk+java
+SystemManager	13	getUSBUpdateBinFlag	int()	int*	method	ndk+java
+SystemManager	14	registerNui	int(int)	int, int*	method	ndk+java
+SystemManager	15	unRegisterNui	int(int)	int, int*	method	ndk+java
+SystemManager	16	notifyNuiStatus	int(String, int)	std::string const&, int, int*	method	ndk+java
+SystemManager	17	notifyNuiError	int(int)	int, int*	method	ndk+java
+SystemManager	18	getDeviceShowName	String()	std::string*	method	ndk+java
+SystemManager	19	getBluetoothDeviceName	String()	std::string*	method	ndk+java
+SystemManager	20	getDeviceMemorySize	String()	std::string*	method	ndk+java
+SystemManager	21	getDeviceSystemPartitionSize	String()	std::string*	method	ndk+java
+SystemManager	22	getDeviceBuildInSize	String()	std::string*	method	ndk+java
+SystemManager	23	getAllFeatureList	String()	std::string*	method	ndk+java
+SystemManager	24	getFeature	String(String)	std::string const&, std::string*	method	ndk+java
+SystemManager	25	getHdmiAutoSwitch	boolean()	bool*	method	ndk+java
+SystemManager	26	setHdmiAutoSwitch	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	27	resetToDefaultEx	boolean(byte)	signed char, bool*	method	ndk+java
+SystemManager	28	saveNetActivation	boolean(int)	int, bool*	method	ndk+java
+SystemManager	29	getNetActivation	int()	int*	method	ndk+java
+SystemManager	30	setFeatureLevel	boolean(int)	int, bool*	method	ndk+java
+SystemManager	31	setBootReason	boolean(String)	std::string const&, bool*	method	ndk+java
+SystemManager	32	setBootAnimState	void(int)	int	method	ndk+java
+SystemManager	33	getBootAnimState	int()	int*	method	ndk+java
+SystemManager	34	setSystemState	void(int)	int	method	ndk+java
+SystemManager	35	getSystemState	int()	int*	method	ndk+java
+SystemManager	36	setSystemUIState	void(int)	int	method	ndk+java
+SystemManager	37	getSystemUIState	int()	int*	method	ndk+java
+SystemManager	38	registerGmpfCalledListener	void()		method	ndk+java
+SystemManager	39	unRegisterGmpfCalledListener	void()		method	ndk+java
+SystemManager	40	setCeilingLampBrightness	boolean(byte, byte)	signed char, signed char, bool*	method	ndk+java
+SystemManager	41	getCeilingLampBrightness	byte(byte)	signed char, signed char*	method	ndk+java
+SystemManager	42	setCeilingLampColorTemp	boolean(byte, byte)	signed char, signed char, bool*	method	ndk+java
+SystemManager	43	getCeilingLampColorTemp	byte(byte)	signed char, signed char*	method	ndk+java
+SystemManager	44	setCeilingLampOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	45	getCeilingLampOnOff	boolean()	bool*	method	ndk+java
+SystemManager	46	switchCeilingLampMode	boolean(byte)	signed char, bool*	method	ndk+java
+SystemManager	47	getCeilingLampMode	byte()	signed char*	method	ndk+java
+SystemManager	48	getBootMode	int()	int*	method	ndk+java
+SystemManager	49	shiftAdjust	void(int)	int	method	ndk+java
+SystemManager	50	getShiftParaString	String()	std::string*	method	ndk+java
+SystemManager	51	resetShiftToDefault	void(byte)	signed char	method	ndk+java
+SystemManager	52	getShiftCurrentStep	int()	int*	method	ndk+java
+SystemManager	53	getShiftLensMovementSwitchStatus	int()	int*	method	ndk+java
+SystemManager	54	setIotWifiInfo	void(String, String)	std::string const&, std::string const&	method	ndk+java
+SystemManager	55	getSystemWindowReady	boolean()	bool*	method	ndk+java
+SystemManager	56	setSystemWindowReady	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	57	getIotModuleSV	String()	std::string*	method	ndk+java
+SystemManager	58	getIotModuleWifiRssi	byte()	signed char*	method	ndk+java
+SystemManager	59	setIotDefault	void(int)	int	method	ndk+java
+SystemManager	60	getCeilingDeviceVersion	String()	std::string*	method	ndk+java
+SystemManager	61	setFactoryFuncStage	int(int, int, boolean)	int, int, bool, int*	method	ndk+java
+SystemManager	62	setCeilingLampAutoBrightnessByProjectorOn	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	63	getCeilingLampAutoBrightnessByProjectorOn	boolean()	bool*	method	ndk+java
+SystemManager	64	setCeilingLampGraduallyMode	boolean(byte)	signed char, bool*	method	ndk+java
+SystemManager	65	getCeilingLampGraduallyMode	byte()	signed char*	method	ndk+java
+SystemManager	66	setCeilingLampBrightnessGradually	boolean(byte, boolean)	signed char, bool, bool*	method	ndk+java
+SystemManager	67	setCeilingLampColorTempGradually	boolean(byte, boolean)	signed char, bool, bool*	method	ndk+java
+SystemManager	68	updateAlarm	boolean(byte, byte)	signed char, signed char, bool*	method	ndk+java
+SystemManager	69	deleteAlarm	boolean(byte)	signed char, bool*	method	ndk+java
+SystemManager	70	deleteAllAlarm	boolean()	bool*	method	ndk+java
+SystemManager	71	getAlarmSettings	boolean(ghalAlarm_t[])	std::vector<IDisplayType::ghalAlarm_t>*, bool*	method	ndk+java
+SystemManager	72	setAlarm	boolean(ghalAlarm_t)	IDisplayType::ghalAlarm_t const&, bool*	method	ndk+java
+SystemManager	73	getCeilingLampBrightnessGradually	byte()	signed char*	method	ndk+java
+SystemManager	74	getCeilingLampColorTempGradually	byte()	signed char*	method	ndk+java
+SystemManager	75	getIotTimestamp	long()	long long*	method	ndk+java
+SystemManager	76	setIotTimestamp	boolean(long)	long long, bool*	method	ndk+java
+SystemManager	77	setIotModuleFwUpgrade	void(String)	std::string const&	method	ndk+java
+SystemManager	78	setDndModeInfo	boolean(DndisturbInfo_t)	IDisplayType::DndisturbInfo_t const&, bool*	method	ndk+java
+SystemManager	79	getDndModeInfo	boolean(DndisturbInfo_t)	IDisplayType::DndisturbInfo_t*, bool*	method	ndk+java
+SystemManager	80	getIsInDndMode	boolean()	bool*	method	ndk+java
+SystemManager	81	getSystemVersionInfo	String()	std::string*	method	ndk+java
+SystemManager	82	setSystemVersionInfo	boolean(String)	std::string const&, bool*	method	ndk+java
+SystemManager	83	getIotModuleNetworkInfo	boolean(gmhalIotNetworkInfo_t)	IDisplayType::gmhalIotNetworkInfo_t*, bool*	method	ndk+java
+SystemManager	84	getIotSwitchPanelListInfo	ISwitchPanelListInfo(byte)	signed char, ISwitchPanelListInfo*	method	ndk+java
+SystemManager	85	setIotSwitchPanelDevRemoveBind	boolean(String)	std::string const&, bool*	method	ndk+java
+SystemManager	86	shieldCeilingLampMovieMode	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	87	setCeilingLampParam	boolean(boolean, byte, byte, int)	bool, signed char, signed char, int, bool*	method	ndk+java
+SystemManager	88	getTemperatureFromSensorStatus	boolean(byte)	signed char, bool*	method	ndk+java
+SystemManager	89	getIotSwitchPanelListInfoExt	ISwitchPanelListInfoExt(byte)	signed char, ISwitchPanelListInfoExt*	method	ndk+java
+SystemManager	90	getCeilingLampDetection	String()	std::string*	method	ndk+java
+SystemManager	91	startCeilingLampDetection	String()	std::string*	method	ndk+java
+SystemManager	92	setIotSwitchPanelUpgradeFw	boolean(String)	std::string const&, bool*	method	ndk+java
+SystemManager	93	setFactoryResetDate	void(String)	std::string const&	method	ndk+java
+SystemManager	94	getFactoryResetDate	String()	std::string*	method	ndk+java
+SystemManager	95	getShiftMaxStep	int()	int*	method	ndk+java
+SystemManager	96	setSmartCurtainBtMacAddr	boolean(String)	std::string const&, bool*	method	ndk+java
+SystemManager	97	getSmartCurtainBtMacAddr	String()	std::string*	method	ndk+java
+SystemManager	98	checkMcuHardFault	boolean(byte)	signed char, bool*	method	ndk+java
+SystemManager	99	setEcoState	void(boolean)	bool	method	ndk+java
+SystemManager	100	getEcoState	boolean()	bool*	method	ndk+java
+SystemManager	101	setShortCutKeyValue2	boolean(int)	int, bool*	method	ndk+java
+SystemManager	102	getShortCutKeyValue2	int()	int*	method	ndk+java
+SystemManager	103	getWakeupMode2	int()	int*	method	ndk+java
+SystemManager	104	setRadarSensitivity	boolean(int)	int, bool*	method	ndk+java
+SystemManager	105	getRadarSensitivity	int()	int*	method	ndk+java
+SystemManager	106	getRadarScanResults	String()	std::string*	method	ndk+java
+SystemManager	107	getIotBtRssiValue	int()	int*	method	ndk+java
+SystemManager	108	getIotBtPairedList	String()	std::string*	method	ndk+java
+SystemManager	109	getIotBtConnectStatus	int()	int*	method	ndk+java
+SystemManager	110	setIotWakeupEnable	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	111	getIotWakeupEnable	boolean()	bool*	method	ndk+java
+SystemManager	112	setIotBtEnable	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	113	getIotBtEnable	boolean()	bool*	method	ndk+java
+SystemManager	114	deleteIotPairedDevice	boolean(int, String)	int, std::string const&, bool*	method	ndk+java
+SystemManager	115	setIotModuleName	boolean(String)	std::string const&, bool*	method	ndk+java
+SystemManager	116	getIotModuleName	String()	std::string*	method	ndk+java
+SystemManager	117	getIotBluetoothPairStatus	int()	int*	method	ndk+java
+SystemManager	118	setDustGauzeAliveTime	boolean(int)	int, bool*	method	ndk+java
+SystemManager	119	getDustGauzeAliveTime	int()	int*	method	ndk+java
+SystemManager	120	setDustGauzeState	boolean(String)	std::string const&, bool*	method	ndk+java
+SystemManager	121	getDustGauzeState	String()	std::string*	method	ndk+java
+SystemManager	122	pantiltElectricMove	boolean(int, float)	int, float, bool*	method	ndk+java
+SystemManager	123	getPantiltAngle	boolean(PantiltAngInfo_st)	IDisplayType::PantiltAngInfo_st*, bool*	method	ndk+java
+SystemManager	124	setPantiltSpeed	boolean(int, int)	int, int, bool*	method	ndk+java
+SystemManager	125	getPantiltSpeed	int(int)	int, int*	method	ndk+java
+SystemManager	126	savePantiltLocationInfo	boolean(int)	int, bool*	method	ndk+java
+SystemManager	127	getPantiltLocationInfo	boolean(int, PantiltLocationInfo_st)	int, IDisplayType::PantiltLocationInfo_st*, bool*	method	ndk+java
+SystemManager	128	deletePantiltLocationInfo	boolean(int)	int, bool*	method	ndk+java
+SystemManager	129	setPantiltFunctionState	boolean(int, byte)	int, signed char, bool*	method	ndk+java
+SystemManager	130	getPantiltFunctionState	byte(int)	int, signed char*	method	ndk+java
+SystemManager	131	setNimbleWallPowerOnEnable	boolean(byte, int)	signed char, int, bool*	method	ndk+java
+SystemManager	132	getNimbleWallPowerOnInfo	boolean(NimbleWallPowerOnInfo_st)	IDisplayType::NimbleWallPowerOnInfo_st*, bool*	method	ndk+java
+SystemManager	133	getCurrentNimbleWall	int()	int*	method	ndk+java
+SystemManager	134	setScreenRotation	boolean(int, float)	int, float, bool*	method	ndk+java
+SystemManager	135	startAutoProject	boolean(int)	int, bool*	method	ndk+java
+SystemManager	136	notifyAutoProject	boolean(int)	int, bool*	method	ndk+java
+SystemManager	137	setPowerOnAutoProject	void(boolean)	bool	method	ndk+java
+SystemManager	138	getPowerOnAutoProject	boolean()	bool*	method	ndk+java
+SystemManager	139	getPantiltCaliPara	String(int)	int, std::string*	method	ndk+java
+SystemManager	140	setPushPullScreenOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	141	getPushPullScreenOnOff	boolean()	bool*	method	ndk+java
+SystemManager	142	getScreenRotationInfo	boolean(ScreenRotationInfo_st)	IDisplayType::ScreenRotationInfo_st*, bool*	method	ndk+java
+SystemManager	143	getElfCoordinates	boolean(ElfCoordinate_st[])	std::vector<IDisplayType::ElfCoordinate_st>*, bool*	method	ndk+java
+SystemManager	144	setElfMode	boolean(byte)	signed char, bool*	method	ndk+java
+SystemManager	145	setMagicAirPlaneState	boolean(int)	int, bool*	method	ndk+java
+SystemManager	146	getMagicAirPlaneCoordinates	void(IMagicAirPlane)	IMagicAirPlane*	method	ndk+java
+SystemManager	147	setPushPullScreenState	boolean(int)	int, bool*	method	ndk+java
+SystemManager	148	getMagicAirPlaneState	int()	int*	method	ndk+java
+SystemManager	149	notifyAutokst	boolean(int)	int, bool*	method	ndk+java
+SystemManager	150	setRadarDetectOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	151	getRadarDetectOnOff	boolean()	bool*	method	ndk+java
+SystemManager	152	getElfMode	byte(byte)	signed char, signed char*	method	ndk+java
+SystemManager	153	registerLiveMonitor	int(int, int)	int, int, int*	method	ndk+java
+SystemManager	154	unregisterLiveMonitor	int(int, int)	int, int, int*	method	ndk+java
+SystemManager	155	setNimbleWallHandStartEnable	boolean(byte, int)	signed char, int, bool*	method	ndk+java
+SystemManager	156	getNimbleWallHandStartEnable	byte(int)	int, signed char*	method	ndk+java
+SystemManager	157	setProjectorModeState	boolean(int)	int, bool*	method	ndk+java
+SystemManager	158	getProjectorModeState	int()	int*	method	ndk+java
+SystemManager	159	setAtmosLightStatus	boolean(int)	int, bool*	method	ndk+java
+SystemManager	160	getAtmosLightStatus	int()	int*	method	ndk+java
+SystemManager	161	setLightPowerOnMode	boolean(int)	int, bool*	method	ndk+java
+SystemManager	162	getLightPowerOnMode	int()	int*	method	ndk+java
+SystemManager	163	setAtmosLightMode	boolean(int)	int, bool*	method	ndk+java
+SystemManager	164	getAtmosLightMode	int()	int*	method	ndk+java
+SystemManager	165	setAtmosCustomLight	boolean(byte, byte, boolean)	signed char, signed char, bool, bool*	method	ndk+java
+SystemManager	166	getAtmosCustomLight	byte(byte)	signed char, signed char*	method	ndk+java
+SystemManager	167	setAtmosCustomTone	boolean(byte, byte, boolean)	signed char, signed char, bool, bool*	method	ndk+java
+SystemManager	168	getAtmosCustomTone	byte(byte)	signed char, signed char*	method	ndk+java
+SystemManager	169	interruptAtmosCtl	boolean(byte, int)	signed char, int, bool*	method	ndk+java
+SystemManager	170	getInterruptAtmosPriority	byte()	signed char*	method	ndk+java
+SystemManager	171	setAtmosLightDynamicSpeed	boolean(byte)	signed char, bool*	method	ndk+java
+SystemManager	172	getAtmosLightDynamicSpeed	byte()	signed char*	method	ndk+java
+SystemManager	173	getAtmosDefaultTone	byte(byte)	signed char, signed char*	method	ndk+java
+SystemManager	174	getAtmosDefaultLight	byte(byte)	signed char, signed char*	method	ndk+java
+SystemManager	175	setAtmosColor	boolean(AtmosColor_st)	IDisplayType::AtmosColor_st const&, bool*	method	ndk+java
+SystemManager	176	getAtmosColor	boolean(AtmosColor_st)	IDisplayType::AtmosColor_st*, bool*	method	ndk+java
+SystemManager	177	registerRadarMonitor	boolean(int)	int, bool*	method	ndk+java
+SystemManager	178	unregisterRadarMonitor	boolean(int)	int, bool*	method	ndk+java
+SystemManager	179	setDisplayPanelPowerSaveStatus	boolean(int)	int, bool*	method	ndk+java
+SystemManager	180	getDisplayPanelPowerSaveStatus	int()	int*	method	ndk+java
+SystemManager	181	setDisplayPanelPowerSaveModeTimeout	boolean(int, int)	int, int, bool*	method	ndk+java
+SystemManager	182	getDisplayPanelPowerSaveModeTimeout	int(int)	int, int*	method	ndk+java
+SystemManager	183	getDisplayPanelPowerSaveMode	int()	int*	method	ndk+java
+SystemManager	184	getRadarStatus	int()	int*	method	ndk+java
+SystemManager	185	setNimbleWallCurtainEnable	boolean(byte, int)	signed char, int, bool*	method	ndk+java
+SystemManager	186	getNimbleWallCurtainEnable	byte(int)	int, signed char*	method	ndk+java
+SystemManager	187	isConvexLensIn	boolean()	bool*	method	ndk+java
+SystemManager	188	setDisplayPanelPowerSaveMode	boolean(int)	int, bool*	method	ndk+java
+SystemManager	189	getPowerOnAction	int()	int*	method	ndk+java
+SystemManager	190	getStandVerticalAngle	float()	float*	method	ndk+java
+SystemManager	191	setLightOffDelay	boolean(int)	int, bool*	method	ndk+java
+SystemManager	192	getLightOffDelay	int()	int*	method	ndk+java
+SystemManager	193	lightOffDelay	boolean(int)	int, bool*	method	ndk+java
+SystemManager	194	getMcuUpgradeState	int()	int*	method	ndk+java
+SystemManager	195	getMcuUpgradeSchedule	float()	float*	method	ndk+java
+SystemManager	196	getConvexLensType	int()	int*	method	ndk+java
+SystemManager	197	getSlaveModelName	String()	std::string*	method	ndk+java
+SystemManager	198	setSlaveModelName	boolean(String)	std::string const&, bool*	method	ndk+java
+SystemManager	199	setAutoAtmosphereLight	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	200	getIsAutoAtmoSphereLight	boolean()	bool*	method	ndk+java
+SystemManager	201	setGestureOnOff	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	202	getGestureOnOff	boolean()	bool*	method	ndk+java
+SystemManager	203	getSlideFunc	byte()	signed char*	method	ndk+java
+SystemManager	204	setSlideFunc	boolean(byte)	signed char, bool*	method	ndk+java
+SystemManager	205	setMachineUsageTime	boolean(int, int)	int, int, bool*	method	ndk+java
+SystemManager	206	getMachineUsageTime	int(int)	int, int*	method	ndk+java
+SystemManager	207	getSupportFeature	String(int)	int, std::string*	method	ndk+java
+SystemManager	208	setConsoleID	boolean(String, int)	std::string const&, int, bool*	method	ndk+java
+SystemManager	209	getConsoleID	String()	std::string*	method	ndk+java
+SystemManager	210	setConsoleGroupAckEnable	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	211	getConsoleGroupAckEnable	boolean()	bool*	method	ndk+java
+SystemManager	212	setConsoleAllAckEnable	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	213	getConsoleAllAckEnable	boolean()	bool*	method	ndk+java
+SystemManager	214	switchConsoleHWI	boolean(int)	int, bool*	method	ndk+java
+SystemManager	215	getConsoleHWI	int()	int*	method	ndk+java
+SystemManager	216	switchConsoleConnect	boolean(int)	int, bool*	method	ndk+java
+SystemManager	217	getConsoleConnect	int()	int*	method	ndk+java
+SystemManager	218	setConsoleSeriesHost	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	219	getConsoleSeriesHost	boolean()	bool*	method	ndk+java
+SystemManager	220	setConsoleEnable	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	221	getConsoleEnable	boolean()	bool*	method	ndk+java
+SystemManager	222	setCustomBootLogoState	int(int, String, long)	int, std::string const&, long long, int*	method	ndk+java
+SystemManager	223	getCustomBootLogoState	int()	int*	method	ndk+java
+SystemManager	224	setPJlinkEnable	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	225	getPJlinkEnable	boolean()	bool*	method	ndk+java
+SystemManager	226	setHighAltitudeMode	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	227	getHighAltitudeMode	boolean()	bool*	method	ndk+java
+SystemManager	228	setSilentMode	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	229	getSilentMode	boolean()	bool*	method	ndk+java
+SystemManager	230	setConsoleCmd	boolean(int, int)	int, int, bool*	method	ndk+java
+SystemManager	231	setUIRotation	boolean(int)	int, bool*	method	ndk+java
+SystemManager	232	setProjectionLensLock	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	233	getProjectionLensLock	boolean()	bool*	method	ndk+java
+SystemManager	234	setIrCtrlId	void(int)	int	method	ndk+java
+SystemManager	235	getIrCtrlId	int()	int*	method	ndk+java
+SystemManager	236	setConsoleProjectionDataSyncMode	boolean(int)	int, bool*	method	ndk+java
+SystemManager	237	getConsoleProjectionDataSyncMode	int()	int*	method	ndk+java
+SystemManager	238	setConsoleProjectionDataSyncConnect	boolean(int)	int, bool*	method	ndk+java
+SystemManager	239	getConsoleProjectionDataSyncConnect	int()	int*	method	ndk+java
+SystemManager	240	setConsoleLightSyncEnable	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	241	getConsoleLightSyncEnable	boolean()	bool*	method	ndk+java
+SystemManager	242	isDispParmSynchronizing	boolean()	bool*	method	ndk+java
+SystemManager	243	setConsoleImageQualitySyncEnable	boolean(boolean)	bool, bool*	method	ndk+java
+SystemManager	244	getConsoleImageQualitySyncEnable	boolean()	bool*	method	ndk+java
+SystemManager	245	getSettingDataSavePath	String()	std::string*	method	ndk+java
+SystemManager	246	setSettingSyncEvent	boolean(int)	int, bool*	method	ndk+java
+SystemManager	247	startDlpUpgradeMode	boolean(int, String)	int, std::string const&, bool*	method	ndk+java
+SystemManager	248	getConsoleType	int()	int*	method	ndk+java
+SystemManager	249	agingApertureByIndex	boolean(int)	int, bool*	method	ndk+java
+SystemManager	250	setAperturePPSByIndex	boolean(int, int)	int, int, bool*	method	ndk+java
+SystemManager	251	getAperturePPSByIndex	int(int)	int, int*	method	ndk+java
+SystemManager	252	setBootMode	void(int, boolean)	int, bool	method	ndk+java
+SystemManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+SystemManager	16777215	getInterfaceVersion	int()	int*	meta	java
+TemperatureCallback	1	temperatureEvent	void(int, String)	int, std::string const&	callback	ndk+java
+TemperatureCallback	16777214	getInterfaceHash	String()	std::string*	meta	java
+TemperatureCallback	16777215	getInterfaceVersion	int()	int*	meta	java
+TemperatureManager	1	setTemperatureCallback	void(ITemperatureCallback)	std::shared_ptr<ITemperatureCallback> const&	method	ndk+java
+TemperatureManager	2	setFanMode	void(byte)	signed char	method	ndk+java
+TemperatureManager	3	getFanMode	byte()	signed char*	method	ndk+java
+TemperatureManager	4	setFanRotationRate	boolean(byte, byte)	signed char, signed char, bool*	method	ndk+java
+TemperatureManager	5	getFanRotationRate	int(byte)	signed char, int*	method	ndk+java
+TemperatureManager	6	getSystemTemperature	byte()	signed char*	method	ndk+java
+TemperatureManager	7	getTemperatureFromSensor	byte(byte)	signed char, signed char*	method	ndk+java
+TemperatureManager	8	getTemperatureFromSensorFloat	float(byte)	signed char, float*	method	ndk+java
+TemperatureManager	9	extendCmd	String(String, String, String, String)	std::string const&, std::string const&, std::string const&, std::string const&, std::string*	method	ndk+java
+TemperatureManager	10	setFanStandMode	boolean(boolean)	bool, bool*	method	ndk+java
+TemperatureManager	11	getFanStandMode	boolean()	bool*	method	ndk+java
+TemperatureManager	12	isTempUltraHigh	boolean()	bool*	method	ndk+java
+TemperatureManager	16777214	getInterfaceHash	String()	std::string*	meta	java
+TemperatureManager	16777215	getInterfaceVersion	int()	int*	meta	java

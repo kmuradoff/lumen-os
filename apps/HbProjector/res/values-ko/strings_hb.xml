@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB only labels, hb-t8b keys only, Lumen's own wording (clean-room rewrite 2026-10-31) of values-ko; the other HB keys fall back to English -->
+<resources>
+    <!-- hb-t8b (2026-10-30): HB keystone and picture labels at the places of the stock rows; texts
+         written by Lumen (clean-room rewrite 2026-10-31): stock strings only told us the meaning -->
+    <string name="kst_restore_hb">원래 화면으로 되돌리기</string>
+    <string name="kst_restore_done_hb">원래 화면으로 되돌렸습니다</string>
+    <string name="kst_settings_hb">키스톤 옵션</string>
+    <string name="kst_enhancement_hb">추가 보정</string>
+    <string name="kst_size_position_hb">화면 크기와 위치</string>
+    <string name="more_hb">기타</string>
+    <string name="kst_projection_type_hb">투사 유형</string>
+    <string name="kst_manual_hb">모서리 수동 조정</string>
+    <string name="kst_precise_hb">모서리 미세 조정</string>
+    <string name="pro_contrast_hb">명암비</string>
+    <string name="pro_gamma_index_hb">감마</string>
+    <string name="pro_dyn_black_hb">블랙 강화</string>
+    <string name="pro_clarity_hb">디테일</string>
+    <string name="pro_noise_hb">노이즈 필터</string>
+    <string name="pro_reset_default_hb">기본값으로 되돌리기</string>
+    <string name="pro_wb_2pt_hb">2포인트 화이트 밸런스</string>
+    <string name="pro_wb_11pt_hb">11포인트 화이트 밸런스</string>
+    <string name="pro_segmentation_hb">그레이 레벨</string>
+    <string name="pro_src_media_hb">앱과 파일 동영상</string>
+    <string name="pro_off_hb">꺼짐</string>
+    <string name="pro_weak_hb">낮음</string>
+    <string name="pro_medium_hb">보통</string>
+    <string name="pro_strong_hb">높음</string>
+    <string name="pro_auto_hb">자동</string>
+</resources>

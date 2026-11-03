@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB only labels, hb-t8b keys only, Lumen's own wording (clean-room rewrite 2026-10-31) of values-es; the other HB keys fall back to English -->
+<resources>
+    <!-- hb-t8b (2026-10-30): HB keystone and picture labels at the places of the stock rows; texts
+         written by Lumen (clean-room rewrite 2026-10-31): stock strings only told us the meaning -->
+    <string name="kst_restore_hb">Volver a la imagen original</string>
+    <string name="kst_restore_done_hb">Imagen original restablecida</string>
+    <string name="kst_settings_hb">Opciones del trapecio</string>
+    <string name="kst_enhancement_hb">Corrección adicional</string>
+    <string name="kst_size_position_hb">Tamaño y ubicación de la imagen</string>
+    <string name="more_hb">Otros</string>
+    <string name="kst_projection_type_hb">Tipo de proyección</string>
+    <string name="kst_manual_hb">Ajuste manual de esquinas</string>
+    <string name="kst_precise_hb">Ajuste fino de esquinas</string>
+    <string name="pro_contrast_hb">Contraste</string>
+    <string name="pro_gamma_index_hb">Gamma</string>
+    <string name="pro_dyn_black_hb">Refuerzo del negro</string>
+    <string name="pro_clarity_hb">Detalle</string>
+    <string name="pro_noise_hb">Filtro de ruido</string>
+    <string name="pro_reset_default_hb">Volver a los valores de fábrica</string>
+    <string name="pro_wb_2pt_hb">Balance de blancos de 2 puntos</string>
+    <string name="pro_wb_11pt_hb">Balance de blancos de 11 puntos</string>
+    <string name="pro_segmentation_hb">Nivel de gris</string>
+    <string name="pro_src_media_hb">Vídeo de apps y archivos</string>
+    <string name="pro_off_hb">Desactivado</string>
+    <string name="pro_weak_hb">Bajo</string>
+    <string name="pro_medium_hb">Medio</string>
+    <string name="pro_strong_hb">Alto</string>
+    <string name="pro_auto_hb">Automático</string>
+</resources>

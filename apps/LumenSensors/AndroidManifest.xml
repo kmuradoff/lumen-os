@@ -4,8 +4,14 @@
   that can really be read, as an overlay (HUD) on top of whatever plays. README.md has the details.
   Platform-signed (release platform key), NOT persistent, NOT priv-app: a test build installs with a plain
   `adb install -r`; in the image later /system/app/LumenSensors/LumenSensors.apk.
-  Version 0.3 (versionCode 3): a test install stays below any image build of this app, so the image copy
-  replaces it (3 is still tiny; the image build takes a high versionCode).
+  Version 0.4 (versionCode 4): a test install stays below any image build of this app, so the image copy
+  replaces it (4 is still tiny; the image build takes a high versionCode). 0.4 adds the X50 (G0111) profile.
+
+  On a stock X50 (XGIMI firmware) the same APK is NOT platform-signed for that device (its platform key is
+  XGIMI's own, not the AOSP test key and not Lumen's), so none of the signature permissions below are granted
+  there: the overlay needs SYSTEM_ALERT_WINDOW given by hand (Settings, or adb shell appops set org.lumen.sensors
+  SYSTEM_ALERT_WINDOW allow) and stays capped at 80 % opacity; Projector's standby broadcast does not exist there.
+  No sharedUserId: android.uid.system would be refused on the X50 (certificate of the package android differs).
 
   Permissions (Lineage 21 protection levels): SYSTEM_ALERT_WINDOW is signature|appop, granted by the platform
   signature (as for org.lumen.projector); INTERNAL_SYSTEM_WINDOW is signature|module|recents, granted by the
@@ -23,8 +29,8 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.lumen.sensors"
-    android:versionCode="3"
-    android:versionName="0.3">
+    android:versionCode="4"
+    android:versionName="0.4">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
 

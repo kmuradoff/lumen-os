@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS on the XGIMI Z9X HB (goat_elegant, G0130), test builds from t8c on: two vendor services that can never
+# link on this model are not left in init's 5 s restart loop (installed as /system/etc/init/hb_vendor_services.rc by
+# compose_hb.sh; HB only, no other device stages this file, the Z9X and Play 6 images do not change).
+#
+# Evidence (T8_NOTES.md, T8C_NOTES.md):
+# - /vendor/etc/init/hw/init.xgimi.gmpf.rc defines "service smart_ak_server /vendor/bin/smart_ak_server" and
+#   "service infoDisp_server /vendor/bin/infoDisp_server", both class main, disabled, user root, not oneshot.
+# - Both binaries NEED libirseg.so, which does not export _ZN2cv3ocl17isOpenCLActivatedEv; no other library of the
+#   NEEDED tree, of the stock vendor or of the stock system defines it. So the dynamic linker gives up before main:
+#   'cannot locate symbol "_ZN2cv3ocl17isOpenCLActivatedEv"' (hb-t7 log, T7_NOTES.md A6). The same on the stock
+#   HB firmware: XGIMI switched the feature off for G0130 (vendor/etc/xgimimodelname/G0130/build.prop:44,
+#   "# persist.vendor.xgimi.smart_ak_server=1"), the stock getprop dump has no init.svc.smart_ak_server.
+# - The gmpf HAL (libxgimi.so) sends ctl.start smart_ak_server for the smart AK steps and ctl.stop after
+#   smartFinish; after a failed start it does not send ctl.stop, so init restarts the service every 5 s until a
+#   reboot (hb-t7 after Auto keystone / Fit to screen: the linker error every 5 s).
+# - On the owner's Z9X (64-bit vendor) the same services link and stop normally. This file is not on the Z9X.
+#
+# What the triggers do: init sets init.svc.NAME=restarting only when a non-oneshot service exited ON ITS OWN and
+# init has scheduled the restart. "stop" then clears the pending restart and sets init.svc.NAME=stopped. So:
+# - a successful run is never touched: the HAL's ctl.stop goes running -> stopping -> stopped, never restarting;
+# - the next ctl.start of the HAL starts the service again as before (stop does not disable it for good), so each
+#   AK run gives one link failure in the log instead of one every 5 s forever;
+# - the HAL path is the same as now: the process dies in the linker before main in both cases, never reports a
+#   status, and the HAL's own wait ends on its timeout ("wait alg status time out!") as it does today. Only the
+#   respawns after that are gone.
+# Init builtin only, no vendor file is changed. A service name the vendor lacks would only log an init error.
+on property:init.svc.smart_ak_server=restarting
+    stop smart_ak_server
+
+on property:init.svc.infoDisp_server=restarting
+    stop infoDisp_server

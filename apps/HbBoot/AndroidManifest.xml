@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  org.lumen.hb.boot ("HbBoot") for the XGIMI Z9X HB (goat_elegant, G0130, MT9660). Author kmuradoff.
+  A minimal app with no UI and no launcher entry. Its persistent, direct boot aware process starts at
+  systemReady and sends the stock boot handshake to the vendor gmpf service once per boot
+  (src/org/lumen/hb/boot/BootSequence.java; evidence in devices/goat_elegant/stock analysis).
+
+  sharedUserId android.uid.system: the stock senders (XRMService, SystemUI) run as uid system, so in
+  SELinux domain system_app, and the stock vendor policy grants exactly that domain
+  "allow system_app aidl_gmpf_xgimi (binder (call))" (vendor_sepolicy.cil). It has no service_manager
+  "find" rule for aidl_gmpf_xgimi_service, because stock runs permissive (uenv selinux=permissive);
+  an enforcing image needs that rule added (handshake.md section 7). Platform signature required.
+
+  Not installed anywhere yet. Test builds: sh build.sh (throwaway key, never the image keys).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.lumen.hb.boot"
+    android:sharedUserId="android.uid.system"
+    android:versionCode="1"
+    android:versionName="hb-boot-1">
+
+    <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="34" />
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:name=".App"
+        android:label="HbBoot"
+        android:persistent="true"
+        android:directBootAware="true"
+        android:allowBackup="false"
+        android:hasCode="true">
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false"
+            android:directBootAware="true">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

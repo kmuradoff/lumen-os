@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS on the Z9X HB: /system/etc/permissions/privapp-permissions-lumeninfo.xml (0644, root:root, system_file).
+     org.lumen.info (apps/LumenInfo, signal info screen and overlay) lives in /system/priv-app/LumenInfo from t11,
+     not persistent, sharedUserId android.uid.system, signed with the goat_elegant platform key. Every permission it
+     requests that framework-res defines with the privileged flag is listed (the rule of tools/play6/check_privapp.py,
+     read on the base framework-res.apk of build/goat_elegant/base_platform, 2026-11-01: DUMP, REAL_GET_TASKS), so an
+     enforcing ro.control_privapp_permissions does not stop the boot. -->
+<permissions>
+    <privapp-permissions package="org.lumen.info">
+        <permission name="android.permission.DUMP" />
+        <permission name="android.permission.REAL_GET_TASKS" />
+    </privapp-permissions>
+</permissions>

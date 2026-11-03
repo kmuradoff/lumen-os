@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB hb-t7: the fit-to-screen hint window at the place of the stock one (HB SystemUI auxiliary_curtain_alignment
+     window). Texts written by Lumen (clean-room rewrite 2026-10-31): the stock
+     strings only told us the meaning. Shown as btn1 + the OK key + btn2. The feature is hidden on the HB
+     (HbFitDevice.SUPPORTED false); CurtainAlignOverlay still references these keys. -->
+<resources>
+    <string name="hb_fit_guide_title">Alinhar com a tela</string>
+    <string name="hb_fit_guide_desc">Posicione o projetor para que a imagem passe um pouco de cada borda da tela.</string>
+    <string name="hb_fit_guide_btn1">Quando estiver pronto, pressione</string>
+    <string name="hb_fit_guide_btn2">para seguir</string>
+</resources>

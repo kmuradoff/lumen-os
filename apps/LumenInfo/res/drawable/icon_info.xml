@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon of LumenInfo: a signal waveform over a small screen, on the #17181B Lumen tile. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <path android:fillColor="#FF17181B"
+        android:pathData="M58,0 L182,0 A58,58 0 0,1 240,58 L240,182 A58,58 0 0,1 182,240 L58,240 A58,58 0 0,1 0,182 L0,58 A58,58 0 0,1 58,0 Z" />
+    <path android:fillColor="#FFF4EFE6"
+        android:pathData="M52,64 L188,64 A10,10 0 0,1 198,74 L198,154 A10,10 0 0,1 188,164 L52,164 A10,10 0 0,1 42,154 L42,74 A10,10 0 0,1 52,64 Z M56,78 L56,150 L184,150 L184,78 Z" />
+    <path android:strokeColor="#FFF2B26B" android:strokeWidth="9" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M64,120 L86,120 L98,96 L114,138 L128,104 L140,124 L176,124" />
+    <path android:fillColor="#FFCFC7BA"
+        android:pathData="M96,176 L144,176 A5,5 0 0,1 144,186 L96,186 A5,5 0 0,1 96,176 Z" />
+</vector>

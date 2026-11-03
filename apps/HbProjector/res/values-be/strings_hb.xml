@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB only labels, hb-t8b keys only, own translation (the stock HB has no such strings in this language); the other HB keys fall back to English -->
+<resources>
+    <!-- hb-t8b (2026-10-30): HB keystone and picture labels at the places of the stock rows; texts
+         written by Lumen (clean-room rewrite 2026-10-31): stock strings only told us the meaning -->
+    <string name="kst_restore_hb">Вярнуць першапачатковую выяву</string>
+    <string name="kst_restore_done_hb">Выява вернута да першапачатковай</string>
+    <string name="kst_settings_hb">Параметры трапецыі</string>
+    <string name="kst_enhancement_hb">Дадаткова для карэкцыі</string>
+    <string name="kst_size_position_hb">Памер і месца выявы</string>
+    <string name="more_hb">Іншае</string>
+    <string name="kst_projection_type_hb">Тып праекцыі</string>
+    <string name="kst_manual_hb">Вуглы ўручную</string>
+    <string name="kst_precise_hb">Дакладная налада вуглоў</string>
+    <string name="pro_contrast_hb">Кантраснасць</string>
+    <string name="pro_gamma_index_hb">Гама</string>
+    <string name="pro_dyn_black_hb">Узмацненне чорнага</string>
+    <string name="pro_clarity_hb">Дэталізацыя</string>
+    <string name="pro_noise_hb">Падаўленне шуму</string>
+    <string name="pro_reset_default_hb">Вярнуць стандартныя значэнні</string>
+    <string name="pro_wb_2pt_hb">Баланс белага па 2 кропках</string>
+    <string name="pro_wb_11pt_hb">Баланс белага па 11 кропках</string>
+    <string name="pro_segmentation_hb">Узровень шэрага</string>
+    <string name="pro_src_media_hb">Відэа з праграм і файлаў</string>
+    <string name="pro_off_hb">Выключана</string>
+    <string name="pro_weak_hb">Нізкі</string>
+    <string name="pro_medium_hb">Сярэдні</string>
+    <string name="pro_strong_hb">Высокі</string>
+    <string name="pro_auto_hb">Аўтаматычна</string>
+</resources>

@@ -1,0 +1,11 @@
+# Recipe of the Play 6 projector app (switched later, setup step 4), read by
+# tools/devices/assemble_app.py. The shared files of apps/common/projector (its FILES list), the HIDL transport and
+# the 1.0.8 import (apps/common/sync.sh items hal and migrate), then the Play 6 layer.
+app       Play6Projector
+base      apps/common/projector apps/common/projector/FILES
+file      apps/common/hal/HidlCaller.java src/org/lumen/projector/hal/HidlCaller.java
+file      apps/common/LumenImport.java src/org/lumen/common/LumenImport.java
+top       apps/Play6Projector
+skip      build/ *.apk CHANGES*.md README*.md SYNCED.txt .DS_Store
+# compare mode: apps/Play6Projector still holds the synced copies (sync.sh --check keeps them equal)
+identical allow

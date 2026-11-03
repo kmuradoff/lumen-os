@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TV launcher banner of LumenInfo (320x180): the icon glyph on the left on the Lumen dark tile. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path android:fillColor="#FF17181B" android:pathData="M0,0 L320,0 L320,180 L0,180 Z" />
+    <path android:fillColor="#FFF4EFE6"
+        android:pathData="M42,50 L278,50 A10,10 0 0,1 288,60 L288,120 A10,10 0 0,1 278,130 L42,130 A10,10 0 0,1 32,120 L32,60 A10,10 0 0,1 42,50 Z M46,64 L46,116 L274,116 L274,64 Z" />
+    <path android:strokeColor="#FFF2B26B" android:strokeWidth="7" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M60,92 L110,92 L126,72 L146,108 L164,78 L178,96 L260,96" />
+    <path android:fillColor="#FFCFC7BA" android:pathData="M136,140 L184,140 A4,4 0 0,1 184,148 L136,148 A4,4 0 0,1 136,140 Z" />
+</vector>

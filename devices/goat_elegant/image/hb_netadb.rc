@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS on the XGIMI Z9X HB, first-boot test builds WITHOUT --usb-adb only: the USB port stays a host port (the
+# vendor default persist.sys.usb.config=mtp, "usb_otg_agent host") so the boot logger can read a stick, and adbd is
+# started anyway for adb over the network (service.adb.tcp.port=5555, ro.adb.secure=0 in hb_prop.txt). It needs a
+# network: Wi-Fi set up with the remote, or Ethernet if the unit has a port. The vendor stops adbd on
+# sys.usb.config=none (init.mt9660.usb.rc); UsbDeviceManager passes through none on its way to mtp, so adbd is
+# started again when the USB state settles.
+on boot
+    start adbd
+
+on property:sys.usb.state=mtp
+    start adbd
+
+on property:sys.boot_completed=1
+    start adbd

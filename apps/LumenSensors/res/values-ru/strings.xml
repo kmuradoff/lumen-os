@@ -136,4 +136,17 @@
     <string name="w_no">Нет</string>
     <string name="w_min">мин</string>
     <string name="w_max">макс</string>
+
+    <!-- профиль X50 (G0111): три лазера вместо LED, его датчики, сырые коды вендора -->
+    <string name="s_laser_r">Красный лазер</string>
+    <string name="s_laser_g">Зелёный лазер</string>
+    <string name="s_laser_r2">Второй красный лазер</string>
+    <string name="s_laser_short">Лазер</string>
+    <string name="s_bp">Датчик BP</string>
+    <string name="s_focus_module">Модуль фокуса</string>
+    <string name="s_light_mode">Режим света</string>
+    <string name="s_laser_power">Мощность лазеров</string>
+    <string name="s_laser_hours">Время лазера %1$d</string>
+    <string name="s_ang_raw">Угловые данные (сырые)</string>
+    <string name="w_raw_code">код %1$d (смысл неизвестен)</string>
 </resources>

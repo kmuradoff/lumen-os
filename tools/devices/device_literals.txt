@@ -1,0 +1,14 @@
+# Java files that may name a projector (codename, model, isPlay6() / isHb()), read by
+# tools/devices/test/device_literals_test.sh. A device difference belongs in a device class or the device feature
+# table, so a new file here needs a reason in the commit.
+# One path per line, relative to gsi/. Recorded 2026-11-03: the device selectors and device-only apps.
+apps/HbProjector/src/org/lumen/projector/fit/HbFitDevice.java
+apps/LumenSensors/src/org/lumen/sensors/core/DeviceProfile.java
+apps/Play6Projector/src/org/lumen/projector/Device.java
+apps/Play6Projector/src/org/lumen/projector/Hal.java
+apps/Play6Projector/src/org/lumen/projector/Play6App.java
+apps/Play6Projector/src/org/lumen/projector/SettingsActivity.java
+apps/Play6Projector/src/org/lumen/projector/battery/BatteryTestReceiver.java
+apps/Play6Projector/src/org/lumen/projector/game/HdmiEventReceiver.java
+apps/Z9xProjector/src/org/lumen/projector/fit/FitDevice.java
+apps/Z9xProjector/src/org/lumen/projector/fit/Z9xFitDevice.java

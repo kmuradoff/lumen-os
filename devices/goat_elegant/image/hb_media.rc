@@ -1,0 +1,27 @@
+# Lumen OS on the XGIMI Z9X HB (goat_elegant, G0130), test builds from t10 on: MediaTek's VNDK
+# libstagefright_foundation.so for the vendor codec2 HAL (installed as /system/etc/init/hb_media.rc by compose_hb.sh;
+# HB only, the Z9X and Play 6 images do not change). RESULTS_hb-t9_playback_hdmi_standby.md, T10_NOTES.md.
+#
+# /vendor/lib/libcodec2.MTK.so (dlopened by /vendor/bin/hw/android.hardware.media.c2@1.1-mediatek) needs 11
+# android::MEDIA_MIMETYPE_VIDEO_* symbols (WMV, AVS, AVS2, FLV, VC1, SHVC, DIVX4, DIVX5, DIVX_AVC, DIVX_HEVC,
+# REAL_VIDEO) that only MediaTek's build of the VNDK libstagefright_foundation.so exports. The GSI copy in
+# /apex/com.android.vndk.v33/lib (AOSP, sha256 1c11aeff...) lacks them, so on hb-t1..t9 the plugin never loaded:
+# the store had no c2.mtk.* component (all video decoded by the CPU) and IInterTunnel, which libcodec2.MTK.so
+# registers, was missing, so the HWC hung on the first HDMI sideband frame.
+#
+# /system/lib/hb_vndk33/libstagefright_foundation.so is the stock HB copy (stock system
+# apex/com.android.vndk.current/lib, sha256 b029d806...854f, ELF ARM 32, API 33; compose_hb.sh copies it from the
+# owner's stock dump on the build server and checks the sha256): every export of the GSI copy plus MediaTek's own.
+# Under /system/lib it gets system_lib_file from plat_file_contexts, the label of the APEX file it covers; no linker
+# namespace searches that sub-folder, so only the bind below makes anyone load it. The framework keeps its own copies
+# (/system/lib, com.android.media); only the vendor (VNDK) namespace path is covered. Only lib: the HB userspace is
+# 32-bit, the APEX has no lib64.
+#
+# The Z9X fix, HB copy (tools/selfbuild/make_base.sh: xgimi_compat.rc fix 3, there for VNDK v34 and the audio HAL).
+# This post-fs-data action runs after init.rc's post-fs-data action (apexd has activated the APEXes, init is in the
+# default mount namespace) and before 'on boot', whose class_start hal starts the codec2 HAL (class hal, no earlier
+# start in the HB vendor rc files). Same steps as the live fix on hb-t9 (~/hb_session/codec/apply_live.sh, 2026-10-31:
+# c2.mtk.* decoders and IInterTunnel present, HDMI picture confirmed by the tester). Gated on ro.lumen.hb.c2foundation=1
+# (hb_lumen_prop.txt). Init builtin only, the vendor partition is not modified.
+on post-fs-data && property:ro.lumen.hb.c2foundation=1
+    mount none /system/lib/hb_vndk33/libstagefright_foundation.so /apex/com.android.vndk.v33/lib/libstagefright_foundation.so bind

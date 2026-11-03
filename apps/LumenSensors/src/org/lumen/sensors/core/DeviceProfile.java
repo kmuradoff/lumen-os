@@ -31,6 +31,20 @@ public final class DeviceProfile {
         return GENERIC;
     }
 
+    /**
+     * The X50 (XGIMI G0111, X50 Ultra, mt9681): ro.lumen.device unset, ro.boot.xgimi.modelname = G0111 and
+     * ro.xgimi.modelname G0111 or unset. Separate from {@link #decide}, which stays as it is (G0111 gives GENERIC
+     * there): the profile classes ask this only when decide() did not say Z9X. No board fallback: the X50 shares
+     * ro.product.device horse_popular and the mt5877 platform with the Z9X, so only the model code tells it.
+     */
+    public static boolean isX50(String lumenDevice, String bootModel, String model) {
+        if (!empty(lumenDevice)) return false;
+        String bm = trim(bootModel), m = trim(model);
+        return X50_MODEL.equals(bm) && (m.isEmpty() || X50_MODEL.equals(m));
+    }
+
+    static final String X50_MODEL = "G0111";
+
     private static boolean empty(String s) { return s == null || s.trim().isEmpty(); }
 
     private static String trim(String s) { return s == null ? "" : s.trim(); }

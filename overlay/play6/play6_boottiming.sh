@@ -12,6 +12,10 @@
 # mounted at /dev/z9x_earlylog, the watcher writes timing.txt into that boot's folder
 # (lumen_os_diag_logs/early/boot_N, found by this boot's ro.boottime.init line in its props.txt), every 2 s and
 # at the end; with no such folder after 30 s, lumen_os_diag_logs/timing_<boot_id>.txt instead.
+# diag2: in the same loop, every 4th round in the first 180 s (2 s, after 60 s 4 s), 'logcat -d -v uptime -s DrvWdt:* MI3:*' (gmpf's watchdog
+# takeover, docs/play6/FIRST_BOOT_CUTOFF.md R6): only lines not seen yet are added to /dev/lumen_p6_timing/drvwdt.txt,
+# at most 3000, so the early lines survive even when a heavy first boot's log buffer rotates them out. Copied
+# next to timing.txt as drvwdt.txt (drvwdt_<boot_id>.txt with the fallback file).
 # Read-only towards the system: no setprop, no service control, no write outside those two places.
 # P6T_* variables exist only for the host test (tools/play6/test_play6_boottiming.sh); init sets none.
 PROC=${P6T_PROC:-/proc}
@@ -19,6 +23,8 @@ SYS=${P6T_SYS:-/sys}
 R=${P6T_DIR:-/dev/lumen_p6_timing}
 STICK=${P6T_STICK:-/dev/z9x_earlylog}
 SLEEP=${P6T_SLEEP:-sleep}   # mksh has sleep built in; the host test passes its stub
+LOGCAT=${P6T_LOGCAT:-logcat}
+WDT_MAX=${P6T_WDT_MAX:-3000}
 mkdir -p $R 2>/dev/null
 
 if [ "$1" = mark ]; then
@@ -38,6 +44,8 @@ TF=         # the file on the stick
 mounted_at=
 done_at=
 echo '#' > $R/.prev
+WDT=$R/drvwdt.txt
+echo '# DrvWdt and MI3 lines (logcat -v uptime: seconds of uptime), dumped every 2-4 s in the first 180 s, new lines only' > $WDT
 ev() { echo "$U $*" >> $EV; }
 
 first_running() {  # first_running SERVICE: uptime when init.svc.SERVICE first became running, or -
@@ -47,6 +55,15 @@ first_running() {  # first_running SERVICE: uptime when init.svc.SERVICE first b
 stage_at() {  # stage_at STAGE: uptime of the init mark
   t=$(grep -m 1 "^$1 uptime=" $R/stages.txt 2>/dev/null)
   t=${t#* uptime=}; echo "${t%% *}" | sed 's/^$/-/'
+}
+wdt_dump() {  # new DrvWdt / MI3 lines of the log buffer into $WDT, at most WDT_MAX lines in all
+  w=$(wc -l < $WDT); w=$((w + 0))
+  [ $w -lt $WDT_MAX ] || return 0
+  $LOGCAT -d -v uptime -s 'DrvWdt:*' 'MI3:*' > $R/.wdt 2>/dev/null || return 0
+  grep -vxF -f $WDT $R/.wdt 2>/dev/null | grep -v '^--------- ' | head -n $((WDT_MAX - w)) >> $WDT
+}
+wdt_file() {  # the stick file for drvwdt.txt, next to TF
+  case $TF in */timing.txt) echo "${TF%timing.txt}drvwdt.txt" ;; *) echo "${TF%/*}/drvwdt_$BOOT_ID.txt" ;; esac
 }
 report() {  # the whole record in one file
   {
@@ -73,6 +90,8 @@ report() {  # the whole record in one file
   mv -f $R/timing.txt.new $R/timing.txt
   if [ -n "$TF" ] && [ -d $STICK/lumen_os_diag_logs ]; then
     cp $R/timing.txt "$TF.new" 2>/dev/null && mv -f "$TF.new" "$TF" 2>/dev/null
+    WF=$(wdt_file)
+    cp $WDT "$WF.new" 2>/dev/null && mv -f "$WF.new" "$WF" 2>/dev/null
   fi
 }
 
@@ -119,12 +138,14 @@ while :; do
   if [ -n "$done_at" ] && [ $((ui - done_at)) -ge 45 ]; then break; fi   # before z9x_earlylog unmounts (>= 60 s)
   [ $ui -ge 870 ] && break
   round=$((round + 1))
+  [ $ui -lt 180 ] && [ $((round % 4)) = 1 ] && wdt_dump
   [ $((round % 4)) = 0 ] && report
   if [ $ui -lt 60 ]; then $SLEEP 0.5; elif [ $ui -lt 180 ]; then $SLEEP 1; else $SLEEP 3; fi
 done
 read -r U _ < $PROC/uptime
 [ -z "$TF" ] && [ -d $STICK/lumen_os_diag_logs ] && TF=$STICK/lumen_os_diag_logs/timing_$BOOT_ID.txt
 ev "watch end"
+[ $ui -lt 180 ] && wdt_dump
 report
 sync
 exit 0

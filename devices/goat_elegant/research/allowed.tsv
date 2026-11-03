@@ -1,0 +1,156 @@
+# allowed.tsv: the complete list of gmpf calls HbProjector may send on the Z9X HB (goat_elegant). Read by
+# tools/devices/check_aidl_hal.py (hal_allowed in devices/goat_elegant/device.conf, rule 6): every Call of
+# apps/HbProjector AidlCaller.java must be a row here and every row a Call. Source: the design notes
+# (the allow rows: the Java method it serves and the Z9X code it replaces) plus the two meta calls. REVIEW rows of
+# banned.tsv (generateLogoByTrapezoid, uiHeartBeatSet / uiHeartBeatDo, getBootReason) are not here: they stay
+# refused until approved. newAutoKst was approved on
+# 2026-10-29 (9.1): EXCEPTION row of banned.tsv, mode 9, 10 or 11 only (GmpfClient refuses the rest); mode 12 added hb-t7
+# (2026-10-30: the stock fit-to-screen hint window "Continue", AuxiliaryCurtainAlignDialog).
+# hb-t5 (test of hb-t4, 2026-10-29: no optical zoom, no way back after "Fit to screen"): setKstPrepare is an
+# EXCEPTION row for type 2 only (9.3, zoom case); 63 / 95 (optical zoom) and 38 / 84 / 85 (stock keystone reset, 9.7)
+# are not banned rows. Every value is restricted in GmpfClient / Gmpf2Client; stock G0130 callers in the reasons.
+# '-' as service = meta call, valid on any interface.
+# service	code	method	reason
+-	0x00FFFFFF	getInterfaceVersion	version guard before the first call on an interface, must be 1 (handshake.md 6.2)
+-	0x00FFFFFE	getInterfaceHash	hash guard before the first call on an interface (handshake.md 6.2)
+DisplayManager	2	setProjectorPutMode	setPutMode [Z9X IGmpf 172]
+DisplayManager	3	getProjectorPutMode	getPutMode [Z9X IGmpf 173]
+DisplayManager	4	setDlpLumensMode	setColorTemp [Z9X IGmpf 174]
+DisplayManager	5	getDlpLumensMode	getColorTemp [Z9X IGmpf 175]
+DisplayManager	6	setDlpLumensLevel	setLampLevel [Z9X IGmpf 176]
+DisplayManager	7	getDlpLumensLevel	getLampLevel [Z9X IGmpf 177]
+DisplayManager	15	setCorrectKeystoneFullPiont	applyKeystonePoints [Z9X IGmpf 185]
+DisplayManager	16	getCorrectKeystoneFullPiont	getKeystonePoints [Z9X IGmpf 186]
+DisplayManager	27	setScreenOnOff	setScreenOn [Z9X IGmpf 195]
+DisplayManager	28	getScreenOnOff	getScreenOn [Z9X IGmpf 196]
+DisplayManager	38	correctKeystoneReset	resetKeystoneForTopSpeedGame [Z9X IGmpf 207]; hb-t5 also resetKeystoneStock (9.7): (0) only, stock V3DisplayManager.setIChipReset (newsettings classes3 198d44 +0x05, SystemUI classes2)
+DisplayManager	61	setHumanDetectOnOff	setEyeProtection [Z9X IGmpf 152]
+DisplayManager	62	getHumanDetectOnOff	getEyeProtection [Z9X IGmpf 151]
+DisplayManager	63	zoomControl	zoomHome [Z9X IGmpf 153]; hb-t5: (5, 10) only, stock KeyStoneManager$resetKeyStone$1 (newsettings classes3 1e6804 +0x33), resetOpticalZoomAndZoom$1, SystemUI AuxiliaryCurtainAlignDialog$resetKeyStone$1; hb-t6: also (12, 10) = the limit step count (read), stock ZoomStateView.getLimitStep (newsettings ZoomStateView constructor / initZoom)
+DisplayManager	64	checkTrapezoidCoordinate	checkKeystonePoints [Z9X IGmpf 150]
+DisplayManager	66	setHumanDetectScreenOnOff	restoreEyeProtectionScreen [Z9X IGmpf 148]
+DisplayManager	67	getHumanDetectScreenOnOff	getEyeProtectionScreenOn [Z9X IGmpf 147]
+DisplayManager	68	uiAkDisplay	uiAkDisplay [Z9X IGmpf 146]
+DisplayManager	72	translationKst	shiftPicture [Z9X IGmpf 141]
+DisplayManager	76	setGameModeOption	setGameModeOption [Z9X IGmpf 648]
+DisplayManager	77	getGameModeOption	getGameModeOption [Z9X IGmpf 647]
+DisplayManager	84	getCurrentKeystoneMode	resetKeystoneStock (9.7, hb-t5): read only inside the reset, stock V3DisplayManager.setIChipReset +0x0c
+DisplayManager	85	switchKeystoneMode	resetKeystoneStock (9.7, hb-t5): (0, 0) only, only after 84 returned 6 in the same reset, stock V3DisplayManager.setIChipReset +0x17
+DisplayManager	93	zoomStart	zoomSessionStart [Z9X IGmpf 121]
+DisplayManager	94	zoomFinish	zoomSessionFinish [Z9X IGmpf 120]
+DisplayManager	95	setOpticalZoomStep	setOpticalZoomStep [Z9X IGmpf 119]; hb-t5: inside a 185(true, 2) + 93 session, +-1 from the last 98 read, inside the last 97 range; stock KeyStoneManager.zoomControl (newsettings classes3 1e74c8) from ZoomStateView
+DisplayManager	96	setDigitalZoomStep	setDigitalZoomStep [Z9X IGmpf 118]
+DisplayManager	97	getZoomStepRange	getZoomStepRange [Z9X IGmpf 117]
+DisplayManager	98	getCurrentZoomStep2	getZoomStep [Z9X IGmpf 116]
+DisplayManager	102	switchDispColorSpace	setColorSpace [Z9X IGmpf 112]
+DisplayManager	103	getDispColorSpace	getColorSpaceRaw [Z9X IGmpf 111]
+DisplayManager	146	setGameModeState	setGameModeState [Z9X IGmpf2 57]
+DisplayManager	147	setGameModeType	setGameModeType [Z9X IGmpf2 56]
+DisplayManager	148	getGameModeProp	getGameModeProp [Z9X IGmpf2 55]
+DisplayManager	151	setLensDispMode	setBoost [Z9X IGmpf2 52]
+DisplayManager	152	getLensDispMode	isBoost [Z9X IGmpf2 51]
+DisplayManager	172	setDynamicBlackType	setDynamicBlack [Z9X IGmpf2 31]
+DisplayManager	174	getDynamicBlackType	getDynamicBlack [Z9X IGmpf2 29]
+DisplayManager	185	setKstPrepare	setKstPrepareForZoom [Z9X IGmpf2 18]; EXCEPTION row of banned.tsv (9.3, zoom case, hb-t5); (true, 2) / (false, 2) only, stock ZoomStateView.dispatchKeyEvent (newsettings classes3 22bdb0 +0x2b) / release (22cc04 +0x78) via MiddleWareApi.notifyKeystone
+DisplayManager	189	SetOpticalZoomLimitStep	-; hb-t6: EXCEPTION row of banned.tsv; GetCurrentZoomLimitStep() +-1 inside [-limitTotal, 0] at optical index 0 inside a 185(true, 2) + 93 session, stock ZoomUtils.setOpticalZoomLimitStep from ZoomStateView.setZoom (newsettings)
+DisplayManager	190	GetCurrentZoomLimitStep	-; hb-t6: read, stock ZoomUtils.getCurrentZoomLimitStep (ZoomStateView.initZoom, setOpticalZoomLimitStep)
+GmAudioManager	2	setAudioOutput	setAudioOutput [Z9X IGmpf 59]
+GmAudioManager	3	getAudioOutput	getAudioOutputRaw [Z9X IGmpf 60]
+GmAudioManager	6	setSoundeffect	setSoundEffect [Z9X IGmpf 61]
+GmAudioManager	7	getSoundeffect	getSoundEffectRaw [Z9X IGmpf 62]
+GmAudioManager	8	setAutoSoundeffect	setAutoSoundEffect [Z9X IGmpf 63]
+GmAudioManager	15	SetPEQEnable	setPeqEnabled [Z9X IGmpf 51]
+GmAudioManager	16	SetPEQ	setPeqBand [Z9X IGmpf 50]
+GmFactoryManager	45	savePowerOnAKFlag	setPowerOnAk [Z9X IGmpf 552]; EXCEPTION row of banned.tsv (boot auto keystone switch)
+GmFactoryManager	46	getPowerOnAKFlag	getPowerOnAk [Z9X IGmpf 553]; EXCEPTION row of banned.tsv (boot auto keystone switch)
+GmTvManager	3	switchInputSource	switchInputSource [Z9X IGmpf 698] (hb-t9 HDMI black screen: Gmpf 25 switchInputSourceWithCallingPid is unimplemented on the HB vendor, never sent); 0 Android / 1 HDMI1 / 2 HDMI2 only (GmpfClient); stock xhplayer TV.switchInputSource TV.smali:1568 (inputToInt: HDMI1TVINPUTSERVICE 1, HDMI2TVINPUTSERVICE 2) and TV.switchToMM TV.smali:1603 (0); IGmTvManager$Stub$Proxy.switchInputSource writeInt, transact 3, readBoolean
+GmTvManager	4	getCurrentInputSource	getCurrentInputSource [Z9X IGmpf 696]
+GmTvManager	5	setContrast	setPq(CONTRAST) [Z9X IGmpf 695]
+GmTvManager	6	getContrast	getPq(CONTRAST) [Z9X IGmpf 694]
+GmTvManager	7	setBrightness	setPq(BRIGHTNESS) [Z9X IGmpf 693]
+GmTvManager	8	getBrightness	getPq(BRIGHTNESS) [Z9X IGmpf 692]
+GmTvManager	9	setSaturation	setPq(SATURATION) [Z9X IGmpf 691]
+GmTvManager	10	getSaturation	getPq(SATURATION) [Z9X IGmpf 690]
+GmTvManager	11	setSharpness	setPq(SHARPNESS) [Z9X IGmpf 689]
+GmTvManager	12	getSharpness	getPq(SHARPNESS) [Z9X IGmpf 688]
+GmTvManager	17	setColorTempRedGain	setWb(RED_GAIN) [Z9X IGmpf 683]
+GmTvManager	18	getColorTempRedGain	getWb(RED_GAIN) [Z9X IGmpf 682]
+GmTvManager	19	setColorTempGreenGain	setWb(GREEN_GAIN) [Z9X IGmpf 681]
+GmTvManager	20	getColorTempGreenGain	getWb(GREEN_GAIN) [Z9X IGmpf 680]
+GmTvManager	21	setColorTempBlueGain	setWb(BLUE_GAIN) [Z9X IGmpf 679]
+GmTvManager	22	getColorTempBlueGain	getWb(BLUE_GAIN) [Z9X IGmpf 678]
+GmTvManager	23	setColorTempRedOffset	setWb(RED_OFFSET) [Z9X IGmpf 677]
+GmTvManager	24	getColorTempRedOffset	getWb(RED_OFFSET) [Z9X IGmpf 676]
+GmTvManager	25	setColorTempGreenOffset	setWb(GREEN_OFFSET) [Z9X IGmpf 675]
+GmTvManager	26	getColorTempGreenOffset	getWb(GREEN_OFFSET) [Z9X IGmpf 674]
+GmTvManager	27	setColorTempBlueOffset	setWb(BLUE_OFFSET) [Z9X IGmpf 673]
+GmTvManager	28	getColorTempBlueOffset	getWb(BLUE_OFFSET) [Z9X IGmpf 672]
+GmTvManager	29	set3DNR	setNoiseReduction [Z9X IGmpf 671]
+GmTvManager	30	get3DNR	getNoiseReduction [Z9X IGmpf 670]
+GmTvManager	31	setMemcLevel	setMemcLevel [Z9X IGmpf 669]
+GmTvManager	32	getMemcLevel	getMemcLevel [Z9X IGmpf 668]
+GmTvManager	33	setPictureMode	setAiScene,setPictureMode [Z9X IGmpf 667]
+GmTvManager	34	getPictureMode	getPictureModeRaw [Z9X IGmpf 666]
+GmTvManager	35	setAspectRatio	setAspectRatio [Z9X IGmpf 665]
+GmTvManager	36	getAspectRatio	getAspectRatioRaw [Z9X IGmpf 664]
+GmTvManager	38	getHdmiInfo	getHdmiInfo [Z9X IGmpf 662]
+GmTvManager	39	getEdidVersion	getEdidVersion [Z9X IGmpf 661]
+GmTvManager	40	setEdidVersion	setEdidVersion [Z9X IGmpf 660]
+GmTvManager	45	setUcdLevel	setLocalContrast [Z9X IGmpf 655]
+GmTvManager	49	getUcdLevel	getLocalContrast [Z9X IGmpf 651]
+GmTvManager	58	getWakeUpSource	getWakeUpSource [Z9X IGmpf 639]
+GmTvManager	63	setHdmiRange	setHdmiRange [Z9X IGmpf 635]
+GmTvManager	64	getHdmiRange	getHdmiRange [Z9X IGmpf 634]
+GmTvManager	65	setEARCEnable	setEarc [Z9X IGmpf 633]
+GmTvManager	66	getEARCEnableState	getEarc [Z9X IGmpf 632]
+GmTvManager	78	getHdrType	getHdrType [Z9X IGmpf 620]
+GmTvManager	112	getHsyPictureModeEnable	getColorOptimization [Z9X IGmpf2 330]
+GmTvManager	113	setTvDynamicContrastEnable	setDynamicContrast [Z9X IGmpf2 329]
+GmTvManager	114	getTvDynamicContrastEnable	getDynamicContrast [Z9X IGmpf2 328]
+GmTvManager	115	setTvGammaLevel	setGamma [Z9X IGmpf2 327]
+GmTvManager	116	getTvGammaLevel	getGamma [Z9X IGmpf2 326]
+GmTvManager	117	setHsyColorModel	setHsyColorModel [Z9X IGmpf2 325]
+GmTvManager	118	getHsyColorModel	getHsyColorModel [Z9X IGmpf2 324]
+GmTvManager	119	setHsyPictureModeEnable	setColorOptimization [Z9X IGmpf2 323]
+GmTvManager	129	setAllmEnable	setAllmAutoSwitch [Z9X IGmpf2 312]
+GmTvManager	130	getAllmEnableState	getAllmAutoSwitch [Z9X IGmpf2 311]
+GmTvManager	131	getAllmStatus	getAllmStatus [Z9X IGmpf2 310]
+GmTvManager	164	ResetPictureToDefault	resetPicture [Z9X IGmpf2 278]
+GmTvManager	165	setOneOfMultiPointWB	setMultiPointWb [Z9X IGmpf2 282]
+GmTvManager	166	getOneOfMultiPointWB	getMultiPointWb [Z9X IGmpf2 281]
+GmTvManager	174	ToggleHDRDyToneMapping	setHdrDynamicToneMapping [Z9X IGmpf2 270]
+GmTvManager	175	GetHDRDyToneMappingStatus	getHdrDynamicToneMapping [Z9X IGmpf2 269]
+MotionDetectionManager	2	getMotionDetection	getMotionDetection [Z9X IGmpf 584]; fit to my screen size (docs/fit_screen/DESIGN.md 9.3), read only, FIT_SCREEN gate, at most 20 per minute 80 ms apart (GmpfClient), 5 per fit; stock newsettings MotionDetectionManagerWrapper.getMotionDetection:41 (IMotionDetectionManager proxy readTypedObject MsensorDataStruct)
+MotionDetectionManager	4	setAngTriggerAF	setMoveAf [Z9X IGmpf 587]
+MotionDetectionManager	5	getAngTriggerAF	getMoveAf [Z9X IGmpf 588]
+MotionDetectionManager	6	setAccTriggerAK	setMoveAk [Z9X IGmpf 585]
+MotionDetectionManager	7	getAccTriggerAK	getMoveAk [Z9X IGmpf 586]
+MotionDetectionManager	8	setAutoReverse	setAutoReverse [Z9X IGmpf 580]
+MotionDetectionManager	9	getAutoReverse	getAutoReverse [Z9X IGmpf 579]
+MotionDetectionManager	15	temporarySwitchTrigger	setRealtimeAkTemporarily,resetRealtimeAkTemporary [Z9X IGmpf 573]; (2, b) as before; hb-t7: (2, false) when the fit-to-screen hint window shows and (0, false) when it goes, as stock HB SystemUI AuxiliaryCurtainAlignDialog.show / dismiss (jadx AuxiliaryCurtainAlignDialog.java:217 and :268)
+PowerManager	2	goToBootCompleted	goToBootCompleted [Z9X IGmpf 237]; HbBoot rows C (0) and E (1)
+ProjectorFocusManager	1	setFocusCallback	connectFocusManager [Z9X IGmpf 298]
+ProjectorFocusManager	2	manualFocus	manualFocus [Z9X IGmpf 300]
+ProjectorFocusManager	4	powerOnAFEnable	setPowerOnAf [Z9X IGmpf 302]
+ProjectorFocusManager	5	isPowerOnAFEnabled	getPowerOnAf [Z9X IGmpf 303]
+ProjectorFocusManager	8	sendFocusStatus	sendPowerOnUiReady,sendRemoteAutofocus,sendAfUiOpen,sendAfCardClosed,sendAfStop [Z9X IGmpf 307]; 17 last in the handshake (stock HB SystemUI FocusUIV2.start), 44 remote AF key; 4 / 5+3 / 3 the AF card (stock HB SystemUI AutoMaticFA, hb-t6 test 2026-10-30)
+ProjectorFocusManager	27	autoKst	autoKst [Z9X IGmpf 326]
+ProjectorFocusManager	33	setProjScreenAdp	setObstacleAvoid [Z9X IGmpf 292]
+ProjectorFocusManager	34	getProjScreenAdp	getObstacleAvoid [Z9X IGmpf 291]
+ProjectorFocusManager	35	setProjCurtainAdp	setCurtainFit [Z9X IGmpf 290]
+ProjectorFocusManager	36	getProjCurtainAdp	getCurtainFit [Z9X IGmpf 289]
+ProjectorFocusManager	46	getTofDistance	getTofDistance [Z9X IGmpf 279]; fit to my screen size (docs/fit_screen/DESIGN.md 9.3), read only, FIT_SCREEN gate, at least 1 s apart and at most 6 per minute (GmpfClient), 3 per fit (FitRun); stock newsettings CalibrationTofDialog.java:424, CalibrationCurtainDialog.java:1197, HallCalibrationDistanceDialog.java:239 via ProjectorFocusManagerWrapper:238
+ProjectorFocusManager	53	newAutoKst	newAutoKst [Z9X IGmpf 272]; EXCEPTION row of banned.tsv (owner 2026-10-29, 9.1); mode 9 / 10 / 11 only, as the stock G0130 callers (SystemUI CurtainAdaptManager 11, newsettings KeyStoneManager 9, KeyStoneWind 10); hb-t7: also 12, owner approved 2026-10-30, the "Continue" (OK) of the fit-to-screen hint window, stock HB SystemUI_release_838 com/xgimi/systemui/focus/keystonewind/AuxiliaryCurtainAlignDialog.kt (jadx AuxiliaryCurtainAlignDialog.java:228-230 onKeyUp keyCode 23 -> dismiss(), GmDisplayManager.newAutoKst(12)), shown by FocusUIV2.onProjectorFocusEventCall on focusEvent 105 "AK_Curtain_Fit_Guide" (FocusUIV2.java:584-588)
+ProjectorFocusManager	85	setPowerOnAFUseDistance	setSmartAutofocus [Z9X IGmpf2 91]
+ProjectorFocusManager	86	getPowerOnAFUseDistance	getSmartAutofocus [Z9X IGmpf2 90]
+SystemManager	5	enablePowerOnMusic	setPowerOnMusic [Z9X IGmpf 419]
+SystemManager	6	isPowerOnMusicEnabled	getPowerOnMusic [Z9X IGmpf 420]
+SystemManager	32	setBootAnimState	setBootAnimFinished [Z9X IGmpf 395]; HbBoot rows A (1) and D (2)
+SystemManager	33	getBootAnimState	getBootAnimState [Z9X IGmpf 394]
+SystemManager	36	setSystemUIState	setSystemUiReady [Z9X IGmpf 391]; HbBoot row B (1)
+SystemManager	37	getSystemUIState	getSystemUiState [Z9X IGmpf 390]
+SystemManager	134	setScreenRotation	rotateScreen [Z9X IGmpf2 207]
+SystemManager	140	setPushPullScreenOnOff	disablePushPullScreenForCeiling [Z9X IGmpf2 201]
+SystemManager	142	getScreenRotationInfo	getScreenRotation [Z9X IGmpf2 199]
+SystemManager	147	setPushPullScreenState	setAdjustScreenOpen [Z9X IGmpf2 194]
+TemperatureManager	6	getSystemTemperature	getSystemTemperature [Z9X IGmpf 438]

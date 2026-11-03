@@ -16,6 +16,9 @@
 #   /system/etc/xgimi/earlylog_usb.sh 0644                                          Play 6 USB host modules for it
 #   /system/etc/init/lumen_escape.rc 0644, /system/etc/xgimi/lumen_escape.sh 0755   fastbootd after a failed boot
 #   /system/etc/init/play6_boottiming.rc 0644, /system/etc/xgimi/play6_boottiming.sh 0755   boot timing record
+#                                                (since diag2 also the early DrvWdt / MI3 log, drvwdt.txt)
+#   /system/etc/init/play6_early_mik.rc 0644      (diag2) the vendor's projector driver chain at late-fs, so gmpf's
+#                                                DrvWdt finds /dev/mik!wdt
 # product/etc/build.prop: ro.lumen.version=VERSION, ro.lumen.build_id=<old>-diagN, ro.lumen.diag=1, and the test
 # builds' log props of tools/play6/compose.sh --diag (ro.logd.auditd=false, persist.logd.size=2097152: the boot's
 # own errors stay in the log instead of the SELinux audit flood). ro.lumen.version_code stays (the installer and
@@ -45,7 +48,8 @@ OLD_VER=$(sed -n 's/^ro\.lumen\.version=//p' "$T/product.prop" | tail -n 1)
 OLD_ID=$(sed -n 's/^ro\.lumen\.build_id=//p' "$T/product.prop" | tail -n 1)
 [ -n "$OLD_ID" ] || die "no ro.lumen.build_id in $IN"
 [ "${VER%-diag*}" = "$OLD_VER" ] || die "$IN is Lumen OS $OLD_VER, VERSION $VER is not a diag of it"
-for f in /system/etc/init/z9x_earlylog.rc /system/etc/init/lumen_escape.rc /system/etc/init/play6_boottiming.rc; do
+for f in /system/etc/init/z9x_earlylog.rc /system/etc/init/lumen_escape.rc /system/etc/init/play6_boottiming.rc \
+         /system/etc/init/play6_early_mik.rc; do
   "$D" -R "stat $f" "$IN" 2>/dev/null | grep -q '^Inode' && die "$IN already has $f"
 done
 grep -v -E '^(ro\.lumen\.version|ro\.lumen\.build_id|ro\.logd\.auditd|persist\.logd\.size)=' "$T/product.prop" > "$T/product.new"
@@ -85,6 +89,7 @@ add /system/etc/init/lumen_escape.rc "$G/overlay/debug/lumen_escape.rc" 644
 add /system/etc/xgimi/lumen_escape.sh "$G/overlay/debug/lumen_escape.sh" 755
 add /system/etc/init/play6_boottiming.rc "$G/overlay/play6/play6_boottiming.rc" 644
 add /system/etc/xgimi/play6_boottiming.sh "$G/overlay/play6/play6_boottiming.sh" 755
+add /system/etc/init/play6_early_mik.rc "$G/overlay/play6/play6_early_mik.rc" 644
 add $PROD "$T/product.new" 644
 
 "$D" -w -f "$CMDS" "$OUT.part" >/dev/null 2>"$T/dbg.err" || true

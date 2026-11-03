@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB only labels. -->
+<resources>
+    <string name="panel_move_ak_hb">Автокоррекция трапеции после перемещения</string>
+    <string name="tg_move_ak_hb">Автокоррекция трапеции после перемещения</string>
+    <string name="hb_proj_hoist_title">Перейти на крепление к потолку?</string>
+    <string name="hb_proj_hoist_desc">Для проектора, установленного вверх ногами на потолке перед экраном. Изображение перевернётся. Некоторые функции при креплении к потолку не поддерживаются (зависит от модели).</string>
+    <string name="hb_curtain_guide_title">Выравнивание по экрану</string>
+    <string name="hb_curtain_guide_desc">Передвиньте проектор так, чтобы изображение немного выходило за все четыре края экрана, затем запустите коррекцию.</string>
+    <string name="hb_curtain_guide_btn">Запустить автокоррекцию</string>
+    <!-- AREA picture (2026-10-30): stock HB picture rows -->
+    <string name="panel_ct_standard_hb">Стандартная</string>
+    <string name="panel_ct_movie_hb">Кино</string>
+    <string name="panel_picture_reset_msg_hb">Все настройки этого режима изображения, в том числе профессиональные, вернутся к стандартным. Продолжить?</string>
+    <string name="panel_picture_reset_all_hb">Сбросить все режимы изображения</string>
+    <string name="panel_picture_reset_all_msg_hb">Настройки всех режимов изображения вернутся к стандартным. Продолжить?</string>
+    <string name="pro_dynamic_black_off_hb">%1$s отключает динамическое улучшение уровня чёрного</string>
+    <!-- hb-t8b (2026-10-30): HB keystone and picture labels at the places of the stock rows; texts
+         written by Lumen (clean-room rewrite 2026-10-31): stock strings only told us the meaning -->
+    <string name="kst_restore_hb">Вернуть исходное изображение</string>
+    <string name="kst_restore_done_hb">Изображение возвращено к исходному</string>
+    <string name="kst_settings_hb">Параметры трапеции</string>
+    <string name="kst_enhancement_hb">Дополнительно для коррекции</string>
+    <string name="kst_size_position_hb">Размер и место изображения</string>
+    <string name="more_hb">Прочее</string>
+    <string name="kst_projection_type_hb">Тип проекции</string>
+    <string name="kst_manual_hb">Углы вручную</string>
+    <string name="kst_precise_hb">Точная настройка углов</string>
+    <string name="pro_contrast_hb">Контрастность</string>
+    <string name="pro_gamma_index_hb">Гамма</string>
+    <string name="pro_dyn_black_hb">Усиление чёрного</string>
+    <string name="pro_clarity_hb">Детализация</string>
+    <string name="pro_noise_hb">Подавление шума</string>
+    <string name="pro_reset_default_hb">Вернуть стандартные значения</string>
+    <string name="pro_wb_2pt_hb">Баланс белого по 2 точкам</string>
+    <string name="pro_wb_11pt_hb">Баланс белого по 11 точкам</string>
+    <string name="pro_segmentation_hb">Уровень серого</string>
+    <string name="pro_src_media_hb">Видео из приложений и файлов</string>
+    <string name="pro_off_hb">Выключено</string>
+    <string name="pro_weak_hb">Низкий</string>
+    <string name="pro_medium_hb">Средний</string>
+    <string name="pro_strong_hb">Высокий</string>
+    <string name="pro_auto_hb">Автоматически</string>
+</resources>

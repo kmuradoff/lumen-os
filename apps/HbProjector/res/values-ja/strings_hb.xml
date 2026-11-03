@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB only labels, hb-t8b keys only, Lumen's own wording (clean-room rewrite 2026-10-31) of values-ja; the other HB keys fall back to English -->
+<resources>
+    <!-- hb-t8b (2026-10-30): HB keystone and picture labels at the places of the stock rows; texts
+         written by Lumen (clean-room rewrite 2026-10-31): stock strings only told us the meaning -->
+    <string name="kst_restore_hb">元の画面に戻す</string>
+    <string name="kst_restore_done_hb">元の画面に戻しました</string>
+    <string name="kst_settings_hb">台形補正オプション</string>
+    <string name="kst_enhancement_hb">追加の補正</string>
+    <string name="kst_size_position_hb">画面のサイズと位置</string>
+    <string name="more_hb">その他</string>
+    <string name="kst_projection_type_hb">投影タイプ</string>
+    <string name="kst_manual_hb">四隅を手動で調整</string>
+    <string name="kst_precise_hb">四隅の微調整</string>
+    <string name="pro_contrast_hb">コントラスト</string>
+    <string name="pro_gamma_index_hb">ガンマ</string>
+    <string name="pro_dyn_black_hb">黒の強調</string>
+    <string name="pro_clarity_hb">ディテール</string>
+    <string name="pro_noise_hb">ノイズフィルター</string>
+    <string name="pro_reset_default_hb">初期値に戻す</string>
+    <string name="pro_wb_2pt_hb">2点ホワイトバランス</string>
+    <string name="pro_wb_11pt_hb">11点ホワイトバランス</string>
+    <string name="pro_segmentation_hb">グレーレベル</string>
+    <string name="pro_src_media_hb">アプリとファイルの動画</string>
+    <string name="pro_off_hb">オフ</string>
+    <string name="pro_weak_hb">低</string>
+    <string name="pro_medium_hb">中</string>
+    <string name="pro_strong_hb">高</string>
+    <string name="pro_auto_hb">自動</string>
+</resources>

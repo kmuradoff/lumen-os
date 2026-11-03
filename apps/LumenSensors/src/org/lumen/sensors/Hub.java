@@ -19,6 +19,7 @@ import org.lumen.sensors.sources.MemorySource;
 import org.lumen.sensors.sources.NetSource;
 import org.lumen.sensors.sources.ThermalSource;
 import org.lumen.sensors.sources.UptimeSource;
+import org.lumen.sensors.x50.X50Profile;
 import org.lumen.sensors.z9x.Z9xProfile;
 
 import java.text.DecimalFormatSymbols;
@@ -30,7 +31,8 @@ import java.util.ArrayList;
  * The sampler runs while at least one owner holds the hub: HudService while its HUD is on screen
  * (hud = true: periodic HAL reads of what the HUD shows), SettingsActivity while it is resumed
  * (hud = false: only the probe, so it can list the groups that exist). With no owner nothing runs.
- * Sources by device profile: the generic ones everywhere, plus the XGIMI HAL source on the Z9X.
+ * Sources by device profile: the generic ones everywhere, plus the XGIMI HAL source on the Z9X, or the X50
+ * gmpf AIDL source on the X50 (G0111).
  * Publishes reach the main thread through one reused Runnable; listeners (HudView, SettingsView)
  * are called there.
  *
@@ -80,7 +82,8 @@ public final class Hub {
         this.prefs = new Prefs(app);
         ArrayList<Source> src = new ArrayList<>();
         boolean z9x = Z9xProfile.isZ9x();
-        src.add(new ThermalSource(z9x ? Z9xProfile.SOC_ZONE : -1));
+        boolean x50 = !z9x && X50Profile.isX50();         // asked only when the Z9X profile said no
+        src.add(new ThermalSource(z9x ? Z9xProfile.SOC_ZONE : (x50 ? X50Profile.SOC_ZONE : -1)));
         src.add(new CpuSource());
         src.add(new GpuSource());
         src.add(new MemorySource());
@@ -89,6 +92,9 @@ public final class Hub {
         src.add(new UptimeSource());
         if (z9x) {
             for (Source s : Z9xProfile.sources(app)) src.add(s);   // last: they see what the generic ones found
+        }
+        if (x50) {
+            for (Source s : X50Profile.sources(app)) src.add(s);
         }
         sampler = new Sampler(registry, src.toArray(new Source[0]), () -> {
             main.removeCallbacks(dispatch);

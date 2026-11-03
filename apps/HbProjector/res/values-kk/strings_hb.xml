@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Z9X HB only labels, hb-t8b keys only, own translation (the stock HB has no such strings in this language); the other HB keys fall back to English -->
+<resources>
+    <!-- hb-t8b (2026-10-30): HB keystone and picture labels at the places of the stock rows; texts
+         written by Lumen (clean-room rewrite 2026-10-31): stock strings only told us the meaning -->
+    <string name="kst_restore_hb">Бастапқы суретті қайтару</string>
+    <string name="kst_restore_done_hb">Сурет бастапқы күйіне қайтарылды</string>
+    <string name="kst_settings_hb">Трапеция параметрлері</string>
+    <string name="kst_enhancement_hb">Түзетуге қосымша</string>
+    <string name="kst_size_position_hb">Суреттің өлшемі мен орны</string>
+    <string name="more_hb">Басқа</string>
+    <string name="kst_projection_type_hb">Проекция түрі</string>
+    <string name="kst_manual_hb">Бұрыштарды қолмен</string>
+    <string name="kst_precise_hb">Бұрыштарды дәл баптау</string>
+    <string name="pro_contrast_hb">Контрастылық</string>
+    <string name="pro_gamma_index_hb">Гамма</string>
+    <string name="pro_dyn_black_hb">Қараны күшейту</string>
+    <string name="pro_clarity_hb">Егжей-тегжей</string>
+    <string name="pro_noise_hb">Шуды басу</string>
+    <string name="pro_reset_default_hb">Әдепкі мәндерді қайтару</string>
+    <string name="pro_wb_2pt_hb">Ақ түс балансы, 2 нүкте</string>
+    <string name="pro_wb_11pt_hb">Ақ түс балансы, 11 нүкте</string>
+    <string name="pro_segmentation_hb">Сұр деңгейі</string>
+    <string name="pro_src_media_hb">Қолданбалар мен файлдардағы бейне</string>
+    <string name="pro_off_hb">Өшірулі</string>
+    <string name="pro_weak_hb">Төмен</string>
+    <string name="pro_medium_hb">Орташа</string>
+    <string name="pro_strong_hb">Жоғары</string>
+    <string name="pro_auto_hb">Автоматты түрде</string>
+</resources>

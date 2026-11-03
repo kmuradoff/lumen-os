@@ -1,0 +1,7 @@
+# method	replacement	note
+# HAL methods Lumen sends on the Z9X / Play 6 that have no same-named method on the HB (G0130 AIDL V1).
+# Columns: Z9X/Play 6 method name, HB method to use instead (Service.method), why.
+connectProjectorFocusManager	-	HIDL handle getter. On HB every manager is its own AIDL service: ServiceManager.waitForDeclaredService("xgimi.hardware.gmpf.IProjectorFocusManager/default"); callbacks via ProjectorFocusManager.setProjectorFocusCallback or Gmpf.setProjectorFocusListener(pid, cb)
+connectPowerManager	-	HIDL handle getter. Use AIDL service "xgimi.hardware.gmpf.IPowerManager/default"; callbacks via PowerManager.setPowerCallback or Gmpf.setPowerListener(pid, cb)
+connectMusicPlayerManager	-	HIDL handle getter. Use AIDL service "xgimi.hardware.gmpf.IMusicPlayerManager/default"; callbacks via MusicPlayerManager.setMusicPlayerCallback or Gmpf.setMusicPlayerListener(pid, cb)
+correctKeystoneFullPiont	DisplayManager.setCorrectKeystoneFullPiont	same 4-corner KstPoint write, renamed; HB takes (byte mode, KstPoint) and returns boolean. DisplayManager.correctKeystoneFullPiontEx(KstPoint) also exists (int return). Wire layout of KstPoint must be checked against AutoKst before use

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS on the Z9X HB: /system/etc/permissions/privapp-permissions-hbboot.xml (0644, root:root, system_file).
+     org.lumen.hb.boot (apps/HbBoot) lives in /system/priv-app/HbBoot, persistent, sharedUserId android.uid.system,
+     signed with the goat_elegant platform key. It requests no privileged permission (only RECEIVE_BOOT_COMPLETED,
+     a normal one), so the list is empty; it is shipped so that every priv-app of the image has its entry and a
+     later privileged permission has its place (ro.control_privapp_permissions may be enforce on this vendor). -->
+<permissions>
+    <privapp-permissions package="org.lumen.hb.boot">
+    </privapp-permissions>
+</permissions>

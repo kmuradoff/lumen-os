@@ -1,0 +1,3 @@
+# Lumen OS goat_elegant certificates (public). SHA-256 of the DER certificate.
+platform      687bf14308a9e41c2edb29c1610d406173add3e650d898257c12b1f267e6ac90
+ota/ota       8e47e495f9fcc5db464f52c578209fda3a9e47ff80aafce6f7125d2c51a98624
