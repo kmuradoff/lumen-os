@@ -12,6 +12,7 @@ import org.lumen.info.core.Hb;
 import org.lumen.info.core.Parse;
 import org.lumen.info.core.Vic;
 import org.lumen.info.data.Snapshot;
+import org.lumen.info.hal.HbGmpf;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -40,11 +41,16 @@ public final class Rows {
     private final Context c;
     private final List<Row> out = new ArrayList<>();
 
+    /** Not an HB (no vendor service): rows without a value are left out, nothing unsupported is shown. */
+    private final boolean hideEmpty;
+
     private Rows(Context c) {
         this.c = c;
+        this.hideEmpty = !HbGmpf.available();
     }
 
     private void add(String key, int label, String value) {
+        if (value == null && hideEmpty) return;
         out.add(new Row(key, c.getString(label), value));
     }
 
