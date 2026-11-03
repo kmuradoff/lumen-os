@@ -350,23 +350,29 @@ public final class InfoTest {
     }
 
     // ================================================================ HB facts
-    static final String INI = "[HDMI_EDID_1]\nHDMI_EDID_File   = \"/config/EDID_BIN/Mstar_EDID1_v2.0_4K_2K_3D_HDR.bin\";\n"
-            + "HDMI_EDID_File_2_0   = \"/config/EDID_BIN/Mstar_EDID1_v2.0_4K_2K_3D_HDR.bin\";\n"
-            + "HDMI_EDID_File_1_4   = \"/config/EDID_BIN/Mstar_EDID1_v1.4_3D_Frame_SideHalf_Top.bin\";\n"
-            + "eEdidVersion     =  3;  #EDID_14:1 , EDID_20:2 , EDID_21:3\n\n"
-            + "[HDMI_EDID_2]\nHDMI_EDID_File_2_0   = \"/config/EDID_BIN/Mstar_EDID2_v2.0_4K_2K_3D_HDR.bin\";\n"
-            + "HDMI_EDID_File_1_4   = \"/config/EDID_BIN/../etc/passwd\";\n";
+    // the HB's mtk_Customer.ini shape (xgimiconfig/G0130, 2026-11-04 dump): absolute paths into the model's tv/ folder
+    static final String INI = "[HDMI_EDID_1]\nHDMI_EDID_File   = \"/mnt/vendor/xgimiconfig/G0130/tv/edid14_1.bin\";\n"
+            + "HDMI_EDID_File_2_1 = \"/mnt/vendor/xgimiconfig/G0130/tv/edid20_1.bin\";\n"
+            + "HDMI_EDID_File_2_0   = \"/mnt/vendor/xgimiconfig/G0130/tv/edid20_1.bin\";\n"
+            + "HDMI_EDID_File_1_4   = \"/mnt/vendor/xgimiconfig/G0130/tv/edid14_1.bin\";\n"
+            + "eEdidVersion     =  3;  #EDID_14:1 , EDID_20:2  EDID_21:3\n\n"
+            + "[HDMI_EDID_2]\nHDMI_EDID_File_2_0   = \"/mnt/vendor/xgimiconfig/G0130/tv/edid20_2.bin\";\n"
+            + "HDMI_EDID_File_1_4   = \"/mnt/vendor/xgimiconfig/G0130/tv/../../../etc/passwd\";\n";
 
     static void hbFacts() {
         Map<String, Map<String, String>> ini = Parse.ini(INI);
         eq("3", ini.get("HDMI_EDID_1").get("eEdidVersion"), "ini comment and semicolon");
-        eq(Hb.EDID_DIR + "/Mstar_EDID1_v1.4_3D_Frame_SideHalf_Top.bin", Hb.edidFile(ini, 1, Hb.EDID_14), "port 1 v1.4");
-        eq(Hb.EDID_DIR + "/Mstar_EDID2_v2.0_4K_2K_3D_HDR.bin", Hb.edidFile(ini, 2, Hb.EDID_20), "port 2 v2.0");
+        eq("/mnt/vendor/xgimiconfig/G0130/mtk_Customer.ini", Hb.vendorIni("G0130"), "vendor ini of the model");
+        eq("/mnt/vendor/xgimiconfig/G0130/tv", Hb.edidDir("G0130"), "edid dir of the model");
+        ok(Hb.modelDir("../x") == null && Hb.modelDir("") == null && Hb.modelDir(null) == null, "bad model names refused");
+        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid14_1.bin", Hb.edidFile(ini, "G0130", 1, Hb.EDID_14), "port 1 v1.4");
+        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid20_2.bin", Hb.edidFile(ini, "G0130", 2, Hb.EDID_20), "port 2 v2.0");
         ok(Hb.edidFromIni(ini, 2, Hb.EDID_20), "port 2 v2.0 from ini");
         ok(!Hb.edidFromIni(ini, 2, Hb.EDID_14), "path with .. refused");
-        eq(Hb.EDID_DIR + "/Mstar_EDID2_v1.4_3D_Frame_SideHalf_Top.bin", Hb.edidFile(ini, 2, Hb.EDID_14), "fallback name");
-        eq(Hb.EDID_DIR + "/Mstar_EDID1_v2.0_4K_2K_3D_HDR.bin", Hb.edidFile(null, 1, Hb.EDID_20), "no ini");
-        ok(Hb.isEdidFileName("Mstar_EDID1_v2.0_4K_2K.bin") && !Hb.isEdidFileName("../x.bin")
+        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid14_2.bin", Hb.edidFile(ini, "G0130", 2, Hb.EDID_14), "fallback name");
+        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid20_1.bin", Hb.edidFile(null, "G0130", 1, Hb.EDID_20), "no ini");
+        ok(Hb.edidFile(null, null, 1, Hb.EDID_20) == null, "no model, no file");
+        ok(Hb.isEdidFileName("edid20_120hz_1.bin") && !Hb.isEdidFileName("../x.bin")
                 && !Hb.isEdidFileName("a.txt"), "edid file names");
         eq("HLG", Hb.hdrTypeName(4), "hdr 4");
         eq("2.0", Hb.edidVersionName(2), "edid 2");

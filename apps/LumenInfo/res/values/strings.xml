@@ -108,7 +108,7 @@
     <string name="r_port_edid">HDMI %1$d: what it announces</string>
     <string name="v_file_guess">(name assumed, the vendor list was not readable)</string>
     <string name="v_edid_unreadable">file not readable</string>
-    <string name="hdmi_note">The projector has no readable copy of the EDID loaded in the receiver. Shown is the built-in vendor file for the selected EDID version; both HDMI inputs use the same version.</string>
+    <string name="hdmi_note">The projector has no readable copy of the EDID loaded in the receiver. Shown is the file the vendor table (mtk_Customer.ini of this model) names for the selected EDID version, and where it points when it is a link into the shared G0000 folder.</string>
     <string name="btn_export_port">Save HDMI %1$d EDID to Download</string>
     <string name="btn_details_port">HDMI %1$d EDID in detail</string>
     <string name="btn_switch_edid">Offer EDID %1$s instead</string>
@@ -218,4 +218,6 @@
     <string name="v_sad_bits">%1$s bit</string>
     <string name="v_sad_kbps">up to %1$d kbit/s</string>
     <string name="v_max_channels">up to %1$d ch</string>
+    <string name="r_edid_cfg">EDID config (kernel module)</string>
+    <string name="v_own_file">own file of this model</string>
 </resources>

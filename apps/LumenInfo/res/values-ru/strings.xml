@@ -104,7 +104,7 @@
     <string name="r_port_edid">HDMI %1$d: что он сообщает</string>
     <string name="v_file_guess">(имя предполагаемое, список производителя не прочитан)</string>
     <string name="v_edid_unreadable">файл не читается</string>
-    <string name="hdmi_note">Копии EDID, загруженного в приёмник, проектор не отдаёт. Здесь показан встроенный файл производителя для выбранной версии EDID; оба входа HDMI работают с одной версией.</string>
+    <string name="hdmi_note">Копии EDID, загруженного в приёмник, проектор не отдаёт. Здесь показан файл, который таблица производителя (mtk_Customer.ini этой модели) называет для выбранной версии EDID, и куда он ведёт, если это ссылка в общую папку G0000.</string>
     <string name="btn_export_port">Сохранить EDID HDMI %1$d в Download</string>
     <string name="btn_details_port">EDID HDMI %1$d подробно</string>
     <string name="btn_switch_edid">Включить EDID %1$s</string>
@@ -212,4 +212,6 @@
     <string name="v_sad_bits">%1$s бит</string>
     <string name="v_sad_kbps">до %1$d кбит/с</string>
     <string name="v_max_channels">до %1$d кан.</string>
+    <string name="r_edid_cfg">Настройка EDID (модуль ядра)</string>
+    <string name="v_own_file">свой файл модели</string>
 </resources>

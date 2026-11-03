@@ -46,6 +46,9 @@ import org.lumen.info.hal.HbGmpf;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,6 +104,7 @@ public final class Collector {
     private final Map<String, String> labels = new HashMap<>();
     private final Map<String, Edid> edidCache = new HashMap<>();
     private Map<String, Map<String, String>> ini;
+    private String model;   // ro.boot.xgimi.modelname, read with the ini
     private boolean iniTried;
 
     private Collector(Context app) {
@@ -577,8 +581,8 @@ public final class Collector {
         if (w.arcPort > 0 && vendorAvailable && w.edidVersion != null) {
             loadIni();
             int ver = w.edidVersion == Hb.EDID_20 ? Hb.EDID_20 : Hb.EDID_14;
-            String f = Hb.edidFile(ini, w.arcPort, ver);
-            Edid e = edid(f);
+            String f = Hb.edidFile(ini, model, w.arcPort, ver);
+            Edid e = f == null ? null : edid(f);
             if (e != null && e.valid) {
                 w.arcOurs = e.audio;
                 w.arcOursFile = new File(f).getName();
@@ -669,8 +673,10 @@ public final class Collector {
         for (int p : Hb.HDMI_PORTS) {
             Snapshot.Port port = new Snapshot.Port();
             port.port = p;
-            port.file = Hb.edidFile(ini, p, ver);
+            port.file = Hb.edidFile(ini, model, p, ver);
+            if (port.file == null) continue;
             port.fromIni = Hb.edidFromIni(ini, p, ver);
+            port.link = linkOf(port.file);
             port.edid = edid(port.file);
             ports.add(port);
         }
@@ -681,17 +687,41 @@ public final class Collector {
     private void loadIni() {
         if (!iniTried) {
             iniTried = true;
-            ini = Parse.ini(Dumps.file(Hb.VENDOR_INI, 256 * 1024));
-            if (ini.isEmpty()) ini = null;
-            File dir = new File(Hb.EDID_DIR);
-            String[] names = dir.list();
+            model = SystemProperties.get("ro.boot.xgimi.modelname", "");
+            String vi = Hb.vendorIni(model);
+            ini = vi == null ? null : Parse.ini(Dumps.file(vi, 256 * 1024));
+            if (ini != null && ini.isEmpty()) ini = null;
+            String ed = Hb.edidDir(model);
             List<String> files = new ArrayList<>();
+            Map<String, String> links = new HashMap<>();
+            String[] names = ed == null ? null : new File(ed).list();
             if (names != null) {
                 Arrays.sort(names);
-                for (String n : names) if (Hb.isEdidFileName(n)) files.add(n);
+                for (String n : names) {
+                    if (!Hb.isEdidFileName(n)) continue;
+                    files.add(n);
+                    String l = linkOf(ed + "/" + n);
+                    if (l != null) links.put(n, l);
+                }
             }
             w.builtinFiles = files;
+            w.builtinLinks = links;
+            w.edidDir = ed;
+            if (ed != null && new File(ed, "edid_cfg.ini").exists()) {
+                String l = linkOf(ed + "/edid_cfg.ini");
+                w.edidCfgLink = l == null ? "" : l;
+            }
             w.iniRead = ini != null;
+        }
+    }
+
+    /** The target of a symlink as stored ("../../G0000/tv/x.bin"), or null when the path is not a link. */
+    private static String linkOf(String path) {
+        try {
+            Path p = Paths.get(path);
+            return Files.isSymbolicLink(p) ? Files.readSymbolicLink(p).toString() : null;
+        } catch (Throwable t) {
+            return null;
         }
     }
 
@@ -713,7 +743,7 @@ public final class Collector {
             return;
         }
         h.post(() -> {
-            Edid e = edid(Hb.EDID_DIR + "/" + name);
+            Edid e = w.edidDir == null ? null : edid(w.edidDir + "/" + name);
             main.post(() -> done.accept(e));
         });
     }
@@ -746,7 +776,7 @@ public final class Collector {
         }
         h.post(() -> {
             String res = null;
-            byte[] raw = Dumps.bytes(Hb.EDID_DIR + "/" + name, 4096);
+            byte[] raw = w.edidDir == null ? null : Dumps.bytes(w.edidDir + "/" + name, 4096);
             if (raw != null) {
                 String base = "lumen_edid_" + name.substring(0, name.length() - 4);
                 boolean a = save(base + ".bin", "application/octet-stream", raw);

@@ -7,6 +7,7 @@ import org.lumen.info.hal.HbGmpf;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * One reading of everything LumenInfo shows. Written by the Collector on its thread, then handed to the main
@@ -91,12 +92,16 @@ public final class Snapshot implements Cloneable {
         public int port;
         public String file;              // the built-in EDID file of the selected version
         public boolean fromIni;
+        public String link;              // where it points when the file is a symlink (e.g. ../../G0000/tv/...), else null
         public Edid edid;                // decoded file, null if unreadable
     }
 
     public List<Port> ports;
     public boolean iniRead;
     public List<String> builtinFiles;   // names in the EDID folder
+    public Map<String, String> builtinLinks;   // name -> symlink target, for the names that are links
+    public String edidDir;              // /mnt/vendor/xgimiconfig/<model>/tv
+    public String edidCfgLink;          // tv/edid_cfg.ini (the kernel module's EDID config): its symlink target, or "" when a plain file, null when absent
 
     /** Shallow copy: the Collector replaces lists and objects, it never changes them in place (arrays are copied). */
     public Snapshot copy() {

@@ -453,9 +453,11 @@ public final class Rows {
             add("allm", R.string.r_allm, s.allm == null ? null : s(s.allm ? R.string.on : R.string.off));
         }
         add("edid", R.string.r_edid_version, s.edidVersion == null ? null : "EDID " + Hb.edidVersionName(s.edidVersion));
+        if (s.edidCfgLink != null) add("edid_cfg", R.string.r_edid_cfg, s.edidCfgLink.isEmpty()
+                ? "edid_cfg.ini, " + s(R.string.v_own_file) : "edid_cfg.ini \u2192 " + s.edidCfgLink);
         if (s.ports == null) return;
         for (Snapshot.Port p : s.ports) {
-            String file = p.file.substring(p.file.lastIndexOf('/') + 1);
+            String file = p.file + (p.link != null ? " \u2192 " + p.link : ", " + s(R.string.v_own_file));
             if (!p.fromIni) file += " " + s(R.string.v_file_guess);
             Boolean cable = p.port < s.hdmiConnected.length ? s.hdmiConnected[p.port] : null;
             if (cable != null) addRaw("cable" + p.port, s(R.string.r_port_cable, p.port),

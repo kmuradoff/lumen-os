@@ -326,9 +326,14 @@ public final class MainActivity extends Activity implements Collector.Listener {
             return;
         }
         final String[] names = s.builtinFiles.toArray(new String[0]);
+        final String[] shown = new String[names.length];
+        for (int i = 0; i < names.length; i++) {
+            String l = s.builtinLinks == null ? null : s.builtinLinks.get(names[i]);
+            shown[i] = l == null ? names[i] : names[i] + "  \u2192 " + l;
+        }
         new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-                .setTitle(R.string.builtin_title)
-                .setItems(names, (d, w) -> collector.decodeBuiltin(names[w], e -> details(e, names[w])))
+                .setTitle(s.edidDir == null ? getString(R.string.builtin_title) : getString(R.string.builtin_title) + ": " + s.edidDir)
+                .setItems(shown, (d, w) -> collector.decodeBuiltin(names[w], e -> details(e, names[w])))
                 .setNegativeButton(R.string.close, null)
                 .show();
     }
