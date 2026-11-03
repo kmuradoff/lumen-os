@@ -1,6 +1,7 @@
 #!/bin/bash
-# Compose a TEST system image for the XGIMI "Z9X HB" (codename goat_elegant, model G0130, MT9660 / mt5873, 32-bit
-# userspace, Android 13 vendor with VNDK 33). Never a release.
+# Compose a system image for the XGIMI "Z9X HB" (codename goat_elegant, model G0130, MT9660 / mt5873, 32-bit
+# userspace, Android 13 vendor with VNDK 33): the test builds tN and, with a version VARIANT and --release, the
+# public release image.
 #   t1   the first-boot test: does a 32-bit LineageOS 21 system boot on this vendor at all (first-stage mount, PWM
 #        watchdog, adb)? Bare base, no Lumen app, AOSP test keys. Booted on the HB on 2026-10-29.
 #   t2+  the first Lumen image: everything t1 has, plus the base's platform set, the four APEXes
@@ -35,6 +36,14 @@
 #        decoders, IInterTunnel for the HDMI sideband). Before t10 it never loaded.
 #   t11  LumenInfo (apps/LumenInfo, org.lumen.info) in /system/priv-app/LumenInfo with
 #        privapp-permissions-lumeninfo.xml; HbProjector with the ARC volume fix.
+#   x.y.z[-mark] --release  the public image (first: 1.0.7-beta1): the
+#        Lumen image of the tN builds WITHOUT the two XGIMI-derived files (MediaTek's libstagefright_foundation.so in
+#        /system/lib/hb_vndk33 with hb_media.rc, and hb_audio_policy_configuration.xml) and without their gate props
+#        ro.lumen.hb.c2foundation / ro.lumen.hb.audiopolicy (the hb_audio.rc audio policy action stays inert). Instead
+#        the unchanged Z9X blobs reader (tools/ota/image/z9x_blobs.rc + .sh, pinned by sha256 below) and the HB
+#        allow-list blobs_allow.txt: at post-fs-data it binds the user's own copies of those two files from the
+#        z9x_blobs<slot> partition the installer makes (sys.z9x.blobs). The c2 and audio policy checks of the stock
+#        dump on this server still run (build-time proof of what the allow-list names), nothing of it is installed.
 #
 # Runs ON THE BUILD SERVER (ssh xgimi-builder) as the normal user, with sudo for the loop mounts and for the root
 # copy (owners, modes, SELinux labels and file capabilities must survive). Started by tools/image/compose.sh (or
@@ -42,7 +51,9 @@
 # OUT/<TAG>. OUT is $LUMEN_IMAGE_DIR (compose.sh sets it to ~/<remote_dir> of image.conf), default ~/hb-out.
 #
 #   bash ~/hb-out/in/compose_hb.sh VARIANT [--usb-adb | --release] [--diag]
-#   VARIANT  t1, t2, ...: ro.lumen.version=hb-VARIANT; t1 is the bare image above, every later one the Lumen one
+#   VARIANT  t1, t2, ...: ro.lumen.version=hb-VARIANT; t1 is the bare image above, every later one the Lumen one.
+#            x.y.z or x.y.z-mark (only with --release): the public release, ro.lumen.version=VARIANT,
+#            ro.lumen.version_code=x*10000+y*100+z (y and z below 100), output TAG hb-VARIANT-release
 #   --diag     adds the USB-stick boot logger of the test builds, overlay/debug/z9x_earlylog.{rc,sh} (the same files
 #              as the Z9X DIAG and Play 6 --diag images; init domain su: userdebug only). Output TAG gets "-diag".
 #              t1 always carries it (the first-boot test needed it; t1 stays byte for byte as recorded).
@@ -55,11 +66,13 @@
 #              lines of hb_prop.txt (ro.adb.secure=0, ro.logd.auditd=false, persist.logd.size) are replaced by
 #              ro.adb.secure=1 and persist.sys.usb.config=none. The vendor's init.mt9660.usb.rc then keeps the USB
 #              port a host port (USB sticks work) and stops adbd; adb runs only after the user turns debugging on,
-#              and every new computer has to be allowed on screen. Output TAG hb-VARIANT-release.
+#              and every new computer has to be allowed on screen. Output TAG hb-VARIANT-release. With a tN VARIANT
+#              the test image otherwise unchanged; with a version VARIANT the public image (x.y.z above).
 #
 # Environment (all optional; recorded in BUILD_INFO.txt):
 #   LUMEN_IMAGE_DIR    OUT, see above
-#   BUILD_ID           ro.lumen.build_id, default hb-VARIANT-<UTC minute>; letters, digits and . _ - only
+#   BUILD_ID           ro.lumen.build_id, default hb-VARIANT-<UTC minute> (a release: lumen-hb-VARIANT-<UTC minute>);
+#                      letters, digits and . _ - only
 #   SOURCE_DATE_EPOCH  the one timestamp of every file in the image (mkfs.erofs -T), default now
 # The erofs UUID is derived from TAG and the base sha256 (uuid5), never random. With the same inputs, BUILD_ID and
 # SOURCE_DATE_EPOCH, two composes are meant to give the same image (not proven byte for byte yet).
@@ -83,7 +96,14 @@ for a in "$@"; do
     *) die "unknown option $a" ;;
   esac
 done
-case $V in t[0-9]*) ;; *) die "VARIANT must look like t1, t2, ..." ;; esac
+PUB=0                                  # 1: the public release (a version VARIANT), see x.y.z above
+if [[ $V =~ ^t[0-9] ]]; then :
+elif [[ $V =~ ^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]?)\.(0|[1-9][0-9]?)(-[A-Za-z0-9]+)?$ ]]; then
+  PUB=1
+  PVCODE=$((10#${BASH_REMATCH[1]} * 10000 + 10#${BASH_REMATCH[2]} * 100 + 10#${BASH_REMATCH[3]}))
+  case ${BASH_REMATCH[4]} in -adb|-stick|-release|-diag) die "the version mark ${BASH_REMATCH[4]#-} is a TAG word" ;; esac
+  [ $REL = 1 ] || die "a version VARIANT is the public release: --release"
+else die "VARIANT must look like t1, t2, ... or a version x.y.z[-mark] (with --release)"; fi
 [ $USBADB = 1 ] && [ $REL = 1 ] && die "--usb-adb and --release do not go together"
 TAG=hb-$V-stick; [ $USBADB = 1 ] && TAG=hb-$V-adb; [ $REL = 1 ] && TAG=hb-$V-release
 [ $DIAG = 1 ] && [ $REL = 1 ] && die "a release image carries no boot logger (--diag)"
@@ -92,6 +112,8 @@ TAG=hb-$V-stick; [ $USBADB = 1 ] && TAG=hb-$V-adb; [ $REL = 1 ] && TAG=hb-$V-rel
 LUMEN=1; [ "$V" = t1 ] && LUMEN=0      # t1 stays the bare first-boot image, byte for byte as recorded
 [ "$V" = t1 ] && DIAG=1                # t1 carried the logger (its TAG unchanged; verify_tree.py knows)
 VCODE=${V#t}; VCODE=${VCODE%%[!0-9]*}
+VNAME=hb-$V                            # ro.lumen.version and the About rows
+[ $PUB = 1 ] && VCODE=$PVCODE && VNAME=$V
 
 BK=$HOME/lumen-builder-backup/play6-out
 BASE=$BK/target/product/generic/system.img
@@ -100,7 +122,8 @@ DEXP=$BK/soong/dexpreopt_arm
 OUT=${LUMEN_IMAGE_DIR:-$HOME/hb-out}
 IN=$OUT/in
 T=$OUT/$TAG
-BUILD_ID=${BUILD_ID:-hb-$V-$(date -u +%Y%m%d%H%M)}
+BID0=hb-$V; [ $PUB = 1 ] && BID0=lumen-hb-$V
+BUILD_ID=${BUILD_ID:-$BID0-$(date -u +%Y%m%d%H%M)}
 TS=${SOURCE_DATE_EPOCH:-$(date -u +%s)}
 case $BUILD_ID in *[!A-Za-z0-9._-]*|'') die "BUILD_ID may hold only letters, digits and . _ -" ;; esac
 case $TS in *[!0-9]*|'') die "SOURCE_DATE_EPOCH must be seconds since 1970 (digits only)" ;; esac
@@ -213,6 +236,57 @@ GAPPSPY
     "$IN/hb_media.rc" || die "c2: hb_media.rc does not bind /system/lib/hb_vndk33 over the VNDK v33 copy"
   grep -qx 'on post-fs-data && property:ro.lumen.hb.c2foundation=1' "$IN/hb_media.rc" || die "c2: hb_media.rc trigger changed"
   grep -qx 'ro.lumen.hb.c2foundation=1' "$IN/hb_lumen_prop.txt" || die "c2: hb_lumen_prop.txt lacks ro.lumen.hb.c2foundation=1"
+fi
+if [ $PUB = 1 ]; then
+  # the public release: the two files above stay out of the image; the unchanged Z9X blobs reader binds the user's
+  # own copies. Its two files must be the very bytes of tools/ota/image the Z9X gate recorded (as the gapps files
+  # above); a change on the Z9X side has to be looked at for the HB before it gets here
+  for f in z9x_blobs.rc z9x_blobs.sh blobs_allow.txt; do
+    [ -s "$IN/$f" ] || die "missing $IN/$f (tools/image/compose.sh stages it)"
+  done
+  for kv in z9x_blobs.rc:40333ab318e13009cf82283fe2a3361683687a70af17063d104587783751d6e1 \
+            z9x_blobs.sh:38456fad478f0cff27c1da9b28edfec26b0a0e68e9f5d84cea50fda33be2b5c4; do
+    [ "$(sha256sum "$IN/${kv%%:*}" | awk '{print $1}')" = "${kv#*:}" ] || die "blobs: $IN/${kv%%:*} is not the pinned Z9X file"
+  done
+  # the HB allow-list names exactly the two files the test builds carry: the pinned stock libstagefright_foundation.so
+  # (checked above) bound over the VNDK v33 copy, and the staged audio policy file (checked above: the vendor file
+  # without XGIMI SUB Out) bound over the vendor file, derived from the pinned vendor file by its from= line deletes
+  python3 -I - "$IN/blobs_allow.txt" "$SF_SHA" "$IN/hb_audio_policy_configuration.xml" \
+      "$HOME/devices/g0130_mt9660/work/fs/vendor/etc/audio_policy_configuration.xml" <<'BLOBSPY' || die "blobs_allow.txt is not the HB allow-list of the two files"
+import hashlib, re, sys
+allow, sf_sha, ap, vendor = sys.argv[1:5]
+def sha(b):
+    return hashlib.sha256(b).hexdigest()
+sets, rows = [], []
+for i, line in enumerate(open(allow, encoding="utf-8"), 1):
+    line = line.rstrip("\n")
+    if not line.strip() or line.startswith("#"):
+        continue
+    if line.startswith("set="):
+        sets.append(line[4:])
+        continue
+    rows.append(line.split(" "))
+if len(sets) != 1 or not re.fullmatch(r"hb-[A-Za-z0-9.-]+", sets[0]):
+    sys.exit("ERROR: blobs: want one set=hb-... line, got %s" % sets)
+SF = "/apex/com.android.vndk.v33/lib/libstagefright_foundation.so"
+AP = "/vendor/etc/audio_policy_configuration.xml"
+ap_sha = sha(open(ap, "rb").read())
+want = [[sf_sha, "lib/hb_vndk33/libstagefright_foundation.so", SF, "bind=" + SF],
+        [ap_sha, "etc/xgimi/hb_audio_policy_configuration.xml", AP, "bind=" + AP]]
+if [r[:4] for r in rows] != want or len(rows[0]) != 4 or len(rows[1]) != 5:
+    sys.exit("ERROR: blobs: rows %s, want %s (+ from= on the audio policy)" % (rows, want))
+m = re.fullmatch(r"from=([0-9a-f]{64}):((?:\d+,\d+d;)*\d+,\d+d)", rows[1][4])
+v = open(vendor, "rb").read()
+if not m or m.group(1) != sha(v):
+    sys.exit("ERROR: blobs: from= is not the sha256 of %s with N,Md deletes" % vendor)
+vl, drop = v.split(b"\n"), set()
+for a, b in re.findall(r"(\d+),(\d+)d", m.group(2)):
+    drop |= set(range(int(a), int(b) + 1))
+if sha(b"\n".join(x for i, x in enumerate(vl, 1) if i not in drop)) != ap_sha:
+    sys.exit("ERROR: blobs: the from= deletes of the vendor file do not give the audio policy file")
+print("blobs: allow-list set=%s: libstagefright_foundation %s..., audio policy %s... (= vendor %s... minus %s)"
+      % (sets[0], sf_sha[:8], ap_sha[:8], m.group(1)[:8], m.group(2)))
+BLOBSPY
 fi
 for t in mkfs.erofs fsck.erofs; do [ -x "$HOST/$t" ] || die "no host tool $HOST/$t"; done
 [ -s "$BASE" ] || die "no base image $BASE"
@@ -513,8 +587,9 @@ if [ $LUMEN = 1 ]; then
   #   t3: the UI click volume (hb_audio.rc, gated on ro.lumen.hb.clickcurve=1 of hb_lumen_prop.txt; file checked above)
   inst 0644 "$IN/hb_audio.rc" "$S/etc/init/hb_audio.rc"
   inst 0644 "$IN/hb_audio_policy_engine_stream_volumes.xml" "$S/etc/xgimi/hb_audio_policy_engine_stream_volumes.xml"
-  #   t7: the audio policy (hb_audio.rc, gated on ro.lumen.hb.audiopolicy=1 of hb_lumen_prop.txt; file checked above)
-  inst 0644 "$IN/hb_audio_policy_configuration.xml" "$S/etc/xgimi/hb_audio_policy_configuration.xml"
+  #   t7: the audio policy (hb_audio.rc, gated on ro.lumen.hb.audiopolicy=1 of hb_lumen_prop.txt; file checked above).
+  #       Not in the public release: there z9x_blobs.sh binds the user's own copy (blobs_allow.txt)
+  [ $PUB = 1 ] || inst 0644 "$IN/hb_audio_policy_configuration.xml" "$S/etc/xgimi/hb_audio_policy_configuration.xml"
   #   t8c: smart_ak_server / infoDisp_server out of init's 5 s restart loop (hb_vendor_services.rc):
   #       both can never link on the G0130 (stock too); stop only on init.svc.NAME=restarting, never a running one
   inst 0644 "$IN/hb_vendor_services.rc" "$S/etc/init/hb_vendor_services.rc"
@@ -635,9 +710,20 @@ SETUPPY
   done
   echo "c2: stock libstagefright_foundation.so $(wc -l < "$SFW/stock.syms") exports, GSI v33 copy $(wc -l < "$SFW/gsi.syms"), none missing, the 11 MTK video MIME types only in the stock copy"
   rm -rf "$SFW"
-  sudo install -d -o root -g root -m 0755 "$S/lib/hb_vndk33"
-  inst 0644 "$SF_STOCK" "$S/lib/hb_vndk33/libstagefright_foundation.so"
-  inst 0644 "$IN/hb_media.rc" "$S/etc/init/hb_media.rc"
+  if [ $PUB = 0 ]; then
+    sudo install -d -o root -g root -m 0755 "$S/lib/hb_vndk33"
+    inst 0644 "$SF_STOCK" "$S/lib/hb_vndk33/libstagefright_foundation.so"
+    inst 0644 "$IN/hb_media.rc" "$S/etc/init/hb_media.rc"
+  else
+    #   the public release: the unchanged Z9X blobs reader and the HB allow-list (checked above). z9x_blobs.rc execs
+    #   z9x_blobs.sh at post-fs-data (su domain, as z9x_gapps.rc), the same trigger the hb_media.rc and hb_audio.rc
+    #   binds use, before 'on boot' starts the codec2 HAL and audioserver. Started as "/system/bin/sh FILE", so the
+    #   fs_config 0644 under /system/etc does not matter. Both lines of the list have bind=, so no placeholder file
+    #   goes into the image; the GSI v33 copy checked above and the vendor file are the bind targets.
+    inst 0644 "$IN/z9x_blobs.rc" "$S/etc/init/z9x_blobs.rc"
+    inst 0755 "$IN/z9x_blobs.sh" "$S/etc/z9x/z9x_blobs.sh"
+    inst 0644 "$IN/blobs_allow.txt" "$S/etc/z9x/blobs_allow.txt"
+  fi
   #   every priv-app has its privapp-permissions entries (tools/play6/check_privapp.py, read only)
   sudo python3 -I "$IN/check_privapp.py" "$S" || die "privapp-permissions check failed"
 fi
@@ -645,7 +731,8 @@ fi
 # 4. properties: appended to /system/product/etc/build.prop, which init reads last (it wins over the vendor)
 PROPS=$T/props_added.txt
 { echo
-  if [ $LUMEN = 1 ]; then echo "# ---- Lumen OS HB test build ($TAG), devices/goat_elegant/image/compose_hb.sh"
+  if [ $PUB = 1 ]; then echo "# ---- Lumen OS HB release ($TAG), devices/goat_elegant/image/compose_hb.sh"
+  elif [ $LUMEN = 1 ]; then echo "# ---- Lumen OS HB test build ($TAG), devices/goat_elegant/image/compose_hb.sh"
   else echo "# ---- Lumen OS HB first-boot test ($TAG), devices/goat_elegant/image/compose_hb.sh"; fi
   if [ $REL = 1 ]; then
     # release: the test lines of hb_prop.txt out, adb secured (see --release above)
@@ -655,14 +742,19 @@ PROPS=$T/props_added.txt
   else
     grep -v '^#' "$IN/hb_prop.txt" | sed '/^$/d'
   fi
-  echo "ro.lumen.version=hb-$V"
+  echo "ro.lumen.version=$VNAME"
   echo "ro.lumen.build_id=$BUILD_ID"
   if [ $LUMEN = 1 ]; then
-    grep -v '^#' "$IN/hb_lumen_prop.txt" | sed '/^$/d'
+    if [ $PUB = 1 ]; then
+      # the public release: the gates of the two files that are not in it out (hb_audio.rc's action stays inert)
+      grep -v '^#' "$IN/hb_lumen_prop.txt" | sed '/^$/d' | grep -v -E '^ro\.lumen\.hb\.(c2foundation|audiopolicy)=1$'
+    else
+      grep -v '^#' "$IN/hb_lumen_prop.txt" | sed '/^$/d'
+    fi
     echo "ro.lumen.version_code=$VCODE"
     # the About rows, as the Z9X image writes them (tools/lumen_v1.sh): Lumen OS name and version, no LineageOS one
-    echo "ro.build.display.id=Lumen OS hb-$V ($BUILD_ID)"
-    echo "ro.lineage.display.version=hb-$V (kmuradoff)"
+    echo "ro.build.display.id=Lumen OS $VNAME ($BUILD_ID)"
+    echo "ro.lineage.display.version=$VNAME (kmuradoff)"
   fi
   [ $USBADB = 1 ] && echo "persist.sys.usb.config=adb"
   true; } > "$PROPS"
@@ -674,6 +766,12 @@ if [ $REL = 1 ]; then
   for l in ro.adb.secure=0 persist.sys.usb.config=adb ro.logd.auditd=false; do
     grep -qx "$l" "$PROPS" && die "props: release still has the test line $l"
   done
+fi
+if [ $PUB = 1 ]; then
+  for l in "ro.lumen.version=$V" "ro.lumen.version_code=$VCODE" "ro.build.display.id=Lumen OS $V ($BUILD_ID)"; do
+    grep -qxF "$l" "$PROPS" || die "props: release lacks $l"
+  done
+  ! grep -qE '^ro\.lumen\.hb\.(c2foundation|audiopolicy)=' "$PROPS" || die "props: release still has a gate of a file it does not ship"
 fi
 sudo sh -c "cat '$PROPS' >> '$S/product/etc/build.prop'"
 echo "props: $(grep -c = "$PROPS") lines appended to /system/product/etc/build.prop"
@@ -718,7 +816,8 @@ BUDGET=$((688357376 + 1340000000))
 ( cd "$T" && sha256sum "$(basename "$IMG")" > "$(basename "$IMG").sha256" )
 { echo "tag=$TAG"; echo "build_id=$BUILD_ID"; echo "base_sha256=$got"; echo "image=$(basename "$IMG")"
   echo "size=$size"; echo "sha256=$(awk '{print $1}' "$IMG.sha256")"; echo "budget=$BUDGET"
-  echo "source_date_epoch=$TS"; echo "uuid=$UUID"; echo "diag=$DIAG"; } > "$T/BUILD_INFO.txt"
+  echo "source_date_epoch=$TS"; echo "uuid=$UUID"; echo "diag=$DIAG"
+  if [ $PUB = 1 ]; then echo "version=$V"; echo "version_code=$VCODE"; fi; } > "$T/BUILD_INFO.txt"
 cat "$T/BUILD_INFO.txt"
 # the root copy is ~1.6 GB of root-owned files: removed, the image and the logs stay
 sudo rm -rf "$R" "$MB" "$ME"

@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS on the XGIMI Z9X HB: the MediaTek / XGIMI files a PUBLIC image takes at boot from the user's own
+# z9x_blobs partition: MediaTek's VNDK libstagefright_foundation (the vendor codec2 plugin libcodec2.MTK.so needs
+# it: c2.mtk.* decoders, IInterTunnel for the HDMI sideband) and the vendor audio policy without XGIMI's
+# AUDIO_DEVICE_OUT_USB_SUB port (Bluetooth, ARC / eARC, SPDIF, USB, remote mic). Hashes only; the files themselves
+# are proprietary and are never in git or in a public image. The installer copies them from the user's own stock
+# (or Lumen) system with adb and refuses any file whose sha256 is not listed here.
+# Image path /system/etc/z9x/blobs_allow.txt; installer copy installer/lib/hb/blobs_allow.txt (identical).
+# Read by the unchanged Z9X reader /system/etc/z9x/z9x_blobs.sh (tools/ota/image).
+#
+# set=<id> names this exact file set (sys.z9x.blobs.set).
+# <sha256> <path inside the blobs tar> <stock source path> [bind=<path>] [from=<sha256>:<sed>]
+#   path       path relative to /system/ (also the fallback source: a private test image has the file there),
+#   bind=      z9x_blobs.sh binds the file over this vendor / VNDK APEX file (no placeholder in the image),
+#   from=      the installer may derive the file from the stock file at <stock source path> with that
+#              sha256 by deleting lines (sed 'N,Md' commands only), then checks <sha256> as usual.
+# The installer pulls <stock source path> first, then /system/<path>.
+set=hb-v61624-a
+b029d806d78f9d560723afe75dc3ff4600d38765f734cf03334d74030961854f lib/hb_vndk33/libstagefright_foundation.so /apex/com.android.vndk.v33/lib/libstagefright_foundation.so bind=/apex/com.android.vndk.v33/lib/libstagefright_foundation.so
+1f5cb6569af7285f66d88b774ab2232d9624e8c347034f810f6f842fd0c0fae9 etc/xgimi/hb_audio_policy_configuration.xml /vendor/etc/audio_policy_configuration.xml bind=/vendor/etc/audio_policy_configuration.xml from=d4783b3ed42902b888b4793d10a1e19af8548b710ee5988bc66afafb79e8d077:282,285d;402,403d

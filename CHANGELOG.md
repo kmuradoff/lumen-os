@@ -24,6 +24,19 @@
   Если проектор не вернулся после запуска, говорит, что делать, как прислать журнал загрузки и как
   правильно откатиться для вашей партии.
 
+## XGIMI Z9X HB, бета 1 (1.0.7-beta1), ноябрь 2026
+
+Первая тестовая сборка Lumen OS для XGIMI Z9X HB (G0130) с прошивкой XGIMI V6.16.24. Релиз с тегом `hb-1.0.7-beta1`
+помечен как Pre-release, инструкция: [«XGIMI Z9X HB»](docs/install/hb/ru.md). Сборка проверена на одном проекторе:
+ставьте, если готовы тестировать и писать о проблемах.
+
+- Установка с компьютера по Wi-Fi. Кабель USB A–A нужен только в режиме fastboot. Шаг vbmeta вы делаете сами, с
+  `vbmeta.img` Google. Установка стирает все данные.
+- Два файла XGIMI и MediaTek (библиотека видео и файл настроек звука) в образ не входят: установщик копирует их с
+  вашего же проектора, сверяет с контрольными суммами и записывает в раздел `z9x_blobs`, как на Z9X.
+- Пока нет: сервисов Google, обновлений по Wi-Fi (планируются к первому полному релизу), приёмника AirPlay.
+- Откат на сток: прошивка XGIMI с флешки, файл даёт поддержка XGIMI.
+
 ## 1.0.7, октябрь 2026
 
 Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
@@ -262,6 +275,20 @@ Newest first. Versions 1.0.x are for the XGIMI Z9X; the XGIMI Play 6 has its own
   them. It asks to keep only a FAT32 stick in the USB port at every power-on and notices a USB Ethernet
   adapter in the port. If the projector does not come back after a start, it says what to do, how to send the
   boot log and the right way back to stock for your batch.
+
+## XGIMI Z9X HB, beta 1 (1.0.7-beta1), November 2026
+
+The first test build of Lumen OS for the XGIMI Z9X HB (G0130) on XGIMI firmware V6.16.24. The release has the tag
+`hb-1.0.7-beta1` and is marked Pre-release; the guide is [XGIMI Z9X HB](docs/install/hb/en.md). It was tested on
+one projector: install it if you are ready to test and report back.
+
+- Installs from a computer over Wi-Fi. The USB A-to-A cable is needed only in fastboot mode. You do the vbmeta
+  step yourself, with Google's `vbmeta.img`. The install erases all data.
+- Two XGIMI and MediaTek files (a video library and the sound settings file) are not in the image: the installer
+  copies them from your own projector, checks them against checksums and writes them into the `z9x_blobs`
+  partition, as on the Z9X.
+- Not there yet: Google services, updates over Wi-Fi (planned for the first full release), the AirPlay receiver.
+- Back to stock: XGIMI's firmware from a USB stick; XGIMI support gives out the file.
 
 ## 1.0.7, October 2026
 

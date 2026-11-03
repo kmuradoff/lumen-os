@@ -4,7 +4,7 @@
 #
 #   lumen-install.cmd [command] [-Image FILE] [-Serial S] [-KeepData] [-Wipe format|factory-reset]
 #                     [-Lang en|ru] [-Blobs partition|embedded] [-NoBlobs] [-UnsignedImage] [-Zip FILE] [-Remove]
-#                     [-Ip ADDRESS[:PORT]] [-Device z9x|play6] [-Path FOLDER] [-GappsZip FILE] [-PlatformTools DIR]
+#                     [-Ip ADDRESS[:PORT]] [-Device z9x|play6|ID] [-Path FOLDER] [-GappsZip FILE] [-PlatformTools DIR]
 #                     [-ErofsUtils DIR]
 #   commands: (none = continue) check | backup | blobs | vbmeta | flash | verify | gsf | rescue | gapps | status | reset
 #   XGIMI Play 6 (-Ip: its Wi-Fi address; it has no USB debugging): (none) | check | backup | flash | verify |
@@ -44,6 +44,18 @@
 # and filled on the projector over adb root, lib\play6\gapps_fill.sh); the data wipe is Android's own factory reset.
 # Never vendor, boot, recovery, MBOOT, env, calibration or factory data. Its model, firmware list and image name:
 # lib\devices.conf.
+# Projectors with FLOW=ab-fastbootd in lib\devices.conf (-Device ID; their model codes, firmware, slots and image name
+# are there; guide: docs/install/<GUIDE>/<language>.md). This computer talks to their system over the network
+# (-Ip ADDRESS; on stock, Developer options > USB debugging opens it); fastbootd is reached over a USB A-to-A cable in
+# the projector's USB port, plugged in when the installer asks. Commands: (none) = check, backup (asked), vbmeta
+# (asked), blobs, flash, continued where it stopped | check (read only) | backup | vbmeta (shows the one manual step:
+# Google's vbmeta.img, both slots; never run by the installer) | blobs (the MediaTek / XGIMI files of the profile's
+# allow-list, from YOUR projector's own system) | flash (one fastbootd visit: z9x_blobs_<slot>, system_<slot>, then
+# 'fastboot format:ext4' of userdata and metadata, the full data wipe; no -KeepData) | verify (after the setup, with
+# debugging on again) | status | reset (-Device ID reset forgets only that projector's progress). It writes only
+# system_<slot> and z9x_blobs_<slot> (create, resize, flash) of the running slot when the profile's SLOTS has it, and
+# formats userdata and metadata. Never vbmeta, boot, vendor, the KEEP partitions, the other slot, a delete, erase or
+# -w (Fb-Allowed). rescue, gapps, gsf and stick: not yet.
 param([string]$Command = "", [string]$Image = "", [string]$Serial = "", [switch]$KeepData,
       [string]$Wipe = "format", [string]$Lang = "", [string]$Blobs = "", [switch]$NoBlobs, [switch]$UnsignedImage,
       [string]$Zip = "", [switch]$Remove, [string]$Ip = "", [string]$Device = "", [string]$Path = "",
@@ -70,7 +82,10 @@ if (-not $Blobs) { $Blobs = if ($conf["BLOBS"]) { $conf["BLOBS"] } else { "parti
 if (@("partition", "embedded", "none") -notcontains $Blobs) { Write-Host "-Blobs partition|embedded|none (-NoBlobs)"; exit 2 }
 if (@("format", "factory-reset") -notcontains $Wipe) { Write-Host "-Wipe format|factory-reset"; exit 2 }
 if ($Command -ne "gapps" -and ($Zip -or $Remove)) { Write-Host "-Zip / -Remove belong to 'gapps'"; exit 2 }
-if (@("", "z9x", "play6") -notcontains $Device) { Write-Host "-Device z9x|play6"; exit 2 }
+# -Device: z9x, play6, or a projector of lib\devices.conf with FLOW=ab-fastbootd (read here, before the functions)
+$dc = Join-Path (Join-Path $Here "lib") "devices.conf"
+$AbfIdsTop = @(if (Test-Path -LiteralPath $dc) { Get-Content -LiteralPath $dc -Encoding UTF8 | ForEach-Object { if ("$_" -cmatch '^([a-z0-9]+)\.FLOW=ab-fastbootd$') { $Matches[1] } } })
+if ((@("", "z9x", "play6") + $AbfIdsTop) -notcontains $Device) { Write-Host ((@("-Device z9x", "play6") + $AbfIdsTop) -join "|"); exit 2 }
 $RelDevice = if ($conf["DEVICE"]) { $conf["DEVICE"] } else { "" }   # the projector this download's image is for (none: z9x)
 $script:Projector = "z9x"     # the projector profile (Resolve-Device); the Z9X path is the one this script always had
 $script:SD = $StateDir        # where the device's progress is kept (the Z9X: $StateDir\state, as always)
@@ -366,6 +381,16 @@ function Fb-Allowed($act, $part) {
     if ("${act}:$part" -ceq "flash:misc" -and $script:P6BcbOk) { return $true }
     return (@("flash:system", "create:lumen_gapps", "resize:lumen_gapps", "delete:lumen_gapps") -ccontains "${act}:$part")
   }
+  # FLOW=ab-fastbootd: system and z9x_blobs of the slot Abf-Fbd-Check found running ($script:AbfS, one of SLOTS), and
+  # the format of userdata and metadata when WIPE_PARTS names them. No delete, erase, vbmeta, KEEP partition or
+  # other slot.
+  if ($script:Prof["FLOW"] -ceq "ab-fastbootd") {
+    $sx = $script:AbfS
+    if (-not $sx -or (@("$($script:Prof['SLOTS'])" -split " ") -cnotcontains $sx.TrimStart('_'))) { return $false }
+    if (@("flash:system$sx", "create:z9x_blobs$sx", "resize:z9x_blobs$sx", "flash:z9x_blobs$sx") -ccontains "${act}:$part") { return $true }
+    if ((@("format:userdata", "format:metadata") -ccontains "${act}:$part") -and (@("$($script:Prof['WIPE_PARTS'])" -split " ") -ccontains $part)) { return $true }
+    return $false
+  }
   $s = State-Get slot
   $ok = @("flash:system", "flash:z9x_blobs$s", "create:z9x_blobs$s", "resize:z9x_blobs$s",
           "create:z9x_gapps$s", "resize:z9x_gapps$s", "format:z9x_gapps$s", "delete:z9x_gapps$s", "flash:z9x_gapps$s",
@@ -380,7 +405,8 @@ function Fb-Do($act, $part, $arg) {
     "resize" { Fb resize-logical-partition $part $arg | Out-Host }
     "delete" { Fb delete-logical-partition $part | Out-Host }
     "format" {
-      if ($part -eq "userdata") { Fb "--fs-options=casefold,projid" format:f2fs userdata | Out-Host }
+      if ($script:Prof["FLOW"] -ceq "ab-fastbootd") { Fb format:ext4 $part | Out-Host }   # fastbootd says raw: the type is given
+      elseif ($part -eq "userdata") { Fb "--fs-options=casefold,projid" format:f2fs userdata | Out-Host }
       elseif ($part -eq "metadata") { Fb format:f2fs metadata | Out-Host }
       else { Fb format:ext4 $part | Out-Host }  # cache, z9x_gapps_<slot>
     }
@@ -417,6 +443,10 @@ function Find-Image {
 function Image-Owner {
   if ($script:Projector -ne "z9x") { return }
   if ((Split-Path -Leaf $script:Image) -like "*play6*") { Die (T "this image is for the $(Dev-Name play6), not for the XGIMI Z9X. Nothing was written." "этот образ для $(Dev-Name play6), а не для XGIMI Z9X. Ничего не записано.") }
+  foreach ($id in @(Abf-Ids)) {   # lumen-os-<IMAGE_TOKEN>-...: the FLOW=ab-fastbootd projectors of lib\devices.conf
+    $tok = Devconf-Get $id "IMAGE_TOKEN"
+    if ($tok -and (Split-Path -Leaf $script:Image) -clike "lumen-os-$tok-*") { Die (T "this image is for the $(Dev-Name $id), not for the XGIMI Z9X. Nothing was written." "этот образ для $(Dev-Name $id), а не для XGIMI Z9X. Ничего не записано.") }
+  }
 }
 
 # the edition of the image (1.0.1): 0 = Lumen OS without Google (-nogms- in the name, ro.z9x.gms=0), 1 = with
@@ -455,6 +485,9 @@ function Check-Tools {  # Pt-Setup ran: adb and fastboot of our own, 35 or newer
     if (-not ((Test-Path (Join-Path $script:PtDir "make_f2fs$($script:PtExt)")) -and (Test-Path (Join-Path $script:PtDir "mke2fs$($script:PtExt)")))) {
       Die (T "make_f2fs.exe/mke2fs.exe missing next to fastboot ($($script:PtDir)): use the official Platform-Tools zip" "нет make_f2fs.exe/mke2fs.exe рядом с fastboot ($($script:PtDir)): используйте официальный архив Platform-Tools")
     }
+  }
+  if ($script:Prof["FLOW"] -ceq "ab-fastbootd" -and -not (Test-Path -LiteralPath (Join-Path $script:PtDir "mke2fs$($script:PtExt)"))) {   # 'fastboot format:ext4' makes the file system with it
+    Die (T "mke2fs missing next to fastboot ($($script:PtDir)): use the official Platform-Tools zip. Nothing was done." "нет mke2fs рядом с fastboot ($($script:PtDir)): используйте официальный архив Platform-Tools. Ничего не сделано.")
   }
   Ok "adb $($script:PtAdbV), fastboot $($script:PtFbV)"
 }
@@ -525,11 +558,13 @@ function Cmd-Check { Check-Tools; Check-Device; Check-Image; Ok (T "check passed
 
 function Cmd-Backup {
   $pre = ""
-  if ($script:Projector -eq "play6") { if (-not (Play6-Adb 60)) { Die (P6-NoConn) }; $pre = "play6-" } else { Pick-Device }
+  if ($script:Projector -eq "play6") { if (-not (Play6-Adb 60)) { Die (P6-NoConn) }; $pre = "play6-" }
+  elseif (Abf-On) { if (-not (Abf-Adb 60)) { Die (P6-NoConn) }; $pre = "$($script:Projector)-" }
+  else { Pick-Device }
   $d = Join-Path $BackupRoot ($pre + (Get-Date -Format "yyyyMMdd-HHmm"))
   New-Item -ItemType Directory -Force -Path (Join-Path $d "apps"), (Join-Path $d "sdcard"), (Join-Path $d "settings") | Out-Null
   Say (T "backup to $d" "резервная копия в $d")
-  if ($script:Projector -eq "play6") {
+  if ($script:Projector -eq "play6" -or (Abf-On)) {
     Say (T "over Wi-Fi this takes about 1 minute per GB" "по Wi-Fi это около минуты на каждый ГБ")
   } elseif ((State-Get image_gms) -eq "0") {
     Say (T "Recommended: remove your Google account on the projector first (Settings > Accounts). Lumen OS without Google does not ask for it, but a later switch to an image with Google services would (Factory Reset Protection)." "Рекомендуется: сначала удалите аккаунт Google на проекторе (Настройки > Аккаунты). Lumen OS без Google его не спросит, но при переходе позже на образ с сервисами Google его спросит защита от сброса.")
@@ -1380,7 +1415,8 @@ function Z9x-Gapps-Finish {  # an install of an older installer that waits on th
 # Z9X runs on the constants at the top and does not need lib\devices.conf (it only names other projectors from it).
 $DevConf = Join-Path $Here "lib\devices.conf"
 $PKeys = @("NAME", "MODEL", "BOARD", "FB_PRODUCT", "VENDOR_OK", "CERT", "IMAGE_TOKEN", "IMAGE_FS", "VERSION_PROP", "LUMEN_PROP",
-           "LOGICAL", "SUPER_RESERVE", "GUIDE", "RESTORE_BIN", "RESTORE_MD5")
+           "LOGICAL", "SUPER_RESERVE", "GUIDE", "RESTORE_BIN", "RESTORE_MD5", "FLOW", "SLOTS", "KEEP", "WIPE_PARTS",
+           "SYSTEM_MAX", "BLOBS_ALLOW")
 $script:Prof = @{}
 function Devconf-Lines { if (Test-Path -LiteralPath $DevConf) { @(Get-Content -LiteralPath $DevConf -Encoding UTF8) } else { @() } }
 function Devconf-Check {  # stops on a missing file, a broken line, an unknown key or a key given twice
@@ -1421,13 +1457,15 @@ function Join-And($items) {  # "a, b and c" (T)
   if ($items.Count -le 1) { return ($items -join "") }
   return (($items[0..($items.Count - 2)] -join ", ") + " " + (T "and" "и") + " " + $items[-1])
 }
-function Profiles-Named {  # "XGIMI Z9X (G0082) and XGIMI Play 6 (...)": every projector of lib\devices.conf
-  $nm = @{}; $mo = @{}; $order = @()
+function Profiles-Named {  # "XGIMI Z9X (G0082) and XGIMI Play 6 (...)": every projector of lib\devices.conf with a built-in
+  # flow (a FLOW=ab-fastbootd one is named by its own path, Abf-Other-Hint)
+  $nm = @{}; $mo = @{}; $fl = @{}; $order = @()
   foreach ($l in (Devconf-Lines)) {
     if ($l -cmatch '^([a-z0-9]+)\.NAME=(.*)$') { $nm[$Matches[1]] = $Matches[2]; $order += $Matches[1] }
     elseif ($l -cmatch '^([a-z0-9]+)\.MODEL=(.*)$') { $mo[$Matches[1]] = $Matches[2] }
+    elseif ($l -cmatch '^([a-z0-9]+)\.FLOW=') { $fl[$Matches[1]] = $true }
   }
-  return (Join-And @($order | ForEach-Object { "$($nm[$_]) ($($mo[$_]))" }))
+  return (Join-And @($order | Where-Object { -not $fl.ContainsKey($_) } | ForEach-Object { "$($nm[$_]) ($($mo[$_]))" }))
 }
 function Load-Profile($id) {  # id: $script:Prof (NAME, MODEL, ...) of that projector
   Devconf-Check
@@ -1439,9 +1477,22 @@ function Load-Profile($id) {  # id: $script:Prof (NAME, MODEL, ...) of that proj
   }
   if ($script:Prof["SUPER_RESERVE"] -notmatch '^[0-9]+$') { Die "internal: lib\devices.conf: $id.SUPER_RESERVE" }
   if ($script:Prof["LUMEN_PROP"] -notmatch ' ') { Die "internal: lib\devices.conf: $id.LUMEN_PROP" }
+  if (-not $script:Prof["FLOW"]) { return }
+  # FLOW=ab-fastbootd: every one of its keys; what they may name is narrowed here (Fb-Allowed narrows it again)
+  if ($script:Prof["FLOW"] -cne "ab-fastbootd") { Die "internal: lib\devices.conf: $id.FLOW=$($script:Prof['FLOW'])" }
+  foreach ($k in @("SLOTS", "KEEP", "WIPE_PARTS", "SYSTEM_MAX", "BLOBS_ALLOW")) {
+    if (-not $script:Prof[$k]) { Die "internal: lib\devices.conf: '$id' has no ${k}: re-download the installer" }
+  }
+  if ($script:Prof["SYSTEM_MAX"] -notmatch '^[0-9]+$') { Die "internal: lib\devices.conf: $id.SYSTEM_MAX" }
+  foreach ($k in (Abf-List SLOTS)) { if (@("a", "b") -cnotcontains $k) { Die "internal: lib\devices.conf: $id.SLOTS" } }
+  foreach ($k in (Abf-List WIPE_PARTS)) { if (@("userdata", "metadata") -cnotcontains $k) { Die "internal: lib\devices.conf: $id.WIPE_PARTS" } }
+  if ($script:Prof["BLOBS_ALLOW"] -cnotmatch '^lib/.*\.txt$') { Die "internal: lib\devices.conf: $id.BLOBS_ALLOW" }
+  if ($script:Prof["BLOBS_ALLOW"].Contains("..")) { Die "internal: lib\devices.conf: $id.BLOBS_ALLOW" }
+  if ($script:Prof["IMAGE_FS"] -cne "erofs") { Die "internal: lib\devices.conf: $id.IMAGE_FS (ab-fastbootd: erofs)" }
 }
 function Other-Hint($model, $board) {  # the Z9X check met another projector this installer knows: its way in
   if ((Profile-Of $model $board) -eq "play6") { return " " + (T "It is an $(Dev-Name play6): it installs over Wi-Fi, run the installer with -Ip ADDRESS (see its section of the guide)." "Это $(Dev-Name play6): он ставится по Wi-Fi, запустите установщик с -Ip АДРЕС (см. его раздел инструкции).") }
+  if (Abf-Is (Profile-Of $model $board)) { return (Abf-Other-Hint $model $board) }
   return ""
 }
 function P6-Unfinished {  # a Play 6 install is saved that was checked and has not reached the wipe yet
@@ -1457,11 +1508,13 @@ function Z9x-Unfinished {
   return (($c -contains "step_check=done") -and -not ($c -contains "step_flash=done"))
 }
 function Resolve-Device {  # the projector: -Device, else -Ip or 'stick' (Play 6), this download, an unfinished own build
-  if (@("", "z9x", "play6") -notcontains $RelDevice) { Die "internal: release.conf DEVICE=${RelDevice}: re-download the installer" }
+  if (@("", "z9x", "play6") -notcontains $RelDevice -and -not (Abf-Is $RelDevice)) { Die "internal: release.conf DEVICE=${RelDevice}: re-download the installer" }
   # A download names its projector (release.conf DEVICE, none = the Z9X), so a Z9X download behaves exactly as it
   # always did, also on a computer that keeps an unfinished Play 6 install. Only your own builds
   # (-UnsignedImage, not bound to a download) let an unfinished install name the projector.
+  # A download for a FLOW=ab-fastbootd projector means it with -Ip and 'stick' too (never the Play 6).
   if ($Device) { $script:Projector = $Device }
+  elseif (Abf-Is $RelDevice) { $script:Projector = $RelDevice }
   elseif ($Ip -or $Command -eq "stick") { $script:Projector = "play6" }
   elseif ($RelDevice) { $script:Projector = $RelDevice }
   elseif ($UnsignedImage -and (P6-Unfinished)) {
@@ -1473,6 +1526,10 @@ function Resolve-Device {  # the projector: -Device, else -Ip or 'stick' (Play 6
   if ($script:Projector -eq "play6") {
     Load-Profile "play6"
     $script:SD = Join-Path $StateDir "play6"
+    $script:ImgGlob = "lumen-os-$($script:Prof['IMAGE_TOKEN'])-*-system.img"
+  } elseif (Abf-Is $script:Projector) {
+    Load-Profile $script:Projector
+    $script:SD = Join-Path $StateDir $script:Projector
     $script:ImgGlob = "lumen-os-$($script:Prof['IMAGE_TOKEN'])-*-system.img"
   }
 }
@@ -2686,6 +2743,564 @@ function Play6-Not-Needed($c) {  # the Z9X commands the Play 6 has no use for
   Die (T "'$c' is not needed on the $nm. Nothing was done." "на $nm шаг '$c' не нужен. Ничего не сделано.")
 }
 
+# ------------------------------------------------------------------ projectors with FLOW=ab-fastbootd (see lumen-install.sh, same section)
+# A virtual A/B projector whose stock Android has adb over the network only (port 5555; Developer options > USB
+# debugging opens it, stock asks for no allow prompt) and whose fastbootd turns the one USB port into a device port:
+# the A-to-A cable goes in when the installer asks, right before 'adb reboot fastboot' (Play6-Adb's way of
+# connecting: $script:AdbT = ADDR:PORT, $script:Serial = ro.serialno, the fastboot serial). What the projector IS
+# comes from its profile ($script:Prof); what may be written is fixed in Fb-Allowed: z9x_blobs<slot> (create,
+# resize, flash) and system<slot> of the running slot when SLOTS has it, then 'fastboot format:ext4' of WIPE_PARTS
+# (fastbootd reports them as raw, so the type is always given; mke2fs of the Platform-Tools makes them). Never
+# vbmeta (the user types that step: 'vbmeta'), never -w, erase, delete, --slot, a KEEP partition or the other slot.
+# fastbootd has no idle timeout, so one visit writes and wipes. A staged stock update shows in fastbootd
+# (snapshot-update-status, *-cow): it stops there, nothing written. Steps: check -> backup (asked) -> vbmeta (asked)
+# -> blobs -> flash; verify later, after the setup with debugging on again. Progress: $StateDir\<id>\state
+# (step_system: started | done, so a write cut off in the middle is never followed by a restart that would start
+# half a system; step_zblobs: z9x_blobs written in this visit, so a resumed run needs no blobs file). The image
+# content is read with a dump.erofs when there is one (tools\erofs-utils, -ErofsUtils, or PATH); Windows has none
+# of its own yet, and then the name and the signed SHA256SUMS bind the image.
+$script:AbfS = ""         # the slot Abf-Fbd-Check found running in fastbootd (_a); Fb-Allowed writes only there
+$script:AbfGv = @()       # its 'getvar all'
+$script:AbfUp = $false    # adb reached the projector in this run (Abf-Adb)
+$script:AbfDump = ""      # dump.erofs that reads the image ("" = none on this computer)
+$script:AbfResume = $false   # Abf-Write continues a visit in fastboot mode: an image STOP goes through Abf-Fb-Stop
+
+function Abf-Ids {  # the ids of lib\devices.conf with FLOW=ab-fastbootd (none without lib\devices.conf)
+  return @(Devconf-Lines | ForEach-Object { if ("$_" -cmatch '^([a-z0-9]+)\.FLOW=ab-fastbootd$') { $Matches[1] } })
+}
+function Abf-Is($id) { return [bool]($id -and (@(Abf-Ids) -contains "$id")) }   # id -> $true for a FLOW=ab-fastbootd projector
+function Abf-On { return ($script:Prof["FLOW"] -ceq "ab-fastbootd") }           # the projector of this run is one
+function Abf-List($k) { return @("$($script:Prof[$k])" -split " " | Where-Object { $_ }) }   # a list key of the profile
+function Abf-Path($rel) { return (Join-Path $Here ($rel -replace '/', [string][IO.Path]::DirectorySeparatorChar)) }   # a profile path in the installer folder
+function Abf-MiB($n) { return [int64]([math]::Floor(([int64]$n + 1048575) / 1048576)) * 1048576 }   # rounded up to 1 MiB
+function Abf-Not-Yet($c) { $nm = P6-Name; Die (T "'$c' is not available for the $nm yet. Nothing was done." "'$c' для $nm пока недоступен. Ничего не сделано.") }
+function Abf-Refuse-Opts {  # options of the Z9X and Play 6 ways that this flow does not have
+  if ($KeepData) { Abf-Not-Yet "-KeepData" }
+  if ($Wipe -ne "format") { Abf-Not-Yet "-Wipe $Wipe" }
+  if ($GappsZip) { Abf-Not-Yet "-GappsZip" }
+}
+function Abf-Hint { return (T "If it hangs with the cable in, pull the cable (then press the power button if the picture does not come back)." "Если он зависнет с вставленным кабелем, выньте кабель (и нажмите кнопку питания, если изображение не вернётся).") }
+function Abf-Dot($m) { if ($m -match '[.!?]$') { $m } else { $m + "." } }   # a message that another sentence follows ends in a full stop
+function Abf-Fb-Stop($m) {  # message: leave fastbootd for the old system (nothing was written), or stay once system was begun
+  $m = Abf-Dot $m
+  $s = State-Get step_system   # a restart now would start half a system, or Lumen OS on the old data
+  if ($s -eq "started" -or $s -eq "done") { Die ($m + " " + (T "The write of this install is not finished: the projector stays in fastboot mode. Keep the cable in and run the installer again." "Запись этой установки не закончена: проектор остаётся в режиме fastboot. Не вынимайте кабель и запустите установщик снова.")) }
+  # this visit is over: a later fastboot mode (entered by hand) is never taken for it, so no run skips the checks
+  State-Set step_fastboot ""
+  Fb reboot | Out-Null
+  Die ($m + " " + (T "Nothing was written. The projector starts its old system." "Ничего не записано. Проектор загружает прежнюю систему.") + " " + (Abf-Hint))
+}
+function Abf-Img-Stop($m, [switch]$Nw) {  # message [-Nw = it ends in 'Nothing was written.']: an image STOP, in a fastboot visit by Abf-Fb-Stop
+  if ($script:AbfResume) { Abf-Fb-Stop $m }
+  if ($Nw) { Die ((Abf-Dot $m) + " " + (T "Nothing was written." "Ничего не записано.")) }
+  Die $m
+}
+
+function Abf-Other-Hint($model, $brd) {  # another projector this installer knows, and its way in
+  $id = Profile-Of $model $brd
+  if (-not $id) { return "" }
+  if ($id -eq "z9x") { return " " + (T "It is an XGIMI Z9X: it installs over the USB cable with the installer of the XGIMI Z9X release (see its guide)." "Это XGIMI Z9X: он ставится по кабелю USB установщиком из релиза для XGIMI Z9X (см. его инструкцию).") }
+  if ($id -eq "play6") { return " " + (T "It is an $(Dev-Name play6): it installs with the installer of its own release, over Wi-Fi with -Ip ADDRESS (see its guide)." "Это $(Dev-Name play6): он ставится установщиком из своего релиза, по Wi-Fi с -Ip АДРЕС (см. его инструкцию).") }
+  return " " + (T "It is an $(Dev-Name $id): it installs with the installer of its own release (-Device $id, see its guide)." "Это $(Dev-Name $id): он ставится установщиком из своего релиза (-Device $id, см. его инструкцию).")
+}
+function Abf-Identity {  # the device at AdbT: this projector model, and the saved one (DHCP may give its address away)
+  $nm = P6-Name; $t = $script:AdbT
+  $code = Prop ro.boot.xgimi.modelname; $brd = Prop ro.boot.hardware; $ser = Prop ro.serialno
+  if ($code -cne $script:Prof["MODEL"] -or $brd -cne $script:Prof["BOARD"]) {
+    Pt-Adb disconnect $t 2>&1 | Out-Null
+    Die ((T "this is not an $nm (model '$code', board '$brd'). Nothing was done." "это не $nm (код модели '$code', плата '$brd'). Ничего не сделано.") + (Abf-Other-Hint $code $brd))
+  }
+  if (-not $ser) { Die (T "the projector at $t reports no serial number. Nothing was done." "проектор по адресу $t не сообщает серийный номер. Ничего не сделано.") }
+  if ($script:Serial -and $script:Serial -cne $ser) {
+    Pt-Adb disconnect $t 2>&1 | Out-Null
+    $saved = $script:Serial; $id = $script:Projector
+    if ($script:SerialFromState) { Die (T "the projector at $t has the serial $ser, but this install was started on $saved. Another projector? Then first: lumen-install.cmd -Device $id reset. Nothing was done." "у проектора по адресу $t серийный номер $ser, а установка начиналась на $saved. Другой проектор? Тогда сначала: lumen-install.cmd -Device $id reset. Ничего не сделано.") }
+    Die (T "the projector at $t has the serial $ser, not $saved (-Serial). Nothing was done." "у проектора по адресу $t серийный номер $ser, а не $saved (-Serial). Ничего не сделано.")
+  }
+  $script:Serial = $ser
+}
+function Abf-Adb($secs) {  # adb over the network (-Ip, the saved address, or mDNS) and who it is; $false = no answer
+  if (-not $script:AdbT) {
+    $a = State-Get ip
+    if (-not $a) {
+      $a = P6-Discover ""
+      if (-not $a -or -not (Ask (T "A projector answers at $a. Is it yours, the one to install on?" "По адресу $a отвечает проектор. Это ваш, на который ставим?"))) {
+        $nm = P6-Name
+        Die (T "give the projector's network address: lumen-install.cmd -Ip 192.168.x.y (the projector's network settings show it; see the guide, section '$nm'). The $nm is reached over the network: on stock, Developer options > USB debugging on opens it. Nothing was done." "укажите сетевой адрес проектора: lumen-install.cmd -Ip 192.168.x.y (он виден в настройках сети проектора; см. инструкцию, раздел «${nm}»). К $nm компьютер подключается по сети: на стоке её открывает «Для разработчиков > Отладка по USB». Ничего не сделано.")
+      }
+    }
+    $script:AdbT = $a
+  }
+  Say (T "connecting to $($script:AdbT) over the network" "подключаюсь к $($script:AdbT) по сети")
+  if (-not (Wifi-Connect $secs)) { return $false }
+  Abf-Identity
+  $script:AbfUp = $true
+  return $true
+}
+function Abf-Device {  # connected: firmware, slot, virtual A/B, stock or Lumen OS; saves serial, address, firmware, slot
+  $nm = P6-Name
+  $vend = Prop ro.vendor.build.version.incremental; $slot = Prop ro.boot.slot_suffix; $vab = Prop ro.virtual_ab.enabled
+  $lum = Prop (P6-LProp); $sl = $slot.TrimStart('_'); $slots = Abf-List SLOTS
+  if ((Abf-List VENDOR_OK) -cnotcontains $vend) {
+    Die (T "XGIMI firmware $vend is not supported: Lumen OS for the $nm is made for $(P6-Fw-List) only. If yours is older, let the stock system update itself (Settings, network), then run the installer again. If it is newer, Lumen OS does not support it yet. Nothing was done." "прошивка XGIMI $vend не поддерживается: Lumen OS для $nm сделана только для $(P6-Fw-List). Если ваша старее, дайте стоку обновиться (настройки, сеть) и запустите установщик снова. Если новее, Lumen OS её пока не поддерживает. Ничего не сделано.")
+  }
+  if ($slot -cnotmatch '^_.$') { Die (T "this projector reports no system slot ('$slot'): it is not the $nm this installer knows. Nothing was done." "этот проектор не сообщает системный слот ('$slot'): это не тот $nm, который знает установщик. Ничего не сделано.") }
+  if ($slots -cnotcontains $sl) { Die (T "the $nm runs from slot ${sl}: Lumen OS installs only into slot $($script:Prof['SLOTS']), the one the stock system uses. Nothing was done." "$nm работает из слота ${sl}: Lumen OS ставится только в слот $($script:Prof['SLOTS']), в котором работает сток. Ничего не сделано.") }
+  if ($vab -cne "true") { Die (T "this projector has no virtual A/B (ro.virtual_ab.enabled='$vab'): it is not the $nm this installer knows. Nothing was done." "у этого проектора нет virtual A/B (ro.virtual_ab.enabled='$vab'): это не тот $nm, который знает установщик. Ничего не сделано.") }
+  if (-not $lum) { State-Set dev_lumen 0; State-Set dev_version ""; $ver = T "XGIMI stock" "родная XGIMI" }
+  elseif ($lum -ceq (P6-LVal)) { $v = Prop $script:Prof['VERSION_PROP']; State-Set dev_lumen 1; State-Set dev_version $v; $ver = "Lumen OS $v" }
+  else { Die (T "this projector runs Lumen OS for another device ('$lum'). Nothing was done." "на проекторе Lumen OS для другого устройства ('$lum'). Ничего не сделано.") }
+  State-Set serial $script:Serial; State-Set ip $script:AdbT; State-Set vendor $vend; State-Set slot $slot
+  Ok "$nm $($script:Serial) ($($script:AdbT)), $(T 'firmware' 'прошивка') $vend, $(T 'slot' 'слот') $sl, $(T 'system' 'система'): $ver"
+}
+
+# The vbmeta step, read only: with verification off first-stage init sets up no dm-verity, so /dev/block/mapper
+# has no '*-verity' device (stock with its own vbmeta shows system-verity, vendor-verity...). 'check' reports it;
+# 'flash' stops without it (a system written over a verified slot fails dm-verity at every start).
+function Abf-Vbmeta-State {  # 0 = verification off on the running slot, 1 = on, 2 = could not read
+  $m = @(Adb shell ls /dev/block/mapper/ | ForEach-Object { "$_".Trim() } | Where-Object { $_ })
+  if ($m.Count -eq 0) { return 2 }
+  if (@($m | Where-Object { $_ -cmatch '-verity$' }).Count -gt 0) { return 1 }
+  return 0
+}
+function Abf-Vbmeta-Check($mode) {  # check|flash
+  $s = (State-Get slot).TrimStart('_'); $st = Abf-Vbmeta-State
+  if ($st -eq 0) { Ok (T "vbmeta: verification is off on slot $s (no *-verity)" "vbmeta: проверка в слоте $s выключена (нет *-verity)"); State-Set step_vbmeta done }
+  elseif ($st -eq 1) {
+    State-Set step_vbmeta ""
+    if ($mode -eq "flash") { Die (T "the running slot $s still verifies its system (*-verity in /dev/block/mapper): the vbmeta step was not done or did not take effect. Do it (lumen-install.cmd vbmeta), let the stock system start, then run the installer again. Nothing was written." "текущий слот $s всё ещё проверяет систему (*-verity в /dev/block/mapper): шаг vbmeta не сделан или не применился. Сделайте его (lumen-install.cmd vbmeta), дайте стоку загрузиться и запустите установщик ещё раз. Ничего не записано.") }
+    Warn (T "vbmeta: slot $s still verifies its system (*-verity): the vbmeta step is needed before 'flash' (lumen-install.cmd vbmeta)" "vbmeta: слот $s всё ещё проверяет систему (*-verity): перед 'flash' нужен шаг vbmeta (lumen-install.cmd vbmeta)")
+  } else {
+    if ($mode -eq "flash") { Die (T "could not read /dev/block/mapper on the projector, so the vbmeta step cannot be confirmed. Restart the projector and run the installer again. Nothing was written." "не удалось прочитать /dev/block/mapper на проекторе, поэтому шаг vbmeta не подтвердить. Перезагрузите проектор и запустите установщик ещё раз. Ничего не записано.") }
+    Warn (T "could not read /dev/block/mapper; vbmeta state not checked" "не удалось прочитать /dev/block/mapper; состояние vbmeta не проверено")
+  }
+}
+function Abf-Vbmeta {  # the one manual step; the installer never runs any vbmeta command
+  $nm = P6-Name; $a = if ($script:AdbT) { $script:AdbT } else { State-Get ip }
+  if (-not $a) { $a = "ADDRESS:5555" }
+  $h = Abf-Hint
+  Write-Host ""
+  Write-Host (T @"
+ONE MANUAL STEP: vbmeta (you type it yourself; this installer never runs any vbmeta command)
+  Lumen OS is not signed by XGIMI, so the $nm must be told once not to verify its system. Use
+  Google's unchanged vbmeta.img from the GSI page below (section 'Requirements for flashing GSIs'),
+  the A-to-A cable between the projector's USB port and this computer, and the adb and fastboot of
+  tools\platform-tools next to this script (there after 'check'):
+    adb connect $a
+    adb -s $a reboot fastboot          (fastboot mode starts in about 30 s)
+    fastboot --disable-verity --disable-verification --slot=all flash vbmeta vbmeta.img
+                                       (BOTH slots: Writing 'vbmeta_a' OKAY and Writing 'vbmeta_b' OKAY)
+    fastboot reboot                    ($h)
+  Nothing else in that visit. The stock system must then start normally, as before.
+"@ @"
+ОДИН РУЧНОЙ ШАГ: vbmeta (вы вводите его сами; установщик никогда не выполняет команды vbmeta)
+  Lumen OS не подписана XGIMI, поэтому $nm один раз нужно разрешить не проверять систему.
+  Нужны неизменённый vbmeta.img Google со страницы GSI ниже (раздел «Requirements for flashing GSIs»),
+  кабель A–A между USB-портом проектора и компьютером, adb и fastboot из tools\platform-tools рядом
+  с этим скриптом (они там после 'check'):
+    adb connect $a
+    adb -s $a reboot fastboot          (режим fastboot примерно через 30 с)
+    fastboot --disable-verity --disable-verification --slot=all flash vbmeta vbmeta.img
+                                       (ОБА слота: Writing 'vbmeta_a' OKAY и Writing 'vbmeta_b' OKAY)
+    fastboot reboot                    ($h)
+  Больше ничего в этом заходе. Затем сток должен загрузиться как обычно.
+"@)
+  Write-Host "  Google: $GoogleGsi"
+  Write-Host "  $(T 'Guide' 'Инструкция'): $(P6-Guide)#vbmeta"
+  Write-Host ""
+  if (Ask (T "Have you done the vbmeta step and did the stock system start normally after it?" "Вы сделали шаг vbmeta и сток после него нормально загрузился?")) { State-Set step_vbmeta done }
+  else { Die (T "do the vbmeta step first, then run the installer again. Nothing was written." "сначала шаг vbmeta, затем запустите установщик снова. Ничего не записано.") }
+}
+
+function Abf-Image-Props {  # the image's properties in the order init reads them (a later file wins: product is read last)
+  foreach ($p in @("/system/etc/prop.default", "/system/build.prop", "/system/system_ext/etc/build.prop", "/system/product/etc/build.prop")) {
+    & $script:AbfDump --cat "--path=$p" $script:Image 2>$null
+  }
+}
+function Abf-Image-Has($p) {  # $true = the image holds that file with content
+  $l = @(& $script:AbfDump "--path=$p" $script:Image 2>$null | Where-Object { "$_" -match '^Size: ([0-9]+)' } | Select-Object -First 1)
+  return ($l.Count -gt 0 -and "$($l[0])" -match '^Size: ([0-9]+)' -and [int64]$Matches[1] -gt 0)
+}
+function Abf-Dump-Find {  # dump.erofs: the installer's own (tools\erofs-utils, checked, or -ErofsUtils), else one on PATH
+  if ($script:AbfDump) { return }
+  if (-not $script:OnWindows) {   # pwsh on macOS or Linux: our erofs-utils are Windows builds; a plain dump.erofs in -ErofsUtils DIR
+    $f = if ($ErofsUtils) { Join-Path $ErofsUtils "dump.erofs" } else { "" }
+    if ($f -and (Test-Path -LiteralPath $f -PathType Leaf)) { $script:AbfDump = (Resolve-Path -LiteralPath $f).Path; return }
+  } else {
+    $plat = Eu-Plat
+    if ($ErofsUtils -or ($plat -and (Test-Path -LiteralPath (Join-Path (Join-Path (Join-Path $Here "tools") "erofs-utils") $plat)))) { Eu-Setup; $script:AbfDump = Join-Path $script:EuDir "dump.erofs.exe"; return }
+  }
+  $c = Get-Command dump.erofs -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1; if ($c) { $script:AbfDump = $c.Path }
+}
+function Abf-Check-Image([switch]$Force) {  # the release image of this projector: name, erofs, size, signature, checksum, content
+  Find-Image
+  $img = $script:Image; $name = Split-Path -Leaf $img; $dir = Split-Path -Parent $img; $nm = P6-Name; $tok = $script:Prof["IMAGE_TOKEN"]
+  $sums = Join-Path $dir "SHA256SUMS"; $sig = "$sums.sig"; $cert = Abf-Path $script:Prof["CERT"]; $max = [int64]$script:Prof["SYSTEM_MAX"]
+  if (-not $name.Contains($tok)) { Abf-Img-Stop (T "$name is not an image for the $nm (its name must contain '$tok')." "$name не образ для $nm (в имени должно быть '$tok').") -Nw }
+  if ($name -cmatch "PRIVATE") { Abf-Img-Stop (T "$name is a private image: it is never installed on the $nm." "$name частный образ: на $nm он не ставится.") -Nw }
+  $nv = ""
+  if (-not $UnsignedImage) {
+    if ($name -notlike "*-nogms-*") { Abf-Img-Stop (T "$name is not a release file (the $nm has Lumen OS without Google only: '-nogms-' in the name)." "$name не файл релиза (для $nm есть только Lumen OS без Google: '-nogms-' в имени).") -Nw }
+    # the release version is in the name, and the signed SHA256SUMS lists the image under that name
+    if (-not $conf["VERSION"]) { Die "internal: release.conf has no VERSION: re-download the installer of the $nm release" }
+    if ($name -cmatch "^lumen-os-$([regex]::Escape($tok))-(.+)-nogms-system\.img$") { $nv = $Matches[1] }
+    if (-not $nv) { Abf-Img-Stop (T "$name is not named like a release file (lumen-os-$tok-<version>-nogms-system.img): use the file exactly as downloaded." "$name назван не как файл релиза (lumen-os-$tok-<версия>-nogms-system.img): используйте файл ровно таким, как он скачан.") -Nw }
+    if ($nv -cne $conf["VERSION"]) { Abf-Img-Stop (T "$name is Lumen OS $nv, but this installer download is for Lumen OS $($conf['VERSION']): download the image and the installer from the same release (guide, section '$nm')." "$name это Lumen OS $nv, а этот установщик скачан для Lumen OS $($conf['VERSION']): скачайте образ и установщик из одного релиза (инструкция, раздел «${nm}»).") -Nw }
+  }
+  # the file system, read without any tool: erofs has e2 e1 f5 e0 at byte 1024 (the fstab mounts nothing else)
+  if ((Read-Hex $img 1024 4) -ne "e2e1f5e0") {
+    if ((Read-Hex $img 1080 2) -eq "53ef") { Abf-Img-Stop (T "$name is an ext4 image (another projector's), not one for the $nm." "$name образ ext4 (для другого проектора), а не для $nm.") -Nw }
+    if ((Read-Hex $img 0 4) -eq "3aff26ed") { Abf-Img-Stop (T "$name is a sparse image, not the release file." "$name разреженный (sparse) образ, а не файл релиза.") -Nw }
+    Abf-Img-Stop (T "$name is not an erofs system image." "$name не системный образ erofs.") -Nw
+  }
+  $len = (Get-Item -LiteralPath $img).Length
+  if ($len % 4096 -ne 0) { Abf-Img-Stop (T "$name has a size that is not a multiple of 4096: damaged." "размер $name не кратен 4096: файл испорчен.") -Nw }
+  # with blobs the new z9x_blobs and the reserve of super come off the budget too (as Abf-Room counts them later)
+  if ($Blobs -eq "partition") { $max = $max - [int64]$BlobSize - [int64]$script:Prof["SUPER_RESERVE"] }
+  if ($len -gt $max) { Abf-Img-Stop (T "$name is too big for the $nm ($([math]::Ceiling($len / 1MB)) MB, at most $([math]::Truncate($max / 1MB)) MB fit next to its vendor, product and system_ext)." "$name слишком велик для $nm ($([math]::Ceiling($len / 1MB)) МБ, рядом с его vendor, product и system_ext помещается не больше $([math]::Truncate($max / 1MB)) МБ).") -Nw }
+  if ((Test-Path -LiteralPath $sums) -and (Test-Path -LiteralPath $sig) -and (Test-Path -LiteralPath $cert)) {
+    if (-not (Verify-Sig $sums $sig $cert)) { Abf-Img-Stop (T "SHA256SUMS is not signed with the Lumen OS key for the ${nm}: do not install this image" "SHA256SUMS не подписан ключом Lumen OS для ${nm}: не устанавливайте этот образ") }
+    Ok (T "SHA256SUMS signature: Lumen OS key for the $nm" "подпись SHA256SUMS: ключ Lumen OS для $nm")
+  } elseif ($UnsignedImage) {
+    Warn (T "-UnsignedImage: this image is NOT authenticated (no signed SHA256SUMS). Only for your own build." "-UnsignedImage: образ НЕ проверен (нет подписанного SHA256SUMS). Только для собственной сборки.")
+    if ((State-Get unsigned_ok) -ne "${name}:$(File-Key $img)") {
+      if ((Read-Host (T "Type UNSIGNED to install $name anyway" "Введите UNSIGNED, чтобы всё равно установить $name")) -cne "UNSIGNED") {
+        if ($script:AbfResume) { Abf-Fb-Stop (T "cancelled." "отменено.") }
+        Die (T "cancelled, nothing was written" "отменено, ничего не записано")
+      }
+      State-Set unsigned_ok "${name}:$(File-Key $img)"
+    }
+    if (-not (Test-Path -LiteralPath $sums)) {   # a list that names the image, or the image's own .sha256
+      $sums = $null
+      $cand = @(Get-ChildItem -Path (Join-Path $dir "SHA256SUMS*") -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike "*.sig" }) + @(Get-Item -LiteralPath "$img.sha256" -ErrorAction SilentlyContinue)
+      foreach ($f in ($cand | Where-Object { $_ })) {
+        if (Get-Content -LiteralPath $f.FullName | Where-Object { $_ -match "\s\*?$([regex]::Escape($name))$" }) { $sums = $f.FullName; break }
+      }
+    }
+  } else {
+    if (-not (Test-Path -LiteralPath $sums)) { Abf-Img-Stop (T "no SHA256SUMS next to the image: it cannot be checked. Download SHA256SUMS and SHA256SUMS.sig from the same release." "рядом с образом нет SHA256SUMS: его нельзя проверить. Скачайте SHA256SUMS и SHA256SUMS.sig из того же релиза.") }
+    if (-not (Test-Path -LiteralPath $sig)) { Abf-Img-Stop (T "no SHA256SUMS.sig next to the image: its origin cannot be checked" "рядом с образом нет SHA256SUMS.sig: происхождение образа нельзя проверить") }
+    Abf-Img-Stop (T "installer certificate $($script:Prof['CERT']) missing: re-download the installer of the $nm release" "нет сертификата установщика $($script:Prof['CERT']): скачайте установщик из релиза для $nm заново")
+  }
+  if ($sums -and (Test-Path -LiteralPath $sums)) {
+    $want = (Get-Content -LiteralPath $sums | Where-Object { $_ -match "\s\*?$([regex]::Escape($name))$" } | ForEach-Object { ($_ -split "\s+")[0] }) | Select-Object -First 1
+    if (-not $want) { Abf-Img-Stop (T "$name is not listed in $(Split-Path -Leaf $sums)" "$name нет в $(Split-Path -Leaf $sums)") }
+    if ($Force -or (State-Get image_ok) -ne "${want}:$(File-Key $img)") {
+      Say (T "checking the image checksum (about a minute)" "проверяю контрольную сумму образа (около минуты)")
+      if ((Sha256 $img) -ne $want.ToLower()) { State-Set image_ok none; Abf-Img-Stop (T "checksum mismatch: the image is damaged or not the right file" "контрольная сумма не совпала: образ повреждён или не тот") }
+      State-Set image_ok "${want}:$(File-Key $img)"
+    }
+    Ok "$name sha256 $($want.Substring(0,16))..."
+  } else { Warn (T "-UnsignedImage without any SHA256SUMS file: checksum not checked" "-UnsignedImage без файла SHA256SUMS: контрольная сумма не проверена") }
+  # what the image says about itself, when a dump.erofs is there; without one the name (its version, checked
+  # above) and the signed SHA256SUMS (which lists the file under that name) bind the image to this release
+  $bound = if ($nv) { T "the signed SHA256SUMS lists this file as Lumen OS $nv, the version of this installer download" "подписанный SHA256SUMS называет этот файл Lumen OS $nv, версией этого установщика" } else { T "an own build (-UnsignedImage)" "собственная сборка (-UnsignedImage)" }
+  Abf-Dump-Find
+  if ($script:AbfDump) {
+    $bp = @(Abf-Image-Props)
+    if ($bp.Count -gt 0) {
+      $pv = { param($k) $l = $bp | Where-Object { "$_" -like "$k=*" } | Select-Object -Last 1; if ($l) { "$l".Substring($k.Length + 1).Trim() } else { "" } }
+      $v = & $pv (P6-LProp)
+      if ($v -cne (P6-LVal)) { Abf-Img-Stop (T "$name is not Lumen OS for the $nm ($(P6-LProp)='$v')." "$name не Lumen OS для $nm ($(P6-LProp)='$v').") -Nw }
+      $v = & $pv $script:Prof["VERSION_PROP"]; $sec = & $pv "ro.adb.secure"
+      if (-not $UnsignedImage) {
+        if ($v -cne $conf["VERSION"]) { Abf-Img-Stop (T "$name holds Lumen OS '$v', the release is $($conf['VERSION'])." "в $name Lumen OS '$v', а релиз $($conf['VERSION']).") -Nw }
+        if ($sec -ne "1") { Abf-Img-Stop (T "$name is a test build (ro.adb.secure='$sec'), not a release." "$name тестовая сборка (ro.adb.secure='$sec'), а не релиз.") -Nw }
+      }
+      # a public image holds none of the allow-list's files at /system/<path in the tar>: they come from 'blobs'
+      $own = $false
+      foreach ($line in (Get-Content -LiteralPath (Abf-Path $script:Prof["BLOBS_ALLOW"]))) {
+        $f = @("$line".Trim() -split "\s+")
+        if (-not $f[0] -or $f[0].StartsWith("#") -or $f[0].StartsWith("set=") -or $f.Count -lt 2) { continue }
+        if (Abf-Image-Has "/system/$($f[1])") { $own = $true }
+      }
+      if ($own -and $Blobs -eq "partition") { Abf-Img-Stop (T "$name carries the MediaTek / XGIMI files itself (a private build): run with -Blobs embedded" "$name сам содержит файлы MediaTek / XGIMI (частная сборка): запустите с -Blobs embedded") }
+      if (-not $own -and $Blobs -eq "embedded") { Abf-Img-Stop (T "$name is a public image: its MediaTek / XGIMI files come from your projector ('blobs'). Run without -Blobs embedded" "$name публичный образ: файлы MediaTek / XGIMI берутся с вашего проектора ('blobs'). Запустите без -Blobs embedded") }
+      Ok (T "image: Lumen OS $v for the $nm" "образ: Lumen OS $v для $nm")
+    } else { Warn (T "dump.erofs could not read the image content (not needed: $bound)" "dump.erofs не смог прочитать содержимое образа (не обязательно: $bound)") }
+  } else { Say (T "image content not read (dump.erofs not installed): $bound" "содержимое образа не прочитано (нет dump.erofs): $bound") }
+  if ($Blobs -eq "none") { Warn (T "-NoBlobs: no sound and no MediaTek video decoders with this install" "-NoBlobs: в этой установке не будет звука и видеодекодеров MediaTek") }
+  State-Set image_gms 0
+  Ok (T "edition: Lumen OS without Google" "редакция: Lumen OS без Google")
+}
+function Abf-Check {
+  Abf-Refuse-Opts
+  Check-Tools
+  if (-not (Abf-Adb 60)) { Die (P6-NoConn) }
+  Abf-Device
+  Abf-Vbmeta-Check check
+  $free = (Get-PSDrive -Name (Get-Item -LiteralPath $HOME).PSDrive.Name -ErrorAction SilentlyContinue).Free
+  if ($free -and $free -lt 4GB) { Warn (T "less than 4 GB free on this computer" "на компьютере свободно меньше 4 ГБ") }
+  Abf-Check-Image
+  Ok (T "check passed; nothing was written" "проверка пройдена; ничего не записано")
+  State-Set step_check done
+}
+
+# blobs: the files of the profile's allow-list (BLOBS_ALLOW, the image's /system/etc/z9x/blobs_allow.txt) pulled
+# from this projector's own system, each checked by sha256 (or derived by its from= line deletes, Remove-Lines),
+# into the 4 MiB ustar tar (Write-Ustar) that the image's unchanged z9x_blobs.sh reads from z9x_blobs<slot>.
+function Abf-Blobs-File { if ($Blobs -eq "partition") { return (Join-Path $BackupRoot "$($script:Projector)-blobs-$($script:Serial).img") }; return "" }
+function Abf-Blobs-Ok {  # $true = the blobs tar of this projector is ready (or none is needed)
+  $f = Abf-Blobs-File
+  if (-not $f) { return $true }
+  return ((State-Get step_blobs) -eq "done" -and (State-Get blobs_img) -eq $f -and (Test-Path -LiteralPath $f) -and (Get-Item -LiteralPath $f).Length -eq $BlobSize)
+}
+function Abf-Blobs {
+  if ($Blobs -eq "none") {
+    Warn (T "-NoBlobs: the MediaTek / XGIMI files are skipped (no sound, no MediaTek video decoders)" "-NoBlobs: файлы MediaTek / XGIMI пропущены (не будет звука и видеодекодеров MediaTek)")
+    State-Set step_blobs skip; return
+  }
+  if ($Blobs -ne "partition") {
+    Ok (T "this image carries its MediaTek / XGIMI files itself: no blobs step needed" "этот образ содержит файлы MediaTek / XGIMI сам: шаг blobs не нужен")
+    State-Set step_blobs skip; return
+  }
+  if (-not $script:AbfUp -and -not (Abf-Adb 60)) { Die (P6-NoConn) }
+  $allow = Abf-Path $script:Prof["BLOBS_ALLOW"]
+  if (-not (Test-Path -LiteralPath $allow)) { Die "internal: $($script:Prof['BLOBS_ALLOW']) is missing: re-download the installer" }
+  $w = Join-Path $script:SD "blobs"; Remove-Item -Recurse -Force -LiteralPath $w -ErrorAction SilentlyContinue
+  $x = Join-Path $w "x"; New-Item -ItemType Directory -Force -Path $x | Out-Null
+  $set = ((Get-Content -LiteralPath $allow | Where-Object { $_ -like "set=*" } | Select-Object -First 1) -replace "^set=", "")
+  $manifest = @("set=$set"); $n = 0
+  foreach ($line in (Get-Content -LiteralPath $allow)) {
+    $f = @("$line".Trim() -split "\s+")
+    if (-not $f[0] -or $f[0].StartsWith("#") -or $f[0].StartsWith("set=")) { continue }
+    $h = $f[0]; $rel = $f[1]; $src = $f[2]
+    $from = ""; foreach ($o in ($f | Select-Object -Skip 3)) { if ($o -like "from=*") { $from = $o.Substring(5) } }
+    $cmds = if ($from.Contains(":")) { ($from -split ":", 2)[1] } else { $from }
+    if ($cmds -notmatch '^[0-9,d;]*$') { Die "internal: ${rel}: from= may only delete lines" }
+    $dst = Join-Path $x ($rel -replace '/', [string][IO.Path]::DirectorySeparatorChar)
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dst) | Out-Null
+    $got = ""
+    foreach ($p in @($src, "/system/$rel")) {
+      Adb pull $p $dst | Out-Null
+      if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $dst)) { continue }
+      $got = Sha256 $dst
+      if ($got -eq $h) { break }
+      if ($from -and $got -eq ($from -split ":", 2)[0]) {
+        Remove-Lines $dst $cmds
+        $got = Sha256 $dst
+        if ($got -eq $h) { break }
+      }
+      $got = "bad"
+    }
+    if ($got -ne $h) { Die (T "$rel from the projector does not match the allow-list ($got): this firmware is not supported. Run again with -NoBlobs to install without these files (then there is NO SOUND and no MediaTek video decoders). Nothing was written." "$rel с проектора не совпадает со списком ($got): эта прошивка не поддерживается. Чтобы установить без этих файлов, запустите с -NoBlobs (тогда НЕ БУДЕТ ЗВУКА и видеодекодеров MediaTek). Ничего не записано.") }
+    $manifest += "$rel $h $((Get-Item -LiteralPath $dst).Length)"; $n++
+  }
+  [IO.File]::WriteAllText((Join-Path $x "MANIFEST"), (($manifest -join "`n") + "`n"))
+  $img = Join-Path $w "z9x_blobs.img"
+  Write-Ustar $x $img
+  New-Item -ItemType Directory -Force -Path $BackupRoot | Out-Null
+  $out = Abf-Blobs-File
+  Copy-Item -LiteralPath $img -Destination $out -Force
+  State-Set blobs_img $out; State-Set step_blobs done
+  Ok (T "$n MediaTek / XGIMI files from your projector, set $set -> $out (keep this file)" "Файлы MediaTek / XGIMI с вашего проектора: $n, набор $set -> $out (сохраните этот файл)")
+}
+
+function Abf-Fbd-Check {  # fastbootd, one getvar all: this projector, its running slot and the known layout; else STOP
+  $nm = P6-Name; $why = ""; $script:AbfS = ""
+  $gv = @(Fb getvar all); $script:AbfGv = $gv
+  $cs = Gv-Val $gv "current-slot"
+  if ((Gv-Val $gv "is-userspace") -ne "yes") { $why = T "not fastbootd" "это не fastbootd" }
+  elseif ((Gv-Val $gv "product") -cne $script:Prof["FB_PRODUCT"]) { $why = (T "fastbootd is not the one of the $nm" "fastbootd не от $nm") + " ($(Gv-Val $gv 'product'))" }
+  elseif ((Gv-Val $gv "serialno") -cne $script:Serial) { $why = (T "another projector in fastboot mode" "в режиме fastboot другой проектор") + " (serialno $(Gv-Val $gv 'serialno'), $(T 'expected' 'ожидался') $($script:Serial))" }
+  elseif ((Gv-Val $gv "unlocked") -ne "yes") { $why = T "the bootloader is locked" "загрузчик заблокирован" }
+  elseif ((Abf-List SLOTS) -cnotcontains $cs) { $why = "current-slot '$cs'" }
+  elseif ("_$cs" -cne (State-Get slot)) { $why = "current-slot $cs, $(T "the system ran from" "система работала из") $(State-Get slot)" }
+  elseif ((Gv-Val $gv "slot-count") -ne "2") { $why = "slot-count '$(Gv-Val $gv 'slot-count')'" }
+  elseif ((Gv-Val $gv "slot-successful:$cs") -ne "yes") { $why = "slot-successful:$cs '$(Gv-Val $gv "slot-successful:$cs")'" }
+  elseif ((Gv-Val $gv "snapshot-update-status") -ne "none") { $why = (T "an XGIMI update is staged or not finished" "обновление XGIMI подготовлено или не завершено") + " (snapshot-update-status $(Gv-Val $gv 'snapshot-update-status')); " + (T "let the projector start, turn automatic updates off, wait 10 minutes" "дайте проектору загрузиться, выключите автообновление, подождите 10 минут") }
+  elseif (@($gv | Where-Object { "$_" -cmatch ':[a-z0-9_]+-cow(:|$)' }).Count -gt 0) { $why = T "*-cow partitions: an XGIMI update is not finished; let the projector start, turn automatic updates off, wait 10 minutes" "разделы *-cow: обновление XGIMI не завершено; дайте проектору загрузиться, выключите автообновление, подождите 10 минут" }
+  elseif ((Gv-Val $gv "super-partition-name") -cne "super") { $why = "super-partition-name '$(Gv-Val $gv 'super-partition-name')'" }
+  elseif ((Gv-Val $gv "is-logical:system_$cs") -ne "yes") { $why = "is-logical:system_$cs '$(Gv-Val $gv "is-logical:system_$cs")'" }
+  else {
+    foreach ($k in (Abf-List KEEP)) {
+      $sz = Gv-Size $gv "$($k)_$cs"
+      if ($null -eq $sz -or $sz -le 0) { $why = (T "the partition $($k)_$cs is missing" "нет раздела $($k)_$cs") + " (partition-size '$(if ($null -ne $sz) { "0x{0:X}" -f $sz })')"; break }
+    }
+  }
+  if ($why) { Abf-Fb-Stop ((T "fastboot mode check failed" "проверка режима fastboot не пройдена") + ": $why.") }
+  $script:AbfS = "_$cs"
+  Ok (T "fastboot mode: $nm $($script:Serial), slot $cs" "режим fastboot: $nm $($script:Serial), слот $cs")
+}
+function Abf-Room($bf) {  # [blobs file]: the new z9x_blobs and the image fit into super next to the other partitions; else STOP
+  $gv = $script:AbfGv; $sx = $script:AbfS; $res = [int64]$script:Prof["SUPER_RESERVE"]; $blob = [int64]0
+  if ($null -eq (Gv-Size $gv "super")) { Abf-Fb-Stop (T "fastbootd did not report the size of super." "fastbootd не сообщил размер super.") }
+  $free = [int64](Super-Free $gv); $sys = Gv-Size $gv "system$sx"; $old = Gv-Size $gv "z9x_blobs$sx"
+  if ($null -eq $sys) { $sys = 0 }
+  if ($null -eq $old) { $old = 0 }
+  if ($bf) { $blob = [int64]$BlobSize - [int64]$old; if ($blob -lt 0) { $blob = [int64]0 } }
+  if ($free -lt ($blob + $res)) { Abf-Fb-Stop (T "no room in super for z9x_blobs$sx ($([math]::Truncate($free / 1MB)) MB free, $([math]::Truncate(($blob + $res) / 1MB)) MB needed)." "в super нет места для z9x_blobs$sx (свободно $([math]::Truncate($free / 1MB)) МБ, нужно $([math]::Truncate(($blob + $res) / 1MB)) МБ).") }
+  # the write resizes system to the image: the space it has now counts for it
+  $room = $free + (Abf-MiB $sys) - (Abf-MiB $blob) - $res
+  $need = Abf-MiB (Get-Item -LiteralPath $script:Image).Length
+  if ($need -gt $room) { Abf-Fb-Stop (T "the image does not fit into super ($([math]::Truncate($room / 1MB)) MB free, $([math]::Truncate($need / 1MB)) MB needed)." "образ не помещается в super (свободно $([math]::Truncate($room / 1MB)) МБ, нужно $([math]::Truncate($need / 1MB)) МБ).") }
+}
+function Abf-Infb { return ((State-Get step_fastboot) -and (State-Get step_flash) -ne "done" -and (P6-In-Fastboot)) }
+function Abf-Write {  # stock or Lumen OS running: checks, ERASE, cable, fastbootd: z9x_blobs, system, the wipe, restart
+  $nm = P6-Name; $infb = $false
+  Abf-Refuse-Opts
+  Check-Tools
+  if (Abf-Infb) {
+    $infb = $true; $script:AbfResume = $true
+    Say (T "the projector waits in fastboot mode on the cable: continuing there" "проектор ждёт в режиме fastboot на кабеле: продолжаю там")
+  } else {
+    if (-not $script:AbfUp -and -not (Abf-Adb 60)) {
+      if ((State-Get step_fastboot) -and (State-Get step_flash) -ne "done") { Die (T "the projector is neither in fastboot mode on the cable nor reachable over the network at $($script:AdbT). If its screen shows fastboot mode: check the cable (the projector's USB port, not a hub; on Windows the Google USB Driver) and run the installer again. If its system runs: run the installer again, it starts over. Nothing more was written." "проектора нет ни в режиме fastboot на кабеле, ни в сети по адресу $($script:AdbT). Если на экране режим fastboot: проверьте кабель (USB-порт проектора, не хаб; на Windows Google USB Driver) и запустите установщик снова. Если работает его система: запустите установщик снова, он начнёт сначала. Больше ничего не записано.") }
+      Die (P6-NoConn)
+    }
+    Abf-Device
+    Abf-Vbmeta-Check flash
+  }
+  Abf-Check-Image -Force
+  $bf = Abf-Blobs-File
+  # z9x_blobs written in this visit already (step_zblobs): only system and the wipe are left, the file is not needed
+  if ($infb -and (State-Get step_zblobs) -eq "done") { $bf = "" }
+  if ($bf -and (-not $infb -or (State-Get step_system) -ne "done") -and -not (Abf-Blobs-Ok)) {
+    if ($infb -and (State-Get step_system) -eq "started") { Abf-Fb-Stop (T "$bf (the MediaTek / XGIMI files of this projector) is missing. To finish without them (no sound, no MediaTek video decoders), run the installer again with -NoBlobs." "нет $bf (файлов MediaTek / XGIMI этого проектора). Чтобы закончить без них (без звука и видеодекодеров MediaTek), запустите установщик снова с -NoBlobs.") }
+    if ($infb) { Abf-Fb-Stop (T "$bf (the MediaTek / XGIMI files of this projector) is missing." "нет $bf (файлов MediaTek / XGIMI этого проектора).") }
+    Abf-Blobs
+  }
+  $sl = (State-Get slot).TrimStart('_')
+  Write-Host ""
+  if ($bf) {
+    Write-Host (T "Writing Lumen OS to slot $sl of the $nm and then ERASING ALL DATA on it (apps, accounts, settings,
+files, Wi-Fi networks). In one visit to fastboot mode the installer writes the partition z9x_blobs_$sl with the
+files copied from your projector, then system_$sl, then formats userdata and metadata. XGIMI's firmware stays
+untouched: vendor, boot, vbmeta, product, system_ext, the other slot, calibration and factory data. Keep the
+power adapter connected." "Записываю Lumen OS в слот $sl $nm, затем СТИРАЮ ВСЕ ДАННЫЕ (приложения, аккаунты,
+настройки, файлы, сети Wi-Fi). За один заход в режим fastboot установщик записывает раздел z9x_blobs_$sl с
+файлами, скопированными с вашего проектора, затем system_$sl, затем форматирует userdata и metadata. Прошивка
+XGIMI не затрагивается: vendor, boot, vbmeta, product, system_ext, второй слот, калибровка и заводские данные.
+Блок питания держите подключённым.")
+  } else {
+    Write-Host (T "Writing Lumen OS to slot $sl of the $nm and then ERASING ALL DATA on it (apps, accounts, settings,
+files, Wi-Fi networks). In one visit to fastboot mode the installer writes system_$sl, then formats userdata
+and metadata. XGIMI's firmware stays untouched: vendor, boot, vbmeta, product, system_ext, the other slot,
+calibration and factory data. Keep the power adapter connected." "Записываю Lumen OS в слот $sl $nm, затем СТИРАЮ ВСЕ ДАННЫЕ (приложения, аккаунты,
+настройки, файлы, сети Wi-Fi). За один заход в режим fastboot установщик записывает system_$sl, затем
+форматирует userdata и metadata. Прошивка XGIMI не затрагивается: vendor, boot, vbmeta, product, system_ext,
+второй слот, калибровка и заводские данные. Блок питания держите подключённым.")
+  }
+  if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") {
+    if ($infb) { Abf-Fb-Stop (T "cancelled." "отменено.") }
+    Die (T "cancelled, nothing was written" "отменено, ничего не записано")
+  }
+  $script:EraseNow = $true
+  if (-not $infb) {
+    foreach ($k in @("step_fastboot", "step_zblobs", "step_system", "step_wipe", "step_flash", "step_verify")) { State-Set $k "" }
+    Write-Host ""
+    Write-Host (T "Connect the projector's USB port to this computer with the USB A-to-A cable now (take out whatever is
+in that port first). Its system keeps running; fastboot mode uses the cable." "Соедините сейчас USB-порт проектора с компьютером кабелем USB A–A (сначала выньте то, что вставлено в
+этот порт). Система проектора продолжает работать; режим fastboot использует кабель.")
+    $null = Read-Host (T "Press Enter when the cable is in" "Когда кабель вставлен, нажмите Enter")
+    Say (T "restarting into fastboot mode (about 30 seconds)" "перезагрузка в режим fastboot (около 30 секунд)")
+    # saved first: a restart that happens although adb reports an error is still continued by the next run
+    State-Set step_fastboot (Get-Date -Format "yyyyMMdd-HHmmss")
+    Adb reboot fastboot | Out-Null
+    if ($LASTEXITCODE -ne 0 -and (P6-Alive)) {
+      State-Set step_fastboot ""
+      Die (T "adb reboot fastboot failed: the projector still runs its system. Nothing was written. Run the installer again." "adb reboot fastboot не удался: проектор работает в своей системе. Ничего не записано. Запустите установщик снова.")
+    }
+    Pt-Adb disconnect $script:AdbT 2>&1 | Out-Null
+  }
+  if (-not (P6-Fb-Wait 180)) { Die ((T "the projector did not appear on the cable within 3 minutes. Is the cable in the projector's USB port (not a hub)? On Windows the Google USB Driver is needed. Nothing was written. Run the installer again: it finds the projector in fastboot mode, or, once its system is back, sends it there again." "проектор не появился на кабеле за 3 минуты. Кабель в USB-порту проектора (не через хаб)? На Windows нужен Google USB Driver. Ничего не записано. Запустите установщик снова: он найдёт проектор в режиме fastboot или, когда система вернётся, снова отправит его туда.") + (Fb-Driver-Hint)) }
+  Abf-Fbd-Check
+  $sx = $script:AbfS; $len = (Get-Item -LiteralPath $script:Image).Length
+  if ((State-Get step_system) -ne "done") {
+    Abf-Room $bf
+    if ($bf) {
+      if ($null -ne (Gv-Size $script:AbfGv "z9x_blobs$sx")) { $made = Fb-Do resize "z9x_blobs$sx" $BlobSize }
+      else { $made = Fb-Do create "z9x_blobs$sx" $BlobSize }
+      if (-not $made) { Abf-Fb-Stop (T "the partition z9x_blobs$sx could not be made." "раздел z9x_blobs$sx не удалось создать.") }
+      if (-not (Fb-Do flash "z9x_blobs$sx" $bf)) { Abf-Fb-Stop (T "z9x_blobs$sx was not written; system was not touched." "z9x_blobs$sx не записан; system не затронут.") }
+      State-Set step_zblobs done
+      Ok "z9x_blobs$sx"
+    }
+    Say (T "writing system (about 1 minute). Do not unplug the cable or the power until it is done." "записываю system (около минуты). Не отключайте кабель и питание, пока запись не закончится.")
+    State-Set step_system started
+    if (-not (Fb-Do flash "system$sx" $script:Image)) { Die (T "system was not written completely. The projector stays in fastboot mode: keep the cable in and run the installer again, it writes system again." "system записан не полностью. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите установщик снова, он запишет system ещё раз.") }
+  }
+  $got = ""
+  foreach ($l in @(Fb getvar "partition-size:system$sx")) { if ("$l" -match "^partition-size:system${sx}:\s*(0x[0-9a-fA-F]+)") { $got = [Convert]::ToInt64($Matches[1], 16); break } }
+  if ("$got" -ne "$len") {
+    State-Set step_system started
+    $g = if ("$got") { "$got" } else { "?" }
+    Die (T "after the write system$sx has $g bytes, the image ${len}: the write did not take. The projector stays in fastboot mode: keep the cable in and run the installer again, it writes system again." "после записи в system$sx $g байт, а в образе ${len}: запись не применилась. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите установщик снова, он запишет system ещё раз.")
+  }
+  State-Set step_system done
+  Ok "system$sx ($([math]::Truncate($len / 1MB)) MB)"
+  $wp = $script:Prof["WIPE_PARTS"]
+  Say (T "wiping data (format:ext4 $wp)" "очистка данных (format:ext4 $wp)")
+  foreach ($p in (Abf-List WIPE_PARTS)) {
+    if (-not (Fb-Do format $p)) { Die (T "the wipe ($p) failed. The projector stays in fastboot mode: keep the cable in and run the installer again, it continues with the wipe." "очистка ($p) не удалась. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите установщик снова, он продолжит с очистки.") }
+  }
+  State-Set step_wipe done
+  Fb reboot | Out-Null
+  State-Set step_flash done
+  $h = Abf-Hint
+  Write-Host ""
+  Write-Host (T "Written. The projector starts Lumen OS now; the first start takes 2-4 minutes and ends in the setup
+on the screen. $h The cable can come out now." "Записано. Проектор загружает Lumen OS; первый запуск 2–4 минуты и заканчивается экраном настройки.
+$h Кабель теперь можно вынуть.")
+}
+function Abf-Verify {  # after the setup, with debugging on again: Lumen OS of this projector started, with its files
+  $nm = P6-Name; $good = $true
+  Check-Tools
+  if (-not (Abf-Adb 60)) { Die (P6-NoConn) }
+  if ((Prop sys.boot_completed) -ne "1") { Die (T "the system has not finished starting yet: wait a minute and run verify again. Nothing was done." "система ещё не загрузилась: подождите минуту и запустите verify снова. Ничего не сделано.") }
+  $v = Prop (P6-LProp)
+  if ($v -cne (P6-LVal)) { Die (T "this projector does not run Lumen OS for the $nm ($(P6-LProp)='$v'). Nothing was done." "на проекторе не Lumen OS для $nm ($(P6-LProp)='$v'). Ничего не сделано.") }
+  $vp = $script:Prof["VERSION_PROP"]; $v = Prop $vp
+  if ($v) { Ok "Lumen OS $v $(T 'on the' 'на') $nm $($script:Serial)" } else { Warn (T "$vp missing" "нет $vp"); $good = $false }
+  if ($Blobs -eq "partition") {
+    $bl = Prop sys.z9x.blobs
+    if ($bl -eq "ok") { Ok (T "MediaTek / XGIMI files (z9x_blobs$(State-Get slot)) ok" "файлы MediaTek / XGIMI (z9x_blobs$(State-Get slot)) в порядке") }
+    else { Warn "sys.z9x.blobs=$bl ($(T "no sound and no MediaTek video decoders until 'blobs' and 'flash'" "без звука и видеодекодеров MediaTek до 'blobs' и 'flash'"))"; $good = $false }
+  }
+  if ($good) { State-Set step_verify done; Ok (T "verify passed" "проверка пройдена") }
+}
+function Abf-Done {
+  $nm = P6-Name
+  Write-Host ""
+  Write-Host (T "Done. On the projector: the Lumen OS setup (language, network). To check the install from this computer
+later: turn on debugging (guide, section '$nm', 'Check the install') and run:
+lumen-install.cmd verify -Ip ADDRESS" "Готово. На проекторе пройдите настройку Lumen OS (язык, сеть). Проверить установку с компьютера можно
+позже: включите отладку (инструкция, раздел «${nm}», «Проверьте установку») и запустите:
+lumen-install.cmd verify -Ip АДРЕС")
+  Write-Host "  $(T 'Guide' 'Инструкция'): $(P6-Guide)"
+}
+function Abf-Flash {  # the 'flash' command: a new write, unless one waits in fastboot mode (then it continues there)
+  Abf-Write
+  Abf-Done
+}
+function Abf-All {  # check, backup (asked), vbmeta (asked), blobs, flash: each step once, continued where it stopped
+  Abf-Refuse-Opts
+  if (-not (Abf-Infb)) {
+    if ((State-Get step_check) -ne "done") { Abf-Check }
+    if (-not (State-Get step_backup)) {
+      if (Ask (T "Make a backup of your apps and files first (recommended)?" "Сначала сделать копию ваших приложений и файлов (рекомендуется)?")) { Cmd-Backup } else { State-Set step_backup skipped }
+    }
+    if ((State-Get step_flash) -ne "done" -and (State-Get step_vbmeta) -ne "done") { Abf-Vbmeta }
+    if ((State-Get step_flash) -ne "done" -and -not (Abf-Blobs-Ok)) { Abf-Blobs }
+  }
+  if ((State-Get step_flash) -ne "done") { Abf-Write }
+  Abf-Done
+}
+function Abf-Main {  # the commands of a FLOW=ab-fastbootd projector
+  if (@("rescue", "gapps", "gsf", "stick") -contains $Command) { Abf-Not-Yet $Command }
+  if (@("", "check", "backup", "blobs", "flash", "verify") -contains $Command) { Pt-Setup }
+  switch ($Command) {
+    ""       { Abf-All }
+    "check"  { Abf-Check }
+    "backup" { Cmd-Backup }
+    "vbmeta" { Abf-Vbmeta }
+    "blobs"  { Abf-Blobs }
+    "flash"  { Abf-Flash }
+    "verify" { Abf-Verify }
+    default  { Get-Content $PSCommandPath -TotalCount 20 | Select-Object -Skip 1; exit 2 }  # the usage lines above
+  }
+}
+
 function Cmd-All {
   if ($GappsZip) { Z9x-Gapps-Plan }
   if ((State-Get step_check) -ne "done") { Cmd-Check }
@@ -2711,14 +3326,22 @@ if ($Ip) {
 }
 if ($Command -eq "status") {   # the saved progress only: no projector, no profile needed
   $shown = $false; $p6s = Join-Path (Join-Path $StateDir "play6") "state"; $f = Join-Path $StateDir "state"
-  if ($Device -ne "play6" -and (Test-Path $f)) { Get-Content $f; $shown = $true }
-  if ($Device -ne "z9x" -and (Test-Path $p6s)) { Write-Host "$(Dev-Name play6):"; Get-Content $p6s | ForEach-Object { "  $_" }; $shown = $true }
+  if (@("", "z9x") -contains $Device -and (Test-Path $f)) { Get-Content $f; $shown = $true }
+  if (@("", "play6") -contains $Device -and (Test-Path $p6s)) { Write-Host "$(Dev-Name play6):"; Get-Content $p6s | ForEach-Object { "  $_" }; $shown = $true }
+  foreach ($id in @(Abf-Ids)) {   # FLOW=ab-fastbootd projectors: $StateDir\<id>
+    $s = Join-Path (Join-Path $StateDir $id) "state"
+    if (@("", $id) -contains $Device -and (Test-Path $s)) { Write-Host "$(Dev-Name $id):"; Get-Content $s | ForEach-Object { "  $_" }; $shown = $true }
+  }
   if (-not $shown) { Write-Host (T "no saved progress" "сохранённого прогресса нет") }
   exit 0
 }
 if ($Command -eq "reset") {
   if ($Device -eq "play6") { Remove-Item -Recurse -Force (Join-Path $StateDir "play6") -ErrorAction SilentlyContinue }
-  elseif ($Device -eq "z9x") { Get-ChildItem -LiteralPath $StateDir -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "play6" } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue }
+  elseif ($Device -eq "z9x") {   # every other projector's folder stays
+    $keep = @("play6") + @(Abf-Ids)
+    Get-ChildItem -LiteralPath $StateDir -Force -ErrorAction SilentlyContinue | Where-Object { $keep -notcontains $_.Name } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+  }
+  elseif ($Device) { Remove-Item -Recurse -Force (Join-Path $StateDir ("$Device".ToLower())) -ErrorAction SilentlyContinue }   # an ab-fastbootd id (checked above)
   else { Remove-Item -Recurse -Force $StateDir -ErrorAction SilentlyContinue }
   Write-Host (T "progress forgotten" "прогресс сброшен")
   exit 0
@@ -2731,6 +3354,7 @@ if ($GappsZip) {   # one pass, one wipe: the full install only
 Resolve-Device
 if (-not $script:Serial) { $script:Serial = State-Get serial; if ($script:Serial) { $script:SerialFromState = $true } }
 if (@("", "check", "flash", "rescue") -contains $Command) { Release-Guard }
+if (Abf-On) { Abf-Main; Pt-Cleanup; exit 0 }
 # every command that talks to the projector: our own adb and fastboot first
 if (@("", "check", "backup", "flash", "verify", "gsf", "rescue", "gapps") -contains $Command -or
     ($script:Projector -eq "z9x" -and @("blobs", "vbmeta") -contains $Command)) { Pt-Setup }

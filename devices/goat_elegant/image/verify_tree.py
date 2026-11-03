@@ -13,7 +13,11 @@
 # system_lib_file), hb_media.rc binding it over /apex/com.android.vndk.v33/lib, and ro.lumen.hb.c2foundation=1 in the
 # product build.prop (the rc's gate).
 # t11 (with IN): LumenInfo in /system/priv-app/LumenInfo and privapp-permissions-lumeninfo.xml, byte-identical to the stage.
-import hashlib, os, stat, sys
+# The public release (TAG hb-x.y.z[-mark]-release, with IN): the t10 lib with
+# hb_media.rc, hb_audio_policy_configuration.xml and their gate props absent; the Z9X blobs reader z9x_blobs.rc +
+# z9x_blobs.sh and the HB blobs_allow.txt present, each byte-identical to the stage; and NO file of the image has the
+# sha256 of a blob (MediaTek's libstagefright_foundation.so, the stock or the Lumen audio policy).
+import hashlib, os, re, stat, sys
 
 base, new, tag = sys.argv[1:4]
 IN = sys.argv[4] if len(sys.argv) > 4 else None
@@ -35,6 +39,7 @@ if "stick" in parts:
     ADDED["system/etc/init/hb_netadb.rc"] = ("u:object_r:system_file:s0", 0o644)
 CHANGED = {"system/product/etc/build.prop"}
 RELEASE = "release" in parts
+PUBLIC = re.fullmatch(r"hb-\d+\.\d+\.\d+(-[A-Za-z0-9]+)?-release", tag) is not None
 SOURCE = {}      # added or replaced path -> the staged file it must equal
 SIGNED = {}      # base_signed path -> new sha256
 PINNED = {}      # added path -> sha256 (files not staged from the Mac, read on the build server)
@@ -42,6 +47,14 @@ C2_LIB = "system/lib/hb_vndk33/libstagefright_foundation.so"
 C2_SHA = "b029d806d78f9d560723afe75dc3ff4600d38765f734cf03334d74030961854f"
 C2_BIND = ("    mount none /system/lib/hb_vndk33/libstagefright_foundation.so "
            "/apex/com.android.vndk.v33/lib/libstagefright_foundation.so bind")
+# the files of the blob set (blobs_allow.txt): never in a public image, by sha256 over every file
+BLOB_SHA = {
+    C2_SHA: "MediaTek VNDK libstagefright_foundation.so",
+    "d4783b3ed42902b888b4793d10a1e19af8548b710ee5988bc66afafb79e8d077": "XGIMI vendor audio_policy_configuration.xml",
+    "1f5cb6569af7285f66d88b774ab2232d9624e8c347034f810f6f842fd0c0fae9": "audio policy without XGIMI SUB Out (Lumen copy)",
+}
+PUBLIC_ABSENT = ("system/lib/hb_vndk33", "system/etc/init/hb_media.rc", "system/etc/xgimi/hb_audio_policy_configuration.xml")
+PUBLIC_GATES = ("ro.lumen.hb.c2foundation", "ro.lumen.hb.audiopolicy")
 if IN:
     F = "u:object_r:system_file:s0"
     SG = os.path.join(IN, "signed_stage")
@@ -85,6 +98,14 @@ if IN:
         "system/priv-app/LumenInfo/LumenInfo.apk": os.path.join(SG, "apps", "LumenInfo.apk"),
         "system/etc/permissions/privapp-permissions-lumeninfo.xml": os.path.join(IN, "privapp-permissions-lumeninfo.xml"),
     }
+    if PUBLIC:
+        for r in PUBLIC_ABSENT[1:]:
+            del lumen[r]
+        # the Z9X blobs reader (unchanged) and the HB allow-list; z9x_blobs.sh gets the fs_config 0644 of
+        # /system/etc like z9x_gapps.sh (started as "/system/bin/sh FILE")
+        lumen["system/etc/init/z9x_blobs.rc"] = os.path.join(IN, "z9x_blobs.rc")
+        lumen["system/etc/z9x/z9x_blobs.sh"] = os.path.join(IN, "z9x_blobs.sh")
+        lumen["system/etc/z9x/blobs_allow.txt"] = os.path.join(IN, "blobs_allow.txt")
     for r, src in lumen.items():
         ADDED[r] = (F, 0o644)
         SOURCE[r] = src
@@ -92,9 +113,10 @@ if IN:
               "system/priv-app/Z9xSetup", "system/priv-app/HbProjector", "system/app/Z9xTvInput", "system/app/BtPair",
               "system/priv-app/LumenInfo", "system/etc/z9x", "system/etc/z9x/gapps", "system/etc/z9x/gapps/sysconfig"):
         ADDED[d] = (F, 0o755)
-    ADDED["system/lib/hb_vndk33"] = ("u:object_r:system_lib_file:s0", 0o755)
-    ADDED[C2_LIB] = ("u:object_r:system_lib_file:s0", 0o644)
-    PINNED[C2_LIB] = C2_SHA
+    if not PUBLIC:
+        ADDED["system/lib/hb_vndk33"] = ("u:object_r:system_lib_file:s0", 0o755)
+        ADDED[C2_LIB] = ("u:object_r:system_lib_file:s0", 0o644)
+        PINNED[C2_LIB] = C2_SHA
     SOURCE["system/product/media/bootanimation.zip"] = os.path.join(IN, "bootanimation.zip")
     for line in open(os.path.join(SG, "base_signed", "base_signed.tsv")):
         if line.startswith("#") or not line.strip():
@@ -105,12 +127,17 @@ if IN:
 MODE_OK = {"lost+found"}
 
 
+_SHA = {}
+
+
 def sha(p):
-    h = hashlib.sha256()
-    with open(p, "rb") as f:
-        for b in iter(lambda: f.read(1 << 20), b""):
-            h.update(b)
-    return h.hexdigest()
+    if p not in _SHA:
+        h = hashlib.sha256()
+        with open(p, "rb") as f:
+            for b in iter(lambda: f.read(1 << 20), b""):
+                h.update(b)
+        _SHA[p] = h.hexdigest()
+    return _SHA[p]
 
 
 def xa(p, k):
@@ -195,6 +222,27 @@ if RELEASE:
         if r in n:
             errors.append("release: %s is in the image" % r)
     notes.append("release: ro.adb.secure=1, persist.sys.usb.config=none, no hb_netadb.rc, no boot logger")
+    if PUBLIC:
+        if not IN:
+            errors.append("public release: verified without IN")
+        for k in PUBLIC_GATES:
+            if k in last:
+                errors.append("public release: product build.prop has the gate %s of a file it does not ship" % k)
+        ver = tag[len("hb-"):-len("-release")]
+        if last.get("ro.lumen.version") != ver:
+            errors.append("public release: ro.lumen.version=%s, must be %s" % (last.get("ro.lumen.version"), ver))
+        for r in PUBLIC_ABSENT:
+            if r in n:
+                errors.append("public release: %s is in the image" % r)
+        nf = 0
+        for r, p in sorted(n.items()):
+            if stat.S_ISREG(os.lstat(p).st_mode):
+                nf += 1
+                if sha(p) in BLOB_SHA:
+                    errors.append("public release: %s has the sha256 of the blob %s" % (r, BLOB_SHA[sha(p)]))
+        notes.append("public: ro.lumen.version=%s, no gate props, no hb_vndk33 / hb_media.rc / audio policy, blobs reader "
+                     "and allow-list in; %d files hashed, none a blob (%s)"
+                     % (ver, nf, ", ".join(h[:8] for h in sorted(BLOB_SHA))))
 for c in capex:
     a = c[:-6] + ".apex"
     if a in n:
