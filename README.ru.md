@@ -19,7 +19,7 @@ Android TV 14 для проекторов XGIMI на основе LineageOS 21.
 |---|---|---|---|
 | XGIMI Z9X | стабильная | [Lumen OS 1.0.7](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.7) | [Русский](docs/install/z9x/ru.md), [English](docs/install/z9x/en.md) |
 | XGIMI Play 6 | стабильная | [Lumen OS 1.0.7 для Play 6](https://github.com/kmuradoff/lumen-os/releases/tag/play6-1.0.7) | [Русский](docs/install/play6/ru.md), [English](docs/install/play6/en.md) |
-| XGIMI Z9X HB | тест (пре-релиз) | [Lumen OS 1.0.7 beta 1 для Z9X HB](https://github.com/kmuradoff/lumen-os/releases/tag/hb-1.0.7-beta1) | [Русский](docs/install/hb/ru.md), [English](docs/install/hb/en.md) |
+| XGIMI Z9X HB | скоро | готовится первый релиз, сразу с обновлениями по Wi-Fi | [Русский](docs/install/hb/ru.md), [English](docs/install/hb/en.md) |
 
 У каждого проектора свои файлы релиза, подписанные своим ключом. Установщик не примет образ для другого
 проектора и прошивку XGIMI, которую он не знает.
@@ -31,9 +31,8 @@ Android TV 14 для проекторов XGIMI на основе LineageOS 21.
   USB, данные сохраняются. Обновления по Wi-Fi появятся позже.
 - XGIMI Play 6: сервисов Google в образе нет, и добавить их пока нельзя. Как и на Z9X, их планируется
   ставить отдельным дополнением, которое вы делаете сами из своего файла MindTheGapps.
-- XGIMI Z9X HB (модель G0130): прошивка XGIMI V6.16.24, другие версии не подходят. Тестовая сборка, проверена
-  на одном проекторе. Двух файлов XGIMI в образе нет: установщик копирует их с вашего же проектора. Сервисов
-  Google и обновлений по Wi-Fi пока нет.
+- XGIMI Z9X HB (модель G0130): прошивка XGIMI V6.16.24, другие версии не подходят. Первый релиз выйдет сразу
+  с обновлениями по Wi-Fi. Двух файлов XGIMI в образе нет: установщик копирует их с вашего же проектора.
 
 Другие проекторы добавятся позже.
 

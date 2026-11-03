@@ -19,7 +19,7 @@ Android TV 14 for XGIMI projectors, built on LineageOS 21.
 |---|---|---|---|
 | XGIMI Z9X | stable | [Lumen OS 1.0.7](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.7) | [English](docs/install/z9x/en.md), [Русский](docs/install/z9x/ru.md) |
 | XGIMI Play 6 | stable | [Lumen OS 1.0.7 for the Play 6](https://github.com/kmuradoff/lumen-os/releases/tag/play6-1.0.7) | [English](docs/install/play6/en.md), [Русский](docs/install/play6/ru.md) |
-| XGIMI Z9X HB | test (pre-release) | [Lumen OS 1.0.7 beta 1 for the Z9X HB](https://github.com/kmuradoff/lumen-os/releases/tag/hb-1.0.7-beta1) | [English](docs/install/hb/en.md), [Русский](docs/install/hb/ru.md) |
+| XGIMI Z9X HB | coming soon | the first release, with updates over Wi-Fi, is being prepared | [English](docs/install/hb/en.md), [Русский](docs/install/hb/ru.md) |
 
 Each projector has its own release files, signed with its own key. The installer refuses an image for
 another projector and any XGIMI firmware it does not know.
@@ -31,9 +31,8 @@ another projector and any XGIMI firmware it does not know.
   keeps your data. Updates over Wi-Fi come later.
 - XGIMI Play 6: Google services are not in the image and cannot be added yet. As on the Z9X, they are
   planned as an add-on that you make from your own MindTheGapps download.
-- XGIMI Z9X HB (model code G0130): XGIMI firmware V6.16.24, no other version. A test build, tested on one
-  projector. Two XGIMI files are not in the image: the installer copies them from your own projector. No
-  Google services and no updates over Wi-Fi yet.
+- XGIMI Z9X HB (model code G0130): XGIMI firmware V6.16.24, no other version. The first release comes with
+  updates over Wi-Fi. Two XGIMI files are not in the image: the installer copies them from your own projector.
 
 More projectors will come later.
 

@@ -8,6 +8,10 @@
 > This guide is for the XGIMI Z9X HB (model code G0130). The plain XGIMI Z9X (G0082) and the XGIMI Play 6
 > have their own guides and their own release files: [Z9X](../z9x/en.md), [Play 6](../play6/en.md).
 
+> [!IMPORTANT]
+> There is no HB release yet: the 1.0.7 beta 1 test build was withdrawn, the first release with updates over
+> Wi-Fi is being prepared. This guide will be updated for it.
+
 This guide covers the test build Lumen OS 1.0.7 beta 1 on the XGIMI Z9X HB (model code G0130) with XGIMI
 firmware V6.16.24. Lumen OS is built on LineageOS 21, it is Android TV 14. It replaces only the system
 partition. XGIMI's firmware, boot, vendor and calibration are not touched.
