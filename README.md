@@ -41,6 +41,11 @@ More projectors will come later.
 > image takes hours. If it gave your projector a second life, please [💖 support the project](#-support-the-project):
 > every donation goes to a faster build computer, so updates and new projectors come sooner.
 
+> [!WARNING]
+> **Lumen OS is never sold.** We do not sell the system, projectors with it, licences or "activation" of any kind.
+> If someone charged you for Lumen OS or for a projector "with Lumen OS", that was not us, and we take no
+> responsibility for such a sale. The only official source is the Releases page of this repository, free of charge.
+
 <p>
 <img src="docs/screenshots/en_01_projector.jpg" width="49%" alt="Projector settings in Lumen Home">
 <img src="docs/screenshots/en_03_pro.jpg" width="49%" alt="Professional picture settings">
