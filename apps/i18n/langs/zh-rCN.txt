@@ -308,7 +308,10 @@ pref_return_home=信号源断开时返回主屏幕
 pref_cec_otp=HDMI-CEC：设备请求时切换到 HDMI（One Touch Play）
 pref_cec_control=HDMI-CEC：用遥控器控制设备
 pref_cec_exit=HDMI-CEC：退出 HDMI 时通知设备
-pref_open_on_boot=开机时如已连接信号源，则打开 HDMI
+pref_boot_source=开机信号源：%1$s
+boot_source_home=主屏幕
+pref_boot_source_note=如果设备通过 HDMI-CEC 开启投影仪，则打开该设备的输入。
+back_key_guide=返回键现在用于控制已连接的设备。按主页键退出。
 settings_inputs_header=输入：
 settings_safe_mode=安全模式：多次失败后，自动切换将关闭，直到下次重启。
 toast_no_input=%1$s 不可用
@@ -1035,6 +1038,8 @@ voice_key_quota=今天的 Gemini 额度已用完，改用设备语音
 voice_key_bad=Google 未接受此密钥
 
 @projector/strings_parity.xml
+panel_ct_3=色温 3
+panel_lamp_mode_locked=%1$s模式下无法调节亮度
 boost_effect=Boost 让画面更亮，但颜色会变淡。色彩空间保持不变。
 boost_blocks_change=请关闭 Boost 后重试
 blocked_game=游戏模式开启时不可用

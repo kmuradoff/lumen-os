@@ -90,14 +90,15 @@ public final class Snapshot implements Cloneable {
     // ---- HDMI inputs (only while the screen's HDMI page or an export asks)
     public static final class Port {
         public int port;
-        public String file;              // the built-in EDID file of the selected version
-        public boolean fromIni;
+        public int raw;                  // TV 39 of this input (Hb.EDID_*)
+        public boolean remembered;       // raw is the last answer seen while this input was on screen, at seenAt
+        public long seenAt;
+        public String file;              // the built-in file the vendor loads for raw, null in game mode
         public String link;              // where it points when the file is a symlink (e.g. ../../G0000/tv/...), else null
         public Edid edid;                // decoded file, null if unreadable
     }
 
-    public List<Port> ports;
-    public boolean iniRead;
+    public List<Port> ports;            // inputs whose TV 39 is known: live for the one on screen, else remembered
     public List<String> builtinFiles;   // names in the EDID folder
     public Map<String, String> builtinLinks;   // name -> symlink target, for the names that are links
     public String edidDir;              // /mnt/vendor/xgimiconfig/<model>/tv

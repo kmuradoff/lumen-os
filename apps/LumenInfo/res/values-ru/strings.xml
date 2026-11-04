@@ -101,19 +101,12 @@
 
     <string name="r_edid_version">EDID для источников</string>
     <string name="r_port_file">HDMI %1$d: встроенный EDID</string>
-    <string name="r_port_edid">HDMI %1$d: что он сообщает</string>
-    <string name="v_file_guess">(имя предполагаемое, список производителя не прочитан)</string>
+    <string name="r_port_edid">HDMI %1$d: что в файле</string>
     <string name="v_edid_unreadable">файл не читается</string>
-    <string name="hdmi_note">Копии EDID, загруженного в приёмник, проектор не отдаёт. Здесь показан файл, который таблица производителя (mtk_Customer.ini этой модели) называет для выбранной версии EDID, и куда он ведёт, если это ссылка в общую папку G0000.</string>
+    <string name="hdmi_note">Копию EDID, который видят источники, проектор не отдаёт. Для каждого входа HDMI здесь показана его настройка EDID и встроенный файл, который производитель для неё загружает, и куда этот файл ведёт, если это ссылка в общую папку G0000. Настройку можно прочитать только пока вход на экране, поэтому для входа не на экране показано то, что было прочитано, когда он был на экране в последний раз (под оверлеем). Живой EDID может отличаться от файла: на всех входах, кроме ARC (HDMI 1), ядро в режиме передачи без декодирования переписывает форматы звука, поэтому звук показан только для HDMI 1.</string>
     <string name="btn_export_port">Сохранить EDID HDMI %1$d в Download</string>
     <string name="btn_details_port">EDID HDMI %1$d подробно</string>
-    <string name="btn_switch_edid">Включить EDID %1$s</string>
     <string name="btn_builtin">Все встроенные файлы EDID</string>
-    <string name="switch_title">Сменить EDID?</string>
-    <string name="switch_text">Источники на обоих входах HDMI увидят EDID %1$s. Картинка подключённого источника может пропасть на несколько секунд, пока он переподключается. Используются только родные файлы производителя.</string>
-    <string name="switch_ok">Сменить</string>
-    <string name="switch_done">Теперь включён EDID %1$s</string>
-    <string name="switch_failed">Проектор не принял изменение</string>
     <string name="cancel">Отмена</string>
     <string name="close">Закрыть</string>
     <string name="export">Сохранить в Download</string>
@@ -183,7 +176,6 @@
     <!-- владелец 2026-11-01: строки дополнительных геттеров вендора -->
     <string name="r_output">Тайминг вывода (чип)</string>
     <string name="r_video_info">Видео (данные чипа)</string>
-    <string name="r_signal_status">Код состояния сигнала</string>
     <string name="r_hdr_switch">Переключатель HDR (настройки картинки)</string>
     <string name="r_screen_zoom">Цифровой масштаб и сдвиг</string>
     <string name="r_arc">HDMI ARC</string>
@@ -214,4 +206,8 @@
     <string name="v_max_channels">до %1$d кан.</string>
     <string name="r_edid_cfg">Настройка EDID (модуль ядра)</string>
     <string name="v_own_file">свой файл модели</string>
+    <string name="v_edid_game">выбирает игровой режим</string>
+    <string name="r_port_version">HDMI %1$d: настройка EDID</string>
+    <string name="v_edid_remembered">(на %2$s, когда HDMI %1$d был на экране в последний раз)</string>
+    <string name="v_hdmi_audio_path">с HDMI-входа (аппаратный тракт, мимо Android)</string>
 </resources>

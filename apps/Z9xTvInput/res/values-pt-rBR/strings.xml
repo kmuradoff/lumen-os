@@ -32,7 +32,10 @@
     <string name="pref_cec_otp">HDMI-CEC: mudar para HDMI quando o dispositivo pedir (One Touch Play)</string>
     <string name="pref_cec_control">HDMI-CEC: controlar o dispositivo com o controle remoto</string>
     <string name="pref_cec_exit">HDMI-CEC: avisar o dispositivo ao sair do HDMI</string>
-    <string name="pref_open_on_boot">Abrir o HDMI ao ligar se houver uma fonte conectada</string>
+    <string name="pref_boot_source">Fonte ao ligar: %1$s</string>
+    <string name="boot_source_home">Ecrã inicial</string>
+    <string name="pref_boot_source_note">Se um dispositivo ligar o projetor por HDMI-CEC, abre-se a entrada dele.</string>
+    <string name="back_key_guide">VOLTAR controla agora o dispositivo ligado. Prima INÍCIO para sair.</string>
     <string name="settings_inputs_header">Entradas:</string>
     <string name="settings_safe_mode">Modo de segurança: após falhas repetidas, a troca automática fica desativada até a próxima reinicialização.</string>
     <string name="toast_no_input">%1$s não está disponível</string>

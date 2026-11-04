@@ -16,7 +16,7 @@ import org.lumen.info.core.HalStructs;
  * (writeInterfaceToken + arguments -> transact -> readException + value), the same wire as HbProjector's
  * AidlCaller. Allow list: only the members of {@link Call} can be sent; every one is a row of core.Hb.PLAN, which
  * the host test checks against devices/goat_elegant/research/allowed.tsv, aidl_codes.tsv and banned.tsv.
- * All are getters except setEdidVersion, which takes only 1 or 2 (the two stock EDID choices). The getters added on
+ * All are getters. The getters added on
  * 2026-11-01 are rows of research/allowed_lumeninfo.tsv; arguments are limited to HDMI ports 1 / 2, the
  * HDMI ARC device id and the DISPLAY 103 ranges.
  *
@@ -55,7 +55,6 @@ public final class HbGmpf {
         GET_PICTURE_MODE(Iface.TV, 34, "getPictureMode"),
         GET_HDMI_INFO(Iface.TV, 38, "getHdmiInfo"),
         GET_EDID_VERSION(Iface.TV, 39, "getEdidVersion"),
-        SET_EDID_VERSION(Iface.TV, 40, "setEdidVersion"),
         GET_HDMI_RANGE(Iface.TV, 64, "getHdmiRange"),
         GET_HDR_TYPE(Iface.TV, 78, "getHdrType"),
         GET_ALLM_STATUS(Iface.TV, 131, "getAllmStatus"),
@@ -141,11 +140,6 @@ public final class HbGmpf {
 
     public static int edidVersion() throws RemoteException { return call(Call.GET_EDID_VERSION, null, Parcel::readInt); }
 
-    /** TV 40 with 1 (EDID 1.4) or 2 (EDID 2.0) only; anything else is refused before sending. */
-    public static boolean setEdidVersion(int v) throws RemoteException {
-        if (v != 1 && v != 2) throw new IllegalArgumentException("EDID version " + v + " is not a stock value");
-        return call(Call.SET_EDID_VERSION, p -> p.writeInt(v), Parcel::readBoolean);
-    }
 
     public static int hdmiRange() throws RemoteException { return call(Call.GET_HDMI_RANGE, null, Parcel::readByte); }
 

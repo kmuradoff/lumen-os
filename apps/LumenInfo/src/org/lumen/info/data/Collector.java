@@ -4,6 +4,7 @@ import android.app.ActivityManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
@@ -103,8 +104,9 @@ public final class Collector {
     private boolean thermalSearched;
     private final Map<String, String> labels = new HashMap<>();
     private final Map<String, Edid> edidCache = new HashMap<>();
-    private Map<String, Map<String, String>> ini;
-    private String model;   // ro.boot.xgimi.modelname, read with the ini
+    private boolean hfr;    // Hb.hfrRule of the model's feature.xml, read once with the EDID folder
+    private int edidSrc = -1;   // the input w.edidVersion was read on
+    private String model;   // ro.boot.xgimi.modelname
     private boolean iniTried;
 
     private Collector(Context app) {
@@ -231,7 +233,9 @@ public final class Collector {
             w.hdmi = null;
             w.allm = null;
             w.hdmiRange = null;
+            w.edidVersion = null;   // TV 39 is per input: the HDMI page shows each input's remembered value instead
         }
+        if (edidSrc != src) w.edidVersion = null;   // read on another input: not this one's
         List<String> plan = Hb.schedule(tick, hdmi, wantEdid);
         for (int i = 1; i < plan.size(); i++) read(plan.get(i), src, hdmi);
     }
@@ -244,7 +248,12 @@ public final class Collector {
             case Hb.VIDEO_INFO: w.videoInfo = opt(HbGmpf::videoInfo); break;
             case Hb.HDR_VIVID: w.hdrVivid = opt(HbGmpf::hdrVividPlaying); break;
             case Hb.OUTPUT_TIMING: w.outputTiming = opt(HbGmpf::outputTiming); break;
-            case Hb.EDID_VERSION: w.edidVersion = opt(HbGmpf::edidVersion); break;
+            // off HDMI, TV 39 answers for the media slot, which loads nothing
+            case Hb.EDID_VERSION:
+                w.edidVersion = hdmi ? opt(HbGmpf::edidVersion) : null;
+                edidSrc = src;
+                if (w.edidVersion != null) rememberEdid(src, w.edidVersion);
+                break;
             case Hb.RANGE: w.hdmiRange = opt(HbGmpf::hdmiRange); break;
             case Hb.ALLM: w.allm = opt(() -> HbGmpf.allmStatus(src)); break;
             case Hb.PICTURE_MODE: w.pictureMode = opt(HbGmpf::pictureMode); break;
@@ -578,10 +587,13 @@ public final class Collector {
         }
         w.arcOurs = null;
         w.arcOursFile = null;
-        if (w.arcPort > 0 && vendorAvailable && w.edidVersion != null) {
+        // TV 39 answers for the input on screen only, and the kernel keeps the file's audio block on the ARC input
+        // alone, so this is shown only while the ARC input itself is on screen
+        Integer src = w.inputSource;
+        Integer raw = edidOf(Hb.ARC_INPUT);
+        if (w.arcPort == Hb.ARC_INPUT && vendorAvailable && raw != null) {
             loadIni();
-            int ver = w.edidVersion == Hb.EDID_20 ? Hb.EDID_20 : Hb.EDID_14;
-            String f = Hb.edidFile(ini, model, w.arcPort, ver);
+            String f = Hb.edidFile(model, w.arcPort, raw, hfr);
             Edid e = f == null ? null : edid(f);
             if (e != null && e.valid) {
                 w.arcOurs = e.audio;
@@ -661,36 +673,73 @@ public final class Collector {
     }
 
     // ---------------------------------------------------------------- built-in EDID files
+    /**
+     * One row per HDMI input. TV 39 answers for the input on screen only, and this app's own screen is never an HDMI
+     * input, so an input that is not on screen shows the value TV 39 gave the last time it was (seen under the
+     * overlay), marked as remembered; an input never seen is left out.
+     */
     private void readPorts() {
         loadIni();
         if (!vendorAvailable) return;   // not an HB: these folders mean nothing elsewhere
-        Integer v = w.edidVersion;
-        if (v == null) v = opt(HbGmpf::edidVersion);
-        if (v == null) return;
-        w.edidVersion = v;
-        int ver = v == Hb.EDID_20 ? Hb.EDID_20 : Hb.EDID_14;   // the stock UI shows every other value as 1.4
+        Integer src = w.inputSource;
+        boolean onHdmi = src != null && Hb.isHdmi(src);
+        if (onHdmi) {
+            Integer v = opt(HbGmpf::edidVersion);
+            w.edidVersion = v;
+            edidSrc = src;
+            if (v != null) rememberEdid(src, v);
+        }
+        SharedPreferences seen = app.getSharedPreferences(SEEN_PREFS, Context.MODE_PRIVATE);
         List<Snapshot.Port> ports = new ArrayList<>();
         for (int p : Hb.HDMI_PORTS) {
             Snapshot.Port port = new Snapshot.Port();
             port.port = p;
-            port.file = Hb.edidFile(ini, model, p, ver);
-            if (port.file == null) continue;
-            port.fromIni = Hb.edidFromIni(ini, p, ver);
-            port.link = linkOf(port.file);
-            port.edid = edid(port.file);
+            boolean live = onHdmi && src == p && edidSrc == p && w.edidVersion != null;
+            if (live) {
+                port.raw = w.edidVersion;
+            } else if (seen.contains("raw" + p)) {
+                port.raw = seen.getInt("raw" + p, Hb.EDID_14);
+                port.seenAt = seen.getLong("at" + p, 0);
+                port.remembered = true;
+            } else {
+                continue;
+            }
+            port.file = Hb.edidFile(model, p, port.raw, hfr);   // null for the game mode request: the vendor picks then
+            if (port.file != null) {
+                port.link = linkOf(port.file);
+                port.edid = edid(port.file);
+            }
             ports.add(port);
         }
         w.ports = ports;
     }
 
-    /** The vendor ini and the list of built-in EDID files, read once. */
+    private static final String SEEN_PREFS = "edid_seen";
+
+    /** TV 39 of an input: live when it is on screen and was read there, else the remembered value, else null. */
+    private Integer edidOf(int port) {
+        Integer src = w.inputSource;
+        if (src != null && src == port && edidSrc == port && w.edidVersion != null) return w.edidVersion;
+        SharedPreferences seen = app.getSharedPreferences(SEEN_PREFS, Context.MODE_PRIVATE);
+        return seen.contains("raw" + port) ? seen.getInt("raw" + port, Hb.EDID_14) : null;
+    }
+
+    /** Keep the TV 39 answer of an HDMI input while it is on screen (this app's own prefs). */
+    private void rememberEdid(int port, int raw) {
+        if (!Hb.isHdmi(port)) return;
+        SharedPreferences seen = app.getSharedPreferences(SEEN_PREFS, Context.MODE_PRIVATE);
+        if (seen.getInt("raw" + port, Integer.MIN_VALUE) == raw && seen.contains("at" + port)
+                && System.currentTimeMillis() - seen.getLong("at" + port, 0) < 60_000) return;
+        seen.edit().putInt("raw" + port, raw).putLong("at" + port, System.currentTimeMillis()).apply();
+    }
+
+    /** The model, its feature.xml rule and the list of built-in EDID files, read once. */
     private void loadIni() {
         if (!iniTried) {
             iniTried = true;
             model = SystemProperties.get("ro.boot.xgimi.modelname", "");
-            String vi = Hb.vendorIni(model);
-            ini = vi == null ? null : Parse.ini(Dumps.file(vi, 256 * 1024));
-            if (ini != null && ini.isEmpty()) ini = null;
+            String fx = Hb.featureXml(model);
+            hfr = fx != null && Hb.hfrRule(Parse.features(Dumps.file(fx, 256 * 1024)));
             String ed = Hb.edidDir(model);
             List<String> files = new ArrayList<>();
             Map<String, String> links = new HashMap<>();
@@ -711,7 +760,6 @@ public final class Collector {
                 String l = linkOf(ed + "/edid_cfg.ini");
                 w.edidCfgLink = l == null ? "" : l;
             }
-            w.iniRead = ini != null;
         }
     }
 
@@ -745,22 +793,6 @@ public final class Collector {
         h.post(() -> {
             Edid e = w.edidDir == null ? null : edid(w.edidDir + "/" + name);
             main.post(() -> done.accept(e));
-        });
-    }
-
-    /** TV 40 with 1 or 2, then read the version back. done(true) when the vendor accepted it. */
-    public void switchEdid(int version, Consumer<Boolean> done) {
-        Handler h = bg;
-        if (h == null || (version != Hb.EDID_14 && version != Hb.EDID_20)) {
-            done.accept(false);
-            return;
-        }
-        h.post(() -> {
-            Boolean ok = opt(() -> HbGmpf.setEdidVersion(version));
-            Log.i(TAG, "setEdidVersion(" + version + ") -> " + ok);
-            w.edidVersion = opt(HbGmpf::edidVersion);
-            readPorts();
-            main.post(() -> done.accept(ok != null && ok));
         });
     }
 

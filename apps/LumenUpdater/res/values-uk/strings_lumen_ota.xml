@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ukrainian translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">Перевірка безпеки оновлень на цьому проєкторі не працює (%1$s). Перезапустіть проєктор і спробуйте ще раз.</string>
+    <string name="blk_not_marked">Цю версію ще не підтверджено як робочу. Залиште проєктор увімкненим на кілька хвилин і спробуйте ще раз.</string>
+    <string name="blk_probe">Перевірка безпеки оновлень не відповіла (%1$s). Перезапустіть проєктор і спробуйте ще раз.</string>
+    <string name="blk_active">Наступного разу проєктор запуститься із системного слота %1$s. Перезапустіть проєктор і спробуйте ще раз.</string>
+    <string name="blk_partitions">На цій версії оновлення небезпечні: неправильний список розділів (%1$s). Скористайтеся інсталятором для комп’ютера.</string>
+    <string name="blk_vab">Пам’ять цього проєктора не підготовлена для оновлень (%1$s). Скористайтеся інсталятором для комп’ютера.</string>
+</resources>

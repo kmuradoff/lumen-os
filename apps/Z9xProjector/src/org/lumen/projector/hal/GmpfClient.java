@@ -742,12 +742,11 @@ public final class GmpfClient extends HidlCaller {
         callU8(SET_DLP_LUMENS_LEVEL, checkRange("lamp level", level, 1, 10));
     }
 
-    /** 175 getDlpLumensMode() -> u8 (colour temperature; null if not 16/17). */
-    public ColorTemp getColorTemp() throws RemoteException {
-        int v = callRetU8(GET_DLP_LUMENS_MODE);
-        for (ColorTemp c : ColorTemp.values()) if (c.wire == v) return c;
-        return null;
-    }
+    /**
+     * 175 getDlpLumensMode() -> raw u8: 16 D65, 17 Colour temp 1, 12 Office, 15 Performance, 6 custom (stock
+     * DisplayHelper). Snapshot keeps colorTemp only for the ColorTemp values (Lumen OS 1.0.8, parity picture 13).
+     */
+    public int getLumensModeRaw() throws RemoteException { return callRetU8(GET_DLP_LUMENS_MODE); }
     /** 174 setDlpLumensMode(u8 16|17). Re-read the lamp level (177) afterwards (QS). TSV W=writeUint8 R=. */
     public void setColorTemp(ColorTemp c) throws RemoteException { callU8(SET_DLP_LUMENS_MODE, c.wire); }
 

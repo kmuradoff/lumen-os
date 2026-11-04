@@ -15,19 +15,35 @@
 #     hb_netadb.rc, the boot logger);
 #   - effective props (system, system_ext, then product build.prop; the last line of a key wins):
 #     ro.adb.secure=1, persist.sys.usb.config=none, ro.lumen.device=goat_elegant, ro.lumen.version = the version
-#     of the file name, no ro.lumen.hb.c2foundation / ro.lumen.hb.audiopolicy.
+#     of the file name, no ro.lumen.hb.c2foundation / ro.lumen.hb.audiopolicy;
+#   - since 1.0.8 the OTA client, owner root, each file byte-identical to its
+#     repo copy: the gate (/system/etc/lumen/lumen_ota.sh, /system/etc/init/lumen_ota.rc, the gate's
+#     /system/etc/init/update_verifier.rc, /system/etc/xgimi/lumen_escape.sh = tools/devices/ota/image/
+#     lumen_ota_escape.sh), /system/etc/lumen/ota_gate.conf, the updater's default permissions; /system/bin/bootctl
+#     with the sha256 of bootctl.sha256; LumenUpdater (/system/app, an APK); /system/etc/security/otacerts.zip =
+#     what tools/devices/ota/make_otacerts.py builds from devices/goat_elegant/certs (exactly ota.x509.pem and
+#     ota_next.x509.pem) and no certificate of another key set (AOSP test keys, the Z9X, the Play 6); no Z9X gate
+#     file; the props ro.lumen.ota.gate=1, ro.lumen.ota.device = the wire id of devices/goat_elegant/ota.conf,
+#     ro.product.ab_ota_partitions = its list, ro.lumen.ota.manifest_url = update-<channel>.json on its manifest_tag
+#     for a channel of the device, and ro.lumen.version_code by design decision.
+import glob
 import hashlib
+import io
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
+import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GSI = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.join(GSI, "tools", "sign"))
 import check_image  # noqa: E402  read only: its MTK_SHA table
+sys.path.insert(0, os.path.join(GSI, "tools", "devices", "ota"))
+import ota_conf  # noqa: E402  read only: the ota.conf reader and the O1 version code
 
 BLOB_SHA = {
     "b029d806d78f9d560723afe75dc3ff4600d38765f734cf03334d74030961854f": "MediaTek VNDK libstagefright_foundation.so",
@@ -40,8 +56,26 @@ BLOBS_FILES = {
     "/system/etc/z9x/blobs_allow.txt": os.path.join(HERE, "blobs_allow.txt"),
 }
 INSTALLER_ALLOW = os.path.join(GSI, "installer", "lib", "hb", "blobs_allow.txt")
+OTA_IMG = os.path.join(GSI, "tools", "devices", "ota", "image")
+OTA_FILES = {
+    "/system/etc/lumen/lumen_ota.sh": os.path.join(OTA_IMG, "lumen_ota.sh"),
+    "/system/etc/init/lumen_ota.rc": os.path.join(OTA_IMG, "lumen_ota.rc"),
+    "/system/etc/init/update_verifier.rc": os.path.join(OTA_IMG, "lumen_update_verifier.rc"),
+    "/system/etc/xgimi/lumen_escape.sh": os.path.join(OTA_IMG, "lumen_ota_escape.sh"),
+    "/system/etc/lumen/ota_gate.conf": os.path.join(HERE, "ota_gate.conf"),
+    "/system/etc/default-permissions/z9x-updater-default-permissions.xml":
+        os.path.join(GSI, "tools", "ota", "image", "z9x-updater-default-permissions.xml"),
+}
+BOOTCTL = "/system/bin/bootctl"
+UPDATER = "/system/app/LumenUpdater/LumenUpdater.apk"
+OTACERTS = "/system/etc/security/otacerts.zip"
+OTA_CONF = os.path.join(GSI, "devices", "goat_elegant", "ota.conf")
+# certificates of the other key sets: never in this device's otacerts.zip (AOSP test keys, Z9X, Play 6, SDK)
+FOREIGN_CERTS = ("tools/sign/testcerts/*.pem", "tools/sign/release_certs/*.pem", "tools/play6/certs/*.pem",
+                 "apps/sdk/*.pem", "installer/certs/*.pem")
 ABSENT = ("/system/lib/hb_vndk33", "/system/etc/init/hb_media.rc", "/system/etc/xgimi/hb_audio_policy_configuration.xml",
-          "/system/etc/init/hb_netadb.rc", "/system/etc/init/z9x_earlylog.rc", "/system/etc/xgimi/z9x_earlylog.sh")
+          "/system/etc/init/hb_netadb.rc", "/system/etc/init/z9x_earlylog.rc", "/system/etc/xgimi/z9x_earlylog.sh",
+          "/system/etc/init/z9x_ota.rc", "/system/etc/z9x/z9x_ota.sh")
 PROP_FILES = ("/system/build.prop", "/system/system_ext/etc/build.prop", "/system/product/etc/build.prop")
 NAME_RX = (r"lumen-os-hb-(\d+\.\d+\.\d+(?:-[A-Za-z0-9]+)?)-nogms-system\.img",
            r"system_hb-(\d+\.\d+\.\d+(?:-[A-Za-z0-9]+)?)-release\.img")
@@ -88,6 +122,52 @@ def walk(dump, img):
             elif t == 1:
                 files[child] = n
     return files
+
+
+def _bytes(dump, img, nid):
+    return run(dump, img, "--cat", "--nid=%d" % nid)
+
+
+def der(pem_bytes):
+    r = subprocess.run(["openssl", "x509", "-outform", "DER"], input=pem_bytes, capture_output=True)
+    return r.stdout if r.returncode == 0 else b""
+
+
+def otacerts_errors(zpath):
+    """The image's otacerts.zip against this device's certificates: exactly what make_otacerts.py builds from
+    devices/goat_elegant/certs, and no certificate of another key set. -> list of errors."""
+    errs = []
+    try:
+        z = zipfile.ZipFile(zpath)
+        entries = [(n, z.read(n)) for n in z.namelist()]
+    except zipfile.BadZipFile:
+        return ["ota: %s is not a zip" % OTACERTS]
+    names = [n for n, _ in entries]
+    if names != ["ota.x509.pem", "ota_next.x509.pem"]:
+        errs.append("ota: %s holds %s, must be exactly ota.x509.pem and ota_next.x509.pem" % (OTACERTS, names))
+    foreign = {}
+    for pat in FOREIGN_CERTS:
+        for f in glob.glob(os.path.join(GSI, pat)):
+            d = der(open(f, "rb").read())
+            if d:
+                foreign.setdefault(d, os.path.relpath(f, GSI))
+    for n, b in entries:
+        if b"PRIVATE KEY" in b:
+            errs.append("ota: %s: %s holds a private key" % (OTACERTS, n))
+        d = der(b)
+        if not d:
+            errs.append("ota: %s: %s is not a certificate" % (OTACERTS, n))
+        elif d in foreign:
+            errs.append("ota: %s: %s is %s (another key set)" % (OTACERTS, n, foreign[d]))
+    r = subprocess.run([sys.executable, "-B", os.path.join(GSI, "tools", "devices", "ota", "make_otacerts.py"),
+                        "--root", GSI, "--device", "goat_elegant", "--check", zpath], capture_output=True, text=True)
+    if r.returncode:
+        errs.append("ota: %s is not what make_otacerts.py builds from devices/goat_elegant/certs: %s"
+                    % (OTACERTS, (r.stdout + r.stderr).strip().splitlines()[-1:]))
+    elif not errs:
+        print("ota: %s = [ota.x509.pem, ota_next.x509.pem] of devices/goat_elegant/certs (make_otacerts.py --check), "
+              "no certificate of another key set (%d checked)" % (OTACERTS, len(foreign)))
+    return errs
 
 
 def main():
@@ -151,7 +231,51 @@ def main():
         print("note: no installer/lib/hb/blobs_allow.txt yet (not compared)")
     for p in ABSENT:
         if info(dump, img, p):
-            errs.append("test-build file in the image: %s" % p)
+            errs.append("test-build or Z9X gate file in the image: %s" % p)
+
+    # the OTA client
+    for p, src in OTA_FILES.items():
+        want = hashlib.sha256(open(src, "rb").read()).hexdigest()
+        st = info(dump, img, p)
+        if p not in sha:
+            errs.append("ota: %s is not in the image" % p)
+        elif sha[p] != want:
+            errs.append("ota: %s is not byte-identical to %s" % (p, os.path.relpath(src, GSI)))
+        elif not st or st[1] != 0:
+            errs.append("ota: %s is not owned by root (%s)" % (p, st))
+        else:
+            print("ota: %s = %s (%s...)" % (p, os.path.relpath(src, GSI), want[:16]))
+    pin = open(os.path.join(HERE, "bootctl.sha256")).read().split()[0]
+    st = info(dump, img, BOOTCTL)
+    if sha.get(BOOTCTL) != pin:
+        errs.append("ota: %s is %s, not the pinned bootctl %s (bootctl.sha256)" % (BOOTCTL, sha.get(BOOTCTL), pin))
+    elif not st or st[1] != 0 or st[2] != "0755":
+        errs.append("ota: %s is not root-owned 0755 (%s)" % (BOOTCTL, st))
+    else:
+        print("ota: %s = the pinned bootctl (%s..., mode %s)" % (BOOTCTL, pin[:16], st[2]))
+    if UPDATER not in sha:
+        errs.append("ota: %s is not in the image" % UPDATER)
+    else:
+        try:
+            names = zipfile.ZipFile(io.BytesIO(_bytes(dump, img, files[UPDATER]))).namelist()
+        except zipfile.BadZipFile:
+            names = []
+        if "AndroidManifest.xml" not in names:
+            errs.append("ota: %s is not an APK" % UPDATER)
+        else:
+            print("ota: %s present (%s...)" % (UPDATER, sha[UPDATER][:16]))
+    with tempfile.TemporaryDirectory() as tmp:
+        oc = os.path.join(tmp, "otacerts.zip")
+        if OTACERTS not in sha:
+            errs.append("ota: %s is not in the image" % OTACERTS)
+        else:
+            open(oc, "wb").write(_bytes(dump, img, files[OTACERTS]))
+            errs += otacerts_errors(oc)
+    try:
+        oconf = ota_conf.parse(OTA_CONF)
+    except ota_conf.OtaError as e:
+        oconf = None
+        errs.append("ota: %s" % e)
 
     last = {}
     for p in PROP_FILES:
@@ -169,9 +293,30 @@ def main():
     for k in ("ro.lumen.hb.c2foundation", "ro.lumen.hb.audiopolicy"):
         if k in last:
             errs.append("props: %s is set (a gate of a file a public image does not ship)" % k)
+    if oconf:
+        want = {"ro.lumen.ota.gate": "1", "ro.lumen.ota.device": oconf["wire_id"],
+                "ro.product.ab_ota_partitions": ",".join(oconf["ab_ota_partitions"])}
+        for k, v in want.items():
+            if last.get(k) != v:
+                errs.append("props: %s=%s, must be %s (ota.conf)" % (k, last.get(k), v))
+        url = last.get("ro.lumen.ota.manifest_url", "")
+        m = re.fullmatch(r"https://github\.com/%s/releases/download/%s/update-(%s-[a-z0-9-]+)\.json"
+                         % (re.escape(oconf["repo"]), re.escape(oconf["manifest_tag"]), re.escape(oconf["wire_id"])), url)
+        if not m or m.group(1) in ota_conf.Z9X_CHANNELS:
+            ch = re.search(r"/update-([^/]*)\.json$", url)
+            errs.append("props: ro.lumen.ota.manifest_url=%s: the image reads channel %s, not update-%s-<channel>.json "
+                        "on the tag %s" % (url, ch.group(1) if ch else "?", oconf["wire_id"], oconf["manifest_tag"]))
+    try:
+        vc = ota_conf.version_code(ver)
+        if last.get("ro.lumen.version_code") != str(vc):
+            errs.append("props: ro.lumen.version_code=%s, %s needs %d (decision O1, x*1000000 + y*10000 + z*100 + n)"
+                        % (last.get("ro.lumen.version_code"), ver, vc))
+    except ota_conf.OtaError as e:
+        errs.append("props: %s" % e)
     print("props: " + ", ".join("%s=%s" % (k, last.get(k)) for k in
                                 ("ro.adb.secure", "persist.sys.usb.config", "ro.lumen.device", "ro.lumen.version",
-                                 "ro.lumen.version_code", "ro.lumen.build_id")))
+                                 "ro.lumen.version_code", "ro.lumen.build_id", "ro.lumen.ota.gate",
+                                 "ro.lumen.ota.device", "ro.lumen.ota.manifest_url", "ro.product.ab_ota_partitions")))
     if errs:
         print("ERRORS (%d):" % len(errs))
         for e in errs:

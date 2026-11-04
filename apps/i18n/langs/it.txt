@@ -311,7 +311,10 @@ pref_return_home=Torna alla schermata Home quando la sorgente viene scollegata
 pref_cec_otp=HDMI-CEC: passa a HDMI su richiesta del dispositivo (One Touch Play)
 pref_cec_control=HDMI-CEC: controlla il dispositivo con il telecomando
 pref_cec_exit=HDMI-CEC: avvisa il dispositivo quando esci da HDMI
-pref_open_on_boot=Apri HDMI all'accensione se una sorgente è collegata
+pref_boot_source=Sorgente all'accensione: %1$s
+boot_source_home=Schermata Home
+pref_boot_source_note=Se un dispositivo accende il proiettore tramite HDMI-CEC, si apre il suo ingresso.
+back_key_guide=INDIETRO ora controlla il dispositivo collegato. Premi HOME per uscire.
 settings_inputs_header=Ingressi:
 settings_safe_mode=Modalità provvisoria: dopo errori ripetuti, il passaggio automatico resta disattivato fino al prossimo riavvio.
 toast_no_input=%1$s non è disponibile
@@ -1040,6 +1043,8 @@ voice_key_quota=Il limite Gemini di oggi è raggiunto, parla la voce del disposi
 voice_key_bad=Google non ha accettato questa chiave
 
 @projector/strings_parity.xml
+panel_ct_3=Temp. colore 3
+panel_lamp_mode_locked=In modalità %1$s la luminosità non si può cambiare
 boost_effect=Il Boost rende l’immagine più luminosa, ma i colori appaiono più pallidi. Lo spazio colore non cambia.
 boost_blocks_change=Disattiva il Boost e riprova
 blocked_game=Non disponibile mentre la modalità gioco è attiva

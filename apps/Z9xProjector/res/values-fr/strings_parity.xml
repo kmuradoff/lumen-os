@@ -9,5 +9,7 @@
     <string name="game_top_speed_confirm">Le mode Turbo désactive la correction du trapèze et remet l’image en plein cadre. Changer ?</string>
     <string name="picture_reset_all">Réinitialiser tous les réglages d’image</string>
     <string name="picture_reset_all_msg">Le mode d’image et les réglages de base et professionnels reviennent aux valeurs par défaut. Continuer ?</string>
+    <string name="panel_ct_3">Temp. couleur 3</string>
+    <string name="panel_lamp_mode_locked">En mode %1$s, la luminosité ne peut pas être modifiée</string>
     <string name="three_d_native_fps">Désactivez d’abord la fréquence d’images d’origine</string>
 </resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB build of the HDMI input app: the per-device switches of apps/Z9xTvInput/res/values/bools.xml. -->
+<resources>
+    <!-- The one-time "BACK controls the device, HOME leaves" hint stays on: tested on the HB 2026-11-03; stock
+         gates it with ro.vendor.xgimi.system.isatv (the HB value is not read yet). -->
+    <bool name="tvinput_back_hint">true</bool>
+</resources>

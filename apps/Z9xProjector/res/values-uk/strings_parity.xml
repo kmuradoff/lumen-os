@@ -9,5 +9,7 @@
     <string name="game_top_speed_confirm">Турбо вимикає корекцію трапеції й повертає картинку до повного кадру. Перемкнути?</string>
     <string name="picture_reset_all">Скинути всі налаштування зображення</string>
     <string name="picture_reset_all_msg">Режим зображення, базові та професійні налаштування повернуться до типових значень. Продовжити?</string>
+    <string name="panel_ct_3">Температура 3</string>
+    <string name="panel_lamp_mode_locked">У режимі «%1$s» яскравість не змінюється</string>
     <string name="three_d_native_fps">Спершу вимкніть вихідну частоту кадрів</string>
 </resources>

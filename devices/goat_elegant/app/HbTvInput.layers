@@ -1,0 +1,9 @@
+# Recipe of the Z9X HB HDMI input app (org.lumen.tvinput), read by tools/devices/assemble_app.py. The HB app is the
+# Z9X app plus the HB layer (apps/HbTvInput: since Z9X 1.0.8 only res/values/bools.xml, a fork with a row in
+# devices/goat_elegant/forks.tsv: the one-time BACK hint on). The Z9X folder is only read; the Z9X image keeps
+# its pinned Z9xTvInput.apk.
+app       HbTvInput
+base      apps/Z9xTvInput
+top       apps/HbTvInput
+# never part of an app tree: build output, APKs, notes
+skip      build/ *.apk CHANGES*.md README*.md SYNCED.txt .DS_Store

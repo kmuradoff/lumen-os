@@ -29,6 +29,11 @@ final class Snapshot {
 
     Integer source, hdr, pictureMode, lamp, colorTemp, memc, fmt3d, gameOption, aspect, soundEffect,
             soundProcess, putMode;
+    /**
+     * Lumen OS 1.0.8: raw IGmpf 175 lumens mode, null = read failed. colorTemp = its wire only when the device's
+     * GmpfClient.ColorTemp lists it (Z9X 16 / 17, HB 0 / 16), else null, as before.
+     */
+    Integer lumensMode;
     final Integer[] pq = new Integer[4];   // GmpfClient.PqItem order: BRIGHTNESS, CONTRAST, SATURATION, SHARPNESS
     /** Lumen OS 1.0.4: IGmpf2 283 original frame rate (stock blocks motion smoothing while it is on). */
     Boolean nativeFps;
@@ -70,10 +75,8 @@ final class Snapshot {
         s.hdr = opt("620", g::getHdrType);
         s.pictureMode = opt("666", g::getPictureModeRaw);
         s.lamp = opt("177", g::getLampLevel);
-        s.colorTemp = opt("175", () -> {
-            GmpfClient.ColorTemp c = g.getColorTemp();
-            return c == null ? null : c.wire;
-        });
+        s.lumensMode = opt("175", g::getLumensModeRaw);
+        s.colorTemp = listedColorTemp(s.lumensMode);
         s.memc = opt("668", g::getMemcLevel);
         GmpfClient.PqItem[] items = GmpfClient.PqItem.values();
         for (int i = 0; i < items.length && i < s.pq.length; i++) {
@@ -136,6 +139,13 @@ final class Snapshot {
     }
 
     /** 3D (or 3D-to-2D) active. Stock is3dMode: getCurrent3DFormat() != 1. Unknown counts as active. */
+    /** Wire of a listed GmpfClient.ColorTemp, null otherwise. Not a HAL call. */
+    private static Integer listedColorTemp(Integer raw) {
+        if (raw == null) return null;
+        for (GmpfClient.ColorTemp c : GmpfClient.ColorTemp.values()) if (c.wire == raw) return c.wire;
+        return null;
+    }
+
     boolean is3dActive() {
         if (fmt3d == null) return true;
         return fmt3d != 1 || Boolean.TRUE.equals(is3dTo2d);

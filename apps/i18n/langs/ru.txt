@@ -885,6 +885,8 @@ voice_key_quota=Лимит Gemini на сегодня исчерпан, гово
 voice_key_bad=Google не принял этот ключ
 
 @projector/strings_parity.xml
+panel_ct_3=Температура 3
+panel_lamp_mode_locked=В режиме «%1$s» яркость не меняется
 boost_effect=Boost делает картинку ярче, но цвета становятся бледнее. Цветовое пространство не меняется.
 boost_blocks_change=Выключите Boost и повторите
 blocked_game=Недоступно, пока включён игровой режим

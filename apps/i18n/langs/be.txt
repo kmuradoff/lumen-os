@@ -313,7 +313,10 @@ pref_return_home=Вяртацца на галоўны экран, калі кр�
 pref_cec_otp=HDMI-CEC: уключаць HDMI па камандзе прылады (One Touch Play)
 pref_cec_control=HDMI-CEC: кіраваць прыладай з пульта
 pref_cec_exit=HDMI-CEC: паведамляць прыладзе пра выхад з HDMI
-pref_open_on_boot=Адкрываць HDMI пры ўключэнні, калі крыніца падключана
+pref_boot_source=Крыніца пры ўключэнні: %1$s
+boot_source_home=Галоўны экран
+pref_boot_source_note=Калі праектар уключыла прылада праз HDMI-CEC, адкрыецца яе ўваход.
+back_key_guide=Кнопка «Назад» цяпер кіруе падключанай прыладай. Каб выйсці, націсніце «Дадому».
 settings_inputs_header=Уваходы:
 settings_safe_mode=Бяспечны рэжым: пасля паўторных збояў аўтапераключэнне выключана да наступнага перазапуску.
 toast_no_input=%1$s недаступны
@@ -1043,6 +1046,8 @@ voice_key_quota=Ліміт Gemini на сёння вычарпаны, гавор
 voice_key_bad=Google не прыняў гэты ключ
 
 @projector/strings_parity.xml
+panel_ct_3=Тэмпература 3
+panel_lamp_mode_locked=У рэжыме «%1$s» яркасць не мяняецца
 boost_effect=Boost робіць відарыс ярчэйшым, але колеры становяцца бляднейшымі. Каляровая прастора не мяняецца.
 boost_blocks_change=Выключыце Boost і паспрабуйце зноў
 blocked_game=Недаступна, пакуль уключаны гульнявы рэжым

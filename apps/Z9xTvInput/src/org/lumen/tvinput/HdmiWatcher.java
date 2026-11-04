@@ -32,7 +32,12 @@ import java.util.Map;
  *       A change from anything else to INPUT_STATE_CONNECTED that is still CONNECTED after
  *       {@value #PLUG_DEBOUNCE_MS} ms opens the viewer.</li>
  *   <li><b>CEC One Touch Play</b>: HdmiTvClient.InputChangeListener (&lt;Active Source&gt;).</li>
- *   <li><b>Open on boot</b> (setting, off by default): once per boot, after the settle window.</li>
+ *   <li><b>Source at power-on</b> (BootSource, the stock choice home / HDMI 1 / HDMI 2, home by default): once
+ *       per boot after the settle window, and {@value #WAKE_CHECK_DELAY_MS} ms after every wake (screen on after
+ *       off: the Z9X STR; the projector's lamp-only standby left: the HB), as stock XRMService BootControlService
+ *       (acon start and xgimi.intent.action.STR_ON); the chosen port even without a signal yet (stock enters it
+ *       and shows no signal); an input a CEC source opened or is about to open wins, as stock says
+ *       (signal_boot_source_info_tips).</li>
  * </ul>
  * Rules (all paths): nothing during the first {@value #START_SETTLE_MS} ms after process start;
  * nothing while the screen is off; v6.5: nothing while org.lumen.projector is in its lamp-only standby
@@ -64,12 +69,18 @@ final class HdmiWatcher {
     /** Routing that our own portSelect() triggered comes back through the same listener. */
     static final long OWN_ROUTING_GUARD_MS = 10000;
     private static final long BOOT_CHECK_DELAY_MS = START_SETTLE_MS + 2000;
+    /**
+     * After a wake the power-on source opens this late: stock waits 2 s plus until the suspend ends; a CEC source
+     * that woke the projector sends &lt;Active Source&gt; only after Android is up, and its input wins.
+     */
+    static final long WAKE_CHECK_DELAY_MS = 5000;
 
     private static final String REASON_PLUG = "plug";
     private static final String REASON_CEC = "cec";
     /** Lumen OS 1.0: the projector left its standby for this CEC source (CecPolicy accepted the wake). */
     private static final String REASON_CEC_WAKE = "cec_wake";
     private static final String REASON_BOOT = "boot";
+    private static final String REASON_WAKE = "wake";
 
     private static HdmiWatcher sInstance;
 
@@ -81,6 +92,12 @@ final class HdmiWatcher {
     private final Map<String, Runnable> mPendingPlug = new ArrayMap<>();
     private Runnable mPendingCec;
     private long mScreenOnAt;
+    /** The screen went off since the process started (a later SCREEN_ON is a wake, not the boot). */
+    private boolean mScreenWasOff;
+    /** The last CEC input change (uptime ms), so a wake check yields to a CEC source that woke the projector. */
+    private long mCecChangeAt;
+    private long mWakeAt;
+    private final Runnable mWakeCheck = Safe.wrap(TAG, "wakeCheck", this::wakeCheck);
     private boolean mCecRegistered;
     private TvInputManager mTim;
 
@@ -91,7 +108,11 @@ final class HdmiWatcher {
             Safe.run(TAG, "standby broadcast", () -> {
                 boolean on = intent != null && intent.getBooleanExtra("standby", false);
                 Log.i(TAG, "projector standby " + (on ? "entered" : "left"));
-                if (on) cancelAllPending("projector standby");
+                if (on) {
+                    cancelAllPending("projector standby");
+                } else {
+                    scheduleWakeCheck("projector standby left");
+                }
             });
         }
     };
@@ -103,7 +124,9 @@ final class HdmiWatcher {
                 String action = intent == null ? null : intent.getAction();
                 if (Intent.ACTION_SCREEN_ON.equals(action)) {
                     mScreenOnAt = SystemClock.uptimeMillis();
+                    if (mScreenWasOff) scheduleWakeCheck("screen on");
                 } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
+                    mScreenWasOff = true;
                     cancelAllPending("screen off");
                 }
             });
@@ -249,6 +272,7 @@ final class HdmiWatcher {
             mHandler.removeCallbacks(mPendingCec);
             mPendingCec = null;
         }
+        mHandler.removeCallbacks(mWakeCheck);
     }
 
     /** Null when an automatic switch is allowed right now. */
@@ -272,6 +296,8 @@ final class HdmiWatcher {
                 Log.i(TAG, "skip " + reason + " " + inputId + ": input disconnected");
                 return;
             }
+        } else if (REASON_BOOT.equals(reason) || REASON_WAKE.equals(reason)) {
+            // the chosen power-on source opens in any state: the viewer shows its own no signal / not connected card
         } else if (state != TvInputManager.INPUT_STATE_CONNECTED) {
             Log.i(TAG, "skip " + reason + " " + inputId + ": not connected any more");
             return;
@@ -317,6 +343,7 @@ final class HdmiWatcher {
     private void handleCecInputChange(HdmiDeviceInfo info) {
         Log.i(TAG, "CEC input change: " + info);
         if (info == null) return;
+        mCecChangeAt = SystemClock.uptimeMillis();
         // INACTIVE_DEVICE / internal source (port <= 0): we never yank the user away.
         int port = info.getPortId();
         if (port <= 0) return;
@@ -371,28 +398,48 @@ final class HdmiWatcher {
 
     // ------------------------------------------------------------------ open on boot
 
-    /** Optional: once per boot, open the connected HDMI input (last used one first). */
+    /** Once per boot: the source chosen for power-on (BootSource). */
     private void bootCheck() {
-        if (!Prefs.get(mContext, Prefs.OPEN_ON_BOOT)) return;
         String bootId = CrashGuard.bootId();
         if (!"unknown".equals(bootId)
                 && bootId.equals(Prefs.getString(mContext, Prefs.BOOT_OPENED_FOR))) {
             return; // the process restarted within the same boot
         }
-        String pick = null;
-        String last = Prefs.getString(mContext, Prefs.LAST_INPUT);
-        if (last != null && HdmiInputs.isOurPortInput(mContext, last)
-                && HdmiInputs.stateOf(mContext, last) == TvInputManager.INPUT_STATE_CONNECTED) {
-            pick = last;
-        } else {
-            for (TvInputInfo i : HdmiInputs.portInputs(mContext)) {
-                if (HdmiInputs.stateOf(mContext, i.getId()) == TvInputManager.INPUT_STATE_CONNECTED) {
-                    pick = i.getId();
-                    break;
-                }
-            }
-        }
         if (!"unknown".equals(bootId)) Prefs.setString(mContext, Prefs.BOOT_OPENED_FOR, bootId);
-        if (pick != null) tryOpen(pick, REASON_BOOT);
+        openBootSource(REASON_BOOT);
+    }
+
+    private void scheduleWakeCheck(String why) {
+        if (BootSource.get(mContext) == BootSource.HOME) return;
+        Log.i(TAG, "wake (" + why + "): boot source check in " + WAKE_CHECK_DELAY_MS + " ms");
+        mWakeAt = SystemClock.uptimeMillis();
+        mHandler.removeCallbacks(mWakeCheck);
+        mHandler.postDelayed(mWakeCheck, WAKE_CHECK_DELAY_MS);
+    }
+
+    /** After a wake: the power-on source again (stock STR_ON), unless a CEC source spoke since the wake. */
+    private void wakeCheck() {
+        if (mPendingCec != null || (mCecChangeAt != 0 && mCecChangeAt >= mWakeAt)) {
+            Log.i(TAG, "boot source on wake skipped: a CEC source asked for its input (CEC first)");
+            return;
+        }
+        openBootSource(REASON_WAKE);
+    }
+
+    /** The source chosen for power-on, unless it is home or a CEC source already opened an input. */
+    private void openBootSource(String reason) {
+        int port = BootSource.get(mContext);
+        if (port == BootSource.HOME) return;
+        String showing = PassthroughActivity.sShowingInputId;
+        if (REASON_BOOT.equals(reason) && showing != null) {
+            Log.i(TAG, "boot source HDMI " + port + " skipped: " + showing + " is open (CEC first)");
+            return;
+        }
+        String pick = HdmiInputs.findInputIdForPort(mContext, port);
+        if (pick == null) {
+            Log.i(TAG, "boot source HDMI " + port + ": no such input");
+            return;
+        }
+        tryOpen(pick, reason);
     }
 }

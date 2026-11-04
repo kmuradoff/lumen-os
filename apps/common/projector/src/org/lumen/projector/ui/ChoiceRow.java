@@ -9,9 +9,10 @@ import android.os.Looper;
 /**
  * Title + "<  value  >". LEFT/RIGHT step through the options WITHOUT wrapping (stock analysis:
  * "enums cycle and do not wrap"). CENTER runs {@link #setOnOpen} (e.g. push a sub-page with the full
- * list) or, without it, steps forward with wrap. The listener gets the final index after
+ * list) and otherwise does nothing: the arrows shown are the only way to change the value (
+ * 2026-11-04; OK changes a value only on a toggle row). The listener gets the final index after
  * {@link #setCommitDelay} ms without a key (default 0 = immediately), so quick presses send one
- * HAL call. Index -1 = unknown value ("—").
+ * HAL call. Index -1 = unknown value ("—", or the text of {@link #setPlaceholder}).
  */
 public class ChoiceRow extends Row {
     public interface OnChoice { void onChoice(ChoiceRow row, int index); }
@@ -21,6 +22,8 @@ public class ChoiceRow extends Row {
     private OnChoice listener;
     private Runnable onOpen;
     private long commitDelay;
+    /** Shown instead of "—" while no option is selected (null = "—"). */
+    private CharSequence placeholder;
     private final Handler h = new Handler(Looper.getMainLooper());
     private final Runnable commit = () -> { if (listener != null && index >= 0) listener.onChoice(this, index); };
     private final float arrowGap;
@@ -54,10 +57,24 @@ public class ChoiceRow extends Row {
 
     public ChoiceRow setCommitDelay(long ms) { commitDelay = Math.max(0, ms); return this; }
 
+    /**
+     * Lumen OS 1.0.8: the text shown while no option is selected, for a device value that is not one of the options
+     * (stock colour temperature "Colour temp 3" in the Office mode); null = "—".
+     */
+    public ChoiceRow setPlaceholder(CharSequence p) {
+        if (!TextUtils.equals(placeholder, p)) {
+            placeholder = p;
+            invalidate();
+        }
+        return this;
+    }
+
     /** Running line for a value that does not fit between the arrows (Marquee). */
     private final Marquee valueMarquee = new Marquee();
 
-    private CharSequence label() { return index >= 0 ? options[index] : "—"; }
+    private CharSequence label() { return index >= 0 ? options[index] : placeholder(); }
+
+    private CharSequence placeholder() { return placeholder != null ? placeholder : "—"; }
 
     /**
      * The value takes what the title does not need (at least 45 % of the row), so a short title leaves room for a long
@@ -67,7 +84,8 @@ public class ChoiceRow extends Row {
     @Override
     protected float rightWidth() {
         float arrows = 2 * (chevronWidth(getContext()) + arrowGap);
-        float max = valuePaint.measureText("—");
+        CharSequence ph = placeholder();
+        float max = valuePaint.measureText(ph, 0, ph.length());
         for (CharSequence o : options) max = Math.max(max, valuePaint.measureText(o, 0, o.length()));
         float free = getWidth() - 2.5f * padH - titleWidth() - arrows;
         return Math.min(max, Math.max(getWidth() * 0.45f, free)) + arrows;
@@ -122,9 +140,7 @@ public class ChoiceRow extends Row {
     @Override
     protected boolean onActivate() {
         if (onOpen != null) { flushPending(); onOpen.run(); return true; }
-        if (options.length == 0) return false;
-        changeTo(index < 0 ? 0 : (index + 1) % options.length);
-        return true;
+        return options.length > 0;                        // consumed, value unchanged
     }
 
     @Override

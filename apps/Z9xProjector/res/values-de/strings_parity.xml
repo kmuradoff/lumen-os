@@ -9,5 +9,7 @@
     <string name="game_top_speed_confirm">Turbo schaltet die Trapezkorrektur aus und setzt das Bild auf den vollen Rahmen zurück. Umschalten?</string>
     <string name="picture_reset_all">Alle Bildeinstellungen zurücksetzen</string>
     <string name="picture_reset_all_msg">Bildmodus, Basis- und Profi-Einstellungen werden auf die Standardwerte zurückgesetzt. Fortfahren?</string>
+    <string name="panel_ct_3">Farbtemp. 3</string>
+    <string name="panel_lamp_mode_locked">Im Modus %1$s lässt sich die Helligkeit nicht ändern</string>
     <string name="three_d_native_fps">Zuerst die originale Bildrate ausschalten</string>
 </resources>

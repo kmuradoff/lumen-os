@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Belarusian translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">Праверка бяспекі абнаўленняў на гэтым праектары не працуе (%1$s). Перазапусціце праектар і паспрабуйце зноў.</string>
+    <string name="blk_not_marked">Гэтая версія яшчэ не пацверджана як рабочая. Пакіньце праектар уключаным на некалькі хвілін і паспрабуйце зноў.</string>
+    <string name="blk_probe">Праверка бяспекі абнаўленняў не адказала (%1$s). Перазапусціце праектар і паспрабуйце зноў.</string>
+    <string name="blk_active">Наступным разам праектар запусціцца з сістэмнага слота %1$s. Перазапусціце праектар і паспрабуйце зноў.</string>
+    <string name="blk_partitions">На гэтай версіі абнаўленні небяспечныя: няправільны спіс раздзелаў (%1$s). Скарыстайцеся ўсталёўшчыкам для камп’ютара.</string>
+    <string name="blk_vab">Памяць гэтага праектара не падрыхтавана для абнаўленняў (%1$s). Скарыстайцеся ўсталёўшчыкам для камп’ютара.</string>
+</resources>

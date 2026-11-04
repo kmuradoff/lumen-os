@@ -9,5 +9,7 @@
     <string name="game_top_speed_confirm">Turbo yamuk düzeltmeyi kapatır ve görüntüyü tam kareye döndürür. Geçilsin mi?</string>
     <string name="picture_reset_all">Tüm görüntü ayarlarını sıfırla</string>
     <string name="picture_reset_all_msg">Görüntü modu, temel ve profesyonel ayarlar varsayılan değerlere döner. Devam edilsin mi?</string>
+    <string name="panel_ct_3">Renk sıcaklığı 3</string>
+    <string name="panel_lamp_mode_locked">%1$s modunda parlaklık değiştirilemez</string>
     <string name="three_d_native_fps">Önce orijinal kare hızını kapatın</string>
 </resources>

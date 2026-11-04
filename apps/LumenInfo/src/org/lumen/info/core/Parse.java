@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 
 /**
  * Text parsers for what the app reads (pure Java, host tests): service dumps (audio_flinger, resource_manager,
- * media.metrics, SurfaceFlinger --hwclayers), /proc files and the vendor ini. Every parser is lenient: a line it
+ * media.metrics, SurfaceFlinger --hwclayers), /proc files and the vendor feature.xml. Every parser is lenient: a line it
  * does not know is skipped, a missing value stays null / -1, nothing throws on odd input.
  */
 public final class Parse {
@@ -318,39 +318,18 @@ public final class Parse {
     }
 
     // ================================================================ vendor ini
-    /** Sections of an ini file: [name] -> key -> value (quotes, trailing ';' and '#' comments removed). */
-    public static Map<String, Map<String, String>> ini(String text) {
-        Map<String, Map<String, String>> out = new LinkedHashMap<>();
+    private static final Pattern FEATURE = Pattern.compile("<feature\\s+key=\"([^\"]+)\"\\s+value=\"([^\"]*)\"");
+
+    /** The vendor feature.xml: every {@code <feature key="k" value="v"/>} as k -> v; empty for null or odd text. */
+    public static Map<String, String> features(String text) {
+        Map<String, String> out = new HashMap<>();
         if (text == null) return out;
-        Map<String, String> cur = null;
-        for (String raw : text.split("\n")) {
-            String line = raw.trim();
-            if (line.isEmpty() || line.startsWith("#") || line.startsWith(";")) continue;
-            if (line.startsWith("[") && line.contains("]")) {
-                cur = new LinkedHashMap<>();
-                out.put(line.substring(1, line.indexOf(']')).trim(), cur);
-                continue;
-            }
-            if (cur == null) continue;
-            int eq = line.indexOf('=');
-            if (eq <= 0) continue;
-            String k = line.substring(0, eq).trim();
-            String v = line.substring(eq + 1);
-            int hash = v.indexOf('#');
-            if (hash >= 0 && !inQuotes(v, hash)) v = v.substring(0, hash);
-            v = v.trim();
-            if (v.endsWith(";")) v = v.substring(0, v.length() - 1).trim();
-            if (v.length() >= 2 && v.startsWith("\"") && v.endsWith("\"")) v = v.substring(1, v.length() - 1);
-            cur.put(k, v);
-        }
+        Matcher m = FEATURE.matcher(text.replaceAll("(?s)<!--.*?-->", ""));
+        while (m.find()) out.put(m.group(1), m.group(2));
         return out;
     }
 
-    private static boolean inQuotes(String s, int pos) {
-        int q = 0;
-        for (int i = 0; i < pos; i++) if (s.charAt(i) == '"') q++;
-        return q % 2 == 1;
-    }
+
 
     // ================================================================ helpers
     static String inParens(String s) {

@@ -118,10 +118,16 @@
 #   flash      in one fastbootd visit: z9x_blobs_<slot>, system_<slot>, then 'fastboot format:ext4' of userdata
 #              and metadata (the full data wipe; never erase or -w). No --keep-data
 #   verify     after the setup, with debugging on again: checks the install over the network
+#   rescue     Lumen OS that does not start any more goes to fastboot mode by itself and waits there: on the
+#              cable, this writes system_<slot> (+ z9x_blobs_<slot>) of the slot it runs from again, WITHOUT
+#              wiping data (no adb needed)
 #   status, reset (--device ID reset forgets only that projector's progress)
-# What it writes there: system_<slot> and z9x_blobs_<slot> (create, resize, flash) of the running slot when the
-# profile's SLOTS has it, and the format of userdata and metadata. Never vbmeta, boot, vendor, the KEEP
-# partitions, the other slot, a delete, erase or -w (fb_allowed). rescue, gapps, gsf and stick: not yet.
+# What it writes there: system_<slot> and z9x_blobs_<slot> (create, resize, flash) of the running slot (a or b,
+# the one fastbootd reports) when the profile's SLOTS has it, and the format of userdata and metadata, only while
+# no update is staged or merging (snapshot-update-status none). 'rescue' may also finish ('snapshot-update merge')
+# or cancel ('snapshot-update cancel') an unfinished Lumen OS update of that slot (fb_snapshot) and never formats
+# anything. Never vbmeta, boot, vendor, the KEEP partitions, the other slot, --slot, set_active, a delete, erase or
+# -w (fb_allowed). gapps, gsf and stick: not yet.
 set -u
 
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -366,7 +372,9 @@ fb_allowed() {  # action partition -> 0 if the installer may touch it
     case " $P_SLOTS " in *" ${ABF_S#_} "*) ;; *) return 1 ;; esac
     case "$1:$2" in
       flash:"system$ABF_S"|create:"z9x_blobs$ABF_S"|resize:"z9x_blobs$ABF_S"|flash:"z9x_blobs$ABF_S") return 0 ;;
-      format:userdata|format:metadata) case " $P_WIPE " in *" $2 "*) return 0 ;; esac ;;
+      format:userdata|format:metadata)   # never while an update is staged or merging (the last getvar all)
+        [ "$(abf_gv snapshot-update-status)" = none ] || return 1
+        case " $P_WIPE " in *" $2 "*) return 0 ;; esac ;;
     esac
     return 1
   fi
@@ -3245,17 +3253,25 @@ play6_not_needed() {  # the Z9X commands the Play 6 has no use for
 # profile (P_*); what may be written is fixed in fb_allowed: z9x_blobs<slot> (create, resize, flash) and
 # system<slot> of the running slot when SLOTS has it, then 'fastboot format:ext4' of WIPE_PARTS (fastbootd reports
 # them as raw, so the type is always given; the host's mke2fs makes them). Never vbmeta (the user types that step:
-# 'vbmeta'), never -w, erase, delete, --slot, a KEEP partition or the other slot. fastbootd has no idle timeout, so
-# one visit writes and wipes. A staged stock update shows in fastbootd (snapshot-update-status, *-cow): it stops
-# there, nothing written. Steps: check -> backup (asked) -> vbmeta (asked) -> blobs -> flash; verify later, after
+# 'vbmeta'), never -w, erase, delete, --slot, set_active, a KEEP partition or the other slot. The slot is the one
+# the system runs from and fastbootd reports (a or b: after a Lumen OS update it is the other one). fastbootd has no
+# idle timeout, so one visit writes and wipes. A staged or merging update (stock or Lumen OS) shows in fastbootd
+# (snapshot-update-status, *-cow): 'flash' stops there, nothing written, so userdata and metadata are never
+# formatted while one exists. Steps: check -> backup (asked) -> vbmeta (asked) -> blobs -> flash; verify later, after
 # the setup with debugging on again. Progress: $STATE_DIR/<id>/state (step_system: started | done, so a write cut
 # off in the middle is never followed by a restart that would start half a system; step_zblobs: z9x_blobs written
-# in this visit, so a resumed run needs no blobs file).
-ABF_S=""             # the slot abf_fbd_check found running in fastbootd (_a); fb_allowed writes only there
+# in this visit, so a resumed run needs no blobs file). 'rescue' (abf_rescue): the projector already waits in
+# fastboot mode; system and z9x_blobs of its slot again, the data kept, never a format. A staged or merging update,
+# or a slot that is an update never marked, stops it before any write, with the way back the user types.
+ABF_S=""             # the slot abf_fbd_check found running in fastbootd (_a, _b); fb_allowed writes only there
 ABF_UP=0             # adb reached the projector in this run (abf_adb)
 ABF_DUMP=""          # dump.erofs that reads the image ('' = none on this computer)
 ABF_RESUME=0         # 1 = abf_write continues a visit in fastboot mode: an image STOP goes through abf_fb_stop
+ABF_RESCUE=0         # 1 = this run is 'rescue': a STOP in fastboot mode goes by ABF_RSYS, not by the install's steps
+ABF_RSYS=0           # 1 = 'rescue' began to write system in this visit (a STOP then keeps it in fastboot mode)
+ABF_IMG_VC=""        # ro.lumen.version_code of the image ('' = not read: no dump.erofs)
 
+abf_other() { case "$1" in a) echo b ;; *) echo a ;; esac; }   # slot -> the other one (slot-count is 2)
 abf_ids() {  # the ids of lib/devices.conf with FLOW=ab-fastbootd (nothing without lib/devices.conf)
   [ -f "$DEVCONF" ] || return 0
   awk '{ sub(/\r$/, "") } /^[a-z0-9]+\.FLOW=ab-fastbootd$/ { print substr($0, 1, index($0, ".") - 1) }' "$DEVCONF"
@@ -3263,8 +3279,8 @@ abf_ids() {  # the ids of lib/devices.conf with FLOW=ab-fastbootd (nothing witho
 abf_is() { [ -n "$1" ] && abf_ids | grep -qx -- "$1"; }   # id -> 0 for a FLOW=ab-fastbootd projector
 abf_opt_text() { local l; l=$(abf_ids | tr '\n' '|'); printf '%s' "--device z9x|play6${l:+|${l%|}}"; }
 abf_not_yet() { die "$(t "'$1' is not available for the $P_NAME yet. Nothing was done." "'$1' для $P_NAME пока недоступен. Ничего не сделано.")"; }
-abf_refuse_opts() {  # options of the Z9X and Play 6 ways that this flow does not have
-  [ "$KEEP_DATA" = 0 ] || abf_not_yet --keep-data
+abf_refuse_opts() {  # [rescue]: options of the Z9X and Play 6 ways that this flow does not have ('rescue' keeps the data)
+  [ "$KEEP_DATA" = 0 ] || [ "${1-}" = rescue ] || abf_not_yet --keep-data
   [ "$WIPE" = format ] || abf_not_yet "--wipe=$WIPE"
   [ -z "$GAPPS_WITH" ] || abf_not_yet --gapps-zip
 }
@@ -3275,6 +3291,11 @@ abf_dot() {  # a message that another sentence follows ends in a full stop
 }
 abf_fb_stop() {  # message: leave fastbootd for the old system (nothing was written), or stay once system was begun
   set -- "$(abf_dot "$1")"
+  if [ "$ABF_RESCUE" = 1 ]; then   # 'rescue': its own write decides, the install's steps are not this visit's
+    [ "$ABF_RSYS" = 0 ] || die "$1 $(t "system was begun in this visit: the projector stays in fastboot mode. Keep the cable in and run 'rescue' again." "запись system в этом заходе начата: проектор остаётся в режиме fastboot. Не вынимайте кабель и запустите 'rescue' снова.")"
+    fb reboot >/dev/null 2>&1
+    die "$1 $(t "No partition was written. The projector tries to start its system again; if it does not start, it comes back to fastboot mode by itself." "Ни один раздел не записан. Проектор снова пробует загрузить свою систему; если она не загрузится, он сам вернётся в режим fastboot.") $(abf_hint)"
+  fi
   case "$(state_get step_system)" in   # a restart now would start half a system, or Lumen OS on the old data
     started|done) die "$1 $(t "The write of this install is not finished: the projector stays in fastboot mode. Keep the cable in and run the installer again." "Запись этой установки не закончена: проектор остаётся в режиме fastboot. Не вынимайте кабель и запустите установщик снова.")" ;;
   esac
@@ -3515,6 +3536,7 @@ abf_check_image() {  # the release image of this projector: name, erofs, size, s
       [ "$v" = "$(p6_lval)" ] || abf_img_stop "$(t "$name is not Lumen OS for the $P_NAME ($(p6_lprop)='$v')." "$name не Lumen OS для $P_NAME ($(p6_lprop)='$v').")" 1
       v=$(printf '%s\n' "$bp" | sed -n "s/^$P_VERSION_PROP=//p" | tail -1)
       sec=$(printf '%s\n' "$bp" | sed -n 's/^ro\.adb\.secure=//p' | tail -1)
+      ABF_IMG_VC=$(printf '%s\n' "$bp" | sed -n 's/^ro\.lumen\.version_code=//p' | tail -1 | tr -d ' \r')
       if [ "$UNSIGNED" = 0 ]; then
         [ "$v" = "${VERSION:-}" ] || abf_img_stop "$(t "$name holds Lumen OS '$v', the release is ${VERSION:-?}." "в $name Lumen OS '$v', а релиз ${VERSION:-?}.")" 1
         [ "$sec" = 1 ] || abf_img_stop "$(t "$name is a test build (ro.adb.secure='$sec'), not a release." "$name тестовая сборка (ro.adb.secure='$sec'), а не релиз.")" 1
@@ -3619,7 +3641,9 @@ abf_blobs() {
   ok "$(t "$n MediaTek / XGIMI files from your projector, set $set -> $out (keep this file)" "Файлы MediaTek / XGIMI с вашего проектора: $n, набор $set -> $out (сохраните этот файл)")"
 }
 
-abf_fbd_check() {  # fastbootd, one getvar all: this projector, its running slot and the known layout; else STOP
+abf_fbd_check() {  # [rescue]: fastbootd, one getvar all: this projector, its running slot and the known layout; else STOP
+  # 'rescue': the slot fastbootd reports may differ from the one this computer saw (an update since) and need not be
+  # marked successful (it is the one that does not start); its update state is abf_rescue's to handle
   local why="" cs k sz
   ABF_S=""
   GV=$(fb getvar all 2>&1)
@@ -3629,12 +3653,20 @@ abf_fbd_check() {  # fastbootd, one getvar all: this projector, its running slot
   [ -n "$why" ] || [ "$(abf_gv unlocked)" = yes ] || why=$(t "the bootloader is locked" "загрузчик заблокирован")
   cs=$(abf_gv current-slot)
   if [ -z "$why" ]; then case " $P_SLOTS " in *" $cs "*) ;; *) why="current-slot '$cs'" ;; esac; fi
-  [ -n "$why" ] || [ "_$cs" = "$(state_get slot)" ] || why="current-slot $cs, $(t "the system ran from" "система работала из") $(state_get slot)"
+  [ -n "$why" ] || [ "${1-}" = rescue ] || [ "_$cs" = "$(state_get slot)" ] || why="current-slot $cs, $(t "the system ran from" "система работала из") $(state_get slot)"
   [ -n "$why" ] || [ "$(abf_gv slot-count)" = 2 ] || why="slot-count '$(abf_gv slot-count)'"
-  [ -n "$why" ] || [ "$(abf_gv "slot-successful:$cs")" = yes ] || why="slot-successful:$cs '$(abf_gv "slot-successful:$cs")'"
-  [ -n "$why" ] || [ "$(abf_gv snapshot-update-status)" = none ] || why="$(t "an XGIMI update is staged or not finished" "обновление XGIMI подготовлено или не завершено") (snapshot-update-status $(abf_gv snapshot-update-status)); $(t "let the projector start, turn automatic updates off, wait 10 minutes" "дайте проектору загрузиться, выключите автообновление, подождите 10 минут")"
-  if [ -z "$why" ] && printf '%s\n' "$GV" | grep -qE ':[a-z0-9_]+-cow(:|$)'; then
-    why="$(t "*-cow partitions: an XGIMI update is not finished; let the projector start, turn automatic updates off, wait 10 minutes" "разделы *-cow: обновление XGIMI не завершено; дайте проектору загрузиться, выключите автообновление, подождите 10 минут")"
+  [ -n "$why" ] || [ "${1-}" = rescue ] || [ "$(abf_gv "slot-successful:$cs")" = yes ] || why="slot-successful:$cs '$(abf_gv "slot-successful:$cs")'"
+  if [ -n "$why" ] || [ "${1-}" = rescue ]; then :
+  elif [ "$(state_get dev_lumen)" = 1 ]; then   # a Lumen OS update: it finishes only while Lumen OS runs
+    [ "$(abf_gv snapshot-update-status)" = none ] || why="$(t "an update is finishing" "обновление ещё завершается") (snapshot-update-status $(abf_gv snapshot-update-status)); $(t "start Lumen OS and wait 10 minutes" "загрузите Lumen OS и подождите 10 минут")"
+    if [ -z "$why" ] && printf '%s\n' "$GV" | grep -qE ':[a-z0-9_]+-cow(:|$)'; then
+      why="$(t "*-cow partitions: an update is finishing; start Lumen OS and wait 10 minutes" "разделы *-cow: обновление ещё завершается; загрузите Lumen OS и подождите 10 минут")"
+    fi
+  else
+    [ "$(abf_gv snapshot-update-status)" = none ] || why="$(t "an XGIMI update is staged or not finished" "обновление XGIMI подготовлено или не завершено") (snapshot-update-status $(abf_gv snapshot-update-status)); $(t "let the projector start, turn automatic updates off, wait 10 minutes" "дайте проектору загрузиться, выключите автообновление, подождите 10 минут")"
+    if [ -z "$why" ] && printf '%s\n' "$GV" | grep -qE ':[a-z0-9_]+-cow(:|$)'; then
+      why="$(t "*-cow partitions: an XGIMI update is not finished; let the projector start, turn automatic updates off, wait 10 minutes" "разделы *-cow: обновление XGIMI не завершено; дайте проектору загрузиться, выключите автообновление, подождите 10 минут")"
+    fi
   fi
   [ -n "$why" ] || [ "$(abf_gv super-partition-name)" = super ] || why="super-partition-name '$(abf_gv super-partition-name)'"
   [ -n "$why" ] || [ "$(abf_gv "is-logical:system_$cs")" = yes ] || why="is-logical:system_$cs '$(abf_gv "is-logical:system_$cs")'"
@@ -3809,10 +3841,176 @@ abf_all() {  # check, backup (asked), vbmeta (asked), blobs, flash: each step on
   [ "$(state_get step_flash)" = done ] || abf_write
   abf_done
 }
+# rescue: Lumen OS that does not finish starting goes to fastbootd by itself (lumen_escape, in every image) and,
+# fastbootd having no idle timeout, waits there. No adb: the projector is the one in fastboot mode on the cable,
+# checked by its product, serial and layout (abf_fbd_check rescue); the slot is the one fastbootd reports (a or b).
+# An update not finished (abf_rescue_hold), *-cow left (never deleted here) or a system newer than the image: STOP
+# before any write. Then system<slot> (its size read back) and z9x_blobs<slot> when this computer has the blobs
+# file. Never a format, so the data stays. The image check, the question and the serial come before any fastboot
+# command.
+abf_rescue_hold() {  # cs os status: an update holds the projector; STOP, nothing written, it stays in fastboot mode
+  # In-place virtual A/B: until the merge the new system<slot> uses the storage of the old slot's, so a cancel and a
+  # write here would overwrite the old slot, the one way back. A slot not marked successful while the other one is
+  # is an update that never started fully: update_engine clears that bit of the slot it writes, and set_active keeps
+  # it. fastbootd may read none for the HAL's unknown and cancelled states, so that test comes before the state.
+  # fastbootd refuses set_active while merging, and its 'snapshot-update cancel' does not look at the slot (AOSP
+  # fastboot/device/commands.cpp): so a cancel is shown only for the slot that ran before the update (this one
+  # marked, the other one read as not marked). Both marked while snapshotted is the update slot, accepted before
+  # the merge began: the last branch. 'rescue' never sends any of these, the user types the way back.
+  echo
+  if [ "$3" = merging ]; then
+    t "The update of slot $1 is being merged (snapshot-update-status merging): slot $1 started and was accepted,
+and the merge writes its system over the storage of slot $2. Slot $2 no longer has a whole system, and fastboot
+mode refuses set_active now. The way that keeps everything: let the merge finish, then run 'rescue' again. Type
+it in this window, with the fastboot of tools/platform-tools next to this script:
+    fastboot snapshot-update merge     (a few minutes; it ends with OKAY)
+fastboot reboot also lets the merge go on while Lumen OS starts, but if it does not finish starting the
+projector comes back here: then use the command above." "Обновление слота $1 сливается (snapshot-update-status merging): слот $1 загрузился и был принят, и слияние
+записывает его system поверх области слота $2. В слоте $2 больше нет целой системы, и режим fastboot сейчас
+не выполняет set_active. Путь, при котором всё сохраняется: дайте слиянию закончиться, затем снова запустите
+'rescue'. Введите в этом окне, fastboot из tools/platform-tools рядом с этим скриптом:
+    fastboot snapshot-update merge     (несколько минут; в конце OKAY)
+fastboot reboot тоже даёт слиянию продолжиться, пока Lumen OS загружается, но если она не загрузится до конца,
+проектор вернётся сюда: тогда используйте команду выше."
+  elif [ "$(abf_gv "slot-successful:$1")" != yes ] && [ "$(abf_gv "slot-successful:$2")" = yes ]; then
+    t "Slot $1 holds a Lumen OS update that never started fully (snapshot-update-status $3, slot $1 not marked
+successful, slot $2 marked). Slot $2 still has the system that ran before it, with the same data. Writing system
+now would overwrite slot $2 too: until an update is finished both slots use the same storage, and a cancelled
+update may leave slot $2 unable to start. The way back that keeps everything: type it in this window, with the
+fastboot of tools/platform-tools next to this script:
+    fastboot set_active $2
+    fastboot reboot                    ($(abf_hint))
+The projector then starts the system of slot $2 and drops the unfinished update." "В слоте $1 обновление Lumen OS, которое так и не загрузилось до конца (snapshot-update-status $3, слот $1
+не отмечен как успешный, слот $2 отмечен). В слоте $2 осталась система, работавшая до него, с теми же данными.
+Запись system сейчас затёрла бы и слот $2: до завершения обновления у обоих слотов общая область, и после
+отмены обновления слот $2 может не загрузиться. Путь назад, при котором всё сохраняется: введите в этом окне,
+fastboot из tools/platform-tools рядом с этим скриптом:
+    fastboot set_active $2
+    fastboot reboot                    ($(abf_hint))
+Тогда проектор загрузит систему слота $2 и отбросит незавершённое обновление."
+  elif [ "$3" = snapshotted ] && [ "$(abf_gv "slot-successful:$1")" = yes ] && [ "$(abf_gv "slot-successful:$2")" = no ]; then
+    t "An update is staged (snapshot-update-status snapshotted). Slot $1 is marked successful and slot $2 is
+not, so slot $1 ran before that update, and the unfinished update is the one of slot $2. Drop it, then run 'rescue' again. Type it in this
+window, with the fastboot of tools/platform-tools next to this script:
+    fastboot snapshot-update cancel" "Подготовлено обновление (snapshot-update-status snapshotted). Слот $1 отмечен как успешный, а слот $2 нет,
+значит слот $1 работал до этого обновления, а незавершённое обновление относится к слоту $2. Отбросьте его и снова запустите
+'rescue'. Введите в этом окне, fastboot из tools/platform-tools рядом с этим скриптом:
+    fastboot snapshot-update cancel"
+  else
+    t "An update is not finished (snapshot-update-status '$3'), and 'rescue' cannot tell which slot ran before it.
+The way back that keeps everything: type fastboot reboot in this window ($(abf_hint)). The boot gate or the boot
+loader's try counter goes back to the slot that ran before. If it keeps coming back to fastboot mode: guide,
+'Back to stock' (it erases everything)." "Обновление не завершено (snapshot-update-status '$3'), и 'rescue' не может определить, какой слот работал
+до него. Путь назад, при котором всё сохраняется: введите в этом окне fastboot reboot ($(abf_hint)). Защита
+загрузки или счётчик попыток загрузчика вернёт слот, который работал раньше. Если он всё равно возвращается в
+режим fastboot: инструкция, «Откат на сток» (стирает всё)."
+  fi
+  echo
+  die "$(t "'rescue' wrote nothing: an update is not finished on slot $1. The projector stays in fastboot mode; type the commands above." "'rescue' ничего не записал: в слоте $1 не завершено обновление. Проектор остаётся в режиме fastboot; введите команды выше.")"
+}
+abf_rescue() {
+  local a saved typed blobs="" st sz got rv cs
+  KEEP_DATA=1
+  ABF_RESCUE=1; ABF_RSYS=0
+  abf_refuse_opts rescue
+  check_tools
+  # a 'flash' of this install cut off in fastboot mode is continued by 'flash', with the wipe it began
+  if [ -n "$(state_get step_fastboot)" ] && [ "$(state_get step_flash)" != done ]; then
+    die "$(t "an install by this computer is not finished on this projector: run the installer again without a command (or 'flash'), it continues where it stopped. 'rescue' is for an installed Lumen OS. Nothing was done." "установка с этого компьютера на этот проектор не закончена: запустите установщик снова без команды (или 'flash'), он продолжит с того места, где остановился. 'rescue' нужен для установленной Lumen OS. Ничего не сделано.")"
+  fi
+  FORCE_HASH=1 abf_check_image
+  echo
+  t "RESCUE ($P_NAME): writes Lumen OS again into system (and z9x_blobs, the MediaTek / XGIMI files of this
+projector, when this computer has them) of the slot the projector runs from, in fastboot mode, WITHOUT erasing
+data (apps, accounts, settings and files stay). Use the image of the newest Lumen OS release for the $P_NAME:
+an older system over newer data may not start. If an update is staged or not finished, it writes nothing and
+shows the way back that keeps everything (fastboot set_active to the other slot): until an update is finished
+both slots use the same storage, so writing system then would overwrite the other slot too. XGIMI's firmware
+stays untouched: vendor, boot, vbmeta, product, system_ext, calibration and factory data. Use it only for a
+projector with Lumen OS that waits in fastboot mode: when Lumen OS does not finish starting, it goes there by
+itself and stays there." "РЕМОНТ ($P_NAME): заново записывает Lumen OS в system (и z9x_blobs, файлы MediaTek / XGIMI этого проектора,
+если они есть на компьютере) того слота, из которого работает проектор, в режиме fastboot, БЕЗ стирания данных
+(приложения, аккаунты, настройки и файлы сохраняются). Используйте образ из самого нового релиза Lumen OS для
+$P_NAME: старая система поверх новых данных может не загрузиться. Если обновление подготовлено или не завершено,
+он ничего не записывает и показывает путь назад, при котором всё сохраняется (fastboot set_active на другой
+слот): до завершения обновления у обоих слотов общая область, и запись system затёрла бы и другой слот.
+Прошивка XGIMI не затрагивается: vendor, boot, vbmeta, product, system_ext, калибровка и заводские данные.
+Только для проектора с Lumen OS, который ждёт в режиме fastboot: если Lumen OS не может загрузиться, она сама
+переходит туда и остаётся там."; echo
+  printf '%s ' "$(t "Type WRITE to continue:" "Введите WRITE, чтобы продолжить:")"
+  read -r a
+  [ "$a" = WRITE ] || die "$(t "cancelled, nothing was written" "отменено, ничего не записано")"
+  saved=$(state_get serial)
+  say "$(t "Connect the projector's USB port to this computer with the USB A-to-A cable now (take out whatever is in that port first). Waiting for the projector in fastboot mode (up to 15 minutes); the picture may stay dark." "Соедините сейчас USB-порт проектора с компьютером кабелем USB A–A (сначала выньте то, что вставлено в этот порт). Жду проектор в режиме fastboot (до 15 минут); изображения может не быть.")"
+  fbd_find 900 || die "$(t "the projector did not appear in fastboot mode within 15 minutes. Is the cable in the projector's USB port (not a hub)? On Linux: udev permissions ('no permissions' in 'fastboot devices'). Nothing was written." "проектор не появился в режиме fastboot за 15 минут. Кабель в USB-порту проектора (не через хаб)? На Linux права udev ('no permissions' в 'fastboot devices'). Ничего не записано.")"
+  # fastbootd cannot tell stock from Lumen OS, so the saved progress does: this projector last seen on stock with
+  # nothing written to it stays stock ('rescue' writes no vbmeta and wipes nothing)
+  if [ "$SERIAL" = "$saved" ] && [ "$(state_get dev_lumen)" = 0 ] \
+     && [ -z "$(state_get step_fastboot)$(state_get step_flash)$(state_get step_rescue)" ]; then
+    abf_fb_stop "$(t "this computer last saw this projector on XGIMI's stock system and has written nothing to it: 'rescue' would put Lumen OS over the stock data. To install, run the installer without a command (guide, section '$P_NAME'). If Lumen OS was put on it another way since: bash lumen-install.sh --device $PROJECTOR reset, then 'rescue' again." "этот компьютер в последний раз видел проектор на родной системе XGIMI и ничего на него не записывал: 'rescue' поставит Lumen OS поверх стоковых данных. Для установки запустите установщик без команды (инструкция, раздел «${P_NAME}»). Если Lumen OS с тех пор поставили на него иначе: bash lumen-install.sh --device $PROJECTOR reset, затем снова 'rescue'.")"
+  fi
+  # fastbootd's product name may be shared by other XGIMI models: the serial must be this projector's
+  if [ -z "$saved" ] || [ "$SERIAL" != "$saved" ]; then
+    printf '%s ' "$(t "In fastboot mode: $SERIAL. Type this serial to confirm it is your $P_NAME:" "В режиме fastboot: $SERIAL. Введите этот серийный номер, чтобы подтвердить, что это ваш $P_NAME:")"
+    read -r typed
+    [ "$typed" = "$SERIAL" ] || abf_fb_stop "$(t "cancelled." "отменено.")"
+  fi
+  abf_fbd_check rescue
+  # only with no update in the way: state none and the slot not an update that never started (abf_rescue_hold)
+  cs=${ABF_S#_}; st=$(abf_gv snapshot-update-status)
+  if [ "$st" != none ] || { [ "$(abf_gv "slot-successful:$cs")" != yes ] && [ "$(abf_gv "slot-successful:$(abf_other "$cs")")" = yes ]; }; then
+    abf_rescue_hold "$cs" "$(abf_other "$cs")" "$st"
+  fi
+  if printf '%s\n' "$GV" | grep -qE ':[a-z0-9_]+-cow(:|$)'; then
+    abf_fb_stop "$(t "*-cow partitions are left over from an update: 'rescue' does not remove them." "остались разделы *-cow от обновления: 'rescue' их не удаляет.")"
+  fi
+  # never an older system over newer data. AOSP fastbootd has no variable for the Lumen OS version (T9 reads
+  # getvar all on the projector), so without one this is a warning only
+  rv=$(abf_gv ro.lumen.version_code)
+  case "$rv" in
+    ''|*[!0-9]*) warn "$(t "the Lumen OS version on the projector cannot be read in fastboot mode: use the image of the newest Lumen OS release for the $P_NAME" "версию Lumen OS на проекторе нельзя прочитать в режиме fastboot: используйте образ из самого нового релиза Lumen OS для $P_NAME")" ;;
+    *) case "$ABF_IMG_VC" in
+         ''|*[!0-9]*) warn "$(t "the projector runs Lumen OS version code $rv, the version code of this image cannot be read (no dump.erofs): use the image of the newest Lumen OS release for the $P_NAME" "на проекторе Lumen OS с кодом версии $rv, код версии этого образа прочитать нельзя (нет dump.erofs): используйте образ из самого нового релиза Lumen OS для $P_NAME")" ;;
+         *) [ "$rv" -le "$ABF_IMG_VC" ] || abf_fb_stop "$(t "the projector runs a newer Lumen OS (version code $rv) than this image ($ABF_IMG_VC): an older system over newer data may not start. Download the newest Lumen OS release for the $P_NAME and run 'rescue' with it." "на проекторе более новая Lumen OS (код версии $rv), чем этот образ ($ABF_IMG_VC): старая система поверх новых данных может не загрузиться. Скачайте самый новый релиз Lumen OS для $P_NAME и запустите 'rescue' с ним.")" ;;
+       esac ;;
+  esac
+  if [ "$BLOBS" = partition ]; then
+    blobs=$(abf_blobs_file)
+    [ -f "$blobs" ] && [ "$(wc -c < "$blobs" | tr -d ' ')" = "$BLOB_SIZE" ] || blobs=""
+  fi
+  abf_room "$blobs"
+  say "$(t "writing system (about 1 minute). Do not unplug the cable or the power until it is done." "записываю system (около минуты). Не отключайте кабель и питание, пока запись не закончится.")"
+  ABF_RSYS=1
+  fb_do flash "system$ABF_S" "$IMG" || die "$(t "system was not written completely. The projector stays in fastboot mode: keep the cable in and run 'rescue' again." "system записан не полностью. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите 'rescue' снова.")"
+  sz=$(wc -c < "$IMG" | tr -d ' ')
+  got=$(fb getvar "partition-size:system$ABF_S" 2>&1 | sed -n "s/^partition-size:system$ABF_S: *//p" | head -n 1 | tr -d ' \r')
+  case "$got" in 0x[0-9a-fA-F]*) got=$((got)) ;; *) got="" ;; esac
+  [ "$got" = "$sz" ] || die "$(t "after the write system$ABF_S has ${got:-?} bytes, the image $sz: the write did not take. The projector stays in fastboot mode: keep the cable in and run 'rescue' again." "после записи в system$ABF_S ${got:-?} байт, а в образе $sz: запись не применилась. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите 'rescue' снова.")"
+  ok "system$ABF_S ($((sz / 1048576)) MB)"
+  if [ -n "$blobs" ]; then
+    if [ -n "$(gv_size "z9x_blobs$ABF_S")" ]; then fb_do resize "z9x_blobs$ABF_S" "$BLOB_SIZE"
+    else fb_do create "z9x_blobs$ABF_S" "$BLOB_SIZE"; fi \
+      && fb_do flash "z9x_blobs$ABF_S" "$blobs" && ok "z9x_blobs$ABF_S" \
+      || warn "$(t "z9x_blobs$ABF_S was not written: no sound and no MediaTek video decoders until 'rescue' is run again" "z9x_blobs$ABF_S не записан: без звука и видеодекодеров MediaTek, пока 'rescue' не запущен снова")"
+  elif [ "$BLOBS" != partition ]; then :
+  elif [ -n "$(gv_size "z9x_blobs$ABF_S")" ]; then
+    ok "$(t "z9x_blobs$ABF_S kept as it is (no blobs file of this projector on this computer)" "z9x_blobs$ABF_S оставлен как есть (на компьютере нет файла blobs этого проектора)")"
+  else
+    warn "$(t "no z9x_blobs$ABF_S and no blobs file of this projector on this computer: no sound and no MediaTek video decoders" "нет z9x_blobs$ABF_S и файла blobs этого проектора на компьютере: без звука и видеодекодеров MediaTek")"
+  fi
+  state_set serial "$SERIAL"; state_set slot "$ABF_S"
+  fb reboot >/dev/null 2>&1
+  state_set step_rescue "$(date +%Y%m%d-%H%M)"
+  echo
+  t "Written; your data is kept. The projector starts Lumen OS now (1-3 minutes). $(abf_hint) The cable can come
+out now. If it comes back to fastboot mode, the system was not the cause: guide, 'Back to stock' (it erases
+everything)." "Записано; данные сохранены. Проектор загружает Lumen OS (1–3 минуты). $(abf_hint) Кабель теперь можно
+вынуть. Если он снова окажется в режиме fastboot, дело не в системе: инструкция, «Откат на сток» (стирает всё)."; echo
+}
 abf_main() {  # the commands of a FLOW=ab-fastbootd projector
   case "${CMD:-all}" in
-    rescue|gapps|gsf|stick) abf_not_yet "$CMD" ;;
-    all|check|backup|blobs|flash|verify) pt_setup ;;
+    gapps|gsf|stick) abf_not_yet "$CMD" ;;
+    all|check|backup|blobs|flash|verify|rescue) pt_setup ;;
     vbmeta) ;;
     *) die "unknown command $CMD (see --help)" ;;
   esac
@@ -3824,6 +4022,7 @@ abf_main() {  # the commands of a FLOW=ab-fastbootd projector
     blobs) abf_blobs ;;
     flash) abf_flash ;;
     verify) abf_verify ;;
+    rescue) abf_rescue ;;
   esac
 }
 

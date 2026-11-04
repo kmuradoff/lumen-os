@@ -1,0 +1,281 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+"""bootctl_twin: a fake /system/bin/bootctl for tools/devices/test/lumen_ota_test.sh that keeps the slot state the
+way the HB keeps it: an AOSP bootloader_control struct at offset 0x800 of misc (libboot_control, the vendor's
+boot@1.2 HAL; research/OTA_TWIN.md section 4: misc read at 0x800 with a valid CRC), so the state lasts between
+simulated boots and a simulated bootloader (U-Boot android_ab ab_select_slot) picks the next slot from it.
+
+  bootctl_twin <verb> [args]    the AOSP bootctl verbs the gate uses, with the reply shapes of the real one
+  (system/extras/bootctl/bootctl.cpp of LineageOS 21, devices/goat_elegant/image/BOOTCTL.md):
+    get-number-slots, get-current-slot, get-active-boot-slot, get-suffix N   one line, exit 0
+    is-slot-bootable N, is-slot-marked-successful N   yes = "1" and exit 0; no = "0" and exit 70 (EX_SOFTWARE);
+                                                      an error or an invalid slot = a message on stderr, exit 70
+    mark-boot-successful, set-active-boot-slot N, set-slot-as-unbootable N  exit 0 and nothing printed
+    get-snapshot-merge-status (none, unknown, snapshotted, merging, cancelled), set-snapshot-merge-status S
+    hal-info
+  The test-only verbs (not logged, never used by the gate):
+    twin-init a=P/T/S b=P/T/S [merge=N]   new misc: priority/tries_remaining/successful_boot per slot
+    twin-set  a=P/T/S | b=P/T/S | merge=N  change fields as a test step (update_engine, a power cut, ...)
+    twin-show                              "a=P/T/S b=P/T/S merge=N"
+    twin-boot                              the bootloader: pick the slot, take one try of an unsuccessful
+                                           slot, print its suffix; exit 1 "no bootable slot"
+State: $BOOTCTL_TWIN_MISC (default $Z9X_T/misc.img); the current slot is ro.boot.slot_suffix of $Z9X_T/props (the
+HAL reads androidboot.slot_suffix). Every real call is logged to $Z9X_T/hal.log as "bootctl <args>".
+Faults (files in $Z9X_T/hal):
+  down                 every call: "Failed to get bootctl module." exit 70 (no HAL)
+  bootctl_fail         every call: an error line, exit 70
+  err_<verb>           that verb: its error line, exit 70 (the yes/no verbs: "Error calling isSlotBootable()" etc.)
+  transport_<verb>     that verb: what bootctl prints on a HIDL transport error (get-current-slot and
+                       get-active-boot-slot: 4294967295 exit 0; the yes/no verbs: their error line, exit 70;
+                       get-snapshot-merge-status: unknown; mark / set-active: exit 0, nothing changed)
+  reply_<verb>         that verb answers exactly as the file says: first line the exit status, the other lines
+                       the output (an empty file = exit 0, nothing printed); nothing changes
+  multi_<verb>         that verb: its normal reply plus one extra line
+  garble_<verb>        that verb: a reply of another shape, exit 0
+  ignore_<verb>        set-active-boot-slot / mark-boot-successful: accepted (exit 0), nothing changed
+  odd_<verb>           set-active-boot-slot / mark-boot-successful: done, but an unexpected line printed
+  current_slot         holds a slot number: the HAL's current slot, whatever ro.boot.slot_suffix says
+A misc whose magic, version or CRC is wrong fails every call (exit 70), as libboot_control refuses it.
+stdout and stderr are kept apart as in the real tool; the gate reads both together.
+"""
+import os
+import struct
+import sys
+import zlib
+
+OFF = 0x800
+MAGIC = 0x42414342          # BOOT_CTRL_MAGIC, "BCAB" little-endian
+MERGE = ["none", "unknown", "snapshotted", "merging", "cancelled"]
+YESNO = {"is-slot-bootable": "isSlotBootable", "is-slot-marked-successful": "isSlotMarkedSuccessful"}
+ACTIVE_PRIORITY, ACTIVE_TRIES = 15, 6    # libboot_control SetActiveBootSlot
+T = os.environ.get("Z9X_T", ".")
+MISC = os.environ.get("BOOTCTL_TWIN_MISC") or os.path.join(T, "misc.img")
+H = os.path.join(T, "hal")
+
+
+def fault(name):
+    return os.path.exists(os.path.join(H, name))
+
+
+class Bad(Exception):
+    pass
+
+
+def load():
+    try:
+        with open(MISC, "rb") as f:
+            f.seek(OFF)
+            b = f.read(32)
+    except OSError:
+        raise Bad("cannot read misc")
+    if len(b) != 32:
+        raise Bad("misc too short")
+    magic, version = struct.unpack_from("<IB", b, 4)
+    crc, = struct.unpack_from("<I", b, 28)
+    if magic != MAGIC or version != 1 or crc != zlib.crc32(b[:28]) & 0xffffffff:
+        raise Bad("bootloader_control in misc is invalid")
+    bits, = struct.unpack_from("<H", b, 9)
+    st = {"suffix": b[0:4], "nb": bits & 7, "rec": (bits >> 3) & 7, "merge": (bits >> 6) & 7, "slots": []}
+    for i in range(4):
+        x, y = b[12 + 2 * i], b[13 + 2 * i]
+        st["slots"].append({"p": x & 15, "t": (x >> 4) & 7, "s": x >> 7, "v": y & 1})
+    return st
+
+
+def save(st):
+    b = bytearray(32)
+    b[0:4] = st["suffix"]
+    struct.pack_into("<IB", b, 4, MAGIC, 1)
+    struct.pack_into("<H", b, 9, (st["nb"] & 7) | ((st["rec"] & 7) << 3) | ((st["merge"] & 7) << 6))
+    for i, s in enumerate(st["slots"]):
+        b[12 + 2 * i] = (s["p"] & 15) | ((s["t"] & 7) << 4) | ((s["s"] & 1) << 7)
+        b[13 + 2 * i] = s["v"] & 1
+    struct.pack_into("<I", b, 28, zlib.crc32(bytes(b[:28])) & 0xffffffff)
+    if not os.path.exists(MISC):
+        with open(MISC, "wb") as f:
+            f.write(bytes(OFF + 0x800))
+    with open(MISC, "r+b") as f:
+        f.seek(OFF)
+        f.write(bytes(b))
+
+
+def current():
+    try:
+        return int(open(os.path.join(H, "current_slot")).read().strip())    # fault: the HAL disagrees
+    except (OSError, ValueError):
+        pass
+    try:
+        for line in open(os.path.join(T, "props"), encoding="utf-8"):
+            if line.startswith("ro.boot.slot_suffix="):
+                return {"_a": 0, "_b": 1}.get(line.rstrip("\n").split("=", 1)[1])
+    except OSError:
+        pass
+    return None
+
+
+def slot_arg(a, st):
+    if len(a) < 1 or a[0] not in ("0", "1") or int(a[0]) >= st["nb"]:
+        raise Bad("invalid slot")
+    return int(a[0])
+
+
+def fields(spec, st):
+    for kv in spec:
+        k, _, v = kv.partition("=")
+        if k == "merge":
+            st["merge"] = int(v)
+        elif k in ("a", "b"):
+            p, t, s = (int(x) for x in v.split("/"))
+            st["slots"]["ab".index(k)].update(p=p, t=t, s=s)
+        else:
+            raise SystemExit("bootctl_twin: bad field %s" % kv)
+
+
+def twin(verb, a):
+    if verb == "twin-init":
+        st = {"suffix": b"_a\0\0", "nb": 2, "rec": 0, "merge": 0,
+              "slots": [{"p": 0, "t": 0, "s": 0, "v": 0} for _ in range(4)]}
+        fields(a, st)
+        save(st)
+        return 0
+    st = load()
+    if verb == "twin-set":
+        fields(a, st)
+        save(st)
+    elif verb == "twin-show":
+        print(" ".join("%s=%d/%d/%d" % (n, s["p"], s["t"], s["s"]) for n, s in zip("ab", st["slots"]))
+              + " merge=%d" % st["merge"])
+    elif verb == "twin-boot":
+        # U-Boot lib/android_ab.c: the bootable slot (priority > 0 and successful or tries left) with the highest
+        # priority, then successful_boot, then tries_remaining wins; an unsuccessful one loses one try
+        pick = None
+        for i in range(st["nb"]):
+            s = st["slots"][i]
+            if s["p"] > 0 and (s["s"] or s["t"] > 0):
+                if pick is None or (s["p"], s["s"], s["t"]) > tuple(st["slots"][pick][k] for k in "pst"):
+                    pick = i
+        if pick is None:
+            print("no bootable slot")
+            return 1
+        if not st["slots"][pick]["s"]:
+            st["slots"][pick]["t"] -= 1
+        st["suffix"] = ("_" + "ab"[pick]).encode() + b"\0\0"
+        save(st)
+        print("_" + "ab"[pick])
+    else:
+        raise SystemExit("bootctl_twin: unknown test verb %s" % verb)
+    return 0
+
+
+def yesno(v):
+    # bootctl.cpp handle_return(std::optional<bool>): printf("%d\n"), EX_OK for true, EX_SOFTWARE for false
+    return (0, ["1"]) if v else (70, ["0"])
+
+
+def real(verb, a):
+    """-> (exit status, output lines) as the AOSP bootctl answers"""
+    if fault("down"):
+        return 70, ["Failed to get bootctl module."]
+    if fault("bootctl_fail") or fault("err_" + verb):
+        if verb in YESNO:
+            return 70, ["Error calling %s()" % YESNO[verb]]
+        return 70, ["Error: boot control HAL call %s failed" % verb]
+    if fault("transport_" + verb):
+        if verb in ("get-current-slot", "get-active-boot-slot"):
+            return 0, ["4294967295"]          # -1 from withDefault(-1), printed with %u
+        if verb in YESNO:
+            return 70, ["Error calling %s()" % YESNO[verb]]
+        if verb == "get-snapshot-merge-status":
+            return 0, ["unknown"]
+        return 0, []                          # CommandResult.success never set: the exit status proves nothing
+    st = load()
+    cur = current()
+    if verb == "hal-info":
+        return 0, ["HAL Version: android.hardware.boot@1.2::IBootControl"]
+    if verb == "get-number-slots":
+        return 0, [str(st["nb"])]
+    if verb == "get-current-slot":
+        if cur is None:
+            raise Bad("no slot suffix")
+        return 0, [str(cur)]
+    if verb == "get-active-boot-slot":
+        # libboot_control GetActiveBootSlot: the current slot unless another one has a higher priority
+        act = cur if cur is not None else 0
+        for i in range(st["nb"]):
+            if st["slots"][i]["p"] > st["slots"][act]["p"]:
+                act = i
+        return 0, [str(act)]
+    if verb == "get-suffix":
+        return 0, ["_" + "ab"[slot_arg(a, st)]]
+    if verb == "is-slot-bootable":
+        return yesno(st["slots"][slot_arg(a, st)]["t"] != 0)
+    if verb == "is-slot-marked-successful":
+        s = st["slots"][slot_arg(a, st)]
+        return yesno(s["s"] and s["t"] != 0)
+    if verb == "get-snapshot-merge-status":
+        return 0, [MERGE[st["merge"]] if st["merge"] < len(MERGE) else "unknown"]
+    if verb == "set-snapshot-merge-status":
+        if not a or a[0] not in MERGE:
+            raise Bad("invalid merge status")
+        st["merge"] = MERGE.index(a[0])
+        save(st)
+        return 0, []
+    if verb == "mark-boot-successful":
+        if cur is None:
+            raise Bad("no slot suffix")
+        if not fault("ignore_" + verb):
+            st["slots"][cur].update(s=1, t=1)    # libboot_control MarkBootSuccessful
+            save(st)
+        return 0, (["Marked."] if fault("odd_" + verb) else [])
+    if verb == "set-active-boot-slot":
+        n = slot_arg(a, st)
+        if not fault("ignore_" + verb):
+            for i in range(st["nb"]):
+                if i != n and st["slots"][i]["p"] >= ACTIVE_PRIORITY:
+                    st["slots"][i]["p"] = ACTIVE_PRIORITY - 1
+            st["slots"][n].update(p=ACTIVE_PRIORITY, t=ACTIVE_TRIES)
+            if n != cur:
+                st["slots"][n]["v"] = 0
+            save(st)
+        return 0, (["Active slot set to %d." % n] if fault("odd_" + verb) else [])
+    if verb == "set-slot-as-unbootable":
+        n = slot_arg(a, st)
+        st["slots"][n].update(p=0, t=0, s=0)
+        save(st)
+        return 0, []
+    return 64, ["bootctl: unknown command %s" % verb]
+
+
+def main():
+    verb, a = (sys.argv[1] if len(sys.argv) > 1 else ""), sys.argv[2:]
+    if verb.startswith("twin-"):
+        try:
+            return twin(verb, a)
+        except Bad as e:
+            print("bootctl_twin: %s" % e, file=sys.stderr)
+            return 1
+    with open(os.path.join(T, "hal.log"), "a", encoding="utf-8") as f:
+        f.write(" ".join(["bootctl"] + sys.argv[1:]) + "\n")
+    if fault("garble_" + verb):
+        print("maybe")
+        return 0
+    if fault("reply_" + verb):
+        lines = open(os.path.join(H, "reply_" + verb), encoding="utf-8").read().splitlines()
+        for line in lines[1:]:
+            print(line)
+        return int(lines[0]) if lines else 0
+    try:
+        rc, out = real(verb, a)
+        err = rc != 0 and out[:1] != ["0"]
+    except Bad as e:
+        # the real yes/no verbs print only their own error line (the reason goes to logcat)
+        rc, out, err = 70, ["Error calling %s()" % YESNO[verb] if verb in YESNO else "Error: %s" % e], True
+    if fault("multi_" + verb):
+        out = out + ["W libboot_control: misc read twice"]
+    for line in out:
+        print(line, file=sys.stderr if err else sys.stdout)
+    return rc
+
+
+if __name__ == "__main__":
+    sys.exit(main())

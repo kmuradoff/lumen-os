@@ -17,7 +17,14 @@
 # hb_media.rc, hb_audio_policy_configuration.xml and their gate props absent; the Z9X blobs reader z9x_blobs.rc +
 # z9x_blobs.sh and the HB blobs_allow.txt present, each byte-identical to the stage; and NO file of the image has the
 # sha256 of a blob (MediaTek's libstagefright_foundation.so, the stock or the Lumen audio policy).
-import hashlib, os, re, stat, sys
+# Since 1.0.8 the public release also carries the OTA client, each file
+# byte-identical to the stage: the gate /system/etc/lumen/lumen_ota.sh + ota_gate.conf, /system/etc/init/lumen_ota.rc,
+# the gate's update_verifier.rc and otacerts.zip over the base files, lumen_escape.sh = the fork lumen_ota_escape.sh,
+# LumenUpdater in /system/app with z9x-updater-default-permissions.xml, and /system/bin/bootctl (root:shell 0755, the
+# sha256 of IN/bootctl.sha256); otacerts.zip holds exactly ota.x509.pem and ota_next.x509.pem; no Z9X gate file; the
+# product build.prop has the OTA props (ab_ota_partitions without mboot and vbmeta, gate 1, device hb, the manifest
+# on the tag hb) and the version code of design decision.
+import hashlib, os, re, stat, sys, zipfile
 
 base, new, tag = sys.argv[1:4]
 IN = sys.argv[4] if len(sys.argv) > 4 else None
@@ -53,8 +60,14 @@ BLOB_SHA = {
     "d4783b3ed42902b888b4793d10a1e19af8548b710ee5988bc66afafb79e8d077": "XGIMI vendor audio_policy_configuration.xml",
     "1f5cb6569af7285f66d88b774ab2232d9624e8c347034f810f6f842fd0c0fae9": "audio policy without XGIMI SUB Out (Lumen copy)",
 }
-PUBLIC_ABSENT = ("system/lib/hb_vndk33", "system/etc/init/hb_media.rc", "system/etc/xgimi/hb_audio_policy_configuration.xml")
+PUBLIC_ABSENT = ("system/lib/hb_vndk33", "system/etc/init/hb_media.rc", "system/etc/xgimi/hb_audio_policy_configuration.xml",
+                 "system/etc/init/z9x_ota.rc", "system/etc/z9x/z9x_ota.sh")
 PUBLIC_GATES = ("ro.lumen.hb.c2foundation", "ro.lumen.hb.audiopolicy")
+OWNER = {}       # added path -> (uid, gid) other than root:root (fs_config: /system/bin is root:shell)
+# the OTA props of a public image (hb_ota_props.txt; the list is devices/goat_elegant/ota.conf, design decision)
+OTA_PROPS = {"ro.product.ab_ota_partitions": "armfw,boot,bootdata,dtbo,optee,tvconfig,tvservice,vbmeta_system,xgimiconfig",
+             "ro.lumen.ota.gate": "1", "ro.lumen.ota.device": "hb"}
+OTA_URL = re.compile(r"https://github\.com/kmuradoff/lumen-os/releases/download/hb/update-hb-(nogms|test)\.json")
 if IN:
     F = "u:object_r:system_file:s0"
     SG = os.path.join(IN, "signed_stage")
@@ -100,12 +113,19 @@ if IN:
     }
     if PUBLIC:
         for r in PUBLIC_ABSENT[1:]:
-            del lumen[r]
+            lumen.pop(r, None)
         # the Z9X blobs reader (unchanged) and the HB allow-list; z9x_blobs.sh gets the fs_config 0644 of
         # /system/etc like z9x_gapps.sh (started as "/system/bin/sh FILE")
         lumen["system/etc/init/z9x_blobs.rc"] = os.path.join(IN, "z9x_blobs.rc")
         lumen["system/etc/z9x/z9x_blobs.sh"] = os.path.join(IN, "z9x_blobs.sh")
         lumen["system/etc/z9x/blobs_allow.txt"] = os.path.join(IN, "blobs_allow.txt")
+        # the OTA client (compose_hb.sh step 3e)
+        lumen["system/etc/lumen/lumen_ota.sh"] = os.path.join(IN, "lumen_ota.sh")
+        lumen["system/etc/lumen/ota_gate.conf"] = os.path.join(IN, "ota_gate.conf")
+        lumen["system/etc/init/lumen_ota.rc"] = os.path.join(IN, "lumen_ota.rc")
+        lumen["system/app/LumenUpdater/LumenUpdater.apk"] = os.path.join(SG, "apps", "LumenUpdater.apk")
+        lumen["system/etc/default-permissions/z9x-updater-default-permissions.xml"] = os.path.join(
+            IN, "z9x-updater-default-permissions.xml")
     for r, src in lumen.items():
         ADDED[r] = (F, 0o644)
         SOURCE[r] = src
@@ -113,6 +133,16 @@ if IN:
               "system/priv-app/Z9xSetup", "system/priv-app/HbProjector", "system/app/Z9xTvInput", "system/app/BtPair",
               "system/priv-app/LumenInfo", "system/etc/z9x", "system/etc/z9x/gapps", "system/etc/z9x/gapps/sysconfig"):
         ADDED[d] = (F, 0o755)
+    if PUBLIC:
+        for d in ("system/etc/lumen", "system/app/LumenUpdater"):
+            ADDED[d] = (F, 0o755)
+        ADDED["system/bin/bootctl"] = (F, 0o755)
+        OWNER["system/bin/bootctl"] = (0, 2000)
+        PINNED["system/bin/bootctl"] = open(os.path.join(IN, "bootctl.sha256")).read().split()[0]
+        # replaced base files and the escape fork, each the staged file
+        SOURCE["system/etc/init/update_verifier.rc"] = os.path.join(IN, "lumen_update_verifier.rc")
+        SOURCE["system/etc/security/otacerts.zip"] = os.path.join(IN, "otacerts.zip")
+        SOURCE["system/etc/xgimi/lumen_escape.sh"] = os.path.join(IN, "lumen_ota_escape.sh")
     if not PUBLIC:
         ADDED["system/lib/hb_vndk33"] = ("u:object_r:system_lib_file:s0", 0o755)
         ADDED[C2_LIB] = ("u:object_r:system_lib_file:s0", 0o644)
@@ -187,8 +217,9 @@ for r, (label, mode) in ADDED.items():
         continue
     st = os.lstat(n[r])
     got = (xa(n[r], "security.selinux") or b"").decode()
-    if got != label or stat.S_IMODE(st.st_mode) != mode or st.st_uid != 0 or st.st_gid != 0:
-        errors.append("%s: label %s mode %o uid %d gid %d (want %s %o root)" % (r, got, stat.S_IMODE(st.st_mode), st.st_uid, st.st_gid, label, mode))
+    if got != label or stat.S_IMODE(st.st_mode) != mode or (st.st_uid, st.st_gid) != OWNER.get(r, (0, 0)):
+        errors.append("%s: label %s mode %o uid %d gid %d (want %s %o %d:%d)" % (r, got, stat.S_IMODE(st.st_mode), st.st_uid,
+                      st.st_gid, label, mode, *OWNER.get(r, (0, 0))))
     if r in SOURCE and sha(n[r]) != sha(SOURCE[r]):
         errors.append("%s: not byte-identical to its staged source %s" % (r, SOURCE[r]))
     if r in PINNED and sha(n[r]) != PINNED[r]:
@@ -243,6 +274,34 @@ if RELEASE:
         notes.append("public: ro.lumen.version=%s, no gate props, no hb_vndk33 / hb_media.rc / audio policy, blobs reader "
                      "and allow-list in; %d files hashed, none a blob (%s)"
                      % (ver, nf, ", ".join(h[:8] for h in sorted(BLOB_SHA))))
+        # the OTA client: props, the O1 version code of the version, otacerts.zip = the two HB certificates
+        for k, v in OTA_PROPS.items():
+            if last.get(k) != v:
+                errors.append("public release: product build.prop %s=%s, must be %s" % (k, last.get(k), v))
+        url = last.get("ro.lumen.ota.manifest_url", "")
+        if not OTA_URL.fullmatch(url):
+            errors.append("public release: ro.lumen.ota.manifest_url=%s, not update-hb-nogms.json or update-hb-test.json "
+                          "on the tag hb" % url)
+        m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:-(beta|rc)(\d+))?", ver)
+        vc = None
+        if m:
+            k = {"beta": 0, "rc": 50}
+            vc = (int(m.group(1)) * 1000000 + int(m.group(2)) * 10000 + int(m.group(3)) * 100
+                  + (k[m.group(4)] + int(m.group(5)) if m.group(4) else 99))
+        if vc is None or last.get("ro.lumen.version_code") != str(vc):
+            errors.append("public release: ro.lumen.version_code=%s, %s needs %s (decision O1)"
+                          % (last.get("ro.lumen.version_code"), ver, vc))
+        oc = n.get("system/etc/security/otacerts.zip")
+        try:
+            names = zipfile.ZipFile(oc).namelist() if oc else None
+        except zipfile.BadZipFile:
+            names = None
+        if names != ["ota.x509.pem", "ota_next.x509.pem"]:
+            errors.append("public release: otacerts.zip holds %s, must be ota.x509.pem and ota_next.x509.pem" % names)
+        notes.append("ota: %s, channel %s, version_code %s, otacerts.zip %s, bootctl %s..."
+                     % (", ".join("%s=%s" % kv for kv in OTA_PROPS.items()),
+                        (OTA_URL.fullmatch(url) or [None, "?"])[1], last.get("ro.lumen.version_code"), names,
+                        PINNED.get("system/bin/bootctl", "?")[:16]))
 for c in capex:
     a = c[:-6] + ".apex"
     if a in n:

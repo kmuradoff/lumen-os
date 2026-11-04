@@ -9,5 +9,7 @@
     <string name="game_top_speed_confirm">Турбо трапецияны түзетуді өшіріп, суретті толық кадрға қайтарады. Ауыстыру керек пе?</string>
     <string name="picture_reset_all">Барлық кескін параметрлерін қалпына келтіру</string>
     <string name="picture_reset_all_msg">Кескін режимі, негізгі және кәсіби параметрлер әдепкі мәндерге оралады. Жалғастыру керек пе?</string>
+    <string name="panel_ct_3">Температура 3</string>
+    <string name="panel_lamp_mode_locked">«%1$s» режимінде жарықтық өзгермейді</string>
     <string name="three_d_native_fps">Алдымен бастапқы кадр жиілігін өшіріңіз</string>
 </resources>

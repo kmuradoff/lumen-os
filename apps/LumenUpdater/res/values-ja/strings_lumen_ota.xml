@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Japanese translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">このプロジェクターではアップデートの安全確認が動作していません（%1$s）。プロジェクターを再起動してもう一度お試しください。</string>
+    <string name="blk_not_marked">このバージョンが正常に動作することはまだ確認されていません。プロジェクターの電源を数分間入れたままにしてから、もう一度お試しください。</string>
+    <string name="blk_probe">アップデートの安全確認から応答がありません（%1$s）。プロジェクターを再起動してもう一度お試しください。</string>
+    <string name="blk_active">プロジェクターは次回、システムスロット %1$s から起動します。プロジェクターを再起動してもう一度お試しください。</string>
+    <string name="blk_partitions">このバージョンではアップデートは安全ではありません。パーティション一覧が正しくありません（%1$s）。パソコン用インストーラーをご利用ください。</string>
+    <string name="blk_vab">このプロジェクターのストレージはアップデート用に設定されていません（%1$s）。パソコン用インストーラーをご利用ください。</string>
+</resources>

@@ -32,7 +32,10 @@
     <string name="pref_cec_otp">HDMI-CEC: cihaz istediğinde HDMI\'ya geç (One Touch Play)</string>
     <string name="pref_cec_control">HDMI-CEC: cihazı kumandayla kontrol et</string>
     <string name="pref_cec_exit">HDMI-CEC: HDMI\'dan çıkarken cihaza bildir</string>
-    <string name="pref_open_on_boot">Kaynak bağlıysa açılışta HDMI\'yı aç</string>
+    <string name="pref_boot_source">Açılışta kaynak: %1$s</string>
+    <string name="boot_source_home">Ana ekran</string>
+    <string name="pref_boot_source_note">Projektörü HDMI-CEC ile bir cihaz açarsa onun girişi açılır.</string>
+    <string name="back_key_guide">GERİ artık bağlı cihazı kontrol eder. Çıkmak için ANA SAYFA tuşuna basın.</string>
     <string name="settings_inputs_header">Girişler:</string>
     <string name="settings_safe_mode">Güvenli mod: tekrarlanan hatalardan sonra otomatik geçiş bir sonraki yeniden başlatmaya kadar kapalıdır.</string>
     <string name="toast_no_input">%1$s kullanılamıyor</string>

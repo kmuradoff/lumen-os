@@ -6,12 +6,14 @@ import java.util.Map;
  * Facts of the XGIMI Z9X HB (goat_elegant, G0130) that LumenInfo uses, as plain data (host tests):
  *  - PLAN: every vendor call this app can send (service, absolute code, stub method, read-only flag). The
  *    test checks each row against devices/goat_elegant/research/allowed.tsv, aidl_codes.tsv and banned.tsv,
- *    and that hal/HbGmpf.java has exactly these calls. The only non-getter is setEdidVersion, restricted to the
- *    two stock values 1 (EDID 1.4) and 2 (EDID 2.0), the same choice as the stock signal settings and HbProjector.
+ *    and that hal/HbGmpf.java has exactly these calls. All are getters: the EDID choice is HbProjector's stock row
+ *    (TV 40 sets the input on screen, and this app's own screen is never an HDMI input).
  *  - wire values of the getters (input source, HDR type, EDID version, HDMI range, colour space);
- *  - where the built-in EDID files are: mtk_Customer.ini of the model's xgimiconfig folder names them under
- *    [HDMI_EDID_n] as /mnt/vendor/xgimiconfig/{model}/tv/edidNN_n.bin (some of them symlinks into G0000);
- *    the older Customer_1.ini with /config/EDID_BIN/Mstar_* names is not the table the vendor loads (2026-11-04).
+ *  - which built-in EDID file the vendor loads: libxgimi Device_HdmiInput builds
+ *    /mnt/vendor/xgimiconfig/{model}/tv/{name}_{port}.bin itself (the [HDMI_EDID_n] lines of mtk_Customer.ini are
+ *    not used for it), name from the stored request, see {@link #edidName}. The kernel then rewrites the audio
+ *    block of the non-ARC inputs in passthrough mode, so a file is never the exact live EDID (checked 2026-11-04
+ *    against an external grab of HDMI 2: edid20_non_hrr_2.bin plus that rewrite, 0 bytes differ).
  */
 public final class Hb {
     private Hb() { }
@@ -24,7 +26,6 @@ public final class Hb {
         {"GmTvManager", "34", "getPictureMode", "r"},
         {"GmTvManager", "38", "getHdmiInfo", "r"},
         {"GmTvManager", "39", "getEdidVersion", "r"},
-        {"GmTvManager", "40", "setEdidVersion", "w"},
         {"GmTvManager", "64", "getHdmiRange", "r"},
         {"GmTvManager", "78", "getHdrType", "r"},
         {"GmTvManager", "131", "getAllmStatus", "r"},
@@ -79,7 +80,7 @@ public final class Hb {
     /**
      * The vendor reads of one tick (one tick per second), in order. Lumen rule (fast on weak hardware): at most 4
      * calls while an HDMI input is on screen (input source, HDMI timing, one fast, one slow), at most 3 otherwise;
-     * HDMI-only reads (timing, range, ALLM) are skipped off HDMI and the per-port reads (cable, port config) only
+     * HDMI-only reads (timing, range, ALLM, EDID setting) are skipped off HDMI and the per-port reads (cable, port config) only
      * while the HDMI page or the log asks (ports). The two meta calls of the version guard come once per interface.
      */
     public static java.util.List<String> schedule(long tick, boolean hdmi, boolean ports) {
@@ -88,7 +89,7 @@ public final class Hb {
         if (hdmi) l.add(HDMI_INFO);
         l.add(FAST[(int) (tick % FAST.length)]);
         String s = SLOW[(int) (tick % SLOW.length)];
-        boolean hdmiOnly = s.equals(RANGE) || s.equals(ALLM);
+        boolean hdmiOnly = s.equals(RANGE) || s.equals(ALLM) || s.equals(EDID_VERSION);   // TV 39 off HDMI: the media slot
         boolean port = s.equals(CONNECT1) || s.equals(CONNECT2) || s.equals(HWCFG1) || s.equals(HWCFG2);
         if ((!hdmiOnly || hdmi) && (!port || ports)) l.add(s);
         return l;
@@ -99,7 +100,12 @@ public final class Hb {
 
     // ---------------------------------------------------------------- wire values
     public static final int SOURCE_MEDIA = 0, SOURCE_HDMI1 = 1, SOURCE_HDMI2 = 2;
-    public static final int EDID_14 = 1, EDID_20 = 2;
+    /**
+     * TV 39 / TV 40 raw EDID requests. Stock SignalEnum sends 1 (1.4) / 2 (2.0) to
+     * com.xgimi.gmuiapi.manager.GmTvManager.setEDIDVersion, which does version-- on Android 8+, and getEDIDVersion
+     * adds 1 back. So the wire is 0 = 1.4, 1 = 2.0; 2 lets the game mode pick the file, 3 = 2.1 (no stock row on G0130).
+     */
+    public static final int EDID_14 = 0, EDID_20 = 1, EDID_GAME = 2, EDID_21 = 3;
     public static final int[] HDMI_PORTS = {SOURCE_HDMI1, SOURCE_HDMI2};
 
     /** TV 78 getHdrType. */
@@ -115,12 +121,13 @@ public final class Hb {
         }
     }
 
-    /** TV 39 getEdidVersion: 1 = 1.4, 2 = 2.0 (the stock settings show every other value as 1.4). */
+    /** TV 39 raw value as an EDID version; null for EDID_GAME and unknown values (the caller words those). */
     public static String edidVersionName(int v) {
         switch (v) {
             case EDID_14: return "1.4";
             case EDID_20: return "2.0";
-            default: return "? (" + v + ")";
+            case EDID_21: return "2.1";
+            default: return null;
         }
     }
 
@@ -141,13 +148,7 @@ public final class Hb {
     }
 
     // ---------------------------------------------------------------- built-in EDID files
-    /**
-     * The vendor's own config folder of a model, /mnt/vendor/xgimiconfig/{model} (model = ro.boot.xgimi.modelname).
-     * Its mtk_Customer.ini (named by mtk_sys.ini, read by libporting) holds the EDID table that is loaded:
-     * [HDMI_EDID_n] HDMI_EDID_File_1_4 / HDMI_EDID_File_2_0 = /mnt/vendor/xgimiconfig/{model}/tv/edidNN_n.bin.
-     * Some files of tv/ are the model's own, others are symlinks into the shared G0000 folder (tv/edid_cfg.ini too).
-     * The older Customer_1.ini with /config/EDID_BIN/Mstar_* names is not what the vendor loads.
-     */
+    /** The vendor's own config folder of a model, /mnt/vendor/xgimiconfig/{model} (model = ro.boot.xgimi.modelname). */
     public static final String XGIMICONFIG = "/mnt/vendor/xgimiconfig/";
 
     /** The model folder, or null for a model name that is not plain (letters and digits, 3 to 12). */
@@ -156,9 +157,9 @@ public final class Hb {
         return XGIMICONFIG + model;
     }
 
-    public static String vendorIni(String model) {
+    public static String featureXml(String model) {
         String d = modelDir(model);
-        return d == null ? null : d + "/mtk_Customer.ini";
+        return d == null ? null : d + "/feature/feature.xml";
     }
 
     public static String edidDir(String model) {
@@ -166,32 +167,33 @@ public final class Hb {
         return d == null ? null : d + "/tv";
     }
 
-    /** The table path when it is a plain .bin under the vendor config folder, else null. */
-    static String tablePath(String p) {
-        if (p == null || !p.startsWith(XGIMICONFIG) || p.contains("..")) return null;
-        String name = p.substring(p.lastIndexOf('/') + 1);
-        return isEdidFileName(name) ? p : null;
-    }
-
     /**
-     * The EDID file of an HDMI port (1 or 2) for an EDID version (1 or 2): from the model's mtk_Customer.ini when it
-     * names one, else tv/edid14_n.bin / tv/edid20_n.bin of the model folder. Null only without a usable model.
+     * libxgimi Msrv_Tv_Control::_setEdidVersion: a 2.0 request loads edid20_non_hrr instead of edid20 when the model
+     * has support_hfr=true and display_gamemode_version=3 in its feature.xml (G0130 has both).
      */
-    public static String edidFile(Map<String, Map<String, String>> ini, String model, int port, int version) {
-        String key = version == EDID_20 ? "HDMI_EDID_File_2_0" : "HDMI_EDID_File_1_4";
-        Map<String, String> sec = ini == null ? null : ini.get("HDMI_EDID_" + port);
-        String p = sec == null ? null : tablePath(sec.get(key));
-        if (p != null) return p;
-        String d = edidDir(model);
-        return d == null ? null : d + "/" + (version == EDID_20 ? "edid20_" : "edid14_") + port + ".bin";
+    public static boolean hfrRule(Map<String, String> feature) {
+        return feature != null && "true".equals(feature.get("support_hfr")) && "3".equals(feature.get("display_gamemode_version"));
     }
 
-    /** true when the ini itself named the file (the fallback name was not needed). */
-    public static boolean edidFromIni(Map<String, Map<String, String>> ini, int port, int version) {
-        String key = version == EDID_20 ? "HDMI_EDID_File_2_0" : "HDMI_EDID_File_1_4";
-        Map<String, String> sec = ini == null ? null : ini.get("HDMI_EDID_" + port);
-        return sec != null && tablePath(sec.get(key)) != null;
+    /** File name stem the vendor loads for a raw request (0-based table of libxgimi), null for EDID_GAME / unknown. */
+    public static String edidName(int raw, boolean hfr) {
+        switch (raw) {
+            case EDID_14: return "edid14";
+            case EDID_20: return hfr ? "edid20_non_hrr" : "edid20";
+            case EDID_21: return "edid21";
+            default: return null;
+        }
     }
+
+    /** The built-in EDID file of an HDMI port (1 or 2) for a raw request, or null (no usable model, EDID_GAME). */
+    public static String edidFile(String model, int port, int raw, boolean hfr) {
+        String d = edidDir(model), n = edidName(raw, hfr);
+        if (d == null || n == null || (port != SOURCE_HDMI1 && port != SOURCE_HDMI2)) return null;
+        return d + "/" + n + "_" + port + ".bin";
+    }
+
+    /** The ARC input of the HB (mtk_sys.ini F_CEC_ARC_HDMI_PORT): the kernel leaves its audio block as the file has it. */
+    public static final int ARC_INPUT = SOURCE_HDMI1;
 
     /** A file name of the EDID folder that may be listed and read: *.bin, no path parts. */
     public static boolean isEdidFileName(String n) {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Russian translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">Проверка безопасности обновлений на этом проекторе не работает (%1$s). Перезапустите проектор и попробуйте снова.</string>
+    <string name="blk_not_marked">Эта версия ещё не подтверждена как рабочая. Оставьте проектор включённым на несколько минут и попробуйте снова.</string>
+    <string name="blk_probe">Проверка безопасности обновлений не ответила (%1$s). Перезапустите проектор и попробуйте снова.</string>
+    <string name="blk_active">В следующий раз проектор запустится из системного слота %1$s. Перезапустите проектор и попробуйте снова.</string>
+    <string name="blk_partitions">На этой версии обновления небезопасны: неверный список разделов (%1$s). Используйте установщик для компьютера.</string>
+    <string name="blk_vab">Память этого проектора не подготовлена для обновлений (%1$s). Используйте установщик для компьютера.</string>
+</resources>

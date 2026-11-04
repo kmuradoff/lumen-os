@@ -1,0 +1,6 @@
+# OTA device test results of the XGIMI Z9X HB (T1..T9).
+# Read by tools/devices/ota/ota_conf.py (results, channel_open): make_manifest.py and check_release.py refuse
+# every channel except the stage channel hb-test until the last rows of T5, T6 and T7 say pass.
+# One row per test run, appended, never edited. 5 tab-separated fields:
+#   test (T1..T9)  result (pass or fail)  date (YYYY-MM-DD)  build (ro.lumen.build_id)  note (no tabs)
+# The last row of a test decides: a later fail closes the public channels again.

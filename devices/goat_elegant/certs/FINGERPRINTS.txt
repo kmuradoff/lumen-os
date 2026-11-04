@@ -1,3 +1,5 @@
 # Lumen OS goat_elegant certificates (public). SHA-256 of the DER certificate.
 platform      687bf14308a9e41c2edb29c1610d406173add3e650d898257c12b1f267e6ac90
 ota/ota       8e47e495f9fcc5db464f52c578209fda3a9e47ff80aafce6f7125d2c51a98624
+
+ota_next (spare OTA key, 2026-11-04, CN=Lumen OS goat_elegant OTA next, RSA-4096): SHA-256 6F:77:76:F7:D1:83:91:E6:46:48:99:9A:6B:4C:B3:5B:9F:A3:BB:0E:1E:87:39:86:2E:0B:5F:93:60:6C:CC:1F

@@ -8,7 +8,10 @@
     the goat_elegant platform key;
   - the application is direct boot aware (the vendor handshake runs before unlock, as HbBoot did); every
     component says directBootAware="false" except BootReceiver (LOCKED_BOOT_COMPLETED and BOOT_COMPLETED);
-  - no problem reports (Z9X only), no OTA state receiver (ota_engine=none).
+  - no problem reports (Z9X only);
+  - the OTA state receiver power.OtaStateReceiver is back for the
+    updater LumenUpdater, guarded by the signature permission OTA_STATE as on the Z9X; not direct boot aware
+    (the updater runs only after unlock).
   Z9X notes kept below.
   versionCode/versionName come from build_apk.sh (Lumen OS 1.0: VERSION_CODE=100 VERSION_NAME=1.0;
   Lumen OS 1.0.0: VERSION_CODE=101 VERSION_NAME=1.0.0; Lumen OS 1.0.1: VERSION_CODE=102 VERSION_NAME=1.0.1;
@@ -304,6 +307,17 @@
             android:permission="org.lumen.projector.permission.SHOW_PANEL">
             <intent-filter>
                 <action android:name="org.lumen.projector.action.SHOW_PANEL" />
+            </intent-filter>
+        </receiver>
+        <!-- HB OTA: org.lumen.updater (LumenUpdater, Ota.setBusy) reports busy / restart when
+             turned off; StrGate keeps the SoC out of STR while busy. -->
+        <receiver
+            android:name=".power.OtaStateReceiver"
+            android:directBootAware="false"
+            android:exported="true"
+            android:permission="org.lumen.projector.permission.OTA_STATE">
+            <intent-filter>
+                <action android:name="org.lumen.projector.action.OTA_STATE" />
             </intent-filter>
         </receiver>
 

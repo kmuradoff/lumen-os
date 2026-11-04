@@ -307,7 +307,10 @@ pref_return_home=ソースが切断されたらホーム画面に戻る
 pref_cec_otp=HDMI-CEC：機器からの要求で HDMI に切り替える（One Touch Play）
 pref_cec_control=HDMI-CEC：リモコンで機器を操作する
 pref_cec_exit=HDMI-CEC：HDMI を終了するときに機器に通知する
-pref_open_on_boot=ソースが接続されていれば電源オン時に HDMI を開く
+pref_boot_source=電源オン時の入力: %1$s
+boot_source_home=ホーム画面
+pref_boot_source_note=HDMI-CEC で機器がプロジェクターの電源を入れた場合は、その入力が開きます。
+back_key_guide=戻るボタンで接続中の機器を操作します。終了するにはホームを押します。
 settings_inputs_header=入力：
 settings_safe_mode=セーフモード：エラーが繰り返されたため、次回の再起動まで自動切り替えはオフです。
 toast_no_input=%1$s は使用できません
@@ -1034,6 +1037,8 @@ voice_key_quota=今日の Gemini の上限に達したため、端末の声で�
 voice_key_bad=Google がこのキーを受け付けませんでした
 
 @projector/strings_parity.xml
+panel_ct_3=色温度 3
+panel_lamp_mode_locked=%1$sモードでは明るさを変更できません
 boost_effect=Boost で映像は明るくなりますが、色が淡くなります。色空間は変わりません。
 boost_blocks_change=Boost をオフにしてからもう一度お試しください
 blocked_game=ゲームモードがオンの間は使用できません

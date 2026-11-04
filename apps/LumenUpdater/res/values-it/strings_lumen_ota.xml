@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Italian translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">Il controllo di sicurezza degli aggiornamenti non funziona su questo proiettore (%1$s). Riavvia il proiettore e riprova.</string>
+    <string name="blk_not_marked">Il funzionamento di questa versione non è ancora confermato. Lascia acceso il proiettore per qualche minuto, poi riprova.</string>
+    <string name="blk_probe">Il controllo di sicurezza degli aggiornamenti non ha risposto (%1$s). Riavvia il proiettore e riprova.</string>
+    <string name="blk_active">La prossima volta il proiettore si avvierà dallo slot di sistema %1$s. Riavvia il proiettore e riprova.</string>
+    <string name="blk_partitions">Gli aggiornamenti non sono sicuri su questa versione: l’elenco delle partizioni è errato (%1$s). Usa il programma di installazione per computer.</string>
+    <string name="blk_vab">La memoria di questo proiettore non è predisposta per gli aggiornamenti (%1$s). Usa il programma di installazione per computer.</string>
+</resources>

@@ -257,6 +257,14 @@ final class QuickPanelController {
             if (ev.getAction() == KeyEvent.ACTION_UP && !ev.isCanceled()) eqBands.stopEditing();
             return true;
         }
+        // 1.0.8 (parity brightness item 13): in 3D every LEFT / RIGHT on the brightness slider, Boost in and out
+        // included, only shows the stock note (Lamp3d); the value stays, no 176 / IGmpf2 52. As stock CoreViewModel
+        // postArrowAbout + SettingMutexManager node brightness_adjustment_progress. One note per press, not per repeat.
+        if (lamp != null && lamp.isFocused() && Lamp3d.isStepKey(ev.getKeyCode()) && snap != null
+                && (Lamp3d.blocks(snap.fmt3d, snap.is3dTo2d) || Lamp3d.modeLocks(snap.lumensMode))) {
+            if (ev.getAction() == KeyEvent.ACTION_DOWN && ev.getRepeatCount() == 0) lampRefusal();
+            return true;
+        }
         // Leaving Boost: at "Boost" a LEFT press arms, a second LEFT within 3 s turns it off (FS 3.1).
         // "Towards the start" is RIGHT in RTL (the slider is mirrored, Row.onKeyDown).
         int towardsStart = lamp != null && lamp.isRtl() ? KeyEvent.KEYCODE_DPAD_RIGHT : KeyEvent.KEYCODE_DPAD_LEFT;
@@ -317,9 +325,30 @@ final class QuickPanelController {
         }
         Page p = pages.get(section);
         if (p == null) return;
+        // 1.0.8 (parity brightness item 13): stock does not open its brightness page in 3D (CoreViewModel.buildPage3,
+        // SettingMutexManager node brightness_adjustment -> dlpLumensLevel rules). The tile stays as it is (value
+        // shown, not greyed); the press shows the stock note. Direct opens (Home shortcut, voice) meet the onKey gate.
+        // Also Custom / Office / Performance (175 = 6 / 12 / 15): stock refuses brightness there with its own note.
+        if (QuickPanel.SECTION_LAMP.equals(section) && snap != null
+                && (Lamp3d.blocks(snap.fmt3d, snap.is3dTo2d) || Lamp3d.modeLocks(snap.lumensMode))) {
+            lampRefusal();
+            return;
+        }
         grid.settle();                                       // a stagger still running ends now
         p.setInitialFocus(-1);                               // a page always opens at its first row
         panel.push(p);
+    }
+
+    /** The stock note for a refused brightness change: 3D first, then the picture mode lock (dlpLumensLevel order). */
+    private void lampRefusal() {
+        if (snap != null && Lamp3d.blocks(snap.fmt3d, snap.is3dTo2d)) {
+            Notify.show(app, s(R.string.panel_lamp), s(R.string.panel_boost_3d));
+            return;
+        }
+        GmpfClient.PictureMode pm = snap == null || snap.pictureMode == null ? null
+                : GmpfClient.PictureMode.fromWire(snap.pictureMode);
+        Notify.show(app, s(R.string.panel_lamp), app.getString(R.string.panel_lamp_mode_locked,
+                pm != null ? pmTileLabel(pm) : s(R.string.panel_picture_mode)));
     }
 
     /**
@@ -652,7 +681,7 @@ final class QuickPanelController {
         colorTemp = p.add(new ChoiceRow(app, s(R.string.panel_color_temp),
                 labels(app, R.string.panel_ct_d65, R.string.panel_ct_1),
                 (row, i) -> safe("color temp", () -> {
-                    if (snap == null || snap.colorTemp == null || i < 0 || i >= CT_ORDER.length) { refresh(); return; }
+                    if (snap == null || snap.lumensMode == null || i < 0 || i >= CT_ORDER.length) { refresh(); return; }
                     final GmpfClient.ColorTemp c = CT_ORDER[i];
                     // 174; the lumens mode carries the lamp level, the refresh re-reads 177 (QS).
                     change("174 color temp " + c, (g, g2) -> g.setColorTemp(c));
@@ -1219,8 +1248,9 @@ final class QuickPanelController {
         GmpfClient.PictureMode cur = GmpfClient.PictureMode.fromWire(snap.pictureMode);
         if (m == cur) return;
         // 1.0.8, stock SettingMutexManager rules (common.json pictureMode): no picture mode change in 3D
-        // (pictureMutexThreeDimension) or in game mode (gameModeBasic), and no Colour accuracy in Boost
-        // (lumenLevelBoost). Parity picture items 3 and 4, brightness item 11.
+        // (pictureMutexThreeDimension) or in game mode (gameModeBasic). Parity picture items 3 and 4. Colour
+        // accuracy is allowed in Boost: the Z9X node image_mode_prof_color_accuracy checks Turbo Light only
+        // (corrected 2026-11-04; Office / Performance read IGmpf2 51 = 1 themselves, so a Boost check stranded them).
         CharSequence title = s(R.string.panel_picture_mode);
         if (snap.fmt3d != null && snap.is3dActive()) {
             Notify.show(app, title, s(R.string.panel_boost_3d));
@@ -1229,11 +1259,6 @@ final class QuickPanelController {
         }
         if (gameModeOn(snap)) {
             Notify.show(app, title, s(R.string.blocked_game));
-            refresh();
-            return;
-        }
-        if (m == GmpfClient.PictureMode.COLOR_ACCURACY && Boolean.TRUE.equals(snap.boost)) {
-            Notify.show(app, title, s(R.string.boost_blocks_change));
             refresh();
             return;
         }
@@ -1785,10 +1810,12 @@ final class QuickPanelController {
             pq[i].setRowEnabled(v != null);
             pq[i].setVisibility(ok && v == null ? View.GONE : View.VISIBLE);
         }
-        int ct = -1;
-        if (ok && sn.colorTemp != null) for (int i = 0; i < CT_ORDER.length; i++) if (CT_ORDER[i].wire == sn.colorTemp) ct = i;
-        setChoice(colorTemp, ct, ok && sn.colorTemp != null, true);
-        colorTemp.setVisibility(ok && sn.colorTemp == null ? View.GONE : View.VISIBLE);
+        // 1.0.8 (parity picture 13): the row stays in Office (12) and Performance (15), as stock, with nothing
+        // marked (Office: stock label Colour temp 3); hidden only when 175 itself failed (ColorTempRule)
+        Integer lm = ok ? sn.lumensMode : null;
+        colorTemp.setPlaceholder(ColorTempRule.isOffice(lm) ? s(R.string.panel_ct_3) : null);
+        setChoice(colorTemp, ColorTempRule.index(lm), ColorTempRule.known(ok, lm), true);
+        colorTemp.setVisibility(ColorTempRule.hidden(ok, lm) ? View.GONE : View.VISIBLE);
         boolean memcKnown = ok && sn.memc != null && sn.memc >= 0 && sn.memc <= 3;
         setChoice(memc, memcKnown ? sn.memc : -1, memcKnown, true);
         memc.setVisibility(ok && !memcKnown ? View.GONE : View.VISIBLE);
@@ -1830,7 +1857,8 @@ final class QuickPanelController {
         digitalFormat.setVisibility(arcOut ? View.VISIBLE : View.GONE);
 
         // ---- tile values (top level): the same read-back, one short line each
-        tileValue(QuickPanel.SECTION_LAMP, !ok ? null : boostOn ? s(R.string.panel_boost)
+        // in Custom / Office / Performance the vendor's own wheel mode reads as Boost: no level is shown there
+        tileValue(QuickPanel.SECTION_LAMP, !ok || Lamp3d.modeLocks(sn.lumensMode) ? null : boostOn ? s(R.string.panel_boost)
                 : sn.lamp != null ? Integer.toString(sn.lamp) : null);
         tileValue(QuickPanel.SECTION_PICTURE, pm != null ? pmTileLabel(pm) : null);
         tileValue(QuickPanel.SECTION_SOUND, sm >= 0 ? sl[sm] : null);

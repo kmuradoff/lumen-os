@@ -1,0 +1,16 @@
+# Lumen OS OTA props of the XGIMI Z9X HB (docs/architecture/OTA_CLIENT.md sections 2 to 4). Appended by
+# compose_hb.sh to /system/product/etc/build.prop of the public release images (a version VARIANT), after
+# hb_lumen_prop.txt; comment lines are dropped. Data only: the composer checks every line, check_public_hb.py the
+# result (the list against devices/goat_elegant/ota.conf).
+#
+# update_engine copies these static partitions from the running slot to the other one (comma-separated, the
+# order of ota.conf ab_ota_partitions). Owner decision O3 (2026-11-04): no mboot (mboot_a == mboot_b in the
+# dump), and never vbmeta (the user's one-time step, never written by an update).
+ro.product.ab_ota_partitions=armfw,boot,bootdata,dtbo,optee,tvconfig,tvservice,vbmeta_system,xgimiconfig
+# the boot gate on (/system/etc/init/lumen_ota.rc); 0 = stock update_verifier behaviour on every boot
+ro.lumen.ota.gate=1
+# the wire id: the manifest's "device" and the payload's pre-device must be this (LumenUpdater Ota.device())
+ro.lumen.ota.device=hb
+# the update manifest on the fixed pre-release tag hb (never releases/latest, which is the Z9X's). The test images
+# (compose_hb.sh --ota-test) read update-hb-test.json there instead.
+ro.lumen.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/hb/update-hb-nogms.json

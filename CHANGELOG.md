@@ -24,6 +24,64 @@
   Если проектор не вернулся после запуска, говорит, что делать, как прислать журнал загрузки и как
   правильно откатиться для вашей партии.
 
+## 1.0.8, ноябрь 2026
+
+Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
+Если обновлятор 1.0.7 во время установки покажет код -1, подождите минут пять и перезапустите проектор:
+обновление всё равно ставится. В 1.0.8 эта ошибка исправлена.
+
+HDMI:
+- Источник при включении, как в стоке: «Главный экран», «HDMI 1» или «HDMI 2» («Настройки HDMI»). Выбор
+  работает при включении и при каждом выходе из сна. Если проектор включило устройство по HDMI-CEC, откроется
+  его вход. Прежняя галочка «Открывать при включении» переносится сама.
+- Кнопка «Назад» на входе HDMI управляет приставкой (PS5 и другие устройства с HDMI-CEC), как в стоке, пока
+  приставка даёт картинку и управление по CEC включено. Чтобы выйти, нажмите «Домой».
+
+Фокус, зум и трапеция:
+- Автофокус после оптического зума больше не срывается: на время автофокуса показывается мишень на весь экран,
+  как в стоке. «Назад» отменяет автофокус, «влево» и «вправо» переводят в ручной фокус.
+- Ручной фокус как в стоке: окно закрывается через 3 секунды и от любой другой кнопки, а кнопка фокуса сначала
+  закрывает его и запускает автофокус.
+- «Умный автофокус» как в стоке: включает и автофокус после перемещения проектора.
+- Оптический зум как в стоке: 14 размеров картинки («Размер N из 14»). В окне зума OK переключает стрелки на
+  сдвиг картинки, MENU возвращает самую большую картинку. Автофокус после зума запускается, только если
+  объектив сдвинулся.
+- «Назад» из окна зума, ручной трапеции и поворота возвращает к строке, с которой окно открыли. Панель,
+  закрытая автофокусом, возвращается после него.
+- Трапеция как в стоке: при сильной коррекции картинку снова рисует графический процессор в 4K со сглаживанием,
+  защищённое видео (Netflix и другие) при коррекции в реальном времени показывается без цветного мусора.
+- В конце страницы трапеции, в разделе «Прочее», строка «Вернуть исходное изображение»: полный сброс как в
+  стоке, вместе с размером картинки. Удержание OK в ручной трапеции сбрасывает только углы.
+- Коррекция трапеции в реальном времени работает и при потолочной установке.
+- В игровом режиме «Турбо» ручная трапеция закрыта, только пока игра действительно идёт, как в стоке.
+
+Изображение и яркость:
+- Цветовая температура видна и в режимах «Офис» и «Производительность», как в стоке. В «Офисе» строка
+  показывает «Температура 3», D65 выбирается одним нажатием.
+- Яркость, как в стоке, не меняется в режимах «Офис» и «Производительность» и в 3D: проектор пишет почему.
+  Раньше ползунок в этих режимах мог застрять в Boost.
+- Новая строка «Сбросить все настройки изображения». Контраст, насыщенность и резкость меняются во всех
+  режимах. «Точная цветопередача» доступна и для HLG и HDR10+, и в Boost. В игровом режиме и в 3D режим
+  изображения не меняется, как в стоке.
+- Boost включается и в тёплой комнате (ток лазера при перегреве снижает сам проектор, как в стоке), в
+  подсказке сказано, что Boost ярче, но цвета бледнее. В Boost нельзя менять цветовое пространство, как в стоке.
+- Ultra 120 Гц на HDMI включается, когда частота сигнала ниже 62 Гц, как в стоке.
+- Игровой режим: не включается в 3D и с Dolby Vision; перед «Турбо» проектор спрашивает, если настроена
+  трапеция; «Формат кадра» перенесён в строки HDMI на странице «Изображение»; «120 Гц для приставок» по
+  умолчанию выключено.
+
+Звук:
+- Саундбар по ARC: формат цифрового звука по умолчанию PCM, как в стоке. Фильмы с AC3 и DTS теперь звучат и на
+  саундбарах без Dolby и DTS.
+
+Прочее:
+- Окна больше не закрываются сами после OK: нажатие, открывшее окно, больше не доходит до главного экрана.
+- Обновлятор больше не показывает код -1, если установку запустили дважды: он следит за уже идущей установкой.
+- Дополнение «Сервисы Google» в формате erofs (его делает установщик с `--gapps-zip`) подключается и после
+  обновления.
+- Приложения Lumen OS получили новые внутренние имена (org.lumen). Избранное Lumen Home, пароли сетевых папок,
+  пары AirPlay, названия и скрытые входы HDMI и остальные настройки переносятся сами при первом запуске.
+
 ## 1.0.7, октябрь 2026
 
 Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
@@ -262,6 +320,65 @@ Newest first. Versions 1.0.x are for the XGIMI Z9X; the XGIMI Play 6 has its own
   them. It asks to keep only a FAT32 stick in the USB port at every power-on and notices a USB Ethernet
   adapter in the port. If the projector does not come back after a start, it says what to do, how to send the
   boot log and the right way back to stock for your batch.
+
+## 1.0.8, November 2026
+
+The update arrives over Wi-Fi: Settings > About > Lumen OS update. Your data is kept.
+If the 1.0.7 updater shows code -1 while it installs, wait about five minutes and restart the projector: the
+update still installs. 1.0.8 fixes this.
+
+HDMI:
+- Source at power-on, as on stock: Home screen, HDMI 1 or HDMI 2 (HDMI settings). The choice applies at power-on
+  and at every wake from sleep. If a device turns the projector on over HDMI-CEC, its input opens instead. The old
+  "Open at power-on" check box moves over by itself.
+- BACK on an HDMI input controls the console or box (PS5 and other HDMI-CEC devices), as on stock, while it gives
+  the picture and CEC control is on. Press HOME to leave.
+
+Focus, zoom and keystone:
+- Autofocus after the optical zoom no longer fails: a full-screen focus card is shown while it runs, as on stock.
+  Back cancels the autofocus, Left and Right switch to manual focus.
+- Manual focus as on stock: the window closes after 3 seconds and on any other key, and the focus key closes it
+  first and starts the autofocus.
+- Smart autofocus as on stock: it also turns on autofocus after the projector is moved.
+- Optical zoom as on stock: 14 picture sizes ("Size N of 14"). In the zoom screen OK switches the arrows to moving
+  the picture, MENU brings back the biggest picture. The autofocus after the zoom runs only when the lens moved.
+- Back from the zoom, manual keystone and rotation screens returns to the row that opened them. A panel that the
+  autofocus closed comes back after it.
+- Keystone as on stock: a strong correction is drawn by the GPU again, at 4K with anti-aliasing, and protected
+  video (Netflix and others) under real-time correction shows without colored garbage.
+- At the end of the keystone page, under Other, a "Reset picture to original" row: the full reset as on stock,
+  picture size included. Holding OK in the manual keystone resets only the corners.
+- Real-time keystone correction also works on a ceiling mount.
+- In the Top speed game mode the manual keystone is closed only while a game really runs, as on stock.
+
+Picture and brightness:
+- Color temperature shows in the Office and Performance modes too, as on stock. In Office the row says
+  "Color temp 3", and D65 is one key away.
+- Brightness cannot be changed in the Office and Performance modes or in 3D, as on stock: the projector says why.
+  Before, the slider could get stuck in Boost in those modes.
+- A new Reset all picture settings row. Contrast, saturation and sharpness can be changed in every mode. Color
+  accuracy is offered for HLG and HDR10+ too, and in Boost. The picture mode does not change in game mode or in
+  3D, as on stock.
+- Boost turns on in a warm room as well (the projector lowers the laser current itself when hot, as on stock), and
+  the hint says that Boost is brighter but colors are paler. In Boost the color space cannot be changed, as on
+  stock.
+- Ultra 120 Hz on HDMI turns on when the signal is below 62 Hz, as on stock.
+- Game mode: it does not turn on in 3D or with Dolby Vision; before Top speed the projector asks if a keystone
+  correction is set; Aspect ratio moved to the HDMI rows of the Picture page; 120 Hz for consoles is off by
+  default.
+
+Sound:
+- Soundbar over ARC: the digital audio format is PCM by default, as on stock. Films with AC3 and DTS now play on
+  soundbars without Dolby and DTS too.
+
+Other:
+- Windows no longer close by themselves after OK: the press that opened a window no longer reaches the Home
+  screen.
+- The updater no longer shows code -1 when an install was started twice: it follows the install already running.
+- A Google services add-on in the erofs format (the installer makes it with `--gapps-zip`) is mounted after the
+  update too.
+- The Lumen OS apps have new internal names (org.lumen). Lumen Home favourites, network folder passwords, AirPlay
+  pairings, HDMI input names and hidden inputs and the other settings move over by themselves at the first start.
 
 ## 1.0.7, October 2026
 

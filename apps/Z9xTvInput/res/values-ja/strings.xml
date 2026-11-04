@@ -32,7 +32,10 @@
     <string name="pref_cec_otp">HDMI-CEC：機器からの要求で HDMI に切り替える（One Touch Play）</string>
     <string name="pref_cec_control">HDMI-CEC：リモコンで機器を操作する</string>
     <string name="pref_cec_exit">HDMI-CEC：HDMI を終了するときに機器に通知する</string>
-    <string name="pref_open_on_boot">ソースが接続されていれば電源オン時に HDMI を開く</string>
+    <string name="pref_boot_source">電源オン時の入力: %1$s</string>
+    <string name="boot_source_home">ホーム画面</string>
+    <string name="pref_boot_source_note">HDMI-CEC で機器がプロジェクターの電源を入れた場合は、その入力が開きます。</string>
+    <string name="back_key_guide">戻るボタンで接続中の機器を操作します。終了するにはホームを押します。</string>
     <string name="settings_inputs_header">入力：</string>
     <string name="settings_safe_mode">セーフモード：エラーが繰り返されたため、次回の再起動まで自動切り替えはオフです。</string>
     <string name="toast_no_input">%1$s は使用できません</string>

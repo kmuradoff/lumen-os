@@ -9,5 +9,7 @@
     <string name="game_top_speed_confirm">터보는 키스톤 보정을 끄고 화면을 전체 프레임으로 되돌립니다. 전환할까요?</string>
     <string name="picture_reset_all">모든 화질 설정 초기화</string>
     <string name="picture_reset_all_msg">화질 모드, 기본 및 전문가 설정이 기본값으로 돌아갑니다. 계속할까요?</string>
+    <string name="panel_ct_3">색온도 3</string>
+    <string name="panel_lamp_mode_locked">%1$s 모드에서는 밝기를 바꿀 수 없습니다</string>
     <string name="three_d_native_fps">먼저 원본 프레임 속도를 끄세요</string>
 </resources>

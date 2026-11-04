@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Turkish translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">Bu projektörde güncellemelerin güvenlik kontrolü çalışmıyor (%1$s). Projektörü yeniden başlatıp tekrar deneyin.</string>
+    <string name="blk_not_marked">Bu sürümün düzgün çalıştığı henüz doğrulanmadı. Projektörü birkaç dakika açık bırakın, sonra tekrar deneyin.</string>
+    <string name="blk_probe">Güncellemelerin güvenlik kontrolü yanıt vermedi (%1$s). Projektörü yeniden başlatıp tekrar deneyin.</string>
+    <string name="blk_active">Projektör bir sonraki açılışta %1$s sistem yuvasından başlayacak. Projektörü yeniden başlatıp tekrar deneyin.</string>
+    <string name="blk_partitions">Bu sürümde güncellemeler güvenli değil: bölüm listesi hatalı (%1$s). Lütfen bilgisayar yükleyicisini kullanın.</string>
+    <string name="blk_vab">Bu projektörün depolama alanı güncellemeler için hazır değil (%1$s). Lütfen bilgisayar yükleyicisini kullanın.</string>
+</resources>

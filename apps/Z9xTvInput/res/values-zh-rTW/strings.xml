@@ -32,7 +32,10 @@
     <string name="pref_cec_otp">HDMI-CEC：裝置要求時切換到 HDMI（One Touch Play）</string>
     <string name="pref_cec_control">HDMI-CEC：使用遙控器控制裝置</string>
     <string name="pref_cec_exit">HDMI-CEC：離開 HDMI 時通知裝置</string>
-    <string name="pref_open_on_boot">開機時如已連接訊號來源，則開啟 HDMI</string>
+    <string name="pref_boot_source">開機訊號源：%1$s</string>
+    <string name="boot_source_home">主畫面</string>
+    <string name="pref_boot_source_note">如果裝置透過 HDMI-CEC 開啟投影機，則開啟該裝置的輸入。</string>
+    <string name="back_key_guide">返回鍵現在用於控制已連接的裝置。按首頁鍵退出。</string>
     <string name="settings_inputs_header">輸入：</string>
     <string name="settings_safe_mode">安全模式：多次失敗後，自動切換將停用，直到下次重新啟動。</string>
     <string name="toast_no_input">無法使用 %1$s</string>

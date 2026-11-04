@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Polish translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">Kontrola bezpieczeństwa aktualizacji nie działa na tym projektorze (%1$s). Uruchom ponownie projektor i spróbuj jeszcze raz.</string>
+    <string name="blk_not_marked">Ta wersja nie została jeszcze potwierdzona jako działająca. Zostaw projektor włączony na kilka minut, a potem spróbuj jeszcze raz.</string>
+    <string name="blk_probe">Kontrola bezpieczeństwa aktualizacji nie odpowiedziała (%1$s). Uruchom ponownie projektor i spróbuj jeszcze raz.</string>
+    <string name="blk_active">Następnym razem projektor uruchomi się ze slotu systemu %1$s. Uruchom ponownie projektor i spróbuj jeszcze raz.</string>
+    <string name="blk_partitions">W tej wersji aktualizacje nie są bezpieczne: lista partycji jest błędna (%1$s). Użyj instalatora na komputer.</string>
+    <string name="blk_vab">Pamięć tego projektora nie jest przygotowana do aktualizacji (%1$s). Użyj instalatora na komputer.</string>
+</resources>

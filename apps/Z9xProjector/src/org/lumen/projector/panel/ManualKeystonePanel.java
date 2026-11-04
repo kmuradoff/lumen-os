@@ -89,8 +89,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * the projector's position of the selected corner (ring) while it catches up.
  *
  * HAL (all on "z9x-hal", FIFO; whitelisted codes only; never 421/400, zoom or motor codes here):
- *   enter: 647 (+696 / tvinput session): refused only for top-speed game mode WHILE on HDMI (647
- *          keeps its last value on the Android source, where the warp is active) -> 586 real-time
+ *   enter: 647 (+696 / tvinput session, then IGmpf2 55 and, only when 55 says off, 666): refused only
+ *          while a top-speed game really runs on HDMI (stock isGameKeystoneMutex: 55 state on or 666 == 4,
+ *          and 647 = 2 / 3, see {@link KstGameLock}; 55 unknown = 647 alone, as 1.0.7; 647 keeps its last
+ *          value on the Android source, where the warp is active) -> 586 real-time
  *          keystone: only when it is on (stock mAkStatus) the "paused" marker is persisted and
  *          573(2,false) pauses it (failure only logged) -> 186 read the 4 corners -> local shape check
  *          (convex, in TL/TR/BR/BL order) -> 150 with the UNCHANGED corners (self-test of the
@@ -253,7 +255,7 @@ public final class ManualKeystonePanel extends Panel {
             return;
         }
         sOpen = p;
-        if (!Hal.run((g, g2) -> p.enter(g))) {
+        if (!Hal.run((g, g2) -> p.enter(g, g2))) {
             refuse(app, "HAL task not queued", R.string.kst_reason_not_ready);
             p.dismiss();
             return;
@@ -405,7 +407,7 @@ public final class ManualKeystonePanel extends Panel {
     }
 
     // ------------------------------------------------------------------ HAL thread
-    private void enter(GmpfClient g) {
+    private void enter(GmpfClient g, Gmpf2Client g2) {
         if (closed) { Log.i(TAG, "enter skipped: the card is already closed"); return; }
         int reason = R.string.kst_reason_hal;
         String why;
@@ -421,11 +423,23 @@ public final class ManualKeystonePanel extends Panel {
                 try { src = g.getCurrentInputSource(); } catch (Throwable t) { Log.w(TAG, "696: " + t); }
                 Boolean tif = TifHdmiState.read(app);
                 boolean hdmi = src == GmpfClient.SOURCE_HDMI1 || src == GmpfClient.SOURCE_HDMI2 || Boolean.TRUE.equals(tif);
+                int[] p = null;
+                Boolean game55 = null;                       // 55 state on; null = unread / does not fit 647
+                Integer pic = null;                          // 666, read only when 55 says the game is off
                 if (hdmi) {
-                    reason = R.string.kst_reason_game;
-                    throw new IllegalStateException("top-speed game mode on HDMI (647=" + o + " 696=" + src + " tif=" + tif + ")");
+                    try { p = g2.getGameModeProp(); } catch (Throwable t) { Log.w(TAG, "g2 55: " + t); }
+                    if (Gmpf2Client.gameModeOf(p, o.wire) >= 0) game55 = p[0] == 0;
+                    if (Boolean.FALSE.equals(game55)) {
+                        try { pic = g.getPictureModeRaw(); } catch (Throwable t) { Log.w(TAG, "666: " + t); }
+                    }
                 }
-                Log.i(TAG, "647 " + o + " but not on HDMI (696=" + src + " tif=" + tif + "): allowed");
+                String st = "647=" + o + " 696=" + src + " tif=" + tif + " 55=" + java.util.Arrays.toString(p)
+                        + " game=" + game55 + " 666=" + pic;
+                if (KstGameLock.refuse(o.wire, hdmi, game55, pic)) {
+                    reason = R.string.kst_reason_game;
+                    throw new IllegalStateException("top-speed game running on HDMI (" + st + ")");
+                }
+                Log.i(TAG, "647 " + o + " but no top-speed game running on HDMI (" + st + "): allowed");
             }
             active = true;                                   // exit() undoes whatever follows
             rtPaused = pauseRealtime(app, g, "manual keystone");

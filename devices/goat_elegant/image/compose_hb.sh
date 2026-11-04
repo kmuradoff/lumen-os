@@ -44,16 +44,30 @@
 #        allow-list blobs_allow.txt: at post-fs-data it binds the user's own copies of those two files from the
 #        z9x_blobs<slot> partition the installer makes (sys.z9x.blobs). The c2 and audio policy checks of the stock
 #        dump on this server still run (build-time proof of what the allow-list names), nothing of it is installed.
+#   x.y.z[-mark] --release, since 1.0.8: every public image can take an OTA.
+#        The neutral boot gate (tools/devices/ota/image: lumen_ota.sh + .rc in /system/etc/lumen and
+#        /system/etc/init, its update_verifier.rc over the base one, its lumen_escape.sh fork lumen_ota_escape.sh in
+#        place of overlay/debug's), the HB gate data ota_gate.conf, the pinned 32-bit AOSP bootctl (~/hb-out/in/bootctl,
+#        bootctl.sha256) as /system/bin/bootctl, the HB otacerts.zip (tools/devices/ota/make_otacerts.py on
+#        the Mac: [ota, ota_next], public certificates only) over the GSI one, LumenUpdater (/system/app, the signed
+#        stage) with the pinned Z9X default permissions file, and the props of hb_ota_props.txt (ab_ota_partitions,
+#        the gate on, wire id hb, the manifest on the pre-release tag hb). The version code is design decision:
+#        x*1000000 + y*10000 + z*100 + n, n = the beta number (betaN, 1..49), 50 + the rc number (rcN, 1..48) or 99
+#        without a mark: 1.0.8-beta1 = 1000801, 1.0.8-rc1 = 1000851, 1.0.8 = 1000899; any other mark is refused.
 #
 # Runs ON THE BUILD SERVER (ssh xgimi-builder) as the normal user, with sudo for the loop mounts and for the root
 # copy (owners, modes, SELinux labels and file capabilities must survive). Started by tools/image/compose.sh (or
 # run_on_builder.sh) from the Mac, which stages OUT/in first. Inputs are read only; everything is written under
 # OUT/<TAG>. OUT is $LUMEN_IMAGE_DIR (compose.sh sets it to ~/<remote_dir> of image.conf), default ~/hb-out.
 #
-#   bash ~/hb-out/in/compose_hb.sh VARIANT [--usb-adb | --release] [--diag]
+#   bash ~/hb-out/in/compose_hb.sh VARIANT [--usb-adb | --release [--ota-test]] [--diag] [--dry-run]
 #   VARIANT  t1, t2, ...: ro.lumen.version=hb-VARIANT; t1 is the bare image above, every later one the Lumen one.
-#            x.y.z or x.y.z-mark (only with --release): the public release, ro.lumen.version=VARIANT,
-#            ro.lumen.version_code=x*10000+y*100+z (y and z below 100), output TAG hb-VARIANT-release
+#            x.y.z, x.y.z-betaN or x.y.z-rcN (only with --release): the public release, ro.lumen.version=VARIANT,
+#            ro.lumen.version_code by design decision (above; y and z below 100), output TAG hb-VARIANT-release
+#   --ota-test the OTA test image (a version VARIANT only; image.conf variant otatest): the same image, but it reads
+#              update-hb-test.json on the tag hb instead of update-hb-nogms.json (test units, staged rollout).
+#              BUILD_INFO.txt says ota_channel=hb-test.
+#   --dry-run  print the TAG, the version, the version code and the OTA channel, then stop (nothing read or written)
 #   --diag     adds the USB-stick boot logger of the test builds, overlay/debug/z9x_earlylog.{rc,sh} (the same files
 #              as the Z9X DIAG and Play 6 --diag images; init domain su: userdebug only). Output TAG gets "-diag".
 #              t1 always carries it (the first-boot test needed it; t1 stays byte for byte as recorded).
@@ -86,13 +100,15 @@
 # no AVB footer (vbmeta must have verity and verification disabled, see README.md), plus .sha256 and a build log.
 set -euo pipefail
 die() { echo "ERROR: $*" >&2; exit 1; }
-V=${1:?usage: compose_hb.sh VARIANT [--usb-adb | --release] [--diag]}; shift
-USBADB=0; DIAG=0; REL=0
+V=${1:?usage: compose_hb.sh VARIANT [--usb-adb | --release [--ota-test]] [--diag] [--dry-run]}; shift
+USBADB=0; DIAG=0; REL=0; OTATEST=0; DRY=0
 for a in "$@"; do
   case $a in
     --usb-adb) USBADB=1 ;;
     --release) REL=1 ;;
     --diag) DIAG=1 ;;
+    --ota-test) OTATEST=1 ;;
+    --dry-run) DRY=1 ;;
     *) die "unknown option $a" ;;
   esac
 done
@@ -100,10 +116,17 @@ PUB=0                                  # 1: the public release (a version VARIAN
 if [[ $V =~ ^t[0-9] ]]; then :
 elif [[ $V =~ ^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]?)\.(0|[1-9][0-9]?)(-[A-Za-z0-9]+)?$ ]]; then
   PUB=1
-  PVCODE=$((10#${BASH_REMATCH[1]} * 10000 + 10#${BASH_REMATCH[2]} * 100 + 10#${BASH_REMATCH[3]}))
-  case ${BASH_REMATCH[4]} in -adb|-stick|-release|-diag) die "the version mark ${BASH_REMATCH[4]#-} is a TAG word" ;; esac
+  VX=${BASH_REMATCH[1]} VY=${BASH_REMATCH[2]} VZ=${BASH_REMATCH[3]} MARK=${BASH_REMATCH[4]#-}
+  case $MARK in adb|stick|release|diag) die "the version mark $MARK is a TAG word" ;; esac
+  # design decision (2026-11-04): n = the beta number, 50 + the rc number, 99 for the final release
+  if [ -z "$MARK" ]; then VN=99
+  elif [[ $MARK =~ ^beta([1-9]|[1-4][0-9])$ ]]; then VN=${BASH_REMATCH[1]}
+  elif [[ $MARK =~ ^rc([1-9]|[1-3][0-9]|4[0-8])$ ]]; then VN=$((50 + BASH_REMATCH[1]))
+  else die "the version mark $MARK: betaN (N 1..49) or rcN (N 1..48), decision O1"; fi
+  PVCODE=$((10#$VX * 1000000 + 10#$VY * 10000 + 10#$VZ * 100 + 10#$VN))
   [ $REL = 1 ] || die "a version VARIANT is the public release: --release"
-else die "VARIANT must look like t1, t2, ... or a version x.y.z[-mark] (with --release)"; fi
+else die "VARIANT must look like t1, t2, ... or a version x.y.z[-betaN|-rcN] (with --release)"; fi
+[ $OTATEST = 1 ] && [ $PUB = 0 ] && die "--ota-test is for a version VARIANT (the OTA-capable public image)"
 [ $USBADB = 1 ] && [ $REL = 1 ] && die "--usb-adb and --release do not go together"
 TAG=hb-$V-stick; [ $USBADB = 1 ] && TAG=hb-$V-adb; [ $REL = 1 ] && TAG=hb-$V-release
 [ $DIAG = 1 ] && [ $REL = 1 ] && die "a release image carries no boot logger (--diag)"
@@ -114,6 +137,12 @@ LUMEN=1; [ "$V" = t1 ] && LUMEN=0      # t1 stays the bare first-boot image, byt
 VCODE=${V#t}; VCODE=${VCODE%%[!0-9]*}
 VNAME=hb-$V                            # ro.lumen.version and the About rows
 [ $PUB = 1 ] && VCODE=$PVCODE && VNAME=$V
+OTACH=none                             # the OTA channel the image reads (hb_ota_props.txt): public images only
+[ $PUB = 1 ] && OTACH=hb-nogms && [ $OTATEST = 1 ] && OTACH=hb-test
+if [ $DRY = 1 ]; then
+  echo "dry run: tag=$TAG version=$VNAME version_code=$VCODE ota_channel=$OTACH"
+  exit 0
+fi
 
 BK=$HOME/lumen-builder-backup/play6-out
 BASE=$BK/target/product/generic/system.img
@@ -287,6 +316,73 @@ if sha(b"\n".join(x for i, x in enumerate(vl, 1) if i not in drop)) != ap_sha:
 print("blobs: allow-list set=%s: libstagefright_foundation %s..., audio policy %s... (= vendor %s... minus %s)"
       % (sets[0], sf_sha[:8], ap_sha[:8], m.group(1)[:8], m.group(2)))
 BLOBSPY
+  # the OTA part: the neutral gate files of tools/devices/ota/image, the HB gate
+  # data and props, the pinned bootctl, the HB otacerts.zip, the updater's default permissions and LumenUpdater
+  for f in lumen_ota.sh lumen_ota.rc lumen_update_verifier.rc lumen_ota_escape.sh ota_gate.conf hb_ota_props.txt \
+           otacerts.zip bootctl bootctl.sha256 z9x-updater-default-permissions.xml; do
+    [ -s "$IN/$f" ] || die "missing $IN/$f (tools/image/compose.sh stages it; bootctl: build_bootctl.sh puts it there)"
+  done
+  grep -q "  apps/LumenUpdater.apk\$" "$SG/SHA256SUMS" || die "$SG: apps/LumenUpdater.apk is not in SHA256SUMS"
+  #   bootctl: the pinned build of build_bootctl.sh, a 32-bit ARM executable
+  BC_SHA=$(awk 'NR == 1 {print $1}' "$IN/bootctl.sha256")
+  [ "$(sha256sum "$IN/bootctl" | awk '{print $1}')" = "$BC_SHA" ] || die "ota: $IN/bootctl is not the pinned build ($BC_SHA, bootctl.sha256)"
+  file -b "$IN/bootctl" | grep -q '^ELF 32-bit LSB pie executable, ARM, ' || die "ota: $IN/bootctl is not a 32-bit ARM executable"
+  #   the updater's default permissions: the very bytes of tools/ota/image the Z9X gate recorded (as the gapps files)
+  [ "$(sha256sum "$IN/z9x-updater-default-permissions.xml" | awk '{print $1}')" = 8ffddb73368df23a6052a04a7002feec7e337f6a1d3582e1e2f93735e448fa51 ] \
+    || die "ota: $IN/z9x-updater-default-permissions.xml is not the pinned Z9X file"
+  #   the gate: count from /system/etc/lumen at post-fs-data, the verifier rc keeps the service name, the HB data
+  grep -qx '    exec u:r:su:s0 root root -- /system/bin/sh /system/etc/lumen/lumen_ota.sh count' "$IN/lumen_ota.rc" \
+    || die "ota: lumen_ota.rc does not exec /system/etc/lumen/lumen_ota.sh count at post-fs-data"
+  grep -qx 'service update_verifier /system/bin/sh /system/etc/lumen/lumen_ota.sh verifier' "$IN/lumen_update_verifier.rc" \
+    || die "ota: lumen_update_verifier.rc is not the update_verifier service of the gate"
+  for f in lumen_ota.sh lumen_ota_escape.sh; do sh -n "$IN/$f" || die "ota: $f does not parse"; done
+  grep -qx 'hal=bootctl' "$IN/ota_gate.conf" || die "ota: ota_gate.conf is not the HB gate data (hal=bootctl)"
+  #   the props: exactly the four OTA lines of hb_ota_props.txt, in this order; the list as ota.conf (O3: no mboot,
+  #   no vbmeta), the manifest on the tag hb; --ota-test reads update-hb-test.json there instead
+  OTAPROPS=$(python3 -I - "$IN/hb_ota_props.txt" "$OTACH" <<'OTAPY'
+import re, sys
+src, ch = sys.argv[1:3]
+rows = [l.rstrip("\n") for l in open(src, encoding="utf-8") if l.strip() and not l.startswith("#")]
+keys = [r.split("=", 1)[0] for r in rows]
+want = ["ro.product.ab_ota_partitions", "ro.lumen.ota.gate", "ro.lumen.ota.device", "ro.lumen.ota.manifest_url"]
+if keys != want:
+    sys.exit("ERROR: ota props: keys %s, want %s" % (keys, want))
+v = dict(r.split("=", 1) for r in rows)
+LIST = "armfw,boot,bootdata,dtbo,optee,tvconfig,tvservice,vbmeta_system,xgimiconfig"
+BASE = "https://github.com/kmuradoff/lumen-os/releases/download/hb/"
+if v[want[0]] != LIST:
+    sys.exit("ERROR: ota props: ab_ota_partitions=%s, want %s (ota.conf, decision O3)" % (v[want[0]], LIST))
+if v[want[1]] != "1" or v[want[2]] != "hb" or v[want[3]] != BASE + "update-hb-nogms.json":
+    sys.exit("ERROR: ota props: gate=%s device=%s url=%s" % (v[want[1]], v[want[2]], v[want[3]]))
+if ch not in ("hb-nogms", "hb-test"):
+    sys.exit("ERROR: ota props: channel %s" % ch)
+v[want[3]] = BASE + "update-%s.json" % ch
+for k in want:
+    print("%s=%s" % (k, v[k]))
+print("ota props: %s, channel %s" % (", ".join("%s=%s" % (k, v[k]) for k in want[:3]), ch), file=sys.stderr)
+OTAPY
+) || die "hb_ota_props.txt is not the four HB OTA lines"
+  #   otacerts.zip (make_otacerts.py on the Mac): exactly ota.x509.pem then ota_next.x509.pem, STORED, each one
+  #   RSA-4096 certificate and nothing else; the two differ (compared with the base's AOSP certificates in step 3e)
+  python3 -I - "$IN/otacerts.zip" <<'CERTSPY' || die "otacerts.zip is not the two HB OTA certificates"
+import subprocess, sys, zipfile
+z = zipfile.ZipFile(sys.argv[1])
+names = [i.filename for i in z.infolist()]
+if names != ["ota.x509.pem", "ota_next.x509.pem"]:
+    sys.exit("ERROR: otacerts: entries %s, want ota.x509.pem, ota_next.x509.pem" % names)
+der = []
+for i in z.infolist():
+    b = z.read(i)
+    if i.compress_type != zipfile.ZIP_STORED or b.count(b"-----BEGIN ") != 1 or not b.startswith(b"-----BEGIN CERTIFICATE-----"):
+        sys.exit("ERROR: otacerts: %s is not one stored PEM certificate" % i.filename)
+    t = subprocess.run(["openssl", "x509", "-noout", "-text"], input=b, capture_output=True).stdout.decode()
+    if "rsaEncryption" not in t or "Public-Key: (4096 bit)" not in t:
+        sys.exit("ERROR: otacerts: %s is not an RSA-4096 certificate" % i.filename)
+    der.append(subprocess.run(["openssl", "x509", "-outform", "DER"], input=b, capture_output=True).stdout)
+if not der[0] or der[0] == der[1]:
+    sys.exit("ERROR: otacerts: ota and ota_next are the same certificate")
+print("otacerts: ota.x509.pem and ota_next.x509.pem, two RSA-4096 certificates, stored")
+CERTSPY
 fi
 for t in mkfs.erofs fsck.erofs; do [ -x "$HOST/$t" ] || die "no host tool $HOST/$t"; done
 [ -s "$BASE" ] || die "no base image $BASE"
@@ -529,7 +625,9 @@ if [ $DIAG = 1 ]; then
   inst 0755 "$IN/z9x_earlylog.sh" "$S/etc/xgimi/z9x_earlylog.sh"
 fi
 inst 0644 "$IN/lumen_escape.rc" "$S/etc/init/lumen_escape.rc"
-inst 0755 "$IN/lumen_escape.sh" "$S/etc/xgimi/lumen_escape.sh"
+#       the public image (OTA): the gate's fork of the escape script, quiet while the gate can still roll back
+if [ $PUB = 1 ]; then inst 0755 "$IN/lumen_ota_escape.sh" "$S/etc/xgimi/lumen_escape.sh"
+else inst 0755 "$IN/lumen_escape.sh" "$S/etc/xgimi/lumen_escape.sh"; fi
 #   3c. network adb on the stick variant only (the USB port stays a host port there)
 [ $USBADB = 1 ] || [ $REL = 1 ] || inst 0644 "$IN/hb_netadb.rc" "$S/etc/init/hb_netadb.rc"
 
@@ -728,6 +826,59 @@ SETUPPY
   sudo python3 -I "$IN/check_privapp.py" "$S" || die "privapp-permissions check failed"
 fi
 
+#   3e. the public image: the OTA client (inputs checked above).
+#       The gate in /system/etc/lumen (started as "/system/bin/sh FILE", so the fs_config 0644 of /system/etc does
+#       not matter) with its rc; its update_verifier.rc replaces the base file (same service name, so init.rc's
+#       exec_start runs it; it execs the stock /system/bin/update_verifier on every normal boot); the pinned bootctl
+#       (the base has none); the HB otacerts.zip replaces the GSI one, which holds the AOSP test key:
+#       Trust (the manifest signature) and update_engine (the payload signature) then take only the HB OTA keys;
+#       LumenUpdater in /system/app as the Z9X updater (platform-signed, no privileged permission, not persistent)
+#       with the Z9X default permissions file (POST_NOTIFICATIONS). No Z9X gate file (z9x_ota.rc / .sh) goes in.
+if [ $PUB = 1 ]; then
+  for f in etc/init/update_verifier.rc etc/security/otacerts.zip; do
+    sudo test -f "$S/$f" || die "ota: the base has no /system/$f to replace"
+  done
+  sudo grep -qx 'service update_verifier /system/bin/update_verifier' "$S/etc/init/update_verifier.rc" \
+    || die "ota: the base update_verifier.rc is not the stock one"
+  for f in bin/bootctl etc/lumen etc/init/lumen_ota.rc etc/init/z9x_ota.rc etc/z9x/z9x_ota.sh app/LumenUpdater; do
+    ! sudo test -e "$S/$f" || die "ota: /system/$f is already in the tree"
+  done
+  #   none of the base otacerts.zip's certificates (the AOSP test key) is one of ours
+  sudo python3 -I - "$S/etc/security/otacerts.zip" "$IN/otacerts.zip" <<'CERTSPY' || die "ota: otacerts.zip shares a certificate with the base"
+import subprocess, sys, zipfile
+def ders(p):
+    z = zipfile.ZipFile(p)
+    return {subprocess.run(["openssl", "x509", "-outform", "DER"], input=z.read(n), capture_output=True).stdout: n
+            for n in z.namelist()}
+base, ours = ders(sys.argv[1]), ders(sys.argv[2])
+same = [ours[d] for d in ours if d in base]
+if same or b"" in ours:
+    sys.exit("ERROR: otacerts: %s is a base (AOSP) certificate" % same)
+print("otacerts: replaces the base's %s; none of ours is a base certificate" % ", ".join(sorted(base.values())))
+CERTSPY
+  sudo install -d -o root -g root -m 0755 "$S/etc/lumen" "$S/app/LumenUpdater"
+  inst 0755 "$IN/lumen_ota.sh" "$S/etc/lumen/lumen_ota.sh"
+  inst 0644 "$IN/ota_gate.conf" "$S/etc/lumen/ota_gate.conf"
+  inst 0644 "$IN/lumen_ota.rc" "$S/etc/init/lumen_ota.rc"
+  inst 0644 "$IN/lumen_update_verifier.rc" "$S/etc/init/update_verifier.rc"
+  inst 0755 "$IN/bootctl" "$S/bin/bootctl"
+  inst 0644 "$IN/otacerts.zip" "$S/etc/security/otacerts.zip"
+  inst 0644 "$SG/apps/LumenUpdater.apk" "$S/app/LumenUpdater/LumenUpdater.apk"
+  inst 0644 "$IN/z9x-updater-default-permissions.xml" "$S/etc/default-permissions/z9x-updater-default-permissions.xml"
+  #   LumenUpdater is org.lumen.updater, not persistent, no HOME filter (apkinfo.py read only)
+  sudo python3 -I - "$S" "$IN" <<'UPDPY' || die "ota: LumenUpdater check failed"
+import os, sys
+sys.path.insert(0, sys.argv[2])
+import apkinfo  # read only (tools/lumen/apkinfo.py, staged)
+with open(os.path.join(sys.argv[1], "app/LumenUpdater/LumenUpdater.apk"), "rb") as f:
+    up = apkinfo.manifest_bytes(f.read())
+if up["package"] != "org.lumen.updater" or up.get("persistent") or up["homePriorities"]:
+    sys.exit("ERROR: app/LumenUpdater: %s, persistent %s, HOME %s" % (up["package"], up.get("persistent"), up["homePriorities"]))
+print("ota: LumenUpdater org.lumen.updater in /system/app, not persistent, no HOME filter")
+UPDPY
+  echo "ota: gate, bootctl $BC_SHA, otacerts.zip, LumenUpdater and update_verifier.rc installed (channel $OTACH)"
+fi
+
 # 4. properties: appended to /system/product/etc/build.prop, which init reads last (it wins over the vendor)
 PROPS=$T/props_added.txt
 { echo
@@ -752,6 +903,8 @@ PROPS=$T/props_added.txt
       grep -v '^#' "$IN/hb_lumen_prop.txt" | sed '/^$/d'
     fi
     echo "ro.lumen.version_code=$VCODE"
+    # the public image: the OTA lines of hb_ota_props.txt (checked above; the manifest of OTACH)
+    [ $PUB = 1 ] && echo "$OTAPROPS"
     # the About rows, as the Z9X image writes them (tools/lumen_v1.sh): Lumen OS name and version, no LineageOS one
     echo "ro.build.display.id=Lumen OS $VNAME ($BUILD_ID)"
     echo "ro.lineage.display.version=$VNAME (kmuradoff)"
@@ -772,6 +925,9 @@ if [ $PUB = 1 ]; then
     grep -qxF "$l" "$PROPS" || die "props: release lacks $l"
   done
   ! grep -qE '^ro\.lumen\.hb\.(c2foundation|audiopolicy)=' "$PROPS" || die "props: release still has a gate of a file it does not ship"
+  while IFS= read -r l; do
+    [ "$(grep -c "^${l%%=*}=" "$PROPS")" = 1 ] && grep -qxF "$l" "$PROPS" || die "props: release lacks the OTA line $l (once)"
+  done <<< "$OTAPROPS"
 fi
 sudo sh -c "cat '$PROPS' >> '$S/product/etc/build.prop'"
 echo "props: $(grep -c = "$PROPS") lines appended to /system/product/etc/build.prop"
@@ -817,7 +973,7 @@ BUDGET=$((688357376 + 1340000000))
 { echo "tag=$TAG"; echo "build_id=$BUILD_ID"; echo "base_sha256=$got"; echo "image=$(basename "$IMG")"
   echo "size=$size"; echo "sha256=$(awk '{print $1}' "$IMG.sha256")"; echo "budget=$BUDGET"
   echo "source_date_epoch=$TS"; echo "uuid=$UUID"; echo "diag=$DIAG"
-  if [ $PUB = 1 ]; then echo "version=$V"; echo "version_code=$VCODE"; fi; } > "$T/BUILD_INFO.txt"
+  if [ $PUB = 1 ]; then echo "version=$V"; echo "version_code=$VCODE"; echo "ota_channel=$OTACH"; echo "bootctl=$BC_SHA"; fi; } > "$T/BUILD_INFO.txt"
 cat "$T/BUILD_INFO.txt"
 # the root copy is ~1.6 GB of root-owned files: removed, the image and the logs stay
 sudo rm -rf "$R" "$MB" "$ME"

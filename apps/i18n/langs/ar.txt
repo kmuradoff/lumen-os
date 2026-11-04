@@ -319,7 +319,10 @@ pref_return_home=الرجوع إلى الشاشة الرئيسية عند فصل
 pref_cec_otp=HDMI-CEC: التبديل إلى HDMI عندما يطلب الجهاز ذلك (One Touch Play)
 pref_cec_control=HDMI-CEC: التحكم في الجهاز باستخدام جهاز التحكم عن بُعد
 pref_cec_exit=HDMI-CEC: إعلام الجهاز عند الخروج من HDMI
-pref_open_on_boot=فتح HDMI عند التشغيل إذا كان هناك مصدر موصول
+pref_boot_source=المصدر عند التشغيل: %1$s
+boot_source_home=الشاشة الرئيسية
+pref_boot_source_note=إذا شغّل جهاز ما جهاز العرض عبر HDMI-CEC، يُفتح مدخله بدلًا من ذلك.
+back_key_guide=زر الرجوع يتحكم الآن بالجهاز المتصل. اضغط الرئيسية للخروج.
 settings_inputs_header=المداخل:
 settings_safe_mode=الوضع الآمن: بعد إخفاقات متكررة، يتوقف التبديل التلقائي حتى إعادة التشغيل التالية.
 toast_no_input=%1$s غير متاح
@@ -1051,6 +1054,8 @@ voice_key_quota=انتهى حد Gemini لليوم، يتحدث صوت الجها
 voice_key_bad=لم يقبل Google هذا المفتاح
 
 @projector/strings_parity.xml
+panel_ct_3=درجة الحرارة 3
+panel_lamp_mode_locked=لا يمكن تغيير السطوع في وضع %1$s
 boost_effect=يجعل Boost الصورة أكثر سطوعًا، لكن الألوان تبدو باهتة أكثر. تبقى مساحة الألوان كما هي.
 boost_blocks_change=أوقف Boost وحاول مرة أخرى
 blocked_game=غير متاح أثناء تشغيل وضع اللعب

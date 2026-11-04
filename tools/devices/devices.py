@@ -5,7 +5,8 @@
   devices.py [--root DIR] get CODENAME KEY          one value (scripts use this instead of sourcing a file)
   devices.py [--root DIR] validate                  every device.conf: format, keys, enums, uniqueness, paths
   devices.py [--root DIR] check-installer [CONF]    installer/lib/devices.conf agrees with the registry
-  devices.py [--root DIR] check-wire                the OTA device ids written in the tools agree with the registry
+  devices.py [--root DIR] check-wire                the OTA device ids written in the tools (or in the device's
+                                                    ota.conf) agree with the registry
 
   devices.py [--root DIR] image CODENAME KEY        one value of devices/<codename>/image.conf
 
@@ -30,7 +31,8 @@ Keys (all required unless marked optional):
   slots             single, ab, ab-virtual
   install_flow      z9x-usb, play6-wifi (the two built-in flows of the installer), ab-fastbootd
   ota_engine        update_engine, recovery-block, none
-  ota_wire_id       device id in OTA metadata and manifests, never changed once shipped (none without OTA)
+  ota_wire_id       device id in OTA metadata and manifests, never changed once shipped (none without OTA);
+                    with OTA it equals installer_id
   prop_namespace    the properties this device's image sets (ro.z9x, ro.lumen)
   keys_dir          private keys, on the Mac only: under ~/.lumen-keys, never inside the tree
   app_prefix        folder prefix under apps/ for apps of this device only
@@ -44,6 +46,8 @@ Keys (all required unless marked optional):
   hal_banned        the table of banned HAL calls, or none
   hal_allowed       optional, required with hal_check=aidl-table: the complete list of HAL calls the app may send
   apps              optional: device-only apps under apps/<name> (list)
+  ota_tools         optional, update_engine only: the folder of the device's OTA host tools, tools/ota (the
+                    default when absent) or tools/devices/ota (they read the wire id from devices/<codename>/ota.conf)
 
 devices/<codename>/image.conf (section 4), same format, how the system image is composed:
   generic     yes: tools/image/compose.sh composes it; no: it has its own entry and compose.sh refuses it
@@ -68,7 +72,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 REQUIRED = ("codename name models platform hardware abi base_product vendor_sdk vendor_firmware hal_transport "
             "image_fs slots install_flow ota_engine ota_wire_id prop_namespace keys_dir app_prefix channel "
             "installer_id fastboot_product forks hal_check hal_app hal_codes hal_banned").split()
-OPTIONAL = ("apps", "hal_allowed")
+OPTIONAL = ("apps", "hal_allowed", "ota_tools")
 LISTS = ("models", "vendor_firmware", "channel", "apps")
 ENUMS = {
     "abi": ("arm64", "arm32"),
@@ -89,14 +93,19 @@ BUILT_IN_FLOWS = ("z9x-usb", "play6-wifi")
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 VALUE_RE = re.compile(r"^[A-Za-z0-9 ._:/~,-]*$")
 INSTALLER_LINE = re.compile(r"^([a-z0-9]+)\.([A-Z0-9_]+)=(.*)$")
-# where the tools write an OTA device id by hand, per ota_engine: (file, text with {id}). check-wire reads them,
-# never edits them (tools/ota is a Z9X gate input)
+# where the tools write an OTA device id by hand, per ota_engine, for a device whose ota_tools is OTA_TOOLS:
+# (file, text with {id}). check-wire reads them, never edits them (tools/ota is a Z9X gate input)
 WIRE = {
     "update_engine": (("tools/ota/make_ota.py", "pre-device={id}"),
                       ("tools/ota/make_manifest.py", '"device": "{id}"')),
     "recovery-block": (("tools/play6/ota/make_manifest_play6.py", '"device": "{id}"'),
                        ("apps/Play6Updater/src/org/lumen/updater/Ota.java", 'DEVICE = "{id}"')),
 }
+# ota_tools when the key is absent: the Z9X tools, which write the wire id by hand (WIRE above)
+OTA_TOOLS = "tools/ota"
+# the other ota_tools folders: they take the device from the registry and read its wire id from this data file
+# (relative to the tree, {codename} filled in), which must hold exactly one wire_id=<ota_wire_id> line
+WIRE_TOOLS = {"tools/devices/ota": "devices/{codename}/ota.conf"}
 
 
 class RegistryError(Exception):
@@ -169,6 +178,11 @@ def by_model(root, model):
     return next((d for d in load(root).values() if model in d["models"]), None)
 
 
+def ota_tools(d):
+    """The folder of a device's OTA host tools, relative to the tree (OTA_TOOLS when ota_tools is absent)."""
+    return d.get("ota_tools") or OTA_TOOLS
+
+
 def image(root, codename):
     """devices/<codename>/image.conf -> dict (list keys split); RegistryError when absent or broken."""
     p = os.path.join(root, "devices", codename, "image.conf")
@@ -208,6 +222,13 @@ def validate_image(root, codename, image_fs, errs, notes):
                 notes.append("%s: entry %s not in this tree" % (rel, v))
             else:
                 errs.append("%s: %s does not exist" % (rel, v))
+    # tools/image/compose.sh copies the stage files flat into one folder: two with one file name would overwrite
+    names = {}
+    for v in vals.get("stage", "").split():
+        b = os.path.basename(v)
+        if b in names:
+            errs.append("%s: stage files %s and %s have the same file name (compose.sh stages flat)" % (rel, names[b], v))
+        names.setdefault(b, v)
     if vals.get("generic") == "yes":
         for k in ("compose", "stage", "variants"):
             if vals.get(k, "none") in ("", "none"):
@@ -249,6 +270,17 @@ def validate(root):
             errs.append("%s: hal_check aidl-table needs hal_allowed (the check refuses every call without it)" % rel)
         if "ota_engine" in vals and (vals["ota_engine"] == "none") != (vals.get("ota_wire_id") == "none"):
             errs.append("%s: ota_wire_id must be none exactly when ota_engine is none" % rel)
+        if vals.get("ota_engine", "none") != "none" and vals.get("ota_wire_id") != vals.get("installer_id"):
+            errs.append("%s: ota_wire_id %s is not installer_id %s (one id per device in downloads and OTA)"
+                        % (rel, vals.get("ota_wire_id"), vals.get("installer_id")))
+        ot = vals.get("ota_tools")
+        if ot is not None:
+            if ot != OTA_TOOLS and ot not in WIRE_TOOLS:
+                errs.append("%s: ota_tools=%s, not one of %s" % (rel, ot, " ".join((OTA_TOOLS,) + tuple(WIRE_TOOLS))))
+            elif not os.path.isdir(os.path.join(root, ot)):
+                errs.append("%s: ota_tools=%s does not exist" % (rel, ot))
+            if vals.get("ota_engine") != "update_engine":
+                errs.append("%s: ota_tools needs ota_engine update_engine, not %s" % (rel, vals.get("ota_engine")))
         kd = vals.get("keys_dir")
         if kd is not None:
             full = os.path.realpath(os.path.expanduser(kd))
@@ -318,10 +350,37 @@ def check_installer(root, conf):
     return errs, notes
 
 
+def wire_conf(root, d):
+    """-> (relative path of the device's wire id file, [its wire_id values]) for an ota_tools of WIRE_TOOLS;
+    the values list is None when the file is missing."""
+    rel = WIRE_TOOLS[ota_tools(d)].format(codename=d["codename"])
+    p = os.path.join(root, rel)
+    if not os.path.isfile(p):
+        return rel, None
+    vals = []
+    with open(p, encoding="utf-8") as f:
+        for line in f:
+            line = line.rstrip("\n")
+            if line.startswith("wire_id="):
+                vals.append(line.split("=", 1)[1])
+    return rel, vals
+
+
 def check_wire(root):
-    """-> (errors, notes): the OTA device ids written in the tools equal the registry's ota_wire_id."""
+    """-> (errors, notes): the OTA device ids written in the tools (WIRE), or in the device's ota.conf for an
+    ota_tools of WIRE_TOOLS, equal the registry's ota_wire_id."""
     errs, notes = [], []
     for d in sorted(load(root).values(), key=lambda x: x["codename"]):
+        if d["ota_engine"] == "update_engine" and ota_tools(d) in WIRE_TOOLS:
+            rel, vals = wire_conf(root, d)
+            if vals is None:
+                errs.append("%s: %s is missing (ota_tools=%s)" % (d["codename"], rel, ota_tools(d)))
+            elif vals != [d["ota_wire_id"]]:
+                errs.append("%s: %s has wire_id %s, not exactly one wire_id=%s (ota_wire_id)"
+                            % (d["codename"], rel, " ".join(vals) or "(none)", d["ota_wire_id"]))
+            else:
+                notes.append("%s: %s has wire_id=%s" % (d["codename"], rel, d["ota_wire_id"]))
+            continue
         for rel, fmt in WIRE.get(d["ota_engine"], ()):
             text = fmt.format(id=d["ota_wire_id"])
             p = os.path.join(root, rel)

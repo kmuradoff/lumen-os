@@ -309,7 +309,10 @@ pref_return_home=Көз ажыратылғанда негізгі экранға
 pref_cec_otp=HDMI-CEC: құрылғы сұрағанда HDMI-ға ауысу (One Touch Play)
 pref_cec_control=HDMI-CEC: құрылғыны пультпен басқару
 pref_cec_exit=HDMI-CEC: HDMI-дан шыққанда құрылғыға хабарлау
-pref_open_on_boot=Көз жалғанған болса, қосқанда HDMI ашу
+pref_boot_source=Қосылғандағы көз: %1$s
+boot_source_home=Басты экран
+pref_boot_source_note=Проекторды құрылғы HDMI-CEC арқылы қосса, оның кірісі ашылады.
+back_key_guide=«Артқа» түймесі енді қосылған құрылғыны басқарады. Шығу үшін «Үйге» түймесін басыңыз.
 settings_inputs_header=Кірістер:
 settings_safe_mode=Қауіпсіз режим: қайталанған қателерден кейін автоматты ауысу келесі қайта іске қосуға дейін өшірулі.
 toast_no_input=%1$s қолжетімсіз
@@ -1037,6 +1040,8 @@ voice_key_quota=Gemini бүгінгі лимиті бітті, құрылғы д
 voice_key_bad=Google бұл кілтті қабылдамады
 
 @projector/strings_parity.xml
+panel_ct_3=Температура 3
+panel_lamp_mode_locked=«%1$s» режимінде жарықтық өзгермейді
 boost_effect=Boost суретті жарығырақ етеді, бірақ түстер солғындайды. Түс кеңістігі өзгермейді.
 boost_blocks_change=Boost өшіріп, қайталап көріңіз
 blocked_game=Ойын режимі қосулы кезде қолжетімсіз

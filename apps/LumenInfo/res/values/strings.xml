@@ -105,19 +105,12 @@
     <!-- HDMI page -->
     <string name="r_edid_version">EDID offered to sources</string>
     <string name="r_port_file">HDMI %1$d: built-in EDID</string>
-    <string name="r_port_edid">HDMI %1$d: what it announces</string>
-    <string name="v_file_guess">(name assumed, the vendor list was not readable)</string>
+    <string name="r_port_edid">HDMI %1$d: built-in file says</string>
     <string name="v_edid_unreadable">file not readable</string>
-    <string name="hdmi_note">The projector has no readable copy of the EDID loaded in the receiver. Shown is the file the vendor table (mtk_Customer.ini of this model) names for the selected EDID version, and where it points when it is a link into the shared G0000 folder.</string>
+    <string name="hdmi_note">The projector gives no copy of the EDID it presents to sources. For each HDMI input shown is its EDID setting and the built-in file the vendor loads for it, and where that file points when it is a link into the shared G0000 folder. The setting can only be read while that input is on screen, so an input that is not on screen shows what was read the last time it was (under the overlay). The live EDID can differ from the file: on every input but the ARC one (HDMI 1) the kernel rewrites the audio formats in passthrough mode, so audio is shown for HDMI 1 only.</string>
     <string name="btn_export_port">Save HDMI %1$d EDID to Download</string>
     <string name="btn_details_port">HDMI %1$d EDID in detail</string>
-    <string name="btn_switch_edid">Offer EDID %1$s instead</string>
     <string name="btn_builtin">All built-in EDID files</string>
-    <string name="switch_title">Change the EDID?</string>
-    <string name="switch_text">Sources on both HDMI inputs will see EDID %1$s. The picture of a connected source may go dark for a few seconds while it reconnects. Only the vendor\'s own EDID files are used.</string>
-    <string name="switch_ok">Change</string>
-    <string name="switch_done">EDID %1$s is now offered</string>
-    <string name="switch_failed">The projector did not accept the change</string>
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
     <string name="export">Save to Download</string>
@@ -189,7 +182,6 @@
     <!-- 2026-11-01: rows of the extra vendor getters -->
     <string name="r_output">Output timing (chip)</string>
     <string name="r_video_info">Video (chip report)</string>
-    <string name="r_signal_status">Signal status code</string>
     <string name="r_hdr_switch">HDR switch (picture settings)</string>
     <string name="r_screen_zoom">Digital zoom and shift</string>
     <string name="r_arc">HDMI ARC</string>
@@ -220,4 +212,8 @@
     <string name="v_max_channels">up to %1$d ch</string>
     <string name="r_edid_cfg">EDID config (kernel module)</string>
     <string name="v_own_file">own file of this model</string>
+    <string name="v_edid_game">chosen by the game mode</string>
+    <string name="r_port_version">HDMI %1$d: EDID setting</string>
+    <string name="v_edid_remembered">(as of %2$s, the last time HDMI %1$d was on screen)</string>
+    <string name="v_hdmi_audio_path">from the HDMI input (hardware path, not through Android)</string>
 </resources>

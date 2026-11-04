@@ -1,0 +1,6 @@
+# ota.py payload ARGS  ==  tools/ota/make_ota.py unsigned ARGS (DELTA_GENERATOR set to a program that is never run)
+help	--help
+no_args
+no_new	--new @W@/none.img --version 1.0.8 --timestamp 1 --super-group main=4096 --out @W@/pout
+odd_size	--new @F@/odd_size.bin --version 1.0.8 --timestamp 1 --super-group main=4096 --out @W@/pout
+bad_timestamp	--new @F@/odd_size.bin --version 1.0.8 --timestamp soon --super-group main=4096 --out @W@/pout

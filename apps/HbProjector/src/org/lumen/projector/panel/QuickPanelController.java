@@ -888,7 +888,7 @@ final class QuickPanelController {
                 labels(app, R.string.hdmi_mode_compat, R.string.hdmi_mode_enhanced),
                 (row, i) -> safe("hdmi mode", () -> {
                     if (i < 0 || i > 1) return;
-                    // Z9X HB fork: stock G0130 sends 1 (HDMI 1.4) or 2 (HDMI 2.0), never a learned value
+                    // Z9X HB fork: stock G0130 SignalEnum 1 / 2 minus 1 in gmuiapi GmTvManager: wire 0 (1.4) / 1 (2.0)
                     final int wire = i == 0 ? GmpfClient.EDID_14 : GmpfClient.EDID_20;
                     final CharSequence title = row.getTitle();
                     change("660 edid " + wire, (g, g2) -> {
@@ -1894,8 +1894,9 @@ final class QuickPanelController {
         hdmiHeader.setVisibility(showRange || showEdid || showAspect ? View.VISIBLE : View.GONE);
         hdmiRange.setSelected(showRange ? sn.hdmiRange : -1);
         hdmiRange.setVisibility(showRange ? View.VISIBLE : View.GONE);
-        // Z9X HB fork: stock SignalManager.getHdmiVersion: 2 shows HDMI 2.0, every other read HDMI 1.4
-        hdmiMode.setSelected(showEdid ? (sn.edid == GmpfClient.EDID_20 ? 1 : 0) : -1);
+        // Z9X HB fork: wire 1 is HDMI 2.0 and 0 is 1.4. Stock shows every other read as 1.4; here another value (2,
+        // stored by Lumen builds before 2026-11-04, which sent 1 / 2) marks nothing, so either choice sends a stock value
+        hdmiMode.setSelected(showEdid ? (sn.edid == GmpfClient.EDID_20 ? 1 : sn.edid == GmpfClient.EDID_14 ? 0 : -1) : -1);
         hdmiMode.setVisibility(showEdid ? View.VISIBLE : View.GONE);
         volumeLevel.setChecked(ok ? sn.volumeBalance : null);
         volumeLevel.setVisibility(ok && sn.volumeBalance != null ? View.VISIBLE : View.GONE);

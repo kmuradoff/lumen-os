@@ -9,5 +9,7 @@
     <string name="game_top_speed_confirm">Turbo disattiva la correzione trapezoidale e riporta l’immagine all’inquadratura completa. Passare?</string>
     <string name="picture_reset_all">Ripristina tutte le impostazioni immagine</string>
     <string name="picture_reset_all_msg">Modalità immagine, impostazioni di base e professionali tornano ai valori predefiniti. Continuare?</string>
+    <string name="panel_ct_3">Temp. colore 3</string>
+    <string name="panel_lamp_mode_locked">In modalità %1$s la luminosità non si può cambiare</string>
     <string name="three_d_native_fps">Disattiva prima la frequenza fotogrammi originale</string>
 </resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arabic translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">فحص الأمان الخاص بالتحديثات لا يعمل على جهاز العرض هذا (%1$s). أعِد تشغيل جهاز العرض ثم حاول مرة أخرى.</string>
+    <string name="blk_not_marked">لم يتم التأكد بعد من أن هذا الإصدار يعمل بشكل سليم. اترك جهاز العرض قيد التشغيل لبضع دقائق ثم حاول مرة أخرى.</string>
+    <string name="blk_probe">لم يستجب فحص الأمان الخاص بالتحديثات (%1$s). أعِد تشغيل جهاز العرض ثم حاول مرة أخرى.</string>
+    <string name="blk_active">في المرة القادمة سيبدأ جهاز العرض من خانة النظام %1$s. أعِد تشغيل جهاز العرض ثم حاول مرة أخرى.</string>
+    <string name="blk_partitions">التحديثات غير آمنة في هذا الإصدار: قائمة الأقسام غير صحيحة (%1$s). يُرجى استخدام برنامج التثبيت على الكمبيوتر.</string>
+    <string name="blk_vab">وحدة تخزين جهاز العرض هذا غير مهيأة للتحديثات (%1$s). يُرجى استخدام برنامج التثبيت على الكمبيوتر.</string>
+</resources>

@@ -32,7 +32,10 @@
     <string name="pref_cec_otp">HDMI-CEC: уключаць HDMI па камандзе прылады (One Touch Play)</string>
     <string name="pref_cec_control">HDMI-CEC: кіраваць прыладай з пульта</string>
     <string name="pref_cec_exit">HDMI-CEC: паведамляць прыладзе пра выхад з HDMI</string>
-    <string name="pref_open_on_boot">Адкрываць HDMI пры ўключэнні, калі крыніца падключана</string>
+    <string name="pref_boot_source">Крыніца пры ўключэнні: %1$s</string>
+    <string name="boot_source_home">Галоўны экран</string>
+    <string name="pref_boot_source_note">Калі праектар уключыла прылада праз HDMI-CEC, адкрыецца яе ўваход.</string>
+    <string name="back_key_guide">Кнопка «Назад» цяпер кіруе падключанай прыладай. Каб выйсці, націсніце «Дадому».</string>
     <string name="settings_inputs_header">Уваходы:</string>
     <string name="settings_safe_mode">Бяспечны рэжым: пасля паўторных збояў аўтапераключэнне выключана да наступнага перазапуску.</string>
     <string name="toast_no_input">%1$s недаступны</string>

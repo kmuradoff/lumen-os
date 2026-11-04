@@ -5,11 +5,16 @@
 installer/lumen-install.sh (the abf_* section) and installer/lumen-install.ps1 (the Abf-* section) must do the
 same, read straight from their source, nothing run:
   - the profile keys: P_KEYS (sh) and $PKeys (ps1), in the same order, and the keys a FLOW profile must have;
-  - the fastboot actions the ab-fastbootd branch of fb_allowed / Fb-Allowed lets through, and the format of
-    fb_do / Fb-Do there ('format:ext4', never f2fs);
+  - the fastboot actions the ab-fastbootd branch of fb_allowed / Fb-Allowed lets through, the format there only
+    while the last 'getvar all' read snapshot-update-status none, and the format of fb_do / Fb-Do there
+    ('format:ext4', never f2fs);
   - the 'getvar all' keys the fastbootd check reads (abf_fbd_check / Abf-Fbd-Check), the *-cow test and the KEEP
     loop;
-  - the fastboot calls of the write, in source order (abf_write / Abf-Write, abf_fbd_check, abf_fb_stop, abf_room);
+  - the fastboot calls of the write, in source order (abf_write / Abf-Write, abf_fbd_check, abf_fb_stop, abf_room,
+    abf_rescue); 'rescue': no snapshot-update, format, --slot or set_active sent; the same hold (state not none, or
+    the slot an update never marked: STOP with no fastboot call, the user types the way back) in both; the fastbootd
+    check in its rescue mode (any slot of SLOTS, not the saved one, no slot-successful or update-state test there:
+    abf_rescue handles the state);
   - the commands: the ones that are not there yet, the ones that set up adb and fastboot first;
   - every text the user reads (t "en" "ru" / T "en" "ru", English and Russian) of the two sections, plus the
     mke2fs check and the image owner: equal once the variables are <v>, the white space is one space, '\\' is '/',
@@ -354,6 +359,11 @@ if not ("P_SLOTS" in shb and "P_WIPE" in shb and "'SLOTS'" in psb and "'WIPE_PAR
     fail("the ab-fastbootd branch does not check SLOTS and WIPE_PARTS in both")
 else:
     ok("the branch checks the running slot against SLOTS and the format against WIPE_PARTS in both")
+if '[ "$(abf_gv snapshot-update-status)" = none ] || return 1' in shb and \
+   '(Gv-Val $script:AbfGv "snapshot-update-status") -ceq "none"' in psb:
+    ok("the format only while snapshot-update-status is none (the last getvar all) in both")
+else:
+    fail("fb_allowed / Fb-Allowed: the format is not tied to snapshot-update-status none")
 if re.search(r'if \[ "\$P_FLOW" = ab-fastbootd \]; then fb format:ext4 "\$part"', sh_fn(sh, "fb_do")) and \
    re.search(r'if \(\$script:Prof\["FLOW"\] -ceq "ab-fastbootd"\) \{ Fb format:ext4 \$part \| Out-Host \}', ps_fn(ps, "Fb-Do")):
     ok("fb_do / Fb-Do format: format:ext4 first for ab-fastbootd")
@@ -388,7 +398,8 @@ def fb_calls(body, do, fb):  # the fastboot calls in source order: ['do:flash sy
     return out
 
 
-for a, b in (("abf_write", "Abf-Write"), ("abf_fbd_check", "Abf-Fbd-Check"), ("abf_fb_stop", "Abf-Fb-Stop"), ("abf_room", "Abf-Room")):
+for a, b in (("abf_write", "Abf-Write"), ("abf_fbd_check", "Abf-Fbd-Check"), ("abf_fb_stop", "Abf-Fb-Stop"), ("abf_room", "Abf-Room"),
+             ("abf_rescue", "Abf-Rescue")):
     x = fb_calls(sh_fn(sh, a), "fb_do", "fb")
     y = fb_calls(ps_fn(ps, b), "Fb-Do", "Fb")
     if x == y:
@@ -399,6 +410,41 @@ for fn in re.findall(r"^function (Abf-[A-Za-z-]+)", pss, re.M):
     body = code(ps_fn(ps, fn))
     if re.search(r"(?<![\w-])(Fb|Fb-Do|Pt-Fastboot)\s+[^\n]*(\s-w\b|erase|--slot|set_active|delete|snapshot-update|vbmeta|flashall|wipe-super)", body):
         fail("%s sends a forbidden fastboot command" % fn)
+
+# rescue: no snapshot-update at all (an update in the way stops it before any write, the user types the way back),
+# never a format, --slot or set_active; the hold sends no fastboot command (the projector stays in fastboot mode)
+shr = code(sh_fn(sh, "abf_rescue"))
+psr = code(ps_fn(ps, "Abf-Rescue"))
+shh = code(sh_fn(sh, "abf_rescue_hold"))
+psh = code(ps_fn(ps, "Abf-Rescue-Hold"))
+cond_sh = 'if [ "$st" != none ] || { [ "$(abf_gv "slot-successful:$cs")" != yes ] && [ "$(abf_gv "slot-successful:$(abf_other "$cs")")" = yes ]; }; then' in shr
+cond_ps = 'if ($st -cne "none" -or ((Gv-Val $script:AbfGv "slot-successful:$sl") -ne "yes" -and (Gv-Val $script:AbfGv "slot-successful:$(Abf-Other $sl)") -eq "yes")) {' in psr
+branches_sh = re.findall(r'(?:if|elif) \[ "\$3" = (merging|snapshotted) \]|(?:if|elif) \[ "\$\(abf_gv "slot-successful:\$1"\)" != yes \]', shh)
+branches_ps = re.findall(r'(?:if|elseif) \(\$st -ceq "(merging|snapshotted)"|(?:if|elseif) \(\(Gv-Val \$script:AbfGv "slot-successful:\$cs"\) -ne "yes"', psh)
+calls = re.compile(r"(?<![\w-])(fb_do|fb|fb_snapshot|Fb-Do|Fb|Fb-Snapshot|Pt-Fastboot|abf_fb_stop|Abf-Fb-Stop)\s")
+# the cancel branch only for the slot that ran before the update: this one marked AND the other one read as not marked
+snap_sh = 'elif [ "$3" = snapshotted ] && [ "$(abf_gv "slot-successful:$1")" = yes ] && [ "$(abf_gv "slot-successful:$2")" = no ]; then' in shh
+snap_ps = '} elseif ($st -ceq "snapshotted" -and (Gv-Val $script:AbfGv "slot-successful:$cs") -eq "yes" -and (Gv-Val $script:AbfGv "slot-successful:$os") -eq "no") {' in psh
+if cond_sh and cond_ps and snap_sh and snap_ps and branches_sh == branches_ps == ["merging", "", "snapshotted"] \
+   and "fb_snapshot" not in shr and "Fb-Snapshot" not in psr and not calls.search(shh) and not calls.search(psh) \
+   and re.search(r"^  die ", shh, re.M) and re.search(r"^  Die ", psh, re.M):
+    ok("rescue: no snapshot-update; state not none or an update slot never marked -> hold (merging, never marked, snapshotted, else), no fastboot call there, in both")
+else:
+    fail("rescue hold differs: cond sh %s ps1 %s, cancel branch sh %s ps1 %s, branches sh %s ps1 %s"
+         % (cond_sh, cond_ps, snap_sh, snap_ps, branches_sh, branches_ps))
+bad = [n for n, body, pat in (("abf_rescue", shr + shh, r"(?<![\w-])(fb_do|fb) +(format|erase|delete|snapshot-update|set_active)|(?<![\w-])(fb_do|fb) [^\n]*--slot"),
+                              ("Abf-Rescue", psr + psh, r"(?<![\w-])(Fb-Do|Fb|Pt-Fastboot) +(format|erase|delete|snapshot-update|set_active)|(?<![\w-])(Fb-Do|Fb|Pt-Fastboot) [^\n]*--slot"))
+       if re.search(pat, body)]
+if bad:
+    fail("a format, erase, delete, --slot, set_active or snapshot-update sent in " + " ".join(bad))
+else:
+    ok("rescue: no format, erase, delete, --slot, set_active or snapshot-update sent in both")
+fsh = sh_fn(sh, "abf_fbd_check")
+if "abf_fbd_check rescue" in shr and "Abf-Fbd-Check -Rescue" in psr and \
+   fsh.count('[ "${1-}" = rescue ]') == 3 and pfc.count("-not $Rescue") == 6:
+    ok("rescue: the fastbootd check in its rescue mode in both (saved slot, slot-successful, update state skipped)")
+else:
+    fail("rescue mode of the fastbootd check differs: sh %d, ps1 %d" % (fsh.count('[ "${1-}" = rescue ]'), pfc.count("-not $Rescue")))
 
 # the commands
 m1 = re.search(r"\n    ([a-z|]+)\) abf_not_yet \"\$CMD\" ;;", sh_fn(sh, "abf_main"))

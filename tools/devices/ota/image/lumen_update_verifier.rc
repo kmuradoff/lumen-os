@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS: replaces /system/etc/init/update_verifier.rc of the base image on the projectors with the neutral
+# OTA gate (fork of the Z9X tools/ota/image/update_verifier.rc; same service name, so init.rc's
+# 'exec_start update_verifier' at zygote-start runs this). On every normal boot it runs the stock
+# /system/bin/update_verifier unchanged (lumen_ota.sh 'verifier' execs it). Only while lumen_ota.sh 'count'
+# has published sys.z9x.ota=pending (an update slot) or the gate asked for a rollback is it skipped, so the
+# slot stays unmarked before boot_completed and a broken update can still roll back. (With userdata
+# checkpointing update_verifier never marks anyway: vold does at boot_completed.)
+# Kill switch: ro.lumen.ota.gate=0 (stock behaviour on every boot).
+service update_verifier /system/bin/sh /system/etc/lumen/lumen_ota.sh verifier
+    user root
+    group cache system
+    priority -20
+    ioprio rt 0
+    seclabel u:r:su:s0

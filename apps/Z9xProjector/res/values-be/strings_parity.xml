@@ -9,5 +9,7 @@
     <string name="game_top_speed_confirm">Турба выключае карэкцыю трапецыі і вяртае відарыс да поўнага кадра. Пераключыць?</string>
     <string name="picture_reset_all">Скінуць усе налады відарыса</string>
     <string name="picture_reset_all_msg">Рэжым відарыса, базавыя і прафесійныя налады вернуцца да прадвызначаных. Працягнуць?</string>
+    <string name="panel_ct_3">Тэмпература 3</string>
+    <string name="panel_lamp_mode_locked">У рэжыме «%1$s» яркасць не мяняецца</string>
     <string name="three_d_native_fps">Спачатку выключыце зыходную частату кадраў</string>
 </resources>

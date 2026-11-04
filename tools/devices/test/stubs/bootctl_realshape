@@ -1,0 +1,17 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Test stub for tools/devices/test/lumen_ota_parity.sh: the Z9X bootctl stub ($BOOTCTL_INNER, tools/ota/test/
+# stubs/bootctl, run with sh: same state and log) with the yes/no replies in the shape of the real AOSP bootctl
+# (bootctl.cpp handle_return): "1" and exit 0 for yes, "0" and exit 70
+# for no. Any other reply (an error line, exit 64) passes through unchanged. The Z9X stub answers yes/no
+# silently, the shape the Z9X gate expects; the neutral gate parses the real shape.
+case "${1-}" in
+  is-slot-bootable|is-slot-marked-successful)
+    o=$(sh "$BOOTCTL_INNER" "$@" 2>&1); rc=$?
+    if [ -z "$o" ]; then
+      case $rc in 0) echo 1 ;; 70) echo 0 ;; esac
+      exit $rc
+    fi
+    printf '%s\n' "$o" >&2; exit $rc ;;
+esac
+exec sh "$BOOTCTL_INNER" "$@"

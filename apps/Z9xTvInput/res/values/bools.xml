@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Per-device switches of the HDMI input app. A device build overrides this file (HB: apps/HbTvInput). -->
+<resources>
+    <!-- The one-time "BACK controls the device, HOME leaves" hint: stock xhplayer shows it only where
+         ro.vendor.xgimi.system.isatv is true; the Z9X stock props do not set it (Z9X stock xhplayer
+         InputActivity, pulled 2026-11-04). -->
+    <bool name="tvinput_back_hint">false</bool>
+</resources>

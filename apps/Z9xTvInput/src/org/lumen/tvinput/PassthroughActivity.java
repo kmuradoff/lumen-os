@@ -26,6 +26,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -37,7 +38,10 @@ import java.util.List;
  * HdmiSession.onRelease -> setSurface(null) + releaseTvInputHardware), so the HAL stream and the
  * HDMI audio patch only exist while the viewer is visible.
  *
- * <p>Keys: BACK leaves; MENU opens the source list; INFO (or OK when no CEC device consumes it)
+ * <p>Keys: BACK goes to the source while a CEC source on the port gives the picture (stock xhplayer
+ * InputActivity.dispatchKeyEvent: hasSignal and isCEC, the same on the Z9X and the HB; the hint "HOME leaves" once per
+ * visit where stock shows it, res bool tvinput_back_hint: stock gates it with ro.vendor.xgimi.system.isatv), else BACK
+ * leaves, also when the source did not take it; MENU opens the source list; INFO (or OK when no CEC device consumes it)
  * shows the banner; OK on an asleep CEC source wakes it (deviceSelect, CEC control on); everything else goes
  * to TvView -> HdmiSession (forwarded over CEC when a CEC source is present). The SOURCE key never reaches
  * us: it is a global key (GlobalKeyReceiver).
@@ -86,6 +90,8 @@ public class PassthroughActivity extends Activity {
     private boolean mStarted;
     private long mStartedAt;
     private boolean mVideoAvailable;
+    /** The "BACK controls the device, HOME leaves" hint was shown since the viewer came to the front. */
+    private boolean mBackHintShown;
     /** Session error to show instead of the port state (string id; 0 = none): failed, busy, unknown input. */
     private int mError;
     /** A "source unplugged -> home" countdown is running. */
@@ -305,6 +311,9 @@ public class PassthroughActivity extends Activity {
         Safe.run(TAG, "onStart", () -> {
             mStarted = true;
             mStartedAt = SystemClock.uptimeMillis();
+            // the hint once per visit: stock arms it in InputActivity.onCreate, and its viewer is gone after HOME,
+            // ours stays (singleTask) and comes back here
+            mBackHintShown = false;
             if (mInputId == null || mTvView == null) return;
             if (mTim != null) {
                 try {
@@ -530,6 +539,15 @@ public class PassthroughActivity extends Activity {
         try {
             switch (event.getKeyCode()) {
                 case KeyEvent.KEYCODE_BACK:
+                    if (backGoesToSource()) {
+                        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 && !mBackHintShown
+                                && getResources().getBoolean(R.bool.tvinput_back_hint)) {
+                            mBackHintShown = true;
+                            Toast.makeText(this, R.string.back_key_guide, Toast.LENGTH_LONG).show();
+                        }
+                        break;  // to TvView -> HdmiSession; not taken there -> onUnhandledInput leaves
+                    }
+                    // falls through: no CEC source on screen, BACK leaves
                 case KeyEvent.KEYCODE_ESCAPE:
                     if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) finish();
                     return true;
@@ -562,11 +580,22 @@ public class PassthroughActivity extends Activity {
         return super.dispatchKeyEvent(event);
     }
 
+    /** BACK is the source's key: a picture, CEC control on and a CEC source on the port (as HdmiSession forwards). */
+    private boolean backGoesToSource() {
+        if (!mVideoAvailable || mInputId == null || !Prefs.get(this, Prefs.CEC_CONTROL)) return false;
+        return CecHelper.hasCecSourceOnPort(this, PortState.of(this, mInputId).port);
+    }
+
     /** Keys the session did not consume (no CEC device / CEC control off). */
     private boolean onUnhandledInput(InputEvent e) {
         try {
             if (e instanceof KeyEvent) {
                 KeyEvent k = (KeyEvent) e;
+                if (k.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+                    // the source did not take BACK: it leaves, as without a CEC source
+                    if (k.getAction() == KeyEvent.ACTION_UP && !k.isCanceled()) finish();
+                    return true;
+                }
                 if (k.getAction() == KeyEvent.ACTION_UP
                         && (k.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER
                         || k.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {

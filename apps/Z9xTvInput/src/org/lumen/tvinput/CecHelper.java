@@ -233,9 +233,13 @@ final class CecHelper {
         }
     }
 
-    /** Keys that make sense to pass to a CEC playback device. BACK/HOME/MENU/TV_INPUT stay local. */
+    /**
+     * Keys that make sense to pass to a CEC playback device. HOME/MENU/TV_INPUT stay local; BACK is the source's
+     * while it gives the picture (stock xhplayer; PassthroughActivity decides when it reaches the session).
+     */
     static boolean isForwardableKey(int keyCode) {
         switch (keyCode) {
+            case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_DPAD_UP:
             case KeyEvent.KEYCODE_DPAD_DOWN:
             case KeyEvent.KEYCODE_DPAD_LEFT:

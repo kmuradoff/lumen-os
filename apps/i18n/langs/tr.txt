@@ -309,7 +309,10 @@ pref_return_home=Kaynak bağlantısı kesildiğinde ana ekrana dön
 pref_cec_otp=HDMI-CEC: cihaz istediğinde HDMI'ya geç (One Touch Play)
 pref_cec_control=HDMI-CEC: cihazı kumandayla kontrol et
 pref_cec_exit=HDMI-CEC: HDMI'dan çıkarken cihaza bildir
-pref_open_on_boot=Kaynak bağlıysa açılışta HDMI'yı aç
+pref_boot_source=Açılışta kaynak: %1$s
+boot_source_home=Ana ekran
+pref_boot_source_note=Projektörü HDMI-CEC ile bir cihaz açarsa onun girişi açılır.
+back_key_guide=GERİ artık bağlı cihazı kontrol eder. Çıkmak için ANA SAYFA tuşuna basın.
 settings_inputs_header=Girişler:
 settings_safe_mode=Güvenli mod: tekrarlanan hatalardan sonra otomatik geçiş bir sonraki yeniden başlatmaya kadar kapalıdır.
 toast_no_input=%1$s kullanılamıyor
@@ -1037,6 +1040,8 @@ voice_key_quota=Bugünkü Gemini sınırına ulaşıldı, cihaz sesi konuşuyor
 voice_key_bad=Google bu anahtarı kabul etmedi
 
 @projector/strings_parity.xml
+panel_ct_3=Renk sıcaklığı 3
+panel_lamp_mode_locked=%1$s modunda parlaklık değiştirilemez
 boost_effect=Boost görüntüyü daha parlak yapar, ancak renkler daha soluk görünür. Renk alanı değişmez.
 boost_blocks_change=Boost'u kapatıp tekrar deneyin
 blocked_game=Oyun modu açıkken kullanılamaz

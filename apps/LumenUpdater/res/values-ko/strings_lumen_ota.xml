@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Korean translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">이 프로젝터에서 업데이트 안전 확인이 작동하지 않습니다(%1$s). 프로젝터를 다시 시작한 후 다시 시도하세요.</string>
+    <string name="blk_not_marked">이 버전이 정상적으로 작동하는지 아직 확인되지 않았습니다. 프로젝터를 몇 분 동안 켜 둔 후 다시 시도하세요.</string>
+    <string name="blk_probe">업데이트 안전 확인이 응답하지 않았습니다(%1$s). 프로젝터를 다시 시작한 후 다시 시도하세요.</string>
+    <string name="blk_active">다음에는 프로젝터가 시스템 슬롯 %1$s에서 시작됩니다. 프로젝터를 다시 시작한 후 다시 시도하세요.</string>
+    <string name="blk_partitions">이 버전에서는 업데이트가 안전하지 않습니다. 파티션 목록이 올바르지 않습니다(%1$s). 컴퓨터용 설치 프로그램을 사용하세요.</string>
+    <string name="blk_vab">이 프로젝터의 저장소는 업데이트용으로 설정되어 있지 않습니다(%1$s). 컴퓨터용 설치 프로그램을 사용하세요.</string>
+</resources>

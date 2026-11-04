@@ -11,6 +11,14 @@ drop      src/org/lumen/projector/hal/HidlCaller.java
 drop      src/org/lumen/common/LumenImport.java
 # Z9X-only strings of the keystone page's last section (the HB has its own, strings_hb.xml)
 drop      res/values*/strings_kst_restore.xml
+# Z9X-only 1.0.8 rules: the HB quick panel and keystone page are its own forks with their own colour temperature,
+# 3D and game rules, so these classes and their host tests are not part of the HB app
+drop      src/org/lumen/projector/panel/ColorTempRule.java
+drop      src/org/lumen/projector/panel/Lamp3d.java
+drop      src/org/lumen/projector/panel/KstGameLock.java
+drop      test/picture/
+drop      test/kstgame/
+drop      test/lamp3d/
 top       apps/HbProjector
 # never part of an app tree: build output, APKs, notes
 skip      build/ *.apk CHANGES*.md README*.md SYNCED.txt .DS_Store

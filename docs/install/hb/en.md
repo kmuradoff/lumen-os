@@ -278,9 +278,29 @@ Send the lines with `!` along with your question. You can turn debugging off aga
   only says "Done". So reset the progress first: `bash lumen-install.sh --device hb reset` (Windows:
   `lumen-install.cmd reset -Device hb`), then install as in [step 5](#hb-install). The write command
   works too: `bash lumen-install.sh --ip 192.168.x.y flash`.
+  When they come: while an update downloads and installs, until the projector asks for a restart, do not
+  change the picture settings or the keystone. The projector keeps them in a partition that the update copies:
+  a change in between makes the install fail, or is lost after the restart.
 - The AirPlay receiver.
-- Rescue from fastboot mode without data loss (`rescue`) and the stock restore stick check (`stick`): on the
-  HB these commands do nothing yet.
+- The stock restore stick check (`stick`): on the HB this command does nothing yet.
+
+<a name="hb-rescue"></a>
+
+## Rescue: Lumen OS no longer starts (your data stays)
+
+When Lumen OS does not finish starting, the projector goes to fastboot mode by itself after a few minutes and
+waits there. `rescue` writes Lumen OS again into the slot it runs from, without erasing data:
+
+1. Download the image of the newest HB release, both `SHA256SUMS` files and the installer zip, as in
+   [step 2](#hb-files). An older system over newer data may not start.
+2. Run `bash lumen-install.sh --device hb rescue` (Windows: `lumen-install.cmd rescue -Device hb`) and type
+   `WRITE`.
+3. When the installer asks, connect the projector's USB port to the computer with the A-to-A cable.
+
+If an update over Wi-Fi is staged or not finished, `rescue` writes nothing: until an update is finished both
+slots use the same storage, and a write then would destroy the way back. It shows the commands that keep
+everything (most often `fastboot set_active` to the other slot, then `fastboot reboot`) and leaves the
+projector in fastboot mode. Type them as shown, with the fastboot of `tools/platform-tools` next to the script.
 
 <a name="hb-problems"></a>
 
@@ -311,7 +331,8 @@ Send the lines with `!` along with your question. You can turn debugging off aga
 | first start | The start hangs with the cable in | Unplug the cable and press the power button. |
 | first start | The lamp never lights, the fans run, the projector restarts about every 20 seconds | Cut the power for 10 seconds and switch on again. If it goes on, go [back to stock](#hb-stock) and tell us. |
 | verify | sys.z9x.blobs=… (a line with `!`) | Send the lines with `!` and the installer output. |
-| gapps, rescue, stick | '…' is not available for the XGIMI Z9X HB yet | That is right, see [Not there yet](#hb-missing). Nothing was done. |
+| rescue | 'rescue' wrote nothing: an update is not finished on slot … | Type the commands it shows above that line, see [Rescue](#hb-rescue). The projector stays in fastboot mode. |
+| gapps, stick | '…' is not available for the XGIMI Z9X HB yet | That is right, see [Not there yet](#hb-missing). Nothing was done. |
 
 The installer keeps its HB progress in `~/.lumen-installer/hb/`. `bash lumen-install.sh status` shows it,
 `bash lumen-install.sh --device hb reset` resets it. Neither touches the projector.

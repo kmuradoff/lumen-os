@@ -1,0 +1,14 @@
+# Shared recipe of the device-neutral Lumen OS updater, read by
+# tools/devices/assemble_app.py. Rule: every device that ships it keeps a byte copy of this file as
+# devices/<codename>/app/LumenUpdater.layers (apps/LumenUpdater/test/ota/run.sh checks that the copies are
+# identical); the device copy is the one assembled, its fork rows are in that device's fork table.
+# The updater is the Z9X one minus the Z9X-only file below, plus the neutral layer (apps/LumenUpdater: the forks
+# Ota.java, Preflight.java, LumenApp.java and the test ChannelTest.java, the gate block strings, the tests).
+# The Z9X folder is only read.
+app       LumenUpdater
+base      apps/Z9xUpdater
+# Z9X-only: the 1.0.8 import of the org.z9x.updater data (LumenApp is forked without it)
+drop      src/org/lumen/common/LumenImport.java
+top       apps/LumenUpdater
+# never part of an app tree: build output, APKs, notes, the Z9X translation inputs
+skip      build/ *.apk CHANGES*.md README*.md tools/ .DS_Store

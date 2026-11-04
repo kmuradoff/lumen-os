@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS OTA gate for the projectors with the neutral update client (image path /system/etc/init/lumen_ota.rc;
+# script /system/etc/lumen/lumen_ota.sh 0755, data /system/etc/lumen/ota_gate.conf 0644). Fork of the Z9X
+# tools/ota/image/z9x_ota.rc (docs/architecture/OTA_CLIENT.md section 3). The service names stay z9x_ota_*:
+# the updater's BootReceiver and Outcome read init.svc.z9x_ota_health. On a normal boot this costs one 'exec' of
+# < 20 ms at post-fs-data (file reads + setprop, no boot HAL call, no conf) and one background oneshot (info).
+# On the first boot of a new build count renames the package parse cache and info deletes it in the background.
+#
+#   post-fs-data   lumen_ota.sh count (exec, root): attempt counter of an update slot -> sys.z9x.ota=pending,
+#                  never a rollback here
+#   pending        z9x_ota_decide: the boot HAL read under 'timeout' (sys.z9x.ota.hal); a marked slot is
+#                  confirmed, more than max_attempts attempts -> set-active-boot-slot(other) + reboot
+#                  z9x_ota_watch: system_server started start_count_max times, or no boot_completed within
+#                  deadline s -> roll back (or, when that is not possible, reboot,z9x-ota-stuck)
+#   boot_completed z9x_ota_health: a marked slot (userdata checkpoint): report only, never reboot. An unmarked
+#                  one: + health_delay s, system_server once and every health= service up ->
+#                  mark-boot-successful (read back), else roll back
+#   boot           z9x_ota_info: sys.z9x.slot + AVB flags of both vbmeta slots (vbmeta read-only, 128 bytes);
+#                  deletes the old package parse cache that count set aside
+#   request        sys.z9x.ota.request=mark (updater "Keep this version"): the health gate at once
+#                  sys.z9x.ota.request=probe (updater preflight): z9x_ota_decide reads the boot HAL again
+#                  and publishes sys.z9x.ota.hal / .marked / .merge / .active; it acts only on its first run
+# Reboot reasons used: reboot,z9x-ota (updater), reboot,z9x-ota-rollback and reboot,z9x-ota-stuck (this gate);
+# all are attended reboots for org.lumen.projector's boot classification (no boot-dark power-off).
+# Kill switch: ro.lumen.ota.gate=0. Domain u:r:su:s0 exists only on userdebug (this image).
+
+on post-fs-data
+    exec u:r:su:s0 root root -- /system/bin/sh /system/etc/lumen/lumen_ota.sh count
+
+on boot
+    start z9x_ota_info
+
+on property:sys.z9x.ota=pending
+    start z9x_ota_decide
+    start z9x_ota_watch
+
+on property:sys.boot_completed=1 && property:sys.z9x.ota=pending
+    start z9x_ota_health
+
+on property:sys.z9x.ota.request=mark
+    start z9x_ota_mark
+
+on property:sys.z9x.ota.request=probe
+    start z9x_ota_decide
+
+service z9x_ota_info /system/bin/sh /system/etc/lumen/lumen_ota.sh info
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service z9x_ota_decide /system/bin/sh /system/etc/lumen/lumen_ota.sh decide
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service z9x_ota_watch /system/bin/sh /system/etc/lumen/lumen_ota.sh watch
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service z9x_ota_health /system/bin/sh /system/etc/lumen/lumen_ota.sh health
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+service z9x_ota_mark /system/bin/sh /system/etc/lumen/lumen_ota.sh mark
+    user root
+    group root system
+    seclabel u:r:su:s0
+    oneshot
+    disabled

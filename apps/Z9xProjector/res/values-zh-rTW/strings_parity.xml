@@ -9,5 +9,7 @@
     <string name="game_top_speed_confirm">極速會關閉梯形校正並將畫面恢復為完整畫面。要切換嗎？</string>
     <string name="picture_reset_all">重設所有影像設定</string>
     <string name="picture_reset_all_msg">影像模式、基本設定和專業設定將恢復預設值。要繼續嗎？</string>
+    <string name="panel_ct_3">色溫 3</string>
+    <string name="panel_lamp_mode_locked">%1$s模式下無法調整亮度</string>
     <string name="three_d_native_fps">請先關閉原始影格率</string>
 </resources>

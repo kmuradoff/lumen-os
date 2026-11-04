@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- French translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">La vérification de sécurité des mises à jour ne fonctionne pas sur ce projecteur (%1$s). Redémarrez le projecteur et réessayez.</string>
+    <string name="blk_not_marked">Le bon fonctionnement de cette version n’est pas encore confirmé. Laissez le projecteur allumé quelques minutes, puis réessayez.</string>
+    <string name="blk_probe">La vérification de sécurité des mises à jour n’a pas répondu (%1$s). Redémarrez le projecteur et réessayez.</string>
+    <string name="blk_active">La prochaine fois, le projecteur démarrera depuis l’emplacement système %1$s. Redémarrez le projecteur et réessayez.</string>
+    <string name="blk_partitions">Les mises à jour ne sont pas sûres sur cette version : la liste des partitions est incorrecte (%1$s). Utilisez l’installateur pour ordinateur.</string>
+    <string name="blk_vab">Le stockage de ce projecteur n’est pas prévu pour les mises à jour (%1$s). Utilisez l’installateur pour ordinateur.</string>
+</resources>

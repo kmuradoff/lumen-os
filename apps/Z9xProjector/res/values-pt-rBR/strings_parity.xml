@@ -9,5 +9,7 @@
     <string name="game_top_speed_confirm">O Turbo desativa a correção trapezoidal e volta a imagem ao quadro completo. Mudar?</string>
     <string name="picture_reset_all">Redefinir todas as configurações de imagem</string>
     <string name="picture_reset_all_msg">O modo de imagem e as configurações básicas e profissionais voltam ao padrão. Continuar?</string>
+    <string name="panel_ct_3">Temp. de cor 3</string>
+    <string name="panel_lamp_mode_locked">No modo %1$s não é possível alterar o brilho</string>
     <string name="three_d_native_fps">Primeiro desative a taxa de quadros original</string>
 </resources>

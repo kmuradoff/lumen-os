@@ -248,15 +248,12 @@ public final class MainActivity extends Activity implements Collector.Listener {
         list.addView(note);
         if (s != null && s.ports != null) {
             for (Snapshot.Port p : s.ports) {
+                if (p.file == null) continue;   // game mode request, unknown value or no model: no file to show
                 final Snapshot.Port port = p;
                 final String name = p.file.substring(p.file.lastIndexOf('/') + 1);
                 action(getString(R.string.btn_details_port, p.port), v -> details(port.edid, name));
                 action(getString(R.string.btn_export_port, p.port), v -> export(name, port.edid));
             }
-        }
-        if (s != null && s.edidVersion != null) {
-            final int other = s.edidVersion == Hb.EDID_20 ? Hb.EDID_14 : Hb.EDID_20;
-            action(getString(R.string.btn_switch_edid, Hb.edidVersionName(other)), v -> confirmSwitch(other));
         }
         action(getString(R.string.btn_builtin), v -> builtin());
     }
@@ -303,20 +300,6 @@ public final class MainActivity extends Activity implements Collector.Listener {
         collector.export(name, txt, path -> Toast.makeText(this,
                 path == null ? getString(R.string.export_failed) : getString(R.string.exported, path),
                 Toast.LENGTH_LONG).show());
-    }
-
-    private void confirmSwitch(int version) {
-        String v = Hb.edidVersionName(version);
-        new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-                .setTitle(R.string.switch_title)
-                .setMessage(getString(R.string.switch_text, v))
-                .setPositiveButton(R.string.switch_ok, (d, w) -> collector.switchEdid(version, ok -> {
-                    Toast.makeText(this, ok ? getString(R.string.switch_done, v) : getString(R.string.switch_failed),
-                            Toast.LENGTH_LONG).show();
-                    if (section == Rows.HDMI) rebuild();
-                }))
-                .setNegativeButton(R.string.cancel, null)
-                .show();
     }
 
     private void builtin() {

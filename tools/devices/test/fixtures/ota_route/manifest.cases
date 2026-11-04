@@ -1,0 +1,9 @@
+# ota.py manifest ARGS  ==  tools/ota/make_manifest.py ARGS
+help	--help
+no_args
+bad_channel	--version 1.0.8 --version-code 10009 --build-id b --build-utc 1 --image @W@/none.img --changelog @F@/changelog.json --channel other --out @W@/mout
+bad_version	--version 1.0 --version-code 10001 --build-id b --build-utc 1 --image @W@/none.img --changelog @F@/changelog.json --out @W@/mout
+bad_version_code	--version 1.0.8 --version-code 10008 --build-id b --build-utc 1 --image @W@/none.img --changelog @F@/changelog.json --out @W@/mout
+changelog_no_en	--version 1.0.8 --version-code 10009 --build-id b --build-utc 1 --image @W@/none.img --changelog @F@/changelog_no_en.json --out @W@/mout
+no_package	--version 1.0.8 --version-code 10009 --build-id b --build-utc 1 --image @W@/none.img --changelog @F@/changelog.json --out @W@/mout
+no_image	--version 1.0.8 --version-code 10009 --build-id b --build-utc 1 --image @W@/none.img --full @W@/none.zip --changelog @F@/changelog.json --channel public-nogms --out @W@/mout

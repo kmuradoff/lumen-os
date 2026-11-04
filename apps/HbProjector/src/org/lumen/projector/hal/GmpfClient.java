@@ -157,11 +157,14 @@ public final class GmpfClient extends AidlCaller {
     /**
      * EDID of the current HDMI input, HB wire values. Stock G0130 newsettings SignalEnum: HDMI1_4 = 1, HDMI2_0 = 2
      * (4 only when edid_2_version_val is "3"; G0130 has "1"), sent through GmDeviceManager.setEDIDVersion ->
-     * V3GmTvManager.setEDIDVersion -> GmTvManager.setEdidVersion -> TV 40 unchanged; SignalManager.getHdmiVersion
-     * shows 2 as "2.0" and every other read as "1.4". libxgimi Msrv_Tv_Control::_setEdidVersion maps 2 to the EDID
-     * file itself. The Z9X values (0 / 1 / 3) are not HB values. EDID_AUTO is no stock value and is never sent.
+     * com.xgimi.gmuiapi.manager.GmTvManager.setEDIDVersion, which does version-- when SDK_INT > 26 (getEDIDVersion
+     * adds 1 back), -> TV 40. So the wire is 0 = 1.4 and 1 = 2.0, as on the Z9X; SignalManager.getHdmiVersion shows 1
+     * as "2.0" and every other read as "1.4". libxgimi Msrv_Tv_Control::_setEdidVersion loads edid14_n for 0 and
+     * edid20_non_hrr_n for 1 (support_hfr + game mode version 3); 2 (stock EN_EDID_AUTO 3 minus 1) lets the game mode
+     * pick the file. Checked 2026-11-04 against an external grab of HDMI 2. EDID_AUTO and EDID_21 have no stock row
+     * on G0130 and are never sent (setEdidVersion refuses them).
      */
-    public static final int EDID_14 = 1, EDID_20 = 2, EDID_AUTO = -1, EDID_21 = 4;
+    public static final int EDID_14 = 0, EDID_20 = 1, EDID_AUTO = 2, EDID_21 = 3;
 
     /** Projector put mode (FS 2.9): 0 desk front .. 3 ceiling rear. */
     public enum PutMode {
@@ -628,12 +631,11 @@ public final class GmpfClient extends AidlCaller {
         callU8(Call.SET_DLP_LUMENS_LEVEL, checkRange("lamp level", level, 1, 10));
     }
 
-    /** DISPLAY 5 getDlpLumensMode() -> byte (colour temperature; null if not 0 / 16, e.g. a Boost or Performance mode) [Z9X 175]. */
-    public ColorTemp getColorTemp() throws RemoteException {
-        int v = callRetU8(Call.GET_DLP_LUMENS_MODE);
-        for (ColorTemp c : ColorTemp.values()) if (c.wire == v) return c;
-        return null;
-    }
+    /**
+     * DISPLAY 5 getDlpLumensMode() -> raw byte [Z9X 175]. Snapshot.colorTemp stays null if it is not 0 / 16 (e.g. a
+     * Boost or Performance mode), as before (Z9X 1.0.8 moved the ColorTemp match into Snapshot).
+     */
+    public int getLumensModeRaw() throws RemoteException { return callRetU8(Call.GET_DLP_LUMENS_MODE); }
     /** DISPLAY 4 setDlpLumensMode(byte 0|16) [Z9X 174]: only the ColorTemp values. Only while HbFeatures.F.COLOR_TEMP is ON. */
     public void setColorTemp(ColorTemp c) throws RemoteException {
         HbFeatures.require(HbFeatures.F.COLOR_TEMP, "setDlpLumensMode");
@@ -815,7 +817,7 @@ public final class GmpfClient extends AidlCaller {
 
     /** TV 39 getEdidVersion() -> EDID_* [Z9X 661]. */
     public int getEdidVersion() throws RemoteException { return callRetI32(Call.GET_EDID_VERSION); }
-    /** TV 40 setEdidVersion(EDID_14 | EDID_20) [Z9X 660]: the two stock G0130 values only (1 / 2). */
+    /** TV 40 setEdidVersion(EDID_14 | EDID_20) [Z9X 660]: the two stock G0130 values only (0 / 1). */
     public boolean setEdidVersion(int v) throws RemoteException {
         if (v != EDID_14 && v != EDID_20) throw new IllegalArgumentException("edid " + v + ": not a stock HB value");
         return callI32RetBool(Call.SET_EDID_VERSION, v);

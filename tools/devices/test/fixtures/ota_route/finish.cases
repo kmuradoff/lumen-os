@@ -1,0 +1,4 @@
+# ota.py finish ARGS  ==  tools/ota/make_ota.py finish ARGS (DELTA_GENERATOR set to a program that is never run)
+help	--help
+no_args
+empty_out	--out @W@/fout --cert @W@/none.pem

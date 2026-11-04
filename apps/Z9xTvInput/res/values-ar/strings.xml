@@ -32,7 +32,10 @@
     <string name="pref_cec_otp">HDMI-CEC: التبديل إلى HDMI عندما يطلب الجهاز ذلك (One Touch Play)</string>
     <string name="pref_cec_control">HDMI-CEC: التحكم في الجهاز باستخدام جهاز التحكم عن بُعد</string>
     <string name="pref_cec_exit">HDMI-CEC: إعلام الجهاز عند الخروج من HDMI</string>
-    <string name="pref_open_on_boot">فتح HDMI عند التشغيل إذا كان هناك مصدر موصول</string>
+    <string name="pref_boot_source">المصدر عند التشغيل: %1$s</string>
+    <string name="boot_source_home">الشاشة الرئيسية</string>
+    <string name="pref_boot_source_note">إذا شغّل جهاز ما جهاز العرض عبر HDMI-CEC، يُفتح مدخله بدلًا من ذلك.</string>
+    <string name="back_key_guide">زر الرجوع يتحكم الآن بالجهاز المتصل. اضغط الرئيسية للخروج.</string>
     <string name="settings_inputs_header">المداخل:</string>
     <string name="settings_safe_mode">الوضع الآمن: بعد إخفاقات متكررة، يتوقف التبديل التلقائي حتى إعادة التشغيل التالية.</string>
     <string name="toast_no_input">%1$s غير متاح</string>

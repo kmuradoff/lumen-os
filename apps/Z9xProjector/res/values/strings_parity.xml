@@ -15,6 +15,10 @@
     <!-- Picture page: the stock Reset all picture settings row and its confirmation. -->
     <string name="picture_reset_all">Reset all picture settings</string>
     <string name="picture_reset_all_msg">Picture mode, basic and professional settings go back to their defaults. Continue?</string>
+    <!-- Picture page, colour temperature row in the Office picture mode (lumens mode 12): stock shows this label
+         with no option marked (BrightFactory.setColorTemp, 色温3); D65 and Color temp 1 stay one key away. -->
+    <string name="panel_ct_3">Color temp 3</string>
+    <string name="panel_lamp_mode_locked">Brightness can\'t be changed in %1$s mode</string>
     <!-- 3D refused while Original frame rate is on (stock native_display_not_support_3d). -->
     <string name="three_d_native_fps">Turn off Original frame rate first</string>
 </resources>

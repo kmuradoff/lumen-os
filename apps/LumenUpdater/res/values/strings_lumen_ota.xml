@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     org.lumen.updater, device-neutral layer (apps/LumenUpdater): English base
+     of the install blocks of the boot gate and the build checks (Preflight.slotState, probe, storage). The rest
+     of the strings come from apps/Z9xUpdater. Translations in res/values-*/strings_lumen_ota.xml, written by us
+     (clean-room).
+     blk_hal: %1$s = the gate's reason (sys.z9x.ota.hal after "bad:").
+     blk_probe: %1$s = setprop refused, no answer, timeout or interrupted (English, like the gate's reasons).
+     blk_active: %1$s = the slot letter the boot HAL starts next (A, B or ?).
+     blk_partitions: %1$s = vendor list, no build list, not the build's list, bad entry, vbmeta or mboot.
+     blk_vab: %1$s = virtual A/B off or compression on. -->
+<resources>
+    <string name="blk_hal">The safety check for updates is not working on this projector (%1$s). Restart the projector and try again.</string>
+    <string name="blk_not_marked">This version is not confirmed as working yet. Leave the projector on for a few minutes, then try again.</string>
+    <string name="blk_probe">The safety check for updates did not answer (%1$s). Restart the projector and try again.</string>
+    <string name="blk_active">The projector is set to start from system slot %1$s next time. Restart the projector and try again.</string>
+    <string name="blk_partitions">Updates are not safe on this version: the partition list is wrong (%1$s). Please use the computer installer.</string>
+    <string name="blk_vab">The storage of this projector is not set up for updates (%1$s). Please use the computer installer.</string>
+</resources>

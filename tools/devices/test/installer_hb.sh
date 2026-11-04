@@ -15,7 +15,9 @@
 #   props.<mode>  getprop; mapper.<mode> the /dev/block/mapper listing; $DEV the file tree 'adb pull' reads
 #   fastboot      devices / getvar all (vars + the logical partitions in parts) / getvar partition-size:X /
 #                 create-, resize-logical-partition / flash / format:ext4 / reboot (-> lumen once system was
-#                 written, else back to the old system); *_fail files make a step fail
+#                 written, else back to the old system); anything else, snapshot-update too, is unexpected; *_fail
+#                 files make a step fail. A format:ext4 while the state is not none or a *-cow partition exists is
+#                 recorded as unexpected, so no case can format userdata or metadata during an update
 # Cases: check (stock, Lumen OS, another projector, firmware, slot, no virtual A/B, Lumen OS of another device,
 # the vbmeta state, no mke2fs), the image (name, release version, ext4 and sparse images, too big, another
 # key, unsigned, its content through a fake dump.erofs), vbmeta (only shown), blobs (stock with from=, the
@@ -24,13 +26,21 @@
 # fastboot commands; vbmeta not effective; every fastbootd refusal; no room; cancelled; an existing z9x_blobs;
 # --no-blobs; failed blobs, system and wipe steps and the resumed run (without the blobs file once z9x_blobs is
 # written, an image refused there, --no-blobs named when the file is still needed); a refused fastbootd check
-# then fastboot mode entered by hand (never taken for that visit); a size that did not take), the full
-# install, verify, the commands that are not there yet, the options it refuses, which download picks the
-# projector, status / reset per projector.
+# then fastboot mode entered by hand (never taken for that visit); a size that did not take; slot b, the slot after a
+# Lumen OS update; a Lumen OS update staged, merging or with *-cow left: STOP, never the wipe, also in a resumed
+# run), rescue (in fastboot mode on the cable: system and z9x_blobs of the slot fastbootd reports, a or b, the data
+# kept; any update in the way stops it before a write and leaves it in fastboot mode with the way back the user
+# types: the slot an update never marked while the other one is (set_active back, with the state none, snapshotted
+# or unknown), merging (the merge first), snapshotted on a marked slot with the other one not marked (cancel; both
+# marked or the other unreadable: reboot only), an unknown or empty state; both
+# slots marked; *-cow left; the version code of the projector newer, the same, older, not readable, the image's
+# not readable; a projector this computer saw on stock, an unknown or mistyped serial, an unfinished 'flash', a failed or not taken system write (stays in fastboot mode), a failed z9x_blobs
+# write (a warning), --no-blobs, --keep-data), the full install, verify, the commands that are not there yet, the
+# options it refuses, which download picks the projector, status / reset per projector.
 # Every case: fb.log holds only the allowed commands (getvar, create / resize / flash of z9x_blobs_<slot>, flash
-# system_<slot>, format:ext4 of WIPE_PARTS, reboot), never -w, erase, vbmeta, --slot, set_active, a partition of
-# another slot, delete-logical-partition, snapshot-update, flashall, update, wipe-super, or a format without
-# :ext4; and adb never writes anything but 'reboot fastboot'.
+# system_<slot>, format:ext4 of WIPE_PARTS, reboot; 'rescue' cases never a format), <slot> the one the case's
+# projector runs from, never -w, erase, vbmeta, --slot, set_active, a partition of the other slot,
+# delete-logical-partition, snapshot-update, flashall, update, wipe-super, or a format without :ext4; and adb never writes anything but 'reboot fastboot'.
 # Exit status 0 only when every case passes. Never touches anything outside its temp dir.
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -161,6 +171,9 @@ case "$1" in
     esac
     echo "Writing '$2' OKAY" >&2 ;;
   format:ext4) [ -e "$FB/format_fail_$2" ] && { echo "FAILED (remote: 'format failed')" >&2; exit 1; }
+               if ! grep -qxF '(bootloader) snapshot-update-status:none' "$FB/vars" || awk '$1 ~ /-cow$/ { f = 1 } END { exit !f }' "$FB/parts"; then
+                 echo "UNEXPECTED format:ext4 $2 during an update: $(grep snapshot-update-status "$FB/vars") $(awk '$1 ~ /-cow$/ { print $1 }' "$FB/parts")" >> "$FB/unexpected"
+               fi
                touch "$FB/formatted_$2" ;;
   reboot) if [ -e "$FB/flashed" ]; then echo lumen > "$FB/mode"; touch "$FB/net_down"; else cat "$FB/before_fastboot" > "$FB/mode"; fi
           rm -f "$FB/flashed"; : > "$FB/connected" ;;
@@ -230,7 +243,7 @@ dev_stock() {  # the projector's files: every allow-list source; a from= line ha
   done
 }
 begin() {
-  CASE=$1; CFAIL=0
+  CASE=$1; CFAIL=0; CSL=$SL; COSL=$OSL; NOFORMAT=0
   C=$W/$1; rm -rf "$C"; mkdir -p "$C/inst/$(dirname "$CERT")" "$C/fb" "$C/state" "$C/backup" "$C/dev"
   FB=$C/fb; DEV=$C/dev
   cp "$INST/lumen-install.sh" "$C/inst/"; cp -R "$INST/lib" "$C/inst/"
@@ -280,27 +293,29 @@ FLASH_FULL="$FLASH_FULL$F reboot;"
 end() {
   [ ! -s "$FB/unexpected" ] || fail "unexpected: $(cat "$FB/unexpected")"
   # the never list, and every fastboot command one of the allowed ones
+  # 'rescue' never formats (NOFORMAT=1) and, like every other command, never sends snapshot-update
   if grep -qE '(^| )(-w|erase|vbmeta|--slot|--slot=.*|set_active|--set-active|delete-logical-partition|snapshot-update|flashall|update|wipe-super|flashing|oem|boot)( |:|$)' "$FB/fb.log"; then
     fail "forbidden fastboot command: $(tr '\n' ';' < "$FB/fb.log")"
   fi
-  grep -qE "_$OSL( |$)" "$FB/fb.log" && fail "a partition of the other slot: $(tr '\n' ';' < "$FB/fb.log")"
-  local allowed="^(--version|devices|-s $SER (getvar all|getvar partition-size:system_$SL|reboot|create-logical-partition z9x_blobs_$SL 4194304|resize-logical-partition z9x_blobs_$SL 4194304|flash z9x_blobs_$SL [^ ]+|flash system_$SL [^ ]+|format:ext4 ($(echo $WIPEP | tr ' ' '|'))))$"
+  grep -qE "_$COSL( |$)" "$FB/fb.log" && fail "a partition of the other slot: $(tr '\n' ';' < "$FB/fb.log")"
+  local allowed="^(--version|devices|-s $SER (getvar all|getvar partition-size:system_$CSL|reboot|create-logical-partition z9x_blobs_$CSL 4194304|resize-logical-partition z9x_blobs_$CSL 4194304|flash z9x_blobs_$CSL [^ ]+|flash system_$CSL [^ ]+|format:ext4 ($(echo $WIPEP | tr ' ' '|'))))$"
   if grep -vqE "$allowed" "$FB/fb.log"; then fail "fastboot command not on the allowed list: $(grep -vE "$allowed" "$FB/fb.log" | head -3 | tr '\n' ';')"; fi
+  [ "$NOFORMAT" = 0 ] || ! grep -q 'format' "$FB/fb.log" || fail "a format in 'rescue': $(grep format "$FB/fb.log" | tr '\n' ';')"
   grep -E '(^| )format' "$FB/fb.log" | grep -vqE ' format:ext4 ' && fail "a format without :ext4"
   case "$(adb_writes)" in ''|"-s $ADDR reboot fastboot;") ;; *) fail "adb wrote: $(adb_writes)" ;; esac
   if [ "$CFAIL" = 0 ]; then PASS=$((PASS + 1)); echo "ok   $CASE"
   else FAIL=$((FAIL + 1)); echo "FAIL $CASE"; sed 's/^/     | /' "$C/out" | tail -14; fi
 }
 roundtrip() {  # the z9x_blobs partition the installer flashed, read by the real z9x_blobs.sh: every file bound
-  local R=$C/root T=$C/dt img=${1:-$FB/z9x_blobs_$SL.img}
+  local R=$C/root T=$C/dt img=${1:-$FB/z9x_blobs_$CSL.img}
   [ -f "$img" ] || { fail "no $img"; return; }
   [ "$(wc -c < "$img" | tr -d ' ')" = 4194304 ] || fail "blobs image is not 4 MiB"
   mkdir -p "$R/system/etc/z9x" "$R/dev/block/mapper" "$R/mnt" "$T"
-  cp "$W/allow.txt" "$R/system/etc/z9x/blobs_allow.txt"; cp "$img" "$R/dev/block/mapper/z9x_blobs_$SL"
+  cp "$W/allow.txt" "$R/system/etc/z9x/blobs_allow.txt"; cp "$img" "$R/dev/block/mapper/z9x_blobs_$CSL"
   awk '$1 !~ /^#/ && $1 !~ /^set=/ && NF >= 3 { t = "/system/" $2; for (i = 4; i <= NF; i++) if ($i ~ /^bind=/) t = substr($i, 6); print $1, t }' \
     "$W/allow.txt" > "$T/want"
   while read -r h t; do mkdir -p "$(dirname "$R$t")"; case "$t" in /system/*) : > "$R$t" ;; *) echo own > "$R$t" ;; esac; done < "$T/want"
-  echo "ro.boot.slot_suffix=_$SL" > "$T/props"; : > "$T/binds"
+  echo "ro.boot.slot_suffix=_$CSL" > "$T/props"; : > "$T/binds"
   env Z9X_ROOT="$R" Z9X_T="$T" PATH="$W/dbin:$PATH" sh "$READER" > "$T/out" 2>&1
   [ ! -s "$T/out" ] || fail "z9x_blobs.sh output: $(cat "$T/out")"
   grep -qx 'sys.z9x.blobs=ok' "$T/props" || fail "round trip: $(grep sys.z9x.blobs "$T/props") $(cat "$T/logcat" 2>/dev/null)"
@@ -308,6 +323,39 @@ roundtrip() {  # the z9x_blobs partition the installer flashed, read by the real
 }
 NB=$(awk '$1 !~ /^#/ && $1 !~ /^set=/ && NF >= 3' "$W/allow.txt" | wc -l | tr -d ' ')
 SET=$(sed -n 's/^set=//p' "$W/allow.txt")
+on_slot() {  # slot: the projector runs from that slot (after a Lumen OS update): its props, fastbootd and super
+  CSL=$1; case "$1" in a) COSL=b ;; *) COSL=a ;; esac
+  setp stock ro.boot.slot_suffix "_$1"; setp lumen ro.boot.slot_suffix "_$1"
+  sed -e "s/^(bootloader) current-slot:.*/(bootloader) current-slot:$1/" -e "s/^(bootloader) slot-successful:.*/(bootloader) slot-successful:$1:yes/" \
+      -e "s/^(bootloader) slot-unbootable:.*/(bootloader) slot-unbootable:$COSL:no/" "$FB/vars" > "$FB/v.tmp"; mv "$FB/v.tmp" "$FB/vars"
+  printf '%s\n' "system_$1 688357376" "vendor_$1 1369018368" "product_$1 59363328" "system_ext_$1 3317760" \
+    "system_$COSL 0" "vendor_$COSL 0" "product_$COSL 0" "system_ext_$COSL 0" > "$FB/parts"
+  printf '%s\n' control "system_$1" "vendor_$1" "product_$1" "system_ext_$1" > "$FB/mapper.stock"; cp "$FB/mapper.stock" "$FB/mapper.lumen"
+}
+snap_state() { sed "s/^(bootloader) snapshot-update-status:.*/(bootloader) snapshot-update-status:$1/" "$FB/vars" > "$FB/v.tmp"; mv "$FB/v.tmp" "$FB/vars"; }
+flash_full() {  # the fastboot commands of a whole 'flash' visit on the case's slot
+  local w="$F getvar all;$F create-logical-partition z9x_blobs_$CSL 4194304;$F flash z9x_blobs_$CSL backup/$BLOBN;$F flash system_$CSL inst/$IMGN;$F getvar partition-size:system_$CSL;" p
+  for p in $WIPEP; do w="$w$F format:ext4 $p;"; done
+  printf '%s' "$w$F reboot;"
+}
+rescue_ready() {  # Lumen OS installed by this computer waits in fastboot mode on the cable (its state, its blobs file)
+  mkdir -p "$C/state/$ID"
+  printf '%s\n' "serial=$SER" "ip=$ADDR" "slot=_$SL" dev_lumen=1 step_check=done step_flash=done step_blobs=done \
+    "blobs_img=$C/backup/$BLOBN" > "$C/state/$ID/state"
+  dd if=/dev/zero of="$C/backup/$BLOBN" bs=4096 count=1024 2>/dev/null; printf 'blobs of %s' "$SER" | dd of="$C/backup/$BLOBN" conv=notrunc 2>/dev/null
+  echo "z9x_blobs_$CSL 4194304" >> "$FB/parts"
+  echo fastboot > "$FB/mode"; echo lumen > "$FB/before_fastboot"
+  NOFORMAT=1
+}
+marks() {  # running other: the slot-successful answers of fastbootd for the case's slot and the other one ('' = none)
+  awk '!/^\(bootloader\) slot-successful:/' "$FB/vars" > "$FB/v.tmp"
+  [ -z "$1" ] || echo "(bootloader) slot-successful:$CSL:$1" >> "$FB/v.tmp"
+  [ -z "$2" ] || echo "(bootloader) slot-successful:$COSL:$2" >> "$FB/v.tmp"
+  mv "$FB/v.tmp" "$FB/vars"
+}
+rescue_cmds() {  # [before]: the fastboot commands of a whole 'rescue' (z9x_blobs resized and written again)
+  printf '%s' "$F getvar all;${1-}$F flash system_$CSL inst/$IMGN;$F getvar partition-size:system_$CSL;$F resize-logical-partition z9x_blobs_$CSL 4194304;$F flash z9x_blobs_$CSL backup/$BLOBN;$F reboot;"
+}
 
 # ---------------------------------------------------------------- check
 begin check_stock
@@ -356,9 +404,15 @@ setp stock ro.vendor.build.version.incremental v0.0.1; inst '' --ip "$ADDR" chec
 expect_rc 1; expect_out "XGIMI firmware v0.0.1 is not supported: Lumen OS for the $NAME is made for V${FW#v} only"
 end
 
+begin check_slot_b
+# after a Lumen OS update the system runs from the other slot: every slot of SLOTS is one Lumen OS installs into
+echo lumen > "$FB/mode"; on_slot "$OSL"; inst '' --ip "$ADDR" check
+expect_rc 0; expect_out "$NAME $SER ($ADDR), firmware $FW, slot $OSL, system: Lumen OS $VER"; [ "$(st slot)" = "_$OSL" ] || fail "state"
+end
+
 begin check_slot_refused
-setp stock ro.boot.slot_suffix "_$OSL"; inst '' --ip "$ADDR" check
-expect_rc 1; expect_out "the $NAME runs from slot $OSL: Lumen OS installs only into slot $SL"
+setp stock ro.boot.slot_suffix _c; inst '' --ip "$ADDR" check
+expect_rc 1; expect_out "the $NAME runs from slot c: Lumen OS installs only into slot $(conf "$ID" SLOTS)"
 end
 
 begin check_no_virtual_ab_refused
@@ -557,7 +611,8 @@ fbd_refusal flash_not_userspace 's/is-userspace:yes/is-userspace:no/' "not fastb
 fbd_refusal flash_other_product "s/product:$PRODUCT/product:other/" "fastbootd is not the one of the $NAME (other)"
 fbd_refusal flash_other_serial "s/serialno:$SER/serialno:OTHER/" "another projector in fastboot mode (serialno OTHER, expected $SER)"
 fbd_refusal flash_locked 's/unlocked:yes/unlocked:no/' "the bootloader is locked"
-fbd_refusal flash_slot_other "s/current-slot:$SL/current-slot:$OSL/" "current-slot '$OSL'"
+fbd_refusal flash_slot_other "s/current-slot:$SL/current-slot:$OSL/" "current-slot $OSL, the system ran from _$SL"
+fbd_refusal flash_slot_unknown "s/current-slot:$SL/current-slot:c/" "current-slot 'c'"
 fbd_refusal flash_slot_count 's/slot-count:2/slot-count:1/' "slot-count '1'"
 fbd_refusal flash_slot_unsuccessful "s/slot-successful:$SL:yes/slot-successful:$SL:no/" "slot-successful:$SL 'no'"
 fbd_refusal flash_snapshot_pending 's/snapshot-update-status:none/snapshot-update-status:snapshotted/' "an XGIMI update is staged or not finished (snapshot-update-status snapshotted)"
@@ -722,6 +777,237 @@ expect_rc 0; expect_out "Введите ERASE, чтобы продолжить:"
 expect_cmds "$FLASH_FULL"
 end
 
+begin flash_slot_b
+# Lumen OS on the other slot (after an update): the visit writes and wipes there, never the slot it left
+dev_stock; echo lumen > "$FB/mode"; on_slot "$OSL"; inst 'ERASE\n\n' --ip "$ADDR" flash
+expect_rc 0; expect_out "fastboot mode: $NAME $SER, slot $OSL"; expect_cmds "$(flash_full)"
+[ "$(st slot)" = "_$OSL" ] && [ "$(st step_flash)" = done ] || fail "state"
+roundtrip
+end
+
+lumen_update_refusal() {  # case status cow expected: Lumen OS runs, its update is staged or merging: STOP, never the wipe
+  begin "$1"
+  dev_stock; echo lumen > "$FB/mode"; on_slot "$OSL"; snap_state "$2"; [ -z "$3" ] || echo "system_$OSL-cow 104857600" >> "$FB/parts"
+  inst 'ERASE\n\n' --ip "$ADDR" flash
+  expect_rc 1; expect_out "fastboot mode check failed: $4"; expect_out "Nothing was written. The projector starts its old system."
+  expect_cmds "$F getvar all;$F reboot;"; [ "$(cat "$FB/mode")" = lumen ] || fail "mode $(cat "$FB/mode")"
+  for p in $WIPEP; do [ ! -e "$FB/formatted_$p" ] || fail "$p formatted"; done
+  end
+}
+lumen_update_refusal flash_lumen_merging merging "" "an update is finishing (snapshot-update-status merging); start Lumen OS and wait 10 minutes"
+lumen_update_refusal flash_lumen_snapshotted snapshotted cow "an update is finishing (snapshot-update-status snapshotted); start Lumen OS and wait 10 minutes"
+lumen_update_refusal flash_lumen_cow none cow "*-cow partitions: an update is finishing; start Lumen OS and wait 10 minutes"
+
+begin flash_resumed_merging_stays
+# system begun, then the next visit finds an update merging: it stops in fastboot mode, the wipe never runs
+dev_stock; touch "$FB/flash_fail_system_$SL"; inst 'ERASE\n\n' --ip "$ADDR" flash
+rm -f "$FB/flash_fail_system_$SL"; sed -i.bak 's/^dev_lumen=.*/dev_lumen=1/' "$C/state/$ID/state"; snap_state merging
+: > "$FB/fb.log"; inst 'ERASE\n' flash
+expect_rc 1; expect_out "fastboot mode check failed: an update is finishing (snapshot-update-status merging)"
+expect_out "The write of this install is not finished: the projector stays in fastboot mode."
+expect_cmds "$F getvar all;"; [ "$(cat "$FB/mode")" = fastboot ] || fail "restarted"
+for p in $WIPEP; do [ ! -e "$FB/formatted_$p" ] || fail "$p formatted"; done
+end
+
+# ---------------------------------------------------------------- rescue (in fastboot mode, the data kept)
+begin rescue_ok
+rescue_ready; inst 'WRITE\n' rescue
+expect_rc 0; expect_cmds "$(rescue_cmds)"; expect_out "RESCUE ($NAME)"; expect_out "fastboot mode: $NAME $SER, slot $SL"
+expect_out "Written; your data is kept."; expect_no_out "In fastboot mode: $SER"
+expect_out "Use the image of the newest Lumen OS release for the $NAME"; expect_no_out "the other slot,"
+cmp -s "$FB/z9x_blobs_$SL.img" "$C/backup/$BLOBN" || fail "z9x_blobs_$SL is not the blobs file"
+[ "$(cat "$FB/mode")" = lumen ] && [ -n "$(st step_rescue)" ] && [ "$(st slot)" = "_$SL" ] || fail "state"
+! adb_talked || fail "adb used: $(cat "$FB/adb.log")"
+end
+
+begin rescue_slot_b
+# the slot fastbootd reports (the other one after an update), whatever slot this computer saw the system run from
+on_slot "$OSL"; rescue_ready; inst 'WRITE\n' rescue
+expect_rc 0; expect_cmds "$(rescue_cmds)"; expect_out "fastboot mode: $NAME $SER, slot $OSL"; [ "$(st slot)" = "_$OSL" ] || fail "state"
+end
+
+hold() {  # case slot status running other text... ('!text': not in the output): an update in the way: STOP before any write, still in fastboot mode
+  local n=$1 sl=$2 stt=$3 mr=$4 mo=$5; shift 5
+  begin "$n"
+  [ "$sl" = "$SL" ] || on_slot "$sl"
+  rescue_ready; snap_state "$stt"; marks "$mr" "$mo"; inst 'WRITE\n' rescue
+  expect_rc 1; expect_cmds "$F getvar all;"; [ "$(cat "$FB/mode")" = fastboot ] || fail "mode $(cat "$FB/mode")"
+  expect_out "'rescue' wrote nothing: an update is not finished on slot $CSL. The projector stays in fastboot mode; type the commands above."
+  while [ $# -gt 0 ]; do case "$1" in '!'*) expect_no_out "${1#!}" ;; *) expect_out "$1" ;; esac; shift; done
+  [ -z "$(st step_rescue)" ] || fail "state step_rescue"
+  end
+}
+# the slot that runs is an update never marked, the other slot marked: set_active back to it (any state, none too)
+hold rescue_hold_update_slot_snapshotted "$OSL" snapshotted no yes "Slot $OSL holds a Lumen OS update that never started fully (snapshot-update-status snapshotted" \
+  "fastboot set_active $SL" "Slot $SL still has the system that ran before it, with the same data."
+hold rescue_hold_update_slot_none "$OSL" none no yes "Slot $OSL holds a Lumen OS update that never started fully (snapshot-update-status none" "fastboot set_active $SL"
+hold rescue_hold_update_slot_unknown "$OSL" initiated "" yes "(snapshot-update-status initiated, slot $OSL not marked" "fastboot set_active $SL"
+# merging: set_active is refused then; the merge is finished by the user, then 'rescue' again
+hold rescue_hold_merging "$OSL" merging yes yes "The update of slot $OSL is being merged (snapshot-update-status merging)" "fastboot snapshot-update merge"
+hold rescue_hold_merging_other_marked "$SL" merging yes no "The update of slot $SL is being merged" "and the merge writes its system over the storage of slot $OSL."
+# snapshotted, this slot marked and the other not: it ran before the update; the user drops the update. fastbootd's
+# cancel does not check the slot, so both marked (the update slot, accepted before the merge began) or the other
+# one unreadable never shows the cancel: only fastboot reboot
+hold rescue_hold_snapshotted_old_slot "$SL" snapshotted yes no "Slot $SL is marked successful and slot $OSL is" "fastboot snapshot-update cancel"
+hold rescue_hold_snapshotted_both_marked "$SL" snapshotted yes yes "(snapshot-update-status 'snapshotted'), and 'rescue' cannot tell" "type fastboot reboot in this window" \
+  '!snapshot-update cancel'
+hold rescue_hold_snapshotted_other_unread "$SL" snapshotted yes "" "(snapshot-update-status 'snapshotted'), and 'rescue' cannot tell" \
+  '!snapshot-update cancel'
+# a state 'rescue' does not know, or a snapshot with no slot marked: only fastboot reboot (the gate goes back)
+hold rescue_hold_unknown "$SL" initiated yes "" "An update is not finished (snapshot-update-status 'initiated'), and 'rescue' cannot tell" "type fastboot reboot in this window"
+hold rescue_hold_no_state "$SL" "" yes yes "(snapshot-update-status '')"
+hold rescue_hold_snapshotted_none_marked "$SL" snapshotted no no "(snapshot-update-status 'snapshotted'), and 'rescue' cannot tell"
+
+begin rescue_hold_ru
+on_slot "$OSL"; rescue_ready; snap_state snapshotted; marks no yes; LANG_CASE=ru_RU.UTF-8 inst 'WRITE\n' rescue; LANG_CASE=""
+expect_rc 1; expect_out "В слоте $OSL обновление Lumen OS, которое так и не загрузилось до конца"; expect_out "fastboot set_active $SL"
+expect_out "'rescue' ничего не записал: в слоте $OSL не завершено обновление."; expect_cmds "$F getvar all;"
+end
+
+begin rescue_both_marked
+# no update in the way: both slots marked, state none
+rescue_ready; marks yes yes; inst 'WRITE\n' rescue
+expect_rc 0; expect_cmds "$(rescue_cmds)"
+end
+
+begin rescue_cow_left
+rescue_ready; echo "system_$SL-cow 104857600" >> "$FB/parts"; inst 'WRITE\n' rescue
+expect_rc 1; expect_out "*-cow partitions are left over from an update: 'rescue' does not remove them."
+expect_out "No partition was written. The projector tries to start its system again"
+expect_cmds "$F getvar all;$F reboot;"; [ "$(cat "$FB/mode")" = lumen ] || fail "mode $(cat "$FB/mode")"
+end
+
+# never an older system over newer data: ro.lumen.version_code of the projector (when fastbootd has it) and the image
+rescue_vc() {  # projector-code image-code: the getvar and the image's product build.prop
+  [ -z "$1" ] || echo "(bootloader) ro.lumen.version_code:$1" >> "$FB/vars"
+  [ -z "$2" ] || image_content "$LPROP=$LVAL" "$VPROP=$VER" "ro.adb.secure=1" "ro.lumen.version_code=$2"
+}
+begin rescue_version_newer_refused
+rescue_ready; rescue_vc 1000900 1000800; inst 'WRITE\n' rescue
+expect_rc 1; expect_out "the projector runs a newer Lumen OS (version code 1000900) than this image (1000800): an older system over newer data may not start."
+expect_out "No partition was written."; expect_cmds "$F getvar all;$F reboot;"; [ "$(cat "$FB/mode")" = lumen ] || fail "mode $(cat "$FB/mode")"
+end
+
+begin rescue_version_same
+rescue_ready; rescue_vc 1000800 1000800; inst 'WRITE\n' rescue
+expect_rc 0; expect_cmds "$(rescue_cmds)"; expect_no_out "version code"; expect_no_out "cannot be read in fastboot mode"
+end
+
+begin rescue_version_older_system
+rescue_ready; rescue_vc 1000700 1000800; inst 'WRITE\n' rescue
+expect_rc 0; expect_cmds "$(rescue_cmds)"
+end
+
+begin rescue_version_image_unread
+# the projector says its code, the image cannot be read (no dump.erofs content): a warning only
+rescue_ready; rescue_vc 1000900 ""; inst 'WRITE\n' rescue
+expect_rc 0; expect_out "the projector runs Lumen OS version code 1000900, the version code of this image cannot be read"; expect_cmds "$(rescue_cmds)"
+end
+
+begin rescue_version_unread
+# XGIMI's fastbootd has no such variable: never a guess, a warning to use the newest release
+rescue_ready; rescue_vc "" 1000800; inst 'WRITE\n' rescue
+expect_rc 0; expect_out "the Lumen OS version on the projector cannot be read in fastboot mode: use the image of the newest Lumen OS release for the $NAME"
+expect_cmds "$(rescue_cmds)"
+end
+
+begin rescue_fbd_refused
+rescue_ready; sed -i.bak "s/product:$PRODUCT/product:other/" "$FB/vars"; inst 'WRITE\n' rescue
+expect_rc 1; expect_out "fastboot mode check failed: fastbootd is not the one of the $NAME (other). No partition was written."
+expect_cmds "$F getvar all;$F reboot;"
+end
+
+begin rescue_slot_unknown_refused
+rescue_ready; sed -i.bak "s/current-slot:$SL/current-slot:c/" "$FB/vars"; inst 'WRITE\n' rescue
+expect_rc 1; expect_out "fastboot mode check failed: current-slot 'c'."; expect_cmds "$F getvar all;$F reboot;"
+end
+
+begin rescue_slot_not_successful
+# the slot that does not start need not be marked successful
+rescue_ready; sed -i.bak "s/slot-successful:$SL:yes/slot-successful:$SL:no/" "$FB/vars"; inst 'WRITE\n' rescue
+expect_rc 0; expect_cmds "$(rescue_cmds)"
+end
+
+begin rescue_stock_refused
+# this computer saw this projector on stock and wrote nothing: no Lumen OS to repair, no vbmeta step known
+rescue_ready; printf '%s\n' "serial=$SER" "slot=_$SL" dev_lumen=0 step_check=done > "$C/state/$ID/state"; inst 'WRITE\n' rescue
+expect_rc 1; expect_out "this computer last saw this projector on XGIMI's stock system and has written nothing to it"
+expect_out "bash lumen-install.sh --device $ID reset, then 'rescue' again"; expect_cmds "$F reboot;"
+end
+
+begin rescue_unknown_serial_confirmed
+# no progress on this computer: the serial in fastboot mode is typed to confirm; no blobs file, z9x_blobs kept
+rescue_ready; rm -rf "$C/state/$ID" "$C/backup/$BLOBN"; inst "WRITE\n$SER\n" rescue
+expect_rc 0; expect_out "In fastboot mode: $SER. Type this serial to confirm it is your $NAME:"
+expect_out "z9x_blobs_$SL kept as it is (no blobs file of this projector on this computer)"
+expect_cmds "$F getvar all;$F flash system_$SL inst/$IMGN;$F getvar partition-size:system_$SL;$F reboot;"
+[ "$(st serial)" = "$SER" ] || fail "state"
+end
+
+begin rescue_wrong_serial
+rescue_ready; rm -rf "$C/state/$ID"; inst 'WRITE\nOTHER\n' rescue
+expect_rc 1; expect_out "cancelled. No partition was written."; expect_cmds "$F reboot;"
+end
+
+begin rescue_no_blobs_anywhere
+rescue_ready; rm -f "$C/backup/$BLOBN"; sed -i.bak "/^z9x_blobs_$SL /d" "$FB/parts"; inst 'WRITE\n' rescue
+expect_rc 0; expect_out "no z9x_blobs_$SL and no blobs file of this projector on this computer: no sound"
+expect_cmds "$F getvar all;$F flash system_$SL inst/$IMGN;$F getvar partition-size:system_$SL;$F reboot;"
+end
+
+begin rescue_flash_unfinished_refused
+# a 'flash' cut off in fastboot mode is finished by 'flash' (with its wipe), never by 'rescue'
+rescue_ready; printf '%s\n' step_fastboot=20261103-120000 step_flash= step_system=started >> "$C/state/$ID/state"; inst 'WRITE\n' rescue
+expect_rc 1; expect_out "an install by this computer is not finished on this projector: run the installer again without a command (or 'flash')"
+expect_cmds ""; [ "$(cat "$FB/mode")" = fastboot ] || fail "mode $(cat "$FB/mode")"
+end
+
+begin rescue_cancelled
+rescue_ready; inst 'no\n' rescue
+expect_rc 1; expect_out "cancelled, nothing was written"; expect_cmds ""
+end
+
+begin rescue_not_in_fastboot
+rescue_ready; echo lumen > "$FB/mode"; inst 'WRITE\n' rescue
+expect_rc 1; expect_out "the projector did not appear in fastboot mode within 15 minutes"; expect_cmds ""
+end
+
+begin rescue_image_refused
+rescue_ready; mkimg "$C/inst/$IMGN" ext4; sign "$C/inst" k; inst 'WRITE\n' rescue
+expect_rc 1; expect_out "is an ext4 image (another projector's), not one for the $NAME. Nothing was written."; expect_cmds ""
+end
+
+begin rescue_system_fails_stays
+rescue_ready; touch "$FB/flash_fail_system_$SL"; inst 'WRITE\n' rescue
+expect_rc 1; expect_out "system was not written completely. The projector stays in fastboot mode: keep the cable in and run 'rescue' again."
+expect_cmds "$F getvar all;$F flash system_$SL inst/$IMGN;"; [ "$(cat "$FB/mode")" = fastboot ] || fail "restarted"
+rm -f "$FB/flash_fail_system_$SL"; : > "$FB/fb.log"; inst 'WRITE\n' rescue
+expect_rc 0; expect_cmds "$(rescue_cmds)"
+end
+
+begin rescue_size_not_taken
+rescue_ready; touch "$FB/no_resize"; inst 'WRITE\n' rescue
+expect_rc 1; expect_out "after the write system_$SL has 688357376 bytes, the image 1048576: the write did not take. The projector stays in fastboot mode"
+[ "$(cat "$FB/mode")" = fastboot ] || fail "restarted"
+end
+
+begin rescue_blobs_write_fails_warns
+rescue_ready; touch "$FB/flash_fail_z9x_blobs_$SL"; inst 'WRITE\n' rescue
+expect_rc 0; expect_out "z9x_blobs_$SL was not written: no sound and no MediaTek video decoders until 'rescue' is run again"
+expect_cmds "$(rescue_cmds)"; [ "$(cat "$FB/mode")" = lumen ] || fail "mode $(cat "$FB/mode")"
+end
+
+begin rescue_no_blobs_option
+rescue_ready; inst 'WRITE\n' --no-blobs --keep-data rescue
+expect_rc 0; expect_no_out "z9x_blobs_$SL"
+expect_cmds "$F getvar all;$F flash system_$SL inst/$IMGN;$F getvar partition-size:system_$SL;$F reboot;"
+end
+
+begin rescue_ru
+rescue_ready; LANG_CASE=ru_RU.UTF-8 inst 'WRITE\n' rescue; LANG_CASE=""
+expect_rc 0; expect_out "РЕМОНТ ($NAME)"; expect_out "Записано; данные сохранены."; expect_cmds "$(rescue_cmds)"
+end
+
 # ---------------------------------------------------------------- the whole install
 begin all_full
 dev_stock; inst 'no\nERASE\n\n' --ip "$ADDR"
@@ -763,7 +1049,7 @@ expect_rc 1; expect_out "the system has not finished starting yet"
 end
 
 # ---------------------------------------------------------------- not there yet, refused options
-for c in rescue gapps gsf stick; do
+for c in gapps gsf stick; do
   begin "not_yet_$c"
   inst '' --ip "$ADDR" "$c"
   expect_rc 1; expect_out "'$c' is not available for the $NAME yet. Nothing was done."

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Chinese (Simplified) translation of res/values/strings_lumen_ota.xml (English base), written by us (clean-room).
+     Keep the names and placeholders. -->
+<resources>
+    <string name="blk_hal">此投影仪上的更新安全检查无法运行（%1$s）。请重启投影仪后重试。</string>
+    <string name="blk_not_marked">尚未确认此版本可以正常运行。请让投影仪保持开机几分钟后重试。</string>
+    <string name="blk_probe">更新安全检查没有响应（%1$s）。请重启投影仪后重试。</string>
+    <string name="blk_active">投影仪下次将从系统槽位 %1$s 启动。请重启投影仪后重试。</string>
+    <string name="blk_partitions">此版本无法安全更新：分区列表不正确（%1$s）。请使用电脑安装程序。</string>
+    <string name="blk_vab">此投影仪的存储未设置为可以更新（%1$s）。请使用电脑安装程序。</string>
+</resources>

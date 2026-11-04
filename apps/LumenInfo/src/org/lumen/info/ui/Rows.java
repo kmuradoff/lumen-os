@@ -2,6 +2,7 @@ package org.lumen.info.ui;
 
 import android.content.Context;
 import android.text.format.DateFormat;
+import android.text.format.DateUtils;
 import android.view.Display;
 
 import org.lumen.info.R;
@@ -115,14 +116,14 @@ public final class Rows {
         add("color_space", R.string.r_color_space, colorSpace(s));
         if (full) {
             add("video_info", R.string.r_video_info, videoInfo(s));
-            if (hdmi) add("signal_status", R.string.r_signal_status, s.signalStatus == null ? null : String.valueOf(s.signalStatus));
+            // TV 106 signal status is not shown: stock never reads it and its codes are not known (the log carries it)
             add("hdr_switch", R.string.r_hdr_switch, s.hdrEnable == null ? null : s(s.hdrEnable ? R.string.on : R.string.off));
             add("screen_zoom", R.string.r_screen_zoom, s.screenRes == null ? null
                     : s(R.string.v_screen_zoom, s.screenRes.center, s.screenRes.horizontal, s.screenRes.vertical));
             if (hdmi) {
                 add("range", R.string.r_range, range(s.hdmiRange));
                 add("allm", R.string.r_allm, s.allm == null ? null : s(s.allm ? R.string.on : R.string.off));
-                add("edid", R.string.r_edid_version, s.edidVersion == null ? null : "EDID " + Hb.edidVersionName(s.edidVersion));
+                add("edid", R.string.r_edid_version, edidVersion(s.edidVersion));
             }
             add("hdr_policy", R.string.r_hdr_policy, hdrPolicy(s));
             add("match_rate", R.string.r_match_rate, matchRate(s.matchFrameRate));
@@ -153,15 +154,15 @@ public final class Rows {
         return b.toString();
     }
 
-    /** TV 122: "3840x2160, 60 Hz, HDMI, type 3" (the vendor's videoType code is shown as a number). */
+    /** TV 122: "3840x2160, 60 Hz". bHdmiOrDvi and videoType are left out: stock never reads them and their codes are
+     *  not known (seen on the HB 2026-11-04 with a 4K HDR10 HDMI signal, TV 38 hdmiMode 1: bHdmiOrDvi 0, videoType 2;
+     *  videoType 0 with SDR). The log broadcast still carries both. */
     private String videoInfo(Snapshot s) {
         HalStructs.VideoInfo v = s.videoInfo;
         if (v == null || !v.plausible()) return null;
         StringBuilder b = new StringBuilder(HalStructs.size(v.width, v.height));
         String r = HalStructs.rate(v.frameRate);
         if (r != null) b.append(", ").append(r);
-        if (onHdmi(s)) b.append(", ").append(v.hdmiOrDvi != 0 ? "HDMI" : s(R.string.v_dvi));
-        b.append(", ").append(s(R.string.v_type_n, v.videoType));
         return b.toString();
     }
 
@@ -302,7 +303,10 @@ public final class Rows {
         add("audio_out", R.string.r_audio_out, a != null && !a.devices.isEmpty() ? a.devices : s.audioDevices);
         add("audio_format", R.string.r_audio_format, a == null ? null : audioFormat(a));
         String mode;
-        if (a == null) mode = s.primary != null ? s(R.string.v_standby) : null;
+        // an HDMI source plays through the vendor's hardware path (sideband), not through Android's mixer, so no
+        // Android audio thread is active then: that is not silence
+        if (a == null && onHdmi(s)) mode = s(R.string.v_hdmi_audio_path);
+        else if (a == null) mode = s.primary != null ? s(R.string.v_standby) : null;
         else if (a.passthrough()) mode = s(R.string.v_passthrough);
         else if ("OFFLOAD".equals(a.type)) mode = s(R.string.v_offload);
         else mode = s(R.string.v_pcm);
@@ -452,22 +456,40 @@ public final class Rows {
             add("range", R.string.r_range, range(s.hdmiRange));
             add("allm", R.string.r_allm, s.allm == null ? null : s(s.allm ? R.string.on : R.string.off));
         }
-        add("edid", R.string.r_edid_version, s.edidVersion == null ? null : "EDID " + Hb.edidVersionName(s.edidVersion));
+        add("edid", R.string.r_edid_version, edidVersion(s.edidVersion));
         if (s.edidCfgLink != null) add("edid_cfg", R.string.r_edid_cfg, s.edidCfgLink.isEmpty()
                 ? "edid_cfg.ini, " + s(R.string.v_own_file) : "edid_cfg.ini \u2192 " + s.edidCfgLink);
         if (s.ports == null) return;
         for (Snapshot.Port p : s.ports) {
-            String file = p.file + (p.link != null ? " \u2192 " + p.link : ", " + s(R.string.v_own_file));
-            if (!p.fromIni) file += " " + s(R.string.v_file_guess);
             Boolean cable = p.port < s.hdmiConnected.length ? s.hdmiConnected[p.port] : null;
             if (cable != null) addRaw("cable" + p.port, s(R.string.r_port_cable, p.port),
                     s(cable ? R.string.v_connected : R.string.v_not_connected));
             HalStructs.HdmiHwCfg hw = p.port < s.hdmiHwCfg.length ? s.hdmiHwCfg[p.port] : null;
             if (hw != null) addRaw("hw" + p.port, s(R.string.r_port_hw, p.port), portHw(hw));
+            String ver = edidVersion(p.raw);
+            if (p.remembered) ver += " " + s(R.string.v_edid_remembered, p.port,
+                    DateUtils.formatDateTime(c, p.seenAt, DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_TIME));
+            addRaw("ver" + p.port, s(R.string.r_port_version, p.port), ver);
+            if (p.file == null) {
+                addRaw("file" + p.port, s(R.string.r_port_file, p.port),
+                        s(p.raw == Hb.EDID_GAME ? R.string.v_edid_game : R.string.v_edid_unreadable));
+                continue;
+            }
+            String file = p.file + (p.link != null ? " \u2192 " + p.link : ", " + s(R.string.v_own_file));
             addRaw("file" + p.port, s(R.string.r_port_file, p.port), file);
+            // the kernel rewrites the audio block of every input but the ARC one, so only that one keeps the file's
+            boolean audio = p.port == Hb.ARC_INPUT;
             addRaw("edid" + p.port, s(R.string.r_port_edid, p.port),
-                    p.edid == null ? s(R.string.v_edid_unreadable) : summary(c, p.edid));
+                    p.edid == null ? s(R.string.v_edid_unreadable) : summary(c, p.edid, audio));
         }
+    }
+
+    /** TV 39 raw value: "EDID 1.4" / "EDID 2.0" / "EDID 2.1", the game mode request, or the bare number. */
+    private String edidVersion(Integer v) {
+        if (v == null) return null;
+        String n = Hb.edidVersionName(v);
+        if (n != null) return "EDID " + n;
+        return v == Hb.EDID_GAME ? s(R.string.v_edid_game) : "? (" + v + ")";
     }
 
     /** TV 153: "port 1, CEC on, ARC off, address 1.0.0.0". */
@@ -481,7 +503,8 @@ public final class Rows {
     }
 
     /** One line: best mode, HDMI level, HDR kinds, audio formats. */
-    public static String summary(Context c, Edid e) {
+    /** "3840x2160p60, HDMI 2.0, HDR10 / HLG[, LPCM / AC-3 ...]"; audio false leaves the audio formats out. */
+    public static String summary(Context c, Edid e, boolean audio) {
         if (!e.valid) return c.getString(R.string.e_invalid, e.error);
         List<String> parts = new ArrayList<>();
         Vic best = e.bestVic();
@@ -490,8 +513,8 @@ public final class Rows {
         if (!lvl.isEmpty()) parts.add("HDMI " + lvl);
         String hdr = EdidText.hdrKinds(e);
         if (!hdr.isEmpty()) parts.add(hdr);
-        String audio = EdidText.audioShort(e);
-        if (!audio.isEmpty()) parts.add(audio);
+        String a = audio ? EdidText.audioShort(e) : "";
+        if (!a.isEmpty()) parts.add(a);
         return String.join(", ", parts);
     }
 }

@@ -20,11 +20,11 @@ import java.util.stream.Stream;
  *  1. EDID decoder on the real HB built-in files (test/data/*.hex, copied from the HB) and on synthetic CTA blocks
  *     (Dolby Vision, HDR luminance, HDMI Forum with ALLM / FRL / VRR, Atmos audio, 4:2:0, speakers), broken input;
  *  2. dump and file parsers on real HB dumps (test/data) and synthetic lines;
- *  3. HB facts: EDID file mapping from the vendor ini;
+ *  3. HB facts: the EDID wire values and the file the vendor loads for each;
  *  4. HAL allow list: every row of Hb.PLAN is a row of allowed.tsv or allowed_lumeninfo.tsv and of aidl_codes.tsv
  *     (same method) and not a BANNED / REVIEW row of banned.tsv; allowed_lumeninfo.tsv is exactly the PLAN rows
- *     that allowed.tsv lacks, each a getter with the signature of aidl_codes.tsv; the only setter is
- *     setEdidVersion; hal/HbGmpf.java has exactly these calls; every "wanted" getter is in neither list; the
+ *     that allowed.tsv lacks, each a getter with the signature of aidl_codes.tsv; there is no setter;
+ *     hal/HbGmpf.java has exactly these calls; every "wanted" getter is in neither list; the
  *     vendor call schedule stays within the budget (4 calls per second on HDMI, 3 otherwise) and reaches every
  *     scheduled read; the parcelable decoders (core.HalStructs) on synthetic words;
  *  5. static checks of src/: Binder transact only in hal/HbGmpf.java, no shell, no su, no writes to /sys or
@@ -350,32 +350,36 @@ public final class InfoTest {
     }
 
     // ================================================================ HB facts
-    // the HB's mtk_Customer.ini shape (xgimiconfig/G0130, 2026-11-04 dump): absolute paths into the model's tv/ folder
-    static final String INI = "[HDMI_EDID_1]\nHDMI_EDID_File   = \"/mnt/vendor/xgimiconfig/G0130/tv/edid14_1.bin\";\n"
-            + "HDMI_EDID_File_2_1 = \"/mnt/vendor/xgimiconfig/G0130/tv/edid20_1.bin\";\n"
-            + "HDMI_EDID_File_2_0   = \"/mnt/vendor/xgimiconfig/G0130/tv/edid20_1.bin\";\n"
-            + "HDMI_EDID_File_1_4   = \"/mnt/vendor/xgimiconfig/G0130/tv/edid14_1.bin\";\n"
-            + "eEdidVersion     =  3;  #EDID_14:1 , EDID_20:2  EDID_21:3\n\n"
-            + "[HDMI_EDID_2]\nHDMI_EDID_File_2_0   = \"/mnt/vendor/xgimiconfig/G0130/tv/edid20_2.bin\";\n"
-            + "HDMI_EDID_File_1_4   = \"/mnt/vendor/xgimiconfig/G0130/tv/../../../etc/passwd\";\n";
+    // the HB's G0130 feature.xml lines that decide the 2.0 file (xgimiconfig dump, 2026-11-04)
+    static final String FEATURE = "<features>\n        <feature key=\"support_hfr\" value=\"true\"/>\n"
+            + "        <feature key=\"display_gamemode_version\" value=\"3\"/>\n        <feature key=\"edid_2_version_val\" value=\"1\"/>\n";
 
     static void hbFacts() {
-        Map<String, Map<String, String>> ini = Parse.ini(INI);
-        eq("3", ini.get("HDMI_EDID_1").get("eEdidVersion"), "ini comment and semicolon");
-        eq("/mnt/vendor/xgimiconfig/G0130/mtk_Customer.ini", Hb.vendorIni("G0130"), "vendor ini of the model");
+        Map<String, String> f = Parse.features(FEATURE);
+        eq("1", f.get("edid_2_version_val"), "feature.xml value");
+        ok(!Hb.hfrRule(Parse.features("<!-- <feature key=\"support_hfr\" value=\"true\"/>\n"
+                + "<feature key=\"display_gamemode_version\" value=\"3\"/> -->")), "commented-out features are skipped");
+        ok(Hb.hfrRule(f), "G0130: 2.0 loads the non_hrr file");
+        ok(!Hb.hfrRule(Parse.features("<feature key=\"support_hfr\" value=\"false\"/>")) && !Hb.hfrRule(null), "no hfr rule");
+        eq("/mnt/vendor/xgimiconfig/G0130/feature/feature.xml", Hb.featureXml("G0130"), "feature.xml of the model");
         eq("/mnt/vendor/xgimiconfig/G0130/tv", Hb.edidDir("G0130"), "edid dir of the model");
         ok(Hb.modelDir("../x") == null && Hb.modelDir("") == null && Hb.modelDir(null) == null, "bad model names refused");
-        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid14_1.bin", Hb.edidFile(ini, "G0130", 1, Hb.EDID_14), "port 1 v1.4");
-        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid20_2.bin", Hb.edidFile(ini, "G0130", 2, Hb.EDID_20), "port 2 v2.0");
-        ok(Hb.edidFromIni(ini, 2, Hb.EDID_20), "port 2 v2.0 from ini");
-        ok(!Hb.edidFromIni(ini, 2, Hb.EDID_14), "path with .. refused");
-        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid14_2.bin", Hb.edidFile(ini, "G0130", 2, Hb.EDID_14), "fallback name");
-        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid20_1.bin", Hb.edidFile(null, "G0130", 1, Hb.EDID_20), "no ini");
-        ok(Hb.edidFile(null, null, 1, Hb.EDID_20) == null, "no model, no file");
+        // stock wire: SignalEnum 1 / 2 minus 1 in gmuiapi GmTvManager.setEDIDVersion; an external grab of HDMI 2 under
+        // raw 1 equals edid20_non_hrr_2.bin plus the kernel audio rewrite
+        eq(0, Hb.EDID_14, "1.4 is raw 0");
+        eq(1, Hb.EDID_20, "2.0 is raw 1");
+        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid14_1.bin", Hb.edidFile("G0130", 1, Hb.EDID_14, true), "port 1 v1.4");
+        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid20_non_hrr_2.bin", Hb.edidFile("G0130", 2, Hb.EDID_20, true), "port 2 v2.0 hfr");
+        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid20_2.bin", Hb.edidFile("G0130", 2, Hb.EDID_20, false), "port 2 v2.0 no hfr");
+        eq("/mnt/vendor/xgimiconfig/G0130/tv/edid21_1.bin", Hb.edidFile("G0130", 1, Hb.EDID_21, true), "2.1");
+        ok(Hb.edidFile("G0130", 1, Hb.EDID_GAME, true) == null, "game mode: the vendor picks");
+        ok(Hb.edidFile("G0130", 3, Hb.EDID_14, true) == null && Hb.edidFile(null, 1, Hb.EDID_14, true) == null, "no port 3, no model");
         ok(Hb.isEdidFileName("edid20_120hz_1.bin") && !Hb.isEdidFileName("../x.bin")
                 && !Hb.isEdidFileName("a.txt"), "edid file names");
         eq("HLG", Hb.hdrTypeName(4), "hdr 4");
-        eq("2.0", Hb.edidVersionName(2), "edid 2");
+        eq("1.4", Hb.edidVersionName(0), "edid 0");
+        eq("2.0", Hb.edidVersionName(1), "edid 1");
+        ok(Hb.edidVersionName(2) == null, "edid 2 is the game mode request");
     }
 
     // ================================================================ allow list
@@ -530,12 +534,11 @@ public final class InfoTest {
             ok(b == null || b.equals("EXCEPTION"), "plan row " + k + " not banned (" + b + ")");
             if (p[3].equals("w")) {
                 setters++;
-                eq("setEdidVersion", p[2], "the only setter");
             } else {
                 ok(p[2].startsWith("get") || p[2].startsWith("is"), "read-only row is a getter: " + p[2]);
             }
         }
-        eq(1, setters, "setters in plan");
+        eq(0, setters, "setters in plan (read only)");
         for (String w : Hb.WANTED_NOT_ALLOWED) {
             String[] f = w.split(" ");
             ok(!allowed.contains(f[0] + "/" + f[1]) && !extra.contains(f[0] + "/" + f[1]), "wanted getter " + w + " is not allowed yet");
@@ -552,7 +555,7 @@ public final class InfoTest {
         List<String> want = new ArrayList<>();
         for (String[] p : Hb.PLAN) want.add(p[0] + "/" + code(p[1]) + "/" + p[2]);
         eq(want, got, "HbGmpf.Call equals Hb.PLAN");
-        ok(src.contains("if (v != 1 && v != 2) throw"), "setEdidVersion refuses other values");
+        ok(!src.contains("setEdidVersion"), "no EDID setter");
         Matcher d = Pattern.compile("\"(xgimi\\.hardware\\.gmpf\\.I\\w+)\"").matcher(src);
         Set<String> desc = new HashSet<>();
         while (d.find()) desc.add(d.group(1));

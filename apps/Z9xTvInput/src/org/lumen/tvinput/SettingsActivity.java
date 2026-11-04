@@ -14,6 +14,9 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /** HDMI settings: plain focusable check boxes (works with a D-pad remote). */
 public class SettingsActivity extends Activity {
     private static final String TAG = "Z9xHdmiSettings";
@@ -64,7 +67,7 @@ public class SettingsActivity extends Activity {
         // Lumen OS 1.0: the HDMI-CEC options (switch on One Touch Play, remote control, internal source on
         // exit) moved to the projector's quick panel page "HDMI devices (CEC)" (HdmiStateProvider
         // get_cec_prefs / set_cec_pref); this page keeps the plain HDMI options.
-        toggle(list, Prefs.OPEN_ON_BOOT, R.string.pref_open_on_boot);
+        bootSourceRow(list);
 
         TextView header = new TextView(this);
         header.setText(R.string.settings_inputs_header);
@@ -88,6 +91,47 @@ public class SettingsActivity extends Activity {
 
         setContentView(scroll);
         first.requestFocus();
+    }
+
+    /**
+     * The stock "Boot source" choice (home screen, then every HDMI port in order) as one focusable row; OK steps
+     * to the next choice. Below it the stock note that a CEC power-on wins.
+     */
+    private void bootSourceRow(LinearLayout parent) {
+        final List<Integer> ports = new ArrayList<>();
+        ports.add(BootSource.HOME);
+        for (TvInputInfo info : HdmiInputs.portInputs(this)) {
+            int p = HdmiInputs.portOf(info);
+            if (p > 0 && !ports.contains(p)) ports.add(p);
+        }
+        final TextView row = new TextView(this);
+        row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        row.setTextColor(Color.WHITE);
+        row.setFocusable(true);
+        row.setClickable(true);
+        row.setBackgroundResource(android.R.drawable.list_selector_background);
+        row.setPadding(dp(8), dp(12), dp(8), dp(12));
+        int cur = BootSource.get(this);
+        if (!ports.contains(cur)) cur = BootSource.HOME;
+        final int[] at = {ports.indexOf(cur)};
+        row.setText(getString(R.string.pref_boot_source, bootSourceName(ports.get(at[0]))));
+        row.setOnClickListener(v -> {
+            at[0] = (at[0] + 1) % ports.size();
+            int p = ports.get(at[0]);
+            BootSource.set(this, p);
+            row.setText(getString(R.string.pref_boot_source, bootSourceName(p)));
+        });
+        parent.addView(row);
+        TextView note = new TextView(this);
+        note.setText(R.string.pref_boot_source_note);
+        note.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        note.setTextColor(Color.LTGRAY);
+        note.setPadding(dp(8), 0, dp(8), dp(8));
+        parent.addView(note);
+    }
+
+    private String bootSourceName(int port) {
+        return port == BootSource.HOME ? getString(R.string.boot_source_home) : "HDMI " + port;
     }
 
     private CheckBox toggle(LinearLayout parent, final String key, int textRes) {
