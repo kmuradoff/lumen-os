@@ -1,6 +1,6 @@
 # Russian: only strings_panel.xml is generated; the other values-ru files are hand-written
-#  and only validated. Terms follow stock analysis
-# (XGIMI's own RU wording): Режим изображения, Точная цветопередача, AI-качество, Ultra 120 Гц, Турбо.
+# and only validated. Picture terms: Режим изображения, Точная цветопередача, AI-качество,
+# Ultra 120 Гц, Турбо.
 @common/strings_panel.xml
 panel_title=Быстрые настройки
 panel_sec_image_correction=Коррекция изображения

@@ -147,7 +147,6 @@ Lumen OS is put together from a LineageOS 21 TV GSI, our apps (`apps/`), system 
 the image tools (`tools/`). You can build all of it yourself, from the pinned LineageOS source to the
 signed image, with your own keys: [docs/selfbuild](docs/selfbuild/en.md). That guide covers the Z9X. The
 Play 6 build scripts are in `tools/play6` and `lineage/patches/play6`, without a step-by-step guide yet.
-Notes for maintainers are in [docs/dev](docs/dev/README.md).
 
 ```
 git clone --recurse-submodules https://github.com/kmuradoff/lumen-os.git

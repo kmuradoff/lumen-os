@@ -1,6 +1,6 @@
 # OTA pieces for the image
 
-`tools/lumen_v1.sh` copies these files into the image from `tools/lumen_v1.sh`
+`tools/lumen_v1.sh` copies these files into the image
 (unchanged bytes: `tools/sign/check_image.py` compares them). Nothing here touches boot, vbmeta,
 vendor or any XGIMI partition.
 
@@ -42,7 +42,7 @@ T system/product/etc/build.prop ro.z9x.ota.gate=1
 T system/product/etc/build.prop ro.z9x.rescue=1
 ```
 
-**1.0.1 (boot rescue), ** `tools/lumen_v1.sh` must add the two new
+**1.0.1 (boot rescue):** `tools/lumen_v1.sh` must add the two new
 files exactly like `z9x_ota.{sh,rc}` (`add system/etc/z9x/z9x_rescue.sh "$OTAIMG/z9x_rescue.sh" 755`,
 `add system/etc/init/z9x_rescue.rc "$OTAIMG/z9x_rescue.rc" 644`, plus `need` checks), and
 `tools/sign/check_image.py` `OTA_FILES` must list
@@ -60,7 +60,7 @@ is the *input* of signing, the flashed image is always the signed one (`tools/si
 
 ## 2. Files for PUBLIC images only (not the private v1)
 
-Implemented in 1.0.1 by `tools/lumen_v1.sh VARIANT=public` (2026-10-09). The owner's image keeps the
+Implemented in 1.0.1 by `tools/lumen_v1.sh VARIANT=public` (2026-10-09). The private image keeps the
 MediaTek Codec2 libs and the base's XGIMI / MediaTek audio files inside `/system` (as v6.5). A public
 image must not: it gets all nine from the user's own system via the installer (`installer/`, `blobs`
 step: stock or a running Lumen OS) into the logical partition `z9x_blobs_<slot>`, and `z9x_blobs.sh`
@@ -113,7 +113,7 @@ of each member into its own path, each checked by sha256, then `MANIFEST`), runs
 `z9x_gapps.sh check`, and then wipes the data like `flash` (not with `--keep-data`). `gapps --remove` deletes
 the partition (also from fastboot mode) with the same wipe.
 
-Since 2026-10-30  the full install with `--gapps-zip` builds
+Since 2026-10-30 the full install with `--gapps-zip` builds
 the partition on the computer instead: an erofs image of the same tree (root, 0755 / 0644, `system_file` on
 every inode, the same MANIFEST), bit for bit the one `installer/lib/gapps_images.txt` names, flashed into
 `z9x_gapps_<slot>` in the same fastbootd session as system and before the one wipe. `z9x_gapps.sh` mounts erofs
@@ -159,7 +159,7 @@ and write, no unpacking, no read-write mount; the allow-list = the installer's c
 Host tests: `sh tools/ota/test/gapps.sh`, `bash tools/ota/test/installer_gapps.sh`,
 `bash tools/ota/test/public_members.sh`.
 
-## 3. Properties and broadcasts the projector app may use (the projector app)
+## 3. Properties and broadcasts the projector app may use
 
 | Name | Values | Meaning |
 |---|---|---|

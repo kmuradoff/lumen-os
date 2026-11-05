@@ -122,7 +122,7 @@ HDMI:
 Ставится тем же установщиком, `--keep-data flash` сохраняет данные. Первая версия Play 6 после беты 1.
 
 - Всё, что есть в стоковых настройках Play 6, теперь есть и в Lumen, кроме того, что работает только через
-  облако XGIMI. Список по пунктам: [docs/play6/TASKS.md](docs/play6/TASKS.md).
+  облако XGIMI.
 - Зум и сдвиг картинки как на стоке: стрелки двигают, кнопки громкости меняют размер, шестерёнка открывает
   «Сброс» (полная картинка по центру). После сдвига картинку снова можно увеличить до полного размера.
 - Поворот изображения без задержек, шумоподавление, гамма, динамический и локальный контраст, цветовая
@@ -419,7 +419,6 @@ The update arrives over Wi-Fi: Settings > About > Lumen OS update. Your data sta
 Installs with the same installer; `--keep-data flash` keeps your data. The first Play 6 version after beta 1.
 
 - Everything in the Play 6 stock settings is now in Lumen too, except what only works through XGIMI's cloud.
-  The item-by-item list: [docs/play6/TASKS.md](docs/play6/TASKS.md).
 - Zoom and shift as on stock: the arrows move, the volume keys change the size, the gear opens Reset (the full
   picture in the centre). After a move the picture grows back to full size.
 - Picture rotation without lag, noise reduction, gamma, dynamic and local contrast, colour temperature with R, G

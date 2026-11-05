@@ -139,5 +139,5 @@ Mock tests: `tools/ota/test/installer_rescue.sh`, `installer_blobs.sh`, `install
 `installer_gapps.sh`, `installer_profiles.sh` (lib/devices.conf, and the Z9X command logs compared byte for
 byte with `tools/ota/test/golden/installer_z9x/`), `installer_play6.sh` (a fake Play 6 over Wi-Fi and in
 fastbootd), `installer_play6_gapps.sh`, and the PowerShell host tests `installer_ps1_gapps.sh` and
-`installer_ps1_play6.sh` (the Play 6 erase request and pre-checks give the same results in both scripts). The `--blobs=embedded` and `--unsigned-image` options are only for maintainers'
-own test builds, see `docs/dev/release.md`.
+`installer_ps1_play6.sh` (the Play 6 erase request and pre-checks give the same results in both scripts). The `--blobs=embedded` and `--unsigned-image` options are only for
+your own test builds.

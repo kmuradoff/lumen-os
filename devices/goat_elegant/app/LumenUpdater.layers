@@ -1,5 +1,5 @@
 # Shared recipe of the device-neutral Lumen OS updater, read by
-# tools/devices/assemble_app.py. Rule: every device that ships it keeps a byte copy of this file as
+# tools/devices/assemble_app.py. Decision O7: every device that ships it keeps a byte copy of this file as
 # devices/<codename>/app/LumenUpdater.layers (apps/LumenUpdater/test/ota/run.sh checks that the copies are
 # identical); the device copy is the one assembled, its fork rows are in that device's fork table.
 # The updater is the Z9X one minus the Z9X-only file below, plus the neutral layer (apps/LumenUpdater: the forks

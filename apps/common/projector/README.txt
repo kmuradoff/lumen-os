@@ -7,7 +7,7 @@ HAL clients (src/org/lumen/projector/hal/) are never shared, each device has its
 hal/HidlCaller.java is the separate `hal` item (apps/common/hal).
 
 Rules
-- The shared files are owned by the Z9X app. A shared file changes only as part of an owner-approved
+- The shared files are owned by the Z9X app. A shared file changes only together with a
   Z9xProjector change: edit it here, then copy it outward with sync.sh into every projector app. Another
   device's app picks the change up at its next build.
 - A need of another device alone never edits a shared file: that device forks the file into its own app at

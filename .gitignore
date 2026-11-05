@@ -1,7 +1,7 @@
 # Lumen OS .gitignore (copied to the repo root as .gitignore). Defence in depth: the pre-push hook
 # runs tools/ota/check_publish.py on content, not only on names.
 
-# ---- keys: NEVER. Private keys live only in ~/.lumen-keys on the owner's Mac.
+# ---- keys: NEVER. Private keys never enter this repository.
 *.pk8
 *.p12
 *.pfx
