@@ -15,7 +15,7 @@ touched. New versions then arrive over Wi-Fi, and your data stays.
 
 > [!WARNING]
 > **Note: this is firmware 6.16.24.** It is only for going back to stock from Lumen OS. If your projector came
-> with firmware 6.18.x, do not put 6.16.24 on it to install Lumen OS afterwards: nobody knows whether the old
+> with firmware V6.17.12 (the menu may also show the GMUI launcher version 6.18.x), do not put 6.16.24 on it to install Lumen OS afterwards: nobody knows whether the old
 > firmware fits the newer boards, and on other XGIMI models such a downgrade left Wi-Fi and Bluetooth dead.
 
 The install takes about 30 minutes. You type a few commands in a terminal, and one step in fastboot mode
@@ -391,7 +391,7 @@ The stock firmware is put back by XGIMI's own update from a USB stick.
 
 1. Download XGIMI's official V6.16.24 firmware for model G0130 from XGIMI's server:
    [XGIMI_GOATELEGANT_XR03D.bin](https://product-library.static.xgimi.com/firmware/release/MTK9660_AOSP/dapeng/MTK9660_AOSP_GEMINI_6.16.24_20260428-152516/XGIMI_GOATELEGANT_XR03D.bin) (2.2 GB). A file for another model will not do.
-   **Note: this is 6.16.24**, only for going back from Lumen OS, not for projectors on 6.18.x.
+   **Note: this is 6.16.24**, only for going back from Lumen OS, not for projectors on firmware V6.17.12.
 2. A USB stick with an **MBR** partition scheme and **one FAT32 partition**. On macOS: "Disk Utility → View →
    Show All Devices", pick the stick itself (not its volume), "Erase", format "MS-DOS (FAT)", scheme "Master
    Boot Record".
