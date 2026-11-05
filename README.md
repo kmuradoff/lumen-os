@@ -13,6 +13,8 @@ English | [Русский](README.ru.md)
 
 Android TV 14 for XGIMI projectors, built on LineageOS 21.
 
+News, new versions and answers to questions: the Telegram channel [@projector_lumenos](https://t.me/projector_lumenos).
+
 ## Supported projectors
 
 | Projector | Status | Latest release | Install guide |
@@ -151,7 +153,8 @@ install id; turning it on again starts with a new one.
 Open an [issue](https://github.com/kmuradoff/lumen-os/issues) and include the projector model, the XGIMI
 firmware version, the Lumen OS version (Settings > Device Preferences > About), what you did right before
 the problem and the full installer output. Russian-speaking users also talk about Lumen OS in the
-[XGIMI Z9X thread on 4PDA](https://4pda.to/forum/index.php?showtopic=1121837).
+[XGIMI Z9X thread on 4PDA](https://4pda.to/forum/index.php?showtopic=1121837) and in the Telegram channel
+[@projector_lumenos](https://t.me/projector_lumenos).
 
 ## Kino player
 

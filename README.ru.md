@@ -13,6 +13,8 @@
 
 Android TV 14 для проекторов XGIMI на основе LineageOS 21.
 
+Новости, новые версии и ответы на вопросы: Telegram-канал [@projector_lumenos](https://t.me/projector_lumenos).
+
 ## Какие проекторы подходят
 
 | Проектор | Состояние | Последний релиз | Инструкция |
@@ -151,7 +153,7 @@ IP Geolocation by [DB-IP](https://db-ip.com).
 
 ## Помощь и сообщения об ошибках
 
-Пишите в [тему XGIMI Z9X на 4PDA](https://4pda.to/forum/index.php?showtopic=1121837) или в
+Пишите в [Telegram-канал](https://t.me/projector_lumenos), в [тему XGIMI Z9X на 4PDA](https://4pda.to/forum/index.php?showtopic=1121837) или в
 [issues на GitHub](https://github.com/kmuradoff/lumen-os/issues). Укажите модель проектора, версию
 прошивки XGIMI, версию Lumen OS («Настройки → Настройки устройства → Об устройстве») и что вы делали
 перед проблемой, и приложите весь текст из терминала.
