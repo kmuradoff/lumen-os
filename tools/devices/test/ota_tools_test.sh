@@ -634,9 +634,9 @@ for n in ('ota', 'ota_next'): z.writestr(zipfile.ZipInfo(n + '.x509.pem', (2009,
   # the reverse: a Z9X manifest signed with the throwaway Z9X key
   mkdir -p "$WORK/zm"
   py -c "
-import json; json.dump({'schema': 1, 'device': 'z9x', 'channel': 'public-nogms', 'version': '1.0.8', 'version_code': 10009,
+import json; json.dump({'schema': 1, 'device': 'z9x', 'channel': 'public-nogms', 'version': '1.0.8', 'version_code': 10010,
   'build_id': 'lumen-1.0.8-x', 'build_utc': 1, 'requires': {}, 'changelog': {'en': 'x'}, 'packages': [{'type': 'full',
-  'url': 'https://github.com/kmuradoff/lumen-os/releases/download/v1.0.8/lumen-os-1.0.8-nogms-full-ota.zip', 'size': 10,
+  'url': 'https://github.com/kmuradoff/lumen-os/releases/download/z9x-1.0.8/lumen-os-1.0.8-nogms-full-ota.zip', 'size': 10,
   'sha256': '0' * 64, 'payload_offset': 1, 'payload_size': 1, 'metadata_url': 'https://x/y', 'payload_properties': []}]},
   open('$WORK/zm/update-public-nogms.json', 'w'), indent=2)"
   openssl dgst -sha256 -keyform DER -sign "$Z9K/ota.pk8" -out "$WORK/zm/update-public-nogms.json.sig" "$WORK/zm/update-public-nogms.json"
@@ -658,7 +658,7 @@ import json; json.dump({'schema': 1, 'device': 'z9x', 'channel': 'public-nogms',
     env KEYS_DIR="$Z9K" DUMP="$DUMP_EROFS" python3 -B "$G/tools/ota/sign_payload.py" "$D" --image "$NEW"
   [ ! -f "$D/payload.sig" ] && ok "the Z9X key signed nothing" || bad "tools/ota/sign_payload.py wrote a signature"
   refuse "tools/ota/make_manifest.py refuses an HB image" "no manifest" \
-    env KEYS_DIR="$Z9K" DUMP="$DUMP_EROFS" python3 -B "$G/tools/ota/make_manifest.py" --version 1.0.8 --version-code 10009 \
+    env KEYS_DIR="$Z9K" DUMP="$DUMP_EROFS" python3 -B "$G/tools/ota/make_manifest.py" --version 1.0.8 --version-code 10010 \
     --build-id x --build-utc 1 --image "$NEW" --full "$WORK/zips/lumen-os-hb-1.0.8-beta1-nogms-full-ota.zip" \
     --changelog "$WORK/changelog.json" --channel public-nogms --out "$WORK/zmo"
   [ ! -e "$WORK/zmo" ] && ok "tools/ota/make_manifest.py wrote nothing" || bad "tools/ota/make_manifest.py wrote a manifest"
@@ -722,7 +722,11 @@ EOF
   meta '{"latest": "hb-1.0.8-beta1", "v1.0.7": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": false}}'
   refuse "check_release: an HB release as Latest is red" "it must stay the Z9X" cr
   meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": false}}'
-  refuse "check_release: hb-1.0.8-beta1 not a pre-release is red" "always a published pre-release" cr
+  expect 0 "check_release: a version release that is a normal release (not Latest) is fine" cr
+  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "hb": {"prerelease": false}, "hb-1.0.8-beta1": {"prerelease": true}}'
+  refuse "check_release: the manifest tag hb not a pre-release is red" "always a published pre-release" cr
+  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true, "draft": true}}'
+  refuse "check_release: a draft version release is red" "is never a draft" cr
   meta "$GOOD"
   cp "$GF/v1.0.7/update-public-nogms.json" "$GF/hb/update-public-nogms.json"
   refuse "check_release: a Z9X manifest name on the hb tag is red" "Z9X manifest name" cr
@@ -744,6 +748,48 @@ EOF
   refuse "check_release: another asset on the hb tag is red" "asset notes.txt" cr
   rm "$GF/hb/notes.txt"
   expect 0 "check_release: green again after every change was undone" cr
+  # the Z9X update channel (images from 1.0.8 on): Latest z9x-1.0.8 and the fixed pre-release z9x carry the same
+  # signed manifest, whose packages are assets of z9x-1.0.8
+  mkdir -p "$GF/z9x-1.0.8" "$GF/z9x"
+  printf '0123456789' > "$GF/z9x-1.0.8/lumen-os-1.0.8-nogms-full-ota.zip"
+  printf 'meta' > "$GF/z9x-1.0.8/lumen-os-1.0.8-nogms-full-payload_metadata.bin"
+  py -c "
+import json; b = 'https://github.com/kmuradoff/lumen-os/releases/download/z9x-1.0.8/'
+json.dump({'schema': 1, 'device': 'z9x', 'channel': 'public-nogms', 'version': '1.0.8', 'version_code': 10010,
+  'build_id': 'lumen-1.0.8-20261105anp', 'build_utc': 1, 'requires': {}, 'changelog': {'en': 'x'}, 'packages': [{'type': 'full',
+  'url': b + 'lumen-os-1.0.8-nogms-full-ota.zip', 'size': 10, 'sha256': '0' * 64, 'payload_offset': 1, 'payload_size': 1,
+  'metadata_url': b + 'lumen-os-1.0.8-nogms-full-payload_metadata.bin', 'metadata_size': 4, 'payload_properties': []}]},
+  open('$GF/z9x/update-public-nogms.json', 'w'), indent=2)"
+  openssl dgst -sha256 -keyform DER -sign "$Z9K/ota.pk8" -out "$GF/z9x/update-public-nogms.json.sig" "$GF/z9x/update-public-nogms.json"
+  cp "$GF/z9x/update-public-nogms.json" "$GF/z9x/update-public-nogms.json.sig" "$GF/z9x-1.0.8/"
+  ZGOOD='{"latest": "z9x-1.0.8", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x": {"prerelease": true}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true}}'
+  meta "$ZGOOD"
+  expect 0 "check_release: Latest z9x-1.0.8 with the channel z9x passes" cr
+  has "$OUT" "releases/latest = z9x-1.0.8 (Z9X)" "check_release: z9x-1.0.8 is accepted as the Z9X Latest"
+  has "$OUT" "Z9X channel: z9x/update-public-nogms.json verifies" "check_release: the z9x channel manifest checked"
+  has "$OUT" "releases/latest z9x-1.0.8 carries the same update-public-nogms.json" "check_release: Latest carries the channel manifest"
+  meta '{"latest": "z9x-1.0.8", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true}}'
+  refuse "check_release: the channel z9x not a pre-release is red" "the Z9X channel is always a published pre-release" cr
+  meta '{"latest": "z9x-1.0.8", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true}}'
+  refuse "check_release: Latest z9x-1.0.8 without the channel z9x is red" "no z9x release, but Latest is z9x-1.0.8" cr
+  meta '{"latest": "z9x", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true}}'
+  refuse "check_release: the channel z9x as Latest is red" "it must stay the Z9X" cr
+  meta "$ZGOOD"
+  echo x > "$GF/z9x/lumen-os-1.0.8-nogms-full-ota.zip"
+  refuse "check_release: a package on the channel z9x is red" "asset lumen-os-1.0.8-nogms-full-ota.zip is not update-public-nogms.json" cr
+  rm "$GF/z9x/lumen-os-1.0.8-nogms-full-ota.zip"
+  cp "$WORK/zm/update-public-nogms.json" "$WORK/zm/update-public-nogms.json.sig" "$GF/z9x-1.0.8/"
+  refuse "check_release: Latest's manifest differing from the channel's is red" "differs from z9x/update-public-nogms.json" cr
+  cp "$GF/z9x/update-public-nogms.json" "$GF/z9x/update-public-nogms.json.sig" "$GF/z9x-1.0.8/"
+  mv "$GF/z9x-1.0.8/lumen-os-1.0.8-nogms-full-payload_metadata.bin" "$WORK/held.bin"
+  refuse "check_release: a side-car missing from z9x-1.0.8 is red" "is not an asset of z9x-1.0.8" cr
+  mv "$WORK/held.bin" "$GF/z9x-1.0.8/lumen-os-1.0.8-nogms-full-payload_metadata.bin"
+  cp "$GF/z9x/update-public-nogms.json.sig" "$WORK/held.sig"
+  openssl dgst -sha256 -keyform DER -sign "$HBK/ota.pk8" -out "$GF/z9x/update-public-nogms.json.sig" "$GF/z9x/update-public-nogms.json"
+  refuse "check_release: the channel manifest signed with the HB key is red" "z9x/update-public-nogms.json does not verify" cr
+  mv "$WORK/held.sig" "$GF/z9x/update-public-nogms.json.sig"
+  expect 0 "check_release: the z9x channel green again" cr
+  meta "$GOOD"
   R=$WORK/rel_closed; mktree "$R"; cp "$G/devices/$DEV/install/OTA_RESULTS.tsv" "$R/devices/$DEV/install/OTA_RESULTS.tsv"
   crc() { env GH="$WORK/bin/gh" python3 -B "$OTA/check_release.py" --device $DEV --root "$R"; }
   refuse "check_release: hb-nogms on the hb tag before T5, T6 and T7 passed is red" "update-hb-nogms.json (or its .sig) is on the tag" crc

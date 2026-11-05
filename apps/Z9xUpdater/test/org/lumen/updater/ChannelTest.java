@@ -18,7 +18,12 @@ public final class ChannelTest {
     }
 
     public static void main(String[] a) {
-        String b = "https://github.com/kmuradoff/lumen-os/releases/latest/download/";
+        // the channel tag z9x (images from 1.0.8 on, tools/lumen_v1.sh MANIFEST_BASE)
+        String b = "https://github.com/kmuradoff/lumen-os/releases/download/z9x/";
+        // what images up to 1.0.7 read: the same file names on the Latest release
+        String old = "https://github.com/kmuradoff/lumen-os/releases/latest/download/";
+        eq("1.0.7 private", "update-stable.json", Ota.channelFile(old + "update-stable.json"));
+        eq("1.0.7 no-Google", "update-public-nogms.json", Ota.channelFile(old + "update-public-nogms.json"));
         eq("private", "update-stable.json", Ota.channelFile(b + "update-stable.json"));
         eq("public", "update-public.json", Ota.channelFile(b + "update-public.json"));
         eq("no-Google", "update-public-nogms.json", Ota.channelFile(b + "update-public-nogms.json"));

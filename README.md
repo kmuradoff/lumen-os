@@ -17,7 +17,7 @@ Android TV 14 for XGIMI projectors, built on LineageOS 21.
 
 | Projector | Status | Latest release | Install guide |
 |---|---|---|---|
-| XGIMI Z9X | stable | [Lumen OS 1.0.7](https://github.com/kmuradoff/lumen-os/releases/tag/v1.0.7) | [English](docs/install/z9x/en.md), [Русский](docs/install/z9x/ru.md) |
+| XGIMI Z9X | stable | [Lumen OS 1.0.8](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-1.0.8) | [English](docs/install/z9x/en.md), [Русский](docs/install/z9x/ru.md) |
 | XGIMI Play 6 | stable | [Lumen OS 1.0.7 for the Play 6](https://github.com/kmuradoff/lumen-os/releases/tag/play6-1.0.7) | [English](docs/install/play6/en.md), [Русский](docs/install/play6/ru.md) |
 | XGIMI Z9X HB | coming soon | the first release, with updates over Wi-Fi, is being prepared | [English](docs/install/hb/en.md), [Русский](docs/install/hb/ru.md) |
 

@@ -65,9 +65,9 @@ chmod 755 "$W/bin/"*
 
 NOGMS_PROP='ro.z9x.variant=public
 ro.z9x.gms=0
-ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/latest/download/update-public-nogms.json'
+ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/z9x/update-public-nogms.json'
 GMS_PROP='ro.z9x.variant=public
-ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/latest/download/update-public.json'
+ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/z9x/update-public.json'
 
 begin() {
   CASE=$1; CFAIL=0

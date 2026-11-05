@@ -15,7 +15,8 @@ create" only after this prints OK). Fails closed (exit 1) on:
     placeholders) -- the same rules as check_image.py --variant public;
   * anything of the Google edition (decision 2026-10-09: only "Lumen OS без Google" is ever
     published): an image must be the no-Google edition by its name (-nogms-) AND its
-    product build.prop (ro.z9x.gms=0, ro.z9x.ota.manifest_url .../update-public-nogms.json), carry no file
+    product build.prop (ro.z9x.gms=0, ro.z9x.ota.manifest_url = the channel tag z9x's update-public-nogms.json,
+    never releases/latest: tools/sign/check_image.py MANIFEST_BASE), carry no file
     at or under a tools/lumen/nogms_remove.txt path and no APK whose package is com.google.* / com.mtg.* /
     com.android.vending; an OTA zip needs lumen-edition=nogms in its metadata and -nogms- in its name; an
     update manifest (update-*.json and its .sig) must be update-public-nogms.json;
@@ -67,6 +68,8 @@ except Exception as e:  # noqa: BLE001
 
 # the only update manifest a release may carry (the no-Google edition's, tools/lumen_v1.sh GMS=0)
 MANIFEST_OK = ("update-public-nogms.json", "update-public-nogms.json.sig")
+# what a published image reads (the channel tag z9x, tools/lumen_v1.sh MANIFEST_BASE)
+CHANNEL_URL = ci.MANIFEST_BASE + "/update-public-nogms.json"
 TEXT = (".txt", ".md", ".json", ".sig", ".pem", ".sh", ".ps1", ".cmd", ".conf", ".tsv", ".bin")
 TEXT_NAMES = ("sha256sums",)        # the image checksums the installer verifies (with SHA256SUMS.sig)
 NEVER = (".so", ".apk", ".apex", ".capex", ".ko", ".pk8", ".key", ".jks", ".keystore", ".p12")
@@ -214,9 +217,14 @@ def image_edition(img, dump, errs):
         errs.append(f"{n}: the Google edition is never published (owner decision 2026-10-09): only "
                     "lumen-os-<ver>-nogms-system.img (tools/lumen_v1.sh VARIANT=public GMS=0)")
         ok = False
-    mf = os.path.basename(p.get("ro.z9x.ota.manifest_url", ""))
+    url = p.get("ro.z9x.ota.manifest_url", "")
+    mf = os.path.basename(url)
     if mf != "update-public-nogms.json":
         errs.append(f"{n}: reads {mf or 'no manifest'}, a published image reads update-public-nogms.json")
+        ok = False
+    elif url != CHANNEL_URL:
+        # since 1.0.8 an image reads the channel tag z9x; releases/latest is only for images up to 1.0.7
+        errs.append(f"{n}: reads {url}, a published image reads {CHANNEL_URL}")
         ok = False
     if p.get("ro.z9x.variant") != "public":
         errs.append(f"{n}: ro.z9x.variant={p.get('ro.z9x.variant')!r}, expected 'public'")
@@ -408,9 +416,11 @@ def self_test_images(td):
         print("self-test skip: image cases (no mkfs.erofs / dump.erofs)")
         return 0
     good = ("ro.z9x.variant=public\nro.z9x.gms=0\nro.z9x.build_id=lumen-1.0.1-20261009enp\n"
-            "ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/latest/download/update-public-nogms.json\n")
+            "ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/z9x/update-public-nogms.json\n")
     gms = ("ro.z9x.variant=public\nro.z9x.build_id=lumen-1.0.1-20261009ep\n"
-           "ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/latest/download/update-public.json\n")
+           "ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/z9x/update-public.json\n")
+    # what images up to 1.0.7 read: no new release image may
+    latest = good.replace("/releases/download/z9x/", "/releases/latest/download/")
 
     def mkimg(name, prop, extra=()):
         root = os.path.join(td, name + ".d")
@@ -434,6 +444,8 @@ def self_test_images(td):
         ("-nogms- name, Google edition props", mkimg("lumen-os-9.9.6-nogms-system.img", gms), False, "says the other"),
         ("no-Google props, name without -nogms-", mkimg("lumen-os-9.9.5-system.img", good), False, "says the other"),
         ("Google edition image", mkimg("lumen-os-9.9.4-system.img", gms), False, "never published"),
+        ("no-Google image reading releases/latest", mkimg("lumen-os-9.9.3-nogms-system.img", latest), False,
+         "a published image reads https://github.com/kmuradoff/lumen-os/releases/download/z9x/update-public-nogms.json"),
     ]
     fails = 0
     for what, path, want_ok, why in cases:

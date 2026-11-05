@@ -16,7 +16,8 @@ then update_engine checks the payload signatures itself (both certs in otacerts.
 For every package: size + sha256 of the zip, the byte offset/size of the STORED payload.bin inside
 it (what UpdateEngine.applyPayload needs), payload_properties.txt lines, and the URL of the
 side-car <name>-payload_metadata.bin (must sit next to the zip; it must equal the payload's
-metadata prefix). Format: ota/update-stable.example.json (schema 1).
+metadata prefix). Format: ota/update-stable.example.json (schema 1). Package URLs point at the release
+z9x-<version>; 1.0.7 and older used v<version>.
 Nothing is uploaded: publishing is a separate, explicit step (docs/release.md).
 Refuses PRIVATE packages (make_ota.py --private: the maintainer's image with MediaTek / XGIMI files;
 "-PRIVATE-" in the name or lumen-variant=private in META-INF/com/android/metadata): a manifest is
@@ -220,6 +221,18 @@ def bind_to_clean_image(image, zips, old_image=None, has_full=True):
     return "public"
 
 
+def version_code(version):
+    """ro.z9x.version_code of a release: major*10000 + minor*100 + patch + 1, + 2 from 1.0.8."""
+    v = [int(x) for x in version.split(".")]
+    base = v[0] * 10000 + v[1] * 100 + v[2]
+    return base + (2 if base >= 10008 else 1)
+
+
+def package_tag(version):
+    """The GitHub release that holds a version's packages: z9x-<version> (the tags v<version> end at 1.0.7)."""
+    return f"z9x-{version}"
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--version", required=True)
@@ -241,13 +254,13 @@ def main():
     a = ap.parse_args()
 
     # Since 1.0.0: version_code = major*10000 + minor*100 + patch + 1 (tools/ota/image/ota_props.txt):
-    # the 1.0 test builds carry 10000, and every release must be newer for the updater.
+    # the 1.0 test builds carry 10000, and every release must be newer for the updater. From 1.0.8 on the
+    # offset is +2: the first 1.0.8 build (10009) was withdrawn, the re-published 1.0.8 is 10010.
     if not re.fullmatch(r"\d+\.\d{1,2}\.\d{1,2}", a.version):
         die(f"version {a.version!r}: expected major.minor.patch (minor, patch below 100)")
-    v = a.version.split(".")
-    vc = int(v[0]) * 10000 + int(v[1]) * 100 + int(v[2]) + 1
+    vc = version_code(a.version)
     if vc != a.version_code:
-        die(f"version_code {a.version_code} != {vc} (major*10000 + minor*100 + patch + 1)")
+        die(f"version_code {a.version_code} != {vc} (major*10000 + minor*100 + patch + 1, + 2 from 1.0.8)")
     ch = json.load(open(a.changelog, encoding="utf-8"))
     if "en" not in ch:
         die("changelog needs at least 'en'")
@@ -263,7 +276,9 @@ def main():
         die(f"--channel {a.channel}: packages for {'PUBLIC' if variant == 'public' else 'PRIVATE (clean delta)'} images "
             f"belong in {'a public channel (update-public-nogms.json)' if variant == 'public' else 'a non-public channel (update-stable.json)'}")
     check_edition(a.image, a.old_image, ([a.full] if a.full else []) + [d.split("=", 1)[0] for d in a.delta], a.channel)
-    base = f"https://github.com/{a.repo}/releases/download/v{a.version}/"
+    # packages are assets of the version's release z9x-<version> (up to 1.0.7: v<version>); the manifest itself
+    # goes on the channel tag z9x and on the Latest release
+    base = f"https://github.com/{a.repo}/releases/download/{package_tag(a.version)}/"
     pk = [package(d.split("=", 1)[0], "delta", base, d.split("=", 1)[1]) for d in a.delta]
     if a.full:
         pk.append(package(a.full, "full", base))

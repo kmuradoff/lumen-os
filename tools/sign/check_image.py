@@ -124,7 +124,8 @@ GAPPS_FILES = {
     "z9x-gapps-sysconfig.xml": "system/etc/z9x/gapps/sysconfig/z9x-gapps.xml",
 }
 GAPPS_MODES = {"system/etc/z9x/z9x_gapps.sh": 0o755}
-MANIFEST_BASE = "https://github.com/kmuradoff/lumen-os/releases/latest/download"
+# the update channel: the fixed pre-release tag z9x (since 1.0.8; images up to 1.0.7 read releases/latest/download)
+MANIFEST_BASE = "https://github.com/kmuradoff/lumen-os/releases/download/z9x"
 # Lumen OS without Google (GMS=0): the Google members a no-Google image must not carry (one list for
 # tools/lumen_v1.sh, this gate and tools/ota/check_release_assets.py)
 NOGMS_LIST = os.path.join(GSI, "tools", "lumen", "nogms_remove.txt")

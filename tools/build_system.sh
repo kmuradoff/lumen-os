@@ -242,14 +242,18 @@ case $VARIANT:$GMS in
 esac
 export GMS
 EDITION_SFX=; [ "$GMS" = 0 ] && EDITION_SFX=-nogms
-# docs/ota.md "Variants": each edition reads its own manifest file
-MANIFEST_BASE=https://github.com/kmuradoff/lumen-os/releases/latest/download
+# docs/ota.md "Variants": each edition reads its own manifest file. Since 1.0.8 the files sit on the fixed
+# pre-release tag z9x (the update channel); images up to 1.0.7 read
+# releases/latest/download, so every Latest z9x-<version> release carries the same signed manifest.
+MANIFEST_BASE=https://github.com/kmuradoff/lumen-os/releases/download/z9x
 CHANNEL=$([ "$VARIANT" = public ] && echo public || echo stable)$EDITION_SFX
 MANIFEST_URL=$MANIFEST_BASE/update-$CHANNEL.json
 # Lumen OS release (1.0.8, the org.lumen bridge release; 1.0.4 to 1.0.7 were tar patches on the Mac; 1.0.0 shipped 2026-10-08, 1.0.1 and 1.0.2 on 2026-10-10): user-facing version and the updater's version_code.
 # Scheme (tools/ota/image/ota_props.txt, docs/ota.md): version_code = major*10000 + minor*100 + patch + 1,
 # so 1.0.0 = 10001 is offered over the 1.0 test builds (version_code 10000, build_id lumen-1.0-<date>)
 # 1.0.1 = 10002 over 1.0.0, 1.0.2 = 10003 over 1.0.1 and 1.0.3 = 10004 over 1.0.2.
+# From 1.0.8 on the offset is +2: the first 1.0.8 build (10009, lumen-1.0.8-20261104anp) was withdrawn, and the
+# re-published 1.0.8 (10010) must be offered to a projector that has it; 1.0.9 = 10011.
 # ro.z9x.version, ro.lumen.version, the build id lumen-$VER-<date>[suffix], the version_code and the APK set's
 # versionName (tools/lumen/lumen_checks.py VERSION_NAME) are all checked against VER in the preflight.
 VER=1.0.8
@@ -699,9 +703,11 @@ preflight() {
   vmaj=${VER%%.*}; vrest=${VER#*.}; vmin=${vrest%%.*}; vpat=${vrest#*.}
   case "$vmaj$vmin$vpat" in *[!0-9]*) die "VER=$VER: not numeric" ;; esac
   [ "$vmin" -lt 100 ] && [ "$vpat" -lt 100 ] || die "VER=$VER: minor and patch below 100 (version_code scheme)"
-  OS_VERSION_CODE=$((vmaj * 10000 + vmin * 100 + vpat + 1))
+  # +1 up to 1.0.7, +2 from 1.0.8 (the withdrawn first 1.0.8 build had 10009)
+  voff=1; [ $((vmaj * 10000 + vmin * 100 + vpat)) -ge 10008 ] && voff=2
+  OS_VERSION_CODE=$((vmaj * 10000 + vmin * 100 + vpat + voff))
   grep -qx "ro.z9x.version_code=$OS_VERSION_CODE" "$OTAIMG/ota_props.txt" \
-    || die "ota_props.txt: ro.z9x.version_code must be $OS_VERSION_CODE for $VER (major*10000 + minor*100 + patch + 1)"
+    || die "ota_props.txt: ro.z9x.version_code must be $OS_VERSION_CODE for $VER (major*10000 + minor*100 + patch + $voff)"
   [ "$OS_VERSION_CODE" -gt 10000 ] || die "version_code $OS_VERSION_CODE is not above the 1.0 test builds (10000)"
   # the APK set is built for one release: its versionName (lumen_checks.py VERSION_NAME) is this VER
   vn=$(sed -n "s/^VERSION_NAME = '\([^']*\)'.*/\1/p" "$CHK")
@@ -717,7 +723,7 @@ preflight() {
       | grep -qE '^ro\.z9x\.(variant|gms)='; then
     die "a prop snippet sets ro.z9x.variant / ro.z9x.gms (only lumen_v1.sh VARIANT=public / GMS=0 may)"
   fi
-  [ "$(grep -c '^ro\.z9x\.ota\.manifest_url=https://github\.com/kmuradoff/lumen-os/releases/latest/download/update-stable\.json$' "$OTAIMG/ota_props.txt")" = 1 ] \
+  [ "$(grep -c '^ro\.z9x\.ota\.manifest_url=https://github\.com/kmuradoff/lumen-os/releases/download/z9x/update-stable\.json$' "$OTAIMG/ota_props.txt")" = 1 ] \
     || die "ota_props.txt: expected one ro.z9x.ota.manifest_url=.../update-stable.json line (VARIANT=public replaces it)"
   dup=$(cat "$V1/build_prop_v1.txt" "$V1/product_prop_v1.txt" "$UIRES/product_prop.txt" "$OTAIMG/ota_props.txt" | grep -v '^#' | grep '=' | cut -d= -f1 | sort | uniq -d)
   [ -z "$dup" ] || die "prop set twice across the snippets: $dup"

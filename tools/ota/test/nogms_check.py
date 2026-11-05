@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(GSI, "tools", "ota"))
 import check_image as ci  # noqa: E402
 import check_release_assets as cra  # noqa: E402
 
-BASE = "https://github.com/kmuradoff/lumen-os/releases/latest/download/"
+BASE = "https://github.com/kmuradoff/lumen-os/releases/download/z9x/"
 PROD = ("ro.z9x.variant=public\nro.z9x.gms=0\nro.z9x.build_id=lumen-1.0.1-20261009enp\n"
         "ro.z9x.ota.manifest_url=" + BASE + "update-public-nogms.json\n")
 SYSCONFIG = (b'<config>\n    <initial-package-state package="org.lumen.updater" stopped="false" />\n</config>\n')
@@ -142,6 +142,11 @@ def main():
          False, "public image only"),
         ("private suffix p", "private", "1", props("private", None, "update-stable.json", "lumen-1.0.1-20261009ep"),
          False, "reserved for public"),
+        # since 1.0.8 the image reads the channel tag z9x, never releases/latest (what 1.0.7 and older read)
+        ("nogms reading releases/latest", "public", "0",
+         dict(props("public", "0", "update-public-nogms.json", "lumen-1.0.8-20261105anp"),
+              **{"ro.z9x.ota.manifest_url": "https://github.com/kmuradoff/lumen-os/releases/latest/download/update-public-nogms.json"}),
+         False, "expected"),
     ]
     for what, variant, gms, p, want_ok, why in cases:
         expect("variant: " + what, ci.check_variant(variant, gms, p), want_ok, why)

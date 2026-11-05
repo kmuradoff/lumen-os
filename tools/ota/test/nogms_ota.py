@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.join(GSI, "tools", "sign"))
 import make_manifest as mm  # noqa: E402
 import make_ota as mo  # noqa: E402
 
-BASE = "https://github.com/kmuradoff/lumen-os/releases/latest/download/"
+BASE = "https://github.com/kmuradoff/lumen-os/releases/download/z9x/"
 NOGMS = ("ro.z9x.variant=public\nro.z9x.gms=0\nro.z9x.build_id=lumen-1.0.1-20261009enp\n"
          "ro.z9x.ota.manifest_url=" + BASE + "update-public-nogms.json\n")
 GMS = ("ro.z9x.variant=public\nro.z9x.build_id=lumen-1.0.1-20261009ep\n"
