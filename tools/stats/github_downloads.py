@@ -31,8 +31,12 @@ KINDS = [
     ("checksums", re.compile(r"^SHA256SUMS$")),
     ("source", re.compile(r"source\.zip$")),
 ]
-# release tag prefix -> device codename (Z9X tags are v<version>)
-DEVICES = [("play6", "dragon_healthy"), ("hb", "goat_elegant"), ("v", "horse_popular")]
+# release tag prefix -> device codename, longest first (the design notes: <slug>-<version> from 1.0.8,
+# the Z9X up to 1.0.7 as v<version>, the HB until its 1.0.8 as hb-<version>)
+DEVICES = [("z9x-hb", "goat_elegant"), ("hb", "goat_elegant"), ("play6", "dragon_healthy"), ("z9x", "horse_popular"),
+           ("v", "horse_popular")]
+# update channel tags: fixed pre-releases holding only the signed manifests; their downloads are update checks
+CHANNELS = {"z9x", "z9x-hb", "hb", "play6"}
 
 
 def kind(name):
@@ -44,7 +48,7 @@ def kind(name):
 
 def device(tag):
     for prefix, dev in DEVICES:
-        if tag.startswith(prefix):
+        if tag == prefix or tag.startswith(prefix + "-") or (prefix == "v" and re.match(r"v\d", tag)):
             return dev
     return "other"
 
@@ -78,7 +82,8 @@ def rows(rels, day):
             sums[k] = sums.get(k, 0) + a["download_count"]
         for k, n in sorted(sums.items()):
             out.append({"date": day, "tag": r["tag_name"], "device": device(r["tag_name"]),
-                        "version": version(r["tag_name"]), "prerelease": bool(r.get("prerelease")),
+                        "version": version(r["tag_name"]), "channel": r["tag_name"] in CHANNELS,
+                        "prerelease": bool(r.get("prerelease")) and r["tag_name"] not in CHANNELS,
                         "published": (r.get("published_at") or "")[:10], "kind": k, "downloads": n})
     return out
 

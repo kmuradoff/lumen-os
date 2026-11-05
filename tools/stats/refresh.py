@@ -30,7 +30,8 @@ def summarize(rows):
     for r in rows:
         k = (r["date"], r["tag"])
         s = out.setdefault(k, {"date": r["date"], "tag": r["tag"], "device": r["device"], "version": r["version"],
-                               "prerelease": r["prerelease"], "published": r["published"], "image": 0,
+                               "prerelease": r["prerelease"], "channel": r.get("channel", False),
+                               "published": r["published"], "image": 0,
                                "installer": 0, "updates": 0, "checks": 0})
         if r["kind"] in ("image", "installer"):
             s[r["kind"]] += r["downloads"]

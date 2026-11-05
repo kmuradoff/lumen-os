@@ -362,7 +362,20 @@ footer { color: var(--text-3); font-size: 11.5px; margin-top: 22px; display: fle
       mRows.map(r => `<tr><td>${esc(modelName(r.model))}</td><td class="m">${esc(r.xgimi_model || "–")}</td><td class="n">${fmt(r.installs)}</td></tr>`).join("") + `</tbody></table>`;
 
     // GitHub: latest snapshot per release, three measures stacked
+    // tags: <slug>-<version> from 1.0.8, v<version> (Z9X) and hb-<version> (HB) before; z9x / z9x-hb / hb / play6 are
+    // update channels (only the manifests: their downloads are update checks); a tag missing from the newest
+    // snapshot was deleted from GitHub
+    const CHANNEL_TAGS = new Set(["z9x", "z9x-hb", "hb", "play6"]);
+    const tagDevice = t => /^(z9x-hb|hb)(-|$)/.test(t) ? "goat_elegant" : /^play6(-|$)/.test(t) ? "dragon_healthy"
+      : /^(z9x(-|$)|v\d)/.test(t) ? "horse_popular" : "other";
+    const newest = gh.reduce((d, r) => r.date > d ? r.date : d, "");
     const last = {}; gh.forEach(r => { if (!last[r.tag] || r.date > last[r.tag].date) last[r.tag] = r; });
+    Object.values(last).forEach(r => {
+      r.channel = r.channel || CHANNEL_TAGS.has(r.tag);
+      if (r.channel) r.prerelease = false;
+      if (!r.device || r.device === "other") r.device = tagDevice(r.tag);
+      r.deleted = r.date < newest;
+    });
     const devOk = r => model === "all" || r.device === model;
     const rel = Object.values(last).filter(devOk).sort((x, y) => (x.published + x.tag).localeCompare(y.published + y.tag));
     const gkeys = [{ id: "installs", name: "Образы и установщики", short: "Образы", color: css("--s1") }, { id: "updates", name: "Пакеты обновления", short: "Обновления", color: css("--s2") }, { id: "checks", name: "Проверки обновлений", short: "Проверки", color: css("--s3") }];
@@ -373,7 +386,7 @@ footer { color: var(--text-3); font-size: 11.5px; margin-top: 22px; display: fle
       const tot = r => gkeys.reduce((t, k) => t + (r[k.id] || 0), 0), gmax = Math.max(1, ...rel.map(tot));
       const shown = rel.slice().reverse();
       chG.innerHTML = `<table><thead><tr><th>Выпуск</th><th>Дата</th><th style="width:46%"></th>` + gkeys.map(k => `<th class="n">${esc(k.short)}</th>`).join("") + `</tr></thead><tbody>` +
-        shown.map(r => `<tr><td>${esc(modelName(r.device))} ${esc(r.version)}${r.prerelease ? '<span class="tag">бета</span>' : ""}</td>` +
+        shown.map(r => `<tr${r.deleted ? ' style="opacity:.55"' : ""}><td>${esc(modelName(r.device))} ${r.channel ? `канал обновлений <span style="color:var(--text-2)">(${esc(r.tag)})</span>` : esc(r.version)}${r.prerelease ? '<span class="tag">бета</span>' : ""}${r.deleted ? '<span class="tag">удалён</span>' : ""}</td>` +
           `<td class="m">${new Date(r.published + "T00:00:00Z").toLocaleDateString("ru-RU", { day: "numeric", month: "short", timeZone: "UTC" })}</td>` +
           `<td><div style="display:flex;gap:2px;height:8px;width:${Math.max(1, tot(r) * 100 / gmax)}%">` +
             gkeys.filter(k => r[k.id]).map(k => `<div title="${esc(k.name)}: ${fmt(r[k.id])}" style="flex:${r[k.id]};background:${k.color};border-radius:3px"></div>`).join("") + `</div></td>` +
