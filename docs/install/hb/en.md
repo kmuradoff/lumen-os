@@ -9,9 +9,9 @@ V6.16.24. It replaces only the system partition. XGIMI's firmware, boot, vendor 
 touched. New versions then arrive over Wi-Fi, and your data stays.
 
 > [!CAUTION]
-> The install **erases all data on the projector**. The stock firmware can only be put back with XGIMI's
-> firmware file, which I do not publish: XGIMI support gives it out, see ["Back to stock"](#hb-stock). Ask
-> for it in advance, before the install.
+> The install **erases all data on the projector**. The stock firmware is put back with XGIMI's official
+> V6.16.24 firmware file (2.2 GB, [download from XGIMI's server](https://product-library.static.xgimi.com/firmware/release/MTK9660_AOSP/dapeng/MTK9660_AOSP_GEMINI_6.16.24_20260428-152516/XGIMI_GOATELEGANT_XR03D.bin)), see
+> ["Back to stock"](#hb-stock). Download it before the install.
 
 The install takes about 30 minutes. You type a few commands in a terminal, and one step in fastboot mode
 (vbmeta) you do yourself, without the installer.
@@ -384,8 +384,8 @@ If nothing helps, write in the [4PDA topic](https://4pda.to/forum/index.php?show
 
 The stock firmware is put back by XGIMI's own update from a USB stick.
 
-1. Ask XGIMI support for the firmware of model G0130. The file is named `XGIMI_GOATELEGANT_XR03D.bin`. I do
-   not publish it. A file for another model will not do.
+1. Download XGIMI's official V6.16.24 firmware for model G0130 from XGIMI's server:
+   [XGIMI_GOATELEGANT_XR03D.bin](https://product-library.static.xgimi.com/firmware/release/MTK9660_AOSP/dapeng/MTK9660_AOSP_GEMINI_6.16.24_20260428-152516/XGIMI_GOATELEGANT_XR03D.bin) (2.2 GB). A file for another model will not do.
 2. A USB stick with an **MBR** partition scheme and **one FAT32 partition**. On macOS: "Disk Utility → View →
    Show All Devices", pick the stick itself (not its volume), "Erase", format "MS-DOS (FAT)", scheme "Master
    Boot Record".
