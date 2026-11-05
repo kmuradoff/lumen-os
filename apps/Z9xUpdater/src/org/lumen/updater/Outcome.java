@@ -53,15 +53,33 @@ final class Outcome {
             boolean ready, boolean installing, String ota, BooleanSupplier needReboot) {
         if (target.isEmpty()) return installing ? Boot.INTERRUPTED : Boot.NONE;
         if (!ready && !installing) return Boot.STALE;
-        // the update runs: its build id, or (a manifest build id that does not match the image) its
-        // version on a build that is not the one we came from
-        boolean onTarget = target.equals(now) || (!now.isEmpty() && !now.equals(from)
-                && !targetVersion.isEmpty() && targetVersion.equals(nowVersion));
-        if (onTarget) return "unhealthy".equals(ota) ? Boot.UNHEALTHY : Boot.OK;
+        if (onTarget(target, from, targetVersion, now, nowVersion)) return "unhealthy".equals(ota) ? Boot.UNHEALTHY : Boot.OK;
         if ((ready || "rolledback".equals(ota)) && !needReboot.getAsBoolean()) {
             return from.isEmpty() || from.equals(now) ? Boot.ROLLED_BACK : Boot.OTHER;
         }
         return installing ? Boot.INTERRUPTED : Boot.NONE;
+    }
+
+    /**
+     * The update runs: its build id, or (a manifest build id that does not match the image) its version on a
+     * build that is not the one we came from. "" target = nothing pending.
+     */
+    static boolean onTarget(String target, String from, String targetVersion, String now, String nowVersion) {
+        if (target.isEmpty()) return false;
+        return target.equals(now) || (!now.isEmpty() && !now.equals(from)
+                && !targetVersion.isEmpty() && targetVersion.equals(nowVersion));
+    }
+
+    /**
+     * StateProvider "state" (Lumen Home's "Update ready" chip, the projector's power policy): READY says a restart
+     * installs the update, so it is over as soon as the update's build runs, also in the first seconds of that
+     * boot, before BootReceiver.evaluate (BOOT_COMPLETED) has stored IDLE: Lumen Home asks at its start
+     * (2026-11-04, HB beta4 -> beta5: the chip showed after the restart and its page said "updated").
+     * @param ready the stored state is READY
+     */
+    static boolean readyStale(boolean ready, String target, String from, String targetVersion, String now,
+            String nowVersion) {
+        return ready && onTarget(target, from, targetVersion, now, nowVersion);
     }
 
     /**

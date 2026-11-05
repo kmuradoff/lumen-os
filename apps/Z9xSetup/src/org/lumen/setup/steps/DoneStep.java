@@ -27,6 +27,7 @@ import org.lumen.setup.ui.Icon;
 import org.lumen.setup.ui.Pill;
 import org.lumen.setup.ui.Row;
 import org.lumen.setup.ui.Sheet;
+import org.lumen.setup.ui.SwitchView;
 import org.lumen.setup.ui.Ui;
 
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ import java.util.TimeZone;
 /**
  * Done: "Lumen OS is ready", a summary (language, network, remote, Google,
  * time zone [Change], projector name [Change: the projector's own names / Projector / rooms / Other…],
- * home screen) and [Start], which runs the finish. The projector's own names are XGIMI Z9X / Z9X unless
+ * home screen, the anonymous statistics switch of the updater) and [Start], which runs the finish. The projector's own names are XGIMI Z9X / Z9X unless
  * the projector app names its device in the ping reply ("names", 1 to 4 clean names, the first one is
  * the default). Shows the "protected video components missing" line when sys.z9x.blobs is set and not
  * ok, and the offline hint when there was no internet.
@@ -140,6 +141,20 @@ public class DoneStep extends Step {
                 home.setFocusable(false);
             }
             list.addView(home, rowLp());
+        }
+
+        // anonymous statistics: the updater owns the switch (default on); shown so it can be turned off here
+        Boolean stats = Sys.statsOn(host);
+        if (stats != null) {
+            Row r = new Row(ctx(), s(R.string.done_stats)).compact().subtitle(s(R.string.done_stats_note)).subtitleLines(3);
+            SwitchView sw = new SwitchView(ctx());
+            sw.setOn(stats, false);
+            r.end(sw, Ui.px(72), Ui.px(40));
+            r.setOnClickListener(x -> {
+                Boolean now = Sys.setStatsOn(host, !sw.isOn());
+                if (now != null) sw.setOn(now, true);
+            });
+            list.addView(r, rowLp());
         }
 
         String blobs = Sys.prop("sys.z9x.blobs", "");

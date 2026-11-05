@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS on the XGIMI Z9X HB (goat_elegant, 32-bit userspace), never in an image: the Google services add-on
+# images that may be written into z9x_gapps_<slot> on the HB. HB ONLY: the Z9X file is installer/lib/gapps_images.txt
+# (arm64 zip) and must never get this line, nor this file a Z9X one. Same format, same profile, same rules as that
+# file: the image is deterministic (fixed time, zero UUID, one worker, no compression), so the same zip and
+# erofs-utils give the same image on every computer. A hash of an image is not a Google file.
+# Made by: python3 -I devices/goat_elegant/image/hb_gapps_allow.py image ZIP --allow devices/goat_elegant/image/
+# gapps_allow.txt (independent Python tar writer, mkfs.erofs of installer/tools/erofs-utils); cross-checked with
+# the installer's own bash writer (gi_tar / gi_build) and the linux-x86_64 erofs-utils on xgimi-builder: same bytes.
+# Checked by: python3 -I devices/goat_elegant/image/hb_gapps_allow.py image-check devices/goat_elegant/image/
+# gapps_images.txt devices/goat_elegant/image/gapps_allow.txt
+#
+# <zip sha256> <erofs-utils version> <profile> <image sha256> <image bytes>
+#   profile plain = mkfs.erofs -b4096 -E noinline_data -T1230768000 -U 00000000-0000-0000-0000-000000000000
+#                   --all-root --workers=1 -Lz9x_gapps --tar=f
+b8d81621106d045cb85bb7e540cb9a09eacd883fa5f1b24a67e7181d687a9623 1.9.4 plain 52b5c9da4b7f296cb768bbc6eb657ade8a98769970a626e0037fc8e2b9f067b8 386568192

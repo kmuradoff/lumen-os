@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Lumen OS on the XGIMI Z9X HB (goat_elegant, 32-bit userspace): the Google services add-on, done the Z9X way.
-# The owner downloads the MindTheGapps zip himself from its official URL (url= below); no Google file is in any
+# The user downloads the MindTheGapps zip himself from its official URL (url= below); no Google file is in any
 # Lumen OS image. Hashes, sizes and paths only. Only a zip whose sha256 has a zip= line here is accepted; exactly
 # that zip's files listed below go into the logical partition z9x_gapps<slot> (part= bytes, ext4), each checked
 # by sha256 (installer/lib/gapps_fill.sh, unchanged); the image's /system/etc/z9x/z9x_gapps.sh (the unchanged

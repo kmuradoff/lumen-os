@@ -37,6 +37,7 @@ public final class Checker {
 
     /** Online check. */
     public static synchronized Result check(Context c) {
+        Stats.maybeSend(c);   // own thread, at most once a day, when the user has not turned it off
         Store st = Store.get(c);
         Store.State s = st.state();
         if (s == Store.State.DOWNLOADING || s == Store.State.INSTALLING || s == Store.State.READY) {

@@ -15,6 +15,12 @@
     <string name="auto_notify">仅通知我</string>
     <string name="auto_download">自动下载</string>
     <string name="auto_hint">未经您同意，绝不会安装更新。</string>
+    <string name="row_beta">Beta 版更新</string>
+    <string name="beta_on">开启</string>
+    <string name="beta_off">关闭</string>
+    <string name="beta_hint">Beta 版更早推出，但测试较少。关闭后，当前版本会保留，直到有更新的正式版发布。</string>
+    <string name="row_stats">发送匿名统计信息</string>
+    <string name="stats_hint">每天一次：型号、版本、经过哈希处理的序列号和国家。不会保存您的 IP 地址。</string>
     <string name="avail_title">Lumen OS %1$s 已推出</string>
     <string name="avail_size_full">完整更新 · %1$s</string>
     <string name="avail_size_delta">更新 · %1$s</string>

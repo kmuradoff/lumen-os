@@ -1,6 +1,9 @@
 # OTA device test results of the XGIMI Z9X HB (T1..T9).
 # Read by tools/devices/ota/ota_conf.py (results, channel_open): make_manifest.py and check_release.py refuse
-# every channel except the stage channel hb-test until the last rows of T5, T6 and T7 say pass.
+# every channel except the stage channel hb-test until the last row of T7 says pass (T5 and T6 were dropped by the
+# owner on 2026-11-04 after the real OTAs on the HB).
 # One row per test run, appended, never edited. 5 tab-separated fields:
 #   test (T1..T9)  result (pass or fail)  date (YYYY-MM-DD)  build (ro.lumen.build_id)  note (no tabs)
 # The last row of a test decides: a later fail closes the public channels again.
+T7	pass	2026-11-04	lumen-hb-1.0.8-beta4-202611041536	beta3 to beta4, slot a to b, USB stick, LumenUpdater; vold marked b, merge completed in 3.7 s
+T7	pass	2026-11-04	lumen-hb-1.0.8-beta5-202611041737	beta4 to beta5 delta, slot b to a, USB stick, LumenUpdater; marked a, merge completed (snapshotctl none)

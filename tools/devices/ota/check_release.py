@@ -17,6 +17,10 @@ of these:
     lists a package or side-car that is not an asset of z9x-<version> with the manifest's size; the manifest
     on Latest not byte-identical to the one on z9x (images up to 1.0.7 and from 1.0.8 must be offered the same);
     a z9x-<x.y.z> release that is a draft;
+  - the Z9X beta channel (the updater's Beta updates switch), when published: the tag beta or a beta-<x.y.z>
+    release that is not a pre-release or is a draft; on the tag beta an asset other than update-public-beta.json
+    and .sig, or a manifest that does not verify with installer/certs/ota.x509.pem, is not device z9x channel
+    public-beta, or lists a package or side-car that is not an asset of beta-<version> with the manifest's size.
   - a release of the device (the manifest tag, or <package_tag> of any version) that is a draft, the manifest tag
     when it is not a pre-release (a version release may be a normal release since the maintainer's HB 1.0.8, 2026-11-05,
     but never Latest), or one that carries an asset named update-stable*, update-public* (the Z9X manifests);
@@ -25,7 +29,7 @@ of these:
     channel = the tag's device and the file's channel, O1 version code, package URLs https on the version's tag),
     or a package or side-car that is not an asset of that version's release with the manifest's size;
   - on the manifest tag: a manifest (or its .sig) of a channel other than stage_channel while
-    devices/<codename>/install/OTA_RESULTS.tsv does not record T5, T6 and T7 as passed;
+    devices/<codename>/install/OTA_RESULTS.tsv does not record T7 as passed (T5 / T6 are not required);
   - the manifest tag is missing while a version release exists.
 Nothing is uploaded, edited or deleted.
 """
@@ -50,6 +54,11 @@ Z9X_TAG = re.compile(r"(v|z9x-)\d+\.\d+\.\d+")
 # the Z9X update channel: a fixed pre-release holding only the signed manifest (tools/lumen_v1.sh MANIFEST_BASE)
 Z9X_CHANNEL_TAG = "z9x"
 Z9X_PKG_TAG = re.compile(r"z9x-(\d+\.\d+\.\d+)")
+# the Z9X beta channel (tools/ota/make_manifest.py public-beta): manifest on the fixed pre-release tag beta,
+# packages on the pre-release beta-<version>
+Z9X_BETA_TAG = "beta"
+Z9X_BETA_MANIFEST = "update-public-beta.json"
+Z9X_BETA_PKG_TAG = re.compile(r"beta-(\d+\.\d+\.\d+)")
 Z9X_MANIFEST = "update-public-nogms.json"
 Z9X_CERT = "installer/certs/ota.x509.pem"
 Z9X_NAMES = re.compile(r"update-(stable|public)")
@@ -113,6 +122,7 @@ def audit(dev, gh, errs, notes):
                         notes.append("releases/latest/%s verifies with %s (Z9X %s)" % (Z9X_MANIFEST, Z9X_CERT, m.get("version")))
         rels = {r["tag_name"]: r for r in gh.releases()}
         z9x_channel(dev, gh, rels, tag if Z9X_TAG.fullmatch(tag) else "", tmp, errs, notes)
+        z9x_beta(dev, gh, rels, tmp, errs, notes)
         ptag = re.compile(re.escape(c["package_tag"]).replace(re.escape("{version}"), r"(.+)"))
         mine = {t: r for t, r in rels.items() if t == c["manifest_tag"] or ptag.fullmatch(t)}
         for t, r in sorted(mine.items()):
@@ -244,6 +254,63 @@ def z9x_channel(dev, gh, rels, latest, tmp, errs, notes):
                         "different updates)" % (latest, Z9X_MANIFEST, Z9X_CHANNEL_TAG, Z9X_MANIFEST))
         else:
             notes.append("Z9X channel: releases/latest %s carries the same %s" % (latest, Z9X_MANIFEST))
+
+
+def z9x_beta(dev, gh, rels, tmp, errs, notes):
+    """The Z9X beta channel, when published: pre-releases only, one signed manifest of channel public-beta whose
+    packages are assets of beta-<version>."""
+    for t, r in sorted(rels.items()):
+        if (t == Z9X_BETA_TAG or Z9X_BETA_PKG_TAG.fullmatch(t)) and (not r.get("prerelease") or r.get("draft")):
+            errs.append("%s: prerelease %s, draft %s (the Z9X beta channel is always a published pre-release)"
+                        % (t, r.get("prerelease"), r.get("draft")))
+    zb = rels.get(Z9X_BETA_TAG)
+    if zb is None:
+        notes.append("Z9X beta channel: not published (no tag %s)" % Z9X_BETA_TAG)
+        return
+    names = {a["name"]: a for a in zb.get("assets", [])}
+    pair = (Z9X_BETA_MANIFEST, Z9X_BETA_MANIFEST + ".sig")
+    for n in sorted(names):
+        if n not in pair:
+            errs.append("%s: asset %s is not %s or its .sig" % (Z9X_BETA_TAG, n, Z9X_BETA_MANIFEST))
+    have = [n for n in pair if n in names]
+    if not have:
+        notes.append("Z9X beta channel: tag %s without a manifest" % Z9X_BETA_TAG)
+        return
+    if len(have) == 1:
+        errs.append("%s: %s without %s" % (Z9X_BETA_TAG, have[0], [n for n in pair if n not in names][0]))
+        return
+    d = os.path.join(tmp, "z9x-beta")
+    os.makedirs(d)
+    gh.download(Z9X_BETA_TAG, list(pair), d)
+    mf = os.path.join(d, Z9X_BETA_MANIFEST)
+    if not vm.signature_ok(mf, mf + ".sig", os.path.join(dev["root"], Z9X_CERT)):
+        errs.append("%s/%s does not verify with %s" % (Z9X_BETA_TAG, Z9X_BETA_MANIFEST, Z9X_CERT))
+        return
+    m = json.load(open(mf, encoding="utf-8"))
+    if m.get("device") != "z9x" or m.get("channel") != "public-beta":
+        errs.append("%s/%s is device %r channel %r, not the Z9X beta's (z9x, public-beta)"
+                    % (Z9X_BETA_TAG, Z9X_BETA_MANIFEST, m.get("device"), m.get("channel")))
+        return
+    vt = "beta-%s" % m.get("version")
+    vr = rels.get(vt)
+    if vr is None:
+        errs.append("%s/%s: version %s has no release %s" % (Z9X_BETA_TAG, Z9X_BETA_MANIFEST, m.get("version"), vt))
+        return
+    assets = {a["name"]: a for a in vr.get("assets", [])}
+    want = "https://github.com/%s/releases/download/%s/" % (dev["ota"]["repo"], vt)
+    for p in m.get("packages", []):
+        for url, size in ((p.get("url", ""), p.get("size")), (p.get("metadata_url", ""), p.get("metadata_size"))):
+            an = url.rsplit("/", 1)[-1]
+            if not url.startswith(want):
+                errs.append("%s/%s: %s is not on %s" % (Z9X_BETA_TAG, Z9X_BETA_MANIFEST, url, want))
+            elif an not in assets:
+                errs.append("%s/%s: %s is not an asset of %s" % (Z9X_BETA_TAG, Z9X_BETA_MANIFEST, an, vt))
+            elif size is not None and assets[an].get("size") != size:
+                errs.append("%s/%s: %s is %s bytes on %s, the manifest says %s"
+                            % (Z9X_BETA_TAG, Z9X_BETA_MANIFEST, an, assets[an].get("size"), vt, size))
+    notes.append("Z9X beta channel: %s/%s verifies with %s (Z9X %s, %s), %d package(s) on %s"
+                 % (Z9X_BETA_TAG, Z9X_BETA_MANIFEST, Z9X_CERT, m.get("version"), m.get("version_code"),
+                    len(m.get("packages", [])), vt))
 
 
 def main():

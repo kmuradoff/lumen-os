@@ -98,6 +98,9 @@
     <string name="done_tz_detected">%1$s (detected)</string>
     <string name="done_name">Projector name</string>
     <string name="done_home">Home screen</string>
+    <!-- the anonymous statistics switch (shared with the updater, which owns it); the note is the disclosure -->
+    <string name="done_stats">Send anonymous statistics</string>
+    <string name="done_stats_note">Once a day: model, version, serial number in hashed form and country. Your IP address is not stored.</string>
     <string name="done_start">Start</string>
     <string name="done_offline_hint">No internet: sign in to Google and set the time zone later in Settings.</string>
     <string name="done_offline_hint_nogms">No internet: set the time zone later in Settings.</string>

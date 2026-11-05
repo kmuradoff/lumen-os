@@ -5,14 +5,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
 /**
  * HTTPS only. Every request goes through the stable GitHub URL, which redirects to a short-lived
- * CDN URL, so a resumed download always gets a fresh one. Only a User-Agent is sent: no device id,
- * no telemetry.
+ * CDN URL, so a resumed download always gets a fresh one. Only a User-Agent is sent: no device id.
+ * The one exception is {@link #post}, used only by Stats (the anonymous version count the user can
+ * turn off).
  */
 public final class Http {
     private Http() {}
@@ -55,6 +57,26 @@ public final class Http {
                 }
                 return bo.toByteArray();
             }
+        } finally {
+            c.disconnect();
+        }
+    }
+
+    /** POST a small JSON body, no redirects followed, short timeouts; any answer but 2xx is an error. */
+    public static void post(String url, byte[] json, int timeoutMs) throws IOException {
+        HttpURLConnection c = open(url);
+        try {
+            c.setInstanceFollowRedirects(false);
+            c.setConnectTimeout(timeoutMs);
+            c.setReadTimeout(timeoutMs);
+            c.setDoOutput(true);
+            c.setFixedLengthStreamingMode(json.length);
+            c.setRequestProperty("Content-Type", "application/json");
+            try (OutputStream out = c.getOutputStream()) {
+                out.write(json);
+            }
+            int code = c.getResponseCode();
+            if (code / 100 != 2) throw new HttpException(code, "HTTP " + code + " for " + url);
         } finally {
             c.disconnect();
         }

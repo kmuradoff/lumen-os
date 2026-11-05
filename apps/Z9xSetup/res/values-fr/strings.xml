@@ -98,6 +98,8 @@
     <string name="done_tz_detected">%1$s (détecté)</string>
     <string name="done_name">Nom du projecteur</string>
     <string name="done_home">Écran d’accueil</string>
+    <string name="done_stats">Envoyer des statistiques anonymes</string>
+    <string name="done_stats_note">Une fois par jour : modèle, version, numéro de série sous forme de hachage et pays. Votre adresse IP n\'est pas conservée.</string>
     <string name="done_start">Commencer</string>
     <string name="done_offline_hint">Pas d’Internet : connectez-vous à Google et réglez le fuseau horaire plus tard dans les paramètres.</string>
     <string name="done_offline_hint_nogms">Pas d’Internet : réglez le fuseau horaire plus tard dans les paramètres.</string>

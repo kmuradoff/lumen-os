@@ -15,6 +15,12 @@
     <string name="auto_notify">إعلامي فقط</string>
     <string name="auto_download">التنزيل تلقائيًا</string>
     <string name="auto_hint">لا يتم تثبيت التحديثات أبدًا دون موافقتك.</string>
+    <string name="row_beta">التحديثات التجريبية</string>
+    <string name="beta_on">مفعّلة</string>
+    <string name="beta_off">متوقفة</string>
+    <string name="beta_hint">تصل الإصدارات التجريبية أبكر لكنها أقل اختبارًا. عند إيقافها يبقى إصدارك الحالي حتى يصدر إصدار عادي أحدث.</string>
+    <string name="row_stats">إرسال إحصاءات مجهولة الهوية</string>
+    <string name="stats_hint">مرة واحدة يوميًا: الطراز والإصدار والرقم التسلسلي بصيغة مُجزّأة (hash) والبلد. لا يتم حفظ عنوان IP الخاص بك.</string>
     <string name="avail_title">يتوفر Lumen OS %1$s</string>
     <string name="avail_size_full">تحديث كامل · %1$s</string>
     <string name="avail_size_delta">تحديث · %1$s</string>

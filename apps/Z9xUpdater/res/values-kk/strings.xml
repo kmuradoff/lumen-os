@@ -15,6 +15,12 @@
     <string name="auto_notify">Тек хабарлау</string>
     <string name="auto_download">Автоматты түрде жүктеу</string>
     <string name="auto_hint">Жаңартулар сіздің келісіміңізсіз ешқашан орнатылмайды.</string>
+    <string name="row_beta">Бета жаңартулар</string>
+    <string name="beta_on">Қосулы</string>
+    <string name="beta_off">Өшірулі</string>
+    <string name="beta_hint">Бета нұсқалар ертерек шығады, бірақ аз тексерілген. Оларды өшірсеңіз, жаңарақ қалыпты нұсқа шыққанша ағымдағы нұсқа сақталады.</string>
+    <string name="row_stats">Анонимді статистика жіберу</string>
+    <string name="stats_hint">Күніне бір рет: модель, нұсқа, хэштелген сериялық нөмір және ел. IP мекенжайыңыз сақталмайды.</string>
     <string name="avail_title">Lumen OS %1$s қолжетімді</string>
     <string name="avail_size_full">Толық жаңарту · %1$s</string>
     <string name="avail_size_delta">Жаңарту · %1$s</string>

@@ -53,8 +53,11 @@ public final class HbFeaturesTest {
         check(HbFeatures.on(HbFeatures.F.OBSTACLE_AVOID), "OBSTACLE_AVOID ON");
         // hb-t8c: manual keystone after the 16 read / 64 + 15 one-step check on the device
         check(HbFeatures.on(HbFeatures.F.MANUAL_KEYSTONE), "MANUAL_KEYSTONE ON");
-        for (HbFeatures.F f : new HbFeatures.F[] {HbFeatures.F.ZOOM_SHIFT, HbFeatures.F.ROTATION, HbFeatures.F.EYE_PROTECTION,
-                HbFeatures.F.GAME_MODE, HbFeatures.F.EQUALIZER, HbFeatures.F.UI_RESOLUTION, HbFeatures.F.FIT_SCREEN}) {
+        // 2026-11-04: game mode with the stock HB options 1 / 2 (display_gamemode_version=3)
+        check(HbFeatures.on(HbFeatures.F.GAME_MODE), "GAME_MODE ON");
+        check(HbFeatures.on(HbFeatures.F.EYE_PROTECTION), "EYE_PROTECTION ON");
+        for (HbFeatures.F f : new HbFeatures.F[] {HbFeatures.F.ZOOM_SHIFT, HbFeatures.F.ROTATION,
+                HbFeatures.F.EQUALIZER, HbFeatures.F.UI_RESOLUTION, HbFeatures.F.FIT_SCREEN}) {
             check(HbFeatures.state(f) == HbFeatures.State.PENDING, f + " PENDING");
             check(!HbFeatures.on(f), f + " not on");
         }

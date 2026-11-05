@@ -98,6 +98,8 @@
     <string name="done_tz_detected">%1$s (wykryta)</string>
     <string name="done_name">Nazwa projektora</string>
     <string name="done_home">Ekran główny</string>
+    <string name="done_stats">Wysyłaj anonimowe statystyki</string>
+    <string name="done_stats_note">Raz dziennie: model, wersja, numer seryjny w postaci skrótu (hash) i kraj. Twój adres IP nie jest zapisywany.</string>
     <string name="done_start">Zaczynamy</string>
     <string name="done_offline_hint">Brak internetu: zaloguj się w Google i ustaw strefę czasową później w ustawieniach.</string>
     <string name="done_offline_hint_nogms">Brak internetu: ustaw strefę czasową później w ustawieniach.</string>

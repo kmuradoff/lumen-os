@@ -98,6 +98,8 @@
     <string name="done_tz_detected">%1$s (rilevato)</string>
     <string name="done_name">Nome del proiettore</string>
     <string name="done_home">Schermata Home</string>
+    <string name="done_stats">Invia statistiche anonime</string>
+    <string name="done_stats_note">Una volta al giorno: modello, versione, numero di serie in forma di hash e paese. Il tuo indirizzo IP non viene salvato.</string>
     <string name="done_start">Inizia</string>
     <string name="done_offline_hint">Nessuna connessione: accedi a Google e imposta il fuso orario più tardi nelle impostazioni.</string>
     <string name="done_offline_hint_nogms">Nessuna connessione: imposta il fuso orario più tardi nelle impostazioni.</string>

@@ -18,7 +18,7 @@ appears at most once, unknown keys are an error; a list is space-separated. Keys
   sig_size           RSA signature size in bytes: 512 (an RSA-4096 OTA key)
   scanner            the public-image check, run as: python3 -B SCANNER IMAGE --dump DUMP_EROFS (exit 0 = clean)
   manifest_tag       the one fixed pre-release tag that holds update-<channel>.json and .sig (never "latest")
-  package_tag        the per-version pre-release tag of the packages, with {version} (e.g. hb-{version})
+  package_tag        the per-version pre-release tag of the packages, with {version} (e.g. z9x-hb-{version})
   repo               the GitHub repository, owner/name
   ab_ota_partitions  the static partitions update_engine copies from the running slot (ro.product.ab_ota_partitions
                      of the image, comma-separated there); never vbmeta, never mboot, never a dynamic partition
@@ -68,7 +68,7 @@ LISTS = ("ab_ota_partitions",)
 NEVER_STATIC = ("vbmeta", "mboot", "system", "vendor", "product", "system_ext", "odm", "vendor_dlkm", "odm_dlkm",
                 "system_dlkm", "super", "userdata", "metadata", "misc")
 # the Z9X channels and its manifest files (tools/ota/make_manifest.py CHANNELS): never a channel of another device
-Z9X_CHANNELS = ("stable", "public", "public-nogms")
+Z9X_CHANNELS = ("stable", "public", "public-nogms", "public-beta")
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 VERSION_RE = re.compile(r"(\d+)\.(\d{1,2})\.(\d{1,2})(?:-(beta|rc)(\d{1,2}))?")
 DPI_OFF = ("virtual_ab=true\nvirtual_ab_compression=false\n"
@@ -77,9 +77,10 @@ DPI_ON = ("virtual_ab=true\nvirtual_ab_compression=true\nvirtual_ab_compression_
           "super_partition_groups={g}\n{g}_size={size}\n{g}_partition_list=system\n")
 
 
-# the device tests that must pass before any channel other than stage_channel takes a manifest: T5 the MBOOT
-# fallback drill (R2), T6 the rollback drills (R1), T7 a real OTA a to b
-PUBLIC_TESTS = ("T5", "T6", "T7")
+# the device tests that must pass before any channel other than stage_channel takes a manifest: T7 a real OTA a to b.
+# Until 2026-11-04 also T5 (the MBOOT fallback drill, R2) and T6 (the rollback drills, R1); the maintainer dropped those
+# drills on 2026-11-04 ("Собери уже релиз ... и выложи", after the real OTAs beta3 -> beta4 -> beta5 on the HB).
+PUBLIC_TESTS = ("T7",)
 RESULTS = "install/OTA_RESULTS.tsv"
 
 

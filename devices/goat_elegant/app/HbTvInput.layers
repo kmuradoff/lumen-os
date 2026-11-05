@@ -5,5 +5,5 @@
 app       HbTvInput
 base      apps/Z9xTvInput
 top       apps/HbTvInput
-# never part of an app tree: build output, APKs, notes
-skip      build/ *.apk CHANGES*.md README*.md SYNCED.txt .DS_Store
+# never part of an app tree: build output, APKs, notes, the build version (read by tools/devices/build_apps.sh)
+skip      build/ *.apk CHANGES*.md README*.md SYNCED.txt .DS_Store BUILD_VERSION

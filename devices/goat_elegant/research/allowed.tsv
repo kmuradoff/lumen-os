@@ -51,6 +51,7 @@ DisplayManager	151	setLensDispMode	setBoost [Z9X IGmpf2 52]
 DisplayManager	152	getLensDispMode	isBoost [Z9X IGmpf2 51]
 DisplayManager	172	setDynamicBlackType	setDynamicBlack [Z9X IGmpf2 31]
 DisplayManager	174	getDynamicBlackType	getDynamicBlack [Z9X IGmpf2 29]
+DisplayManager	179	getDispOutputFps	getDispOutputFps [-]; game bar FPS overlay while VRR is on, every 2 s, stock HB xhplayer GameMenuActivity (research/GAME_BAR.md) FpsCell
 DisplayManager	185	setKstPrepare	setKstPrepareForZoom [Z9X IGmpf2 18]; EXCEPTION row of banned.tsv (9.3, zoom case, hb-t5); (true, 2) / (false, 2) only, stock ZoomStateView.dispatchKeyEvent (newsettings classes3 22bdb0 +0x2b) / release (22cc04 +0x78) via MiddleWareApi.notifyKeystone
 DisplayManager	189	SetOpticalZoomLimitStep	-; hb-t6: EXCEPTION row of banned.tsv; GetCurrentZoomLimitStep() +-1 inside [-limitTotal, 0] at optical index 0 inside a 185(true, 2) + 93 session, stock ZoomUtils.setOpticalZoomLimitStep from ZoomStateView.setZoom (newsettings)
 DisplayManager	190	GetCurrentZoomLimitStep	-; hb-t6: read, stock ZoomUtils.getCurrentZoomLimitStep (ZoomStateView.initZoom, setOpticalZoomLimitStep)
@@ -104,6 +105,7 @@ GmTvManager	64	getHdmiRange	getHdmiRange [Z9X IGmpf 634]
 GmTvManager	65	setEARCEnable	setEarc [Z9X IGmpf 633]
 GmTvManager	66	getEARCEnableState	getEarc [Z9X IGmpf 632]
 GmTvManager	78	getHdrType	getHdrType [Z9X IGmpf 620]
+GmTvManager	79	getEARCStatus	getEarcStatus (audio/HbEarc): read, stock XRMService SignalChangeReceiver.register (== 3 = eARC linked)
 GmTvManager	112	getHsyPictureModeEnable	getColorOptimization [Z9X IGmpf2 330]
 GmTvManager	113	setTvDynamicContrastEnable	setDynamicContrast [Z9X IGmpf2 329]
 GmTvManager	114	getTvDynamicContrastEnable	getDynamicContrast [Z9X IGmpf2 328]
@@ -115,11 +117,19 @@ GmTvManager	119	setHsyPictureModeEnable	setColorOptimization [Z9X IGmpf2 323]
 GmTvManager	129	setAllmEnable	setAllmAutoSwitch [Z9X IGmpf2 312]
 GmTvManager	130	getAllmEnableState	getAllmAutoSwitch [Z9X IGmpf2 311]
 GmTvManager	131	getAllmStatus	getAllmStatus [Z9X IGmpf2 310]
+GmTvManager	145	setVRRModeEnable	setVrr [-]; game bar VRR, (0 | 1, HDMI 1 | 2) only, on needs top speed (support_vrr_only_at_top_speed) and 16:9, stock HB xhplayer GameMenuActivity (research/GAME_BAR.md) GameModeApi.setVrr
+GmTvManager	146	getVRREnableState	getVrr [-]; (HDMI 1 | 2), -1 read as off, stock HB xhplayer GameMenuActivity (research/GAME_BAR.md) GameModeApi.getVrrState
+GmTvManager	147	setGamePictureMode	setGamePicture [-]; game bar game picture, (0..4, HDMI 1 | 2), stock HB xhplayer GameMenuActivity (research/GAME_BAR.md) GameModeApi.setPictureMode
+GmTvManager	148	getGamePictureMode	getGamePicture [-]; (HDMI 1 | 2), -1 read as 0, stock HB xhplayer GameMenuActivity (research/GAME_BAR.md) GameModeApi.getPictureMode
+GmTvManager	149	setDarkBoostOnoff	setDarkBoost [-]; game bar dark enhance, (bool, game picture 0..4, HDMI 1 | 2), stock HB xhplayer GameMenuActivity (research/GAME_BAR.md) OtherViewModel.setDarkEnhance
+GmTvManager	150	getDarkBoostState	getDarkBoost [-]; (game picture 0..4, HDMI 1 | 2), stock HB xhplayer GameMenuActivity (research/GAME_BAR.md) OtherViewModel.getDarkEnhance
 GmTvManager	164	ResetPictureToDefault	resetPicture [Z9X IGmpf2 278]
 GmTvManager	165	setOneOfMultiPointWB	setMultiPointWb [Z9X IGmpf2 282]
 GmTvManager	166	getOneOfMultiPointWB	getMultiPointWb [Z9X IGmpf2 281]
 GmTvManager	174	ToggleHDRDyToneMapping	setHdrDynamicToneMapping [Z9X IGmpf2 270]
 GmTvManager	175	GetHDRDyToneMappingStatus	getHdrDynamicToneMapping [Z9X IGmpf2 269]
+GmTvManager	191	setHGiGMode	setHgig [-]; game bar HDR settings with 174, only while 78 reads HDR10, stock HB xhplayer GameMenuActivity (research/GAME_BAR.md) OtherViewModel.setHdrMode
+GmTvManager	192	getHGiGMode	getHgig [-]; stock HB xhplayer GameMenuActivity (research/GAME_BAR.md) OtherViewModel.getCurrentHdrMode
 MotionDetectionManager	2	getMotionDetection	getMotionDetection [Z9X IGmpf 584]; fit to my screen size (docs/fit_screen/DESIGN.md 9.3), read only, FIT_SCREEN gate, at most 20 per minute 80 ms apart (GmpfClient), 5 per fit; stock newsettings MotionDetectionManagerWrapper.getMotionDetection:41 (IMotionDetectionManager proxy readTypedObject MsensorDataStruct)
 MotionDetectionManager	4	setAngTriggerAF	setMoveAf [Z9X IGmpf 587]
 MotionDetectionManager	5	getAngTriggerAF	getMoveAf [Z9X IGmpf 588]

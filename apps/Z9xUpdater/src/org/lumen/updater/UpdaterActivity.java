@@ -32,6 +32,7 @@ public final class UpdaterActivity extends Activity {
     private LinearLayout left, right;
     private String renderedKey = "";
     private Ui.ProgressLine progress;
+    private View betaRow, statsRow, wantFocus;
     private TextView progressText, etaText;
     private final Runnable onChange = this::refresh;
     private volatile boolean working;
@@ -186,6 +187,28 @@ public final class UpdaterActivity extends Activity {
         }
     }
 
+    /**
+     * "Beta updates" on or off: drop an offer of the other channel that is not downloaded yet and check the newly
+     * chosen one. Turning it off never downgrades: the stable channel is offered only once its version_code is
+     * above the installed one (Preflight.applicable), until then the check says up to date.
+     */
+    private void toggleBeta() {
+        if (working) return;
+        Store st = Store.get(this);
+        if (betaLocked(st.state())) return;
+        st.setBeta(!Ota.betaOn());
+        UpdateService.deleteFiles(this);
+        st.clearOffer();
+        st.setState(Store.State.IDLE);
+        check();
+    }
+
+    /** While an update is downloaded, installed or waits for the restart the channel stays (the row is hidden). */
+    private static boolean betaLocked(Store.State s) {
+        return s == Store.State.DOWNLOADING || s == Store.State.PAUSED || s == Store.State.DOWNLOADED
+                || s == Store.State.INSTALLING || s == Store.State.READY;
+    }
+
     private void reboot() {
         PowerManager pm = getSystemService(PowerManager.class);
         pm.reboot(Ota.REBOOT_REASON);
@@ -221,12 +244,15 @@ public final class UpdaterActivity extends Activity {
         Store st = Store.get(this);
         Store.State s = st.state();
         String key = screen + "|" + s + "|" + st.errorRes() + "|" + st.errorArg() + "|" + st.lastResult()
-                + "|" + st.autoMode() + "|" + working + "|" + Locale.getDefault();
+                + "|" + st.autoMode() + "|" + Ota.betaOn() + "|" + st.statsOn() + "|" + working + "|" + Locale.getDefault();
         if (key.equals(renderedKey)) {
             updateDynamic(st);
             return;
         }
         renderedKey = key;
+        // a toggle keeps the focus on its row, also when the next rebuild comes before the posted requestFocus
+        boolean betaFocus = betaRow != null && (betaRow.hasFocus() || wantFocus == betaRow);
+        boolean statsFocus = statsRow != null && (statsRow.hasFocus() || wantFocus == statsRow);
         left.removeAllViews();
         progress = null;
         progressText = null;
@@ -239,7 +265,13 @@ public final class UpdaterActivity extends Activity {
         }
         renderSide(st);
         updateDynamic(st);
-        if (focus != null) focus.post(focus::requestFocus);
+        if (betaFocus && betaRow != null) focus = betaRow;
+        if (statsFocus && statsRow != null) focus = statsRow;
+        View f = wantFocus = focus;
+        if (f != null) f.post(() -> {
+            f.requestFocus();
+            if (wantFocus == f) wantFocus = null;
+        });
     }
 
     private TextView brand() {
@@ -509,11 +541,33 @@ public final class UpdaterActivity extends Activity {
             st.setAutoMode((st.autoMode() + 1) % 3);
             if (st.autoMode() != Store.AUTO_OFF) CheckJob.schedule(this);
         }, true), Ui.match());
+        // only an edition with a beta channel shows the switch, and not while an update is under way
+        boolean beta = Ota.betaAvailable() && !betaLocked(st.state());
+        betaRow = null;
+        if (beta) {
+            betaRow = Ui.row(this, getString(R.string.row_beta),
+                    getString(Ota.betaOn() ? R.string.beta_on : R.string.beta_off), v -> toggleBeta());
+            set.addView(betaRow, Ui.match());
+        }
+        // stacked: the long title would push the value out of the row; no row without a statistics server
+        if (Stats.configured()) {
+            statsRow = Ui.row(this, getString(R.string.row_stats),
+                    getString(st.statsOn() ? R.string.beta_on : R.string.beta_off), v -> st.setStatsOn(!st.statsOn()), true);
+            set.addView(statsRow, Ui.match());
+        } else {
+            statsRow = null;
+        }
         set.addView(Ui.row(this, getString(R.string.row_usb), "", v -> checkUsb()), Ui.match());
-        TextView hint = Ui.text(this, getString(R.string.auto_hint), 14, Ui.DIM, 400);
         int p = Ui.dp(this, 20);
-        hint.setPadding(p, Ui.dp(this, 4), p, Ui.dp(this, 10));
-        set.addView(hint);
+        boolean stats = Stats.configured();
+        int[] hints = beta ? (stats ? new int[] {R.string.auto_hint, R.string.beta_hint, R.string.stats_hint}
+                        : new int[] {R.string.auto_hint, R.string.beta_hint})
+                : (stats ? new int[] {R.string.auto_hint, R.string.stats_hint} : new int[] {R.string.auto_hint});
+        for (int i = 0; i < hints.length; i++) {
+            TextView hint = Ui.text(this, getString(hints[i]), 14, Ui.DIM, 400);
+            hint.setPadding(p, Ui.dp(this, 4), p, Ui.dp(this, i == hints.length - 1 ? 10 : 4));
+            set.addView(hint);
+        }
         right.addView(set, Ui.match());
 
         TextView h = Ui.text(this, getString(R.string.about_header), 15, Ui.DIM, 500);

@@ -98,6 +98,8 @@
     <string name="done_tz_detected">%1$s (вызначаны)</string>
     <string name="done_name">Назва праектара</string>
     <string name="done_home">Галоўны экран</string>
+    <string name="done_stats">Адпраўляць ананімную статыстыку</string>
+    <string name="done_stats_note">Раз на дзень: мадэль, версія, серыйны нумар у выглядзе хэша і краіна. Ваш IP-адрас не захоўваецца.</string>
     <string name="done_start">Пачаць</string>
     <string name="done_offline_hint">Няма інтэрнэту: увайсці ў Google і выбраць часавы пояс можна пазней у наладах.</string>
     <string name="done_offline_hint_nogms">Няма інтэрнэту: выбраць часавы пояс можна пазней у наладах.</string>

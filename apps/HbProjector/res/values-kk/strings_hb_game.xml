@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">Ойын режимі</string>
+    <string name="gbar_standard">Стандарт</string>
+    <string name="gbar_top_speed">Турбо</string>
+    <string name="gbar_hfr">Жоғары жиілік</string>
+    <string name="gbar_off">Өшір</string>
+    <string name="gbar_on">Қос</string>
+    <string name="gbar_auto">Авто</string>
+    <string name="gbar_picture">Ойын суреті</string>
+    <string name="gbar_pic_standard">Стандарт</string>
+    <string name="gbar_pic_sports">Спорт</string>
+    <string name="gbar_color_space">Түс кеңістігі</string>
+    <string name="gbar_cs_native">Төл</string>
+    <string name="gbar_dark">Қараңғы сахналар</string>
+    <string name="gbar_aspect">Кадр пішімі</string>
+    <string name="gbar_fps">FPS санағышы</string>
+    <string name="gbar_fps_left">Жоғарғы сол жақ</string>
+    <string name="gbar_fps_center">Жоғарғы ортасы</string>
+    <string name="gbar_fps_right">Жоғарғы оң жақ</string>
+    <string name="gbar_hdr_mapping">Динамикалық тон бейнелеу</string>
+    <string name="gbar_tip_top_speed">Ең аз кідіріс. Трапеция толық кадрға оралады.</string>
+    <string name="gbar_tip_vrr">Сурет приставканың кадр жиілігіне бейімделеді. Приставкада да VRR қосыңыз.</string>
+    <string name="gbar_tip_hfr_off">Көзден 60 Гц-ке дейін.</string>
+    <string name="gbar_tip_hfr_on">Көзден 120 Гц-ке дейін.</string>
+    <string name="gbar_tip_dark">Қараңғы сахналарда бөлшектер жақсы көрінеді.</string>
+    <string name="gbar_tip_wide">Көз 3840 x 2160 беруі керек.</string>
+    <string name="gbar_tip_hdr_mapping">Жарықтық кадрдың әр бөлігінде реттеледі. Қосқаннан кейін приставкада HDR-ді қайта калибрлеңіз.</string>
+    <string name="gbar_tip_hgig">HDR ойын авторлары ойлағандай. Қосқаннан кейін приставкада HDR-ді қайта калибрлеңіз.</string>
+    <string name="gbar_need_top_speed">VRR тек Турбо режимінде жұмыс істейді</string>
+    <string name="gbar_need_16_9">Алдымен 16:9 пішімін таңдаңыз</string>
+    <string name="gbar_vrr_blocks_aspect">Алдымен VRR-ді өшіріңіз</string>
+    <string name="gbar_vrr_blocks_hfr">VRR қосулы кезде жоғары жиілік қосулы қалады</string>
+    <string name="gbar_need_4k">Көз 3840 x 2160 беруі керек</string>
+    <string name="gbar_need_hdr">Көз HDR бермейді</string>
+    <string name="gbar_boost_blocks">Boost қосулы кезде қолжетімсіз</string>
+    <string name="gbar_failed">Проектор өзгерісті қабылдамады</string>
+</resources>

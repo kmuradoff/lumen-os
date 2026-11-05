@@ -125,15 +125,62 @@ public final class Ota {
     public static String buildId() { return prop("ro.lumen.build_id"); }
 
     /** ro.lumen.ota.manifest_url (https only); "" without a device or a URL: nothing is checked. */
-    public static String manifestUrl() {
+    public static String imageManifestUrl() {
         String u = prop("ro.lumen.ota.manifest_url").trim();
         return !device().isEmpty() && u.startsWith("https://") ? u : "";
     }
 
+    /** The user's "Beta updates" choice (Store, the app's own storage); null = not chosen = the image's channel. */
+    private static volatile Boolean sBeta;
+
+    static void setBeta(Boolean on) { sBeta = on; }
+
     /**
-     * The file name of this image's own manifest (update-<channel>.json): the USB file to look for, and the
-     * channel a manifest must carry (an edition never installs another edition's update). "" when the image has
-     * no manifest URL (no USB file matches, every manifest is refused).
+     * {stable, beta} manifest URLs of the channel pair an image of manifest URL {@code image} belongs to, or null
+     * when it has none: update-&lt;device&gt;-nogms.json (stable) and update-&lt;device&gt;-test.json (beta) in the
+     * same folder (the HB: both on the fixed pre-release tag z9x-hb), whichever of the two the image reads.
+     */
+    static String[] channels(String image) {
+        String d = device(), f = channelFile(image);
+        if (d.isEmpty() || f.isEmpty()) return null;
+        String stable = "update-" + d + "-nogms.json", beta = "update-" + d + "-test.json";
+        if (!f.equals(stable) && !f.equals(beta)) return null;
+        int q = image.indexOf('?');
+        String dir = (q >= 0 ? image.substring(0, q) : image);
+        dir = dir.substring(0, dir.lastIndexOf('/') + 1);
+        return new String[] {dir + stable, dir + beta};
+    }
+
+    /** True when this image has a beta channel: only then the updater shows the "Beta updates" switch. */
+    public static boolean betaAvailable() { return channels(imageManifestUrl()) != null; }
+
+    /** True when the beta channel is read: the user's choice, else whether the image itself reads it. */
+    public static boolean betaOn() { return betaOn(imageManifestUrl(), sBeta); }
+
+    static boolean betaOn(String image, Boolean choice) {
+        String[] c = channels(image);
+        if (c == null) return false;
+        return choice != null ? choice : channelFile(c[1]).equals(channelFile(image));
+    }
+
+    /**
+     * The manifest to read: the stable or the beta channel (betaOn), else the image's own ("" without a device or
+     * a URL). Turning beta off never downgrades: a manifest is offered only with a version_code above the
+     * installed one (Preflight.applicable), so a beta stays until the stable channel has a newer version.
+     */
+    public static String manifestUrl() { return manifestUrl(imageManifestUrl(), sBeta); }
+
+    static String manifestUrl(String image, Boolean choice) {
+        String[] c = channels(image);
+        if (c == null) return image;
+        return betaOn(image, choice) ? c[1] : c[0];
+    }
+
+    /**
+     * The file name of the manifest this updater reads (update-<channel>.json): the USB file to look for, and the
+     * channel a manifest must carry (an edition never installs another edition's update, and a beta manifest is
+     * refused while beta updates are off). "" when the image has no manifest URL (no USB file matches, every
+     * manifest is refused).
      */
     public static String channelFile() {
         return channelFile(manifestUrl());

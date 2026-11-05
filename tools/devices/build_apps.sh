@@ -59,6 +59,10 @@ for n in $APPS; do
     python3 -B "$H/assemble_app.py" --root "$ROOT" "$RCP" --out "$W/tree/$n" || die "$n: the recipe $RCP does not assemble"
     SRC=$W/tree/$n
   fi
+  # optional apps/<name>/BUILD_VERSION "CODE NAME": the version of an app whose manifest has none (build_apk.sh)
+  VC=; VN=
+  if [ -f "$ROOT/apps/$n/BUILD_VERSION" ]; then read -r VC VN < "$ROOT/apps/$n/BUILD_VERSION" || true; fi
+  VERSION_CODE=$VC VERSION_NAME=$VN \
   KEY_PK8=$KEY_PK8 KEY_PEM=$KEY_PEM BUILD_DIR=$W/$n sh "$G/apps/build_apk.sh" "$SRC" "$OUT/$n.apk" > "$W/$n.log" 2>&1 \
     || { cat "$W/$n.log" >&2; die "$n: build failed"; }
   got=$("$APKSIGNER" verify --print-certs "$OUT/$n.apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')

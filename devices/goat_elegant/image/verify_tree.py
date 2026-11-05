@@ -23,7 +23,7 @@
 # LumenUpdater in /system/app with z9x-updater-default-permissions.xml, and /system/bin/bootctl (root:shell 0755, the
 # sha256 of IN/bootctl.sha256); otacerts.zip holds exactly ota.x509.pem and ota_next.x509.pem; no Z9X gate file; the
 # product build.prop has the OTA props (ab_ota_partitions without mboot and vbmeta, gate 1, device hb, the manifest
-# on the tag hb) and the version code of design decision.
+# on the tag z9x-hb) and the version code of design decision.
 import hashlib, os, re, stat, sys, zipfile
 
 base, new, tag = sys.argv[1:4]
@@ -67,7 +67,16 @@ OWNER = {}       # added path -> (uid, gid) other than root:root (fs_config: /sy
 # the OTA props of a public image (hb_ota_props.txt; the list is devices/goat_elegant/ota.conf, design decision)
 OTA_PROPS = {"ro.product.ab_ota_partitions": "armfw,boot,bootdata,dtbo,optee,tvconfig,tvservice,vbmeta_system,xgimiconfig",
              "ro.lumen.ota.gate": "1", "ro.lumen.ota.device": "hb"}
-OTA_URL = re.compile(r"https://github\.com/kmuradoff/lumen-os/releases/download/hb/update-hb-(nogms|test)\.json")
+OTA_URL = re.compile(r"https://github\.com/kmuradoff/lumen-os/releases/download/z9x-hb/update-hb-(nogms|test)\.json")
+# LumenInfo (t11) is in the test images, not in the public release image that reads update-hb-nogms.json (maintainer
+# 2026-11-04, compose_hb.sh INFO): decided from the new image's own manifest URL, so either way it is checked exactly
+_bp = os.path.join(new, "system/product/etc/build.prop")
+_url = ""
+if os.path.exists(_bp):
+    for _l in open(_bp, encoding="utf-8", errors="replace").read().split("\n"):
+        if _l.startswith("ro.lumen.ota.manifest_url="):
+            _url = _l.split("=", 1)[1].strip()
+INFO = not (PUBLIC and _url.endswith("/update-hb-nogms.json"))
 if IN:
     F = "u:object_r:system_file:s0"
     SG = os.path.join(IN, "signed_stage")
@@ -79,10 +88,13 @@ if IN:
         "system/priv-app/Z9xHome/Z9xHome.apk": os.path.join(SG, "pinned", "Z9xHome.apk"),
         "system/etc/permissions/privapp-permissions-z9xhome.xml": os.path.join(IN, "privapp-permissions-z9xhome.xml"),
         "system/etc/default-permissions/z9x-home-default-permissions.xml": os.path.join(IN, "z9x-home-default-permissions.xml"),
-        "system/app/Z9xTvInput/Z9xTvInput.apk": os.path.join(SG, "pinned", "Z9xTvInput.apk"),
+        "system/app/Z9xTvInput/Z9xTvInput.apk": os.path.join(SG, "apps", "HbTvInput.apk"),   # since 1.0.8-beta3
+        # 1.0.8: the AirPlay receiver as on the Z9X (pinned, re-signed with the HB key) and its default permissions
+        "system/app/Z9xAirPlay/Z9xAirPlay.apk": os.path.join(SG, "pinned", "Z9xAirPlay.apk"),
+        "system/etc/default-permissions/z9x-airplay-default-permissions.xml": os.path.join(IN, "z9x-airplay-default-permissions.xml"),
         "system/product/overlay/Z9xLineagePlatformOverlay.apk": os.path.join(SG, "pinned", "Z9xLineagePlatformOverlay.apk"),
         "system/etc/sysconfig/z9x.xml": os.path.join(IN, "z9x-sysconfig-nogms.xml"),
-        "system/priv-app/Z9xSetup/Z9xSetup.apk": os.path.join(SG, "pinned", "Z9xSetup.apk"),
+        "system/priv-app/Z9xSetup/Z9xSetup.apk": os.path.join(SG, "apps", "Z9xSetup.apk"),   # since 1.0.8-beta5
         "system/etc/permissions/privapp-permissions-z9xsetup.xml": os.path.join(IN, "privapp-permissions-z9xsetup.xml"),
         "system/priv-app/HbProjector/HbProjector.apk": os.path.join(SG, "apps", "HbProjector.apk"),
         "system/etc/permissions/privapp-permissions-hbprojector.xml": os.path.join(IN, "privapp-permissions-hbprojector.xml"),
@@ -107,9 +119,7 @@ if IN:
         "system/etc/z9x/gapps/sysconfig/z9x-gapps.xml": os.path.join(IN, "z9x-gapps-sysconfig.xml"),
         # t10: the codec2 VNDK fix (hb_media.rc)
         "system/etc/init/hb_media.rc": os.path.join(IN, "hb_media.rc"),
-        # t11: LumenInfo (signal info screen and overlay), priv-app with its list
-        "system/priv-app/LumenInfo/LumenInfo.apk": os.path.join(SG, "apps", "LumenInfo.apk"),
-        "system/etc/permissions/privapp-permissions-lumeninfo.xml": os.path.join(IN, "privapp-permissions-lumeninfo.xml"),
+
     }
     if PUBLIC:
         for r in PUBLIC_ABSENT[1:]:
@@ -126,13 +136,19 @@ if IN:
         lumen["system/app/LumenUpdater/LumenUpdater.apk"] = os.path.join(SG, "apps", "LumenUpdater.apk")
         lumen["system/etc/default-permissions/z9x-updater-default-permissions.xml"] = os.path.join(
             IN, "z9x-updater-default-permissions.xml")
+    if INFO:
+        # t11: LumenInfo (signal info screen and overlay), priv-app with its list (test images only)
+        lumen["system/priv-app/LumenInfo/LumenInfo.apk"] = os.path.join(SG, "apps", "LumenInfo.apk")
+        lumen["system/etc/permissions/privapp-permissions-lumeninfo.xml"] = os.path.join(IN, "privapp-permissions-lumeninfo.xml")
     for r, src in lumen.items():
         ADDED[r] = (F, 0o644)
         SOURCE[r] = src
     for d in ("system/product/usr/idc", "system/etc/default-permissions", "system/priv-app/Z9xHome",
               "system/priv-app/Z9xSetup", "system/priv-app/HbProjector", "system/app/Z9xTvInput", "system/app/BtPair",
-              "system/priv-app/LumenInfo", "system/etc/z9x", "system/etc/z9x/gapps", "system/etc/z9x/gapps/sysconfig"):
+              "system/app/Z9xAirPlay", "system/etc/z9x", "system/etc/z9x/gapps", "system/etc/z9x/gapps/sysconfig"):
         ADDED[d] = (F, 0o755)
+    if INFO:
+        ADDED["system/priv-app/LumenInfo"] = (F, 0o755)
     if PUBLIC:
         for d in ("system/etc/lumen", "system/app/LumenUpdater"):
             ADDED[d] = (F, 0o755)
@@ -281,7 +297,7 @@ if RELEASE:
         url = last.get("ro.lumen.ota.manifest_url", "")
         if not OTA_URL.fullmatch(url):
             errors.append("public release: ro.lumen.ota.manifest_url=%s, not update-hb-nogms.json or update-hb-test.json "
-                          "on the tag hb" % url)
+                          "on the tag z9x-hb" % url)
         m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:-(beta|rc)(\d+))?", ver)
         vc = None
         if m:

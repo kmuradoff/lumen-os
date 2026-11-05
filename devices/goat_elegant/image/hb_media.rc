@@ -11,7 +11,7 @@
 #
 # /system/lib/hb_vndk33/libstagefright_foundation.so is the stock HB copy (stock system
 # apex/com.android.vndk.current/lib, sha256 b029d806...854f, ELF ARM 32, API 33; compose_hb.sh copies it from the
-# owner's stock dump on the build server and checks the sha256): every export of the GSI copy plus MediaTek's own.
+# stock firmware dump on the build server and checks the sha256): every export of the GSI copy plus MediaTek's own.
 # Under /system/lib it gets system_lib_file from plat_file_contexts, the label of the APEX file it covers; no linker
 # namespace searches that sub-folder, so only the bind below makes anyone load it. The framework keeps its own copies
 # (/system/lib, com.android.media); only the vendor (VNDK) namespace path is covered. Only lib: the HB userspace is

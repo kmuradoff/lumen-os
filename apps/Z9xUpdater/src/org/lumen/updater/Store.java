@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 
+import org.json.JSONException;
+
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -27,6 +29,7 @@ public final class Store {
     private Store(Context c) {
         p = c.getApplicationContext().createDeviceProtectedStorageContext()
                 .getSharedPreferences("ota", Context.MODE_PRIVATE);
+        Ota.setBeta(beta());
     }
 
     public static synchronized Store get(Context c) {
@@ -111,12 +114,66 @@ public final class Store {
     public int autoMode() { return p.getInt("auto", AUTO_DOWNLOAD); }
     public void setAutoMode(int m) { p.edit().putInt("auto", m).apply(); changed(); }
 
+    /** "Beta updates": true on, false off, null never chosen (the image's own channel, Ota.betaOn). */
+    public Boolean beta() { return p.contains("beta") ? p.getBoolean("beta", false) : null; }
+
+    public void setBeta(boolean on) {
+        p.edit().putBoolean("beta", on).apply();
+        Ota.setBeta(on);
+        changed();
+    }
+
+    /** "Send anonymous statistics" (Stats); default Stats.DEFAULT_ON. */
+    public boolean statsOn() { return p.getBoolean("stats", Stats.DEFAULT_ON); }
+
+    /** Off forgets the install id and the last send: turning it on again starts as a new install. */
+    public void setStatsOn(boolean on) {
+        SharedPreferences.Editor e = p.edit().putBoolean("stats", on);
+        if (!on) e.remove("stats_id").remove("stats_day").remove("stats_try").remove("stats_vc").remove("stats_version");
+        e.apply();
+        changed();
+    }
+
+    /** The random install id of Stats, made on first use. */
+    public synchronized String statsId() {
+        String id = p.getString("stats_id", "");
+        if (id.isEmpty()) {
+            id = Stats.newId();
+            p.edit().putString("stats_id", id).apply();
+        }
+        return id;
+    }
+
+    /** UTC day (yyyy-MM-dd) of the last statistics sent, and the time of the last try. */
+    public String statsDay() { return p.getString("stats_day", ""); }
+
+    /** After a send: the day, and the version it reported (the next send after a change names it as previous). */
+    public void setStatsSent(String day, int versionCode, String version) {
+        p.edit().putString("stats_day", day).putInt("stats_vc", versionCode).putString("stats_version", version).apply();
+    }
+
+    /** Version code and name of the last send; 0 = never sent by this install id. */
+    public int statsVc() { return p.getInt("stats_vc", 0); }
+    public String statsVersion() { return p.getString("stats_version", ""); }
+
+    /** How the update to build statsMethodBuild() was installed (ota_full, ota_delta, usb), set at its install. */
+    public String statsMethod() { return p.getString("stats_method", ""); }
+    public String statsMethodBuild() { return p.getString("stats_method_build", ""); }
+    public long statsTry() { return p.getLong("stats_try", 0); }
+    public void setStatsTry(long t) { p.edit().putLong("stats_try", t).apply(); }
+
     /** The user allowed, once, that an update copies XGIMI firmware unchanged into the other slot. */
     public boolean firmwareConsent() { return p.getBoolean("consent_fw", false); }
     public void setFirmwareConsent(boolean b) { p.edit().putBoolean("consent_fw", b).apply(); }
 
     // ---- what we expect after the restart
     public void setPending(String targetBuildId, String targetVersion, String fromBuildId, String fromVersion) {
+        String method = fromUsb() ? "usb" : "ota";
+        try {
+            if (!fromUsb()) method = "ota_" + UpdateManifest.Pkg.parse(packageJson()).type;
+        } catch (JSONException ignored) {
+        }
+        p.edit().putString("stats_method", method).putString("stats_method_build", targetBuildId).apply();
         p.edit().putString("pend_target", targetBuildId).putString("pend_version", targetVersion)
                 .putString("pend_from", fromBuildId).putString("pend_from_version", fromVersion).apply();
     }

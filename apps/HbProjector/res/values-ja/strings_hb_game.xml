@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">ゲームモード</string>
+    <string name="gbar_standard">標準</string>
+    <string name="gbar_top_speed">最速</string>
+    <string name="gbar_hfr">高フレームレート</string>
+    <string name="gbar_off">オフ</string>
+    <string name="gbar_on">オン</string>
+    <string name="gbar_auto">自動</string>
+    <string name="gbar_picture">ゲーム画質</string>
+    <string name="gbar_pic_standard">標準</string>
+    <string name="gbar_pic_sports">スポーツ</string>
+    <string name="gbar_color_space">色空間</string>
+    <string name="gbar_cs_native">ネイティブ</string>
+    <string name="gbar_dark">暗部補正</string>
+    <string name="gbar_aspect">アスペクト比</string>
+    <string name="gbar_fps">FPS表示</string>
+    <string name="gbar_fps_left">左上</string>
+    <string name="gbar_fps_center">中央上</string>
+    <string name="gbar_fps_right">右上</string>
+    <string name="gbar_hdr_mapping">ダイナミックトーンマッピング</string>
+    <string name="gbar_tip_top_speed">遅延が最小になります。台形補正は全画面に戻ります。</string>
+    <string name="gbar_tip_vrr">映像がゲーム機のフレームレートに合わせて変わります。ゲーム機側でもVRRをオンにしてください。</string>
+    <string name="gbar_tip_hfr_off">ソースから最大60 Hz。</string>
+    <string name="gbar_tip_hfr_on">ソースから最大120 Hz。</string>
+    <string name="gbar_tip_dark">暗いシーンの細部が見やすくなります。</string>
+    <string name="gbar_tip_wide">ソースは3840 x 2160で出力する必要があります。</string>
+    <string name="gbar_tip_hdr_mapping">明るさを領域ごとに調整します。オンにした後、ゲーム機でHDRを再調整してください。</string>
+    <string name="gbar_tip_hgig">ゲームの制作意図どおりにHDRを表示します。オンにした後、ゲーム機でHDRを再調整してください。</string>
+    <string name="gbar_need_top_speed">VRRは最速モードでのみ使えます</string>
+    <string name="gbar_need_16_9">先に16:9を選んでください</string>
+    <string name="gbar_vrr_blocks_aspect">先にVRRをオフにしてください</string>
+    <string name="gbar_vrr_blocks_hfr">VRRがオンの間は高フレームレートもオンのままです</string>
+    <string name="gbar_need_4k">ソースは3840 x 2160で出力する必要があります</string>
+    <string name="gbar_need_hdr">ソースがHDRを送っていません</string>
+    <string name="gbar_boost_blocks">Boostがオンの間は使えません</string>
+    <string name="gbar_failed">プロジェクターが変更を受け付けませんでした</string>
+</resources>

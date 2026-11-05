@@ -847,10 +847,11 @@ final class QuickPanelController {
                 if (!ok) throw new IllegalStateException("42 returned false");
             });
         }).run()));
-        // Lumen OS 1.0.4: the stock eARC mode (Auto = on, Off), only where 632 answers
+        // Lumen OS 1.0.4: the stock eARC mode (Auto = on, Off), only where 632 answers; 2026-11-04 through cec/EarcLink,
+        // which watches the link after the write (the HDMI ARC output while linked, ARC asked for again if it fails)
         earc = p.add(new ToggleRow(app, "eARC", (row, w) -> safe("633", () ->
                 change("633 eARC " + w, (g, g2) -> {
-                    if (!g.setEarc(w)) throw new IllegalStateException("633 returned false");
+                    if (!org.lumen.projector.cec.EarcLink.setUser(g, w)) throw new IllegalStateException("633 returned false");
                 })).run()));
         // 1.0.4: manual sound output (stock Sound > Sound output). Only connected outputs are listed; the choice is a
         // preferred device of the media strategy, so AudioPathReporter moves the vendor path (HDMI input sound) too.

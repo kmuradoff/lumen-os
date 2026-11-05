@@ -177,9 +177,12 @@ public final class GmpfClient extends AidlCaller {
         }
     }
 
-    /** HDMI aspect ratio: 0 4:3, 1 16:9, 2 Auto, 4 Original. */
+    /**
+     * HDMI aspect ratio: 0 4:3, 1 16:9, 2 Auto, 4 Original; 5 21:9 and 6 32:9 only from the game bar (stock HB xhplayer
+     * GmDisplayManager.getVideoRatioFromCommonVal on a GMPF2 platform: common 6 / 7 -> 5 / 6, stock analysis).
+     */
     public enum AspectRatio {
-        R4_3(0), R16_9(1), AUTO(2), ORIGINAL(4);
+        R4_3(0), R16_9(1), AUTO(2), ORIGINAL(4), R21_9(5), R32_9(6);
         public final int wire;
         AspectRatio(int v) { wire = v; }
     }
@@ -474,7 +477,7 @@ public final class GmpfClient extends AidlCaller {
 
     /** [Z9X 158] DISPLAY 56 generateLogoByTrapezoid is a REVIEW row: refused, nothing sent. */
     public int regenerateBootLogo() throws RemoteException {
-        throw new NotOnHbException("generateLogoByTrapezoid(0) (REVIEW row, owner decision 9.2)");
+        throw new NotOnHbException("generateLogoByTrapezoid(0) (not used on the HB)");
     }
 
     /** MOTION 15 temporarySwitchTrigger(2, enable) [Z9X 573]: pause / resume real-time AK. Type 2. */
@@ -515,13 +518,21 @@ public final class GmpfClient extends AidlCaller {
     /** The 84 value after which stock setIChipReset sends 85(0, 0). */
     private static final int KEYSTONE_MODE_SWITCH_BACK = 6;
 
-    /** DISPLAY 38 correctKeystoneReset(0) [Z9X 207]: ONLY in HDMI game "top speed" mode (refused otherwise). */
+    /**
+     * DISPLAY 38 correctKeystoneReset(0) [Z9X 207]: ONLY in HDMI game "top speed" mode (refused otherwise). Stock HB
+     * switchGameModeSpeed calls setIChipReset after 76(2), so 84 and 85(0, 0) after a 6 follow as in resetKeystoneStock.
+     */
     public void resetKeystoneForTopSpeedGame() throws RemoteException {
         GameModeOption cur = getGameModeOption();
         if (cur == null || !cur.isTopSpeed()) {
             throw new IllegalStateException("correctKeystoneReset only in top-speed game mode (now " + cur + ")");
         }
         callU8(Call.CORRECT_KEYSTONE_RESET, 0);
+        int mode = callRetI32(Call.GET_CURRENT_KEYSTONE_MODE);
+        if (mode == KEYSTONE_MODE_SWITCH_BACK) {
+            boolean r = callI32I32RetBool(Call.SWITCH_KEYSTONE_MODE, 0, 0);
+            Log.i(TAG, "top speed keystone reset: 84 -> 6, 85(0,0) -> " + r);
+        }
     }
 
     /** Picture shift direction for translationKst (FS 2.5): 1 up, 2 down, 3 left, 4 right. */
@@ -672,14 +683,14 @@ public final class GmpfClient extends AidlCaller {
         checkWatchName(name);
         checkRange("heartbeat period", periodMs, 500, 10_000);
         requireNuiReader("DISPLAY 99 uiHeartBeatSet");
-        throw new NotOnHbException("uiHeartBeatSet (REVIEW row, owner decision 9.4)");
+        throw new NotOnHbException("uiHeartBeatSet (not used on the HB)");
     }
 
     /** [Z9X 114] DISPLAY 100 uiHeartBeatDo is a REVIEW row: refused, nothing sent. */
     public byte uiHeartBeatDo(String name) throws RemoteException {
         checkWatchName(name);
         requireNuiReader("DISPLAY 100 uiHeartBeatDo");
-        throw new NotOnHbException("uiHeartBeatDo (REVIEW row, owner decision 9.4)");
+        throw new NotOnHbException("uiHeartBeatDo (not used on the HB)");
     }
 
     /** Watchdog names: short ASCII identifiers only. */
@@ -1175,8 +1186,13 @@ public final class GmpfClient extends AidlCaller {
 
     /** TV 66 getEARCEnableState() [Z9X 632] (true = Auto, false = Off). */
     public boolean getEarc() throws RemoteException { return callRetBool(Call.GET_EARC_ENABLE_STATE); }
-    /** TV 65 setEARCEnable(bool) [Z9X 633]. */
+    /**
+     * TV 65 setEARCEnable(bool) [Z9X 633]: the vendor's runtime eARC flag and its database value (audio/HbEarc: once per
+     * boot with the stored value, and the panel's eARC row).
+     */
     public boolean setEarc(boolean on) throws RemoteException { return callBoolRetBool(Call.SET_EARC_ENABLE, on); }
+    /** TV 79 getEARCStatus() -> vendor EN_CEC_EarcStatus, 3 = eARC linked (stock XRMService; audio/HbEarc). */
+    public int getEarcStatus() throws RemoteException { return callRetI32(Call.GET_EARC_STATUS); }
 
     /** SYSTEM 6 / 5 [Z9X 420 / 419]: the stock "Power-on music". */
     public boolean getPowerOnMusic() throws RemoteException { return callRetBool(Call.IS_POWER_ON_MUSIC_ENABLED); }

@@ -54,12 +54,16 @@
 # 'fastboot format:ext4' of userdata and metadata, the full data wipe; no -KeepData) | verify (after the setup, with
 # debugging on again) | rescue (Lumen OS that does not start any more goes to fastboot mode by itself and waits there:
 # on the cable, system_<slot> (+ z9x_blobs_<slot>) of the slot it runs from again, WITHOUT wiping data, no adb needed)
-# | status | reset (-Device ID reset forgets only that projector's progress). It writes only system_<slot> and
-# z9x_blobs_<slot> (create, resize, flash) of the running slot (a or b, the one fastbootd reports) when the profile's
-# SLOTS has it, and formats userdata and metadata, only while no update is staged or merging (snapshot-update-status
-# none). 'rescue' may also finish or cancel an unfinished Lumen OS update of that slot (Fb-Snapshot merge|cancel) and
-# never formats anything. Never vbmeta, boot, vendor, the KEEP partitions, the other slot, --slot, set_active, a
-# delete, erase or -w (Fb-Allowed). gapps, gsf and stick: not yet.
+# | gapps -Zip FILE (a profile with GAPPS_ALLOW: the Google services add-on image built on this computer, erofs,
+# written into z9x_gapps_<slot> in one fastbootd visit, then the format of userdata and metadata) | gapps -Remove |
+# gapps (its state) | gsf (the GSF ID, adb root) | status | reset (-Device ID reset forgets only that projector's
+# progress). -GappsZip FILE with the full install: the same add-on in the install's own visit, after system and before
+# the wipe. It writes only system_<slot> and z9x_blobs_<slot> (create, resize, flash) of the running slot (a or b, the
+# one fastbootd reports) when the profile's SLOTS has it, z9x_gapps_<slot> of that slot (create, resize, flash,
+# delete; only with GAPPS_ALLOW), and formats userdata and metadata, only while no update is staged or merging
+# (snapshot-update-status none). 'rescue' may also finish or cancel an unfinished Lumen OS update of that slot
+# (Fb-Snapshot merge|cancel) and never formats anything. Never vbmeta, boot, vendor, the KEEP partitions, the other
+# slot, --slot, set_active, a delete of anything but z9x_gapps_<slot>, erase or -w (Fb-Allowed). stick: not yet.
 param([string]$Command = "", [string]$Image = "", [string]$Serial = "", [switch]$KeepData,
       [string]$Wipe = "format", [string]$Lang = "", [string]$Blobs = "", [switch]$NoBlobs, [switch]$UnsignedImage,
       [string]$Zip = "", [switch]$Remove, [string]$Ip = "", [string]$Device = "", [string]$Path = "",
@@ -385,13 +389,14 @@ function Fb-Allowed($act, $part) {
     if ("${act}:$part" -ceq "flash:misc" -and $script:P6BcbOk) { return $true }
     return (@("flash:system", "create:lumen_gapps", "resize:lumen_gapps", "delete:lumen_gapps") -ccontains "${act}:$part")
   }
-  # FLOW=ab-fastbootd: system and z9x_blobs of the slot Abf-Fbd-Check found running ($script:AbfS, one of SLOTS), and
-  # the format of userdata and metadata when WIPE_PARTS names them. No delete, erase, vbmeta, KEEP partition or
-  # other slot.
+  # FLOW=ab-fastbootd: system and z9x_blobs of the slot Abf-Fbd-Check found running ($script:AbfS, one of SLOTS), the
+  # Google services add-on z9x_gapps of that slot when the profile has GAPPS_ALLOW (the only delete), and the
+  # format of userdata and metadata when WIPE_PARTS names them. No erase, vbmeta, KEEP partition or other slot.
   if ($script:Prof["FLOW"] -ceq "ab-fastbootd") {
     $sx = $script:AbfS
     if (-not $sx -or (@("$($script:Prof['SLOTS'])" -split " ") -cnotcontains $sx.TrimStart('_'))) { return $false }
     if (@("flash:system$sx", "create:z9x_blobs$sx", "resize:z9x_blobs$sx", "flash:z9x_blobs$sx") -ccontains "${act}:$part") { return $true }
+    if ($script:Prof["GAPPS_ALLOW"] -and (@("create:z9x_gapps$sx", "resize:z9x_gapps$sx", "flash:z9x_gapps$sx", "delete:z9x_gapps$sx") -ccontains "${act}:$part")) { return $true }
     # the format: never while an update is staged or merging (the last getvar all)
     if ((@("format:userdata", "format:metadata") -ccontains "${act}:$part") -and (@("$($script:Prof['WIPE_PARTS'])" -split " ") -ccontains $part) -and
         (Gv-Val $script:AbfGv "snapshot-update-status") -ceq "none") { return $true }
@@ -927,7 +932,11 @@ function Cmd-Gsf {
 # -KeepData; -Wipe factory-reset leaves it to the projector). -Remove deletes the partition (also from fastboot
 # mode, waited for like 'rescue') with the same wipe. 'gapps' alone shows the state.
 $GappsDir = "/data/local/tmp/lumen-gapps"
-function Gapps-Line($sha) { Get-Content (Join-Path $Here "lib\gapps_allow.txt") | Where-Object { $_ -like "zip=$sha *" } | Select-Object -First 1 }
+# the add-on's allow-list (the same file as the image's /system/etc/z9x/gapps_allow.txt) and the checked add-on images:
+# the Z9X ones here; a FLOW profile names its own (GAPPS_ALLOW, GAPPS_IMAGES, Load-Profile)
+$script:GappsAllowF = Join-Path $Here "lib\gapps_allow.txt"; $script:GappsAllowRel = "lib\gapps_allow.txt"
+$script:GappsImagesF = Join-Path $Here "lib\gapps_images.txt"; $script:GappsImagesRel = "lib\gapps_images.txt"
+function Gapps-Line($sha) { $af = if ($script:GappsAllowF) { $script:GappsAllowF } else { Join-Path $Here "lib\gapps_allow.txt" }; Get-Content $af | Where-Object { $_ -like "zip=$sha *" } | Select-Object -First 1 }
 function Gapps-Field($line, $key) { foreach ($w in ("$line" -split " ")) { if ($w.StartsWith("$key=")) { return $w.Substring($key.Length + 1) } }; return "" }
 function Gv-Size($gv, $name) {
   $l = $gv | Where-Object { $_ -like "(bootloader) partition-size:${name}:*" } | Select-Object -First 1
@@ -1235,7 +1244,8 @@ function Gi-Entry($fs, $name, $mode, $size, $type) {
 function Gi-Pad($fs, [int64]$size) { $pad = [int]((512 - ($size % 512)) % 512); if ($pad) { $fs.Write((New-Object byte[] $pad), 0, $pad) } }
 function Gi-Lines($sha) {  # the zip's file lines of lib\gapps_allow.txt as "sha256 size path"
   $out = @(); $on = $false
-  foreach ($raw in (Get-Content (Join-Path $Here "lib\gapps_allow.txt"))) {
+  $af = if ($script:GappsAllowF) { $script:GappsAllowF } else { Join-Path $Here "lib\gapps_allow.txt" }
+  foreach ($raw in (Get-Content $af)) {
     $w = @("$raw".Trim() -split "\s+")
     if ($w[0] -like "zip=*") { $on = ($w[0] -eq "zip=$sha"); continue }
     if ($on -and $w.Count -eq 3 -and -not $w[0].StartsWith("#")) { $out += ($w -join " ") }
@@ -1244,7 +1254,7 @@ function Gi-Lines($sha) {  # the zip's file lines of lib\gapps_allow.txt as "sha
 }
 function Gi-Tar($zipPath, $out) {  # the add-on's tree as a tar, laid out exactly as lib\gapps_fill.sh fills the ext4 partition; "" or why not
   $lines = Gi-Lines $script:GzSha
-  if ($lines.Count -eq 0) { Die "internal: no files for $($script:GzName) in lib\gapps_allow.txt" }
+  if ($lines.Count -eq 0) { Die "internal: no files for $($script:GzName) in $($script:GappsAllowRel)" }
   $dirs = New-Object 'System.Collections.Generic.HashSet[string]'
   foreach ($ln in $lines) { $p = ($ln -split " ")[2]; while ($p.Contains("/")) { $p = $p.Substring(0, $p.LastIndexOf("/")); $null = $dirs.Add($p) } }
   $dl = [string[]]@($dirs); [Array]::Sort($dl, [StringComparer]::Ordinal)
@@ -1287,9 +1297,9 @@ function Gi-Image-Ok {  # the Lumen OS image to be written can use an erofs add-
 }
 function Gi-Build {  # the add-on image in the state folder, built and checked; sets GiImg, GiSha, GiSize
   $nw = T "Nothing was written." "Ничего не записано."
-  $ref = $null; $imf = Join-Path $Here "lib\gapps_images.txt"
+  $ref = $null; $imf = $script:GappsImagesF; $imr = $script:GappsImagesRel
   if (Test-Path -LiteralPath $imf) { $ref = Get-Content -LiteralPath $imf | Where-Object { $w = @("$_".Trim() -split "\s+"); $w.Count -eq 5 -and $w[0] -eq $script:GzSha -and $w[1] -eq $EuVer -and $w[2] -eq "plain" } | Select-Object -First 1 }
-  if (-not $ref) { Die (T "lib\gapps_images.txt names no checked add-on image of $($script:GzName) for erofs-utils ${EuVer}: download the installer again. $nw" "в lib\gapps_images.txt нет проверенного образа дополнения из $($script:GzName) для erofs-utils ${EuVer}: скачайте установщик заново. $nw") }
+  if (-not $ref) { Die (T "$imr names no checked add-on image of $($script:GzName) for erofs-utils ${EuVer}: download the installer again. $nw" "в $imr нет проверенного образа дополнения из $($script:GzName) для erofs-utils ${EuVer}: скачайте установщик заново. $nw") }
   $w = @("$ref".Trim() -split "\s+"); $script:GiSha = $w[3]; $script:GiSize = [int64]$w[4]
   $mb = [math]::Ceiling($script:GiSize / 1MB)
   $wd = Join-Path $StateDir "gapps"; $img = Join-Path $wd "z9x_gapps-$($script:GzSha.Substring(0, 16)).img"
@@ -1360,6 +1370,17 @@ function Z9x-Gapps-Prepare {  # before the ERASE question: erofs-utils, the imag
   Gi-Build
   $script:GiReady = $true
 }
+function Gapps-Zipcheck($f) {  # the zip on this computer against the allow-list (lumen-install.sh gapps_zipcheck); sets GzZip, GzSha, GzName, GzPart
+  if (-not (Test-Path -LiteralPath $f)) { Die (T "no file $f" "нет файла $f") }
+  $script:GzZip = (Resolve-Path -LiteralPath $f).Path
+  $zname = Split-Path -Leaf $script:GzZip
+  Say (T "checking $zname" "проверяю $zname")
+  $script:GzSha = Sha256 $script:GzZip
+  $zl = Gapps-Line $script:GzSha
+  if (-not $zl) { Die ((T "$zname is not the MindTheGapps file this installer accepts (sha256 $($script:GzSha.Substring(0,16))...). Download exactly the file the guide names, section 'Adding Google services'" "$zname не тот файл MindTheGapps, который принимает установщик (sha256 $($script:GzSha.Substring(0,16))...). Скачайте ровно тот файл, что указан в инструкции, раздел «Как поставить сервисы Google»") + ". " + (T "Nothing was written." "Ничего не записано.")) }
+  $script:GzName = ("$zl" -split " ")[1]; $script:GzPart = [int64](Gapps-Field $zl "part")
+  Ok "$($script:GzName), sha256 $($script:GzSha.Substring(0,16))..."
+}
 function Z9x-In-Fastboot {
   if (-not $script:Serial) { return $false }
   return (@(Pt-Fastboot devices 2>$null | ForEach-Object { ("$_".Trim() -split "\s+")[0] }) -ccontains $script:Serial)
@@ -1422,7 +1443,7 @@ function Z9x-Gapps-Finish {  # an install of an older installer that waits on th
 $DevConf = Join-Path $Here "lib\devices.conf"
 $PKeys = @("NAME", "MODEL", "BOARD", "FB_PRODUCT", "VENDOR_OK", "CERT", "IMAGE_TOKEN", "IMAGE_FS", "VERSION_PROP", "LUMEN_PROP",
            "LOGICAL", "SUPER_RESERVE", "GUIDE", "RESTORE_BIN", "RESTORE_MD5", "FLOW", "SLOTS", "KEEP", "WIPE_PARTS",
-           "SYSTEM_MAX", "BLOBS_ALLOW")
+           "SYSTEM_MAX", "BLOBS_ALLOW", "GAPPS_ALLOW", "GAPPS_IMAGES")
 $script:Prof = @{}
 function Devconf-Lines { if (Test-Path -LiteralPath $DevConf) { @(Get-Content -LiteralPath $DevConf -Encoding UTF8) } else { @() } }
 function Devconf-Check {  # stops on a missing file, a broken line, an unknown key or a key given twice
@@ -1495,6 +1516,14 @@ function Load-Profile($id) {  # id: $script:Prof (NAME, MODEL, ...) of that proj
   if ($script:Prof["BLOBS_ALLOW"] -cnotmatch '^lib/.*\.txt$') { Die "internal: lib\devices.conf: $id.BLOBS_ALLOW" }
   if ($script:Prof["BLOBS_ALLOW"].Contains("..")) { Die "internal: lib\devices.conf: $id.BLOBS_ALLOW" }
   if ($script:Prof["IMAGE_FS"] -cne "erofs") { Die "internal: lib\devices.conf: $id.IMAGE_FS (ab-fastbootd: erofs)" }
+  # the Google services add-on: both lists or neither (then gapps, gsf and -GappsZip are not there for it)
+  if ($script:Prof["GAPPS_ALLOW"] -or $script:Prof["GAPPS_IMAGES"]) {
+    foreach ($k in @("GAPPS_ALLOW", "GAPPS_IMAGES")) {
+      if ("$($script:Prof[$k])" -cnotmatch '^lib/.*\.txt$' -or "$($script:Prof[$k])".Contains("..")) { Die "internal: lib\devices.conf: $id.$k" }
+    }
+    $script:GappsAllowF = Abf-Path $script:Prof["GAPPS_ALLOW"]; $script:GappsAllowRel = $script:Prof["GAPPS_ALLOW"] -replace '/', '\'
+    $script:GappsImagesF = Abf-Path $script:Prof["GAPPS_IMAGES"]; $script:GappsImagesRel = $script:Prof["GAPPS_IMAGES"] -replace '/', '\'
+  }
 }
 function Other-Hint($model, $board) {  # the Z9X check met another projector this installer knows: its way in
   if ((Profile-Of $model $board) -eq "play6") { return " " + (T "It is an $(Dev-Name play6): it installs over Wi-Fi, run the installer with -Ip ADDRESS (see its section of the guide)." "Это $(Dev-Name play6): он ставится по Wi-Fi, запустите установщик с -Ip АДРЕС (см. его раздел инструкции).") }
@@ -2756,8 +2785,9 @@ function Play6-Not-Needed($c) {  # the Z9X commands the Play 6 has no use for
 # connecting: $script:AdbT = ADDR:PORT, $script:Serial = ro.serialno, the fastboot serial). What the projector IS
 # comes from its profile ($script:Prof); what may be written is fixed in Fb-Allowed: z9x_blobs<slot> (create,
 # resize, flash) and system<slot> of the running slot when SLOTS has it, then 'fastboot format:ext4' of WIPE_PARTS
-# (fastbootd reports them as raw, so the type is always given; mke2fs of the Platform-Tools makes them). Never
-# vbmeta (the user types that step: 'vbmeta'), never -w, erase, delete, --slot, set_active, a KEEP partition or the
+# (fastbootd reports them as raw, so the type is always given; mke2fs of the Platform-Tools makes them), and with
+# GAPPS_ALLOW z9x_gapps<slot> (create, resize, flash, delete: the Google services add-on). Never vbmeta (the user
+# types that step: 'vbmeta'), never -w, erase, another delete, --slot, set_active, a KEEP partition or the
 # other slot. The slot is the one the system runs from and fastbootd reports (a or b: after a Lumen OS update it is
 # the other one). fastbootd has no idle timeout, so one visit writes and wipes. A staged or merging update (stock or
 # Lumen OS) shows in fastbootd (snapshot-update-status, *-cow): 'flash' stops there, nothing written, so userdata and
@@ -2778,6 +2808,9 @@ $script:AbfResume = $false   # Abf-Write continues a visit in fastboot mode: an 
 $script:AbfRescue = $false   # this run is 'rescue': a STOP in fastboot mode goes by AbfRSys, not by the install's steps
 $script:AbfRSys = $false     # 'rescue' began to write system in this visit (a STOP then keeps it in fastboot mode)
 $script:AbfImgVc = ""        # ro.lumen.version_code of the image ("" = not read: no dump.erofs)
+$script:AbfGapps = $false    # this run is 'gapps' (its own fastbootd visit): a STOP there goes by AbfGw
+$script:AbfGw = $false       # 'gapps' changed z9x_gapps in this visit (a STOP then keeps it in fastboot mode)
+$script:AbfGneed = [int64]0  # bytes of super the add-on of this write still needs (-GappsZip; Abf-Room counts them)
 
 function Abf-Other($sl) { if ($sl -ceq "a") { "b" } else { "a" } }   # slot -> the other one (slot-count is 2)
 function Abf-Ids {  # the ids of lib\devices.conf with FLOW=ab-fastbootd (none without lib\devices.conf)
@@ -2792,12 +2825,19 @@ function Abf-Not-Yet($c) { $nm = P6-Name; Die (T "'$c' is not available for the 
 function Abf-Refuse-Opts([switch]$Rescue) {  # options of the Z9X and Play 6 ways that this flow does not have ('rescue' keeps the data)
   if ($KeepData -and -not $Rescue) { Abf-Not-Yet "-KeepData" }
   if ($Wipe -ne "format") { Abf-Not-Yet "-Wipe $Wipe" }
-  if ($GappsZip) { Abf-Not-Yet "-GappsZip" }
+  if ($GappsZip -and -not (Abf-Gapps-On)) { Abf-Not-Yet "-GappsZip" }
 }
+function Abf-Gapps-On { return [bool]$script:Prof["GAPPS_ALLOW"] }   # the profile has the Google services add-on (GAPPS_ALLOW, GAPPS_IMAGES)
 function Abf-Hint { return (T "If it hangs with the cable in, pull the cable (then press the power button if the picture does not come back)." "Если он зависнет с вставленным кабелем, выньте кабель (и нажмите кнопку питания, если изображение не вернётся).") }
 function Abf-Dot($m) { if ($m -match '[.!?]$') { $m } else { $m + "." } }   # a message that another sentence follows ends in a full stop
 function Abf-Fb-Stop($m) {  # message: leave fastbootd for the old system (nothing was written), or stay once system was begun
   $m = Abf-Dot $m
+  if ($script:AbfGapps) {   # 'gapps': its own visit decides, the install's steps are not this visit's
+    if ($script:AbfGw) { Die ($m + " " + (T "z9x_gapps was changed in this visit: the projector stays in fastboot mode. Keep the cable in and run the same command again." "z9x_gapps в этом заходе уже изменён: проектор остаётся в режиме fastboot. Не вынимайте кабель и запустите ту же команду снова.")) }
+    State-Set gapps_fastboot ""
+    Fb reboot | Out-Null
+    Die ($m + " " + (T "Nothing was written. The projector starts Lumen OS again." "Ничего не записано. Проектор снова загружает Lumen OS.") + " " + (Abf-Hint))
+  }
   if ($script:AbfRescue) {   # 'rescue': its own write decides, the install's steps are not this visit's
     if ($script:AbfRSys) { Die ($m + " " + (T "system was begun in this visit: the projector stays in fastboot mode. Keep the cable in and run 'rescue' again." "запись system в этом заходе начата: проектор остаётся в режиме fastboot. Не вынимайте кабель и запустите 'rescue' снова.")) }
     Fb reboot | Out-Null
@@ -2978,6 +3018,9 @@ function Abf-Check-Image([switch]$Force) {  # the release image of this projecto
   # with blobs the new z9x_blobs and the reserve of super come off the budget too (as Abf-Room counts them later)
   if ($Blobs -eq "partition") { $max = $max - [int64]$BlobSize - [int64]$script:Prof["SUPER_RESERVE"] }
   if ($len -gt $max) { Abf-Img-Stop (T "$name is too big for the $nm ($([math]::Ceiling($len / 1MB)) MB, at most $([math]::Truncate($max / 1MB)) MB fit next to its vendor, product and system_ext)." "$name слишком велик для $nm ($([math]::Ceiling($len / 1MB)) МБ, рядом с его vendor, product и system_ext помещается не больше $([math]::Truncate($max / 1MB)) МБ).") -Nw }
+  # with -GappsZip the add-on image (rounded up to 1 MiB) comes off it as well, as Abf-Room counts it in super
+  $g = Abf-Gapps-Need
+  if ($g -gt 0 -and ((Abf-MiB $len) + $g) -gt $max) { Abf-Img-Stop (T "$name and the Google services do not fit on the $nm together ($([math]::Ceiling($len / 1MB)) MB + $([math]::Truncate($g / 1MB)) MB, at most $([math]::Truncate($max / 1MB)) MB fit next to its vendor, product and system_ext). Install without -GappsZip." "$name и сервисы Google вместе не помещаются на $nm ($([math]::Ceiling($len / 1MB)) МБ + $([math]::Truncate($g / 1MB)) МБ, рядом с его vendor, product и system_ext помещается не больше $([math]::Truncate($max / 1MB)) МБ). Установите без -GappsZip.") -Nw }
   if ((Test-Path -LiteralPath $sums) -and (Test-Path -LiteralPath $sig) -and (Test-Path -LiteralPath $cert)) {
     if (-not (Verify-Sig $sums $sig $cert)) { Abf-Img-Stop (T "SHA256SUMS is not signed with the Lumen OS key for the ${nm}: do not install this image" "SHA256SUMS не подписан ключом Lumen OS для ${nm}: не устанавливайте этот образ") }
     Ok (T "SHA256SUMS signature: Lumen OS key for the $nm" "подпись SHA256SUMS: ключ Lumen OS для $nm")
@@ -3148,7 +3191,7 @@ function Abf-Fbd-Check([switch]$Rescue) {  # fastbootd, one getvar all: this pro
   $script:AbfS = "_$cs"
   Ok (T "fastboot mode: $nm $($script:Serial), slot $cs" "режим fastboot: $nm $($script:Serial), слот $cs")
 }
-function Abf-Room($bf) {  # [blobs file]: the new z9x_blobs and the image fit into super next to the other partitions; else STOP
+function Abf-Room($bf) {  # [blobs file]: the new z9x_blobs and the image (and the add-on of AbfGneed) fit into super; else STOP
   $gv = $script:AbfGv; $sx = $script:AbfS; $res = [int64]$script:Prof["SUPER_RESERVE"]; $blob = [int64]0
   if ($null -eq (Gv-Size $gv "super")) { Abf-Fb-Stop (T "fastbootd did not report the size of super." "fastbootd не сообщил размер super.") }
   $free = [int64](Super-Free $gv); $sys = Gv-Size $gv "system$sx"; $old = Gv-Size $gv "z9x_blobs$sx"
@@ -3160,6 +3203,11 @@ function Abf-Room($bf) {  # [blobs file]: the new z9x_blobs and the image fit in
   $room = $free + (Abf-MiB $sys) - (Abf-MiB $blob) - $res
   $need = Abf-MiB (Get-Item -LiteralPath $script:Image).Length
   if ($need -gt $room) { Abf-Fb-Stop (T "the image does not fit into super ($([math]::Truncate($room / 1MB)) MB free, $([math]::Truncate($need / 1MB)) MB needed)." "образ не помещается в super (свободно $([math]::Truncate($room / 1MB)) МБ, нужно $([math]::Truncate($need / 1MB)) МБ).") }
+  # -GappsZip: z9x_gapps is made or resized to the add-on image after system; what it adds to its space counts too
+  if ($script:AbfGneed -le 0) { return }
+  $gold = Gv-Size $gv "z9x_gapps$sx"; if ($null -eq $gold) { $gold = 0 }
+  $g = [int64]$script:AbfGneed - (Abf-MiB $gold); if ($g -lt 0) { $g = [int64]0 }
+  if (($need + $g) -gt $room) { Abf-Fb-Stop (T "the image and the Google services do not fit into super together ($([math]::Truncate($room / 1MB)) MB free, $([math]::Truncate(($need + $g) / 1MB)) MB needed). To install without them, run the installer without -GappsZip." "образ и сервисы Google вместе не помещаются в super (свободно $([math]::Truncate($room / 1MB)) МБ, нужно $([math]::Truncate(($need + $g) / 1MB)) МБ). Чтобы установить без них, запустите установщик без -GappsZip.") }
 }
 function Abf-Infb { return ((State-Get step_fastboot) -and (State-Get step_flash) -ne "done" -and (P6-In-Fastboot)) }
 function Abf-Write {  # stock or Lumen OS running: checks, ERASE, cable, fastbootd: z9x_blobs, system, the wipe, restart
@@ -3186,6 +3234,14 @@ function Abf-Write {  # stock or Lumen OS running: checks, ERASE, cable, fastboo
     if ($infb) { Abf-Fb-Stop (T "$bf (the MediaTek / XGIMI files of this projector) is missing." "нет $bf (файлов MediaTek / XGIMI этого проектора).") }
     Abf-Blobs
   }
+  # -GappsZip (one visit, one wipe, as on the Z9X): the add-on image built and checked here, before the ERASE
+  # question. A visit resumed in fastboot mode keeps its saved add-on only with -GappsZip given again
+  if ($GappsZip) { Z9x-Gapps-Prepare }
+  elseif ($infb -and (State-Get gapps_plan) -and (State-Get step_gapps_flash) -ne "done") {
+    Say (T "this install was started with Google services (-GappsZip), and they are not written yet" "эта установка начата с сервисами Google (-GappsZip), и они ещё не записаны")
+    if (-not (Ask (T "Finish the install without Google services? (Adding them later with 'gapps' wipes the data once more.)" "Завершить установку без сервисов Google? (Если добавить их позже через 'gapps', данные сотрутся ещё раз.)"))) { Abf-Fb-Stop (T "run the same command again with -GappsZip FILE." "запустите ту же команду снова с -GappsZip ФАЙЛ.") }
+    State-Set gapps_plan ""
+  }
   $sl = (State-Get slot).TrimStart('_')
   Write-Host ""
   if ($bf) {
@@ -3207,11 +3263,26 @@ calibration and factory data. Keep the power adapter connected." "Записыв
 форматирует userdata и metadata. Прошивка XGIMI не затрагивается: vendor, boot, vbmeta, product, system_ext,
 второй слот, калибровка и заводские данные. Блок питания держите подключённым.")
   }
+  if ($GappsZip) {
+    Write-Host (T "With -GappsZip the same visit also writes the Google services from $($script:GzName) into the partition
+z9x_gapps_$sl ($([math]::Ceiling($script:GiSize / 1MB)) MB, the image just built on this computer), after system and before the wipe: the first start
+is clean and its setup has the Google sign-in step." "С -GappsZip в том же заходе в раздел z9x_gapps_$sl ($([math]::Ceiling($script:GiSize / 1MB)) МБ, образ только что собран на
+компьютере) записываются ещё сервисы Google из $($script:GzName), после system и до очистки: первый запуск чистый, и в его
+настройке есть шаг входа в Google.")
+  }
   if ((Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")) -cne "ERASE") {
     if ($infb) { Abf-Fb-Stop (T "cancelled." "отменено.") }
     Die (T "cancelled, nothing was written" "отменено, ничего не записано")
   }
   $script:EraseNow = $true
+  # the add-on of this write (Abf-Gapps-Write); a new write without -GappsZip forgets what an earlier one saved
+  if (-not $infb -and ($GappsZip -or (State-Get gapps_plan) -or (State-Get step_gapps_flash))) {
+    State-Set gapps_plan $script:GzSha; State-Set gapps_img $script:GiSha; State-Set step_gapps_flash ""
+  } elseif ($GappsZip -and (State-Get gapps_plan) -ne $script:GzSha) {
+    State-Set gapps_plan $script:GzSha; State-Set gapps_img $script:GiSha; State-Set step_gapps_flash ""
+  }
+  $script:AbfGneed = [int64]0
+  if ((State-Get gapps_plan) -and (State-Get step_gapps_flash) -ne "done") { $script:AbfGneed = Abf-MiB $script:GiSize }
   if (-not $infb) {
     foreach ($k in @("step_fastboot", "step_zblobs", "step_system", "step_wipe", "step_flash", "step_verify")) { State-Set $k "" }
     Write-Host ""
@@ -3232,6 +3303,9 @@ in that port first). Its system keeps running; fastboot mode uses the cable." "�
   if (-not (P6-Fb-Wait 180)) { Die ((T "the projector did not appear on the cable within 3 minutes. Is the cable in the projector's USB port (not a hub)? On Windows the Google USB Driver is needed. Nothing was written. Run the installer again: it finds the projector in fastboot mode, or, once its system is back, sends it there again." "проектор не появился на кабеле за 3 минуты. Кабель в USB-порту проектора (не через хаб)? На Windows нужен Google USB Driver. Ничего не записано. Запустите установщик снова: он найдёт проектор в режиме fastboot или, когда система вернётся, снова отправит его туда.") + (Fb-Driver-Hint)) }
   Abf-Fbd-Check
   $sx = $script:AbfS; $len = (Get-Item -LiteralPath $script:Image).Length
+  if (-not (State-Get gapps_plan) -and $null -ne (Gv-Size $script:AbfGv "z9x_gapps$sx")) {
+    Say (T "z9x_gapps$sx (Google services you added) stays as it is; 'gapps --remove' removes it" "z9x_gapps$sx (добавленные вами сервисы Google) остаётся как есть; 'gapps --remove' его удаляет")
+  }
   if ((State-Get step_system) -ne "done") {
     Abf-Room $bf
     if ($bf) {
@@ -3255,6 +3329,7 @@ in that port first). Its system keeps running; fastboot mode uses the cable." "�
   }
   State-Set step_system done
   Ok "system$sx ($([math]::Truncate($len / 1MB)) MB)"
+  if ((State-Get gapps_plan) -and (State-Get step_gapps_flash) -ne "done") { if (-not (Abf-Gapps-Write)) { State-Set gapps_plan "" } }
   $wp = $script:Prof["WIPE_PARTS"]
   Say (T "wiping data (format:ext4 $wp)" "очистка данных (format:ext4 $wp)")
   foreach ($p in (Abf-List WIPE_PARTS)) {
@@ -3265,9 +3340,248 @@ in that port first). Its system keeps running; fastboot mode uses the cable." "�
   State-Set step_flash done
   $h = Abf-Hint
   Write-Host ""
+  if ((State-Get step_gapps_flash) -eq "done") {
+    Write-Host (T "Written. The projector starts Lumen OS now; the first start takes 2-4 minutes and ends in the setup
+on the screen, with the Google sign-in step. $h The cable can come out now." "Записано. Проектор загружает Lumen OS; первый запуск 2–4 минуты и заканчивается экраном настройки,
+в ней есть шаг входа в Google. $h Кабель теперь можно вынуть.")
+    return
+  }
   Write-Host (T "Written. The projector starts Lumen OS now; the first start takes 2-4 minutes and ends in the setup
 on the screen. $h The cable can come out now." "Записано. Проектор загружает Lumen OS; первый запуск 2–4 минуты и заканчивается экраном настройки.
 $h Кабель теперь можно вынуть.")
+}
+# The Google services add-on of a profile with GAPPS_ALLOW (see lumen-install.sh, the same place): the user's own
+# MindTheGapps zip becomes, on this computer, the erofs image of the profile's GAPPS_IMAGES (Gi-Build), written into
+# z9x_gapps_<slot> in fastbootd. -GappsZip: part of the install's one visit (Abf-Gapps-Write: after system, before the
+# wipe; no room or a failed write leaves Google out, warned). 'gapps -Zip FILE' on Lumen OS of this projector: one
+# fastbootd visit of its own (z9x_gapps, then the format of WIPE_PARTS); no fill over adb, no root. 'gapps -Remove':
+# z9x_gapps deleted in such a visit, the same wipe. 'gapps': the state. 'gsf': the GSF ID (adb root). A 'gapps' visit
+# cut off after z9x_gapps was changed stays in fastboot mode (gapps_fastboot in the state); the same command continues.
+function Abf-Gapps-Write {  # fastbootd, system written: z9x_gapps_<slot> sized to the add-on image and flashed; $false = left out
+  # (warned; the partition is deleted again, so the system starts plainly without Google)
+  $p = "z9x_gapps$($script:AbfS)"
+  $need = Abf-MiB $script:GiSize
+  $why = T "the install goes on without Google services (add them later: gapps -Zip FILE)" "установка продолжается без сервисов Google (добавить их позже: gapps -Zip ФАЙЛ)"
+  $gv = @(Fb getvar all); $script:AbfGv = $gv   # system and z9x_blobs have their new sizes now
+  $free = [int64](Super-Free $gv); $cur = Gv-Size $gv $p; if ($null -eq $cur) { $cur = [int64]0 }
+  if (($free + $cur) -lt $need) {
+    if ($cur -gt 0) { $null = Fb-Do delete $p }
+    Warn ((T "not enough free space in super for the Google services ($([math]::Truncate(($free + $cur) / 1MB)) MB, $([math]::Truncate($need / 1MB)) MB needed): $why" "в super мало места для сервисов Google ($([math]::Truncate(($free + $cur) / 1MB)) МБ, нужно $([math]::Truncate($need / 1MB)) МБ): $why"))
+    State-Set step_gapps_flash "skipped:room"; return $false
+  }
+  Say (T "writing the Google services into $p ($([math]::Truncate($need / 1MB)) MB, about 20 s)" "записываю сервисы Google в $p ($([math]::Truncate($need / 1MB)) МБ, около 20 секунд)")
+  $made = if ($cur -gt 0) { Fb-Do resize $p $need } else { Fb-Do create $p $need }
+  if (-not $made) { $null = Fb-Do delete $p; Warn (T "$p could not be created: $why" "$p создать не удалось: $why"); State-Set step_gapps_flash "skipped:create"; return $false }
+  if (-not (Fb-Do flash $p $script:GiImg)) {
+    if (-not (P6-In-Fastboot)) { Die (T "fastboot mode ended while $p was being written. Put the cable in again and run the same command: it continues there, or, once Lumen OS runs, writes everything again in one visit." "режим fastboot завершился во время записи $p. Снова вставьте кабель и запустите ту же команду: установка продолжится там или, если уже работает Lumen OS, всё запишется заново за один заход.") }
+    $null = Fb-Do delete $p
+    Warn (T "$p could not be written and was removed again: $why" "$p записать не удалось, раздел удалён: $why")
+    State-Set step_gapps_flash "skipped:flash"; return $false
+  }
+  State-Set step_gapps_flash done; State-Set gapps $script:GzName; State-Set gapps_img $script:GiSha
+  Ok "${p}: $($script:GzName)"
+  return $true
+}
+function Abf-Gapps-Need {  # bytes of super the -GappsZip add-on takes (its checked image rounded up to 1 MiB), 0 without one
+  if (-not $GappsZip -or -not $script:GzSha -or -not (Test-Path -LiteralPath $script:GappsImagesF)) { return [int64]0 }
+  $ref = Get-Content -LiteralPath $script:GappsImagesF | Where-Object { $w = @("$_".Trim() -split "\s+"); $w.Count -eq 5 -and $w[0] -eq $script:GzSha -and $w[1] -eq $EuVer -and $w[2] -eq "plain" } | Select-Object -First 1
+  if (-not $ref) { return [int64]0 }
+  $sz = @("$ref".Trim() -split "\s+")[4]
+  if ($sz -notmatch '^[0-9]+$') { return [int64]0 }
+  return (Abf-MiB $sz)
+}
+function Abf-Gapps-Cable {  # Lumen OS runs: cable in, restart into fastboot mode for the 'gapps' visit, wait for it there
+  Write-Host ""
+  Write-Host (T "Connect the projector's USB port to this computer with the USB A-to-A cable now (take out whatever is
+in that port first). Its system keeps running; fastboot mode uses the cable." "Соедините сейчас USB-порт проектора с компьютером кабелем USB A–A (сначала выньте то, что вставлено в
+этот порт). Система проектора продолжает работать; режим fastboot использует кабель.")
+  $null = Read-Host (T "Press Enter when the cable is in" "Когда кабель вставлен, нажмите Enter")
+  Say (T "restarting into fastboot mode (about 30 seconds)" "перезагрузка в режим fastboot (около 30 секунд)")
+  State-Set gapps_fastboot (Get-Date -Format "yyyyMMdd-HHmmss")
+  Adb reboot fastboot | Out-Null
+  if ($LASTEXITCODE -ne 0 -and (P6-Alive)) {
+    State-Set gapps_fastboot ""
+    Die (T "adb reboot fastboot failed: the projector still runs its system. Nothing was written. Run the installer again." "adb reboot fastboot не удался: проектор работает в своей системе. Ничего не записано. Запустите установщик снова.")
+  }
+  Pt-Adb disconnect $script:AdbT 2>&1 | Out-Null
+  if (-not (P6-Fb-Wait 180)) { Die ((T "the projector did not appear on the cable within 3 minutes. Is the cable in the projector's USB port (not a hub)? On Windows the Google USB Driver is needed. Nothing was written. Run the same command again: it finds the projector in fastboot mode, or, once its system is back, sends it there again." "проектор не появился на кабеле за 3 минуты. Кабель в USB-порту проектора (не через хаб)? На Windows нужен Google USB Driver. Ничего не записано. Запустите ту же команду снова: она найдёт проектор в режиме fastboot или, когда система вернётся, снова отправит его туда.") + (Fb-Driver-Hint)) }
+}
+function Abf-Gapps-Wipe {  # the 'gapps' visit, z9x_gapps changed: the format of WIPE_PARTS, then the restart
+  $wp = $script:Prof["WIPE_PARTS"]
+  Say (T "wiping data (format:ext4 $wp)" "очистка данных (format:ext4 $wp)")
+  foreach ($p in (Abf-List WIPE_PARTS)) {
+    if (-not (Fb-Do format $p)) { Die (T "the wipe ($p) failed. The projector stays in fastboot mode: keep the cable in and run the same command again, it continues there." "очистка ($p) не удалась. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите ту же команду снова, она продолжит там.") }
+  }
+  Fb reboot | Out-Null
+  State-Set gapps_fastboot ""
+}
+function Abf-Gapps-Lumen {  # connected: Lumen OS of this projector without Google built in, else STOP
+  P6-Lumen-Only
+  if ((Prop ro.z9x.gms) -ne "0") { Die (T "this projector runs Lumen OS with Google services built in: nothing to add" "на проекторе Lumen OS со встроенными сервисами Google: добавлять нечего") }
+}
+function Abf-Gapps-Install {
+  $infb = $false; $h = Abf-Hint
+  Abf-Refuse-Opts
+  if (-not (Test-Path -LiteralPath $Zip)) { Die (T "no file $Zip" "нет файла $Zip") }
+  Check-Tools
+  Gapps-Zipcheck $Zip
+  if ((State-Get gapps_fastboot) -and (P6-In-Fastboot)) {
+    $infb = $true
+    Say (T "the projector waits in fastboot mode on the cable: continuing there" "проектор ждёт в режиме fastboot на кабеле: продолжаю там")
+  } else {
+    if (-not (Abf-Adb 60)) { Die (P6-NoConn) }
+    Abf-Device
+    Abf-Gapps-Lumen
+    # the same add-on, on: writing it again would only cost the Google apps their data (one start without them)
+    if ((Prop sys.z9x.gapps) -eq "ok" -and (Prop sys.z9x.gapps.zip) -eq $script:GzSha) {
+      Ok (T "these Google services ($($script:GzName)) are already installed and on: nothing to do. Nothing was written." "эти сервисы Google ($($script:GzName)) уже установлены и включены: делать нечего. Ничего не записано.")
+      return
+    }
+    # the Lumen OS on the projector takes this zip as an erofs add-on (its own files, read without root)
+    $al = @((Adb shell cat /system/etc/z9x/gapps_allow.txt) | ForEach-Object { "$_".TrimEnd("`r") })
+    $gs = @((Adb shell cat /system/etc/z9x/z9x_gapps.sh) | ForEach-Object { "$_".TrimEnd("`r") })
+    if (-not ($al | Where-Object { $_ -like "zip=$($script:GzSha) *" }) -or -not ($gs | Where-Object { $_ -match '^# lumen-gapps-fs:.* erofs' })) {
+      Die (T "the Lumen OS on the projector does not accept this file yet: update Lumen OS first (Settings > Device preferences > About > Lumen OS update). Nothing was written." "Lumen OS на проекторе ещё не принимает этот файл: сначала обновите Lumen OS (Настройки > Настройки устройства > Об устройстве > Обновление Lumen OS). Ничего не записано.")
+    }
+  }
+  Eu-Setup
+  Gi-Build
+  $sl = (State-Get slot).TrimStart('_'); $mb = [math]::Ceiling($script:GiSize / 1MB)
+  Write-Host ""
+  Write-Host (T "Adding Google services (slot $sl): in one visit to fastboot mode the installer writes the partition
+z9x_gapps_$sl ($mb MB, the image just built on this computer from $($script:GzName)), then ERASES ALL DATA on the
+projector (apps, accounts, settings, files, Wi-Fi networks) by formatting userdata and metadata, as at the
+install: the first start then sets up Google services properly. system, vendor, boot, vbmeta, the other slot,
+calibration and factory data stay untouched. Keep the power adapter connected." "Добавляю сервисы Google (слот $sl): за один заход в режим fastboot установщик записывает раздел
+z9x_gapps_$sl ($mb МБ, образ только что собран на компьютере из $($script:GzName)), затем СТИРАЕТ ВСЕ ДАННЫЕ
+проектора (приложения, аккаунты, настройки, файлы, сети Wi-Fi), форматируя userdata и metadata, как при
+установке: тогда первый запуск правильно настроит сервисы Google. System, vendor, boot, vbmeta, второй слот,
+калибровка и заводские данные не затрагиваются. Блок питания держите подключённым.")
+  if (-not $infb -and (State-Get step_backup) -ne "done" -and (Ask (T "Make a backup of your apps and files first (recommended)?" "Сначала сделать копию ваших приложений и файлов (рекомендуется)?"))) { Cmd-Backup }
+  $a = Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")
+  $script:AbfGapps = $true; $script:AbfGw = $false
+  if ($a -cne "ERASE") {
+    if ($infb) { Abf-Fb-Stop (T "cancelled." "отменено.") }
+    Die (T "cancelled, nothing was written" "отменено, ничего не записано")
+  }
+  $script:EraseNow = $true
+  if (-not $infb) { Abf-Gapps-Cable }
+  Abf-Fbd-Check
+  $p = "z9x_gapps$($script:AbfS)"
+  # room: super's free space and what the partition has now
+  $need = Abf-MiB $script:GiSize; $res = [int64]$script:Prof["SUPER_RESERVE"]
+  $free = [int64](Super-Free $script:AbfGv); $cur = Gv-Size $script:AbfGv $p; if ($null -eq $cur) { $cur = [int64]0 }
+  if (($free + $cur) -lt ($need + $res)) { Abf-Fb-Stop (T "not enough free space in super: $([math]::Truncate(($free + $cur) / 1MB)) MB, the Google services need $([math]::Truncate(($need + $res) / 1MB)) MB." "в super мало места: свободно $([math]::Truncate(($free + $cur) / 1MB)) МБ, сервисам Google нужно $([math]::Truncate(($need + $res) / 1MB)) МБ.") }
+  Say (T "writing the Google services into $p ($([math]::Truncate($need / 1MB)) MB, about 20 s)" "записываю сервисы Google в $p ($([math]::Truncate($need / 1MB)) МБ, около 20 секунд)")
+  $made = if ($cur -gt 0) { Fb-Do resize $p $need } else { Fb-Do create $p $need }
+  if (-not $made) { Abf-Fb-Stop (T "$p could not be made." "$p не удалось создать.") }
+  $script:AbfGw = $true
+  if (-not (Fb-Do flash $p $script:GiImg)) {
+    if (-not (P6-In-Fastboot)) { Die (T "fastboot mode ended while $p was being written. Put the cable in again and run the same command." "режим fastboot завершился во время записи $p. Снова вставьте кабель и запустите ту же команду.") }
+    if (-not (Fb-Do delete $p)) { Die (T "$p could not be written. The projector stays in fastboot mode: keep the cable in and run the same command again." "$p записать не удалось. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите ту же команду снова.") }
+    State-Set gapps_fastboot ""
+    Fb reboot | Out-Null
+    Die ((T "$p could not be written and was removed again; nothing else changed: Lumen OS starts without Google services. Run 'gapps -Zip FILE' again." "$p записать не удалось, раздел удалён; больше ничего не изменилось: Lumen OS загружается без сервисов Google. Запустите 'gapps -Zip ФАЙЛ' ещё раз.") + " " + $h)
+  }
+  Ok "${p}: $($script:GzName)"
+  State-Set gapps $script:GzName; State-Set gapps_img $script:GiSha
+  Abf-Gapps-Wipe
+  State-Set step_gapps done
+  Write-Host ""
+  Write-Host (T "Done. The projector starts Lumen OS on wiped data now; the first start takes 2-4 minutes and ends in the
+setup on the screen, with the Google sign-in step. If Google refuses the sign-in, register the GSF ID (guide,
+section 'Adding Google services'). $h The cable can come out now." "Готово. Проектор загружает Lumen OS на очищенных данных; первый запуск 2–4 минуты и заканчивается
+экраном настройки, в ней есть шаг входа в Google. Если Google не пускает, зарегистрируйте GSF ID (инструкция,
+раздел «Как поставить сервисы Google»). $h Кабель теперь можно вынуть.")
+}
+function Abf-Gapps-Remove {
+  $infb = $false; $h = Abf-Hint
+  Abf-Refuse-Opts
+  Check-Tools
+  if ((State-Get gapps_fastboot) -and (P6-In-Fastboot)) {
+    $infb = $true
+    Say (T "the projector waits in fastboot mode on the cable: continuing there" "проектор ждёт в режиме fastboot на кабеле: продолжаю там")
+  } else {
+    if (-not (Abf-Adb 60)) { Die (P6-NoConn) }
+    Abf-Device
+    Abf-Gapps-Lumen
+    if ((Prop sys.z9x.gapps) -eq "none") {
+      $sl = (State-Get slot).TrimStart('_')
+      Ok (T "slot $sl has no z9x_gapps: nothing to remove. Nothing was written." "в слоте $sl нет z9x_gapps: удалять нечего. Ничего не записано.")
+      return
+    }
+  }
+  Write-Host ""
+  Write-Host (T "Removing the Google services you added: in one visit to fastboot mode the installer deletes the
+partition z9x_gapps of the slot Lumen OS runs from and then ERASES ALL DATA on the projector (apps,
+accounts, settings, files, Wi-Fi networks), as at the install. system, vendor, boot, vbmeta, the other slot,
+calibration and factory data stay untouched." "Удаляю добавленные вами сервисы Google: за один заход в режим fastboot установщик удаляет раздел
+z9x_gapps того слота, из которого работает Lumen OS, и затем СТИРАЕТ ВСЕ ДАННЫЕ проектора (приложения,
+аккаунты, настройки, файлы, сети Wi-Fi), как при установке. System, vendor, boot, vbmeta, второй слот,
+калибровка и заводские данные не затрагиваются.")
+  $a = Read-Host (T "Type ERASE to continue" "Введите ERASE, чтобы продолжить")
+  $script:AbfGapps = $true; $script:AbfGw = $false
+  if ($a -cne "ERASE") {
+    if ($infb) { Abf-Fb-Stop (T "cancelled." "отменено.") }
+    Die (T "cancelled, nothing was written" "отменено, ничего не записано")
+  }
+  $script:EraseNow = $true
+  if (-not $infb) { Abf-Gapps-Cable }
+  Abf-Fbd-Check
+  $p = "z9x_gapps$($script:AbfS)"
+  if ($null -ne (Gv-Size $script:AbfGv $p)) {
+    $script:AbfGw = $true
+    $del = Fb-Do delete $p
+    if (-not $del) { Die (T "$p could not be deleted. The projector stays in fastboot mode: keep the cable in and run the same command again." "$p удалить не удалось. Проектор остаётся в режиме fastboot: не вынимайте кабель и запустите ту же команду снова.") }
+    Ok (T "$p deleted" "$p удалён")
+  } elseif (-not $infb) {
+    $sl = $script:AbfS.TrimStart('_')
+    Abf-Fb-Stop (T "slot $sl has no ${p}: nothing to remove." "в слоте $sl нет ${p}: удалять нечего.")
+  }
+  Abf-Gapps-Wipe
+  State-Set gapps ""; State-Set gapps_img ""
+  Ok ((T "the projector starts Lumen OS without Google services on wiped data" "проектор загружает Lumen OS без сервисов Google на очищенных данных") + " " + $h)
+}
+function Abf-Gapps-Status {
+  Check-Tools
+  if (-not (Abf-Adb 60)) { Die (P6-NoConn) }
+  Abf-Device
+  P6-Lumen-Only
+  $v = Prop sys.z9x.gapps; $z = Prop sys.z9x.gapps.zip
+  if ($v -eq "ok") { Ok ((T "Google services added by you: on" "добавленные вами сервисы Google: включены") + " ($(("$(Gapps-Line $z)" -split ' ')[1]))") }
+  elseif ($v -eq "none" -or -not $v) { Say (T "no Google services added. To add them: lumen-install.cmd gapps -Zip FILE (guide, section 'Adding Google services')" "сервисы Google не добавлены. Как добавить: lumen-install.cmd gapps -Zip ФАЙЛ (инструкция, раздел «Как поставить сервисы Google»)") }
+  elseif ($v -eq "bad:slow") { Warn (T "at the last start the check of the Google services took too long, so the projector started without them: restart it" "при последнем запуске проверка сервисов Google шла слишком долго, поэтому проектор запустился без них: перезагрузите его") }
+  elseif ($v -eq "off") {
+    Warn (T "the Google services were turned off: the projector failed to start twice in a row with them" "сервисы Google выключены: проектор дважды подряд не смог загрузиться с ними")
+    if (Ask (T "Turn them on again (the projector restarts)?" "Включить их снова (проектор перезагрузится)?")) {
+      P6-Root-Or-Die
+      Adb shell rm -rf /metadata/z9x_gapps | Out-Null
+      Adb reboot | Out-Null
+      Ok (T "turned on; the projector restarts" "включены; проектор перезагружается")
+    }
+  }
+  else { Warn (T "the Google services you added cannot be used ($v): run 'gapps -Zip FILE' again, or 'gapps -Remove'" "добавленные сервисы Google не могут использоваться ($v): запустите 'gapps -Zip ФАЙЛ' ещё раз или 'gapps -Remove'") }
+}
+function Abf-Gapps {
+  if ($Zip -and $Remove) { Die "gapps: -Zip or -Remove, not both" }
+  if ($Remove) { Abf-Gapps-Remove } elseif ($Zip) { Abf-Gapps-Install } else { Abf-Gapps-Status }
+}
+function Abf-Gsf {  # the Google Services Framework ID of the projector's Lumen OS, for google.com/android/uncertified
+  Check-Tools
+  if (-not (Abf-Adb 60)) { Die (P6-NoConn) }
+  Abf-Device
+  P6-Lumen-Only
+  if (-not ((Adb shell pm path com.google.android.gsf) | Out-String).Trim()) {
+    Ok (T "this Lumen OS has no Google services: nothing to register" "в этой Lumen OS нет сервисов Google: регистрировать нечего")
+    Say (T "To add them: lumen-install.cmd gapps -Zip FILE (guide, section 'Adding Google services')" "Как их добавить: lumen-install.cmd gapps -Zip ФАЙЛ (инструкция, раздел «Как поставить сервисы Google»)")
+    return
+  }
+  P6-Root-Or-Die
+  $id = ((Adb shell "sqlite3 /data/data/com.google.android.gsf/databases/gservices.db `"select value from main where name='android_id';`"") | Out-String).Trim()
+  Adb unroot | Out-Null
+  if (-not $id) { Die (T "no GSF ID yet: connect the projector to the internet, wait two minutes, try again" "GSF ID ещё нет: подключите проектор к интернету, подождите пару минут и повторите") }
+  Write-Host "GSF ID: $id"
+  Write-Host (T "Register it at https://www.google.com/android/uncertified (signed in with your Google account), wait 10-30 minutes, then sign in on the projector." "Зарегистрируйте его на https://www.google.com/android/uncertified (войдя в свой аккаунт Google), подождите 10–30 минут и войдите на проекторе.")
 }
 function Abf-Verify {  # after the setup, with debugging on again: Lumen OS of this projector started, with its files
   $nm = P6-Name; $good = $true
@@ -3283,6 +3597,11 @@ function Abf-Verify {  # after the setup, with debugging on again: Lumen OS of t
     if ($bl -eq "ok") { Ok (T "MediaTek / XGIMI files (z9x_blobs$(State-Get slot)) ok" "файлы MediaTek / XGIMI (z9x_blobs$(State-Get slot)) в порядке") }
     else { Warn "sys.z9x.blobs=$bl ($(T "no sound and no MediaTek video decoders until 'blobs' and 'flash'" "без звука и видеодекодеров MediaTek до 'blobs' и 'flash'"))"; $good = $false }
   }
+  if (Abf-Gapps-On) {
+    $gs = Prop sys.z9x.gapps
+    if ($gs -eq "ok") { Ok (T "Google services added by you ('gapps'): on" "сервисы Google, добавленные вами ('gapps'): включены") }
+    elseif ($gs -eq "off" -or $gs -like "bad:*") { Warn (T "the Google services add-on is not in use ($gs): lumen-install.cmd gapps" "дополнение с сервисами Google не используется ($gs): lumen-install.cmd gapps") }
+  }
   if ($good) { State-Set step_verify done; Ok (T "verify passed" "проверка пройдена") }
 }
 function Abf-Done {
@@ -3293,6 +3612,11 @@ later: turn on debugging (guide, section '$nm', 'Check the install') and run:
 lumen-install.cmd verify -Ip ADDRESS" "Готово. На проекторе пройдите настройку Lumen OS (язык, сеть). Проверить установку с компьютера можно
 позже: включите отладку (инструкция, раздел «${nm}», «Проверьте установку») и запустите:
 lumen-install.cmd verify -Ip АДРЕС")
+  if ((State-Get step_gapps_flash) -eq "done") {
+    Write-Host (T "For Google sign-in, if Google refuses it: register the GSF ID (lumen-install.cmd gsf -Ip ADDRESS,
+guide, section 'Adding Google services')." "Для входа в Google, если Google не пускает: зарегистрируйте GSF ID (lumen-install.cmd gsf -Ip АДРЕС,
+инструкция, раздел «Как поставить сервисы Google»).")
+  }
   Write-Host "  $(T 'Guide' 'Инструкция'): $(P6-Guide)"
 }
 function Abf-Flash {  # the 'flash' command: a new write, unless one waits in fastboot mode (then it continues there)
@@ -3301,8 +3625,11 @@ function Abf-Flash {  # the 'flash' command: a new write, unless one waits in fa
 }
 function Abf-All {  # check, backup (asked), vbmeta (asked), blobs, flash: each step once, continued where it stopped
   Abf-Refuse-Opts
+  if ($GappsZip) { Z9x-Gapps-Plan }   # -GappsZip: the zip, and that the install saved here can take it
   if (-not (Abf-Infb)) {
     if ((State-Get step_check) -ne "done") { Abf-Check }
+    # -GappsZip: the add-on image built before the backup question, so that a refusal comes first
+    if ($GappsZip -and (State-Get step_flash) -ne "done") { Z9x-Gapps-Prepare }
     if (-not (State-Get step_backup)) {
       if (Ask (T "Make a backup of your apps and files first (recommended)?" "Сначала сделать копию ваших приложений и файлов (рекомендуется)?")) { Cmd-Backup } else { State-Set step_backup skipped }
     }
@@ -3476,10 +3803,13 @@ everything)." "Записано; данные сохранены. Проекто
 вынуть. Если он снова окажется в режиме fastboot, дело не в системе: инструкция, «Откат на сток» (стирает всё).")
 }
 function Abf-Main {  # the commands of a FLOW=ab-fastbootd projector
-  if (@("gapps", "gsf", "stick") -contains $Command) { Abf-Not-Yet $Command }
-  if (@("", "check", "backup", "blobs", "flash", "verify", "rescue") -contains $Command) { Pt-Setup }
+  if (@("stick") -contains $Command) { Abf-Not-Yet $Command }
+  if (@("gapps", "gsf") -contains $Command -and -not (Abf-Gapps-On)) { Abf-Not-Yet $Command }
+  if (@("", "check", "backup", "blobs", "flash", "verify", "rescue", "gapps", "gsf") -contains $Command) { Pt-Setup }
   switch ($Command) {
     ""       { Abf-All }
+    "gapps"  { Abf-Gapps }
+    "gsf"    { Abf-Gsf }
     "check"  { Abf-Check }
     "backup" { Cmd-Backup }
     "vbmeta" { Abf-Vbmeta }

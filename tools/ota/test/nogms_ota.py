@@ -9,7 +9,8 @@ images. make_ota.py unsigned must refuse a delta between two editions (before an
 delta_generator that would fail is never run) and finish's package names must carry -nogms- if and only if
 the edition is nogms; make_manifest.py must refuse a no-Google image with --channel public, a Google image
 with --channel public-nogms, an --old-image of the other edition and a package whose lumen-edition is not
-the image's, and accept the matching set. Exit status 0 only when every case passes. Writes only into its
+the image's, and accept the matching set; the beta channel public-beta takes a no-Google image's packages
+only, with package URLs on the pre-release beta-<version>. Exit status 0 only when every case passes. Writes only into its
 own temp dir.
 """
 import os
@@ -128,6 +129,21 @@ def main():
         expect("make_manifest: nogms image, nogms package, delta from nogms",
                dies(mm.check_edition, ng, ng2, [zn], "public-nogms"), False)
         expect("make_manifest: gms image, gms package (lab)", dies(mm.check_edition, gm, None, [zg], "public"), False)
+        # ---- the beta channel (Beta updates switch): packages of a no-Google image, on the pre-release beta-<version>
+        expect("make_manifest: nogms image, --channel public-beta", dies(mm.check_edition, ng, ng2, [zn], "public-beta"),
+               False)
+        expect("make_manifest: gms image, --channel public-beta", dies(mm.check_edition, gm, None, [zg], "public-beta"),
+               True, "--image reads update-public.json")
+        expect("make_manifest: gms package in public-beta", dies(mm.check_edition, ng, None, [zg], "public-beta"), True,
+               "lumen-edition=gms")
+        expect("make_manifest: public-beta is a channel", ("public-beta" not in mm.CHANNELS, str(mm.CHANNELS)), False)
+        r = "kmuradoff/lumen-os"
+        expect("make_manifest: beta packages on beta-<version>",
+               (mm.package_base(r, "public-beta", "1.0.9") != "https://github.com/" + r + "/releases/download/beta-1.0.9/",
+                mm.package_base(r, "public-beta", "1.0.9")), False)
+        expect("make_manifest: stable packages on z9x-<version>",
+               (mm.package_base(r, "public-nogms", "1.0.9") != "https://github.com/" + r + "/releases/download/z9x-1.0.9/",
+                mm.package_base(r, "public-nogms", "1.0.9")), False)
     print("nogms ota: " + ("FAILED %d" % fails if fails else "all passed"))
     return 1 if fails else 0
 

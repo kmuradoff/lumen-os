@@ -20,7 +20,8 @@
 #     repo copy: the gate (/system/etc/lumen/lumen_ota.sh, /system/etc/init/lumen_ota.rc, the gate's
 #     /system/etc/init/update_verifier.rc, /system/etc/xgimi/lumen_escape.sh = tools/devices/ota/image/
 #     lumen_ota_escape.sh), /system/etc/lumen/ota_gate.conf, the updater's default permissions; /system/bin/bootctl
-#     with the sha256 of bootctl.sha256; LumenUpdater (/system/app, an APK); /system/etc/security/otacerts.zip =
+#     with the sha256 of bootctl.sha256; LumenUpdater (/system/app, an APK); since 1.0.8 also the AirPlay receiver
+#     /system/app/Z9xAirPlay (an APK with uncompressed armeabi-v7a libraries); /system/etc/security/otacerts.zip =
 #     what tools/devices/ota/make_otacerts.py builds from devices/goat_elegant/certs (exactly ota.x509.pem and
 #     ota_next.x509.pem) and no certificate of another key set (AOSP test keys, the Z9X, the Play 6); no Z9X gate
 #     file; the props ro.lumen.ota.gate=1, ro.lumen.ota.device = the wire id of devices/goat_elegant/ota.conf,
@@ -32,6 +33,7 @@ import io
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -68,6 +70,23 @@ OTA_FILES = {
 }
 BOOTCTL = "/system/bin/bootctl"
 UPDATER = "/system/app/LumenUpdater/LumenUpdater.apk"
+AIRPLAY = "/system/app/Z9xAirPlay/Z9xAirPlay.apk"     # 1.0.8: the AirPlay receiver, as on the Z9X
+
+
+def _unaligned(apk, infos, page=4096):
+    """Stored members whose data does not start on a page boundary. With extractNativeLibs false the libraries
+    are mapped straight from the APK, so each one must start at a multiple of 4096 (local header offset + 30 +
+    name length + local extra length; the local extra is where zipalign puts its padding)."""
+    bad = []
+    for i in infos:
+        h = apk[i.header_offset:i.header_offset + 30]
+        if len(h) < 30 or h[:4] != b"PK\x03\x04":
+            bad.append(i.filename)
+            continue
+        n, e = struct.unpack("<HH", h[26:30])
+        if (i.header_offset + 30 + n + e) % page:
+            bad.append(i.filename)
+    return bad
 OTACERTS = "/system/etc/security/otacerts.zip"
 OTA_CONF = os.path.join(GSI, "devices", "goat_elegant", "ota.conf")
 # certificates of the other key sets: never in this device's otacerts.zip (AOSP test keys, Z9X, Play 6, SDK)
@@ -264,6 +283,24 @@ def main():
             errs.append("ota: %s is not an APK" % UPDATER)
         else:
             print("ota: %s present (%s...)" % (UPDATER, sha[UPDATER][:16]))
+    if AIRPLAY not in sha:
+        errs.append("airplay: %s is not in the image" % AIRPLAY)
+    else:
+        apk = _bytes(dump, img, files[AIRPLAY])
+        try:
+            libs = [i for i in zipfile.ZipFile(io.BytesIO(apk)).infolist()
+                    if i.filename.startswith("lib/armeabi-v7a/") and i.filename.endswith(".so")]
+        except zipfile.BadZipFile:
+            libs = None
+        if libs is None:
+            errs.append("airplay: %s is not an APK" % AIRPLAY)
+        elif not libs or any(i.compress_type != zipfile.ZIP_STORED for i in libs):
+            errs.append("airplay: %s has no uncompressed armeabi-v7a libraries" % AIRPLAY)
+        elif _unaligned(apk, libs):
+            errs.append("airplay: %s armeabi-v7a libraries not page-aligned (4096): %s"
+                        % (AIRPLAY, ", ".join(_unaligned(apk, libs))))
+        else:
+            print("airplay: %s present (%s..., %d armeabi-v7a libraries)" % (AIRPLAY, sha[AIRPLAY][:16], len(libs)))
     with tempfile.TemporaryDirectory() as tmp:
         oc = os.path.join(tmp, "otacerts.zip")
         if OTACERTS not in sha:

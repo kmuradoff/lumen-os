@@ -15,6 +15,12 @@
     <string name="auto_notify">Толькі паведамляць</string>
     <string name="auto_download">Спампоўваць аўтаматычна</string>
     <string name="auto_hint">Абнаўленні ніколі не ўсталёўваюцца без вашай згоды.</string>
+    <string name="row_beta">Бэта-абнаўленні</string>
+    <string name="beta_on">Укл</string>
+    <string name="beta_off">Выкл</string>
+    <string name="beta_hint">Бэта-версіі выходзяць раней, але правераныя менш. Калі іх выключыць, бягучая версія застанецца, пакуль не выйдзе навейшая звычайная версія.</string>
+    <string name="row_stats">Адпраўляць ананімную статыстыку</string>
+    <string name="stats_hint">Раз на дзень: мадэль, версія, серыйны нумар у выглядзе хэша і краіна. Ваш IP-адрас не захоўваецца.</string>
     <string name="avail_title">Даступна Lumen OS %1$s</string>
     <string name="avail_size_full">Поўнае абнаўленне · %1$s</string>
     <string name="avail_size_delta">Абнаўленне · %1$s</string>

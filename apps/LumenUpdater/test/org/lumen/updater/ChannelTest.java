@@ -3,7 +3,7 @@ package org.lumen.updater;
 
 /**
  * Host test of {@link Ota#channelFile(String)} (sh test/ota/run.sh): the manifest file of each HB edition on the
- * fixed pre-release tag hb, which is the USB file the updater looks
+ * fixed pre-release tag z9x-hb, which is the USB file the updater looks
  * for and the channel a manifest must name. Fork of the Z9X ChannelTest: a URL that names no manifest file gives
  * "" (fail closed), never the Z9X update-stable.json.
  */
@@ -20,7 +20,7 @@ public final class ChannelTest {
     }
 
     public static void main(String[] a) {
-        String b = "https://github.com/kmuradoff/lumen-os/releases/download/hb/";
+        String b = "https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/";
         eq("hb public", "update-hb-nogms.json", Ota.channelFile(b + "update-hb-nogms.json"));
         eq("hb test units", "update-hb-test.json", Ota.channelFile(b + "update-hb-test.json"));
         eq("query string", "update-hb-nogms.json", Ota.channelFile(b + "update-hb-nogms.json?x=1"));

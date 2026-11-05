@@ -80,6 +80,14 @@ public final class OutcomeTest {
         eq("restored, then the update runs", true, Outcome.resultStale("rollback:1.0.0", OLD, NEW));
         eq("ok, then rolled back after the result", true, Outcome.resultStale("ok:1.0.1", NEW, OLD));
 
+        // ---- the provider's READY right after the restart (before BootReceiver.evaluate stored IDLE)
+        eq("ready stale on the new build", true, Outcome.readyStale(true, "b5", "b4", "1.0.8-beta5", "b5", "1.0.8-beta5"));
+        eq("ready stale by version", true, Outcome.readyStale(true, "x", "b4", "1.0.8-beta5", "b5", "1.0.8-beta5"));
+        eq("ready before the restart", false, Outcome.readyStale(true, "b5", "b4", "1.0.8-beta5", "b4", "1.0.8-beta4"));
+        eq("ready, nothing pending", false, Outcome.readyStale(true, "", "", "", "b5", "1.0.8-beta5"));
+        eq("not ready", false, Outcome.readyStale(false, "b5", "b4", "1.0.8-beta5", "b5", "1.0.8-beta5"));
+        eq("rolled back to the old build", false, Outcome.readyStale(true, "b5", "b4", "1.0.8-beta5", "b4", "1.0.8-beta4"));
+
         // ---- reasons (z9x_ota.sh health_ok / mark / rollback)
         eq("why empty", Outcome.Why.NONE, Outcome.why(""));
         eq("why null", Outcome.Why.NONE, Outcome.why(null));

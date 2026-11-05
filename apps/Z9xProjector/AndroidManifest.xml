@@ -178,6 +178,8 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_ROUTING" />
     <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <!-- the anonymous statistics switch in the settings: org.lumen.updater StateProvider (signature permission) -->
+    <uses-permission android:name="org.lumen.updater.permission.OTA_STATE" />
     <!-- ===== v6.4 AI sound END ===== -->
 
     <!-- Package visibility for the remote app keys (launch + app picker). -->

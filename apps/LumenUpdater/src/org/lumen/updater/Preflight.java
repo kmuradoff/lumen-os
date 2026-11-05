@@ -53,14 +53,17 @@ public final class Preflight {
                             int versionCode, int minVersionCode) {
         String mine = Ota.device();
         if (schema != 1 || mine.isEmpty() || !mine.equals(device)) return new Block("err_signature", "");
-        // the manifest's channel must be this image's own file (docs/ota.md "Variants"): a USB stick or a
-        // mirror may carry another edition's signed manifest, which must never be installed here
+        // the manifest's channel must be the file this updater reads (docs/ota.md "Variants"): a USB stick or a
+        // mirror may carry another edition's signed manifest, which must never be installed here, and a beta
+        // manifest counts only while beta updates are on
         if (!("update-" + channel + ".json").equals(Ota.channelFile())) return new Block("blk_channel", channel);
         String vendor = Ota.prop("ro.vendor.build.version.incremental");
         if (!vendorIncremental.isEmpty() && !vendorIncremental.contains(vendor)) {
             return new Block("blk_vendor", vendor.isEmpty() ? "?" : vendor);
         }
         int cur = Ota.currentVersionCode();
+        // never a downgrade: also after beta updates are turned off, nothing is offered until the stable
+        // channel has a version above the installed beta
         if (versionCode <= cur) return new Block("uptodate", "");
         if (cur < minVersionCode) return new Block("blk_min_version", Ota.versionName(minVersionCode));
         return null;

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">游戏模式</string>
+    <string name="gbar_standard">标准</string>
+    <string name="gbar_top_speed">极速</string>
+    <string name="gbar_hfr">高帧率</string>
+    <string name="gbar_off">关</string>
+    <string name="gbar_on">开</string>
+    <string name="gbar_auto">自动</string>
+    <string name="gbar_picture">游戏画面</string>
+    <string name="gbar_pic_standard">标准</string>
+    <string name="gbar_pic_sports">体育</string>
+    <string name="gbar_color_space">色彩空间</string>
+    <string name="gbar_cs_native">原生</string>
+    <string name="gbar_dark">暗部增强</string>
+    <string name="gbar_aspect">画面比例</string>
+    <string name="gbar_fps">帧率显示</string>
+    <string name="gbar_fps_left">左上</string>
+    <string name="gbar_fps_center">中上</string>
+    <string name="gbar_fps_right">右上</string>
+    <string name="gbar_hdr_mapping">动态色调映射</string>
+    <string name="gbar_tip_top_speed">延迟最低。梯形校正恢复为完整画面。</string>
+    <string name="gbar_tip_vrr">画面跟随主机的帧率变化。请在主机中同时开启 VRR。</string>
+    <string name="gbar_tip_hfr_off">信号源最高 60 Hz。</string>
+    <string name="gbar_tip_hfr_on">信号源最高 120 Hz。</string>
+    <string name="gbar_tip_dark">暗场细节更清楚。</string>
+    <string name="gbar_tip_wide">信号源需输出 3840 x 2160。</string>
+    <string name="gbar_tip_hdr_mapping">按区域调节亮度。开启后请在主机中重新校准 HDR。</string>
+    <string name="gbar_tip_hgig">按游戏制作时的效果显示 HDR。开启后请在主机中重新校准 HDR。</string>
+    <string name="gbar_need_top_speed">VRR 仅在极速模式下可用</string>
+    <string name="gbar_need_16_9">请先选择 16:9</string>
+    <string name="gbar_vrr_blocks_aspect">请先关闭 VRR</string>
+    <string name="gbar_vrr_blocks_hfr">VRR 开启时高帧率保持开启</string>
+    <string name="gbar_need_4k">信号源需输出 3840 x 2160</string>
+    <string name="gbar_need_hdr">信号源未输出 HDR</string>
+    <string name="gbar_boost_blocks">Boost 开启时不可用</string>
+    <string name="gbar_failed">投影仪未接受此更改</string>
+</resources>

@@ -102,6 +102,8 @@ public final class App extends Application {
         try { org.lumen.projector.cec.CecPolicy.install(this); } catch (Throwable t) { Log.e(TAG, "CecPolicy.install", t); }
         // Z9X HB: CEC volume control / System Audio follow the sound output choice at boot, wake and ARC (cec/HbSystemAudio)
         try { org.lumen.projector.cec.HbSystemAudio.install(this); } catch (Throwable t) { Log.e(TAG, "HbSystemAudio.install", t); }
+        // 2026-11-04 (as the Z9X): eARC the stock way (the HDMI ARC output while the vendor reports the eARC link)
+        try { org.lumen.projector.cec.EarcLink.install(this); } catch (Throwable t) { Log.e(TAG, "EarcLink.install", t); }
         try { RemoteAutoPair.install(this); } catch (Throwable t) { Log.e(TAG, "RemoteAutoPair.install", t); }
         try { EyeGuard.install(this); } catch (Throwable t) { Log.e(TAG, "EyeGuard.install", t); }
         try { org.lumen.projector.voice.Assistant.install(this, new org.lumen.projector.voice.AssistantHost()); } catch (Throwable t) { Log.e(TAG, "Assistant.install", t); }
@@ -116,7 +118,7 @@ public final class App extends Application {
         try { org.lumen.projector.dream.IdleOwner.install(this); } catch (Throwable t) { Log.e(TAG, "IdleOwner.install", t); }
         // ===== v6.2 module "game": HDMI console recognition + auto game profile (no HAL call here) =====
         // Z9X HB fork: the automatic console profile writes game settings by itself, so it starts only once
-        // HbFeatures.F.GAME_MODE is ON (PENDING until the HB game values are checked)
+        // HbFeatures.F.GAME_MODE is ON (since 2026-11-04, stock HB wires checked)
         if (HbFeatures.on(HbFeatures.F.GAME_MODE)) {
             try { org.lumen.projector.game.GameProfile.install(this); } catch (Throwable t) { Log.e(TAG, "GameProfile.install", t); }
         }

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">Modo de jogo</string>
+    <string name="gbar_standard">Padrão</string>
+    <string name="gbar_top_speed">Velocidade máxima</string>
+    <string name="gbar_hfr">Alta taxa de quadros</string>
+    <string name="gbar_off">Desligado</string>
+    <string name="gbar_on">Ligado</string>
+    <string name="gbar_auto">Auto</string>
+    <string name="gbar_picture">Imagem de jogo</string>
+    <string name="gbar_pic_standard">Padrão</string>
+    <string name="gbar_pic_sports">Esportes</string>
+    <string name="gbar_color_space">Espaço de cor</string>
+    <string name="gbar_cs_native">Nativo</string>
+    <string name="gbar_dark">Cenas escuras</string>
+    <string name="gbar_aspect">Proporção</string>
+    <string name="gbar_fps">Contador de FPS</string>
+    <string name="gbar_fps_left">Em cima à esquerda</string>
+    <string name="gbar_fps_center">Em cima no centro</string>
+    <string name="gbar_fps_right">Em cima à direita</string>
+    <string name="gbar_hdr_mapping">Mapeamento dinâmico de tons</string>
+    <string name="gbar_tip_top_speed">Atraso mínimo. A correção trapezoidal volta à imagem completa.</string>
+    <string name="gbar_tip_vrr">A imagem acompanha a taxa do console. Ligue também o VRR no console.</string>
+    <string name="gbar_tip_hfr_off">Até 60 Hz da fonte.</string>
+    <string name="gbar_tip_hfr_on">Até 120 Hz da fonte.</string>
+    <string name="gbar_tip_dark">Mais detalhes em cenas escuras.</string>
+    <string name="gbar_tip_wide">A fonte precisa enviar 3840 x 2160.</string>
+    <string name="gbar_tip_hdr_mapping">Ajusta o brilho área por área. Depois calibre o HDR de novo no console.</string>
+    <string name="gbar_tip_hgig">Mostra o HDR como o jogo foi feito. Depois calibre o HDR de novo no console.</string>
+    <string name="gbar_need_top_speed">O VRR só funciona em Velocidade máxima</string>
+    <string name="gbar_need_16_9">Escolha 16:9 primeiro</string>
+    <string name="gbar_vrr_blocks_aspect">Desligue o VRR primeiro</string>
+    <string name="gbar_vrr_blocks_hfr">A alta taxa fica ligada enquanto o VRR estiver ligado</string>
+    <string name="gbar_need_4k">A fonte precisa enviar 3840 x 2160</string>
+    <string name="gbar_need_hdr">A fonte não está enviando HDR</string>
+    <string name="gbar_boost_blocks">Indisponível com o Boost ligado</string>
+    <string name="gbar_failed">O projetor não aceitou a mudança</string>
+</resources>

@@ -61,6 +61,12 @@ public class Row extends LinearLayout {
         return this;
     }
 
+    /** Lets the subtitle wrap to n lines (a note that must be read in full, such as a disclosure). */
+    public Row subtitleLines(int n) {
+        sub.setMaxLines(n);
+        return this;
+    }
+
     public Row startIcon(View v, float sizeDesign) {
         if (mStart != null) removeView(mStart);
         mStart = v;

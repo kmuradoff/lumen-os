@@ -44,6 +44,9 @@
     <uses-permission android:name="android.permission.START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
     <!-- signature|privileged: PowerManager.reboot("z9x-ota") -->
     <uses-permission android:name="android.permission.REBOOT" />
+    <!-- the projector serial for the anonymous statistics (Stats.serial, when ro.serialno is not readable):
+         signature|privileged, granted by the platform signature -->
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
     <!-- signature|appop|preinstalled: read update files from a USB stick (StorageVolume paths) -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 

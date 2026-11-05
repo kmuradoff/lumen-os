@@ -18,6 +18,15 @@
     <string name="auto_notify">Only tell me</string>
     <string name="auto_download">Download automatically</string>
     <string name="auto_hint">Updates are never installed without your OK.</string>
+    <!-- beta channel (only an edition that has one shows the switch) -->
+    <string name="row_beta">Beta updates</string>
+    <string name="beta_on">On</string>
+    <string name="beta_off">Off</string>
+    <string name="beta_hint">Beta versions come earlier but are tested less. When you turn them off, your version stays until a newer regular version is out.</string>
+    <!-- anonymous statistics (Stats): the row uses beta_on / beta_off for On / Off; stats_hint is the disclosure,
+         the same list as the setup wizard (done_stats_note) and the projector settings (stats_note) -->
+    <string name="row_stats">Send anonymous statistics</string>
+    <string name="stats_hint">Once a day: model, version, serial number in hashed form and country. Your IP address is not stored.</string>
 
     <!-- update available -->
     <string name="avail_title">Lumen OS %1$s is available</string>

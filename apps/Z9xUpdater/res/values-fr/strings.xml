@@ -15,6 +15,12 @@
     <string name="auto_notify">Me prévenir seulement</string>
     <string name="auto_download">Télécharger automatiquement</string>
     <string name="auto_hint">Les mises à jour ne sont jamais installées sans votre accord.</string>
+    <string name="row_beta">Mises à jour bêta</string>
+    <string name="beta_on">Activées</string>
+    <string name="beta_off">Désactivées</string>
+    <string name="beta_hint">Les versions bêta arrivent plus tôt mais sont moins testées. Si vous les désactivez, votre version reste en place jusqu’à la sortie d’une version normale plus récente.</string>
+    <string name="row_stats">Envoyer des statistiques anonymes</string>
+    <string name="stats_hint">Une fois par jour : modèle, version, numéro de série sous forme de hachage et pays. Votre adresse IP n\'est pas conservée.</string>
     <string name="avail_title">Lumen OS %1$s est disponible</string>
     <string name="avail_size_full">Mise à jour complète · %1$s</string>
     <string name="avail_size_delta">Mise à jour · %1$s</string>

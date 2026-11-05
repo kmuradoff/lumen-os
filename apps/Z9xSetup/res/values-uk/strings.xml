@@ -98,6 +98,8 @@
     <string name="done_tz_detected">%1$s (визначено)</string>
     <string name="done_name">Назва проєктора</string>
     <string name="done_home">Головний екран</string>
+    <string name="done_stats">Надсилати анонімну статистику</string>
+    <string name="done_stats_note">Раз на день: модель, версія, серійний номер у вигляді хешу та країна. Ваша IP-адреса не зберігається.</string>
     <string name="done_start">Почати</string>
     <string name="done_offline_hint">Немає інтернету: увійти в Google і вибрати часовий пояс можна пізніше в налаштуваннях.</string>
     <string name="done_offline_hint_nogms">Немає інтернету: вибрати часовий пояс можна пізніше в налаштуваннях.</string>

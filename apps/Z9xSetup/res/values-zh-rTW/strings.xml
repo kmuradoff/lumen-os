@@ -98,6 +98,8 @@
     <string name="done_tz_detected">%1$s（自動偵測）</string>
     <string name="done_name">投影機名稱</string>
     <string name="done_home">主畫面</string>
+    <string name="done_stats">傳送匿名統計資料</string>
+    <string name="done_stats_note">每天一次：型號、版本、經雜湊處理的序號和國家。不會儲存你的 IP 位址。</string>
     <string name="done_start">開始使用</string>
     <string name="done_offline_hint">沒有網際網路：可稍後在設定中登入 Google 並設定時區。</string>
     <string name="done_offline_hint_nogms">沒有網際網路：可稍後在設定中設定時區。</string>

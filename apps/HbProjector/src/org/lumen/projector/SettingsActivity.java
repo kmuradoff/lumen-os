@@ -46,6 +46,8 @@ public final class SettingsActivity extends Activity {
     private final Map<HalController.Toggle, Boolean> toggleState = new EnumMap<>(HalController.Toggle.class);
     private TextView slot3Value, slot4Value, launcherValue, bootSourceValue;
     private TextView voiceLang, voiceSpeak, voiceKey;
+    private TextView statsValue;
+    private View statsRow, statsNote;
     private LinearLayout diagBox;
     private boolean resumed;
     private final Runnable onHalState = () -> { if (resumed) { refreshToggles(); refreshDiagnostics(); } };
@@ -87,6 +89,7 @@ public final class SettingsActivity extends Activity {
         refreshSlots();
         refreshUiRes();
         refreshDiagnostics();
+        refreshStats();
     }
 
     /** The resolution chooser is an overlay window: the row shows the value again when it closes. */
@@ -184,6 +187,15 @@ public final class SettingsActivity extends Activity {
         action(R.string.guide_title, false, v -> org.lumen.projector.guide.GuideDialog.show(this));
 
         header(R.string.sec_diag);
+        // anonymous statistics: the updater owns the switch (sys.UpdaterStats); hidden without an updater
+        statsValue = valueRow(R.string.stats_row, v -> toggleStats());
+        statsRow = (View) statsValue.getParent();
+        TextView note = text(getString(R.string.stats_note), 14, R.color.text_dim, false);
+        note.setPadding(dp(20), 0, dp(20), dp(8));
+        list.addView(note);
+        statsNote = note;
+        statsRow.setVisibility(View.GONE);
+        statsNote.setVisibility(View.GONE);
         // Z9X HB fork: no problem reports (Z9X only)
         action(R.string.act_refresh, false, v -> refreshDiagnostics());
         diagBox = new LinearLayout(this);
@@ -231,6 +243,30 @@ public final class SettingsActivity extends Activity {
         });
         if (needsHal && !feat) disable(r);
         return r;
+    }
+
+    // ------------------------------------------------------------------ anonymous statistics
+    private void refreshStats() {
+        new Thread(() -> {
+            Boolean on = org.lumen.projector.sys.UpdaterStats.get(this);
+            runOnUiThread(() -> showStats(on));
+        }, "stats-read").start();
+    }
+
+    private void toggleStats() {
+        boolean want = !getString(R.string.val_on).contentEquals(statsValue.getText());
+        new Thread(() -> {
+            Boolean on = org.lumen.projector.sys.UpdaterStats.set(this, want);
+            runOnUiThread(() -> showStats(on));
+        }, "stats-set").start();
+    }
+
+    private void showStats(Boolean on) {
+        if (statsRow == null) return;
+        int vis = on == null ? View.GONE : View.VISIBLE;
+        statsRow.setVisibility(vis);
+        statsNote.setVisibility(vis);
+        if (on != null) statsValue.setText(on ? R.string.val_on : R.string.val_off);
     }
 
     private void refreshVoice() {

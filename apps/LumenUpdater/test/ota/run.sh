@@ -5,8 +5,9 @@
 #   1. recipe copies: every devices/*/app/LumenUpdater.layers is a byte copy of apps/LumenUpdater/LumenUpdater.layers
 #     
 #   2. strings: key parity of strings_lumen_ota.xml across all locales of the app (strings_parity.py)
-#   3. ChannelTest, PreflightHbTest and PreflightGateTest (Ota and Preflight with the SystemProperties stand-in
-#      of stubs/; the gate probe with a fake gate), and the Z9X OutcomeTest unchanged
+#   3. ChannelTest, PreflightHbTest, PreflightGateTest and BetaTest (Ota and Preflight with the SystemProperties
+#      stand-in of stubs/; the gate probe with a fake gate; the Beta updates switch and no downgrade), and the Z9X
+#      OutcomeTest unchanged
 # Mac only, no device, no network. Writes only a temp dir.
 set -eu
 HERE=$(cd "$(dirname "$0")/../.." && pwd)
@@ -44,9 +45,10 @@ mkdir -p "$OUT/j"
   "$T/test/ota/stubs/android/os/SystemProperties.java" "$S/Ota.java" "$S/Preflight.java" "$S/Engine.java" \
   "$S/UpdateManifest.java" "$S/Outcome.java" "$T/test/org/lumen/updater/ChannelTest.java" \
   "$T/test/org/lumen/updater/PreflightHbTest.java" "$T/test/org/lumen/updater/PreflightGateTest.java" \
-  "$T/test/org/lumen/updater/OutcomeTest.java"
+  "$T/test/org/lumen/updater/OutcomeTest.java" "$T/test/org/lumen/updater/BetaTest.java"
 "$JAVA_HOME/bin/java" -cp "$OUT/j:$AJ:$HJ" org.lumen.updater.OutcomeTest
 "$JAVA_HOME/bin/java" -cp "$OUT/j:$AJ:$HJ" org.lumen.updater.ChannelTest
 "$JAVA_HOME/bin/java" -cp "$OUT/j:$AJ:$HJ" org.lumen.updater.PreflightHbTest
 "$JAVA_HOME/bin/java" -cp "$OUT/j:$AJ:$HJ" org.lumen.updater.PreflightGateTest
+"$JAVA_HOME/bin/java" -cp "$OUT/j:$AJ:$HJ" org.lumen.updater.BetaTest
 echo "LumenUpdater host tests: green"

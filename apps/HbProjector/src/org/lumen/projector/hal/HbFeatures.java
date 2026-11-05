@@ -115,10 +115,45 @@ public final class HbFeatures {
         EQUALIZER(State.PENDING, null),
         /** eARC, HDMI range, EDID: voice_earc_*, signal_*. */
         HDMI(State.ON, null),
-        /** Eye protection: support_eye_protect_brightness_mode=true, area ToF; needs a NUI reader and 9.4 (8.4). */
-        EYE_PROTECTION(State.PENDING, "support_eye_protect_brightness_mode", "false"),
-        /** Game mode: display_gamemode_version=3; values S0 (f) open and a device check. */
-        GAME_MODE(State.PENDING, "display_gamemode_version", "0"),
+        /**
+         * Eye protection (stock "eye radiation protection": newsettings MoreRepository.setHumanDetectOnOff -> DISPLAY 61;
+         * focusEvent 500 / 601 -> SystemUI HumanDetectManager -> com.xgimi.config EyeProjectionService: the mask, BACK =
+         * 66(true), gear = 66(true) + 61(false); the vendor dims the light itself, 66(false) is only in a debug activity).
+         * The same flow as the Z9X EyeGuard; the image runs the NUI fifo reader since hb-t6 (z9x_nui.rc,
+         * sys.z9x.nui=ready), and EyeGuard still sends nothing while it is not ready. The vendor watchdog (99 / 100
+         * uiHeartBeatSet("NativeUIWatch", 1|0, 1500) and uiHeartBeatDo every 1 s) stays refused (9.4, owner).
+         * ON in the public 1.0.8 (2026-11-05: "Защита глаз должна быть в релизе"), not yet tested live on the HB.
+         */
+        EYE_PROTECTION(State.ON, "support_eye_protect_brightness_mode", "false"),
+        /**
+         * Game mode: display_gamemode_version=3, support_hfr=true. ON since 2026-11-04: the stock HB wires (newsettings
+         * PictureViewModel, gmuiapi DisplayManager) are the Z9X ones; stock sends option 1 (standard) and 2 (top speed).
+         */
+        GAME_MODE(State.ON, "display_gamemode_version", "0"),
+        /**
+         * Game bar (stock analysis): gear long press on HDMI while the game mode runs (148 state 0), the stock
+         * xhplayer GameMenuActivity with the Product_dapengse list. The items below are its rows; the bar is built
+         * only with GAME_MODE ON.
+         */
+        GAME_BAR(State.ON, "display_gamemode_version", "0"),
+        /** VRR (TV 145 / 146 per input), on only in top speed (support_vrr_only_at_top_speed=true) and 16:9. */
+        GAME_VRR(State.ON, null),
+        /** Game picture (TV 147 / 148): Standard, FPS, RPG, RTS, Sports. */
+        GAME_PICTURE(State.ON, null),
+        /** Dark enhance (TV 149 / 150, per game picture and input). */
+        GAME_DARK_BOOST(State.ON, null),
+        /** HDR settings (TV 174 / 175 tone mapping, 191 / 192 HGiG), only while HDR10 plays. hgig_mode=1. */
+        GAME_HDR(State.ON, "hgig_mode", "0"),
+        /** FPS overlay (DISPLAY 179 with VRR on, else the TV 38 frame rate). */
+        GAME_FPS(State.ON, null),
+        /** Screen shift (TV 41 / 151 / 171) in 21:9 and 32:9: the stDisplayArea layout is not read yet. */
+        GAME_SCREEN_SHIFT(State.PENDING, null),
+        /** Virtual crosshair (an overlay of our own, no HAL): not built yet. */
+        GAME_CROSSHAIR(State.PENDING, null),
+        /** AMD FreeSync Premium (TV 172 / 173): stock shows it only with support_amd_free_sync_premium=true; G0130 has no key. */
+        GAME_FREESYNC(State.OFF, null),
+        /** Menu theme: the bar's own vendor skins (Switch, PlayStation, Xbox, Mecha); nothing to copy. */
+        GAME_MENU_THEME(State.OFF, null),
         /** Interface resolution row (Projector settings): the HB panel and UI sizes are not checked yet. */
         UI_RESOLUTION(State.PENDING, null),
         /**

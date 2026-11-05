@@ -11,6 +11,6 @@ ro.product.ab_ota_partitions=armfw,boot,bootdata,dtbo,optee,tvconfig,tvservice,v
 ro.lumen.ota.gate=1
 # the wire id: the manifest's "device" and the payload's pre-device must be this (LumenUpdater Ota.device())
 ro.lumen.ota.device=hb
-# the update manifest on the fixed pre-release tag hb (never releases/latest, which is the Z9X's). The test images
-# (compose_hb.sh --ota-test) read update-hb-test.json there instead.
-ro.lumen.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/hb/update-hb-nogms.json
+# the update manifest on the fixed pre-release tag z9x-hb, the HB's update channel (never releases/latest, which is
+# the Z9X's). The test images (compose_hb.sh --ota-test) read update-hb-test.json there instead.
+ro.lumen.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/update-hb-nogms.json

@@ -19,7 +19,8 @@ create" only after this prints OK). Fails closed (exit 1) on:
     never releases/latest: tools/sign/check_image.py MANIFEST_BASE), carry no file
     at or under a tools/lumen/nogms_remove.txt path and no APK whose package is com.google.* / com.mtg.* /
     com.android.vending; an OTA zip needs lumen-edition=nogms in its metadata and -nogms- in its name; an
-    update manifest (update-*.json and its .sig) must be update-public-nogms.json;
+    update manifest (update-*.json and its .sig) must be update-public-nogms.json, or its beta channel's
+    update-public-beta.json (only on the fixed pre-release tag beta: the updater's Beta updates switch);
   * an OTA zip whose payload is not bound to such a checked image: the payload manifest's
     new_partition_info SHA-256 (what update_engine verifies after writing) must equal the sha256 of a
     clean *.img given in the same run. A payload's compressed operations cannot be scanned file by
@@ -67,7 +68,8 @@ except Exception as e:  # noqa: BLE001
     sys.exit(1)
 
 # the only update manifest a release may carry (the no-Google edition's, tools/lumen_v1.sh GMS=0)
-MANIFEST_OK = ("update-public-nogms.json", "update-public-nogms.json.sig")
+MANIFEST_OK = ("update-public-nogms.json", "update-public-nogms.json.sig",
+               "update-public-beta.json", "update-public-beta.json.sig")
 # what a published image reads (the channel tag z9x, tools/lumen_v1.sh MANIFEST_BASE)
 CHANNEL_URL = ci.MANIFEST_BASE + "/update-public-nogms.json"
 TEXT = (".txt", ".md", ".json", ".sig", ".pem", ".sh", ".ps1", ".cmd", ".conf", ".tsv", ".bin")
@@ -498,6 +500,8 @@ def self_test():
             ("Google edition manifest", mk_text("update-public.json", b'{"channel": "public"}\n'), False),
             ("private manifest", mk_text("update-stable.json.sig", b"sig\n"), False),
             ("no-Google manifest", mk_text("update-public-nogms.json", b'{"channel": "public-nogms"}\n'), True),
+            ("no-Google beta manifest", mk_text("update-public-beta.json", b'{"channel": "public-beta"}\n'), True),
+            ("other beta manifest", mk_text("update-public-gms-beta.json", b'{"channel": "x"}\n'), False),
         ]
         for what, path, want_ok in cases:
             r = subprocess.run([sys.executable, os.path.abspath(__file__), path], capture_output=True, text=True)
@@ -546,7 +550,8 @@ def main():
             continue
         low = n.lower()
         if re.fullmatch(r"update-.*\.json(\.sig)?", low) and n not in MANIFEST_OK:
-            errs.append(f"{n}: only the no-Google edition's update-public-nogms.json (+ .sig) is ever published")
+            errs.append(f"{n}: only the no-Google edition's update-public-nogms.json or update-public-beta.json "
+                        "(+ .sig) is ever published")
             continue
         if low.endswith(NEVER):
             errs.append(f"{n}: this file type never goes into a release")

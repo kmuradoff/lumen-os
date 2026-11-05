@@ -15,6 +15,8 @@ import org.json.JSONException;
  * (signature). Keys: state (idle|checking|available|downloading|paused|downloaded|installing|ready|
  * error), busy (boolean), ready (boolean), available (boolean), version (offered version or ""),
  * current (running Lumen OS version), progress (0..1 of the current phase).
+ * The anonymous statistics switch (Stats; its one owner is this app): call("stats") -> {on, available}, and
+ * call("stats_set", "1" | "0") -> the same after the change. The setup wizard and the projector settings use it.
  */
 public final class StateProvider extends ContentProvider {
     @Override
@@ -23,9 +25,22 @@ public final class StateProvider extends ContentProvider {
     @Override
     public Bundle call(String method, String arg, Bundle extras) {
         getContext().enforceCallingOrSelfPermission(Ota.PERM_STATE, "OTA state");
-        if (!"state".equals(method)) return null;
         Store st = Store.get(getContext());
+        if ("stats".equals(method) || "stats_set".equals(method)) {
+            if ("stats_set".equals(method) && ("1".equals(arg) || "0".equals(arg))) st.setStatsOn("1".equals(arg));
+            Bundle b = new Bundle();
+            b.putBoolean("on", st.statsOn());
+            // false: no statistics server in this build; Setup and the projector settings then show no switch
+            b.putBoolean("available", Stats.configured());
+            return b;
+        }
+        if (!"state".equals(method)) return null;
         Store.State s = st.state();
+        // the update already runs (the first seconds of its boot, before BootReceiver stored IDLE): not "ready"
+        if (Outcome.readyStale(s == Store.State.READY, st.pendingTarget(), st.pendingFrom(), st.pendingVersion(),
+                Ota.buildId(), Ota.currentVersion())) {
+            s = Store.State.IDLE;
+        }
         Bundle b = new Bundle();
         b.putString("state", s.name().toLowerCase());
         b.putBoolean("busy", s == Store.State.DOWNLOADING || s == Store.State.INSTALLING);

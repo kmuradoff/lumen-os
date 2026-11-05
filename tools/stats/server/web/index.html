@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Lumen OS · статистика</title>
+<!-- Private statistics page (tools/stats/server/web): no external resources. Data: /lumen/v1/stats (ping server)
+     and github.json (hourly GitHub download counts). Charts are inline SVG. -->
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f6f4; --surface: #ffffff; --surface-2: #fafaf8; --border: #e6e5e0; --grid: #eeede8;
+  --text: #0b0b0b; --text-2: #52514e; --text-3: #8a8983; --accent: #2a78d6;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #6250d6;
+  --good: #0ca30c; --chip: #efeee9; --chip-on: #0b0b0b; --chip-on-text: #ffffff;
+  --shadow: 0 1px 2px rgba(20,20,18,.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111110; --surface: #1a1a19; --surface-2: #1f1f1d; --border: #2c2c2a; --grid: #262624;
+    --text: #f0efec; --text-2: #c3c2b7; --text-3: #8f8e86; --accent: #3987e5;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #9085e9;
+    --chip: #262624; --chip-on: #f0efec; --chip-on-text: #111110; --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111110; --surface: #1a1a19; --surface-2: #1f1f1d; --border: #2c2c2a; --grid: #262624;
+  --text: #f0efec; --text-2: #c3c2b7; --text-3: #8f8e86; --accent: #3987e5;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #9085e9;
+  --chip: #262624; --chip-on: #f0efec; --chip-on-text: #111110; --shadow: none;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+       -webkit-font-smoothing: antialiased; }
+.num, td.n, .kpi .v, .tip b { font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 28px 24px 48px; }
+header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+         margin-bottom: 20px; }
+h1 { font-size: 20px; font-weight: 650; letter-spacing: -.01em; margin: 0; }
+.sub { color: var(--text-3); font-size: 12.5px; margin-top: 4px; }
+.controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; background: var(--chip); border-radius: 8px; padding: 2px; }
+.seg button { border: 0; background: transparent; color: var(--text-2); font: inherit; font-size: 13px;
+              padding: 5px 11px; border-radius: 6px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.icon-btn { border: 1px solid var(--border); background: var(--surface); color: var(--text-2); border-radius: 8px;
+            height: 30px; padding: 0 10px; font: inherit; font-size: 13px; cursor: pointer; }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(12, 1fr); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px;
+        box-shadow: var(--shadow); min-width: 0; }
+.card h2 { font-size: 13px; font-weight: 600; margin: 0 0 2px; }
+.card .hint { color: var(--text-3); font-size: 12px; margin: 0 0 12px; }
+.c3 { grid-column: span 3; } .c4 { grid-column: span 4; } .c5 { grid-column: span 5; } .c6 { grid-column: span 6; }
+.c7 { grid-column: span 7; } .c8 { grid-column: span 8; } .c12 { grid-column: span 12; }
+@media (max-width: 980px) { .c3 { grid-column: span 6; } .c4, .c5, .c6, .c7, .c8 { grid-column: span 12; } }
+@media (max-width: 560px) { .c3 { grid-column: span 12; } .wrap { padding: 18px 14px 36px; } }
+.kpi .l { color: var(--text-2); font-size: 12.5px; }
+.kpi .v { font-size: 30px; font-weight: 650; letter-spacing: -.02em; margin: 6px 0 2px; }
+.kpi .d { color: var(--text-3); font-size: 12px; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.axis text { fill: var(--text-3); font-size: 11px; }
+.gridline { stroke: var(--grid); stroke-width: 1; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 0 0 10px; color: var(--text-2); font-size: 12px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border);
+       border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--text-2); white-space: nowrap;
+       box-shadow: 0 6px 20px rgba(0,0,0,.12); opacity: 0; transition: opacity .08s; z-index: 5; }
+.tip .t { color: var(--text); font-weight: 600; margin-bottom: 4px; }
+.tip .r { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.tip .r span { display: inline-flex; align-items: center; gap: 6px; }
+.tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.tip b { color: var(--text); font-weight: 600; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; color: var(--text-3); font-weight: 500; font-size: 12px; padding: 0 8px 8px 0; border-bottom: 1px solid var(--border); }
+td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--grid); color: var(--text); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; padding-right: 0; }
+td.m { color: var(--text-2); }
+.tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 5px; background: var(--chip); color: var(--text-2); margin-left: 6px; }
+.bar-row { display: grid; grid-template-columns: minmax(90px, 34%) 1fr auto; gap: 10px; align-items: center; padding: 5px 0; }
+.bar-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row .track { height: 8px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+.bar-row .fill { height: 100%; background: var(--s1); border-radius: 4px; }
+.bar-row .val { color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+.empty { color: var(--text-3); font-size: 13px; padding: 26px 0; text-align: center; }
+.arrow { color: var(--text-3); padding: 0 4px; }
+footer { color: var(--text-3); font-size: 11.5px; margin-top: 22px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.err { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; color: var(--text-2); display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Lumen OS · статистика</h1>
+      <div class="sub" id="updated">Загрузка…</div>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Период" id="period">
+        <button data-v="7" aria-pressed="false">7 дней</button>
+        <button data-v="30" aria-pressed="true">30 дней</button>
+      </div>
+      <div class="seg" role="group" aria-label="Модель" id="model"></div>
+      <button class="icon-btn" id="theme" title="Тема">Тема</button>
+    </div>
+  </header>
+
+  <div class="err" id="err"></div>
+
+  <div class="grid">
+    <div class="card kpi c3"><div class="l">Проекторов на Lumen</div><div class="v" id="k-proj">–</div><div class="d" id="k-proj-d"></div></div>
+    <div class="card kpi c3"><div class="l">На связи за 7 дней</div><div class="v" id="k-7">–</div><div class="d" id="k-7-d"></div></div>
+    <div class="card kpi c3"><div class="l">Обновились за период</div><div class="v" id="k-upd">–</div><div class="d" id="k-upd-d"></div></div>
+    <div class="card kpi c3"><div class="l">На последней версии</div><div class="v" id="k-latest">–</div><div class="d" id="k-latest-d"></div></div>
+
+    <div class="card c8">
+      <h2>Проекторы на связи по дням</h2>
+      <p class="hint">Сколько проекторов отправили статистику в этот день, по моделям</p>
+      <div class="legend" id="lg-daily"></div>
+      <div class="chart" id="ch-daily"></div>
+    </div>
+    <div class="card c4">
+      <h2>Версии</h2>
+      <p class="hint">Последняя версия каждого проектора за период</p>
+      <div id="versions"></div>
+    </div>
+
+    <div class="card c7">
+      <h2>Обновления по дням</h2>
+      <p class="hint">Смена версии на проекторе, по способу установки</p>
+      <div class="legend" id="lg-upd"></div>
+      <div class="chart" id="ch-upd"></div>
+    </div>
+    <div class="card c5">
+      <h2>Страны</h2>
+      <p class="hint">Проекторы за период</p>
+      <div id="countries"></div>
+    </div>
+
+    <div class="card c7">
+      <h2>Переходы между версиями</h2>
+      <p class="hint">С какой версии на какую обновились, за 90 дней</p>
+      <div id="pairs"></div>
+    </div>
+    <div class="card c5">
+      <h2>Модели</h2>
+      <p class="hint">Проекторы за период</p>
+      <div id="models"></div>
+    </div>
+
+    <div class="card c12">
+      <h2>Скачивания с GitHub</h2>
+      <p class="hint">Всего по выпускам: образы и установщики, пакеты обновления, проверки обновлений</p>
+      <div class="legend" id="lg-gh"></div>
+      <div class="chart" id="ch-gh"></div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Данные: проекторы с включённой статистикой и GitHub API. Обновляется каждые 5 минут.</span>
+    <span id="geo"></span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const MODELS = { horse_popular: "Z9X", goat_elegant: "Z9X HB", dragon_healthy: "Play 6" };
+  const METHODS = { ota_delta: "Дельта по сети", ota_full: "Полное по сети", ota: "По сети", usb: "Флешка", installer: "Установщик", unknown: "Неизвестно", first: "Первый запуск", delta: "Дельта по сети", full: "Полное по сети" };
+  const SERIES = ["--s1", "--s2", "--s3", "--s4", "--s5", "--s6"];
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fmt = n => (n == null ? "–" : Number(n).toLocaleString("ru-RU"));
+  const pct = (a, b) => (b ? Math.round(a * 100 / b) + "%" : "–");
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const modelName = m => MODELS[m] || m || "?";
+  let countryName = c => c;
+  try { const dn = new Intl.DisplayNames(["ru"], { type: "region" }); countryName = c => (c && c.length === 2 ? dn.of(c.toUpperCase()) : (c || "Неизвестно")); } catch (e) {}
+  const dayLabel = d => { const [y, m, dd] = d.split("-"); return dd + "." + m; };
+
+  let stats = null, gh = [], period = "30", model = "all";
+  try { period = localStorage.getItem("lumen.period") || "30"; } catch (e) {}
+
+  // ---------- theme toggle (explicit stamp beats the OS in both directions)
+  const themeBtn = document.getElementById("theme");
+  const applyTheme = t => { if (t) document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme"); };
+  try { applyTheme(localStorage.getItem("lumen.theme")); } catch (e) {}
+  themeBtn.onclick = () => {
+    const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+    const cur = document.documentElement.getAttribute("data-theme") || (dark ? "dark" : "light");
+    const next = cur === "dark" ? "light" : "dark";
+    applyTheme(next); try { localStorage.setItem("lumen.theme", next); } catch (e) {}
+    render();
+  };
+
+  // ---------- small SVG helpers
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+  // 4 gridline steps of a "nice" integer size (1, 2, 2.5x10^n only when it stays whole, 5, 10...)
+  const niceMax = v => { const raw = Math.max(1, v) / 4; const p = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map(f => f * p).find(s => s >= raw && Number.isInteger(s)) || Math.ceil(raw); return step * 4; };
+  function tooltip(box) { let t = box.querySelector(".tip"); if (!t) { t = document.createElement("div"); t.className = "tip"; box.appendChild(t); } return t; }
+  function placeTip(box, tip, x, y) {
+    const bw = box.clientWidth, tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(bw - tw, x - tw / 2)) + "px";
+    tip.style.top = Math.max(0, y - tip.offsetHeight - 12) + "px";
+    tip.style.opacity = 1;
+  }
+  function legend(id, items) {
+    document.getElementById(id).innerHTML = items.length > 1
+      ? items.map(i => `<span><i style="background:${i.color}"></i>${esc(i.name)}</span>`).join("") : "";
+  }
+  function empty(node, text) { node.innerHTML = `<div class="empty">${esc(text)}</div>`; }
+
+  // Stacked columns per day. days: [label...], keys: [{name,color}], val(dayIndex,keyIndex)
+  function columns(box, days, keys, val, opts) {
+    box.innerHTML = "";
+    const W = box.clientWidth || 600, H = opts.h || 220, L = 36, R = 6, T = 8, B = 24;
+    const totals = days.map((_, i) => keys.reduce((s, _, k) => s + val(i, k), 0));
+    const max = niceMax(Math.max(1, ...totals));
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": opts.label }, box);
+    const plotW = W - L - R, plotH = H - T - B, step = plotW / days.length, bw = Math.max(2, Math.min(28, step * 0.62));
+    const g = el("g", { class: "axis" }, svg);
+    for (let i = 0; i <= 4; i++) {
+      const y = T + plotH - plotH * i / 4;
+      el("line", { class: "gridline", x1: L, x2: W - R, y1: y, y2: y }, g);
+      el("text", { x: L - 8, y: y + 4, "text-anchor": "end" }, g).textContent = fmt(max * i / 4);
+    }
+    const every = Math.ceil(days.length / Math.max(2, Math.floor(plotW / 64)));
+    days.forEach((d, i) => { const lastOk = i === days.length - 1 && (i % every) >= every / 2;
+      if (i % every === 0 || lastOk) el("text", { x: L + step * i + step / 2, y: H - 6, "text-anchor": "middle" }, g).textContent = opts.xlabel(d); });
+    const tip = tooltip(box);
+    days.forEach((d, i) => {
+      let y0 = T + plotH;
+      const x = L + step * i + (step - bw) / 2;
+      keys.forEach((k, j) => {
+        const v = val(i, j); if (!v) return;
+        const h = plotH * v / max;
+        const top = j === keys.length - 1 || !keys.slice(j + 1).some((_, jj) => val(i, j + 1 + jj));
+        const r = Math.min(3, bw / 2, h / 2);
+        // rounded top only on the top segment, 2px surface gap between segments
+        const yTop = y0 - h, hh = Math.max(0, h - (j ? 2 : 0));
+        el("path", { d: top
+          ? `M${x},${y0 - (j ? 2 : 0)} V${yTop + r} Q${x},${yTop} ${x + r},${yTop} H${x + bw - r} Q${x + bw},${yTop} ${x + bw},${yTop + r} V${y0 - (j ? 2 : 0)} Z`
+          : `M${x},${y0 - (j ? 2 : 0)} V${yTop} H${x + bw} V${y0 - (j ? 2 : 0)} Z`, fill: k.color }, svg);
+        y0 = yTop;
+      });
+      const hit = el("rect", { x: L + step * i, y: T, width: step, height: plotH, fill: "transparent" }, svg);
+      hit.addEventListener("mouseenter", () => {
+        const rows = keys.map((k, j) => ({ k, v: val(i, j) })).filter(r => r.v);
+        tip.innerHTML = `<div class="t">${esc(opts.tiplabel(d))}</div>` + (rows.length
+          ? rows.map(r => `<div class="r"><span><i style="background:${r.k.color}"></i>${esc(r.k.name)}</span><b>${fmt(r.v)}</b></div>`).join("")
+            + (rows.length > 1 ? `<div class="r"><span>Всего</span><b>${fmt(totals[i])}</b></div>` : "")
+          : `<div class="r"><span>Нет данных</span></div>`);
+        placeTip(box, tip, L + step * i + step / 2, T + plotH - plotH * totals[i] / max);
+      });
+      hit.addEventListener("mouseleave", () => { tip.style.opacity = 0; });
+    });
+  }
+
+  function barList(node, rows, opts) {
+    if (!rows.length) return empty(node, opts.empty);
+    const max = Math.max(...rows.map(r => r.v)), total = rows.reduce((s, r) => s + r.v, 0);
+    node.innerHTML = rows.slice(0, opts.limit || 12).map(r =>
+      `<div class="bar-row"><div class="name" title="${esc(r.name)}">${r.html || esc(r.name)}</div>` +
+      `<div class="track"><div class="fill" style="width:${Math.max(2, r.v * 100 / max)}%;background:${r.color || "var(--s1)"}"></div></div>` +
+      `<div class="val">${fmt(r.v)} <span style="color:var(--text-3)">· ${pct(r.v, total)}</span></div></div>`).join("");
+  }
+
+  // ---------- data helpers
+  const lastDays = n => { const out = []; const end = stats ? new Date(stats.day + "T00:00:00Z") : new Date(); for (let i = n - 1; i >= 0; i--) { const d = new Date(end.getTime() - i * 864e5); out.push(d.toISOString().slice(0, 10)); } return out; };
+  const inModel = m => model === "all" || m === model;
+  const vkey = s => s.split(/[.-]/).map(p => (isNaN(+p) ? p : (+p).toString().padStart(5, "0"))).join(".");
+
+  function render() {
+    if (!stats) return;
+    const a = (stats.active || {})[period] || { by_version: [], by_model: [], by_country: [], installs: 0, projectors: 0 };
+    const a7 = (stats.active || {})["7"] || { by_version: [] };
+    const sum = rows => rows.filter(r => inModel(r.model)).reduce((s, r) => s + r.installs, 0);
+
+    // model switch (only models seen)
+    const seen = [...new Set([...(stats.active["30"] || { by_model: [] }).by_model.map(r => r.model), ...(stats.daily || []).map(r => r.model)])];
+    const mBox = document.getElementById("model");
+    mBox.innerHTML = [["all", "Все"], ...seen.map(m => [m, modelName(m)])].map(([v, n]) => `<button data-v="${esc(v)}" aria-pressed="${v === model}">${esc(n)}</button>`).join("");
+    mBox.style.display = seen.length > 1 ? "" : "none";
+    mBox.querySelectorAll("button").forEach(b => b.onclick = () => { model = b.dataset.v; render(); });
+    document.querySelectorAll("#period button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === period));
+
+    // KPIs
+    const nAll = model === "all" ? (a.projectors || a.installs) : sum(a.by_version);
+    document.getElementById("k-proj").textContent = fmt(nAll);
+    document.getElementById("k-proj-d").textContent = `уникальных за ${period} дней` + (stats.reinstalled ? ` · переустановок: ${fmt(stats.reinstalled)}` : "");
+    const n7 = sum(a7.by_version);
+    document.getElementById("k-7").textContent = fmt(n7);
+    document.getElementById("k-7-d").textContent = nAll ? `${pct(n7, nAll)} от всех за ${period} дней` : "";
+    const since = lastDays(+period)[0];
+    const upd = (stats.updates_daily || []).filter(r => r.day >= since && r.method !== "first");
+    const nUpd = upd.reduce((s, r) => s + r.n, 0);
+    document.getElementById("k-upd").textContent = fmt(nUpd);
+    const today = (stats.updates_daily || []).filter(r => r.day === stats.day && r.method !== "first").reduce((s, r) => s + r.n, 0);
+    document.getElementById("k-upd-d").textContent = `сегодня: ${fmt(today)}`;
+    // latest stable version per model, share on it
+    const vers = a.by_version.filter(r => inModel(r.model));
+    let latestN = 0, latestLabel = [];
+    [...new Set(vers.map(r => r.model))].forEach(m => {
+      const stable = vers.filter(r => r.model === m && r.channel !== "beta");
+      const pool = stable.length ? stable : vers.filter(r => r.model === m);
+      const top = pool.map(r => r.version).sort((x, y) => vkey(y).localeCompare(vkey(x)))[0];
+      latestN += pool.filter(r => r.version === top).reduce((s, r) => s + r.installs, 0);
+      latestLabel.push(`${modelName(m)} ${top}`);
+    });
+    const vTotal = vers.reduce((s, r) => s + r.installs, 0);
+    document.getElementById("k-latest").textContent = pct(latestN, vTotal);
+    document.getElementById("k-latest-d").textContent = latestLabel.join(" · ");
+
+    // daily active, stacked by model
+    const days = lastDays(Math.max(+period, 30));
+    const dm = [...new Set((stats.daily || []).map(r => r.model))].filter(inModel);
+    const mkeys = dm.map((m, i) => ({ id: m, name: modelName(m), color: css(SERIES[i % SERIES.length]) }));
+    const dIdx = {}; (stats.daily || []).forEach(r => { if (!inModel(r.model)) return; const k = r.day + "|" + r.model; dIdx[k] = (dIdx[k] || 0) + r.installs; });
+    legend("lg-daily", mkeys);
+    const chD = document.getElementById("ch-daily");
+    if (!dm.length) empty(chD, "Пока нет данных. Проекторы начнут появляться после обновления с включённой статистикой.");
+    else columns(chD, days, mkeys, (i, k) => dIdx[days[i] + "|" + mkeys[k].id] || 0, { label: "Проекторы по дням", xlabel: dayLabel, tiplabel: d => new Date(d + "T00:00:00Z").toLocaleDateString("ru-RU", { day: "numeric", month: "long", timeZone: "UTC" }) });
+
+    // versions
+    const vAgg = {}; vers.forEach(r => { const k = r.model + "|" + r.version + "|" + r.channel; vAgg[k] = (vAgg[k] || 0) + r.installs; });
+    const multiModel = new Set(vers.map(r => r.model)).size > 1;
+    barList(document.getElementById("versions"), Object.entries(vAgg).map(([k, v]) => { const [m, ver, ch] = k.split("|"); return { v, name: (multiModel ? modelName(m) + " " : "") + ver, html: (multiModel ? `<span style="color:var(--text-2)">${esc(modelName(m))}</span> ` : "") + esc(ver) + (ch === "beta" ? '<span class="tag">бета</span>' : "") }; }).sort((x, y) => y.v - x.v), { empty: "Пока нет данных" });
+
+    // updates per day by method
+    const ORDER = ["ota_delta", "ota_full", "usb", "installer", "ota", "unknown"];
+    const methods = [...new Set(upd.map(r => r.method))].sort((x, y) => (ORDER.indexOf(x) + 99 * (ORDER.indexOf(x) < 0)) - (ORDER.indexOf(y) + 99 * (ORDER.indexOf(y) < 0)));
+    const ukeys = methods.map(m => ({ id: m, name: METHODS[m] || m, color: css(SERIES[Math.max(0, ORDER.indexOf(m) < 0 ? 4 : ORDER.indexOf(m))]) }));
+    const uIdx = {}; upd.forEach(r => { const k = r.day + "|" + r.method; uIdx[k] = (uIdx[k] || 0) + r.n; });
+    const udays = lastDays(+period);
+    legend("lg-upd", ukeys);
+    const chU = document.getElementById("ch-upd");
+    if (!methods.length) empty(chU, "Обновлений за период пока нет");
+    else columns(chU, udays, ukeys, (i, k) => uIdx[udays[i] + "|" + ukeys[k].id] || 0, { h: 200, label: "Обновления по дням", xlabel: dayLabel, tiplabel: d => new Date(d + "T00:00:00Z").toLocaleDateString("ru-RU", { day: "numeric", month: "long", timeZone: "UTC" }) });
+
+    // countries (country only)
+    const cRows = (a.by_country || []).map(r => ({ v: r.installs, name: countryName(r.country) })).filter(r => r.v);
+    barList(document.getElementById("countries"), cRows, { empty: "Пока нет данных", limit: 10 });
+
+    // pairs
+    const pr = (stats.pairs || []).filter(r => inModel(r.model));
+    const pBox = document.getElementById("pairs");
+    if (!pr.length) empty(pBox, "Переходов пока нет. Они появятся после первых обновлений.");
+    else pBox.innerHTML = `<table><thead><tr><th>Модель</th><th>Переход</th><th>Способ</th><th class="n">Проекторов</th></tr></thead><tbody>` +
+      pr.slice(0, 12).map(r => `<tr><td class="m">${esc(modelName(r.model))}</td><td>${esc(r.from_version)}<span class="arrow">→</span>${esc(r.to_version)}</td><td class="m">${esc(METHODS[r.method] || r.method)}</td><td class="n">${fmt(r.n)}</td></tr>`).join("") + `</tbody></table>`;
+
+    // models
+    const mRows = (a.by_model || []).filter(r => inModel(r.model));
+    const mdl = document.getElementById("models");
+    if (!mRows.length) empty(mdl, "Пока нет данных");
+    else mdl.innerHTML = `<table><thead><tr><th>Модель</th><th>Код XGIMI</th><th class="n">Проекторов</th></tr></thead><tbody>` +
+      mRows.map(r => `<tr><td>${esc(modelName(r.model))}</td><td class="m">${esc(r.xgimi_model || "–")}</td><td class="n">${fmt(r.installs)}</td></tr>`).join("") + `</tbody></table>`;
+
+    // GitHub: latest snapshot per release, three measures stacked
+    const last = {}; gh.forEach(r => { if (!last[r.tag] || r.date > last[r.tag].date) last[r.tag] = r; });
+    const devOk = r => model === "all" || r.device === model;
+    const rel = Object.values(last).filter(devOk).sort((x, y) => (x.published + x.tag).localeCompare(y.published + y.tag));
+    const gkeys = [{ id: "installs", name: "Образы и установщики", short: "Образы", color: css("--s1") }, { id: "updates", name: "Пакеты обновления", short: "Обновления", color: css("--s2") }, { id: "checks", name: "Проверки обновлений", short: "Проверки", color: css("--s3") }];
+    legend("lg-gh", gkeys);
+    const chG = document.getElementById("ch-gh");
+    if (!rel.length) empty(chG, "Нет данных GitHub");
+    else {
+      const tot = r => gkeys.reduce((t, k) => t + (r[k.id] || 0), 0), gmax = Math.max(1, ...rel.map(tot));
+      const shown = rel.slice().reverse();
+      chG.innerHTML = `<table><thead><tr><th>Выпуск</th><th>Дата</th><th style="width:46%"></th>` + gkeys.map(k => `<th class="n">${esc(k.short)}</th>`).join("") + `</tr></thead><tbody>` +
+        shown.map(r => `<tr><td>${esc(modelName(r.device))} ${esc(r.version)}${r.prerelease ? '<span class="tag">бета</span>' : ""}</td>` +
+          `<td class="m">${new Date(r.published + "T00:00:00Z").toLocaleDateString("ru-RU", { day: "numeric", month: "short", timeZone: "UTC" })}</td>` +
+          `<td><div style="display:flex;gap:2px;height:8px;width:${Math.max(1, tot(r) * 100 / gmax)}%">` +
+            gkeys.filter(k => r[k.id]).map(k => `<div title="${esc(k.name)}: ${fmt(r[k.id])}" style="flex:${r[k.id]};background:${k.color};border-radius:3px"></div>`).join("") + `</div></td>` +
+          gkeys.map(k => `<td class="n">${fmt(r[k.id] || 0)}</td>`).join("") + `</tr>`).join("") + `</tbody></table>`;
+    }
+
+    document.getElementById("geo").textContent = stats.geo || "";
+  }
+
+  async function load() {
+    const errBox = document.getElementById("err");
+    try {
+      const [s, g] = await Promise.all([fetch("/lumen/v1/stats", { cache: "no-store" }), fetch("github.json", { cache: "no-store" })]);
+      if (s.ok) stats = await s.json(); else throw new Error("сервер статистики ответил " + s.status);
+      gh = g.ok ? await g.json() : [];
+      errBox.style.display = "none";
+      const t = new Date(stats.generated);
+      document.getElementById("updated").textContent = "Обновлено " + t.toLocaleString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+      render();
+    } catch (e) {
+      errBox.textContent = "Не удалось загрузить данные: " + e.message;
+      errBox.style.display = "block";
+    }
+  }
+  document.querySelectorAll("#period button").forEach(b => b.onclick = () => { period = b.dataset.v; try { localStorage.setItem("lumen.period", period); } catch (e) {} render(); });
+  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+  load(); setInterval(load, 5 * 60 * 1000);
+})();
+</script>
+</body>
+</html>

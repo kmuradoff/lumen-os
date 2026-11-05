@@ -19,7 +19,7 @@ Android TV 14 for XGIMI projectors, built on LineageOS 21.
 |---|---|---|---|
 | XGIMI Z9X | stable | [Lumen OS 1.0.8](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-1.0.8) | [English](docs/install/z9x/en.md), [Русский](docs/install/z9x/ru.md) |
 | XGIMI Play 6 | stable | [Lumen OS 1.0.7 for the Play 6](https://github.com/kmuradoff/lumen-os/releases/tag/play6-1.0.7) | [English](docs/install/play6/en.md), [Русский](docs/install/play6/ru.md) |
-| XGIMI Z9X HB | coming soon | the first release, with updates over Wi-Fi, is being prepared | [English](docs/install/hb/en.md), [Русский](docs/install/hb/ru.md) |
+| XGIMI Z9X HB | stable | [Lumen OS 1.0.8 for the Z9X HB](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-hb-1.0.8) | [English](docs/install/hb/en.md), [Русский](docs/install/hb/ru.md) |
 
 Each projector has its own release files, signed with its own key. The installer refuses an image for
 another projector and any XGIMI firmware it does not know.
@@ -31,8 +31,9 @@ another projector and any XGIMI firmware it does not know.
   keeps your data. Updates over Wi-Fi come later.
 - XGIMI Play 6: Google services are not in the image and cannot be added yet. As on the Z9X, they are
   planned as an add-on that you make from your own MindTheGapps download.
-- XGIMI Z9X HB (model code G0130): XGIMI firmware V6.16.24, no other version. The first release comes with
-  updates over Wi-Fi. Two XGIMI files are not in the image: the installer copies them from your own projector.
+- XGIMI Z9X HB (model code G0130): XGIMI firmware V6.16.24, no other version. Updates come over Wi-Fi. Two
+  XGIMI files are not in the image: the installer copies them from your own projector. Google services can be
+  added with the installer from your own MindTheGapps download.
 
 More projectors will come later.
 
@@ -77,8 +78,9 @@ This list is for the Z9X. The Play 6 has Lumen Home, its own projector app with 
 input, the voice assistant and the first setup, but no AirPlay receiver, no updates over Wi-Fi and no Google
 services yet.
 
-Nothing about you is collected. The system goes online only for the time zone and city (ip-api.com over
-plain HTTP, ipapi.co or ipwho.is), the weather (Open-Meteo) and updates (GitHub).
+Nothing about you is collected, apart from the anonymous usage counter you can turn off (see [Privacy](#privacy)).
+The system goes online only for the time zone and city (ip-api.com over plain HTTP, ipapi.co or ipwho.is), the
+weather (Open-Meteo), updates (GitHub) and that counter.
 
 ## Without Google
 
@@ -114,6 +116,21 @@ keeps your data. Debugging must be on, see [step 6 of the Play 6 guide](docs/ins
 
 To go back, flash the official XGIMI firmware from a USB stick. This erases everything, see Back to stock
 for the [Z9X](docs/install/z9x/en.md#stock) and for the [Play 6](docs/install/play6/en.md#play6-stock).
+
+## Privacy
+
+No ads, no tracking: only an anonymous usage counter that you can turn off. Once a day, when the updater checks
+for updates, it sends the model, the version and the serial number in hashed form, and from your connection the
+server works out the country; your IP address is not stored. In detail: the projector model (codename
+and XGIMI model), the Lumen OS version, its version code and build id, the update channel, a random install id,
+and after an update the previous version and how it was installed. The serial number and the install id are kept
+only as a keyed hash, rows are deleted after 400 days, and nothing else is sent: no MAC address, no account, no
+list of apps, nothing about what you watch. It only counts how many projectors run each version and how many
+have updated. Country: IP Geolocation by [DB-IP](https://db-ip.com).
+
+To turn it off: the switch "Send anonymous statistics" on the last page of the first setup, in the projector
+settings (Diagnostics), or in Lumen OS update. All three are the same switch. Turning it off also deletes the
+install id; turning it on again starts with a new one.
 
 ## Known issues
 

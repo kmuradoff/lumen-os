@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">遊戲模式</string>
+    <string name="gbar_standard">標準</string>
+    <string name="gbar_top_speed">極速</string>
+    <string name="gbar_hfr">高影格率</string>
+    <string name="gbar_off">關</string>
+    <string name="gbar_on">開</string>
+    <string name="gbar_auto">自動</string>
+    <string name="gbar_picture">遊戲畫面</string>
+    <string name="gbar_pic_standard">標準</string>
+    <string name="gbar_pic_sports">運動</string>
+    <string name="gbar_color_space">色彩空間</string>
+    <string name="gbar_cs_native">原生</string>
+    <string name="gbar_dark">暗部增強</string>
+    <string name="gbar_aspect">畫面比例</string>
+    <string name="gbar_fps">影格率顯示</string>
+    <string name="gbar_fps_left">左上</string>
+    <string name="gbar_fps_center">中上</string>
+    <string name="gbar_fps_right">右上</string>
+    <string name="gbar_hdr_mapping">動態色調映射</string>
+    <string name="gbar_tip_top_speed">延遲最低。梯形校正恢復為完整畫面。</string>
+    <string name="gbar_tip_vrr">畫面跟隨主機的影格率變化。請在主機中同時開啟 VRR。</string>
+    <string name="gbar_tip_hfr_off">訊號源最高 60 Hz。</string>
+    <string name="gbar_tip_hfr_on">訊號源最高 120 Hz。</string>
+    <string name="gbar_tip_dark">暗場細節更清楚。</string>
+    <string name="gbar_tip_wide">訊號源需輸出 3840 x 2160。</string>
+    <string name="gbar_tip_hdr_mapping">依區域調整亮度。開啟後請在主機中重新校準 HDR。</string>
+    <string name="gbar_tip_hgig">依遊戲製作時的效果顯示 HDR。開啟後請在主機中重新校準 HDR。</string>
+    <string name="gbar_need_top_speed">VRR 僅在極速模式下可用</string>
+    <string name="gbar_need_16_9">請先選擇 16:9</string>
+    <string name="gbar_vrr_blocks_aspect">請先關閉 VRR</string>
+    <string name="gbar_vrr_blocks_hfr">VRR 開啟時高影格率保持開啟</string>
+    <string name="gbar_need_4k">訊號源需輸出 3840 x 2160</string>
+    <string name="gbar_need_hdr">訊號源未輸出 HDR</string>
+    <string name="gbar_boost_blocks">Boost 開啟時無法使用</string>
+    <string name="gbar_failed">投影機未接受此變更</string>
+</resources>

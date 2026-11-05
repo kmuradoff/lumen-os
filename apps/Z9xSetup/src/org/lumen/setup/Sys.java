@@ -75,6 +75,30 @@ public final class Sys {
     }
 
     /** Which launchers can be chosen. Lumen Home first. */
+    /** org.lumen.updater, the one owner of the anonymous statistics switch (its StateProvider "stats" calls). */
+    public static final String PKG_UPDATER = "org.lumen.updater";
+    private static final android.net.Uri UPDATER = android.net.Uri.parse("content://org.lumen.updater");
+
+    /** The statistics switch of the updater; null when there is no updater or no statistics server (no row). */
+    public static Boolean statsOn(Context c) {
+        try {
+            android.os.Bundle b = c.getContentResolver().call(UPDATER, "stats", null, null);
+            return b == null || !b.getBoolean("available", true) ? null : b.getBoolean("on");
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** Sets the updater's statistics switch; the value it holds afterwards, or null without an updater. */
+    public static Boolean setStatsOn(Context c, boolean on) {
+        try {
+            android.os.Bundle b = c.getContentResolver().call(UPDATER, "stats_set", on ? "1" : "0", null);
+            return b == null || !b.getBoolean("available", true) ? null : b.getBoolean("on");
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
     public static boolean hasLumenHome(Context c) { return installed(c, PKG_HOME); }
 
     public static boolean hasClassic(Context c) { return installed(c, PKG_TVLAUNCHER); }

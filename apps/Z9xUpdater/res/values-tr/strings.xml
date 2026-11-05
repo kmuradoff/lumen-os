@@ -15,6 +15,12 @@
     <string name="auto_notify">Yalnızca haber ver</string>
     <string name="auto_download">Otomatik indir</string>
     <string name="auto_hint">Güncellemeler onayınız olmadan asla yüklenmez.</string>
+    <string name="row_beta">Beta güncellemeleri</string>
+    <string name="beta_on">Açık</string>
+    <string name="beta_off">Kapalı</string>
+    <string name="beta_hint">Beta sürümleri daha erken gelir ancak daha az test edilmiştir. Kapatırsanız, daha yeni bir normal sürüm çıkana kadar mevcut sürümünüz kalır.</string>
+    <string name="row_stats">Anonim istatistik gönder</string>
+    <string name="stats_hint">Günde bir kez: model, sürüm, karma (hash) biçiminde seri numarası ve ülke. IP adresiniz saklanmaz.</string>
     <string name="avail_title">Lumen OS %1$s kullanılabilir</string>
     <string name="avail_size_full">Tam güncelleme · %1$s</string>
     <string name="avail_size_delta">Güncelleme · %1$s</string>

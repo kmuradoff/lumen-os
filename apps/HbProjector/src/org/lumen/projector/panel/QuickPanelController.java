@@ -131,10 +131,12 @@ final class QuickPanelController {
     private static final int[] EQ_PRESET_LABELS = {R.string.eq_preset_flat, R.string.eq_preset_bass,
             R.string.eq_preset_voice, R.string.eq_preset_night, R.string.eq_preset_custom};
     private static final long EQ_LIMIT_NOTE_GAP_MS = 2_000;
-    /** Game speed rows -> 648 values (0 basic, 1 basic+HFR, 3 top speed, 2 top speed+HFR). */
+    /**
+     * Game speed rows -> 77 values. Z9X HB fork: the stock HB (display_gamemode_version=3, support_hfr=true,
+     * newsettings PictureViewModel setGameMode / switchGameModeSpeed) sends only 1 (standard) and 2 (top speed).
+     */
     private static final GmpfClient.GameModeOption[] SPEED_ORDER = {
-            GmpfClient.GameModeOption.BASIC, GmpfClient.GameModeOption.BASIC_HFR,
-            GmpfClient.GameModeOption.TOP_SPEED, GmpfClient.GameModeOption.TOP_SPEED_HFR};
+            GmpfClient.GameModeOption.BASIC_HFR, GmpfClient.GameModeOption.TOP_SPEED_HFR};
     private static final GmpfClient.AspectRatio[] ASPECT_ORDER = {
             GmpfClient.AspectRatio.AUTO, GmpfClient.AspectRatio.R16_9, GmpfClient.AspectRatio.R4_3,
             GmpfClient.AspectRatio.ORIGINAL};
@@ -970,10 +972,11 @@ final class QuickPanelController {
                 if (!ok) throw new IllegalStateException("42 returned false");
             });
         }).run()));
-        // Lumen OS 1.0.4: the stock eARC mode (Auto = on, Off), only where 632 answers
-        earc = addIf(p, F.HDMI, new ToggleRow(app, "eARC", (row, w) -> safe("633", () ->
-                change("633 eARC " + w, (g, g2) -> {
-                    if (!g.setEarc(w)) throw new IllegalStateException("633 returned false");
+        // Z9X HB fork: the stock eARC mode (Auto = on, Off) through cec/EarcLink, which plays the stock XRMService
+        // part (the HDMI ARC output while the link holds, ARC asked for again when it ends or fails)
+        earc = addIf(p, F.HDMI, new ToggleRow(app, "eARC", (row, w) -> safe("TV 65", () ->
+                change("TV 65 eARC " + w, (g, g2) -> {
+                    if (!org.lumen.projector.cec.EarcLink.setUser(g, w)) throw new IllegalStateException("TV 65 returned false");
                 })).run()));
         // 1.0.4: manual sound output (stock Sound > Sound output). Only connected outputs are listed; the choice is a
         // preferred device of the media strategy, so AudioPathReporter moves the vendor path (HDMI input sound) too.
@@ -1169,8 +1172,7 @@ final class QuickPanelController {
                 (row, i) -> safe("game mode", () -> onGameMode(i)).run()));
         gameMode.setCommitDelay(CHOICE_COMMIT_MS);
         gameSpeed = addIf(p, F.GAME_MODE, new ChoiceRow(app, s(R.string.panel_game_speed),
-                labels(app, R.string.panel_speed_standard, R.string.panel_speed_standard_hfr,
-                        R.string.panel_speed_top, R.string.panel_speed_top_hfr),
+                labels(app, R.string.panel_speed_standard, R.string.panel_speed_top),
                 (row, i) -> safe("game speed", () -> onGameSpeed(i)).run()));
         gameSpeed.setCommitDelay(CHOICE_COMMIT_MS);
         allm = addIf(p, F.GAME_MODE, new ChoiceRow(app, s(R.string.panel_allm),
@@ -1537,22 +1539,31 @@ final class QuickPanelController {
      */
     private void onGameMode(int i) {
         if (i < 0 || i > 2) return;
+        // Z9X HB fork (2026-11-04, Z9X 1.0.8 items 2.2 / 2.17): the 147 / 146 results are checked and the row reads
+        // back 148; the 3D / Dolby Vision refusals are not ported (both OFF on the HB)
         change("game mode " + i, (g, g2) -> {
             if (!hdmiNow(g, "game mode")) return;
+            boolean ok;
             if (i == 0) {
-                g2.setGameModeType(Gmpf2Client.GameModeType.MANUAL);
-                g2.setGameModeState(false);
+                ok = g2.setGameModeType(Gmpf2Client.GameModeType.MANUAL);
+                ok &= g2.setGameModeState(false);
             } else if (i == 1) {
                 GmpfClient.GameModeOption o = g.getGameModeOption();
                 if (o != null) g.setGameModeOption(o);
-                g2.setGameModeType(Gmpf2Client.GameModeType.MANUAL);
-                g2.setGameModeState(true);
+                ok = g2.setGameModeType(Gmpf2Client.GameModeType.MANUAL);
+                ok &= g2.setGameModeState(true);
             } else {
-                g2.setGameModeType(Gmpf2Client.GameModeType.AUTO);
+                ok = g2.setGameModeType(Gmpf2Client.GameModeType.AUTO);
             }
+            if (!ok) throw new IllegalStateException("147 / 146 returned false");
             prefs.edit().putInt(KEY_GAME_MODE, i).apply();
+            pendingGame = i;
+            pendingGameUntil = SystemClock.uptimeMillis() + PENDING_SPEED_MS;
         });
     }
+
+    private volatile int pendingGame = -1;
+    private volatile long pendingGameUntil;
 
     /**
      * 648 setGameModeOption; top speed also 207 correctKeystoneReset(0) as stock switchGameModeSpeed.
@@ -1805,7 +1816,17 @@ final class QuickPanelController {
         // re-check right before every write (hdmiNow).
         boolean hdmi = ok && sn.hdmiConfirmed();
         gameHint.setVisibility(ok && !hdmi ? View.VISIBLE : View.GONE);
+        // Z9X HB fork (Z9X 1.0.8 item 2.2): the current input's game mode from 148 when it fits 77; the last value
+        // set while a change is pending or when 148 is unknown
         int gm = prefs.getInt(KEY_GAME_MODE, -1);
+        if (hdmi && sn.gameMode55 != null) {
+            int pg = pendingGame;
+            if (pg >= 0 && pg != sn.gameMode55 && SystemClock.uptimeMillis() < pendingGameUntil) gm = pg;
+            else {
+                pendingGame = -1;
+                gm = sn.gameMode55;
+            }
+        }
         gameMode.setSelected(gm);
         gameMode.setRowEnabled(hdmi && sn.boost != null);
         int sp = -1;
@@ -1814,6 +1835,9 @@ final class QuickPanelController {
             int shown = sn.gameOption;
             if (pend != null && shown != pend.wire && SystemClock.uptimeMillis() < pendingSpeedUntil) shown = pend.wire;
             else pendingSpeed = null;                        // 647 agrees (or the wait is over)
+            // Z9X HB fork: 0 / 3 (no HFR, never sent by the stock HB, left by older Lumen builds) show as their speed
+            if (shown == GmpfClient.GameModeOption.BASIC.wire) shown = GmpfClient.GameModeOption.BASIC_HFR.wire;
+            else if (shown == GmpfClient.GameModeOption.TOP_SPEED.wire) shown = GmpfClient.GameModeOption.TOP_SPEED_HFR.wire;
             for (int i = 0; i < SPEED_ORDER.length; i++) if (SPEED_ORDER[i].wire == shown) sp = i;
         }
         setChoice(gameSpeed, sp, ok && sn.gameOption != null, hdmi);

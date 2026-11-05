@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+# Lumen OS on the XGIMI Z9X HB (goat_elegant, 32-bit userspace): the Google services add-on, done the Z9X way.
+# The user downloads the MindTheGapps zip himself from its official URL (url= below); no Google file is in any
+# Lumen OS image. Hashes, sizes and paths only. Only a zip whose sha256 has a zip= line here is accepted; exactly
+# that zip's files listed below go into the logical partition z9x_gapps<slot> (part= bytes, ext4), each checked
+# by sha256 (installer/lib/gapps_fill.sh, unchanged); the image's /system/etc/z9x/z9x_gapps.sh (the unchanged
+# Z9X tools/ota/image/z9x_gapps.sh) checks the partition against the same lines at every start (names and sizes)
+# and overlays it.
+# Image path /system/etc/z9x/gapps_allow.txt (the Z9X path). HB ONLY: the Z9X list is tools/ota/image/
+# gapps_allow.txt (arm64 zip) and must never get this block, nor this file its arm64 one (a 32-bit system
+# cannot run the arm64 APKs' native code).
+# Made and checked by devices/goat_elegant/image/hb_gapps_allow.py (tools/ota/gapps_allow.py with the zip name
+# pattern widened to 'arm'; same rules): the zip's members the no-Google edition leaves out
+# (tools/lumen/nogms_remove.txt), without gapps.rc (z9x_gapps.sh sets its ro.com.google.gmsversion itself).
+# Never remove a published zip= block: a projector keeps its partition across Lumen OS updates.
+#
+# zip=<sha256> <file name> size=<bytes> part=<partition bytes> gmsversion=<value> url=<official download URL>
+# <sha256> <size> <path inside the partition>
+zip=b8d81621106d045cb85bb7e540cb9a09eacd883fa5f1b24a67e7181d687a9623 MindTheGapps-14.0.0-arm-ATV-full-20240523_191930.zip size=223011089 part=536870912 gmsversion=14_202403 url=https://github.com/MindTheGapps/14.0.0-arm-ATV/releases/download/MindTheGapps-14.0.0-arm-ATV-20240523_192108/MindTheGapps-14.0.0-arm-ATV-full-20240523_191930.zip
+950323c04863c6a8549fb10a5749556ea82242a436e5e48929a70679ebcd8ab2 51045221 product/app/GoogleTTS/GoogleTTS.apk
+46f62a090ab193923bbb798393d862a66aa8fe4b0448169c0ebe70837a6d32c6 27918403 product/app/talkback/talkback.apk
+9d3d3af5d8e1dcb6890076fe17f8ba48752b490e9b9aab3a5a3be7fce288b82e 2301 product/etc/default-permissions/default-atv-permissions.xml
+00bff885ac890876070e67555de8d4c36cb97177d36a6efc77f6690e84fd02e8 10899 product/etc/permissions/privapp-permissions-atv-product.xml
+0075ce38e76c6caddb3238b48131bfe37ce0db297e3754b0e023b4a2a4fccd04 45964 product/etc/permissions/privapp-permissions-google-product.xml
+73a160b4ec5ee9fd7ebb3ad8947d37c699302732584a90cc6a03956005cada12 919 product/etc/permissions/split-permissions-google.xml
+ae227b5f58b6517de8d28d12d2eb57ea1c9eb7abeb4ecd5fd6c3f54838d8f1b6 7407 product/etc/sysconfig/google-hiddenapi-package-whitelist.xml
+c074b60ed9d74bdf5f65145a47caf9565417099fbed1bc59c5f4966f126024e2 394 product/etc/sysconfig/google-staged-installer-whitelist.xml
+659451437a7e220d1ad4df682558a968d0780137ec61342aba5f9ed20d8ad332 8150 product/etc/sysconfig/google.xml
+f07b8a0da5f870877c34b2c48cd85e4748360e77a498e3a44df0925e0f8bcc2b 1843 product/etc/sysconfig/google_atv.xml
+bd62544fbc81f47d37ce278b3278589d045943a302a9d98d3bd03afca985bd33 12680 product/overlay/ATVOverlay.apk
+3bf9e4d9cce20b370aceeae56af4b939f7882322ce7da51f6f5864814766b4d8 101314724 product/priv-app/AndroidMediaShell/AndroidMediaShell.apk
+7277927433926d24ba2196cf35320a974fe54482bb1de2ecb67bd671aeccf7a0 3817484 product/priv-app/AtvRemoteService/AtvRemoteService.apk
+e28e71d281228d77068cc1c9bf51f8d13c3f8649e1d3806709a391da7be2922e 5614895 product/priv-app/Backdrop/Backdrop.apk
+57a3ed991c4ece2b2d26ebee92aea855059a8a13c57cd95742cc369bc3848d27 73663218 product/priv-app/PrebuiltGmsCorePano/PrebuiltGmsCorePano.apk
+9a86c6c7f2a1d46c343028bb66ba2dcb3c93cd82c3dfd6da7793817d988b5457 42774621 product/priv-app/SetupWraithPrebuilt/SetupWraithPrebuilt.apk
+18c038e600ba703bc192fd205a15fe6f80bd17af458c81c181eae097992caa7d 15532388 product/priv-app/TVLauncher/TVLauncher.apk
+b40777b4eceed9c42aacb334096fcf1a829fdceb7c560e39ce2d798e0e600a3b 7415306 product/priv-app/TVRecommendations/TVRecommendations.apk
+585a5872ee329df1c99ca8a6c348254719f5bc1b08714165ddbbf0a865f66bf4 51571224 product/priv-app/Tubesky/Tubesky.apk
+86e016f7810b43aa8c955303c7fec20f12565c6ac301b2473dfbb82280cc5f81 16861 system/app/GoogleExtShared/GoogleExtShared.apk
+641eb5aa55a4bc9cf0d8eb6d5faaafe464d85d53be445797655dcd0606992ea7 3511 system/etc/permissions/privapp-permissions-google-system.xml
+d4dc70e5b8efbb48a7340703118fc861a0d4118d5a305cab6f48d6d52ce2bf16 13061 system_ext/etc/permissions/privapp-permissions-google-system_ext.xml
+12db6d2c530e8ed0c9057d13f0842fd3c923ff2d96c0882f57553a038a467514 5699883 system_ext/priv-app/GoogleServicesFramework/GoogleServicesFramework.apk

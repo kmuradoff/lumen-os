@@ -168,7 +168,10 @@ public final class AudioOutputChoice {
             if (d == null) continue;
             CharSequence label;
             switch (k) {
+                // eARC: an HDMI eARC output, or the HDMI ARC output while the vendor reports the eARC link
+                // (cec/EarcLink; stock routes eARC through the plain ARC output and labels it "eARC")
                 case ARC: label = ctx.getString(d.getType() == AudioDeviceInfo.TYPE_HDMI_EARC
+                        || org.lumen.projector.cec.EarcLink.linked()
                         ? org.lumen.projector.R.string.sound_output_earc : org.lumen.projector.R.string.sound_output_arc); break;
                 case WIRED: label = ctx.getString(org.lumen.projector.R.string.sound_output_wired); break;
                 default: {

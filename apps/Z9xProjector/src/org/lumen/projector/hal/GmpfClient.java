@@ -181,6 +181,8 @@ public final class GmpfClient extends HidlCaller {
     // Lumen OS 1.0.4 HDMI settings and eARC (stock SignalRepository / VoiceRepository, stock analysis)
     private static final int GET_EARC_ENABLE_STATE = 632;          // ()      -> bool
     private static final int SET_EARC_ENABLE = 633;                // (bool)  -> bool
+    // 2026-11-04 eARC link (cec/EarcLink; stock analysis: 619 _hidl_getEARCStatus() R= readInt32)
+    private static final int GET_EARC_STATUS = 619;                // ()      -> i32
     private static final int GET_HDMI_RANGE = 634;                 // ()      -> i8
     private static final int SET_HDMI_RANGE = 635;                 // (i8)    -> bool
     private static final int SET_EDID_VERSION = 660;               // (i32)   -> bool
@@ -1477,6 +1479,8 @@ public final class GmpfClient extends HidlCaller {
     public boolean getEarc() throws RemoteException { return callRetBool(GET_EARC_ENABLE_STATE); }
     /** 633 setEARCEnable(bool), as stock VoiceRepository. TSV W=writeBool R=readBool. */
     public boolean setEarc(boolean on) throws RemoteException { return callBoolRetBool(SET_EARC_ENABLE, on); }
+    /** 619 getEARCStatus() -> vendor EN_CEC_EarcStatus, 3 = eARC linked (stock XRMService; cec/EarcLink). R=readInt32. */
+    public int getEarcStatus() throws RemoteException { return callRetI32(GET_EARC_STATUS); }
 
     /**
      * Lumen OS 1.0.4: 420 / 419, the stock "Power-on music" (General > Advanced > Power on/off): the vendor

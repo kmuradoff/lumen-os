@@ -23,7 +23,8 @@ which must be the O1 code of the version: an older formula is refused), --build-
 (VABC as ota.conf says), and its zip says pre-device=<wire id>, lumen-edition=nogms, lumen-device=<wire id>.
 Channel: the image's own channel (basename of ro.lumen.ota.manifest_url), or the ota.conf stage_channel (the
 same packages go to the test units first). A channel other than stage_channel is public: it is refused until
-devices/<codename>/install/OTA_RESULTS.tsv records T5, T6 and T7 as passed (ota_conf.channel_open).
+devices/<codename>/install/OTA_RESULTS.tsv records T7 as passed (ota_conf.channel_open; T5 / T6 dropped by the maintainer
+on 2026-11-04).
 requires: vendor_incremental (default: the registry's vendor_firmware), min_version_code (default 1000000: the
 first code of the O1 formula, so an image of the old formula never takes a package), blobs_set (the set= lines
 of the image's /system/etc/z9x/blobs_allow.txt).

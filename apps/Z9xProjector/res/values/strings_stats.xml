@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0
+     The anonymous statistics switch in the projector settings (sys/UpdaterStats: the updater owns the value, the
+     setup wizard and the updater show the same switch). stats_note is the disclosure, the same list everywhere. -->
+<resources>
+    <string name="stats_row">Send anonymous statistics</string>
+    <string name="stats_note">Once a day: model, version, serial number in hashed form and country. Your IP address is not stored.</string>
+</resources>

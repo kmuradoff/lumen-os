@@ -122,6 +122,7 @@ abstract class AidlCaller {
         GET_LENS_DISP_MODE(Iface.DISPLAY, 152, "getLensDispMode"),
         SET_DYNAMIC_BLACK_TYPE(Iface.DISPLAY, 172, "setDynamicBlackType"),
         GET_DYNAMIC_BLACK_TYPE(Iface.DISPLAY, 174, "getDynamicBlackType"),
+        GET_DISP_OUTPUT_FPS(Iface.DISPLAY, 179, "getDispOutputFps"),           // game bar FPS overlay with VRR on
         SET_KST_PREPARE(Iface.DISPLAY, 185, "setKstPrepare"),
         SET_OPTICAL_ZOOM_LIMIT_STEP(Iface.DISPLAY, 189, "SetOpticalZoomLimitStep"),
         GET_CURRENT_ZOOM_LIMIT_STEP(Iface.DISPLAY, 190, "GetCurrentZoomLimitStep"),
@@ -175,6 +176,7 @@ abstract class AidlCaller {
         SET_EARC_ENABLE(Iface.TV, 65, "setEARCEnable"),
         GET_EARC_ENABLE_STATE(Iface.TV, 66, "getEARCEnableState"),
         GET_HDR_TYPE(Iface.TV, 78, "getHdrType"),
+        GET_EARC_STATUS(Iface.TV, 79, "getEARCStatus"),
         GET_HSY_PICTURE_MODE_ENABLE(Iface.TV, 112, "getHsyPictureModeEnable"),
         SET_TV_DYNAMIC_CONTRAST_ENABLE(Iface.TV, 113, "setTvDynamicContrastEnable"),
         GET_TV_DYNAMIC_CONTRAST_ENABLE(Iface.TV, 114, "getTvDynamicContrastEnable"),
@@ -186,11 +188,19 @@ abstract class AidlCaller {
         SET_ALLM_ENABLE(Iface.TV, 129, "setAllmEnable"),
         GET_ALLM_ENABLE_STATE(Iface.TV, 130, "getAllmEnableState"),
         GET_ALLM_STATUS(Iface.TV, 131, "getAllmStatus"),
+        SET_VRR_MODE_ENABLE(Iface.TV, 145, "setVRRModeEnable"),              // game bar
+        GET_VRR_ENABLE_STATE(Iface.TV, 146, "getVRREnableState"),
+        SET_GAME_PICTURE_MODE(Iface.TV, 147, "setGamePictureMode"),
+        GET_GAME_PICTURE_MODE(Iface.TV, 148, "getGamePictureMode"),
+        SET_DARK_BOOST_ONOFF(Iface.TV, 149, "setDarkBoostOnoff"),
+        GET_DARK_BOOST_STATE(Iface.TV, 150, "getDarkBoostState"),
         RESET_PICTURE_TO_DEFAULT(Iface.TV, 164, "ResetPictureToDefault"),
         SET_ONE_OF_MULTI_POINT_WB(Iface.TV, 165, "setOneOfMultiPointWB"),
         GET_ONE_OF_MULTI_POINT_WB(Iface.TV, 166, "getOneOfMultiPointWB"),
         TOGGLE_HDR_DY_TONE_MAPPING(Iface.TV, 174, "ToggleHDRDyToneMapping"),
         GET_HDR_DY_TONE_MAPPING_STATUS(Iface.TV, 175, "GetHDRDyToneMappingStatus"),
+        SET_HGIG_MODE(Iface.TV, 191, "setHGiGMode"),                            // game bar HDR settings
+        GET_HGIG_MODE(Iface.TV, 192, "getHGiGMode"),
         GET_MOTION_DETECTION(Iface.MOTION, 2, "getMotionDetection"),   // fit to screen size: the tilt (read)
         SET_ANG_TRIGGER_AF(Iface.MOTION, 4, "setAngTriggerAF"),
         GET_ANG_TRIGGER_AF(Iface.MOTION, 5, "getAngTriggerAF"),
@@ -596,6 +606,10 @@ abstract class AidlCaller {
 
     static int callI32I32RetI32(Call c, int a, int b) throws RemoteException {
         return call(c, o -> { o.i32(a); o.i32(b); }, RET_I32);
+    }
+
+    static int callBoolI32I32RetI32(Call c, boolean a, int b, int d) throws RemoteException {
+        return call(c, o -> { o.bool(a); o.i32(b); o.i32(d); }, RET_I32);
     }
 
     static boolean callI32x3RetBool(Call c, int a, int b, int d) throws RemoteException {

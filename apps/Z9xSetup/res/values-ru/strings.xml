@@ -98,6 +98,8 @@
     <string name="done_tz_detected">%1$s (определён)</string>
     <string name="done_name">Имя проектора</string>
     <string name="done_home">Главный экран</string>
+    <string name="done_stats">Отправлять анонимную статистику</string>
+    <string name="done_stats_note">Раз в день: модель, версия, серийный номер в виде хеша и страна. Ваш IP-адрес не сохраняется.</string>
     <string name="done_start">Начать</string>
     <string name="done_offline_hint">Нет интернета: войти в Google и выбрать часовой пояс можно позже в настройках.</string>
     <string name="done_offline_hint_nogms">Нет интернета: часовой пояс можно выбрать позже в настройках.</string>

@@ -51,7 +51,7 @@
 #        bootctl.sha256) as /system/bin/bootctl, the HB otacerts.zip (tools/devices/ota/make_otacerts.py on
 #        the Mac: [ota, ota_next], public certificates only) over the GSI one, LumenUpdater (/system/app, the signed
 #        stage) with the pinned Z9X default permissions file, and the props of hb_ota_props.txt (ab_ota_partitions,
-#        the gate on, wire id hb, the manifest on the pre-release tag hb). The version code is design decision:
+#        the gate on, wire id hb, the manifest on the pre-release tag z9x-hb). The version code is design decision:
 #        x*1000000 + y*10000 + z*100 + n, n = the beta number (betaN, 1..49), 50 + the rc number (rcN, 1..48) or 99
 #        without a mark: 1.0.8-beta1 = 1000801, 1.0.8-rc1 = 1000851, 1.0.8 = 1000899; any other mark is refused.
 #
@@ -65,7 +65,7 @@
 #            x.y.z, x.y.z-betaN or x.y.z-rcN (only with --release): the public release, ro.lumen.version=VARIANT,
 #            ro.lumen.version_code by design decision (above; y and z below 100), output TAG hb-VARIANT-release
 #   --ota-test the OTA test image (a version VARIANT only; image.conf variant otatest): the same image, but it reads
-#              update-hb-test.json on the tag hb instead of update-hb-nogms.json (test units, staged rollout).
+#              update-hb-test.json on the tag z9x-hb instead of update-hb-nogms.json (test units, staged rollout).
 #              BUILD_INFO.txt says ota_channel=hb-test.
 #   --dry-run  print the TAG, the version, the version code and the OTA channel, then stop (nothing read or written)
 #   --diag     adds the USB-stick boot logger of the test builds, overlay/debug/z9x_earlylog.{rc,sh} (the same files
@@ -139,6 +139,9 @@ VNAME=hb-$V                            # ro.lumen.version and the About rows
 [ $PUB = 1 ] && VCODE=$PVCODE && VNAME=$V
 OTACH=none                             # the OTA channel the image reads (hb_ota_props.txt): public images only
 [ $PUB = 1 ] && OTACH=hb-nogms && [ $OTATEST = 1 ] && OTACH=hb-test
+# LumenInfo (t11): in the test images (tN and the OTA test image), not in the public release image (2026-11-04:
+# "LumenInfo не вшивай ... он не нужен там в релизе"). A LumenInfo update a tester installed into /data stays there.
+INFO=1; [ $PUB = 1 ] && [ $OTATEST = 0 ] && INFO=0
 if [ $DRY = 1 ]; then
   echo "dry run: tag=$TAG version=$VNAME version_code=$VCODE ota_channel=$OTACH"
   exit 0
@@ -170,8 +173,8 @@ done
 if [ $LUMEN = 1 ]; then
   # the Lumen inputs: staged files of image.conf and the signed stage of tools/devices/sign_device.py (stage_dir)
   for f in hb_lumen_prop.txt privapp-permissions-hbprojector.xml bootanimation.zip privapp-permissions-z9xhome.xml \
-           privapp-permissions-z9xsetup.xml z9x-home-default-permissions.xml z9x-sysconfig-nogms.xml \
-           hb_audio.rc hb_audio_policy_engine_stream_volumes.xml hb_audio_policy_configuration.xml \
+           privapp-permissions-z9xsetup.xml z9x-home-default-permissions.xml z9x-airplay-default-permissions.xml \
+           z9x-sysconfig-nogms.xml hb_audio.rc hb_audio_policy_engine_stream_volumes.xml hb_audio_policy_configuration.xml \
            hb_audio_policy_check.py hb_vendor_services.rc z9x_nui.rc z9x_nui.sh \
            Vendor_000d_Product_3841.kl Vendor_000d_Product_3841.idc Vendor_3697_Product_0001.kl \
            Vendor_3697_Product_0002.kl check_privapp.py apkinfo.py z9x_gapps.rc z9x_gapps.sh z9x-gapps-sysconfig.xml \
@@ -181,8 +184,9 @@ if [ $LUMEN = 1 ]; then
   SG=$IN/signed_stage
   [ -s "$SG/SHA256SUMS" ] || die "no $SG/SHA256SUMS (sign_device.py goat_elegant stage on the Mac, then compose.sh)"
   (cd "$SG" && sha256sum -c --quiet --strict SHA256SUMS) || die "$SG: files do not match SHA256SUMS"
-  for f in pinned/Z9xHome.apk pinned/Z9xSetup.apk pinned/Z9xTvInput.apk pinned/Z9xLineagePlatformOverlay.apk \
-           apps/HbProjector.apk apps/Z9xBtPair.apk apps/HbFrameworkOverlay.apk apps/LumenInfo.apk base_signed/base_signed.tsv; do
+  for f in pinned/Z9xHome.apk apps/Z9xSetup.apk pinned/Z9xTvInput.apk pinned/Z9xLineagePlatformOverlay.apk \
+           pinned/Z9xAirPlay.apk apps/HbProjector.apk apps/Z9xBtPair.apk apps/HbFrameworkOverlay.apk apps/LumenInfo.apk apps/HbTvInput.apk \
+           base_signed/base_signed.tsv; do
     grep -q "  $f\$" "$SG/SHA256SUMS" || die "$SG: $f is not in SHA256SUMS"
   done
   # the click volume file: the HB vendor's audio_policy_engine_stream_volumes.xml (the extracted stock vendor of
@@ -338,7 +342,7 @@ BLOBSPY
   for f in lumen_ota.sh lumen_ota_escape.sh; do sh -n "$IN/$f" || die "ota: $f does not parse"; done
   grep -qx 'hal=bootctl' "$IN/ota_gate.conf" || die "ota: ota_gate.conf is not the HB gate data (hal=bootctl)"
   #   the props: exactly the four OTA lines of hb_ota_props.txt, in this order; the list as ota.conf (O3: no mboot,
-  #   no vbmeta), the manifest on the tag hb; --ota-test reads update-hb-test.json there instead
+  #   no vbmeta), the manifest on the tag z9x-hb; --ota-test reads update-hb-test.json there instead
   OTAPROPS=$(python3 -I - "$IN/hb_ota_props.txt" "$OTACH" <<'OTAPY'
 import re, sys
 src, ch = sys.argv[1:3]
@@ -349,7 +353,7 @@ if keys != want:
     sys.exit("ERROR: ota props: keys %s, want %s" % (keys, want))
 v = dict(r.split("=", 1) for r in rows)
 LIST = "armfw,boot,bootdata,dtbo,optee,tvconfig,tvservice,vbmeta_system,xgimiconfig"
-BASE = "https://github.com/kmuradoff/lumen-os/releases/download/hb/"
+BASE = "https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/"
 if v[want[0]] != LIST:
     sys.exit("ERROR: ota props: ab_ota_partitions=%s, want %s (ota.conf, decision O3)" % (v[want[0]], LIST))
 if v[want[1]] != "1" or v[want[2]] != "hb" or v[want[3]] != BASE + "update-hb-nogms.json":
@@ -635,7 +639,8 @@ else inst 0755 "$IN/lumen_escape.sh" "$S/etc/xgimi/lumen_escape.sh"; fi
 if [ $LUMEN = 1 ]; then
   sudo install -d -o root -g root -m 0755 "$S/product/usr/keylayout" "$S/product/usr/idc" "$S/etc/default-permissions" \
     "$S/priv-app/Z9xHome" "$S/priv-app/Z9xSetup" "$S/priv-app/HbProjector" "$S/app/Z9xTvInput" "$S/app/BtPair" \
-    "$S/priv-app/LumenInfo"
+    "$S/app/Z9xAirPlay"
+  [ $INFO = 0 ] || sudo install -d -o root -g root -m 0755 "$S/priv-app/LumenInfo"
   #   key layouts: the published overlay/v1 files the Z9X and Play 6 images use, in /product/usr (Android reads it
   #   before /vendor, and XGIMI's own vendor files do not parse on Android 14: Play 6 t10). The XGIMI BLE remote
   #   000d:3841 with its idc (keys of a BLE remote do not wake the projector by default; its microphone), and the
@@ -652,8 +657,37 @@ if [ $LUMEN = 1 ]; then
   inst 0644 "$SG/pinned/Z9xHome.apk" "$S/priv-app/Z9xHome/Z9xHome.apk"
   inst 0644 "$IN/privapp-permissions-z9xhome.xml" "$S/etc/permissions/privapp-permissions-z9xhome.xml"
   inst 0644 "$IN/z9x-home-default-permissions.xml" "$S/etc/default-permissions/z9x-home-default-permissions.xml"
-  #   Lumen TvInput (HDMI input, TIF, no projector HAL; persistent), /system/app as on the Z9X and Play 6
-  inst 0644 "$SG/pinned/Z9xTvInput.apk" "$S/app/Z9xTvInput/Z9xTvInput.apk"
+  #   Lumen TvInput (HDMI input, TIF, no projector HAL; persistent), /system/app as on the Z9X and Play 6. Since
+  #   1.0.8-beta3 the HB build HbTvInput (build_apps.sh, the HB platform key) in place of the pinned Z9xTvInput.apk:
+  #   same package org.lumen.tvinput, same path, so its data stays
+  inst 0644 "$SG/apps/HbTvInput.apk" "$S/app/Z9xTvInput/Z9xTvInput.apk"
+  #   1.0.8: the AirPlay receiver, as the Z9X image ships it (tools/lumen_v1.sh): the pinned overlay/apps_v1
+  #   Z9xAirPlay.apk (org.lumen.airplay, its armeabi-v7a libs for this 32-bit userspace), re-signed with the HB
+  #   platform key like the other pinned APKs (sign.conf), /system/app, not persistent; its default runtime
+  #   permission POST_NOTIFICATIONS (overlay/v1/z9x-airplay-default-permissions.xml). The sysconfig file below
+  #   already names org.lumen.airplay (not stopped at first sight)
+  inst 0644 "$SG/pinned/Z9xAirPlay.apk" "$S/app/Z9xAirPlay/Z9xAirPlay.apk"
+  inst 0644 "$IN/z9x-airplay-default-permissions.xml" "$S/etc/default-permissions/z9x-airplay-default-permissions.xml"
+  #   the 32-bit userspace loads the receiver's native code from the APK itself (extractNativeLibs false): its
+  #   armeabi-v7a libraries must be there, stored uncompressed and page-aligned (4096)
+  sudo python3 -I - "$S/app/Z9xAirPlay/Z9xAirPlay.apk" <<'AIRPY' || die "Z9xAirPlay.apk has no uncompressed, page-aligned armeabi-v7a libraries"
+import struct, sys, zipfile
+apk = open(sys.argv[1], "rb").read()
+libs = [i for i in zipfile.ZipFile(sys.argv[1]).infolist()
+        if i.filename.startswith("lib/armeabi-v7a/") and i.filename.endswith(".so")]
+if not libs or any(i.compress_type != zipfile.ZIP_STORED for i in libs):
+    sys.exit("ERROR: airplay: armeabi-v7a libraries %s" % [(i.filename, i.compress_type) for i in libs])
+def start(i):   # data offset: local header (30 bytes) + name + local extra (zipalign's padding)
+    h = apk[i.header_offset:i.header_offset + 30]
+    if h[:4] != b"PK\x03\x04":
+        return -1
+    n, e = struct.unpack("<HH", h[26:30])
+    return i.header_offset + 30 + n + e
+bad = [i.filename for i in libs if start(i) < 0 or start(i) % 4096]
+if bad:
+    sys.exit("ERROR: airplay: armeabi-v7a libraries not page-aligned (4096): %s" % ", ".join(bad))
+print("airplay: %s stored uncompressed, page-aligned" % ", ".join(i.filename for i in libs))
+AIRPY
   #   Lumen's LineageOS platform values (static RRO on lineageos.platform: About row titles, HOME double-tap)
   inst 0644 "$SG/pinned/Z9xLineagePlatformOverlay.apk" "$S/product/overlay/Z9xLineagePlatformOverlay.apk"
   #   t5: the framework key RRO (apps/HbFrameworkOverlay, org.lumen.overlay.hb, priority 2001, the HB platform key):
@@ -665,7 +699,8 @@ if [ $LUMEN = 1 ]; then
   inst 0644 "$IN/z9x-sysconfig-nogms.xml" "$S/etc/sysconfig/z9x.xml"
   #   Lumen Setup, the first-run flow: priv-app (its HOME priority 10 is not capped), privileged allow-list; it
   #   provisions the device at its end, makes Lumen Home HOME and disables itself
-  inst 0644 "$SG/pinned/Z9xSetup.apk" "$S/priv-app/Z9xSetup/Z9xSetup.apk"
+  #   since 1.0.8-beta5 built from apps/Z9xSetup with the HB platform key (build_apps.sh), not the pinned copy
+  inst 0644 "$SG/apps/Z9xSetup.apk" "$S/priv-app/Z9xSetup/Z9xSetup.apk"
   inst 0644 "$IN/privapp-permissions-z9xsetup.xml" "$S/etc/permissions/privapp-permissions-z9xsetup.xml"
   #   HbProjector (apps/HbProjector, org.lumen.projector): the projector app, which
   #   also sends the stock boot handshake to the vendor gmpf service (HbBoot's job until t2; never both in one
@@ -680,8 +715,11 @@ if [ $LUMEN = 1 ]; then
   #   t11: LumenInfo (apps/LumenInfo built by build_apps.sh, org.lumen.info, the HB platform key): the
   #   signal info screen and overlay. sharedUserId android.uid.system (the vendor policy lets only system_app reach
   #   the gmpf services and the EDID files), priv-app with its list (DUMP, REAL_GET_TASKS), not persistent
-  inst 0644 "$SG/apps/LumenInfo.apk" "$S/priv-app/LumenInfo/LumenInfo.apk"
-  inst 0644 "$IN/privapp-permissions-lumeninfo.xml" "$S/etc/permissions/privapp-permissions-lumeninfo.xml"
+  #   not in the public release image (INFO=0, 2026-11-04)
+  if [ $INFO = 1 ]; then
+    inst 0644 "$SG/apps/LumenInfo.apk" "$S/priv-app/LumenInfo/LumenInfo.apk"
+    inst 0644 "$IN/privapp-permissions-lumeninfo.xml" "$S/etc/permissions/privapp-permissions-lumeninfo.xml"
+  fi
   #   t3: the UI click volume (hb_audio.rc, gated on ro.lumen.hb.clickcurve=1 of hb_lumen_prop.txt; file checked above)
   inst 0644 "$IN/hb_audio.rc" "$S/etc/init/hb_audio.rc"
   inst 0644 "$IN/hb_audio_policy_engine_stream_volumes.xml" "$S/etc/xgimi/hb_audio_policy_engine_stream_volumes.xml"
@@ -767,8 +805,9 @@ if hb["package"] != "org.lumen.projector" or not hb.get("persistent") or hb["hom
 bt = facts("app/BtPair/BtPair.apk")
 if bt["package"] != "org.lumen.btpair" or bt["homePriorities"]:
     fail("app/BtPair: %s, HOME %s" % (bt["package"], bt["homePriorities"]))
-li = facts("priv-app/LumenInfo/LumenInfo.apk")
-if li["package"] != "org.lumen.info" or li.get("persistent") or li["homePriorities"]:
+# LumenInfo only in the test images (compose_hb.sh INFO)
+li = facts("priv-app/LumenInfo/LumenInfo.apk") if os.path.exists(os.path.join(root, "priv-app/LumenInfo/LumenInfo.apk")) else None
+if li is not None and (li["package"] != "org.lumen.info" or li.get("persistent") or li["homePriorities"]):
     fail("priv-app/LumenInfo: %s, persistent %s, HOME %s" % (li["package"], li.get("persistent"), li["homePriorities"]))
 if glob.glob(os.path.join(root, "*", "HbBoot")) or glob.glob(os.path.join(root, "*", "*", "HbBoot")):
     fail("HbBoot is still in the tree: two handshake senders")
@@ -782,8 +821,8 @@ for part in ("", "product", "system_ext"):
         n += 1
         if f["homePriorities"] and max(f["homePriorities"]) >= 10:
             fail("%s (%s) has a HOME filter at priority %s" % (rel, f["package"], max(f["homePriorities"])))
-print("setup guard: Lumen Setup HOME 10, no SETUP_WIZARD; Lumen Home HOME %s; HbProjector persistent, no HbBoot; BtPair org.lumen.btpair; LumenInfo org.lumen.info not persistent; %d other priv-apps below 10"
-      % (max(hm["homePriorities"]), n))
+print("setup guard: Lumen Setup HOME 10, no SETUP_WIZARD; Lumen Home HOME %s; HbProjector persistent, no HbBoot; BtPair org.lumen.btpair; %s; %d other priv-apps below 10"
+      % (max(hm["homePriorities"]), "LumenInfo org.lumen.info not persistent" if li else "no LumenInfo (public image)", n))
 SETUPPY
   #   t10: MediaTek's VNDK libstagefright_foundation.so for the vendor codec2 HAL (hb_media.rc, checked above). The
   #       base's com.android.vndk.v33.apex must hold the GSI copy hb_media.rc covers (/lib/libstagefright_foundation.so,

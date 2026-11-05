@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">Ігровий режим</string>
+    <string name="gbar_standard">Стандарт</string>
+    <string name="gbar_top_speed">Турбо</string>
+    <string name="gbar_hfr">Висока частота</string>
+    <string name="gbar_off">Вимк</string>
+    <string name="gbar_on">Увімк</string>
+    <string name="gbar_auto">Авто</string>
+    <string name="gbar_picture">Ігрова картинка</string>
+    <string name="gbar_pic_standard">Стандарт</string>
+    <string name="gbar_pic_sports">Спорт</string>
+    <string name="gbar_color_space">Колірний простір</string>
+    <string name="gbar_cs_native">Рідний</string>
+    <string name="gbar_dark">Темні сцени</string>
+    <string name="gbar_aspect">Формат кадру</string>
+    <string name="gbar_fps">Лічильник FPS</string>
+    <string name="gbar_fps_left">Ліворуч угорі</string>
+    <string name="gbar_fps_center">По центру вгорі</string>
+    <string name="gbar_fps_right">Праворуч угорі</string>
+    <string name="gbar_hdr_mapping">Динамічне тональне відображення</string>
+    <string name="gbar_tip_top_speed">Найменша затримка. Трапеція повернеться до повного кадру.</string>
+    <string name="gbar_tip_vrr">Картинка підлаштовується під частоту кадрів приставки. Увімкніть VRR і в приставці.</string>
+    <string name="gbar_tip_hfr_off">До 60 Гц від джерела.</string>
+    <string name="gbar_tip_hfr_on">До 120 Гц від джерела.</string>
+    <string name="gbar_tip_dark">Краще видно деталі в темних сценах.</string>
+    <string name="gbar_tip_wide">Джерело має видавати 3840 x 2160.</string>
+    <string name="gbar_tip_hdr_mapping">Яскравість підлаштовується за ділянками кадру. Після увімкнення знову відкалібруйте HDR у приставці.</string>
+    <string name="gbar_tip_hgig">HDR так, як задумали автори гри. Після увімкнення знову відкалібруйте HDR у приставці.</string>
+    <string name="gbar_need_top_speed">VRR працює лише в режимі Турбо</string>
+    <string name="gbar_need_16_9">Спершу виберіть формат 16:9</string>
+    <string name="gbar_vrr_blocks_aspect">Спершу вимкніть VRR</string>
+    <string name="gbar_vrr_blocks_hfr">Поки увімкнено VRR, висока частота лишається увімкненою</string>
+    <string name="gbar_need_4k">Джерело має видавати 3840 x 2160</string>
+    <string name="gbar_need_hdr">Джерело не передає HDR</string>
+    <string name="gbar_boost_blocks">Недоступно, поки увімкнено Boost</string>
+    <string name="gbar_failed">Проєктор не прийняв зміну</string>
+</resources>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">Game mode</string>
+    <string name="gbar_standard">Standard</string>
+    <string name="gbar_top_speed">Top speed</string>
+    <string name="gbar_vrr" translatable="false">VRR</string>
+    <string name="gbar_hfr">High frame rate</string>
+    <string name="gbar_off">Off</string>
+    <string name="gbar_on">On</string>
+    <string name="gbar_auto">Auto</string>
+    <string name="gbar_picture">Game picture</string>
+    <string name="gbar_pic_standard">Standard</string>
+    <string name="gbar_pic_sports">Sports</string>
+    <string name="gbar_color_space">Colour space</string>
+    <string name="gbar_cs_native">Native</string>
+    <string name="gbar_dark">Dark enhance</string>
+    <string name="gbar_aspect">Aspect ratio</string>
+    <string name="gbar_fps">FPS overlay</string>
+    <string name="gbar_fps_left">Top left</string>
+    <string name="gbar_fps_center">Top centre</string>
+    <string name="gbar_fps_right">Top right</string>
+    <string name="gbar_hdr" translatable="false">HDR</string>
+    <string name="gbar_hdr_mapping">Dynamic tone mapping</string>
+    <string name="gbar_hdr_hgig" translatable="false">HGIG</string>
+
+    <string name="gbar_tip_top_speed">Lowest delay. The keystone goes back to the full picture.</string>
+    <string name="gbar_tip_vrr">The picture follows the frame rate of the console. Turn VRR on in the console too.</string>
+    <string name="gbar_tip_hfr_off">Up to 60 Hz from the source.</string>
+    <string name="gbar_tip_hfr_on">Up to 120 Hz from the source.</string>
+    <string name="gbar_tip_dark">Brings out detail in dark scenes.</string>
+    <string name="gbar_tip_wide">The source must send 3840 x 2160.</string>
+    <string name="gbar_tip_hdr_mapping">Adjusts brightness area by area. Calibrate HDR again on the console after turning it on.</string>
+    <string name="gbar_tip_hgig">Shows HDR as the game was made. Calibrate HDR again on the console after turning it on.</string>
+
+    <string name="gbar_need_top_speed">VRR works only in Top speed</string>
+    <string name="gbar_need_16_9">Set the aspect ratio to 16:9 first</string>
+    <string name="gbar_vrr_blocks_aspect">Turn VRR off first</string>
+    <string name="gbar_vrr_blocks_hfr">High frame rate stays on while VRR is on</string>
+    <string name="gbar_need_4k">The source must send 3840 x 2160</string>
+    <string name="gbar_need_hdr">The source is not sending HDR</string>
+    <string name="gbar_boost_blocks">Not available while Boost is on</string>
+    <string name="gbar_failed">The projector did not accept the change</string>
+    <string name="gbar_hdmi_n" translatable="false">HDMI %1$d</string>
+</resources>

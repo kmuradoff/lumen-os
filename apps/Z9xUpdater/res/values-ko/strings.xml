@@ -15,6 +15,12 @@
     <string name="auto_notify">알림만 받기</string>
     <string name="auto_download">자동으로 다운로드</string>
     <string name="auto_hint">동의 없이 업데이트가 설치되는 일은 없습니다.</string>
+    <string name="row_beta">베타 업데이트</string>
+    <string name="beta_on">사용</string>
+    <string name="beta_off">사용 안함</string>
+    <string name="beta_hint">베타 버전은 더 일찍 제공되지만 테스트가 덜 되어 있습니다. 끄면 더 새로운 정식 버전이 나올 때까지 현재 버전이 유지됩니다.</string>
+    <string name="row_stats">익명 통계 보내기</string>
+    <string name="stats_hint">하루 한 번: 모델, 버전, 해시 처리된 일련번호, 국가. IP 주소는 저장되지 않습니다.</string>
     <string name="avail_title">Lumen OS %1$s 사용 가능</string>
     <string name="avail_size_full">전체 업데이트 · %1$s</string>
     <string name="avail_size_delta">업데이트 · %1$s</string>

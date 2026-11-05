@@ -98,6 +98,8 @@
     <string name="done_tz_detected">%1$s (анықталды)</string>
     <string name="done_name">Проектор атауы</string>
     <string name="done_home">Басты экран</string>
+    <string name="done_stats">Анонимді статистика жіберу</string>
+    <string name="done_stats_note">Күніне бір рет: модель, нұсқа, хэштелген сериялық нөмір және ел. IP мекенжайыңыз сақталмайды.</string>
     <string name="done_start">Бастау</string>
     <string name="done_offline_hint">Интернет жоқ: Google-ға кіруді және уақыт белдеуін кейін параметрлерде орнатуға болады.</string>
     <string name="done_offline_hint_nogms">Интернет жоқ: уақыт белдеуін кейін параметрлерде орнатуға болады.</string>

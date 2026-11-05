@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">وضع الألعاب</string>
+    <string name="gbar_standard">قياسي</string>
+    <string name="gbar_top_speed">السرعة القصوى</string>
+    <string name="gbar_hfr">معدل إطارات مرتفع</string>
+    <string name="gbar_off">إيقاف</string>
+    <string name="gbar_on">تشغيل</string>
+    <string name="gbar_auto">تلقائي</string>
+    <string name="gbar_picture">صورة الألعاب</string>
+    <string name="gbar_pic_standard">قياسي</string>
+    <string name="gbar_pic_sports">رياضة</string>
+    <string name="gbar_color_space">فضاء الألوان</string>
+    <string name="gbar_cs_native">أصلي</string>
+    <string name="gbar_dark">المشاهد المظلمة</string>
+    <string name="gbar_aspect">نسبة العرض</string>
+    <string name="gbar_fps">عداد FPS</string>
+    <string name="gbar_fps_left">أعلى اليسار</string>
+    <string name="gbar_fps_center">أعلى الوسط</string>
+    <string name="gbar_fps_right">أعلى اليمين</string>
+    <string name="gbar_hdr_mapping">تعيين النغمات الديناميكي</string>
+    <string name="gbar_tip_top_speed">أقل تأخير. يعود تصحيح الشكل إلى الصورة الكاملة.</string>
+    <string name="gbar_tip_vrr">تتبع الصورة معدل إطارات جهاز الألعاب. شغّل VRR في الجهاز أيضاً.</string>
+    <string name="gbar_tip_hfr_off">حتى 60 هرتز من المصدر.</string>
+    <string name="gbar_tip_hfr_on">حتى 120 هرتز من المصدر.</string>
+    <string name="gbar_tip_dark">تفاصيل أوضح في المشاهد المظلمة.</string>
+    <string name="gbar_tip_wide">يجب أن يرسل المصدر 3840 x 2160.</string>
+    <string name="gbar_tip_hdr_mapping">يضبط السطوع منطقة بمنطقة. بعد التشغيل أعد معايرة HDR في جهاز الألعاب.</string>
+    <string name="gbar_tip_hgig">يعرض HDR كما صُممت اللعبة. بعد التشغيل أعد معايرة HDR في جهاز الألعاب.</string>
+    <string name="gbar_need_top_speed">يعمل VRR في السرعة القصوى فقط</string>
+    <string name="gbar_need_16_9">اختر 16:9 أولاً</string>
+    <string name="gbar_vrr_blocks_aspect">أوقف VRR أولاً</string>
+    <string name="gbar_vrr_blocks_hfr">يبقى معدل الإطارات المرتفع مشغلاً ما دام VRR مشغلاً</string>
+    <string name="gbar_need_4k">يجب أن يرسل المصدر 3840 x 2160</string>
+    <string name="gbar_need_hdr">المصدر لا يرسل HDR</string>
+    <string name="gbar_boost_blocks">غير متاح أثناء تشغيل Boost</string>
+    <string name="gbar_failed">لم يقبل جهاز العرض التغيير</string>
+</resources>

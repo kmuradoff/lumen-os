@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">Spielmodus</string>
+    <string name="gbar_standard">Standard</string>
+    <string name="gbar_top_speed">Höchstgeschwindigkeit</string>
+    <string name="gbar_hfr">Hohe Bildrate</string>
+    <string name="gbar_off">Aus</string>
+    <string name="gbar_on">Ein</string>
+    <string name="gbar_auto">Auto</string>
+    <string name="gbar_picture">Spielbild</string>
+    <string name="gbar_pic_standard">Standard</string>
+    <string name="gbar_pic_sports">Sport</string>
+    <string name="gbar_color_space">Farbraum</string>
+    <string name="gbar_cs_native">Nativ</string>
+    <string name="gbar_dark">Dunkle Szenen</string>
+    <string name="gbar_aspect">Seitenverhältnis</string>
+    <string name="gbar_fps">FPS-Anzeige</string>
+    <string name="gbar_fps_left">Oben links</string>
+    <string name="gbar_fps_center">Oben Mitte</string>
+    <string name="gbar_fps_right">Oben rechts</string>
+    <string name="gbar_hdr_mapping">Dynamisches Tone Mapping</string>
+    <string name="gbar_tip_top_speed">Geringste Verzögerung. Die Trapezkorrektur kehrt zum vollen Bild zurück.</string>
+    <string name="gbar_tip_vrr">Das Bild folgt der Bildrate der Konsole. Schalten Sie VRR auch an der Konsole ein.</string>
+    <string name="gbar_tip_hfr_off">Bis zu 60 Hz von der Quelle.</string>
+    <string name="gbar_tip_hfr_on">Bis zu 120 Hz von der Quelle.</string>
+    <string name="gbar_tip_dark">Mehr Details in dunklen Szenen.</string>
+    <string name="gbar_tip_wide">Die Quelle muss 3840 x 2160 senden.</string>
+    <string name="gbar_tip_hdr_mapping">Passt die Helligkeit Bereich für Bereich an. Kalibrieren Sie HDR danach an der Konsole neu.</string>
+    <string name="gbar_tip_hgig">Zeigt HDR so, wie das Spiel gemacht wurde. Kalibrieren Sie HDR danach an der Konsole neu.</string>
+    <string name="gbar_need_top_speed">VRR funktioniert nur mit Höchstgeschwindigkeit</string>
+    <string name="gbar_need_16_9">Wählen Sie zuerst 16:9</string>
+    <string name="gbar_vrr_blocks_aspect">Schalten Sie zuerst VRR aus</string>
+    <string name="gbar_vrr_blocks_hfr">Hohe Bildrate bleibt an, solange VRR an ist</string>
+    <string name="gbar_need_4k">Die Quelle muss 3840 x 2160 senden</string>
+    <string name="gbar_need_hdr">Die Quelle sendet kein HDR</string>
+    <string name="gbar_boost_blocks">Nicht verfügbar, solange Boost an ist</string>
+    <string name="gbar_failed">Der Projektor hat die Änderung nicht übernommen</string>
+</resources>

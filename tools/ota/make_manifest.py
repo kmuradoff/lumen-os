@@ -6,7 +6,7 @@
         --build-utc 1792490000 --image system.img --full DIR/lumen-os-1.0.1-full-ota.zip \
         [--delta DIR/lumen-os-1.0.1-from-1.0.0-ota.zip=lumen-1.0.0-20261008 ...] \
         --changelog changelog.json [--vendor v6.15.58 ...] [--blobs-set z9x-v61558-b ...] \
-        [--min-version-code 10000] [--channel public-nogms|public|stable] [--repo kmuradoff/lumen-os] --out DIR
+        [--min-version-code 10000] [--channel public-nogms|public-beta|public|stable] [--repo kmuradoff/lumen-os] --out DIR
 
 Writes DIR/update-<channel>.json and DIR/update-<channel>.json.sig: RSA-4096 PKCS#1 v1.5 SHA-256
 over the exact JSON bytes with ~/.lumen-keys/ota.pk8 (verified before writing). The updater checks
@@ -34,6 +34,12 @@ whose name starts with "public"; clean deltas between private images only into a
 --old-image) == update-<channel>.json (public-nogms: Lumen OS without Google, the only edition that is
 published; public: the Google edition's public image, never published; stable: the maintainer's private
 image), and every package's lumen-edition (make_ota.py) must be the image's edition.
+Beta channel (the updater's "Beta updates" switch, 2026-11-04): public-beta is the no-Google edition's beta,
+update-public-beta.json on the fixed pre-release tag beta (never releases/latest). Its packages come from a
+no-Google image (one that reads update-public-nogms.json) and their URLs point at the version's own pre-release
+beta-<version>, not at v<version>. Turning the switch off never downgrades: the updater offers the stable channel
+only once its version_code is above the installed one, so a stable release meant for beta users needs a version
+above the last beta, or is the same build (then those users already run it).
 """
 import argparse
 import hashlib
@@ -87,7 +93,11 @@ def payload_location(zpath):
     return off, info.file_size, 24 + msize + ssize, props
 
 
-CHANNELS = ("stable", "public", "public-nogms")
+CHANNELS = ("stable", "public", "public-nogms", "public-beta")
+# a beta channel -> the channel of the images its packages come from (the updater reads it with the switch on)
+IMAGE_CHANNEL = {"public-beta": "public-nogms"}
+# a beta channel -> the pre-release tag its packages go on ({version} = the manifest's version)
+PACKAGE_TAG = {"public-beta": "beta-{version}"}
 
 
 def image_props(image):
@@ -107,11 +117,20 @@ def image_props(image):
     return out
 
 
+def package_base(repo, channel, version):
+    """The release URL folder of a channel's packages: z9x-<version> (the tags v<version> end at 1.0.7; the manifest
+    itself goes on the channel tag z9x and on the Latest release), a beta channel its
+    own pre-release (PACKAGE_TAG)."""
+    return f"https://github.com/{repo}/releases/download/" + PACKAGE_TAG.get(channel, package_tag("{version}")).replace(
+        "{version}", version) + "/"
+
+
 def check_edition(image, old_image, zips, channel):
-    """The channel is the image's own manifest file; packages carry the image's edition."""
+    """The channel is the image's own manifest file (a beta channel: that of its edition, IMAGE_CHANNEL); packages
+    carry the image's edition."""
     p = image_props(image)
     mf = os.path.basename(p.get("ro.z9x.ota.manifest_url", ""))
-    if mf != f"update-{channel}.json":
+    if mf != f"update-{IMAGE_CHANNEL.get(channel, channel)}.json":
         die(f"--channel {channel}: --image reads {mf or 'no manifest'} (ro.z9x.ota.manifest_url): "
             f"its packages belong in --channel {mf[len('update-'):-len('.json')] if mf.startswith('update-') else '?'}")
     edition = "nogms" if p.get("ro.z9x.gms") == "0" else "gms"
@@ -132,7 +151,8 @@ def check_edition(image, old_image, zips, channel):
             die(f"{os.path.basename(z)}: lumen-edition={got[0] if got else 'missing'}, --image is the {edition} edition")
         if (edition == "nogms") != ("-nogms-" in os.path.basename(z)):
             die(f"{os.path.basename(z)}: -nogms- in the name if and only if the package is the no-Google edition")
-    print(f"edition: {edition}, channel {channel} = the image's {mf}")
+    print(f"edition: {edition}, channel {channel} " + ("= the image's" if channel not in IMAGE_CHANNEL
+                                                         else "is the beta of the image's") + f" {mf}")
     return edition
 
 
@@ -276,9 +296,7 @@ def main():
         die(f"--channel {a.channel}: packages for {'PUBLIC' if variant == 'public' else 'PRIVATE (clean delta)'} images "
             f"belong in {'a public channel (update-public-nogms.json)' if variant == 'public' else 'a non-public channel (update-stable.json)'}")
     check_edition(a.image, a.old_image, ([a.full] if a.full else []) + [d.split("=", 1)[0] for d in a.delta], a.channel)
-    # packages are assets of the version's release z9x-<version> (up to 1.0.7: v<version>); the manifest itself
-    # goes on the channel tag z9x and on the Latest release
-    base = f"https://github.com/{a.repo}/releases/download/{package_tag(a.version)}/"
+    base = package_base(a.repo, a.channel, a.version)
     pk = [package(d.split("=", 1)[0], "delta", base, d.split("=", 1)[1]) for d in a.delta]
     if a.full:
         pk.append(package(a.full, "full", base))

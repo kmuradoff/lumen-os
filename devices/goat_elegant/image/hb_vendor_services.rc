@@ -14,7 +14,7 @@
 # - The gmpf HAL (libxgimi.so) sends ctl.start smart_ak_server for the smart AK steps and ctl.stop after
 #   smartFinish; after a failed start it does not send ctl.stop, so init restarts the service every 5 s until a
 #   reboot (hb-t7 after Auto keystone / Fit to screen: the linker error every 5 s).
-# - On the owner's Z9X (64-bit vendor) the same services link and stop normally. This file is not on the Z9X.
+# - On the Z9X (64-bit vendor) the same services link and stop normally. This file is not on the Z9X.
 #
 # What the triggers do: init sets init.svc.NAME=restarting only when a non-oneshot service exited ON ITS OWN and
 # init has scheduled the restart. "stop" then clears the pending restart and sets init.svc.NAME=stopped. So:

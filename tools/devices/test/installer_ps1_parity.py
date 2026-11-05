@@ -11,11 +11,14 @@ same, read straight from their source, nothing run:
   - the 'getvar all' keys the fastbootd check reads (abf_fbd_check / Abf-Fbd-Check), the *-cow test and the KEEP
     loop;
   - the fastboot calls of the write, in source order (abf_write / Abf-Write, abf_fbd_check, abf_fb_stop, abf_room,
-    abf_rescue); 'rescue': no snapshot-update, format, --slot or set_active sent; the same hold (state not none, or
+    abf_rescue, and the Google services add-on: abf_gapps_write, abf_gapps_install, abf_gapps_remove, abf_gapps_wipe);
+    z9x_gapps of the running slot (create, resize, flash, delete) let through only with GAPPS_ALLOW, the only delete
+    an Abf-Gapps-* function may send; 'rescue': no snapshot-update, format, --slot or set_active sent; the same hold (state not none, or
     the slot an update never marked: STOP with no fastboot call, the user types the way back) in both; the fastbootd
     check in its rescue mode (any slot of SLOTS, not the saved one, no slot-successful or update-state test there:
     abf_rescue handles the state);
-  - the commands: the ones that are not there yet, the ones that set up adb and fastboot first;
+  - the commands: the ones that are not there yet, gapps and gsf gated on GAPPS_ALLOW, the ones that set up adb and
+    fastboot first;
   - every text the user reads (t "en" "ru" / T "en" "ru", English and Russian) of the two sections, plus the
     mke2fs check and the image owner: equal once the variables are <v>, the white space is one space, '\\' is '/',
     the option names are the ps1 ones (--ip -> -Ip, ...), 'bash lumen-install.sh' is 'lumen-install.cmd' and the
@@ -51,7 +54,8 @@ SH_ONLY = {
 }
 OPTS = [("bash lumen-install.sh", "lumen-install.cmd"), ("--ip", "-Ip"), ("--no-blobs", "-NoBlobs"),
         ("--blobs=embedded", "-Blobs embedded"), ("--unsigned-image", "-UnsignedImage"), ("--device", "-Device"),
-        ("--serial", "-Serial"), ("--keep-data", "-KeepData"), ("--gapps-zip", "-GappsZip")]
+        ("--serial", "-Serial"), ("--keep-data", "-KeepData"), ("--gapps-zip", "-GappsZip"), ("--zip", "-Zip"),
+        ("--remove", "-Remove")]
 
 FAILS = []
 
@@ -350,7 +354,8 @@ m = re.search(r'if \(\$script:Prof\["FLOW"\] -ceq "ab-fastbootd"\) \{\n(.*?)\n  
 psb = m.group(1) if m else ""
 sha = {a + ":" + p + ("<S>" if v else "") for a, p, v in re.findall(r'\b(flash|create|resize|format|delete|erase|wipe):"?([a-z0-9_]+)(\$ABF_S)?', shb)}
 psa = {a + ":" + p + ("<S>" if v else "") for a, p, v in re.findall(r'"(flash|create|resize|format|delete|erase|wipe):([a-z0-9_]+)(\$sx)?"', psb)}
-want = {"flash:system<S>", "create:z9x_blobs<S>", "resize:z9x_blobs<S>", "flash:z9x_blobs<S>", "format:userdata", "format:metadata"}
+want = {"flash:system<S>", "create:z9x_blobs<S>", "resize:z9x_blobs<S>", "flash:z9x_blobs<S>", "format:userdata", "format:metadata",
+        "create:z9x_gapps<S>", "resize:z9x_gapps<S>", "flash:z9x_gapps<S>", "delete:z9x_gapps<S>"}
 if sha == psa == want:
     ok("allowed fastboot actions: " + " ".join(sorted(sha)))
 else:
@@ -359,6 +364,12 @@ if not ("P_SLOTS" in shb and "P_WIPE" in shb and "'SLOTS'" in psb and "'WIPE_PAR
     fail("the ab-fastbootd branch does not check SLOTS and WIPE_PARTS in both")
 else:
     ok("the branch checks the running slot against SLOTS and the format against WIPE_PARTS in both")
+# z9x_gapps (the only delete) only for a profile with GAPPS_ALLOW
+if re.search(r'create:"z9x_gapps\$ABF_S"\|resize:"z9x_gapps\$ABF_S"\|flash:"z9x_gapps\$ABF_S"\|delete:"z9x_gapps\$ABF_S"\)\n\s+\[ -n "\$P_GAPPS_ALLOW" \] && return 0 ;;', shb) and \
+   'if ($script:Prof["GAPPS_ALLOW"] -and (@("create:z9x_gapps$sx", "resize:z9x_gapps$sx", "flash:z9x_gapps$sx", "delete:z9x_gapps$sx") -ccontains "${act}:$part")) { return $true }' in psb:
+    ok("z9x_gapps of the running slot (create, resize, flash, delete) only with GAPPS_ALLOW in both")
+else:
+    fail("fb_allowed / Fb-Allowed: z9x_gapps is not tied to GAPPS_ALLOW the same way")
 if '[ "$(abf_gv snapshot-update-status)" = none ] || return 1' in shb and \
    '(Gv-Val $script:AbfGv "snapshot-update-status") -ceq "none"' in psb:
     ok("the format only while snapshot-update-status is none (the last getvar all) in both")
@@ -399,7 +410,8 @@ def fb_calls(body, do, fb):  # the fastboot calls in source order: ['do:flash sy
 
 
 for a, b in (("abf_write", "Abf-Write"), ("abf_fbd_check", "Abf-Fbd-Check"), ("abf_fb_stop", "Abf-Fb-Stop"), ("abf_room", "Abf-Room"),
-             ("abf_rescue", "Abf-Rescue")):
+             ("abf_rescue", "Abf-Rescue"), ("abf_gapps_write", "Abf-Gapps-Write"), ("abf_gapps_install", "Abf-Gapps-Install"),
+             ("abf_gapps_remove", "Abf-Gapps-Remove"), ("abf_gapps_wipe", "Abf-Gapps-Wipe")):
     x = fb_calls(sh_fn(sh, a), "fb_do", "fb")
     y = fb_calls(ps_fn(ps, b), "Fb-Do", "Fb")
     if x == y:
@@ -408,6 +420,9 @@ for a, b in (("abf_write", "Abf-Write"), ("abf_fbd_check", "Abf-Fbd-Check"), ("a
         fail("fastboot calls of %s %s, %s %s" % (a, x, b, y))
 for fn in re.findall(r"^function (Abf-[A-Za-z-]+)", pss, re.M):
     body = code(ps_fn(ps, fn))
+    # the add-on functions delete their own z9x_gapps of the running slot, and nothing else
+    if fn.startswith("Abf-Gapps-") and '$p = "z9x_gapps$($script:AbfS)"' in body:
+        body = body.replace("Fb-Do delete $p", "Fb-Do z9x_gapps")
     if re.search(r"(?<![\w-])(Fb|Fb-Do|Pt-Fastboot)\s+[^\n]*(\s-w\b|erase|--slot|set_active|delete|snapshot-update|vbmeta|flashall|wipe-super)", body):
         fail("%s sends a forbidden fastboot command" % fn)
 
@@ -448,6 +463,12 @@ else:
 
 # the commands
 m1 = re.search(r"\n    ([a-z|]+)\) abf_not_yet \"\$CMD\" ;;", sh_fn(sh, "abf_main"))
+gate_sh = "\n    gapps|gsf) abf_gapps_on || abf_not_yet \"$CMD\" ;;" in sh_fn(sh, "abf_main")
+gate_ps = 'if (@("gapps", "gsf") -contains $Command -and -not (Abf-Gapps-On)) { Abf-Not-Yet $Command }' in ps_fn(ps, "Abf-Main")
+if gate_sh and gate_ps:
+    ok("commands: gapps and gsf only for a profile with GAPPS_ALLOW in both")
+else:
+    fail("commands: the GAPPS_ALLOW gate of gapps and gsf differs (sh %s, ps1 %s)" % (gate_sh, gate_ps))
 m2 = re.search(r'@\(([^)]*)\) -contains \$Command\) \{ Abf-Not-Yet', ps_fn(ps, "Abf-Main"))
 n1 = sorted(m1.group(1).split("|")) if m1 else []
 n2 = sorted(re.findall(r'"([a-z]+)"', m2.group(1))) if m2 else []

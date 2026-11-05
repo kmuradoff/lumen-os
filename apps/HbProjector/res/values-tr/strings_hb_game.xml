@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">Oyun modu</string>
+    <string name="gbar_standard">Standart</string>
+    <string name="gbar_top_speed">En yüksek hız</string>
+    <string name="gbar_hfr">Yüksek kare hızı</string>
+    <string name="gbar_off">Kapalı</string>
+    <string name="gbar_on">Açık</string>
+    <string name="gbar_auto">Otomatik</string>
+    <string name="gbar_picture">Oyun görüntüsü</string>
+    <string name="gbar_pic_standard">Standart</string>
+    <string name="gbar_pic_sports">Spor</string>
+    <string name="gbar_color_space">Renk uzayı</string>
+    <string name="gbar_cs_native">Yerel</string>
+    <string name="gbar_dark">Karanlık sahneler</string>
+    <string name="gbar_aspect">En boy oranı</string>
+    <string name="gbar_fps">FPS göstergesi</string>
+    <string name="gbar_fps_left">Sol üst</string>
+    <string name="gbar_fps_center">Orta üst</string>
+    <string name="gbar_fps_right">Sağ üst</string>
+    <string name="gbar_hdr_mapping">Dinamik ton eşleme</string>
+    <string name="gbar_tip_top_speed">En düşük gecikme. Yamuk düzeltme tam görüntüye döner.</string>
+    <string name="gbar_tip_vrr">Görüntü konsolun kare hızını izler. VRR\'yi konsolda da açın.</string>
+    <string name="gbar_tip_hfr_off">Kaynaktan en fazla 60 Hz.</string>
+    <string name="gbar_tip_hfr_on">Kaynaktan en fazla 120 Hz.</string>
+    <string name="gbar_tip_dark">Karanlık sahnelerde daha fazla ayrıntı.</string>
+    <string name="gbar_tip_wide">Kaynak 3840 x 2160 göndermelidir.</string>
+    <string name="gbar_tip_hdr_mapping">Parlaklığı bölge bölge ayarlar. Açtıktan sonra HDR\'yi konsolda yeniden kalibre edin.</string>
+    <string name="gbar_tip_hgig">HDR\'yi oyunun tasarlandığı gibi gösterir. Açtıktan sonra HDR\'yi konsolda yeniden kalibre edin.</string>
+    <string name="gbar_need_top_speed">VRR yalnızca En yüksek hızda çalışır</string>
+    <string name="gbar_need_16_9">Önce 16:9 seçin</string>
+    <string name="gbar_vrr_blocks_aspect">Önce VRR\'yi kapatın</string>
+    <string name="gbar_vrr_blocks_hfr">VRR açıkken yüksek kare hızı açık kalır</string>
+    <string name="gbar_need_4k">Kaynak 3840 x 2160 göndermelidir</string>
+    <string name="gbar_need_hdr">Kaynak HDR göndermiyor</string>
+    <string name="gbar_boost_blocks">Boost açıkken kullanılamaz</string>
+    <string name="gbar_failed">Projektör değişikliği kabul etmedi</string>
+</resources>

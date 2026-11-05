@@ -105,7 +105,7 @@ public final class Gmpf2Client extends AidlCaller {
 
     /** [IGmpf2 18] DISPLAY 185 setKstPrepare(enter, 0) is a REVIEW row: refused, nothing sent. */
     public boolean setKstPrepare(boolean enter) throws RemoteException {
-        throw new NotOnHbException("setKstPrepare(" + enter + ", 0) (REVIEW row, owner decision 9.3)");
+        throw new NotOnHbException("setKstPrepare(" + enter + ", 0) (not used on the HB)");
     }
 
     /**
@@ -189,6 +189,51 @@ public final class Gmpf2Client extends AidlCaller {
     public boolean setHdrDynamicToneMapping(boolean on) throws RemoteException {
         return callI32I32RetBool(Call.TOGGLE_HDR_DY_TONE_MAPPING, WINDOW_MAIN, on ? 1 : 0);
     }
+
+    // ------------------------------------------------------------------ game bar (stock analysis)
+    // Stock HB xhplayer GameModeApi / OtherViewModel. src = 1 for HDMI 1, 2 for HDMI 2 (stock TV.inputToInt).
+
+    /** TV 146 getVRREnableState(src): 1 on, everything else off (stock reads -1 as 0). */
+    public boolean getVrr(int src) throws RemoteException {
+        return callI32RetI32(Call.GET_VRR_ENABLE_STATE, checkRange("hdmi", src, 1, 2)) == 1;
+    }
+    /** TV 145 setVRRModeEnable(0 | 1, src) -> int (logged by the caller). */
+    public int setVrr(boolean on, int src) throws RemoteException {
+        return callI32I32RetI32(Call.SET_VRR_MODE_ENABLE, on ? 1 : 0, checkRange("hdmi", src, 1, 2));
+    }
+
+    /** Game picture of the game bar: 0 Standard, 1 FPS, 2 RPG, 3 RTS, 4 Sports. */
+    public static final int GAME_PICTURE_MAX = 4;
+
+    /** TV 148 getGamePictureMode(src) -> 0..4; anything else (stock: -1) reads as 0. */
+    public int getGamePicture(int src) throws RemoteException {
+        int v = callI32RetI32(Call.GET_GAME_PICTURE_MODE, checkRange("hdmi", src, 1, 2));
+        return v < 0 || v > GAME_PICTURE_MAX ? 0 : v;
+    }
+    /** TV 147 setGamePictureMode(0..4, src) -> int. */
+    public int setGamePicture(int mode, int src) throws RemoteException {
+        return callI32I32RetI32(Call.SET_GAME_PICTURE_MODE, checkRange("game picture", mode, 0, GAME_PICTURE_MAX),
+                checkRange("hdmi", src, 1, 2));
+    }
+
+    /** TV 150 getDarkBoostState(game picture, src): the game bar's dark enhance. */
+    public boolean getDarkBoost(int gamePicture, int src) throws RemoteException {
+        return callI32I32RetBool(Call.GET_DARK_BOOST_STATE, checkRange("game picture", gamePicture, 0, GAME_PICTURE_MAX),
+                checkRange("hdmi", src, 1, 2));
+    }
+    /** TV 149 setDarkBoostOnoff(on, game picture, src) -> int. */
+    public int setDarkBoost(boolean on, int gamePicture, int src) throws RemoteException {
+        return callBoolI32I32RetI32(Call.SET_DARK_BOOST_ONOFF, on,
+                checkRange("game picture", gamePicture, 0, GAME_PICTURE_MAX), checkRange("hdmi", src, 1, 2));
+    }
+
+    /** TV 192 getHGiGMode(). */
+    public boolean getHgig() throws RemoteException { return callRetBool(Call.GET_HGIG_MODE); }
+    /** TV 191 setHGiGMode(bool). */
+    public boolean setHgig(boolean on) throws RemoteException { return callBoolRetBool(Call.SET_HGIG_MODE, on); }
+
+    /** DISPLAY 179 getDispOutputFps(): the output frame rate (stock FPS overlay while VRR is on). */
+    public int getOutputFps() throws RemoteException { return callRetI32(Call.GET_DISP_OUTPUT_FPS); }
 
     /** [IGmpf2 283] getFDBoostStatus ("original frame rate"): not in the HB tree. Nothing sent. */
     public boolean getNativeFrameRate() throws RemoteException { throw new NotOnHbException("getFDBoostStatus"); }

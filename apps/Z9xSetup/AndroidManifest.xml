@@ -57,7 +57,11 @@
     <!-- installed/enabled checks of the launchers, GMS, SetupWraith (normal) -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
+    <!-- the anonymous statistics switch on the Done step: org.lumen.updater StateProvider (signature) -->
+    <uses-permission android:name="org.lumen.updater.permission.OTA_STATE" />
+
     <queries>
+        <package android:name="org.lumen.updater" />
         <package android:name="org.lumen.projector" />
         <package android:name="org.lumen.home" />
         <package android:name="com.google.android.tvlauncher" />

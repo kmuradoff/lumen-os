@@ -13,7 +13,8 @@ lumen-variant=private marker in the zip's META-INF/com/android/metadata. With --
 of the manifest must be present in DIR (no silent skip). --delta-only accepts a manifest without a full
 package (a release of clean deltas, make_ota.py --clean-delta). The file name must be
 update-<channel>.json (the file the images of that edition read), and with --zips every package's
-lumen-edition (make_ota.py) must be the channel's edition (nogms for a channel ending in -nogms).
+lumen-edition (make_ota.py) must be the channel's edition (nogms for a channel ending in -nogms, and for the
+no-Google edition's beta channel public-beta, whose package URLs must be on the pre-release beta-<version>).
 """
 import argparse
 import hashlib
@@ -64,7 +65,13 @@ def main():
         errs.append("schema must be 1 and device z9x")
     if os.path.basename(a.manifest) != f"update-{m.get('channel')}.json":
         errs.append(f"file name {os.path.basename(a.manifest)} != update-{m.get('channel')}.json (channel field)")
-    edition = "nogms" if str(m.get("channel", "")).endswith("-nogms") else "gms"
+    edition = "nogms" if str(m.get("channel", "")).endswith("-nogms") or m.get("channel") == "public-beta" else "gms"
+    if m.get("channel") == "public-beta":
+        want = f"/releases/download/beta-{m.get('version')}/"
+        for p in m.get("packages", []):
+            for k in ("url", "metadata_url"):
+                if want not in str(p.get(k, "")):
+                    errs.append(f"package {p.get(k)}: a beta package is on the pre-release beta-{m.get('version')}")
     if not m.get("packages"):
         errs.append("no package")
     elif not any(p.get("type") == "full" for p in m.get("packages", [])) and not a.delta_only:

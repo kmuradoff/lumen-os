@@ -15,6 +15,12 @@
     <string name="auto_notify">通知のみ</string>
     <string name="auto_download">自動でダウンロード</string>
     <string name="auto_hint">アップデートが同意なしにインストールされることはありません。</string>
+    <string name="row_beta">ベータ版アップデート</string>
+    <string name="beta_on">オン</string>
+    <string name="beta_off">オフ</string>
+    <string name="beta_hint">ベータ版は早く届きますが、テストは少なめです。オフにすると、より新しい通常版が出るまで現在のバージョンのままになります。</string>
+    <string name="row_stats">匿名の統計情報を送信</string>
+    <string name="stats_hint">1日1回：モデル、バージョン、ハッシュ化したシリアル番号、国。IP アドレスは保存されません。</string>
     <string name="avail_title">Lumen OS %1$s を利用できます</string>
     <string name="avail_size_full">完全アップデート · %1$s</string>
     <string name="avail_size_delta">アップデート · %1$s</string>

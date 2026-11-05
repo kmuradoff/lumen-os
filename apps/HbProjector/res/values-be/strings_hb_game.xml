@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">Гульнявы рэжым</string>
+    <string name="gbar_standard">Стандарт</string>
+    <string name="gbar_top_speed">Турба</string>
+    <string name="gbar_hfr">Высокая частата</string>
+    <string name="gbar_off">Выкл</string>
+    <string name="gbar_on">Укл</string>
+    <string name="gbar_auto">Аўта</string>
+    <string name="gbar_picture">Гульнявая карцінка</string>
+    <string name="gbar_pic_standard">Стандарт</string>
+    <string name="gbar_pic_sports">Спорт</string>
+    <string name="gbar_color_space">Каляровая прастора</string>
+    <string name="gbar_cs_native">Роднае</string>
+    <string name="gbar_dark">Цёмныя сцэны</string>
+    <string name="gbar_aspect">Фармат кадра</string>
+    <string name="gbar_fps">Лічыльнік FPS</string>
+    <string name="gbar_fps_left">Злева ўверсе</string>
+    <string name="gbar_fps_center">Па цэнтры ўверсе</string>
+    <string name="gbar_fps_right">Справа ўверсе</string>
+    <string name="gbar_hdr_mapping">Дынамічнае танальнае адлюстраванне</string>
+    <string name="gbar_tip_top_speed">Найменшая затрымка. Трапецыя вернецца да поўнага кадра.</string>
+    <string name="gbar_tip_vrr">Карцінка падладжваецца пад частату кадраў прыстаўкі. Уключыце VRR і ў прыстаўцы.</string>
+    <string name="gbar_tip_hfr_off">Да 60 Гц ад крыніцы.</string>
+    <string name="gbar_tip_hfr_on">Да 120 Гц ад крыніцы.</string>
+    <string name="gbar_tip_dark">Лепш відаць дэталі ў цёмных сцэнах.</string>
+    <string name="gbar_tip_wide">Крыніца павінна выдаваць 3840 x 2160.</string>
+    <string name="gbar_tip_hdr_mapping">Яркасць падладжваецца па ўчастках кадра. Пасля ўключэння зноў адкалібруйце HDR у прыстаўцы.</string>
+    <string name="gbar_tip_hgig">HDR так, як задумалі аўтары гульні. Пасля ўключэння зноў адкалібруйце HDR у прыстаўцы.</string>
+    <string name="gbar_need_top_speed">VRR працуе толькі ў рэжыме Турба</string>
+    <string name="gbar_need_16_9">Спачатку выберыце фармат 16:9</string>
+    <string name="gbar_vrr_blocks_aspect">Спачатку выключыце VRR</string>
+    <string name="gbar_vrr_blocks_hfr">Пакуль уключаны VRR, высокая частата застаецца ўключанай</string>
+    <string name="gbar_need_4k">Крыніца павінна выдаваць 3840 x 2160</string>
+    <string name="gbar_need_hdr">Крыніца не перадае HDR</string>
+    <string name="gbar_boost_blocks">Недаступна, пакуль уключаны Boost</string>
+    <string name="gbar_failed">Праектар не прыняў змяненне</string>
+</resources>

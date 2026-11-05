@@ -9,14 +9,14 @@ import java.util.List;
 
 /**
  * Host test of the device-neutral Preflight and Ota (sh test/ota/run.sh)
- * with the properties of an HB image (wire id hb, channel hb-nogms on the fixed pre-release tag hb). The
+ * with the properties of an HB image (wire id hb, channel hb-nogms on the fixed pre-release tag z9x-hb). The
  * properties come from the SystemProperties stand-in of test/ota/stubs. Cases: the device must be hb; an empty
  * device prop fails closed; the gate blocks (hal not ok, slot not marked, merge not none, pending, another slot
  * starts next); version codes of a project decision; the guide links. The probe and the build checks: PreflightGateTest.
  */
 public final class PreflightHbTest {
     private static int failed, passed;
-    private static final String TAG_URL = "https://github.com/kmuradoff/lumen-os/releases/download/hb/";
+    private static final String TAG_URL = "https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/";
     private static final List<String> ANY = Collections.emptyList();
 
     private static void eq(String what, Object want, Object got) {

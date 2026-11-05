@@ -115,6 +115,20 @@ FXPRE=$WORK/fxpre; mktree "$FXPRE" "" pre
 # the OTA client files of an HB image (compose_hb.sh step 3e): otacerts.zip of the scratch certificates, an APK
 py "$OTA/make_otacerts.py" --root "$FX" --device $DEV --out "$OFX/otacerts.zip" > /dev/null || { echo "make_otacerts failed"; exit 1; }
 py -c "import sys, zipfile; zipfile.ZipFile(sys.argv[1], 'w').writestr('AndroidManifest.xml', b'stand-in')" "$OFX/LumenUpdater.apk"
+# the AirPlay receiver (1.0.8): a stand-in APK with one uncompressed armeabi-v7a library, as the scanner wants it
+# (stored, its data on a 4096 boundary, padded in the local extra field like zipalign); ALIGN=0 leaves it unaligned
+cat > "$WORK/mkapk.py" << 'APK'
+import os, sys, zipfile
+z = zipfile.ZipFile(sys.argv[1], "w")
+z.writestr("AndroidManifest.xml", b"stand-in")
+zi = zipfile.ZipInfo("lib/armeabi-v7a/libstandin.so", (2026, 1, 1, 0, 0, 0))
+if os.environ.get("ALIGN", "1") == "1":
+    zi.extra = b"\0" * (-(z.fp.tell() + 30 + len(zi.filename)) % 4096)
+z.writestr(zi, b"stand-in")
+z.close()
+APK
+py "$WORK/mkapk.py" "$OFX/Z9xAirPlay.apk"
+ALIGN=0 py "$WORK/mkapk.py" "$OFX/Z9xAirPlay_unaligned.apk"
 
 # ------------------------------------------------------------------ tiny images
 cat > "$WORK/mkimg.py" << 'EOF'
@@ -136,10 +150,10 @@ if kind == "hb":
     prop = {"ro.adb.secure": "1", "persist.sys.usb.config": "none", "ro.lumen.device": "goat_elegant",
             "ro.lumen.version": ver, "ro.lumen.version_code": str(code), "ro.lumen.build_id": "lumen-hb-%s-%s" % (ver, seed),
             "ro.lumen.ota.device": "hb", "ro.lumen.ota.gate": "1",
-            "ro.lumen.ota.manifest_url": "https://github.com/kmuradoff/lumen-os/releases/download/hb/update-%s.json" % chan,
+            "ro.lumen.ota.manifest_url": "https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/update-%s.json" % chan,
             "ro.product.ab_ota_partitions": "armfw,boot,bootdata,dtbo,optee,tvconfig,tvservice,vbmeta_system,xgimiconfig"}
     for x in ("system/etc/lumen", "system/etc/xgimi", "system/etc/security", "system/etc/default-permissions",
-              "system/bin", "system/app/LumenUpdater"):
+              "system/bin", "system/app/LumenUpdater", "system/app/Z9xAirPlay"):
         os.makedirs(os.path.join(d, x))
     OFX = os.environ["OFX"]
     for src, dst in (("tools/ota/image/z9x_blobs.rc", "system/etc/init/z9x_blobs.rc"),
@@ -154,7 +168,8 @@ if kind == "hb":
                       "system/etc/default-permissions/z9x-updater-default-permissions.xml"),
                      (OFX + "/bootctl", "system/bin/bootctl"),
                      (OFX + "/otacerts.zip", "system/etc/security/otacerts.zip"),
-                     (OFX + "/LumenUpdater.apk", "system/app/LumenUpdater/LumenUpdater.apk")):
+                     (OFX + "/LumenUpdater.apk", "system/app/LumenUpdater/LumenUpdater.apk"),
+                     (OFX + "/Z9xAirPlay.apk", "system/app/Z9xAirPlay/Z9xAirPlay.apk")):
         shutil.copyfile(os.path.join(G, src), os.path.join(d, dst))
     os.chmod(os.path.join(d, "system/bin/bootctl"), 0o755)
 else:
@@ -191,12 +206,14 @@ mkimg "$I/abvb/lumen-os-hb-1.0.8-beta1-nogms-system.img" hb 1.0.8-beta1 hb-nogms
   ro.product.ab_ota_partitions=armfw,boot,bootdata,dtbo,mboot,optee,tvconfig,tvservice,vbmeta,vbmeta_system,xgimiconfig
 mkimg "$I/pubch/lumen-os-hb-1.0.8-beta1-nogms-system.img" hb 1.0.8-beta1 public-nogms pubch
 # the OTA client of the image (check_public_hb.py): the GSI otacerts.zip (AOSP test key), no bootctl, a Z9X gate file
-mkdir -p "$I/aospoc" "$I/nobc" "$I/z9xgate"
+mkdir -p "$I/aospoc" "$I/nobc" "$I/z9xgate" "$I/apunal"
 py -c "import sys, zipfile; zipfile.ZipFile(sys.argv[1], 'w').write(sys.argv[2], 'testkey.x509.pem')" \
   "$OFX/aosp_otacerts.zip" "$G/tools/sign/testcerts/testkey.x509.pem"
 mkimg "$I/aospoc/lumen-os-hb-1.0.8-beta1-nogms-system.img" hb 1.0.8-beta1 hb-nogms aospoc \
   "/system/etc/security/otacerts.zip=$OFX/aosp_otacerts.zip"
 mkimg "$I/nobc/lumen-os-hb-1.0.8-beta1-nogms-system.img" hb 1.0.8-beta1 hb-nogms nobc /system/bin/bootctl=-
+mkimg "$I/apunal/lumen-os-hb-1.0.8-beta1-nogms-system.img" hb 1.0.8-beta1 hb-nogms apunal \
+  "/system/app/Z9xAirPlay/Z9xAirPlay.apk=$OFX/Z9xAirPlay_unaligned.apk"
 mkimg "$I/z9xgate/lumen-os-hb-1.0.8-beta1-nogms-system.img" hb 1.0.8-beta1 hb-nogms z9xgate \
   "/system/etc/init/z9x_ota.rc=$G/tools/ota/image/z9x_ota.rc"
 
@@ -336,7 +353,7 @@ if want conf_; then
     refuse "version $v refused" "version" py "$OTA/ota_conf.py" version-code "$v"
   done
   for x in 's/xgimiconfig$/xgimiconfig vbmeta/' 's/^ab_ota_partitions=armfw/ab_ota_partitions=mboot armfw/' \
-           's/^vabc=no/vabc=maybe/' 's/^sig_size=512/sig_size=256/' 's/^manifest_tag=hb/manifest_tag=latest/' \
+           's/^vabc=no/vabc=maybe/' 's/^sig_size=512/sig_size=256/' 's/^manifest_tag=z9x-hb/manifest_tag=latest/' \
            's/^package_tag=.*/package_tag=v{version}/' 's/^wire_id=hb/wire_id=z9x/' 's/^super_group=.*/super_group=group_oem_a=1/'; do
     n=$((${n:-0} + 1)); R=$WORK/conf$n; mktree "$R" "$x"
     expect 1 "ota.conf refused: $x" py "$OTA/ota_conf.py" --root "$R" $DEV
@@ -380,6 +397,8 @@ if want image_; then
     mo --root "$FX" unsigned --new "$I/aospoc/lumen-os-hb-1.0.8-beta1-nogms-system.img" --version 1.0.8-beta1 --out "$WORK/x"
   refuse "make_ota refuses an image without the pinned bootctl" "not the pinned bootctl" \
     mo --root "$FX" unsigned --new "$I/nobc/lumen-os-hb-1.0.8-beta1-nogms-system.img" --version 1.0.8-beta1 --out "$WORK/x"
+  refuse "make_ota refuses an image whose AirPlay libraries are not page-aligned" "not page-aligned (4096)" \
+    mo --root "$FX" unsigned --new "$I/apunal/lumen-os-hb-1.0.8-beta1-nogms-system.img" --version 1.0.8-beta1 --out "$WORK/x"
   refuse "make_ota refuses an image with a Z9X gate file" "Z9X gate file in the image: /system/etc/init/z9x_ota.rc" \
     mo --root "$FX" unsigned --new "$I/z9xgate/lumen-os-hb-1.0.8-beta1-nogms-system.img" --version 1.0.8-beta1 --out "$WORK/x"
   refuse "make_ota refuses a wrong --version" "--version 1.0.9" \
@@ -495,10 +514,10 @@ import json; m = json.load(open('$M/update-hb-nogms.json'))
 assert m['device'] == 'hb' and m['channel'] == 'hb-nogms' and m['version'] == '1.0.8-beta1' and m['version_code'] == 1000801, m
 assert m['requires']['vendor_incremental'] == ['v6.16.24'] and m['requires']['min_version_code'] == 1000000
 assert m['requires']['blobs_set'] == ['hb-v61624-a'], m['requires']
-base = 'https://github.com/kmuradoff/lumen-os/releases/download/hb-1.0.8-beta1/'
+base = 'https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb-1.0.8-beta1/'
 assert all(p['url'].startswith(base) and p['metadata_url'].startswith(base) for p in m['packages'])
 assert [p['type'] for p in m['packages']] == ['delta', 'full']
-" > "$OUT" 2>&1 && ok "the manifest: device hb, O1 code, v6.16.24, blobs set, URLs on hb-1.0.8-beta1" || bad "manifest content"
+" > "$OUT" 2>&1 && ok "the manifest: device hb, O1 code, v6.16.24, blobs set, URLs on z9x-hb-1.0.8-beta1" || bad "manifest content"
   expect 0 "verify_manifest round trip (signature, schema, URLs)" vf --root "$FX" "$M/update-hb-nogms.json"
   expect 0 "verify_manifest round trip with --zips" vf --root "$FX" "$M/update-hb-nogms.json" --zips "$WORK/zips"
   mkdir -p "$WORK/tm"; sed 's/"test build"/"test buiLd"/' "$M/update-hb-nogms.json" > "$WORK/tm/update-hb-nogms.json"
@@ -528,15 +547,18 @@ assert [p['type'] for p in m['packages']] == ['delta', 'full']
 fi
 
 if want gate_; then
-  # the real tree's results file parses, and today it keeps hb-nogms closed and hb-test open
+  # the real tree's results file parses; since 2026-11-04 (T7 passed on the HB, owner: T5 / T6 dropped) it opens
+  # hb-nogms, and hb-test stays open
   R=$WORK/gate_real; mktree "$R"; cp "$G/devices/$DEV/install/OTA_RESULTS.tsv" "$R/devices/$DEV/install/OTA_RESULTS.tsv"
   expect 0 "ota_conf reads the tree's install/OTA_RESULTS.tsv" py "$OTA/ota_conf.py" --root "$R" $DEV
-  has "$OUT" "# channel hb-nogms: closed" "ota_conf: hb-nogms closed by the tree's results file"
+  has "$OUT" "# channel hb-nogms: open" "ota_conf: hb-nogms open by the tree's results file (T7 passed)"
   has "$OUT" "# channel hb-test: open" "ota_conf: the stage channel hb-test open"
-  refuse "make_manifest refuses hb-nogms with the tree's results file" "channel hb-nogms is public" \
+  # a tree whose results file has no T7 yet keeps hb-nogms closed and writes nothing for it
+  R=$WORK/gate_closed; mktree "$R"; printf '# no runs yet\n' > "$R/devices/$DEV/install/OTA_RESULTS.tsv"
+  refuse "make_manifest refuses hb-nogms without a T7 pass" "channel hb-nogms is public" \
     mm --root "$R" --image "$NEW" --full "$FZ" --changelog "$WORK/changelog.json" --channel hb-nogms --out "$WORK/g_real"
   [ ! -e "$WORK/g_real" ] && ok "nothing written for the refused hb-nogms" || bad "a manifest was written for a closed channel"
-  expect 0 "make_manifest takes hb-test with the tree's results file" \
+  expect 0 "make_manifest takes hb-test without a T7 pass" \
     mm --root "$R" --image "$NEW" --full "$FZ" --changelog "$WORK/changelog.json" --channel hb-test --out "$WORK/g_test"
   # gate RESULTS-ROWS "what" "refusal text": a scratch tree with these rows (\t = tab), hb-nogms refused
   gate() {
@@ -546,18 +568,18 @@ if want gate_; then
       mm --root "$R" --image "$NEW" --full "$FZ" --changelog "$WORK/changelog.json" --channel hb-nogms --out "$WORK/x"
   }
   R=$WORK/gate_none; mktree "$R"; rm "$R/devices/$DEV/install/OTA_RESULTS.tsv"
-  refuse "make_manifest: no results file, hb-nogms refused" "T5 not recorded; T6 not recorded; T7 not recorded" \
+  refuse "make_manifest: no results file, hb-nogms refused" "T7 not recorded" \
     mm --root "$R" --image "$NEW" --full "$FZ" --changelog "$WORK/changelog.json" --channel hb-nogms --out "$WORK/x"
   expect 0 "make_manifest: no results file, hb-test still taken" \
     mm --root "$R" --image "$NEW" --full "$FZ" --changelog "$WORK/changelog.json" --channel hb-test --out "$WORK/g_none"
-  gate '# only comments\n\n' "comments only, refused" "T5 not recorded"
+  gate '# only comments\n\n' "comments only, refused" "T7 not recorded"
   gate 'T5\tpass\t2026-11-01\tb1\t\nT6\tpass\t2026-11-01\tb1\t\n' "T7 missing, refused" "(T7 not recorded)"
   gate 'T5\tpass\t2026-11-01\tb1\t\nT6\tpass\t2026-11-01\tb1\t\nT7\tfail\t2026-11-02\tb2\tmerge hung\n' \
     "T7 failed, refused" "(T7 fail on b2)"
-  gate 'T5\tpass\t2026-11-01\tb1\t\nT6\tpass\t2026-11-01\tb1\t\nT7\tpass\t2026-11-01\tb1\t\nT6\tfail\t2026-11-03\tb3\tno rollback\n' \
-    "a later fail closes it again" "(T6 fail on b3)"
+  gate 'T5\tpass\t2026-11-01\tb1\t\nT6\tpass\t2026-11-01\tb1\t\nT7\tpass\t2026-11-01\tb1\t\nT7\tfail\t2026-11-03\tb3\tno merge\n' \
+    "a later fail closes it again" "(T7 fail on b3)"
   gate 'T1\tpass\t2026-11-01\tb1\t\nT2\tpass\t2026-11-01\tb1\t\nT3\tpass\t2026-11-01\tb1\t\nT4\tpass\t2026-11-01\tb1\t\n' \
-    "T1..T4 only, refused" "T5 not recorded"
+    "T1..T4 only, refused" "T7 not recorded"
   gate 'T5\tpass\t2026-11-01\tb1\nT6\tpass\t2026-11-01\tb1\t\nT7\tpass\t2026-11-01\tb1\t\n' "a row of 4 fields, refused" "expected 5"
   gate 'T5\tok\t2026-11-01\tb1\t\nT6\tpass\t2026-11-01\tb1\t\nT7\tpass\t2026-11-01\tb1\t\n' "result ok, refused" "not pass or fail"
   gate 'T5\tpass\t5.11.2026\tb1\t\nT6\tpass\t2026-11-01\tb1\t\nT7\tpass\t2026-11-01\tb1\t\n' "a bad date, refused" "YYYY-MM-DD"
@@ -568,6 +590,9 @@ if want gate_; then
   R=$WORK/gate_badfile; mktree "$R"; printf 'T5\tok\n' > "$R/devices/$DEV/install/OTA_RESULTS.tsv"
   refuse "ota_conf CODENAME exits non-zero on a bad results file" "expected 5" py "$OTA/ota_conf.py" --root "$R" $DEV
   gate 'T5 pass 2026-11-01 b1 x\nT6\tpass\t2026-11-01\tb1\t\nT7\tpass\t2026-11-01\tb1\t\n' "spaces instead of tabs, refused" "expected 5"
+  R=$WORK/gate_t7; mktree "$R"; printf 'T7\tpass\t2026-11-04\tb4\ta to b\n' > "$R/devices/$DEV/install/OTA_RESULTS.tsv"
+  expect 0 "make_manifest: T7 alone (owner 2026-11-04: T5 / T6 dropped): hb-nogms taken" \
+    mm --root "$R" --image "$NEW" --full "$FZ" --changelog "$WORK/changelog.json" --channel hb-nogms --out "$WORK/g_t7"
   R=$WORK/gate_ok; mktree "$R"
   printf 'T5\tfail\t2026-11-01\tb1\tfirst try\nT5\tpass\t2026-11-02\tb2\t\nT6\tpass\t2026-11-02\tb2\t\nT7\tpass\t2026-11-03\tb2\ta to b\n' \
     > "$R/devices/$DEV/install/OTA_RESULTS.tsv"
@@ -673,10 +698,10 @@ fi
 
 if want release_; then
   # a mocked GitHub: releases of a fixture folder, served the way gh api / gh release download answer
-  GF=$WORK/gh; mkdir -p "$GF/v1.0.7" "$GF/hb" "$GF/hb-1.0.8-beta1"
+  GF=$WORK/gh; mkdir -p "$GF/v1.0.7" "$GF/z9x-hb" "$GF/z9x-hb-1.0.8-beta1"
   cp "$WORK/zm/update-public-nogms.json" "$WORK/zm/update-public-nogms.json.sig" "$GF/v1.0.7/"
-  cp "$M/update-hb-nogms.json" "$M/update-hb-nogms.json.sig" "$M/update-hb-test.json" "$M/update-hb-test.json.sig" "$GF/hb/"
-  cp "$WORK/zips"/* "$GF/hb-1.0.8-beta1/"
+  cp "$M/update-hb-nogms.json" "$M/update-hb-nogms.json.sig" "$M/update-hb-test.json" "$M/update-hb-test.json.sig" "$GF/z9x-hb/"
+  cp "$WORK/zips"/* "$GF/z9x-hb-1.0.8-beta1/"
   cat > "$WORK/bin/gh" << 'EOF'
 #!/usr/bin/env python3
 # mocked gh: GH_FIXTURE/<tag>/<asset files>, GH_FIXTURE/meta.json {tag: {prerelease, draft}, "latest": tag}
@@ -711,42 +736,42 @@ EOF
   chmod 755 "$WORK/bin/gh"
   export GH_FIXTURE=$GF
   meta() { py -c "import json,sys; json.dump(json.loads(sys.argv[1]), open('$GF/meta.json', 'w'))" "$1"; }
-  GOOD='{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true}}'
+  GOOD='{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}}'
   cr() { env GH="$WORK/bin/gh" python3 -B "$OTA/check_release.py" --device $DEV --root "$FX"; }
   meta "$GOOD"
   expect 0 "check_release: the good state passes" cr
   has "$OUT" "releases/latest = v1.0.7 (Z9X)" "check_release: latest is the Z9X v1.0.7"
-  has "$OUT" "hb/update-hb-nogms.json: hb-nogms 1.0.8-beta1 (1000801)" "check_release: the hb manifest checked"
+  has "$OUT" "z9x-hb/update-hb-nogms.json: hb-nogms 1.0.8-beta1 (1000801)" "check_release: the hb manifest checked"
   grep -qE "release (upload|create|delete|edit)" "$GF/calls.log" && bad "check_release called a writing gh command" \
     || ok "check_release made only read calls (api, release download)"
-  meta '{"latest": "hb-1.0.8-beta1", "v1.0.7": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": false}}'
+  meta '{"latest": "z9x-hb-1.0.8-beta1", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": false}}'
   refuse "check_release: an HB release as Latest is red" "it must stay the Z9X" cr
-  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": false}}'
+  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": false}}'
   expect 0 "check_release: a version release that is a normal release (not Latest) is fine" cr
-  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "hb": {"prerelease": false}, "hb-1.0.8-beta1": {"prerelease": true}}'
-  refuse "check_release: the manifest tag hb not a pre-release is red" "always a published pre-release" cr
-  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true, "draft": true}}'
+  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": false}, "z9x-hb-1.0.8-beta1": {"prerelease": true}}'
+  refuse "check_release: the manifest tag z9x-hb not a pre-release is red" "always a published pre-release" cr
+  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true, "draft": true}}'
   refuse "check_release: a draft version release is red" "is never a draft" cr
   meta "$GOOD"
-  cp "$GF/v1.0.7/update-public-nogms.json" "$GF/hb/update-public-nogms.json"
-  refuse "check_release: a Z9X manifest name on the hb tag is red" "Z9X manifest name" cr
-  rm "$GF/hb/update-public-nogms.json"
-  mv "$GF/hb-1.0.8-beta1/lumen-os-hb-1.0.8-beta1-nogms-full-ota.zip" "$WORK/held.zip"
-  refuse "check_release: a package missing from its version tag is red" "is not an asset of hb-1.0.8-beta1" cr
-  mv "$WORK/held.zip" "$GF/hb-1.0.8-beta1/lumen-os-hb-1.0.8-beta1-nogms-full-ota.zip"
-  cp "$GF/hb/update-hb-nogms.json" "$WORK/held.json"; sed 's/"test build"/"test buiLd"/' "$WORK/held.json" > "$GF/hb/update-hb-nogms.json"
+  cp "$GF/v1.0.7/update-public-nogms.json" "$GF/z9x-hb/update-public-nogms.json"
+  refuse "check_release: a Z9X manifest name on the z9x-hb tag is red" "Z9X manifest name" cr
+  rm "$GF/z9x-hb/update-public-nogms.json"
+  mv "$GF/z9x-hb-1.0.8-beta1/lumen-os-hb-1.0.8-beta1-nogms-full-ota.zip" "$WORK/held.zip"
+  refuse "check_release: a package missing from its version tag is red" "is not an asset of z9x-hb-1.0.8-beta1" cr
+  mv "$WORK/held.zip" "$GF/z9x-hb-1.0.8-beta1/lumen-os-hb-1.0.8-beta1-nogms-full-ota.zip"
+  cp "$GF/z9x-hb/update-hb-nogms.json" "$WORK/held.json"; sed 's/"test build"/"test buiLd"/' "$WORK/held.json" > "$GF/z9x-hb/update-hb-nogms.json"
   refuse "check_release: a changed hb manifest is red" "signature does not verify" cr
-  mv "$WORK/held.json" "$GF/hb/update-hb-nogms.json"
-  mv "$GF/hb/update-hb-test.json.sig" "$WORK/held.sig"
+  mv "$WORK/held.json" "$GF/z9x-hb/update-hb-nogms.json"
+  mv "$GF/z9x-hb/update-hb-test.json.sig" "$WORK/held.sig"
   refuse "check_release: a manifest without .sig is red" "has no .sig" cr
-  mv "$WORK/held.sig" "$GF/hb/update-hb-test.json.sig"
+  mv "$WORK/held.sig" "$GF/z9x-hb/update-hb-test.json.sig"
   cp "$GF/v1.0.7/update-public-nogms.json.sig" "$WORK/held.sig"
   openssl dgst -sha256 -keyform DER -sign "$HBK/ota.pk8" -out "$GF/v1.0.7/update-public-nogms.json.sig" "$GF/v1.0.7/update-public-nogms.json"
   refuse "check_release: the Latest Z9X manifest signed with the HB key is red" "does not verify with installer/certs/ota.x509.pem" cr
   mv "$WORK/held.sig" "$GF/v1.0.7/update-public-nogms.json.sig"
-  echo x > "$GF/hb/notes.txt"
-  refuse "check_release: another asset on the hb tag is red" "asset notes.txt" cr
-  rm "$GF/hb/notes.txt"
+  echo x > "$GF/z9x-hb/notes.txt"
+  refuse "check_release: another asset on the z9x-hb tag is red" "asset notes.txt" cr
+  rm "$GF/z9x-hb/notes.txt"
   expect 0 "check_release: green again after every change was undone" cr
   # the Z9X update channel (images from 1.0.8 on): Latest z9x-1.0.8 and the fixed pre-release z9x carry the same
   # signed manifest, whose packages are assets of z9x-1.0.8
@@ -762,17 +787,17 @@ json.dump({'schema': 1, 'device': 'z9x', 'channel': 'public-nogms', 'version': '
   open('$GF/z9x/update-public-nogms.json', 'w'), indent=2)"
   openssl dgst -sha256 -keyform DER -sign "$Z9K/ota.pk8" -out "$GF/z9x/update-public-nogms.json.sig" "$GF/z9x/update-public-nogms.json"
   cp "$GF/z9x/update-public-nogms.json" "$GF/z9x/update-public-nogms.json.sig" "$GF/z9x-1.0.8/"
-  ZGOOD='{"latest": "z9x-1.0.8", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x": {"prerelease": true}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true}}'
+  ZGOOD='{"latest": "z9x-1.0.8", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x": {"prerelease": true}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}}'
   meta "$ZGOOD"
   expect 0 "check_release: Latest z9x-1.0.8 with the channel z9x passes" cr
   has "$OUT" "releases/latest = z9x-1.0.8 (Z9X)" "check_release: z9x-1.0.8 is accepted as the Z9X Latest"
   has "$OUT" "Z9X channel: z9x/update-public-nogms.json verifies" "check_release: the z9x channel manifest checked"
   has "$OUT" "releases/latest z9x-1.0.8 carries the same update-public-nogms.json" "check_release: Latest carries the channel manifest"
-  meta '{"latest": "z9x-1.0.8", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true}}'
+  meta '{"latest": "z9x-1.0.8", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}}'
   refuse "check_release: the channel z9x not a pre-release is red" "the Z9X channel is always a published pre-release" cr
-  meta '{"latest": "z9x-1.0.8", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true}}'
+  meta '{"latest": "z9x-1.0.8", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}}'
   refuse "check_release: Latest z9x-1.0.8 without the channel z9x is red" "no z9x release, but Latest is z9x-1.0.8" cr
-  meta '{"latest": "z9x", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x": {"prerelease": false}, "hb": {"prerelease": true}, "hb-1.0.8-beta1": {"prerelease": true}}'
+  meta '{"latest": "z9x", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}}'
   refuse "check_release: the channel z9x as Latest is red" "it must stay the Z9X" cr
   meta "$ZGOOD"
   echo x > "$GF/z9x/lumen-os-1.0.8-nogms-full-ota.zip"
@@ -789,16 +814,66 @@ json.dump({'schema': 1, 'device': 'z9x', 'channel': 'public-nogms', 'version': '
   refuse "check_release: the channel manifest signed with the HB key is red" "z9x/update-public-nogms.json does not verify" cr
   mv "$WORK/held.sig" "$GF/z9x/update-public-nogms.json.sig"
   expect 0 "check_release: the z9x channel green again" cr
+  mkdir -p "$GF/z9x-1.0.8-beta1"; cp "$GF/v1.0.7"/update-public-nogms.json* "$GF/z9x-1.0.8-beta1/"
+  meta '{"latest": "z9x-1.0.8-beta1", "v1.0.7": {"prerelease": false}, "z9x-1.0.8-beta1": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}}'
+  refuse "check_release: z9x-1.0.8-beta1 as Latest is red" "it must stay the Z9X" cr
+  rm -r "$GF/z9x-1.0.8-beta1"
   meta "$GOOD"
-  R=$WORK/rel_closed; mktree "$R"; cp "$G/devices/$DEV/install/OTA_RESULTS.tsv" "$R/devices/$DEV/install/OTA_RESULTS.tsv"
+  R=$WORK/rel_closed; mktree "$R"; printf '# no runs yet\n' > "$R/devices/$DEV/install/OTA_RESULTS.tsv"
   crc() { env GH="$WORK/bin/gh" python3 -B "$OTA/check_release.py" --device $DEV --root "$R"; }
-  refuse "check_release: hb-nogms on the hb tag before T5, T6 and T7 passed is red" "update-hb-nogms.json (or its .sig) is on the tag" crc
-  mv "$GF/hb/update-hb-nogms.json" "$WORK/held.json"
-  refuse "check_release: a lone hb-nogms .sig before T5, T6 and T7 passed is red" "update-hb-nogms.json (or its .sig) is on the tag" crc
-  mv "$GF/hb/update-hb-nogms.json.sig" "$WORK/held.sig"
-  expect 0 "check_release: only hb-test on the hb tag before T5, T6 and T7 is green" crc
-  mv "$WORK/held.json" "$GF/hb/update-hb-nogms.json"; mv "$WORK/held.sig" "$GF/hb/update-hb-nogms.json.sig"
-  expect 0 "check_release: green again in the tree with T5, T6 and T7 passed" cr
+  refuse "check_release: hb-nogms on the z9x-hb tag before T7 passed is red" "update-hb-nogms.json (or its .sig) is on the tag" crc
+  mv "$GF/z9x-hb/update-hb-nogms.json" "$WORK/held.json"
+  refuse "check_release: a lone hb-nogms .sig before T7 passed is red" "update-hb-nogms.json (or its .sig) is on the tag" crc
+  mv "$GF/z9x-hb/update-hb-nogms.json.sig" "$WORK/held.sig"
+  expect 0 "check_release: only hb-test on the z9x-hb tag before T7 is green" crc
+  mv "$WORK/held.json" "$GF/z9x-hb/update-hb-nogms.json"; mv "$WORK/held.sig" "$GF/z9x-hb/update-hb-nogms.json.sig"
+  expect 0 "check_release: green again in the tree with T7 passed" cr
+  has "$OUT" "Z9X beta channel: not published" "check_release: no Z9X beta tag is fine"
+  # the Z9X beta channel (Beta updates switch): update-public-beta.json on the tag beta, packages on beta-<version>
+  mkdir -p "$GF/beta" "$GF/beta-1.0.9"
+  printf 'zip-bytes\n' > "$GF/beta-1.0.9/lumen-os-1.0.9-nogms-full-ota.zip"
+  printf 'meta\n' > "$GF/beta-1.0.9/lumen-os-1.0.9-nogms-full-payload_metadata.bin"
+  zbeta() {   # $1 channel, $2 the key that signs
+    py -c "
+import json; b = 'https://github.com/kmuradoff/lumen-os/releases/download/beta-1.0.9/'
+json.dump({'schema': 1, 'device': 'z9x', 'channel': '$1', 'version': '1.0.9', 'version_code': 10010,
+  'build_id': 'lumen-1.0.9-x', 'build_utc': 1, 'requires': {}, 'changelog': {'en': 'x'}, 'packages': [{'type': 'full',
+  'url': b + 'lumen-os-1.0.9-nogms-full-ota.zip', 'size': 10, 'sha256': '0' * 64, 'payload_offset': 1,
+  'payload_size': 1, 'metadata_url': b + 'lumen-os-1.0.9-nogms-full-payload_metadata.bin', 'metadata_size': 5,
+  'payload_properties': []}]}, open('$GF/beta/update-public-beta.json', 'w'), indent=2)"
+    openssl dgst -sha256 -keyform DER -sign "$2/ota.pk8" -out "$GF/beta/update-public-beta.json.sig" "$GF/beta/update-public-beta.json"
+  }
+  zbeta public-beta "$Z9K"
+  BETA='{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}, "beta": {"prerelease": true}, "beta-1.0.9": {"prerelease": true}}'
+  meta "$BETA"
+  expect 0 "check_release: a good Z9X beta channel passes" cr
+  has "$OUT" "Z9X beta channel: beta/update-public-beta.json verifies" "check_release: the Z9X beta manifest checked"
+  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}, "beta": {"prerelease": false}, "beta-1.0.9": {"prerelease": true}}'
+  refuse "check_release: the tag beta not a pre-release is red" "the Z9X beta channel is always a published pre-release" cr
+  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}, "beta": {"prerelease": true}, "beta-1.0.9": {"prerelease": false}}'
+  refuse "check_release: beta-1.0.9 not a pre-release is red" "the Z9X beta channel is always a published pre-release" cr
+  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}, "beta": {"prerelease": true}}'
+  refuse "check_release: a Z9X beta without its package release is red" "has no release beta-1.0.9" cr
+  meta "$BETA"
+  cp "$GF/v1.0.7/update-public-nogms.json" "$GF/beta/"
+  refuse "check_release: the stable Z9X manifest on the tag beta is red" "asset update-public-nogms.json is not update-public-beta.json" cr
+  rm "$GF/beta/update-public-nogms.json"
+  mv "$GF/beta/update-public-beta.json.sig" "$WORK/held.sig"
+  refuse "check_release: a Z9X beta manifest without .sig is red" "update-public-beta.json without update-public-beta.json.sig" cr
+  mv "$WORK/held.sig" "$GF/beta/update-public-beta.json.sig"
+  zbeta public-beta "$HBK"
+  refuse "check_release: a Z9X beta manifest signed with the HB key is red" "beta/update-public-beta.json does not verify" cr
+  zbeta public-nogms "$Z9K"
+  refuse "check_release: a stable channel in the beta file is red" "not the Z9X beta's" cr
+  zbeta public-beta "$Z9K"
+  printf 'longer zip\n' > "$GF/beta-1.0.9/lumen-os-1.0.9-nogms-full-ota.zip"
+  refuse "check_release: a beta package of another size is red" "the manifest says 10" cr
+  printf 'zip-bytes\n' > "$GF/beta-1.0.9/lumen-os-1.0.9-nogms-full-ota.zip"
+  expect 0 "check_release: green again with the Z9X beta channel" cr
+  cp "$GF/beta/update-public-beta.json" "$GF/z9x-hb/"
+  refuse "check_release: the Z9X beta manifest on the z9x-hb tag is red" "Z9X manifest name" cr
+  rm "$GF/z9x-hb/update-public-beta.json"
+  meta "$GOOD"
 fi
 
 echo "ota_tools_test: $PASS passed, $FAIL failed (delta_generator $DGKIND)"

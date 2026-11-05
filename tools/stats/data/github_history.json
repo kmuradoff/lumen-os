@@ -1,0 +1,145 @@
+[
+ {
+  "date": "2026-11-04",
+  "tag": "v1.0.0",
+  "device": "horse_popular",
+  "version": "1.0.0",
+  "prerelease": false,
+  "published": "2026-10-08",
+  "updates": 6,
+  "checks": 23,
+  "installs": 0
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "v1.0.1",
+  "device": "horse_popular",
+  "version": "1.0.1",
+  "prerelease": false,
+  "published": "2026-10-10",
+  "updates": 3,
+  "checks": 5,
+  "installs": 3
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "v1.0.2",
+  "device": "horse_popular",
+  "version": "1.0.2",
+  "prerelease": false,
+  "published": "2026-10-10",
+  "updates": 5,
+  "checks": 16,
+  "installs": 3
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "play6-beta1",
+  "device": "dragon_healthy",
+  "version": "play6-beta1",
+  "prerelease": true,
+  "published": "2026-10-13",
+  "updates": 0,
+  "checks": 0,
+  "installs": 3
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "v1.0.3",
+  "device": "horse_popular",
+  "version": "1.0.3",
+  "prerelease": false,
+  "published": "2026-10-13",
+  "updates": 4,
+  "checks": 12,
+  "installs": 2
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "v1.0.4",
+  "device": "horse_popular",
+  "version": "1.0.4",
+  "prerelease": false,
+  "published": "2026-10-16",
+  "updates": 3,
+  "checks": 21,
+  "installs": 4
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "v1.0.5",
+  "device": "horse_popular",
+  "version": "1.0.5",
+  "prerelease": false,
+  "published": "2026-10-22",
+  "updates": 2,
+  "checks": 5,
+  "installs": 3
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "play6-1.0.6",
+  "device": "dragon_healthy",
+  "version": "1.0.6",
+  "prerelease": false,
+  "published": "2026-10-24",
+  "updates": 0,
+  "checks": 0,
+  "installs": 10
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "v1.0.6",
+  "device": "horse_popular",
+  "version": "1.0.6",
+  "prerelease": false,
+  "published": "2026-10-24",
+  "updates": 5,
+  "checks": 17,
+  "installs": 8
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "play6-1.0.7",
+  "device": "dragon_healthy",
+  "version": "1.0.7",
+  "prerelease": false,
+  "published": "2026-10-28",
+  "updates": 0,
+  "checks": 0,
+  "installs": 4
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "v1.0.7",
+  "device": "horse_popular",
+  "version": "1.0.7",
+  "prerelease": false,
+  "published": "2026-10-28",
+  "updates": 6,
+  "checks": 92,
+  "installs": 6
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "play6-1.0.7-kst1",
+  "device": "dragon_healthy",
+  "version": "1.0.7-kst1",
+  "prerelease": true,
+  "published": "2026-10-29",
+  "updates": 0,
+  "checks": 0,
+  "installs": 3
+ },
+ {
+  "date": "2026-11-04",
+  "tag": "play6-1.0.7-diag2",
+  "device": "dragon_healthy",
+  "version": "1.0.7-diag2",
+  "prerelease": true,
+  "published": "2026-11-01",
+  "updates": 0,
+  "checks": 0,
+  "installs": 1
+ }
+]

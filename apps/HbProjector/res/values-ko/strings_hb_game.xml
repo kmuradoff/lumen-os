@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HB game bar (stock analysis). Lumen's own wording; the stock bar was read only for the meaning. -->
+<resources>
+    <string name="gbar_game_mode">게임 모드</string>
+    <string name="gbar_standard">표준</string>
+    <string name="gbar_top_speed">최고 속도</string>
+    <string name="gbar_hfr">높은 프레임 레이트</string>
+    <string name="gbar_off">끔</string>
+    <string name="gbar_on">켬</string>
+    <string name="gbar_auto">자동</string>
+    <string name="gbar_picture">게임 화질</string>
+    <string name="gbar_pic_standard">표준</string>
+    <string name="gbar_pic_sports">스포츠</string>
+    <string name="gbar_color_space">색 공간</string>
+    <string name="gbar_cs_native">기본</string>
+    <string name="gbar_dark">어두운 장면</string>
+    <string name="gbar_aspect">화면 비율</string>
+    <string name="gbar_fps">FPS 표시</string>
+    <string name="gbar_fps_left">왼쪽 위</string>
+    <string name="gbar_fps_center">가운데 위</string>
+    <string name="gbar_fps_right">오른쪽 위</string>
+    <string name="gbar_hdr_mapping">동적 톤 매핑</string>
+    <string name="gbar_tip_top_speed">지연이 가장 적습니다. 키스톤은 전체 화면으로 돌아갑니다.</string>
+    <string name="gbar_tip_vrr">화면이 콘솔의 프레임 레이트를 따릅니다. 콘솔에서도 VRR을 켜세요.</string>
+    <string name="gbar_tip_hfr_off">소스에서 최대 60 Hz.</string>
+    <string name="gbar_tip_hfr_on">소스에서 최대 120 Hz.</string>
+    <string name="gbar_tip_dark">어두운 장면의 디테일이 잘 보입니다.</string>
+    <string name="gbar_tip_wide">소스가 3840 x 2160으로 출력해야 합니다.</string>
+    <string name="gbar_tip_hdr_mapping">영역별로 밝기를 조정합니다. 켠 후 콘솔에서 HDR을 다시 보정하세요.</string>
+    <string name="gbar_tip_hgig">게임 제작 의도대로 HDR을 표시합니다. 켠 후 콘솔에서 HDR을 다시 보정하세요.</string>
+    <string name="gbar_need_top_speed">VRR은 최고 속도에서만 작동합니다</string>
+    <string name="gbar_need_16_9">먼저 16:9를 선택하세요</string>
+    <string name="gbar_vrr_blocks_aspect">먼저 VRR을 끄세요</string>
+    <string name="gbar_vrr_blocks_hfr">VRR이 켜져 있는 동안 높은 프레임 레이트는 켜진 상태로 유지됩니다</string>
+    <string name="gbar_need_4k">소스가 3840 x 2160으로 출력해야 합니다</string>
+    <string name="gbar_need_hdr">소스가 HDR을 보내지 않습니다</string>
+    <string name="gbar_boost_blocks">Boost가 켜져 있으면 사용할 수 없습니다</string>
+    <string name="gbar_failed">프로젝터가 변경을 받아들이지 않았습니다</string>
+</resources>
