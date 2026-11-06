@@ -3,7 +3,7 @@
      Lineage 21 sets config_stopSystemPackagesByDefault=true: a system package seen for the first
      time is put in the "stopped" state if it has an exported LAUNCHER activity, and a stopped
      package gets no BOOT_COMPLETED / implicit broadcasts / jobs until the user opens it.
-     Every org.lumen package must run without being opened first (plan C6): the projector, tvinput and
+     Every org.lumen package must run without being opened first: the projector, tvinput and
      airplay services, Lumen Home's jobs and receivers, the first-run setup, and the updater's
      check job. Lumen OS 1.0 is flashed with a userdata wipe, so every base package is "first seen"
      too: the Google packages below have an exported LAUNCHER activity (aapt2 on the signed tar) and
@@ -22,8 +22,8 @@
     <initial-package-state package="com.google.android.gms" stopped="false" />
     <initial-package-state package="com.google.android.gsf" stopped="false" />
 
-    <!-- Google's setup stays installed (Google sign-in needs SetupWraith's AddAccount activities, plan
-         C22) but its own wizard never runs; org.lumen.setup is the first-run setup (setup spec 3).
+    <!-- Google's setup stays installed (Google sign-in needs SetupWraith's AddAccount
+         activities) but its own wizard never runs; org.lumen.setup is the first-run setup.
          <component-override> changes the DEFAULT enabled state of these components of the system
          package, also when Play updates it (SystemConfig.readComponentOverrides,
          ScanPackageUtils.configurePackageComponents). SetupWraith stays the platform's setup-wizard

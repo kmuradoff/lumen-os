@@ -17,7 +17,7 @@ import java.util.Map;
 
 /** Remote app keys, slots 1..5. The user can choose the app for slot 3 (iQIYI key) and slot 4 (bilibili key). */
 final class AppSlots {
-    private static final String TAG = "Z9xSlots";
+    static final String TAG = "Z9xSlots";
     private static final String PREFS = "app_slots";
     static final String PLAY_STORE = "com.android.vending";
     /** Default without Play (Lumen OS without Google): the key opens Lumen Home's Apps page (ACTION_ALL_APPS). */
@@ -48,6 +48,7 @@ final class AppSlots {
         SharedPreferences.Editor e = prefs(c).edit();
         if (pkg == null) e.remove("slot" + slot); else e.putString("slot" + slot, pkg);
         e.apply();
+        Log.i(TAG, "slot " + slot + " set: " + (pkg == null ? "default" : pkg));
     }
 
     static String defaultPackage(Context c, int slot) {

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Lumen OS boot rescue (image path /system/etc/init/z9x_rescue.rc; script /system/etc/z9x/z9x_rescue.sh
-# 0755). Owner decision 2026-10-08: 3 starts in a row without sys.boot_completed -> the next start
+# 0755). Since 2026-10-08: 3 starts in a row without sys.boot_completed -> the next start
 # reboots into fastbootd (reboot,fastboot) for 'lumen-install rescue'. An unverified OTA slot is left to
 # z9x_ota.sh's rollback first. See z9x_rescue.sh and docs/ota.md ("Boot rescue").
 #

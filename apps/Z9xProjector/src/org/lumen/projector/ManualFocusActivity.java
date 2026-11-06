@@ -6,7 +6,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.InputDevice;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.WindowManager;
 
 /**
@@ -149,5 +151,50 @@ public final class ManualFocusActivity extends Activity {
             if (!isFinishing()) finish();
         }
         return true;                                              // its UP stays here too
+    }
+
+    /**
+     * 2026-11-04 (stock systemui FocusAdjust.java:586-603 and its messages 3 / 4): a mouse wheel moves the lens for
+     * 200 ms per notch, re-armed by the next notch. Wheel down (VSCROLL < 0) or right (HSCROLL > 0) = stock RIGHT
+     * (manualFocus 0), the other way stock LEFT (1); with SHIFT the vertical wheel counts as horizontal.
+     */
+    private int wheelDir = -1;
+    private final Runnable wheelStop = () -> {
+        wheelDir = -1;
+        if (motor != null) motor.stop();
+    };
+
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent ev) {
+        if (motor == null || (ev.getSource() & InputDevice.SOURCE_CLASS_POINTER) == 0
+                || ev.getAction() != MotionEvent.ACTION_SCROLL) {
+            return super.onGenericMotionEvent(ev);
+        }
+        lastKeyAt = SystemClock.elapsedRealtime();
+        float v, h;
+        if ((ev.getMetaState() & KeyEvent.META_SHIFT_ON) != 0) {
+            h = ev.getAxisValue(MotionEvent.AXIS_VSCROLL);
+            v = 0f;
+        } else {
+            v = -ev.getAxisValue(MotionEvent.AXIS_VSCROLL);
+            h = ev.getAxisValue(MotionEvent.AXIS_HSCROLL);
+        }
+        if (v == 0f && h == 0f) return true;
+        int d = (h > 0f || v > 0f) ? 0 : 1;                       // 0 = stock RIGHT, 1 = stock LEFT
+        android.os.Handler main = getWindow().getDecorView().getHandler();
+        if (d != wheelDir) {
+            wheelDir = d;
+            motor.start(d);
+        } else {
+            motor.feed();
+        }
+        if (main != null) {
+            main.removeCallbacks(wheelStop);
+            main.postDelayed(wheelStop, 200);
+        } else {
+            motor.stop();
+            wheelDir = -1;
+        }
+        return true;
     }
 }

@@ -20,7 +20,12 @@
     <string name="beta_off">Выкл</string>
     <string name="beta_hint">Бэта-версіі выходзяць раней, але правераныя менш. Калі іх выключыць, бягучая версія застанецца, пакуль не выйдзе навейшая звычайная версія.</string>
     <string name="row_stats">Адпраўляць ананімную статыстыку</string>
-    <string name="stats_hint">Раз на дзень: мадэль, версія, серыйны нумар у выглядзе хэша і краіна. Ваш IP-адрас не захоўваецца.</string>
+    <string name="stats_hint">Пры кожным уключэнні і раз на дзень: мадэль, версія, зборка, звесткі пра абнаўленне, краіна, выпадковы нумар усталёўкі і серыйны нумар (сервер захоўвае толькі яго хэш). Ваш IP-адрас не захоўваецца.</string>
+    <string name="notice_title">Ананімная статыстыка</string>
+    <string name="notice_body">Пры кожным уключэнні і раз на дзень Lumen OS паведамляе мадэль, версію, зборку, звесткі пра абнаўленне і краіну, а таксама выпадковы нумар усталёўкі і серыйны нумар (сервер захоўвае толькі яго хэш). IP-адрас не захоўваецца, а тое, што вы глядзіце, не адпраўляецца.</string>
+    <string name="notice_where">Змяніць гэта можна ў раздзеле «%1$s».</string>
+    <string name="notice_ok">Добра</string>
+    <string name="notice_off">Выключыць</string>
     <string name="avail_title">Даступна Lumen OS %1$s</string>
     <string name="avail_size_full">Поўнае абнаўленне · %1$s</string>
     <string name="avail_size_delta">Абнаўленне · %1$s</string>
@@ -85,6 +90,8 @@
     <string name="err_signature">Інфармацыя пра абнаўленне не падпісана Lumen OS і была праігнараваная.</string>
     <string name="err_hash">Спампоўка пашкоджана і будзе спампавана зноў.</string>
     <string name="err_install">Не ўдалося ўсталяваць абнаўленне (код %1$d). Бягучая версія працуе далей.</string>
+    <string name="err_install_unknown">Не ўдалося ўсталяваць абнаўленне. Бягучая версія працуе далей.</string>
+    <string name="err_downgrade">Гэта абнаўленне старэйшае за ўсталяваную сістэму, таму яно не ўсталявана.</string>
     <string name="err_space_device">На праектары не хапае месца для абнаўлення.</string>
     <string name="btn_retry">Паўтарыць</string>
     <string name="row_usb">Усталяваць з USB-назапашвальніка</string>

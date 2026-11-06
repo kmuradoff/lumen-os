@@ -20,7 +20,12 @@
     <string name="beta_off">Wył.</string>
     <string name="beta_hint">Wersje beta pojawiają się wcześniej, ale są mniej przetestowane. Po wyłączeniu obecna wersja zostaje, dopóki nie wyjdzie nowsza zwykła wersja.</string>
     <string name="row_stats">Wysyłaj anonimowe statystyki</string>
-    <string name="stats_hint">Raz dziennie: model, wersja, numer seryjny w postaci skrótu (hash) i kraj. Twój adres IP nie jest zapisywany.</string>
+    <string name="stats_hint">Przy każdym uruchomieniu i raz dziennie: model, wersja, kompilacja, dane o aktualizacji, kraj, losowy numer instalacji i numer seryjny (serwer przechowuje tylko jego skrót). Twój adres IP nie jest zapisywany.</string>
+    <string name="notice_title">Anonimowe statystyki</string>
+    <string name="notice_body">Przy każdym uruchomieniu i raz dziennie Lumen OS przesyła model, wersję, kompilację, dane o aktualizacji i kraj, a także losowy numer instalacji i numer seryjny (serwer przechowuje tylko jego skrót). Adres IP nie jest zapisywany, a to, co oglądasz, nie jest wysyłane.</string>
+    <string name="notice_where">Możesz to zmienić w sekcji „%1$s”.</string>
+    <string name="notice_ok">OK</string>
+    <string name="notice_off">Wyłącz</string>
     <string name="avail_title">Dostępny jest Lumen OS %1$s</string>
     <string name="avail_size_full">Pełna aktualizacja · %1$s</string>
     <string name="avail_size_delta">Aktualizacja · %1$s</string>
@@ -85,6 +90,8 @@
     <string name="err_signature">Informacje o aktualizacji nie są podpisane przez Lumen OS i zostały zignorowane.</string>
     <string name="err_hash">Pobrany plik był uszkodzony i zostanie pobrany ponownie.</string>
     <string name="err_install">Nie udało się zainstalować aktualizacji (kod %1$d). Obecna wersja działa dalej.</string>
+    <string name="err_install_unknown">Nie udało się zainstalować aktualizacji. Obecna wersja nadal działa.</string>
+    <string name="err_downgrade">Ta aktualizacja jest starsza niż zainstalowany system, więc nie została zainstalowana.</string>
     <string name="err_space_device">Za mało miejsca na projektorze na aktualizację.</string>
     <string name="btn_retry">Spróbuj ponownie</string>
     <string name="row_usb">Zainstaluj z pamięci USB</string>

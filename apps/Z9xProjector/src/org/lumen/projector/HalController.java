@@ -516,9 +516,34 @@ final class HalController {
 
     /** hal thread: Hal.addConnectedListener hooks (e.g. PowerPolicy re-checks the lamp). */
     private void fireConnected() {
+        firedHooks.clear();
         for (Runnable r : Hal.CONNECT_LISTENERS) {
+            firedHooks.add(r);
             try { r.run(); } catch (Throwable t) { Log.w(TAG, "connected listener: " + t); }
         }
+    }
+
+    /**
+     * 2026-11-04 (ported from the HB fork, hb-t7): the hooks that ran on the last connect (hal thread only). On a
+     * restart within a boot (crash, APK update) lateStart connects at once, in parallel with App.onCreate, so the
+     * hooks of the modules installed after hal.start() (DreamLamp, TimerLamp, ManualKeystonePanel, OpticalZoomPanel,
+     * EarcLink...) would wait for the next reconnect: exactly the crash case their recovery is for.
+     */
+    private final java.util.Set<Runnable> firedHooks =
+            java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+    /** Runs, once, the connect hooks added after the last connect fired (end of App.onCreate). Any thread. */
+    void runLateConnectHooks() {
+        hal.post(() -> {
+            if (!connected) return;
+            int n = 0;
+            for (Runnable r : Hal.CONNECT_LISTENERS) {
+                if (!firedHooks.add(r)) continue;
+                n++;
+                try { r.run(); } catch (Throwable t) { Log.w(TAG, "late connected listener: " + t); }
+            }
+            Log.i(TAG, "late connect hooks: " + n + " run (" + firedHooks.size() + " in all)");
+        });
     }
 
     /** After a reconnect: if gmpf_main lost the handshake state, resend it (never 17). */
@@ -608,6 +633,17 @@ final class HalController {
             case 2:
                 afBusyUntil = 0;
                 Ui.toast(app, R.string.toast_af_failed);
+                break;
+            case 7:
+                // 2026-11-04: the AF could not start (stock FocusUIV2.java:670-673 "auto focus initialization failed").
+                // The card closes on 7 without a stop, so the 15 s busy window must end here, or the focus key is
+                // ignored ("AF running") with nothing on screen
+                afBusyUntil = 0;
+                Ui.toast(app, R.string.af_init_failed);
+                break;
+            case 18:
+                // stock FocusUIV2.java:635-640: AF done and fine-tuning offered (strings.xml:510)
+                if (value != null && value.contains("AF_Success_Into_Adjust")) Ui.toast(app, R.string.af_done_fine_tune);
                 break;
             case 0: case 1:
                 motor.stop();                                  // motor limit reached
@@ -731,6 +767,17 @@ final class HalController {
             if (fit && !client.getCurtainFit()) {
                 if (user) Ui.toast(app, R.string.toast_need_curtain);
                 return;
+            }
+            // 2026-11-04 (stock autoKeystone, common.json:284): a user "Auto keystone now" is refused in a top-speed game
+            // (KstGameLock), then in 3D (G0082 support_Trapezoid_3D=0). Fit now (curtainAutoKeystone) has no such rule.
+            if (user && !fit) {
+                org.lumen.projector.panel.PanelRules.Why w = org.lumen.projector.panel.PanelRules.keystone(
+                        org.lumen.projector.panel.RuleNotes.readKeystone(app, client, client2));
+                if (w != org.lumen.projector.panel.PanelRules.Why.NONE) {
+                    Log.i(TAG, "keystone refused: stock rule " + w);
+                    org.lumen.projector.panel.RuleNotes.show(app, app.getString(R.string.panel_ak_now), w, false);
+                    return;
+                }
             }
             // Always go through the motor thread: this queues behind a startNow that is already
             // posted (it then sees the stop), sends manualFocus(2) only if something may be moving,

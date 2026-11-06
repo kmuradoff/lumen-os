@@ -178,7 +178,7 @@ if [ $LUMEN = 1 ]; then
            hb_audio_policy_check.py hb_vendor_services.rc z9x_nui.rc z9x_nui.sh \
            Vendor_000d_Product_3841.kl Vendor_000d_Product_3841.idc Vendor_3697_Product_0001.kl \
            Vendor_3697_Product_0002.kl check_privapp.py apkinfo.py z9x_gapps.rc z9x_gapps.sh z9x-gapps-sysconfig.xml \
-           gapps_allow.txt hb_media.rc privapp-permissions-lumeninfo.xml; do
+           gapps_allow.txt hb_media.rc privapp-permissions-lumeninfo.xml hb_bt.rc hb_bt_sbc.py; do
     [ -s "$IN/$f" ] || die "missing $IN/$f (tools/image/compose.sh stages it)"
   done
   SG=$IN/signed_stage
@@ -278,7 +278,7 @@ if [ $PUB = 1 ]; then
     [ -s "$IN/$f" ] || die "missing $IN/$f (tools/image/compose.sh stages it)"
   done
   for kv in z9x_blobs.rc:40333ab318e13009cf82283fe2a3361683687a70af17063d104587783751d6e1 \
-            z9x_blobs.sh:38456fad478f0cff27c1da9b28edfec26b0a0e68e9f5d84cea50fda33be2b5c4; do
+            z9x_blobs.sh:8ad31ef4fbcf91bb1ad14e9ac0610a80b0c36a822113af64885c80759a468832; do
     [ "$(sha256sum "$IN/${kv%%:*}" | awk '{print $1}')" = "${kv#*:}" ] || die "blobs: $IN/${kv%%:*} is not the pinned Z9X file"
   done
   # the HB allow-list names exactly the two files the test builds carry: the pinned stock libstagefright_foundation.so
@@ -861,6 +861,21 @@ SETUPPY
     inst 0755 "$IN/z9x_blobs.sh" "$S/etc/z9x/z9x_blobs.sh"
     inst 0644 "$IN/blobs_allow.txt" "$S/etc/z9x/blobs_allow.txt"
   fi
+  #   Bluetooth (hb_bt.rc): the base's libbluetooth_jni.so with SBC fed at 44.1 kHz (hb_bt_sbc.py: the
+  #   pinned base copy in, the pinned HB copy out), in /system/lib/hb_bt (label system_lib_file, the label of the APEX
+  #   file it covers; no namespace searches the sub-folder), bound over the APEX copy at post-fs-data. Our own build,
+  #   no XGIMI file: in the test and the public images alike.
+  BTW=$T/btchk; mkdir -p "$BTW"
+  python3 -I -c 'import sys, zipfile; open(sys.argv[2], "wb").write(zipfile.ZipFile(sys.argv[1]).read("apex_payload.img"))' \
+    "$MB/system/apex/com.android.btservices.apex" "$BTW/bt_payload.img" || die "bt: cannot read the base btservices APEX payload"
+  "$(command -v debugfs || echo /sbin/debugfs)" -R "dump /lib/libbluetooth_jni.so $BTW/base.so" "$BTW/bt_payload.img" > /dev/null 2>&1
+  python3 -I "$IN/hb_bt_sbc.py" "$BTW/base.so" "$BTW/libbluetooth_jni.so" || die "bt: hb_bt_sbc.py refused the base copy"
+  grep -qx '    mount none /system/lib/hb_bt/libbluetooth_jni.so /apex/com.android.btservices/lib/libbluetooth_jni.so bind' \
+    "$IN/hb_bt.rc" || die "bt: hb_bt.rc does not bind /system/lib/hb_bt over the btservices copy"
+  sudo install -d -o root -g root -m 0755 "$S/lib/hb_bt"
+  inst 0644 "$BTW/libbluetooth_jni.so" "$S/lib/hb_bt/libbluetooth_jni.so"
+  inst 0644 "$IN/hb_bt.rc" "$S/etc/init/hb_bt.rc"
+  rm -rf "$BTW"
   #   every priv-app has its privapp-permissions entries (tools/play6/check_privapp.py, read only)
   sudo python3 -I "$IN/check_privapp.py" "$S" || die "privapp-permissions check failed"
 fi

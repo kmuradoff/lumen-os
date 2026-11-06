@@ -94,13 +94,17 @@ final class TimerLamp {
         Hal.query((g, g2) -> {
             int boost;
             try { boost = g2.isBoost() ? 1 : 0; } catch (Throwable t) { boost = -1; }
-            return new int[]{g.getLampLevel(), boost};
+            // 2026-11-04 (as the HB fork): a 176 turns dynamic black off (Z9X libxgimi DB_OFF:setlumenslevel)
+            int db;
+            try { db = g2.getDynamicBlack() ? 1 : 0; } catch (Throwable t) { db = -1; }
+            return new int[]{g.getLampLevel(), boost, db};
         }, r -> {
             if (gen != sGen.get()) return;
             if (r == null) { Log.i(TAG, "177 unreadable: no lamp fade"); return; }
             final int cur = r[0];
             final int tgt = Math.max(1, Math.min(10, target));
             if (r[1] != 0) { Log.i(TAG, "Boost on or unknown (" + r[1] + "): no lamp fade"); return; }
+            if (r[2] != 0) { Log.i(TAG, "dynamic black on or unknown (" + r[2] + "): no lamp fade"); return; }
             if (cur <= tgt || cur > 10) { Log.i(TAG, "level " + cur + ": nothing to fade"); return; }
             final int n = Math.min(MAX_STEPS, cur - tgt);
             sWorker.post(() -> {

@@ -314,7 +314,7 @@ public final class DreamLamp {
             return;
         }
         sInFlightGen = gen;
-        Hal.query((g, g2) -> new int[]{g.getLampLevel(), boostState(g2)}, r -> {
+        Hal.query((g, g2) -> new int[]{g.getLampLevel(), boostState(g2), dynamicBlackState(g2)}, r -> {
             if (gen != sGen.get()) { endInFlight(gen); done.run(); return; }
             if (r == null) {
                 Log.i(TAG, "dim: 177 not readable, lamp left as is");
@@ -325,6 +325,14 @@ public final class DreamLamp {
             final int cur = r[0];
             if (r[1] != 0) {
                 Log.i(TAG, "dim: Boost " + (r[1] < 0 ? "unknown" : "on") + ", no dim");
+                endInFlight(gen);
+                done.run();
+                return;
+            }
+            if (r[2] != 0) {
+                // 2026-11-04 (as the HB fork): any 176 turns dynamic black off (Z9X libxgimi DB_OFF:setlumenslevel,
+                // libxgimi.str:157309); stock never dims, so with dynamic black on (or unknown) the lamp stays
+                Log.i(TAG, "dim: dynamic black " + (r[2] < 0 ? "unknown" : "on") + ", no dim");
                 endInFlight(gen);
                 done.run();
                 return;
@@ -635,6 +643,15 @@ public final class DreamLamp {
     // =================================================================== helpers
 
     /** IGmpf2 51: 1 = Boost on, 0 = off, -1 = unknown (never throws). z9x-hal. */
+    /** IGmpf2 29 getDynamicBlackType: 1 = on, 0 = off, -1 = unknown (never throws). z9x-hal. */
+    private static int dynamicBlackState(org.lumen.projector.hal.Gmpf2Client g2) {
+        try {
+            return g2 == null ? -1 : g2.getDynamicBlack() ? 1 : 0;
+        } catch (Throwable t) {
+            return -1;
+        }
+    }
+
     private static int boostState(org.lumen.projector.hal.Gmpf2Client g2) {
         try {
             return g2 != null && g2.isBoost() ? 1 : (g2 == null ? -1 : 0);

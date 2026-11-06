@@ -99,7 +99,7 @@
     <string name="done_name">Projektorname</string>
     <string name="done_home">Startbildschirm</string>
     <string name="done_stats">Anonyme Statistik senden</string>
-    <string name="done_stats_note">Einmal am Tag: Modell, Version, Seriennummer als Hash und Land. Deine IP-Adresse wird nicht gespeichert.</string>
+    <string name="done_stats_note">Bei jedem Start und einmal am Tag: Modell, Version, Build, Update-Angaben, Land, eine zufällige Installationsnummer und die Seriennummer (der Server speichert nur ihren Hash). Deine IP-Adresse wird nicht gespeichert.</string>
     <string name="done_start">Los geht’s</string>
     <string name="done_offline_hint">Kein Internet: Google-Anmeldung und Zeitzone später in den Einstellungen.</string>
     <string name="done_offline_hint_nogms">Kein Internet: Zeitzone später in den Einstellungen festlegen.</string>

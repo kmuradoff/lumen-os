@@ -35,4 +35,19 @@ public final class EarcRules {
         if (arcPresent || !avrKnown) return false;
         return kind == null || "AUTO".equals(kind) || "ARC".equals(kind);
     }
+
+    /**
+     * 2026-11-04: the "no eARC, no ARC" restart is scheduled only after an eARC event of this process: the panel row
+     * pressed within windowMs (a failed Auto, the vendor's "Amp Not Support EARC"), or a link of 3 seen before. A plain
+     * ARC soundbar the user turned off (it sends &lt;Terminate ARC&gt;) is never asked for ARC again.
+     */
+    public static boolean restartAllowed(long sinceUserMs, boolean userPressed, boolean sawLinked, long windowMs) {
+        if (sawLinked) return true;
+        return userPressed && sinceUserMs >= 0 && sinceUserMs < windowMs;
+    }
+
+    /** The restart itself: only with the screen on and an audio system that does not report standby. */
+    public static boolean restartAwake(boolean interactive, boolean avrStandby) {
+        return interactive && !avrStandby;
+    }
 }

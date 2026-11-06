@@ -217,13 +217,17 @@
         android:theme="@style/Theme.Z9x.Settings">
 
         <!-- v6.2 (v6.2 requirements 4): no launcher tile any more. Opened only from inside the app
-             (quick panel > All settings > Projector settings, Hal.openProjectorSettings). -->
+             (quick panel > All settings > Projector settings, Hal.openProjectorSettings).
+             1.0.9: a BLE remote that reconnects changes keyboard / navigation; that used to recreate the
+             activity and close an open chooser (the bilibili key choice was lost). Density, screen size and
+             locale still recreate it (UI resolution, language). -->
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:label="@string/app_name"
             android:banner="@drawable/brand_banner_projector"
             android:launchMode="singleTask"
+            android:configChanges="keyboard|keyboardHidden|navigation|uiMode"
             android:theme="@style/Theme.Z9x.Settings" />
 
         <!-- Lumen OS 1.0.1: "Send a problem report" (report.ReportActivity), opened only from Projector

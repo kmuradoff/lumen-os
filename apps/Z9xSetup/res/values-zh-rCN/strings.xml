@@ -99,7 +99,7 @@
     <string name="done_name">投影仪名称</string>
     <string name="done_home">主屏幕</string>
     <string name="done_stats">发送匿名统计信息</string>
-    <string name="done_stats_note">每天一次：型号、版本、经过哈希处理的序列号和国家。不会保存您的 IP 地址。</string>
+    <string name="done_stats_note">每次开机时及每天一次：型号、版本、构建、更新信息、国家、随机安装编号和序列号（服务器只保存其哈希值）。不会保存您的 IP 地址。</string>
     <string name="done_start">开始使用</string>
     <string name="done_offline_hint">无互联网：可稍后在设置中登录 Google 并设置时区。</string>
     <string name="done_offline_hint_nogms">无互联网：可稍后在设置中设置时区。</string>

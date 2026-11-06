@@ -2,7 +2,7 @@
 #
 # Replaces the reader side of stock "service nativeui /system/bin/nativeui / class main / oneshot"
 # (not shipped on the GSI), so the vendor's blocking open of /data/vendor/tmp/nuififo in gmpf_main
-# (eye protection, IGmpf 148, AK/AL native-UI steps) can never hang (research/v62x RESULT_eye.json).
+# (eye protection, IGmpf 148, AK/AL native-UI steps) can never hang (measured on the device).
 #
 # Two background services in class main (started by init's class_start, i.e. after /data is
 # mounted; nothing here runs before early-boot and there is no 'exec'). Neither is oneshot: init

@@ -6,7 +6,7 @@
      Lineage 21 sets config_stopSystemPackagesByDefault=true: a system package seen for the first time is
      put in the "stopped" state if it has an exported LAUNCHER activity, and a stopped package gets no
      BOOT_COMPLETED / implicit broadcasts / jobs until the user opens it. Every org.lumen package must run
-     without being opened first (plan C6): the projector, tvinput and airplay services, Lumen Home's jobs
+     without being opened first: the projector, tvinput and airplay services, Lumen Home's jobs
      and receivers, the first-run setup, and the updater's check job. -->
 <config>
     <initial-package-state package="org.lumen.projector" stopped="false" />

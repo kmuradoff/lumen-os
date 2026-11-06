@@ -99,6 +99,14 @@ public final class Sys {
         }
     }
 
+    /** Tells the updater that this install saw the statistics choice (no one-time notice after a later update). */
+    public static void statsSeen(Context c) {
+        try {
+            c.getContentResolver().call(UPDATER, "stats_seen", null, null);
+        } catch (Throwable ignored) {
+        }
+    }
+
     public static boolean hasLumenHome(Context c) { return installed(c, PKG_HOME); }
 
     public static boolean hasClassic(Context c) { return installed(c, PKG_TVLAUNCHER); }

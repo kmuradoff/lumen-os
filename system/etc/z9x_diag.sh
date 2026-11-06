@@ -203,7 +203,14 @@ start_logcat() {
 }
 start_logcat
 LC_RESTARTS=0
-dmesg -w 2>&1 | head -c $DMESG_BYTES > $B/dmesg.txt &
+# 2026-11-04: the 4K mailbox / VCP / motion / ToF lines filled the 3 MB in 4.5 min of 4K playback (boot #46), so a
+# later crash had no kernel lines. They are dropped; everything else is kept for the whole budget. A grep without
+# --line-buffered (old toybox) falls back to the unfiltered stream.
+if echo x | grep -av --line-buffered -E 'y' >/dev/null 2>&1; then
+  dmesg -w 2>&1 | grep -av --line-buffered -E 'add ch 58 to send list|\[VCP\]|Motion_det|TOF_DEBUG' | head -c $DMESG_BYTES > $B/dmesg.txt &
+else
+  dmesg -w 2>&1 | head -c $DMESG_BYTES > $B/dmesg.txt &
+fi
 DM=$!
 
 snap() {
@@ -224,10 +231,10 @@ tombs() {
 # Only a stick that vold has already mounted (/mnt/media_rw/*) is used. The logger never mounts a
 # block device itself, so it can never race vold's fsck/mount of the user's stick (which may be the
 # XGIMI firmware rescue stick). Every write stays inside <stick>/z9x_diag_logs/.
-# Opt-in (review 2026-10-07: the logs hold the serial, account names, Wi-Fi SSIDs, URLs): a stick is
+# Opt-in (the logs hold the serial, account names, Wi-Fi SSIDs, URLs): a stick is
 # used only when it ALREADY has a z9x_diag_logs/ folder (made by the user on purpose), or, for a
 # developer, with persist.z9x.diag_usb=1 (then the folder is created). A stick plugged in to play a
-# film, or a friend's stick, is never written.
+# film, or any other stick, is never written.
 usb_copy() {
   mp=""
   usb_dev=$(gp persist.z9x.diag_usb)

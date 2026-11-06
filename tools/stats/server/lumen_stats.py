@@ -51,6 +51,9 @@ VERSION_RE = re.compile(r"^[0-9A-Za-z.\-]{1,24}$")
 BUILD_RE = re.compile(r"^[0-9A-Za-z._\-]{0,64}$")
 CHANNELS = ("stable", "beta")
 
+# one projector: its serial hash, or the install id hash for an install that reports no serial
+DEVICE = "COALESCE(NULLIF(serial_hash, ''), id_hash)"
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS pings2 (day TEXT NOT NULL, id_hash TEXT NOT NULL, serial_hash TEXT NOT NULL,
   model TEXT NOT NULL, xgimi_model TEXT NOT NULL, version TEXT NOT NULL, version_code INTEGER NOT NULL,
@@ -204,11 +207,12 @@ class Store:
                 "active": {}}
             for n in (7, 30):
                 since = (d - datetime.timedelta(days=n - 1)).isoformat()
-                # each install once, at its latest row in the window (SQLite: bare columns come from the MAX row)
+                # each projector once (its serial; an install without one by its install id), at its latest row
+                # in the window (SQLite: bare columns come from the MAX row); a reset or reinstall is not a new one
                 latest = ("(SELECT id_hash, serial_hash, model, xgimi_model, version, channel, country, "
-                          "MAX(day) FROM pings2 WHERE day >= ? GROUP BY id_hash)")
-                tot = self.db.execute("SELECT COUNT(*), COUNT(DISTINCT NULLIF(serial_hash, '')) FROM " + latest,
-                                      (since,)).fetchone()
+                          "MAX(day) FROM pings2 WHERE day >= ? GROUP BY " + DEVICE + ")")
+                tot = self.db.execute("SELECT COUNT(DISTINCT id_hash), COUNT(DISTINCT " + DEVICE + ") FROM pings2 "
+                                      "WHERE day >= ?", (since,)).fetchone()
                 a = {"since": since, "installs": tot[0], "projectors": tot[1]}
                 a["by_version"] = self._rows("SELECT model, version, channel, COUNT(*) FROM " + latest +
                                              " GROUP BY 1, 2, 3 ORDER BY 4 DESC", (since,),
@@ -220,8 +224,8 @@ class Store:
                                              " GROUP BY 1 ORDER BY 2 DESC", (since,), ("country", "installs"))
                 out["active"][str(n)] = a
             since = (d - datetime.timedelta(days=89)).isoformat()
-            out["daily"] = self._rows("SELECT day, model, version, channel, COUNT(*) FROM pings2 WHERE day >= ? "
-                                      "GROUP BY 1, 2, 3, 4 ORDER BY 1", (since,),
+            out["daily"] = self._rows("SELECT day, model, version, channel, COUNT(DISTINCT " + DEVICE + ") FROM pings2 "
+                                      "WHERE day >= ? GROUP BY 1, 2, 3, 4 ORDER BY 1", (since,),
                                       ("day", "model", "version", "channel", "installs"))
             out["updates_daily"] = self._rows("SELECT day, method, COUNT(*) FROM updates2 WHERE day >= ? "
                                               "GROUP BY 1, 2 ORDER BY 1", (since,), ("day", "method", "n"))
@@ -236,6 +240,7 @@ class Store:
             if now is None:
                 self.cache = (t, body)
             return body
+
 
 
 class RateLimit:

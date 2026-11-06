@@ -102,6 +102,14 @@ public final class AfAfterTest {
         eq("clear arms no timer", false, q.queue(null));
         eq("cleared", null, q.focusEvent(5));
 
+        // 2026-11-04: stock key modes of the card
+        eq("LR manual on event 8", true, AfAfter.leftRightOpensManual(8));
+        eq("LR no manual on 335", false, AfAfter.leftRightOpensManual(335));
+        eq("LR no manual on 4", false, AfAfter.leftRightOpensManual(4));
+        eq("motor key 2092", true, AfAfter.isFocusMotorKey(2092));
+        eq("motor key 2096", true, AfAfter.isFocusMotorKey(2096));
+        eq("not motor key 2091", false, AfAfter.isFocusMotorKey(2091));
+        eq("not motor key DPAD_LEFT", false, AfAfter.isFocusMotorKey(21));
         System.out.println("AfAfterTest: " + passed + " passed, " + failed + " failed");
         if (failed > 0) System.exit(1);
     }

@@ -130,6 +130,8 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
     private LauncherApps.Callback mAppsCb;
     private TvInputManager.TvInputCallback mInputCb;
     private BroadcastReceiver mStandbyRx;
+    /** 2026-11-04: the updater's OTA_STATE broadcast (Ota.setBusy): the "Update ready" chip follows it. */
+    private BroadcastReceiver mOtaRx;
     private ConnectivityManager.NetworkCallback mNetCb;
     private SharedPreferences.OnSharedPreferenceChangeListener mPrefsCb;
     private BroadcastReceiver mTimeRx;
@@ -517,6 +519,21 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         };
         registerReceiver(mStandbyRx, new IntentFilter(ProjectorBridge.ACTION_STANDBY_CHANGED), ProjectorBridge.PERM_STANDBY,
                 h, Context.RECEIVER_EXPORTED);
+        // 2026-11-04: onStart asks the updater once, and at the first start after an OTA reboot the updater still
+        // holds the state of the old boot (it is settled by its BOOT_COMPLETED, which comes after the launcher's
+        // first start): the chip follows the updater's state broadcast, read again from its provider
+        mOtaRx = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent i) {
+                Log.i(App.TAG, "updater state " + i.getStringExtra("state"));
+                mApp.io().post(() -> {
+                    boolean upd = ProjectorBridge.updateReady(HomeActivity.this);
+                    mMain.post(() -> mBar.setUpdateReady(upd));
+                });
+            }
+        };
+        registerReceiver(mOtaRx, new IntentFilter("org.lumen.updater.action.OTA_STATE"),
+                "org.lumen.updater.permission.OTA_STATE", h, Context.RECEIVER_EXPORTED);
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         mNetCb = new ConnectivityManager.NetworkCallback() {
             private boolean mFirst = true;
@@ -657,6 +674,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
             TvInputManager tim = getSystemService(TvInputManager.class);
             if (tim != null && mInputCb != null) tim.unregisterCallback(mInputCb);
             if (mStandbyRx != null) unregisterReceiver(mStandbyRx);
+            if (mOtaRx != null) unregisterReceiver(mOtaRx);
             if (mNetCb != null) getSystemService(ConnectivityManager.class).unregisterNetworkCallback(mNetCb);
             if (mPrefsCb != null) mApp.prefs().raw().unregisterOnSharedPreferenceChangeListener(mPrefsCb);
             if (mTimeRx != null) unregisterReceiver(mTimeRx);
@@ -678,6 +696,7 @@ public class HomeActivity extends Activity implements PageApps.Host, TopBar.Host
         mAppsCb = null;
         mInputCb = null;
         mStandbyRx = null;
+        mOtaRx = null;
         mNetCb = null;
         mPrefsCb = null;
     }

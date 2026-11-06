@@ -1,4 +1,4 @@
-# Lumen OS 1.0 power: real STR (install as /system/etc/init/z9x_power.rc). Owner: lane L-PROJECTOR.
+# Lumen OS 1.0 power: real STR (install as /system/etc/init/z9x_power.rc), driven by org.lumen.projector.
 # Only init builtins (write, setprop): nothing here can block early boot; every write to a node that
 # does not exist fails harmlessly with one init log line.
 #
@@ -52,8 +52,8 @@ on property:sys.boot_completed=1
     write /sys/mtk_pm/wakeup_source/usb 0
     write /sys/mtk_pm/wakeup_source/cast 0
 
-# ---- 2) CEC auto-wake (cec0). 1 only while the CEC lane's "Turn on with HDMI device" is enabled; that
-# lane sets persist.z9x.cec_wake (1 / 0) in a later wave. Unset (Lumen OS 1.0 default) = 0 from block 1.
+# ---- 2) CEC auto-wake (cec0). 1 only while the projector app's "Turn on with HDMI device" is enabled; the
+# app sets persist.z9x.cec_wake (1 / 0). Unset (Lumen OS 1.0 default) = 0 from block 1.
 # (An action with two property triggers runs whenever either one changes while both match.)
 on property:persist.z9x.cec_wake=1 && property:sys.boot_completed=1
     write /sys/mtk_pm/wakeup_source/cec0 1
@@ -62,7 +62,7 @@ on property:persist.z9x.cec_wake=0 && property:sys.boot_completed=1
     write /sys/mtk_pm/wakeup_source/cec0 0
 
 # ---- 3) STR allowed by default (the v6.5 never-STR wakelock is gone).
-# v6.5's z9x_base.rc held the kernel wakelock z9x_no_str from post-fs. Lumen OS 1.0 must not (L-SYSTEM
+# v6.5's z9x_base.rc held the kernel wakelock z9x_no_str from post-fs. Lumen OS 1.0 must not (the image
 # drops that block from overlay/v1/z9x_base.rc); this releases it anyway at 'on boot', so an image that
 # still carries the old block cannot keep the SoC out of STR. Kill switch, as before:
 #   setprop persist.z9x.allow_str 0  -> wake_lock again (and the app goes back to the v6.5 lamp-only

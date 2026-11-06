@@ -20,7 +20,12 @@
     <string name="beta_off">Вимк</string>
     <string name="beta_hint">Бета-версії виходять раніше, але перевірені менше. Якщо їх вимкнути, поточна версія залишиться, доки не вийде новіша звичайна версія.</string>
     <string name="row_stats">Надсилати анонімну статистику</string>
-    <string name="stats_hint">Раз на день: модель, версія, серійний номер у вигляді хешу та країна. Ваша IP-адреса не зберігається.</string>
+    <string name="stats_hint">Під час кожного ввімкнення і раз на день: модель, версія, збірка, відомості про оновлення, країна, випадковий номер встановлення та серійний номер (сервер зберігає лише його хеш). Ваша IP-адреса не зберігається.</string>
+    <string name="notice_title">Анонімна статистика</string>
+    <string name="notice_body">Під час кожного ввімкнення і раз на день Lumen OS повідомляє модель, версію, збірку, відомості про оновлення та країну, а також випадковий номер встановлення й серійний номер (сервер зберігає лише його хеш). IP-адреса не зберігається, а те, що ви дивитеся, не надсилається.</string>
+    <string name="notice_where">Змінити це можна в розділі «%1$s».</string>
+    <string name="notice_ok">Добре</string>
+    <string name="notice_off">Вимкнути</string>
     <string name="avail_title">Доступна Lumen OS %1$s</string>
     <string name="avail_size_full">Повне оновлення · %1$s</string>
     <string name="avail_size_delta">Оновлення · %1$s</string>
@@ -85,6 +90,8 @@
     <string name="err_signature">Інформацію про оновлення не підписано Lumen OS, її проігноровано.</string>
     <string name="err_hash">Завантаження пошкоджено, його буде завантажено знову.</string>
     <string name="err_install">Не вдалося встановити оновлення (код %1$d). Поточна версія працює далі.</string>
+    <string name="err_install_unknown">Не вдалося встановити оновлення. Поточна версія працює далі.</string>
+    <string name="err_downgrade">Це оновлення старіше за встановлену систему, тому його не встановлено.</string>
     <string name="err_space_device">На проєкторі недостатньо місця для оновлення.</string>
     <string name="btn_retry">Спробувати ще</string>
     <string name="row_usb">Установити з USB-накопичувача</string>

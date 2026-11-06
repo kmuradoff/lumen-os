@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Lumen OS UI resolution (image path /system/etc/z9x/z9x_uires.sh, 0755 root:root; run only by
 # /system/product/etc/init/init.lineage.atv.scaling.rc, Lumen's replacement of the LineageOS ATV file of
-# that name, as root, u:r:su:s0). Owner decision (1.0.1, 2026-10-09): the Android UI runs at 4K (3840x2160,
+# that name, as root, u:r:su:s0). Since 1.0.1 (2026-10-09): the Android UI runs at 4K (3840x2160,
 # the default, 1:1 on the panel) or 1080p, picked in Projector settings. 2K (2560x1440) is not offered: it
 # is a hidden debug mode (the file /metadata/z9x_uires/debug, adb root). Every mode has the same 960x540 dp
 # layout (density 640 / 320 / 427). A start the projector cannot show correctly falls back to 1080p by
@@ -31,7 +31,7 @@
 #   z9x_uires.sh state   print what 'check' reads, the panel ini in effect, our tmpfs, the props and the
 #                        state files (adb root shell).
 #
-# Measured on the owner's Z9X (2026-10-08/09, as root, runtime only, reverted by a reboot):
+# Measured on a Z9X (2026-10-08/09, as root, runtime only, reverted by a reboot):
 #  - the GOP (vendor OSD plane) scales the HWC display to the panel by panel / Display Region:
 #    Dst = vendor.display-size x (3840x2160 / Display Region). 'dumpsys SurfaceFlinger' shows the GOP as
 #    "CustomerSize X:Y|LayerW:LayerH|DstW:DstH[0:0|1920:1080|3840:2160]" and the region in the HWC table

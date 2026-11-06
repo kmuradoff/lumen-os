@@ -115,8 +115,9 @@ final class QuickPanelController {
     private static final GmpfClient.GameModeOption[] SPEED_ORDER = {
             GmpfClient.GameModeOption.BASIC, GmpfClient.GameModeOption.BASIC_HFR,
             GmpfClient.GameModeOption.TOP_SPEED, GmpfClient.GameModeOption.TOP_SPEED_HFR};
+    /** Stock Z9X order Auto, 4:3, 16:9, Original (tree_annot.txt:154-158; PanelRules.ASPECT_WIRES 2, 0, 1, 4). */
     private static final GmpfClient.AspectRatio[] ASPECT_ORDER = {
-            GmpfClient.AspectRatio.AUTO, GmpfClient.AspectRatio.R16_9, GmpfClient.AspectRatio.R4_3,
+            GmpfClient.AspectRatio.AUTO, GmpfClient.AspectRatio.R4_3, GmpfClient.AspectRatio.R16_9,
             GmpfClient.AspectRatio.ORIGINAL};
     private static final GmpfClient.MemcLevel[] MEMC_ORDER = GmpfClient.MemcLevel.values();
     private static final GmpfClient.ColorTemp[] CT_ORDER = GmpfClient.ColorTemp.values();
@@ -170,8 +171,13 @@ final class QuickPanelController {
     // 1.0.4: manual sound output and the digital audio format (stock voice_output / voice_arc_format_auto_sound_v5)
     private ChoiceRow soundOut, digitalFormat;
     private java.util.List<org.lumen.projector.audio.AudioOutputChoice.Option> outOptions;
-    /** The "Enhanced" EDID value this projector uses (1 = HDMI 2.0, or 3 once 661 has read 3). */
-    private static final String KEY_EDID_ENHANCED = "edid_enhanced";
+    /** S8: the option list shown when the user last stepped the sound output row, and when (uptime). */
+    private java.util.List<org.lumen.projector.audio.AudioOutputChoice.Option> soundOutShown;
+    private long soundOutTouchedAt;
+    /**
+     * 2026-11-04 (Z9X sweep): Enhanced is always raw 1 on G0082 (getHdmi2_1() false; the vendor getter is its internal
+     * scale minus 1, so 661 never reads 3). The old "edid_enhanced" pref (1 = HDMI 2.0, or 3 once read) is ignored.
+     */
 
     // Boost two-press state
     private boolean boostOn;
@@ -210,6 +216,11 @@ final class QuickPanelController {
     }
 
     void show(String section) {
+        // 2026-11-04: a direct open of the game page (Home shortcut, voice) meets the stock entry rule as the tile does
+        if (QuickPanel.SECTION_GAME.equals(section) && snap != null
+                && RuleNotes.show(app, s(R.string.panel_sec_game), PanelRules.gamePage(rin(snap)), true)) {
+            return;
+        }
         show(section, null);
     }
 
@@ -264,6 +275,22 @@ final class QuickPanelController {
                 && (Lamp3d.blocks(snap.fmt3d, snap.is3dTo2d) || Lamp3d.modeLocks(snap.lumensMode))) {
             if (ev.getAction() == KeyEvent.ACTION_DOWN && ev.getRepeatCount() == 0) lampRefusal();
             return true;
+        }
+        // 2026-11-04 (stock image_mode_basic_setting, PanelRules.basicOrPro): in a running game, AI picture or
+        // Performance a basic slider does not move; one note per press
+        if (Lamp3d.isStepKey(ev.getKeyCode()) && snap != null) {
+            for (SliderRow r : pq) {
+                if (r != null && r.isFocused() && PanelRules.basicOrPro(rin(snap)) != PanelRules.Why.NONE) {
+                    if (ev.getAction() == KeyEvent.ACTION_DOWN && ev.getRepeatCount() == 0) pictureRowRefused(r.getTitle());
+                    return true;
+                }
+            }
+        }
+        // 2026-11-04 (S8): the sound output list the user is stepping through stays as shown until its commit
+        if (soundOut != null && soundOut.isFocused() && Lamp3d.isStepKey(ev.getKeyCode())
+                && ev.getAction() == KeyEvent.ACTION_DOWN) {
+            soundOutTouchedAt = SystemClock.uptimeMillis();
+            soundOutShown = outOptions;
         }
         // Leaving Boost: at "Boost" a LEFT press arms, a second LEFT within 3 s turns it off (FS 3.1).
         // "Towards the start" is RIGHT in RTL (the slider is mirrored, Row.onKeyDown).
@@ -334,21 +361,29 @@ final class QuickPanelController {
             lampRefusal();
             return;
         }
+        // 2026-11-04 (stock game_enhance_mode_entrance, common.json gameMode): the page itself is refused with Dolby
+        // Vision, in 3D and off HDMI, in that order; no page of disabled rows
+        if (QuickPanel.SECTION_GAME.equals(section) && snap != null
+                && RuleNotes.show(app, s(R.string.panel_sec_game), PanelRules.gamePage(rin(snap)), true)) {
+            return;
+        }
         grid.settle();                                       // a stagger still running ends now
         p.setInitialFocus(-1);                               // a page always opens at its first row
         panel.push(p);
     }
 
-    /** The stock note for a refused brightness change: 3D first, then the picture mode lock (dlpLumensLevel order). */
+    /**
+     * The stock note for a refused brightness change, in the dlpLumensLevel order (CJ:3-44): the Custom / Office /
+     * Performance lumens mode first, named from IGmpf 175 (not from the picture mode), then 3D.
+     */
     private void lampRefusal() {
-        if (snap != null && Lamp3d.blocks(snap.fmt3d, snap.is3dTo2d)) {
+        int b = PanelRules.brightness(rin(snap));
+        if (b == PanelRules.LAMP_3D || b == PanelRules.LAMP_FREE) {
             Notify.show(app, s(R.string.panel_lamp), s(R.string.panel_boost_3d));
             return;
         }
-        GmpfClient.PictureMode pm = snap == null || snap.pictureMode == null ? null
-                : GmpfClient.PictureMode.fromWire(snap.pictureMode);
-        Notify.show(app, s(R.string.panel_lamp), app.getString(R.string.panel_lamp_mode_locked,
-                pm != null ? pmTileLabel(pm) : s(R.string.panel_picture_mode)));
+        int name = b == 0 ? R.string.rules_custom : b == 1 ? R.string.panel_pm_office : R.string.panel_pm_performance;
+        Notify.show(app, s(R.string.panel_lamp), app.getString(R.string.panel_lamp_mode_locked, s(name)));
     }
 
     /**
@@ -453,6 +488,37 @@ final class QuickPanelController {
         CharSequence[] out = new CharSequence[res.length];
         for (int i = 0; i < res.length; i++) out[i] = c.getString(res[i]);
         return out;
+    }
+
+    // ================================================================== stock refusal rules (PanelRules)
+    /** The panel's last read as PanelRules input (all null when there is none: nothing refuses). */
+    private static PanelRules.In rin(Snapshot sn) {
+        PanelRules.In in = new PanelRules.In();
+        if (sn == null) return in;
+        in.pic666 = sn.pictureMode;
+        in.hdr620 = sn.hdr;
+        in.fmt192 = sn.fmt3d;
+        in.to2d193 = sn.is3dTo2d;
+        in.lumens175 = sn.lumensMode;
+        in.opt647 = sn.gameOption;
+        in.game55 = sn.gameActive55;
+        in.boost51 = sn.boost;
+        in.nativeFps283 = sn.nativeFps;
+        in.ultra120 = sn.ultra120;
+        in.hdmi = sn.hdmiConfirmed();
+        in.hdmiFpsCenti = sn.hdmiSignal != null && sn.hdmiSignal.plausible() ? sn.hdmiSignal.frameRateCenti : null;
+        return in;
+    }
+
+    /**
+     * Stock image_mode_basic_setting / image_mode_prof_setting (PanelRules.basicOrPro): a basic or professional
+     * picture row is refused in a running game, the AI picture mode and Performance. True = refused (note shown,
+     * rows re-read so the old value comes back).
+     */
+    private boolean pictureRowRefused(CharSequence title) {
+        if (!RuleNotes.show(app, title, PanelRules.basicOrPro(rin(snap)), true)) return false;
+        refresh();
+        return true;
     }
 
     // ================================================================== HAL helpers
@@ -607,14 +673,18 @@ final class QuickPanelController {
         }
         // Lumen OS 1.0.4: picture rotation (stock RotateWind)
         p.add(new NavRow(app, s(R.string.rot_title), safe("rotation", () -> {
-            if (snap != null && snap.isTopSpeedGame()) { Notify.show(app, s(R.string.panel_kst_game_mode)); return; }
+            // stock screenRotation (common.json:746): top-speed game (KstGameLock: 55 or 666 == 4), then 3D
+            if (RuleNotes.show(app, s(R.string.rot_title), PanelRules.keystone(rin(snap)), false)) return;
             RotatePanel.open(app, backToRow(QuickPanel.SECTION_KEYSTONE));        // replaces the quick panel
         })));
         p.add(new HeaderRow(app, s(R.string.panel_image_correction_settings)));
-        rtKst = p.add(new ToggleRow(app, s(R.string.panel_rt_keystone), (row, w) -> safe("585", () ->
-                change("585 real-time keystone " + w, (g, g2) -> {
-                    if (!Hal.setMoveAkChecked(g, w)) Notify.show(app, s(R.string.toast_rt_kst_ceiling));
-                })).run()));
+        rtKst = p.add(new ToggleRow(app, s(R.string.panel_rt_keystone), (row, w) -> safe("585", () -> {
+            // stock displacementAk (common.json:821, node keystone_non_inductive_real_time): refused in 3D
+            if (RuleNotes.show(app, row.getTitle(), PanelRules.realtimeKeystone(rin(snap)), false)) { refresh(); return; }
+            change("585 real-time keystone " + w, (g, g2) -> {
+                if (!Hal.setMoveAkChecked(g, w)) Notify.show(app, s(R.string.toast_rt_kst_ceiling));
+            });
+        }).run()));
         powerOnKst = p.add(new ToggleRow(app, s(R.string.panel_power_on_keystone), (row, w) -> safe("552", () ->
                 change("552 power-on keystone " + w, (g, g2) -> g.setPowerOnAk(w))).run()));
         // stock spec 2.3: fit to screen ON also turns obstacle avoidance on; obstacle avoidance
@@ -630,10 +700,8 @@ final class QuickPanelController {
         // manual keystone screen's (hold OK). Z9X-only strings (strings_kst_restore.xml): the shared panel_reset_keystone
         // of strings_panel.xml stays as it is for the Play 6.
         p.add(new HeaderRow(app, s(R.string.kst_more)));
-        p.add(new NavRow(app, s(R.string.kst_restore), safe("restore picture", () -> {
-            if (snap != null && snap.isTopSpeedGame()) { Notify.show(app, s(R.string.panel_kst_game_mode)); return; }
-            resetKeystone();
-        })).setChevron(false));
+        // 2026-11-04: no game gate (stock reset_keystone has no SettingMutexManager case, KeyStoneViewModel:555-559)
+        p.add(new NavRow(app, s(R.string.kst_restore), safe("restore picture", this::resetKeystone)).setChevron(false));
     }
 
     // ================================================================== brightness page (stock spec 3.1)
@@ -674,7 +742,10 @@ final class QuickPanelController {
             pq[i] = p.add(new SliderRow(app, s(titles[i]), 0, 100, new SliderRow.OnSlide() {
                 @Override public void onChanging(SliderRow row, int value) { touch(row); }
                 @Override public void onCommit(SliderRow row, int value) {
-                    safe("pq", () -> change("pq " + item + " " + value, (g, g2) -> g.setPq(item, value))).run();
+                    safe("pq", () -> {
+                        if (pictureRowRefused(row.getTitle())) return;
+                        change("pq " + item + " " + value, (g, g2) -> g.setPq(item, value));
+                    }).run();
                 }
             }));
         }
@@ -682,6 +753,9 @@ final class QuickPanelController {
                 labels(app, R.string.panel_ct_d65, R.string.panel_ct_1),
                 (row, i) -> safe("color temp", () -> {
                     if (snap == null || snap.lumensMode == null || i < 0 || i >= CT_ORDER.length) { refresh(); return; }
+                    if (pictureRowRefused(row.getTitle())) return;
+                    // stock image_mode_3_color_temp_dapeng: Office (666 == 25), then 3D
+                    if (RuleNotes.show(app, row.getTitle(), PanelRules.colorTemp(rin(snap)), true)) { refresh(); return; }
                     final GmpfClient.ColorTemp c = CT_ORDER[i];
                     // 174; the lumens mode carries the lamp level, the refresh re-reads 177 (QS).
                     change("174 color temp " + c, (g, g2) -> g.setColorTemp(c));
@@ -691,6 +765,7 @@ final class QuickPanelController {
                 labels(app, R.string.panel_off, R.string.panel_low, R.string.panel_medium, R.string.panel_high),
                 (row, i) -> safe("memc", () -> {
                     if (snap == null || snap.memc == null || i < 0 || i >= MEMC_ORDER.length) { refresh(); return; }
+                    if (pictureRowRefused(row.getTitle())) return;
                     if (Boolean.TRUE.equals(snap.nativeFps)) {            // stock: original frame rate blocks MEMC
                         Notify.show(app, s(R.string.panel_memc), s(R.string.pro_memc_blocked));
                         refresh();
@@ -701,13 +776,20 @@ final class QuickPanelController {
                 }).run()));
         memc.setCommitDelay(CHOICE_COMMIT_MS);
         aiContrast = p.add(new ToggleRow(app, s(R.string.panel_ai_contrast),
-                (row, wanted) -> safe("ai contrast", () ->
-                        change("IGmpf2 288 ai contrast " + wanted, (g, g2) -> g2.setAiContrast(wanted))).run()));
+                (row, wanted) -> safe("ai contrast", () -> {
+                    if (pictureRowRefused(row.getTitle())) return;
+                    change("IGmpf2 288 ai contrast " + wanted, (g, g2) -> g2.setAiContrast(wanted));
+                }).run()));
         superRes = p.add(new ToggleRow(app, s(R.string.panel_super_resolution),
-                (row, wanted) -> safe("super resolution", () ->
-                        change("IGmpf2 322 super resolution " + wanted, (g, g2) -> g2.setSuperResolution(wanted))).run()));
+                (row, wanted) -> safe("super resolution", () -> {
+                    if (pictureRowRefused(row.getTitle())) return;
+                    change("IGmpf2 322 super resolution " + wanted, (g, g2) -> g2.setSuperResolution(wanted));
+                }).run()));
         ultra120 = p.add(new ToggleRow(app, s(R.string.panel_ultra120),
-                (row, wanted) -> safe("ultra 120", () -> onUltra120(row, wanted)).run()));
+                (row, wanted) -> safe("ultra 120", () -> {
+                    if (pictureRowRefused(row.getTitle())) return;
+                    onUltra120(row, wanted);
+                }).run()));
         // Lumen OS 1.0.4: the stock "Professional settings" (ProPicture: white balance, colour, gamma, contrast,
         // original frame rate, noise reduction), its own pages
         pro = new ProPicture(app, prefs, new ProPicture.Host() {
@@ -716,11 +798,16 @@ final class QuickPanelController {
                 QuickPanelController.this.confirm(titleRes, msg, okRes, onOk);
             }
         });
-        p.add(new NavRow(app, s(R.string.pro_title), safe("pro page", () -> push(pro.page))));
-        p.add(new NavRow(app, s(R.string.panel_picture_reset), safe("picture reset", () ->
-                confirm(R.string.panel_picture_reset, s(R.string.panel_picture_reset_msg), R.string.panel_reset,
-                        () -> change("IGmpf2 278 reset basic",
-                                (g, g2) -> g2.resetPicture(Gmpf2Client.PictureReset.BASIC)))))).setChevron(false);
+        p.add(new NavRow(app, s(R.string.pro_title), safe("pro page", () -> {
+            if (pictureRowRefused(s(R.string.pro_title))) return;   // stock image_mode_prof_setting entry
+            push(pro.page);
+        })));
+        p.add(new NavRow(app, s(R.string.panel_picture_reset), safe("picture reset", () -> {
+            if (pictureRowRefused(s(R.string.panel_picture_reset))) return;
+            confirm(R.string.panel_picture_reset, s(R.string.panel_picture_reset_msg), R.string.panel_reset,
+                    () -> change("IGmpf2 278 reset basic",
+                            (g, g2) -> g2.resetPicture(Gmpf2Client.PictureReset.BASIC)));
+        }))).setChevron(false);
         // 1.0.8 (parity picture item 34): stock "Reset all picture settings" (reset_image_mode_all_setting in
         // Brightness and display): a confirmation, then ResetPictureToDefault(0, -8, 0) = IGmpf2 278 and a re-read
         // (PictureViewModel.java:2788-2813). What exactly the vendor resets is logged by the read-back.
@@ -747,8 +834,10 @@ final class QuickPanelController {
                 labels(app, R.string.hdmi_mode_compat, R.string.hdmi_mode_enhanced),
                 (row, i) -> safe("hdmi mode", () -> {
                     if (i < 0 || i > 1) return;
-                    final int wire = i == 0 ? GmpfClient.EDID_14 : prefs.getInt(KEY_EDID_ENHANCED, GmpfClient.EDID_20);
+                    final int wire = PanelRules.edidWire(i);
                     final CharSequence title = row.getTitle();
+                    // stock signal_setting_hdmi_version: no EDID change in a game at a high-frame-rate speed
+                    if (RuleNotes.show(app, title, PanelRules.hdmiMode(rin(snap)), false)) { refresh(); return; }
                     change("660 edid " + wire, (g, g2) -> {
                         if (!hdmiNow(g, "660")) return;
                         if (!g.setEdidVersion(wire)) throw new IllegalStateException("660 returned false");
@@ -759,12 +848,12 @@ final class QuickPanelController {
         // 1.0.8: aspect ratio of the HDMI input on screen (was on the Game page); stock SettingMutexManager refuses it
         // while game mode runs (parity game item 2.15)
         aspect = p.add(new ChoiceRow(app, s(R.string.panel_aspect),
-                labels(app, R.string.panel_auto, R.string.panel_aspect_16_9, R.string.panel_aspect_4_3,
+                labels(app, R.string.panel_auto, R.string.panel_aspect_4_3, R.string.panel_aspect_16_9,
                         R.string.panel_aspect_original),
                 (row, i) -> safe("aspect", () -> {
                     if (snap == null || snap.aspect == null || i < 0 || i >= ASPECT_ORDER.length) { refresh(); return; }
-                    if (gameModeOn(snap)) {
-                        Notify.show(app, row.getTitle(), s(R.string.blocked_game));
+                    // stock SettingMutexManager.java:989-1006: game, then 3D, then HDMI (on the HAL thread)
+                    if (RuleNotes.show(app, row.getTitle(), PanelRules.aspect(rin(snap), gameModeOn(snap)), false)) {
                         refresh();
                         return;
                     }
@@ -858,7 +947,10 @@ final class QuickPanelController {
         soundOut = p.add(new ChoiceRow(app, s(R.string.sound_output),
                 labels(app, R.string.sound_output_auto, R.string.sound_output_speaker),
                 (row, i) -> safe("sound output", () -> {
-                    java.util.List<org.lumen.projector.audio.AudioOutputChoice.Option> o = outOptions;
+                    // the list that was shown while the user stepped (S8), not one rebuilt since
+                    java.util.List<org.lumen.projector.audio.AudioOutputChoice.Option> o =
+                            soundOutShown != null ? soundOutShown : outOptions;
+                    soundOutShown = null;
                     if (o == null || i < 0 || i >= o.size()) { refresh(); return; }
                     org.lumen.projector.audio.AudioOutputChoice.Option opt = o.get(i);
                     org.lumen.projector.audio.AudioOutputChoice.choose(app, opt.kind, opt.addr);
@@ -1252,14 +1344,9 @@ final class QuickPanelController {
         // (pictureMutexThreeDimension) or in game mode (gameModeBasic). Parity picture items 3 and 4. Colour
         // accuracy is allowed in Boost: the Z9X node image_mode_prof_color_accuracy checks Turbo Light only
         // (corrected 2026-11-04; Office / Performance read IGmpf2 51 = 1 themselves, so a Boost check stranded them).
+        // 2026-11-04: the stock order (common.json pictureMode, isImageMode2): game, Dolby Vision, 3D
         CharSequence title = s(R.string.panel_picture_mode);
-        if (snap.fmt3d != null && snap.is3dActive()) {
-            Notify.show(app, title, s(R.string.panel_boost_3d));
-            refresh();
-            return;
-        }
-        if (gameModeOn(snap)) {
-            Notify.show(app, title, s(R.string.blocked_game));
+        if (RuleNotes.show(app, title, PanelRules.pictureMode(rin(snap), gameModeOn(snap)), true)) {
             refresh();
             return;
         }
@@ -1295,8 +1382,14 @@ final class QuickPanelController {
     private void applyPictureMode(GmpfClient.PictureMode m) {
         change("667 picture mode " + m, (g, g2) -> {
             if (!g.setPictureMode(m)) throw new IllegalStateException("667 returned false");
-            if (m == GmpfClient.PictureMode.AI) g.setAiScene(GmpfClient.AiScene.FILM);
+            // stock XRMService AIPQ.java:216-221 writes no scene for Dolby Vision content
+            if (m == GmpfClient.PictureMode.AI && !dolbyVision(g)) g.setAiScene(GmpfClient.AiScene.FILM);
         });
+    }
+
+    /** HAL thread: 620 reads Dolby Vision (a failed read = no). */
+    private static boolean dolbyVision(GmpfClient g) {
+        try { return g.getHdrType() == GmpfClient.HDR_DOLBY_VISION; } catch (Throwable t) { Log.d(TAG, "620: " + t); return false; }
     }
 
     /** Boost (stock spec 3.1): two presses beyond 10 / below Boost. dir +1 enter, -1 leave. */
@@ -1333,6 +1426,12 @@ final class QuickPanelController {
         if (!ready()) return;
         if (!wanted) {
             setUltra120(false);
+            return;
+        }
+        // 2026-11-04 (stock image_mode_prefect_120): original frame rate on, then 3D
+        if (RuleNotes.show(app, row.getTitle(), PanelRules.ultra120On(rin(snap)), true)) {
+            row.setChecked(false);
+            refresh();
             return;
         }
         // 1.0.8 (parity picture item 30): on HDMI as stock, allowed below 62 Hz (662); the HAL task checks again
@@ -1404,18 +1503,19 @@ final class QuickPanelController {
         if (i < 0 || i > 2) return;
         final CharSequence title = s(R.string.panel_game_mode);
         change("game mode " + i, (g, g2) -> {
-            if (!hdmiNow(g, "game mode")) return;
             if (i != 0) {
+                // stock common.json gameMode order: Dolby Vision, 3D, then not on HDMI
+                if (g.getHdrType() == GmpfClient.HDR_DOLBY_VISION) {
+                    Notify.show(app, title, s(R.string.game_blocked_dv));
+                    return;
+                }
                 int f = g.getCurrent3DFormat();
                 if (f != 1 || g.is3DTo2DEnabled()) {               // stock: game mode and 3D exclude each other
                     Notify.show(app, title, s(R.string.panel_boost_3d));
                     return;
                 }
-                if (g.getHdrType() == GmpfClient.HDR_DOLBY_VISION) {
-                    Notify.show(app, title, s(R.string.game_blocked_dv));
-                    return;
-                }
             }
+            if (!hdmiNow(g, "game mode")) return;
             boolean ok;
             if (i == 0) {
                 ok = g2.setGameModeType(Gmpf2Client.GameModeType.MANUAL);
@@ -1446,6 +1546,7 @@ final class QuickPanelController {
      */
     private void onGameSpeed(int i) {
         if (snap == null || snap.gameOption == null || i < 0 || i >= SPEED_ORDER.length) { refresh(); return; }
+        if (RuleNotes.show(app, s(R.string.panel_game_speed), PanelRules.gamePage(rin(snap)), true)) { refresh(); return; }
         final GmpfClient.GameModeOption o = SPEED_ORDER[i];
         if (!o.isTopSpeed() || snap.isTopSpeedGame()) {     // already top speed: the keystone is reset already
             applyGameSpeed(o);
@@ -1465,9 +1566,19 @@ final class QuickPanelController {
     }
 
     private void applyGameSpeed(GmpfClient.GameModeOption o) {
+        // shown mode On (the speed row is shown only then): stock GmTvManager re-applies the state after 648
+        final boolean modeOn = gameMode != null && gameMode.getSelected() == 1;
         change("648 game option " + o, (g, g2) -> {
             if (!hdmiNow(g, "648")) return;                  // 207 below would reset the normal picture
             boolean r = g.setGameModeOption(o);
+            if (PanelRules.resendGameState(r, modeOn)) {
+                // stock gmuiapi GmTvManager.java:104-113 + DisplayManager.setGameModeState(0) (G0082
+                // display_gamemode_version 3): 55 is read first (and ignored on GMPF2), then 57(0)
+                try { g2.getGameModeProp(); } catch (Throwable t) { Log.d(TAG, "g2 55 before 57: " + t); }
+                boolean r57 = false;
+                try { r57 = g2.setGameModeState(true); } catch (Throwable t) { Log.w(TAG, "g2 57(0): " + t); }
+                Log.i(TAG, "57(0) after 648 -> " + r57);
+            }
             GmpfClient.GameModeOption now = g.getGameModeOption();
             Log.i(TAG, "648(" + o + ") -> " + r + ", 647 reads " + now);
             if (!r && now != o) {
@@ -1558,11 +1669,6 @@ final class QuickPanelController {
     private void resetKeystone() {
         if (Hal.isKeystoneRunning() || AkOverlay.isActive()) { Ui.toast(app, R.string.toast_kst_busy); return; }
         change("keystone reset (stock)", (g, g2) -> {
-            GmpfClient.GameModeOption o = g.getGameModeOption();          // 647
-            if (o != null && o.isTopSpeed()) {
-                Notify.show(app, s(R.string.panel_kst_game_mode));
-                return;
-            }
             if (Hal.isKeystoneRunning() || AkOverlay.isActive()) {
                 Notify.show(app, s(R.string.toast_kst_busy));
                 return;
@@ -1743,7 +1849,10 @@ final class QuickPanelController {
             }
         }
         gameMode.setSelected(gm);
-        gameMode.setRowEnabled(hdmi && sn.boost != null);
+        // 2026-11-04 (rule: hide, never grey; stock game.md row 5): off HDMI only the hint line stays (the
+        // tile itself is refused there); on HDMI Speed only in On, Auto switch only in Auto
+        gameMode.setRowEnabled(true);
+        gameMode.setVisibility(hdmi && sn.boost != null ? View.VISIBLE : View.GONE);
         int sp = -1;
         if (ok && sn.gameOption != null) {
             GmpfClient.GameModeOption pend = pendingSpeed;
@@ -1752,8 +1861,10 @@ final class QuickPanelController {
             else pendingSpeed = null;                        // 647 agrees (or the wait is over)
             for (int i = 0; i < SPEED_ORDER.length; i++) if (SPEED_ORDER[i].wire == shown) sp = i;
         }
-        setChoice(gameSpeed, sp, ok && sn.gameOption != null, hdmi);
-        setChoice(allm, ok && sn.allm != null ? (sn.allm ? 0 : 1) : -1, ok && sn.allm != null, hdmi);
+        setChoice(gameSpeed, sp, ok && sn.gameOption != null, true);
+        setChoice(allm, ok && sn.allm != null ? (sn.allm ? 0 : 1) : -1, ok && sn.allm != null, true);
+        gameSpeed.setVisibility(hdmi && sn.gameOption != null && gm == 1 ? View.VISIBLE : View.GONE);
+        allm.setVisibility(hdmi && sn.allm != null && gm == 2 ? View.VISIBLE : View.GONE);
 
         // ---- sound (v6.3.1: SoundProfiles state mapping, DTS only with the output path reported)
         SoundProfiles.Profile prof = ok ? SoundProfiles.fromState(sn.soundProcess, sn.dtsOn, sn.soundPathActive) : null;
@@ -1798,11 +1909,12 @@ final class QuickPanelController {
         pCeiling.setRowEnabled(known);
         setToggle(pRear, known ? (Boolean) (sn.putMode == 2 || sn.putMode == 3) : null, true);
 
-        // ---- picture page. Lumen 1.0.8 (parity picture items 12, 13, 26, 37): no grey rows any more. Stock does not
-        // block the basic sliders in AI / Performance (isAiImageMode / isPerformanceImageMode are never called), the
-        // colour temperature in Office or AI contrast outside SDR, so neither do we; a row whose getter failed is
-        // hidden (rule: hide, never disable). While the whole read failed (HAL not ready, transient) the rows
-        // stay as they were, disabled.
+        // ---- picture page. Lumen 1.0.8 (parity picture items 12, 13, 26, 37): no grey rows. Corrected 2026-11-04 (the
+        // per-node rules of SettingMutexManager.mutex, read from the dexdump; jadx did not decompile it): stock DOES
+        // refuse the basic and professional rows in a running game, AI (666 == 10) and Performance (666 == 5), and the
+        // colour temperature in Office and 3D. The rows stay visible and selectable; the press or step is refused
+        // with the stock note (PanelRules). A row whose getter failed is hidden (rule: hide, never disable).
+        // While the whole read failed (HAL not ready, transient) the rows stay as they were, disabled.
         picHint.setText(null);
         picHint.setVisibility(View.GONE);
         for (int i = 0; i < pq.length; i++) {
@@ -1826,10 +1938,6 @@ final class QuickPanelController {
         superRes.setVisibility(ok && sn.superRes == null ? View.GONE : View.VISIBLE);
         // Lumen OS 1.0.4 HDMI settings: only while HDMI is on screen (they apply to that input)
         boolean onHdmi = ok && sn.hdmiConfirmed();
-        if (ok && sn.edid != null && (sn.edid == GmpfClient.EDID_20 || sn.edid == GmpfClient.EDID_21)
-                && prefs.getInt(KEY_EDID_ENHANCED, -1) != sn.edid) {
-            prefs.edit().putInt(KEY_EDID_ENHANCED, sn.edid).apply();     // this projector's "Enhanced" value
-        }
         boolean showRange = onHdmi && sn.hdmiRange != null && sn.hdmiRange >= 0 && sn.hdmiRange <= 2;
         boolean showEdid = onHdmi && sn.edid != null;
         int as = -1;
@@ -1840,19 +1948,22 @@ final class QuickPanelController {
         hdmiHeader.setVisibility(showRange || showEdid || showAspect ? View.VISIBLE : View.GONE);
         hdmiRange.setSelected(showRange ? sn.hdmiRange : -1);
         hdmiRange.setVisibility(showRange ? View.VISIBLE : View.GONE);
-        // stock: Enhanced for 1 (2.0) and 3 (2.1-style), every other read shows Compatible
-        hdmiMode.setSelected(showEdid ? (sn.edid == GmpfClient.EDID_20 || sn.edid == GmpfClient.EDID_21 ? 1 : 0) : -1);
+        // stock SignalManager.getHdmiVersion on G0082: Enhanced only for raw 1 (2.0), every other read Compatible
+        hdmiMode.setSelected(showEdid ? PanelRules.edidIndex(sn.edid) : -1);
         hdmiMode.setVisibility(showEdid ? View.VISIBLE : View.GONE);
         volumeLevel.setChecked(ok ? sn.volumeBalance : null);
         volumeLevel.setVisibility(ok && sn.volumeBalance != null ? View.VISIBLE : View.GONE);
         earc.setChecked(ok ? sn.earc : null);
         earc.setVisibility(ok && sn.earc != null ? View.VISIBLE : View.GONE);
-        // 1.0.4: sound output rows from AudioManager (no HAL read); Auto and Speaker always exist
-        outOptions = org.lumen.projector.audio.AudioOutputChoice.options(app);
-        CharSequence[] ol = new CharSequence[outOptions.size()];
-        for (int i = 0; i < ol.length; i++) ol[i] = outOptions.get(i).label;
-        soundOut.setOptions(ol);
-        soundOut.setSelected(org.lumen.projector.audio.AudioOutputChoice.selectedIndex(app, outOptions));
+        // 1.0.4: sound output rows from AudioManager (no HAL read); Auto and Speaker always exist. 2026-11-04 (S8): not
+        // while the user is stepping through the row (its pending commit would send another option)
+        if (SystemClock.uptimeMillis() - soundOutTouchedAt > CHOICE_COMMIT_MS + 300) {
+            outOptions = org.lumen.projector.audio.AudioOutputChoice.options(app);
+            CharSequence[] ol = new CharSequence[outOptions.size()];
+            for (int i = 0; i < ol.length; i++) ol[i] = outOptions.get(i).label;
+            soundOut.setOptions(ol);
+            soundOut.setSelected(org.lumen.projector.audio.AudioOutputChoice.selectedIndex(app, outOptions));
+        }
         boolean arcOut = org.lumen.projector.audio.AudioOutputChoice.arcConnected(app);
         digitalFormat.setSelected(arcOut ? org.lumen.projector.audio.AudioOutputChoice.formatIndex(app) : -1);
         digitalFormat.setVisibility(arcOut ? View.VISIBLE : View.GONE);

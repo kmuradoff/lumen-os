@@ -20,7 +20,12 @@
     <string name="beta_off">Désactivées</string>
     <string name="beta_hint">Les versions bêta arrivent plus tôt mais sont moins testées. Si vous les désactivez, votre version reste en place jusqu’à la sortie d’une version normale plus récente.</string>
     <string name="row_stats">Envoyer des statistiques anonymes</string>
-    <string name="stats_hint">Une fois par jour : modèle, version, numéro de série sous forme de hachage et pays. Votre adresse IP n\'est pas conservée.</string>
+    <string name="stats_hint">À chaque démarrage et une fois par jour : modèle, version, build, informations de mise à jour, pays, un numéro d\'installation aléatoire et le numéro de série (le serveur n\'en garde que le hachage). Votre adresse IP n\'est pas conservée.</string>
+    <string name="notice_title">Statistiques anonymes</string>
+    <string name="notice_body">À chaque démarrage et une fois par jour, Lumen OS indique le modèle, la version, le build, les informations de mise à jour et le pays, ainsi qu\'un numéro d\'installation aléatoire et le numéro de série (le serveur n\'en garde que le hachage). L\'adresse IP n\'est pas conservée, et ce que vous regardez n\'est pas envoyé.</string>
+    <string name="notice_where">Vous pouvez le modifier dans « %1$s ».</string>
+    <string name="notice_ok">OK</string>
+    <string name="notice_off">Désactiver</string>
     <string name="avail_title">Lumen OS %1$s est disponible</string>
     <string name="avail_size_full">Mise à jour complète · %1$s</string>
     <string name="avail_size_delta">Mise à jour · %1$s</string>
@@ -84,6 +89,8 @@
     <string name="err_signature">Les informations de mise à jour ne sont pas signées par Lumen OS et ont été ignorées.</string>
     <string name="err_hash">Le téléchargement était endommagé et va être recommencé.</string>
     <string name="err_install">La mise à jour n’a pas pu être installée (code %1$d). La version actuelle continue de fonctionner.</string>
+    <string name="err_install_unknown">La mise à jour n’a pas pu être installée. La version actuelle continue de fonctionner.</string>
+    <string name="err_downgrade">Cette mise à jour est plus ancienne que le système installé et n’a pas été installée.</string>
     <string name="err_space_device">Pas assez d’espace sur le projecteur pour la mise à jour.</string>
     <string name="btn_retry">Réessayer</string>
     <string name="row_usb">Installer depuis une clé USB</string>

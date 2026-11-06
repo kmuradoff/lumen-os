@@ -29,6 +29,19 @@ public final class StatsTest {
         eq("default on", true, Stats.DEFAULT_ON);
         for (String u : Stats.URLS) eq("https " + u, true, u.startsWith("https://"));
         eq("configured = a URL is set", Stats.URLS.length > 0, Stats.configured());
+        // allowed(configured, on, setupDone, noticeDue): never before the notice after an update was shown
+        eq("all set", true, Stats.allowed(true, true, true, false));
+        eq("notice due: not sent", false, Stats.allowed(true, true, true, true));
+        eq("switch off", false, Stats.allowed(true, false, true, false));
+        eq("setup running", false, Stats.allowed(true, true, false, false));
+        eq("no server", false, Stats.allowed(false, true, true, false));
+        // due(updated, newBoot, newDay, sinceTry): once per start, once a day, at once after an update
+        long ok = Stats.RETRY_MS;
+        eq("new boot", true, Stats.due(false, true, false, ok));
+        eq("same boot, same day", false, Stats.due(false, false, false, ok));
+        eq("same boot, new day", true, Stats.due(false, false, true, ok));
+        eq("updated", true, Stats.due(true, false, false, ok));
+        eq("new boot, try just failed", false, Stats.due(false, true, false, ok - 1));
         System.out.println(fails == 0 ? "StatsTest: all passed" : "StatsTest: " + fails + " failed");
         if (fails != 0) System.exit(1);
     }

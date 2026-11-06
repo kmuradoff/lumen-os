@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Lumen OS OTA props (L-OTA -> L-SYSTEM). Append to the PRODUCT build.prop snippet
+# Lumen OS OTA props. Append to the PRODUCT build.prop snippet
 # (/system/product/etc/build.prop), before '# end of file'. <DATE> = build date yyyymmdd.
 #
 # update_engine reads ro.product.ab_ota_partitions (ro.vendor.build.ab_ota_partitions is empty on
@@ -7,7 +7,7 @@
 # running slot to the other one (ota/SPEC.md F5). vbmeta is deliberately NOT in the list: it is
 # the user's manual one-time step and is never written by an update.
 ro.product.ab_ota_partitions=boot,bootdata,dtbo,mboot,optee,owl,satf,tvconfig,tvservice,vbmeta_system,xgimiconfig
-# release-key build (sign_tar.py); ro.build.tags stays test-keys (C18, fingerprint unchanged)
+# release-key build (sign_tar.py); ro.build.tags stays test-keys (fingerprint unchanged)
 ro.z9x.keys=release
 ro.z9x.device=z9x
 # updater identity: build_id must match the update manifest's from_build_id for a delta;
@@ -17,8 +17,8 @@ ro.z9x.device=z9x
 # updater offers only a higher version_code. From 1.0.8 on it is +2 (1.0.8 -> 10010, 1.0.9 -> 10011): the first
 # 1.0.8 build (10009) was withdrawn and the re-published one must be offered over it.
 # tools/lumen_v1.sh checks both lines against its VER.
-ro.z9x.build_id=lumen-1.0.8-<DATE>
-ro.z9x.version_code=10010
+ro.z9x.build_id=lumen-1.0.9-<DATE>
+ro.z9x.version_code=10011
 # OTA gate on (z9x_ota.rc); 0 = stock update_verifier behaviour on every boot
 ro.z9x.ota.gate=1
 # boot rescue on (z9x_rescue.rc, 1.0.1): 3 starts in a row without boot_completed -> fastbootd;

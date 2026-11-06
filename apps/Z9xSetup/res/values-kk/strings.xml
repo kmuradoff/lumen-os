@@ -99,7 +99,7 @@
     <string name="done_name">Проектор атауы</string>
     <string name="done_home">Басты экран</string>
     <string name="done_stats">Анонимді статистика жіберу</string>
-    <string name="done_stats_note">Күніне бір рет: модель, нұсқа, хэштелген сериялық нөмір және ел. IP мекенжайыңыз сақталмайды.</string>
+    <string name="done_stats_note">Әр қосылған сайын және күніне бір рет: модель, нұсқа, жинақ, жаңарту туралы мәлімет, ел, кездейсоқ орнату нөмірі және сериялық нөмір (сервер тек оның хэшін сақтайды). IP мекенжайыңыз сақталмайды.</string>
     <string name="done_start">Бастау</string>
     <string name="done_offline_hint">Интернет жоқ: Google-ға кіруді және уақыт белдеуін кейін параметрлерде орнатуға болады.</string>
     <string name="done_offline_hint_nogms">Интернет жоқ: уақыт белдеуін кейін параметрлерде орнатуға болады.</string>

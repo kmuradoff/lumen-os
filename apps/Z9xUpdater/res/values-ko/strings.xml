@@ -20,7 +20,12 @@
     <string name="beta_off">사용 안함</string>
     <string name="beta_hint">베타 버전은 더 일찍 제공되지만 테스트가 덜 되어 있습니다. 끄면 더 새로운 정식 버전이 나올 때까지 현재 버전이 유지됩니다.</string>
     <string name="row_stats">익명 통계 보내기</string>
-    <string name="stats_hint">하루 한 번: 모델, 버전, 해시 처리된 일련번호, 국가. IP 주소는 저장되지 않습니다.</string>
+    <string name="stats_hint">켤 때마다 그리고 하루 한 번: 모델, 버전, 빌드, 업데이트 정보, 국가, 무작위 설치 번호, 일련번호(서버는 해시만 저장). IP 주소는 저장되지 않습니다.</string>
+    <string name="notice_title">익명 통계</string>
+    <string name="notice_body">Lumen OS는 켤 때마다 그리고 하루에 한 번 모델, 버전, 빌드, 업데이트 정보, 국가와 함께 무작위 설치 번호와 일련번호(서버는 해시만 저장)를 보고합니다. IP 주소는 저장되지 않으며 시청 중인 콘텐츠는 전송되지 않습니다.</string>
+    <string name="notice_where">‘%1$s’에서 변경할 수 있습니다.</string>
+    <string name="notice_ok">확인</string>
+    <string name="notice_off">끄기</string>
     <string name="avail_title">Lumen OS %1$s 사용 가능</string>
     <string name="avail_size_full">전체 업데이트 · %1$s</string>
     <string name="avail_size_delta">업데이트 · %1$s</string>
@@ -82,6 +87,8 @@
     <string name="err_signature">업데이트 정보가 Lumen OS로 서명되지 않아 무시했습니다.</string>
     <string name="err_hash">다운로드가 손상되어 다시 다운로드합니다.</string>
     <string name="err_install">업데이트를 설치할 수 없습니다(코드 %1$d). 현재 버전은 계속 작동합니다.</string>
+    <string name="err_install_unknown">업데이트를 설치할 수 없습니다. 현재 버전은 계속 작동합니다.</string>
+    <string name="err_downgrade">이 업데이트는 설치된 시스템보다 오래되어 설치되지 않았습니다.</string>
     <string name="err_space_device">프로젝터에 업데이트를 위한 공간이 부족합니다.</string>
     <string name="btn_retry">다시 시도</string>
     <string name="row_usb">USB 메모리에서 설치</string>

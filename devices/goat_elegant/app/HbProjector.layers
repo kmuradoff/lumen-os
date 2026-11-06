@@ -19,6 +19,13 @@ drop      src/org/lumen/projector/panel/KstGameLock.java
 drop      test/picture/
 drop      test/kstgame/
 drop      test/lamp3d/
+# Z9X-only 2026-11-04 sweep: the stock Z9X refusal rules (they use KstGameLock / Lamp3d), the AI scene policy and
+# their notes; the HB quick panel, keystone screens and App are its own forks
+drop      src/org/lumen/projector/panel/PanelRules.java
+drop      src/org/lumen/projector/panel/RuleNotes.java
+drop      src/org/lumen/projector/AiScenePolicy.java
+drop      res/values*/strings_rules.xml
+drop      test/rules/
 top       apps/HbProjector
 # never part of an app tree: build output, APKs, notes
 skip      build/ *.apk CHANGES*.md README*.md SYNCED.txt .DS_Store

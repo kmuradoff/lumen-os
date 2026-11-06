@@ -99,7 +99,7 @@
     <string name="done_name">프로젝터 이름</string>
     <string name="done_home">홈 화면</string>
     <string name="done_stats">익명 통계 보내기</string>
-    <string name="done_stats_note">하루 한 번: 모델, 버전, 해시 처리된 일련번호, 국가. IP 주소는 저장되지 않습니다.</string>
+    <string name="done_stats_note">켤 때마다 그리고 하루 한 번: 모델, 버전, 빌드, 업데이트 정보, 국가, 무작위 설치 번호, 일련번호(서버는 해시만 저장). IP 주소는 저장되지 않습니다.</string>
     <string name="done_start">시작</string>
     <string name="done_offline_hint">인터넷 없음: Google 로그인과 시간대는 나중에 설정에서 지정하세요.</string>
     <string name="done_offline_hint_nogms">인터넷 없음: 시간대는 나중에 설정에서 지정하세요.</string>

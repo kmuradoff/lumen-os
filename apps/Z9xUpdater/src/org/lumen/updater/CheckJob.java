@@ -18,6 +18,8 @@ import org.json.JSONException;
  * automatically" mode it only downloads and then asks (decision 2026-10-06).
  * JOB_GATE (no network, any update mode): the boot gate's verdict a few minutes after an update's
  * first boot (BootReceiver.gateVerdict), asked again while the gate has not decided.
+ * JOB_NOTICE (no network): the one-time statistics notice waits for the home screen (Notice).
+ * JOB_STATS (any network): statistics soon after boot, so an update is reported at once.
  */
 public final class CheckJob extends JobService {
     private static final int JOB_DAILY = 7701, JOB_BOOT = 7702;
@@ -26,6 +28,10 @@ public final class CheckJob extends JobService {
     /** First look 3 min after BOOT_COMPLETED (the gate checks 90 s after boot), then every 2 min, 5 looks. */
     private static final long GATE_FIRST_MS = 3 * 60 * 1000L, GATE_NEXT_MS = 2 * 60 * 1000L;
     private static final int GATE_TRIES = 5;
+    /** The statistics notice's looks for the home screen (Notice), two alternating ids like the gate's. */
+    private static final int JOB_NOTICE = 7705, JOB_NOTICE_NEXT = 7706;
+    /** Statistics soon after boot (any network): an update is reported at once, not at the next check. */
+    private static final int JOB_STATS = 7707;
 
     public static void schedule(Context c) {
         JobScheduler js = c.getSystemService(JobScheduler.class);
@@ -56,14 +62,49 @@ public final class CheckJob extends JobService {
                 .setExtras(x).build());
     }
 
+    /** attempt 1..Notice.TRIES; attempt 1 (Notice.onBoot) starts the series over. */
+    static void scheduleNotice(Context c, int attempt) {
+        JobScheduler js = c.getSystemService(JobScheduler.class);
+        if (js == null || attempt > Notice.TRIES) return;
+        if (attempt <= 1) js.cancel(JOB_NOTICE_NEXT);
+        long wait = attempt <= 1 ? Notice.FIRST_MS : Notice.NEXT_MS;
+        PersistableBundle x = new PersistableBundle();
+        x.putInt("attempt", attempt);
+        js.schedule(new JobInfo.Builder(attempt % 2 == 1 ? JOB_NOTICE : JOB_NOTICE_NEXT, new ComponentName(c, CheckJob.class))
+                .setMinimumLatency(wait).setOverrideDeadline(wait + 60 * 1000L)
+                .setExtras(x).build());
+    }
+
+    /** 30 s to 15 min after boot, once there is a network (Stats.maybeSend keeps its own once-a-day rule). */
+    static void scheduleStats(Context c) {
+        JobScheduler js = c.getSystemService(JobScheduler.class);
+        if (js == null) return;
+        js.schedule(new JobInfo.Builder(JOB_STATS, new ComponentName(c, CheckJob.class))
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                .setMinimumLatency(30 * 1000L).setOverrideDeadline(15 * 60 * 1000L).build());
+    }
+
     @Override
     public boolean onStartJob(JobParameters params) {
+        if (params.getJobId() == JOB_STATS) {
+            Stats.maybeSend(this);   // own thread
+            return false;
+        }
         if (params.getJobId() == JOB_GATE || params.getJobId() == JOB_GATE_NEXT) {
             int attempt = params.getExtras().getInt("attempt", 1);
             try {
                 if (BootReceiver.gateVerdict(this, attempt >= GATE_TRIES)) scheduleGate(this, attempt + 1);
             } catch (Throwable t) {
                 Log.w(Ota.TAG, "gate job", t);
+            }
+            return false;
+        }
+        if (params.getJobId() == JOB_NOTICE || params.getJobId() == JOB_NOTICE_NEXT) {
+            int attempt = params.getExtras().getInt("attempt", 1);
+            try {
+                if (Notice.tryShow(this)) scheduleNotice(this, attempt + 1);
+            } catch (Throwable t) {
+                Log.w(Ota.TAG, "notice job", t);
             }
             return false;
         }

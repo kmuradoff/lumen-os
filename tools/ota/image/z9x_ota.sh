@@ -11,7 +11,7 @@
 #   z9x_ota.sh info       background at boot: read-only slot facts for the updater app
 #   z9x_ota.sh mark       background on request (updater "Keep this version"): health gate now
 #
-# Measured on a Z9X during the first OTA (1.0.0, 2026-10-08, the second projector, logs/friend_<serial>):
+# Measured on a Z9X during the first OTA (1.0.0, 2026-10-08):
 #  - /system/bin/bootctl is not in the image. 1.0.0's gate failed every bootctl call: it "rolled back"
 #    a healthy slot, the rollback (set-active-boot-slot) failed as well, and the projector rebooted for
 #    nothing and came back on the new slot, where 'rolledback' was then published.

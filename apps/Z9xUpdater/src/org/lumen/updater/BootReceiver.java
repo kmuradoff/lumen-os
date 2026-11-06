@@ -26,6 +26,8 @@ public final class BootReceiver extends BroadcastReceiver {
             try {
                 evaluate(c);
                 CheckJob.schedule(c);
+                Notice.onBoot(c);
+                CheckJob.scheduleStats(c);
             } catch (Throwable t) {
                 Log.w(Ota.TAG, "boot", t);
             } finally {
@@ -34,7 +36,11 @@ public final class BootReceiver extends BroadcastReceiver {
         }, "updater-boot").start();
     }
 
-    static void evaluate(Context c) {
+    /**
+     * Idempotent (a second run sees IDLE or no target and changes nothing); synchronized because StateProvider and
+     * the WATCH command may run it before BOOT_COMPLETED does (2026-11-04).
+     */
+    static synchronized void evaluate(Context c) {
         Store st = Store.get(c);
         String target = st.pendingTarget();
         String now = Ota.buildId();
@@ -103,6 +109,14 @@ public final class BootReceiver extends BroadcastReceiver {
         // the update's first boot (or a restart before the verdict): ask the gate again in a few minutes
         if (!st.gateWatch().isEmpty()) CheckJob.scheduleGate(c, 1);
         Ota.setBusy(c, false, st.state().name().toLowerCase());
+    }
+
+    /** Runs {@link #evaluate} first when the saved READY / INSTALLING is of another boot. Any worker thread. */
+    static void settleIfStale(Context c, String why) {
+        Store st = Store.get(c);
+        if (!Outcome.staleBootState(st.state().name(), st.stateBoot(), Store.bootId())) return;
+        Log.i(Ota.TAG, why + ": state " + st.state() + " is of another boot, evaluating now");
+        evaluate(c);
     }
 
     /** The pending update ended (either way): its files, offer and state go. */

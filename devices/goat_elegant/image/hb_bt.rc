@@ -1,0 +1,24 @@
+# Lumen OS on the XGIMI Z9X HB (goat_elegant, G0130): Bluetooth audio (installed as /system/etc/init/hb_bt.rc by
+# compose_hb.sh; HB only, the Z9X and Play 6 images do not change). HB_BT_NOTES.md.
+#
+# 1. SBC fed at 44.1 kHz. The HB base is the Play 6 base, whose Bluetooth stack carries lineage/patches/play6/0005:
+#    SBC at 44.1 kHz is fed at 48 kHz and resampled, because the Play 6 audio HAL feeds the A2DP stream at 48 kHz.
+#    The HB audio HAL (audio_hw_primary, MT9660) resamples its 48 kHz DSP to the session rate itself (44.1 kHz, the
+#    AIDL path the Play 6 patch does not change), so the stack read about 13 % of what it expected: thousands of
+#    "UNDERFLOW" lines and crackling headphones (2026-11-05, UGREEN Studio Max5s). /system/lib/hb_bt/libbluetooth_jni.so
+#    is the base's /apex/com.android.btservices/lib copy with that one 48000 turned back into 44100 (hb_bt_sbc.py,
+#    both sha256 pinned), so the HB feeds SBC exactly as AOSP does. Under /system/lib it gets system_lib_file from
+#    plat_file_contexts, the label of the APEX file it covers. Proven live on the tester's HB on 2026-11-05 (bind, then
+#    a framework restart): 3 underflows at the stream start, clean sound.
+#    This post-fs-data action runs after init.rc's (apexd has activated the APEXes, init is in the default mount
+#    namespace) and before zygote starts, so every app process, com.android.bluetooth among them, sees the bind.
+# 2. AVRCP absolute volume on, as on the Z9X (overlay/v1/product_prop_v1.txt) and the Play 6 (play6_base.rc). The
+#    HB audio HAL plays A2DP from its DSP at bluetooth_volume=100 (BtDspVolume), so without it the remote's volume
+#    keys moved the slider and nothing else; with it they set the headphones' own volume. Something on the HB sets
+#    persist.bluetooth.disableabsvol=true at runtime (seen on hb 1.0.8-beta5), so it is set again at early-boot,
+#    before system_server starts Bluetooth. Headphones paired before may need to be paired again.
+on post-fs-data
+    mount none /system/lib/hb_bt/libbluetooth_jni.so /apex/com.android.btservices/lib/libbluetooth_jni.so bind
+
+on early-boot
+    setprop persist.bluetooth.disableabsvol false

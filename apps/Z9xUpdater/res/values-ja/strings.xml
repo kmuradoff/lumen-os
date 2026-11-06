@@ -20,7 +20,12 @@
     <string name="beta_off">オフ</string>
     <string name="beta_hint">ベータ版は早く届きますが、テストは少なめです。オフにすると、より新しい通常版が出るまで現在のバージョンのままになります。</string>
     <string name="row_stats">匿名の統計情報を送信</string>
-    <string name="stats_hint">1日1回：モデル、バージョン、ハッシュ化したシリアル番号、国。IP アドレスは保存されません。</string>
+    <string name="stats_hint">起動するたびと1日1回：モデル、バージョン、ビルド、アップデート情報、国、ランダムなインストール番号、シリアル番号（サーバーはハッシュのみ保存）。IP アドレスは保存されません。</string>
+    <string name="notice_title">匿名の統計</string>
+    <string name="notice_body">Lumen OS は起動するたびと1日1回、モデル、バージョン、ビルド、アップデート情報、国に加え、ランダムなインストール番号とシリアル番号（サーバーはハッシュのみ保存）を送信します。IP アドレスは保存されず、視聴内容は送信されません。</string>
+    <string name="notice_where">「%1$s」で変更できます。</string>
+    <string name="notice_ok">OK</string>
+    <string name="notice_off">オフにする</string>
     <string name="avail_title">Lumen OS %1$s を利用できます</string>
     <string name="avail_size_full">完全アップデート · %1$s</string>
     <string name="avail_size_delta">アップデート · %1$s</string>
@@ -82,6 +87,8 @@
     <string name="err_signature">アップデート情報が Lumen OS の署名付きではないため、無視しました。</string>
     <string name="err_hash">ダウンロードが破損していたため、もう一度ダウンロードします。</string>
     <string name="err_install">アップデートをインストールできませんでした（コード %1$d）。現在のバージョンは引き続き動作します。</string>
+    <string name="err_install_unknown">アップデートをインストールできませんでした。現在のバージョンはそのまま使えます。</string>
+    <string name="err_downgrade">このアップデートはインストール済みのシステムより古いため、インストールされませんでした。</string>
     <string name="err_space_device">プロジェクターにアップデート用の空き容量がありません。</string>
     <string name="btn_retry">再試行</string>
     <string name="row_usb">USB メモリからインストール</string>

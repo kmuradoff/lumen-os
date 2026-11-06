@@ -99,7 +99,7 @@
     <string name="done_name">Nome do projetor</string>
     <string name="done_home">Tela inicial</string>
     <string name="done_stats">Enviar estatísticas anônimas</string>
-    <string name="done_stats_note">Uma vez por dia: modelo, versão, número de série em forma de hash e país. Seu endereço IP não é armazenado.</string>
+    <string name="done_stats_note">A cada inicialização e uma vez por dia: modelo, versão, build, dados da atualização, país, um número de instalação aleatório e o número de série (o servidor guarda só o hash dele). Seu endereço IP não é armazenado.</string>
     <string name="done_start">Começar</string>
     <string name="done_offline_hint">Sem internet: faça login no Google e defina o fuso horário depois nas configurações.</string>
     <string name="done_offline_hint_nogms">Sem internet: defina o fuso horário depois nas configurações.</string>

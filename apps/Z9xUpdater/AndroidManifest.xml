@@ -42,6 +42,17 @@
     <!-- signature|privileged|...: the daily JobService may start the download service (FGS from
          the background) -->
     <uses-permission android:name="android.permission.START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
+    <!-- the one-time statistics notice (Notice): it opens over the home screen from a job, and checks that the home
+         activity is in front (signature|privileged, granted by the platform signature) -->
+    <uses-permission android:name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+    <uses-permission android:name="android.permission.REAL_GET_TASKS" />
+    <!-- the notice compares the activity in front with the default home activity: package visibility for HOME -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
     <!-- signature|privileged: PowerManager.reboot("z9x-ota") -->
     <uses-permission android:name="android.permission.REBOOT" />
     <!-- the projector serial for the anonymous statistics (Stats.serial, when ro.serialno is not readable):
@@ -75,6 +86,15 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".NoticeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Lumen.Notice"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity="org.lumen.updater.notice"
+            android:configChanges="locale|layoutDirection|keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode" />
 
         <service
             android:name=".UpdateService"

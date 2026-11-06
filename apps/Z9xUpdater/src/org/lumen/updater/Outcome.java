@@ -133,4 +133,32 @@ final class Outcome {
         if (w.contains("markBootSuccessful failed")) return Why.CONFIRM;
         return Why.OTHER;
     }
+
+    // ---- 2026-11-04 Z9X sweep: state of another boot, a failed check, plain error words
+
+    /**
+     * A saved READY or INSTALLING belongs to the boot that wrote it (Store state_boot). Saved on another boot (or by
+     * an updater that did not save one, e.g. the 1.0.7 state LumenImport copied) = stale until BootReceiver.evaluate
+     * has run for this boot. An unreadable current boot id never counts as stale.
+     */
+    static boolean staleBootState(String state, String savedBoot, String currentBoot) {
+        if (currentBoot == null || currentBoot.isEmpty()) return false;
+        if (!"READY".equals(state) && !"INSTALLING".equals(state)) return false;
+        return !currentBoot.equals(savedBoot);
+    }
+
+    /** A check that failed (network) keeps a downloaded or paused update as it was instead of "no connection". */
+    static boolean keepOnCheckError(String before) {
+        return "DOWNLOADED".equals(before) || "PAUSED".equals(before);
+    }
+
+    enum InstallError { UNKNOWN, DOWNGRADE, SPACE, CODE }
+
+    /** update_engine's code (or our -1 / -2 when there was none) in words: never a bare internal sentinel. */
+    static InstallError installError(int code) {
+        if (code < 0) return InstallError.UNKNOWN;
+        if (code == 51) return InstallError.DOWNGRADE;          // ERR_TIMESTAMP: older than the running system
+        if (code == 60) return InstallError.SPACE;              // ERR_NOT_ENOUGH_SPACE
+        return InstallError.CODE;
+    }
 }

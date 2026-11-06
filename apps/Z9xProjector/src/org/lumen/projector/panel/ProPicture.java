@@ -165,10 +165,15 @@ final class ProPicture {
             final CharSequence title = row.getTitle();
             change("112 colour space " + cs, (g, g2) -> {
                 // 1.0.8 (parity brightness item 10): stock colorAdjustmentMutexBoost, the 5-segment Boost mode keeps
-                // its colour space (G0082 has no support_boost_color_space; dispcomm.ini LensDispSupportColorSpace {1, 0})
-                if (g2.isBoost()) {
-                    Log.i(TAG, "112 refused: Boost is on");
-                    Notify.show(app, title, s(R.string.boost_blocks_change));
+                // its colour space (G0082 has no support_boost_color_space; dispcomm.ini LensDispSupportColorSpace {1, 0}).
+                // 2026-11-04 (stock picture_gamut_athenaultra): the Office mode (666 == 25) first, then Boost.
+                PanelRules.In in = new PanelRules.In();
+                in.pic666 = opt("666", g::getPictureModeRaw);
+                in.boost51 = opt("g2 51", g2::isBoost);
+                PanelRules.Why w = PanelRules.colorSpace(in);
+                if (w != PanelRules.Why.NONE) {
+                    Log.i(TAG, "112 refused: " + w);
+                    RuleNotes.show(app, title, w, true);
                     return;
                 }
                 g.setColorSpace(cs);
@@ -203,12 +208,33 @@ final class ProPicture {
         localContrast.setCommitDelay(CHOICE_COMMIT_MS);
         dynContrast = page.add(new ToggleRow(app, s(R.string.pro_dynamic_contrast), (row, w) -> safe("329", () ->
                 change("IGmpf2 329 dynamic contrast " + w, (g, g2) -> bool(g2.setDynamicContrast(w), "329"))).run()));
-        dynBlack = page.add(new ToggleRow(app, s(R.string.pro_dynamic_black), (row, w) -> safe("31", () ->
-                change("IGmpf2 31 dynamic black " + w, (g, g2) -> bool(g2.setDynamicBlack(w), "31"))).run()));
+        dynBlack = page.add(new ToggleRow(app, s(R.string.pro_dynamic_black), (row, w) -> safe("31", () -> {
+            final CharSequence title = row.getTitle();
+            change("IGmpf2 31 dynamic black " + w, (g, g2) -> {
+                // 2026-11-04 (stock image_dynamic_black_bit_enhancement): refused in Office (666 6 or 25)
+                PanelRules.In in = new PanelRules.In();
+                in.pic666 = opt("666", g::getPictureModeRaw);
+                if (RuleNotes.show(app, title, PanelRules.dynamicBlack(in), true)) return;
+                bool(g2.setDynamicBlack(w), "31");
+            });
+        }).run()));
 
         page.add(new HeaderRow(app, s(R.string.pro_motion)));
-        nativeFps = page.add(new ToggleRow(app, s(R.string.pro_native_fps), (row, w) -> safe("284", () ->
-                change("IGmpf2 284 original frame rate " + w, (g, g2) -> {
+        nativeFps = page.add(new ToggleRow(app, s(R.string.pro_native_fps), (row, w) -> safe("284", () -> {
+            final CharSequence title = row.getTitle();
+            change("IGmpf2 284 original frame rate " + w, (g, g2) -> {
+                    if (w) {
+                        // 2026-11-04 (stock image_original_needle_display): refused while Ultra 120 is on (157),
+                        // then in 3D; the 161(6) below is kept for what the rule lets through
+                        PanelRules.In in = new PanelRules.In();
+                        in.ultra120 = opt("157", () -> {
+                            GmpfClient.OutputTimingInfo t = g.getOutputTimingInfo();
+                            return t == null ? null : t.isUltra120();
+                        });
+                        in.fmt192 = opt("192", g::getCurrent3DFormat);
+                        in.to2d193 = opt("193", g::is3DTo2DEnabled);
+                        if (RuleNotes.show(app, title, PanelRules.nativeFpsOn(in), false)) return;
+                    }
                     bool(g2.setNativeFrameRate(w), "284");
                     if (w) {
                         // stock: original frame rate turns Ultra 120 Hz off (161(6), 2160p60)
@@ -216,7 +242,8 @@ final class ProPicture {
                         Log.i(TAG, "161(6) with original frame rate: " + ok);
                         if (ok) prefs.edit().putBoolean(QuickPanelController.KEY_ULTRA_120, false).apply();
                     }
-                })).run()));
+                });
+        }).run()));
 
         page.add(new HeaderRow(app, s(R.string.pro_clarity)));
         CharSequence[] nr = labels(R.string.panel_off, R.string.panel_low, R.string.panel_medium, R.string.panel_high,

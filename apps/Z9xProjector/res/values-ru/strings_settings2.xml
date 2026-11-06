@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="s2_hint_ok">выбрать</string>
+    <string name="s2_hint_nav">разделы</string>
+
+    <string name="s2_sec_focus">Фокус и трапеция</string>
+    <string name="s2_sec_power">Включение</string>
+    <string name="s2_sec_remote">Пульт и кнопки</string>
+    <string name="s2_sec_home">Главный экран</string>
+    <string name="s2_sec_help">Справка</string>
+
+    <string name="s2_now">Сейчас</string>
+    <string name="s2_now_title">Навести картинку</string>
+    <string name="s2_auto_title">Автоматически</string>
+    <string name="s2_t_af">Автофокус</string>
+    <string name="s2_t_af_sub">Навести резкость</string>
+    <string name="s2_t_kst">Трапеция</string>
+    <string name="s2_t_kst_sub">Ровный прямоугольник</string>
+    <string name="s2_t_fit">Под экран</string>
+    <string name="s2_t_fit_sub">По рамке полотна</string>
+    <string name="s2_t_manual">Ручной фокус</string>
+    <string name="s2_t_manual_sub">Резкость пультом</string>
+
+    <string name="s2_d_power_on_af">Сам наводит резкость</string>
+    <string name="s2_d_power_on_ak">Сам выравнивает картинку</string>
+    <string name="s2_d_move">Когда проектор сдвинули</string>
+    <string name="s2_d_curtain">Картинка не выходит за полотно</string>
+    <string name="s2_d_obstacle">Уменьшает картинку, если мешает предмет</string>
+    <string name="s2_d_music">Короткая мелодия при старте</string>
+    <string name="s2_d_boot">Что открыть после включения</string>
+    <string name="s2_d_slot">Какое приложение открывает кнопка</string>
+    <string name="s2_d_pair">Новый, второй или запасной пульт</string>
+    <string name="s2_d_launcher">Lumen Home или классический Android TV</string>
+    <string name="s2_d_voice_lang">На каком языке вы говорите с ассистентом</string>
+    <string name="s2_d_voice_speak">Ассистент отвечает голосом</string>
+    <string name="s2_d_voice_key">Свой ключ Gemini для живого голоса</string>
+    <string name="s2_d_guide">QR-код, чтобы открыть руководство на телефоне</string>
+    <string name="s2_d_report">Отправляет журналы разработчику</string>
+    <string name="s2_d_refresh">Заново прочитать состояние проектора</string>
+    <string name="s2_diag_state">Состояние проектора</string>
+</resources>

@@ -99,6 +99,22 @@ public final class OutcomeTest {
         eq("why no rollback", Outcome.Why.NO_ROLLBACK, Outcome.why("no rollback: slot _b is not bootable"));
         eq("why other", Outcome.Why.OTHER, Outcome.why("something new"));
 
+        // ---- 2026-11-04: state of another boot
+        eq("ready, same boot", false, Outcome.staleBootState("READY", "b1", "b1"));
+        eq("ready, other boot", true, Outcome.staleBootState("READY", "b0", "b1"));
+        eq("ready, saved by 1.0.7 (no boot)", true, Outcome.staleBootState("READY", "", "b1"));
+        eq("installing, other boot", true, Outcome.staleBootState("INSTALLING", "b0", "b1"));
+        eq("downloaded never stale", false, Outcome.staleBootState("DOWNLOADED", "", "b1"));
+        eq("boot id unreadable", false, Outcome.staleBootState("READY", "b0", null));
+        eq("check error keeps downloaded", true, Outcome.keepOnCheckError("DOWNLOADED"));
+        eq("check error keeps paused", true, Outcome.keepOnCheckError("PAUSED"));
+        eq("check error after idle", false, Outcome.keepOnCheckError("IDLE"));
+        eq("error -1", Outcome.InstallError.UNKNOWN, Outcome.installError(-1));
+        eq("error -2", Outcome.InstallError.UNKNOWN, Outcome.installError(-2));
+        eq("error 51", Outcome.InstallError.DOWNGRADE, Outcome.installError(51));
+        eq("error 60", Outcome.InstallError.SPACE, Outcome.installError(60));
+        eq("error 7", Outcome.InstallError.CODE, Outcome.installError(7));
+
         System.out.println((failed == 0 ? "OK" : "FAILED") + ": " + passed + " passed, " + failed + " failed");
         if (failed != 0) System.exit(1);
     }

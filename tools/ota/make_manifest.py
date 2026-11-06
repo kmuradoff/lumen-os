@@ -34,12 +34,14 @@ whose name starts with "public"; clean deltas between private images only into a
 --old-image) == update-<channel>.json (public-nogms: Lumen OS without Google, the only edition that is
 published; public: the Google edition's public image, never published; stable: the maintainer's private
 image), and every package's lumen-edition (make_ota.py) must be the image's edition.
-Beta channel (the updater's "Beta updates" switch, 2026-11-04): public-beta is the no-Google edition's beta,
-update-public-beta.json on the fixed pre-release tag beta (never releases/latest). Its packages come from a
-no-Google image (one that reads update-public-nogms.json) and their URLs point at the version's own pre-release
-beta-<version>, not at v<version>. Turning the switch off never downgrades: the updater offers the stable channel
-only once its version_code is above the installed one, so a stable release meant for beta users needs a version
-above the last beta, or is the same build (then those users already run it).
+Beta channel (the updater's "Beta updates" switch): public-beta is the no-Google edition's beta,
+update-public-beta.json beside update-public-nogms.json on the channel tag z9x (never releases/latest). Its
+packages come from a no-Google image (one that reads update-public-nogms.json) and their URLs point at the
+version's own pre-release z9x-<version>, where --version may carry -betaN (z9x-1.0.10-beta1; only with
+--channel public-beta). With the switch on the updater reads both manifests and offers the higher version_code,
+so stable updates keep coming while no beta is published. The version_code of x.y.z-betaN is that of x.y.z (the
+Z9X scheme has no beta slot): a stable release meant for beta users is the same build as the last beta (they
+already run it) or a later version. Turning the switch off never downgrades.
 """
 import argparse
 import hashlib
@@ -94,10 +96,14 @@ def payload_location(zpath):
 
 
 CHANNELS = ("stable", "public", "public-nogms", "public-beta")
-# a beta channel -> the channel of the images its packages come from (the updater reads it with the switch on)
+# a beta channel -> the channel of the images its packages come from (the updater reads both with the switch on)
 IMAGE_CHANNEL = {"public-beta": "public-nogms"}
-# a beta channel -> the pre-release tag its packages go on ({version} = the manifest's version)
-PACKAGE_TAG = {"public-beta": "beta-{version}"}
+# a beta channel -> the pre-release tag its packages go on ({version} = the manifest's version, x.y.z or
+# x.y.z-betaN): the release naming scheme z9x-<version>, a pre-release, never Latest
+PACKAGE_TAG = {"public-beta": "z9x-{version}"}
+# --version: x.y.z, and for a beta channel also x.y.z-betaN
+VERSION_RE = re.compile(r"\d+\.\d{1,2}\.\d{1,2}")
+BETA_VERSION_RE = re.compile(r"(\d+\.\d{1,2}\.\d{1,2})-beta([1-9]\d?)")
 
 
 def image_props(image):
@@ -242,10 +248,23 @@ def bind_to_clean_image(image, zips, old_image=None, has_full=True):
 
 
 def version_code(version):
-    """ro.z9x.version_code of a release: major*10000 + minor*100 + patch + 1, + 2 from 1.0.8."""
-    v = [int(x) for x in version.split(".")]
+    """ro.z9x.version_code of a release: major*10000 + minor*100 + patch + 1, + 2 from 1.0.8 (x.y.z-betaN: that of
+    x.y.z, the Z9X scheme has no beta slot)."""
+    v = [int(x) for x in version.split("-", 1)[0].split(".")]
     base = v[0] * 10000 + v[1] * 100 + v[2]
     return base + (2 if base >= 10008 else 1)
+
+
+def check_version(version, channel):
+    """--version is x.y.z (minor, patch below 100); a beta channel (PACKAGE_TAG) also takes x.y.z-betaN."""
+    if VERSION_RE.fullmatch(version):
+        return
+    if BETA_VERSION_RE.fullmatch(version):
+        if channel not in PACKAGE_TAG:
+            die(f"version {version!r}: a -betaN version only goes into a beta channel ({', '.join(PACKAGE_TAG)})")
+        return
+    die(f"version {version!r}: expected major.minor.patch (minor, patch below 100)"
+        + (", or major.minor.patch-betaN" if channel in PACKAGE_TAG else ""))
 
 
 def package_tag(version):
@@ -276,8 +295,7 @@ def main():
     # Since 1.0.0: version_code = major*10000 + minor*100 + patch + 1 (tools/ota/image/ota_props.txt):
     # the 1.0 test builds carry 10000, and every release must be newer for the updater. From 1.0.8 on the
     # offset is +2: the first 1.0.8 build (10009) was withdrawn, the re-published 1.0.8 is 10010.
-    if not re.fullmatch(r"\d+\.\d{1,2}\.\d{1,2}", a.version):
-        die(f"version {a.version!r}: expected major.minor.patch (minor, patch below 100)")
+    check_version(a.version, a.channel)
     vc = version_code(a.version)
     if vc != a.version_code:
         die(f"version_code {a.version_code} != {vc} (major*10000 + minor*100 + patch + 1, + 2 from 1.0.8)")

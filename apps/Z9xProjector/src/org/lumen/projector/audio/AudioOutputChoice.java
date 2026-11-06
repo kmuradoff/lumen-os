@@ -185,11 +185,34 @@ public final class AudioOutputChoice {
         return out;
     }
 
-    /** Selected row: the stored kind while it is listed, else Auto (the choice stays stored). */
+    /**
+     * Selected row: the stored kind while it is listed and really routed, else Auto (the choice stays stored).
+     * 2026-11-04: a setPreferredDevice the framework REFUSED used to leave the row on the choice while media played
+     * elsewhere (stock shows the vendor's real output, VoiceHelper getAudioDeviceV5).
+     */
     public static int selectedIndex(Context ctx, List<Option> opts) {
         Kind k = kind(ctx);
+        if (k != Kind.AUTO && !routedTo(ctx, k)) return 0;
         for (int i = 0; i < opts.size(); i++) if (opts.get(i).kind == k) return i;
         return 0;
+    }
+
+    /** Media's preferred device is the stored one. A failed read counts as routed (no false Auto). */
+    private static boolean routedTo(Context ctx, Kind k) {
+        try {
+            AudioManager am = ctx.getSystemService(AudioManager.class);
+            AudioProductStrategy media = mediaStrategy();
+            if (am == null || media == null) return true;
+            AudioDeviceInfo d = find(am, k, prefs(ctx).getString(KEY_ADDR, ""));
+            if (d == null) return false;
+            List<AudioDeviceAttributes> cur = am.getPreferredDevicesForStrategy(media);
+            if (cur == null) return false;
+            AudioDeviceAttributes want = new AudioDeviceAttributes(d);
+            for (AudioDeviceAttributes a : cur) if (same(a, want)) return true;
+            return false;
+        } catch (Throwable t) {
+            return true;
+        }
     }
 
     /** An HDMI ARC / eARC output is connected now (the Audio format row is shown only then). */

@@ -20,7 +20,12 @@
     <string name="beta_off">متوقفة</string>
     <string name="beta_hint">تصل الإصدارات التجريبية أبكر لكنها أقل اختبارًا. عند إيقافها يبقى إصدارك الحالي حتى يصدر إصدار عادي أحدث.</string>
     <string name="row_stats">إرسال إحصاءات مجهولة الهوية</string>
-    <string name="stats_hint">مرة واحدة يوميًا: الطراز والإصدار والرقم التسلسلي بصيغة مُجزّأة (hash) والبلد. لا يتم حفظ عنوان IP الخاص بك.</string>
+    <string name="stats_hint">عند كل تشغيل ومرة واحدة يوميًا: الطراز والإصدار والبنية ومعلومات التحديث والبلد ورقم تثبيت عشوائي والرقم التسلسلي (يحتفظ الخادم بقيمته المُجزّأة فقط). لا يتم حفظ عنوان IP الخاص بك.</string>
+    <string name="notice_title">إحصاءات مجهولة الهوية</string>
+    <string name="notice_body">يُبلغ Lumen OS عند كل تشغيل ومرة واحدة يوميًا عن الطراز والإصدار والبنية ومعلومات التحديث والبلد، بالإضافة إلى رقم تثبيت عشوائي والرقم التسلسلي (يحتفظ الخادم بقيمته المُجزّأة فقط). لا يتم حفظ عنوان IP، ولا يتم إرسال ما تشاهده.</string>
+    <string name="notice_where">يمكنك تغيير ذلك من «%1$s».</string>
+    <string name="notice_ok">حسنًا</string>
+    <string name="notice_off">إيقاف</string>
     <string name="avail_title">يتوفر Lumen OS %1$s</string>
     <string name="avail_size_full">تحديث كامل · %1$s</string>
     <string name="avail_size_delta">تحديث · %1$s</string>
@@ -87,6 +92,8 @@
     <string name="err_signature">معلومات التحديث غير موقّعة من Lumen OS وتم تجاهلها.</string>
     <string name="err_hash">كان التنزيل تالفًا وسيُعاد تنزيله.</string>
     <string name="err_install">تعذّر تثبيت التحديث (الرمز %1$d). يستمر الإصدار الحالي في العمل.</string>
+    <string name="err_install_unknown">تعذّر تثبيت التحديث. يستمر الإصدار الحالي في العمل.</string>
+    <string name="err_downgrade">هذا التحديث أقدم من النظام المثبّت، لذلك لم يُثبَّت.</string>
     <string name="err_space_device">لا توجد مساحة كافية على جهاز العرض للتحديث.</string>
     <string name="btn_retry">إعادة المحاولة</string>
     <string name="row_usb">التثبيت من ذاكرة USB</string>

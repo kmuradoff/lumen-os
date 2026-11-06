@@ -105,7 +105,7 @@ GmTvManager	64	getHdmiRange	getHdmiRange [Z9X IGmpf 634]
 GmTvManager	65	setEARCEnable	setEarc [Z9X IGmpf 633]
 GmTvManager	66	getEARCEnableState	getEarc [Z9X IGmpf 632]
 GmTvManager	78	getHdrType	getHdrType [Z9X IGmpf 620]
-GmTvManager	79	getEARCStatus	getEarcStatus (audio/HbEarc): read, stock XRMService SignalChangeReceiver.register (== 3 = eARC linked)
+GmTvManager	79	getEARCStatus	getEarcStatus (cec/EarcLink): read, stock XRMService SignalChangeReceiver.register (== 3 = eARC linked)
 GmTvManager	112	getHsyPictureModeEnable	getColorOptimization [Z9X IGmpf2 330]
 GmTvManager	113	setTvDynamicContrastEnable	setDynamicContrast [Z9X IGmpf2 329]
 GmTvManager	114	getTvDynamicContrastEnable	getDynamicContrast [Z9X IGmpf2 328]

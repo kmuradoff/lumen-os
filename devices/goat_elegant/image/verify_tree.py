@@ -51,6 +51,9 @@ SOURCE = {}      # added or replaced path -> the staged file it must equal
 SIGNED = {}      # base_signed path -> new sha256
 PINNED = {}      # added path -> sha256 (files not staged from the Mac, read on the build server)
 C2_LIB = "system/lib/hb_vndk33/libstagefright_foundation.so"
+# Bluetooth (hb_bt.rc): the base's libbluetooth_jni.so with SBC fed at 44.1 kHz (hb_bt_sbc.py OUT_SHA)
+BT_LIB = "system/lib/hb_bt/libbluetooth_jni.so"
+BT_SHA = "a8d8b1accec813aa2d0fe2dc20675821663b7d378587e354fc7ca54c7677b1dd"
 C2_SHA = "b029d806d78f9d560723afe75dc3ff4600d38765f734cf03334d74030961854f"
 C2_BIND = ("    mount none /system/lib/hb_vndk33/libstagefright_foundation.so "
            "/apex/com.android.vndk.v33/lib/libstagefright_foundation.so bind")
@@ -119,6 +122,8 @@ if IN:
         "system/etc/z9x/gapps/sysconfig/z9x-gapps.xml": os.path.join(IN, "z9x-gapps-sysconfig.xml"),
         # t10: the codec2 VNDK fix (hb_media.rc)
         "system/etc/init/hb_media.rc": os.path.join(IN, "hb_media.rc"),
+        # Bluetooth: SBC fed at 44.1 kHz and AVRCP absolute volume (hb_bt.rc, test and public images)
+        "system/etc/init/hb_bt.rc": os.path.join(IN, "hb_bt.rc"),
 
     }
     if PUBLIC:
@@ -159,6 +164,9 @@ if IN:
         SOURCE["system/etc/init/update_verifier.rc"] = os.path.join(IN, "lumen_update_verifier.rc")
         SOURCE["system/etc/security/otacerts.zip"] = os.path.join(IN, "otacerts.zip")
         SOURCE["system/etc/xgimi/lumen_escape.sh"] = os.path.join(IN, "lumen_ota_escape.sh")
+    ADDED["system/lib/hb_bt"] = ("u:object_r:system_lib_file:s0", 0o755)
+    ADDED[BT_LIB] = ("u:object_r:system_lib_file:s0", 0o644)
+    PINNED[BT_LIB] = BT_SHA
     if not PUBLIC:
         ADDED["system/lib/hb_vndk33"] = ("u:object_r:system_lib_file:s0", 0o755)
         ADDED[C2_LIB] = ("u:object_r:system_lib_file:s0", 0o644)

@@ -111,11 +111,13 @@ NEEDS_ACTION = {
     'org.lumen.updater': ['android.settings.SYSTEM_UPDATE_SETTINGS'],  # About > System update row
 }
 HOME_PRIO = {'org.lumen.setup': 10, 'org.lumen.home': 3}                 # plan C3
-VERSION_NAME = '1.0.8'  # Lumen OS 1.0.8, the org.lumen rename: every APK rebuilt (1.0.3 had '1.0.3', 1.0.2 '1.0.2', ...)
+VERSION_NAME = '1.0.9'  # Lumen OS 1.0.9 (1.0.8 had '1.0.8', the org.lumen rename; 1.0.3 had '1.0.3', 1.0.2 '1.0.2', ...)
 # Since 1.0.3 an app or RRO whose sources did not change keeps its earlier build byte for byte, and so its
 # version (overlay/apps_v1/README.txt): name -> the versionName it kept. A self-build (LUMEN_SELF=1,
 # docs/selfbuild) builds every APK from source, so there VERSION_NAME is accepted for them too.
-KEPT_VERSION = {}   # 1.0.8: none kept (the rename gave every APK a new package)
+# 1.0.9: the three RROs have no source change since z9x-1.0.8 (Z9xLineagePlatformOverlay: only its README.txt, not
+# in the APK) and keep their 1.0.8 files. 1.0.8 kept none (the rename gave every APK a new package).
+KEPT_VERSION = {'Z9xFrameworkKeysOverlay': '1.0.8', 'Z9xLineagePlatformOverlay': '1.0.8', 'Z9xDeviceConfigOverlay': '1.0.8'}
 
 
 def cmd_apks(apps, testcerts, releasecerts, plan_out):

@@ -3,5 +3,5 @@
      v6.1 translate phase; edit the text here or regenerate, keep names/placeholders. -->
 <resources>
     <string name="stats_row">Wysyłaj anonimowe statystyki</string>
-    <string name="stats_note">Raz dziennie: model, wersja, numer seryjny w postaci skrótu (hash) i kraj. Twój adres IP nie jest zapisywany.</string>
+    <string name="stats_note">Przy każdym uruchomieniu i raz dziennie: model, wersja, kompilacja, dane o aktualizacji, kraj, losowy numer instalacji i numer seryjny (serwer przechowuje tylko jego skrót). Twój adres IP nie jest zapisywany.</string>
 </resources>

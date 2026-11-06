@@ -6,7 +6,7 @@
 
 github.json   one row per snapshot date and release: installs, updates, checks (github_downloads.py --json),
               merged into tools/stats/data/github_history.json so the counts keep a history (GitHub has none)
-From the updater ping server (https://<domain>/lumen/v1/stats), windows 7 and 30 days:
+From the updater ping server (https://prompt.az/lumen/v1/stats), windows 7 and 30 days:
 totals.json   installs, projectors (distinct hashed serials), reinstalled projectors (90 days)
 active.json   installs per model / version / channel      models.json   per model and XGIMI model
 countries.json per country                              daily.json    per day and version, 90 days
@@ -21,7 +21,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 GSI = os.path.dirname(os.path.dirname(HERE))
 HISTORY = os.path.join(HERE, "data", "github_history.json")
-STATS_URL = "https://<domain>/lumen/v1/stats"
+STATS_URL = "https://prompt.az/lumen/v1/stats"
 
 
 def summarize(rows):

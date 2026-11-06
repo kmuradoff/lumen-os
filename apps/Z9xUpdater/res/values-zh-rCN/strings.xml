@@ -20,7 +20,12 @@
     <string name="beta_off">关闭</string>
     <string name="beta_hint">Beta 版更早推出，但测试较少。关闭后，当前版本会保留，直到有更新的正式版发布。</string>
     <string name="row_stats">发送匿名统计信息</string>
-    <string name="stats_hint">每天一次：型号、版本、经过哈希处理的序列号和国家。不会保存您的 IP 地址。</string>
+    <string name="stats_hint">每次开机时及每天一次：型号、版本、构建、更新信息、国家、随机安装编号和序列号（服务器只保存其哈希值）。不会保存您的 IP 地址。</string>
+    <string name="notice_title">匿名统计</string>
+    <string name="notice_body">Lumen OS 在每次开机时及每天报告一次型号、版本、构建、更新信息和国家，以及随机安装编号和序列号（服务器只保存其哈希值）。不会保存 IP 地址，也不会发送您观看的内容。</string>
+    <string name="notice_where">可在“%1$s”中更改。</string>
+    <string name="notice_ok">好</string>
+    <string name="notice_off">关闭</string>
     <string name="avail_title">Lumen OS %1$s 已推出</string>
     <string name="avail_size_full">完整更新 · %1$s</string>
     <string name="avail_size_delta">更新 · %1$s</string>
@@ -82,6 +87,8 @@
     <string name="err_signature">更新信息未经 Lumen OS 签名，已忽略。</string>
     <string name="err_hash">下载内容已损坏，将重新下载。</string>
     <string name="err_install">无法安装更新（代码 %1$d）。当前版本将继续正常工作。</string>
+    <string name="err_install_unknown">无法安装更新。当前版本仍可正常使用。</string>
+    <string name="err_downgrade">此更新比已安装的系统旧，因此未安装。</string>
     <string name="err_space_device">投影仪空间不足，无法安装更新。</string>
     <string name="btn_retry">重试</string>
     <string name="row_usb">从 U 盘安装</string>

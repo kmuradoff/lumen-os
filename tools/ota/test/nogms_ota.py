@@ -10,7 +10,7 @@ delta_generator that would fail is never run) and finish's package names must ca
 the edition is nogms; make_manifest.py must refuse a no-Google image with --channel public, a Google image
 with --channel public-nogms, an --old-image of the other edition and a package whose lumen-edition is not
 the image's, and accept the matching set; the beta channel public-beta takes a no-Google image's packages
-only, with package URLs on the pre-release beta-<version>. Exit status 0 only when every case passes. Writes only into its
+only, with package URLs on the pre-release z9x-<version> (version x.y.z or x.y.z-betaN, -betaN only there). Exit status 0 only when every case passes. Writes only into its
 own temp dir.
 """
 import os
@@ -129,7 +129,7 @@ def main():
         expect("make_manifest: nogms image, nogms package, delta from nogms",
                dies(mm.check_edition, ng, ng2, [zn], "public-nogms"), False)
         expect("make_manifest: gms image, gms package (lab)", dies(mm.check_edition, gm, None, [zg], "public"), False)
-        # ---- the beta channel (Beta updates switch): packages of a no-Google image, on the pre-release beta-<version>
+        # ---- the beta channel (Beta updates switch): packages of a no-Google image, on the pre-release z9x-<version>
         expect("make_manifest: nogms image, --channel public-beta", dies(mm.check_edition, ng, ng2, [zn], "public-beta"),
                False)
         expect("make_manifest: gms image, --channel public-beta", dies(mm.check_edition, gm, None, [zg], "public-beta"),
@@ -138,9 +138,23 @@ def main():
                "lumen-edition=gms")
         expect("make_manifest: public-beta is a channel", ("public-beta" not in mm.CHANNELS, str(mm.CHANNELS)), False)
         r = "kmuradoff/lumen-os"
-        expect("make_manifest: beta packages on beta-<version>",
-               (mm.package_base(r, "public-beta", "1.0.9") != "https://github.com/" + r + "/releases/download/beta-1.0.9/",
-                mm.package_base(r, "public-beta", "1.0.9")), False)
+        expect("make_manifest: beta packages on z9x-<version>-betaN",
+               (mm.package_base(r, "public-beta", "1.0.10-beta1") != "https://github.com/" + r
+                + "/releases/download/z9x-1.0.10-beta1/", mm.package_base(r, "public-beta", "1.0.10-beta1")), False)
+        expect("make_manifest: a beta of a plain version on z9x-<version>",
+               (mm.package_base(r, "public-beta", "1.0.10") != "https://github.com/" + r + "/releases/download/z9x-1.0.10/",
+                mm.package_base(r, "public-beta", "1.0.10")), False)
+        expect("make_manifest: 1.0.10-beta1 in public-beta", dies(mm.check_version, "1.0.10-beta1", "public-beta"), False)
+        expect("make_manifest: 1.0.10-beta1 in public-nogms", dies(mm.check_version, "1.0.10-beta1", "public-nogms"),
+               True, "only goes into a beta channel")
+        expect("make_manifest: 1.0.10-rc1 in public-beta", dies(mm.check_version, "1.0.10-rc1", "public-beta"), True,
+               "expected major.minor.patch")
+        expect("make_manifest: 1.0.10-beta0 refused", dies(mm.check_version, "1.0.10-beta0", "public-beta"), True,
+               "expected major.minor.patch")
+        expect("make_manifest: 1.0.10 in public-nogms", dies(mm.check_version, "1.0.10", "public-nogms"), False)
+        expect("make_manifest: a beta's version code is that of x.y.z",
+               (mm.version_code("1.0.10-beta1") != mm.version_code("1.0.10"), mm.version_code("1.0.10-beta1")), False)
+        expect("make_manifest: 1.0.9 is 10011", (mm.version_code("1.0.9") != 10011, mm.version_code("1.0.9")), False)
         expect("make_manifest: stable packages on z9x-<version>",
                (mm.package_base(r, "public-nogms", "1.0.9") != "https://github.com/" + r + "/releases/download/z9x-1.0.9/",
                 mm.package_base(r, "public-nogms", "1.0.9")), False)

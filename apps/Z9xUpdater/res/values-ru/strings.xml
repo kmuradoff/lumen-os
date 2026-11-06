@@ -20,7 +20,12 @@
     <string name="beta_off">Выкл</string>
     <string name="beta_hint">Бета-версии выходят раньше, но проверены меньше. Если их выключить, текущая версия останется, пока не выйдет более новая обычная версия.</string>
     <string name="row_stats">Отправлять анонимную статистику</string>
-    <string name="stats_hint">Раз в день: модель, версия, серийный номер в виде хеша и страна. Ваш IP-адрес не сохраняется.</string>
+    <string name="stats_hint">При каждом включении и раз в день: модель, версия, сборка, сведения об обновлении, страна, случайный номер установки и серийный номер (сервер хранит только его хеш). Ваш IP-адрес не сохраняется.</string>
+    <string name="notice_title">Анонимная статистика</string>
+    <string name="notice_body">При каждом включении и раз в день Lumen OS сообщает модель, версию, сборку, сведения об обновлении и страну, а также случайный номер установки и серийный номер (сервер хранит только его хеш). IP-адрес не сохраняется, то, что вы смотрите, не отправляется.</string>
+    <string name="notice_where">Изменить можно в разделе «%1$s».</string>
+    <string name="notice_ok">Хорошо</string>
+    <string name="notice_off">Выключить</string>
     <string name="avail_title">Доступна Lumen OS %1$s</string>
     <string name="avail_size_full">Полное обновление · %1$s</string>
     <string name="avail_size_delta">Обновление · %1$s</string>
@@ -85,6 +90,8 @@
     <string name="err_signature">Информация об обновлении не подписана Lumen OS и была проигнорирована.</string>
     <string name="err_hash">Загрузка повреждена и будет загружена заново.</string>
     <string name="err_install">Не удалось установить обновление (код %1$d). Текущая версия продолжает работать.</string>
+    <string name="err_install_unknown">Не удалось установить обновление. Текущая версия продолжает работать.</string>
+    <string name="err_downgrade">Это обновление старше установленной системы, поэтому оно не установлено.</string>
     <string name="err_space_device">На проекторе недостаточно места для обновления.</string>
     <string name="btn_retry">Повторить</string>
     <string name="row_usb">Установить с USB-накопителя</string>

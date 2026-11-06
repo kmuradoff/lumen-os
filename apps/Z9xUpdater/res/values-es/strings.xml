@@ -20,7 +20,12 @@
     <string name="beta_off">Desactivadas</string>
     <string name="beta_hint">Las versiones beta llegan antes, pero se prueban menos. Si las desactivas, tu versión se mantiene hasta que salga una versión normal más reciente.</string>
     <string name="row_stats">Enviar estadísticas anónimas</string>
-    <string name="stats_hint">Una vez al día: modelo, versión, número de serie en forma de hash y país. Tu dirección IP no se guarda.</string>
+    <string name="stats_hint">En cada encendido y una vez al día: modelo, versión, compilación, datos de actualización, país, un número de instalación aleatorio y el número de serie (el servidor solo guarda su hash). Tu dirección IP no se guarda.</string>
+    <string name="notice_title">Estadísticas anónimas</string>
+    <string name="notice_body">En cada encendido y una vez al día, Lumen OS informa del modelo, la versión, la compilación, los datos de actualización y el país, además de un número de instalación aleatorio y el número de serie (el servidor solo guarda su hash). La dirección IP no se guarda, y lo que ves no se envía.</string>
+    <string name="notice_where">Puedes cambiarlo en «%1$s».</string>
+    <string name="notice_ok">Aceptar</string>
+    <string name="notice_off">Desactivar</string>
     <string name="avail_title">Lumen OS %1$s está disponible</string>
     <string name="avail_size_full">Actualización completa · %1$s</string>
     <string name="avail_size_delta">Actualización · %1$s</string>
@@ -84,6 +89,8 @@
     <string name="err_signature">La información de la actualización no está firmada por Lumen OS y se ha ignorado.</string>
     <string name="err_hash">La descarga estaba dañada y se volverá a descargar.</string>
     <string name="err_install">No se pudo instalar la actualización (código %1$d). La versión actual sigue funcionando.</string>
+    <string name="err_install_unknown">No se pudo instalar la actualización. La versión actual sigue funcionando.</string>
+    <string name="err_downgrade">Esta actualización es más antigua que el sistema instalado y no se instaló.</string>
     <string name="err_space_device">No hay suficiente espacio en el proyector para la actualización.</string>
     <string name="btn_retry">Reintentar</string>
     <string name="row_usb">Instalar desde una memoria USB</string>

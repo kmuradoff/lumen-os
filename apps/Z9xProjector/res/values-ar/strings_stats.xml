@@ -3,5 +3,5 @@
      v6.1 translate phase; edit the text here or regenerate, keep names/placeholders. -->
 <resources>
     <string name="stats_row">إرسال إحصاءات مجهولة الهوية</string>
-    <string name="stats_note">مرة واحدة يوميًا: الطراز والإصدار والرقم التسلسلي بصيغة مُجزّأة (hash) والبلد. لا يتم حفظ عنوان IP الخاص بك.</string>
+    <string name="stats_note">عند كل تشغيل ومرة واحدة يوميًا: الطراز والإصدار والبنية ومعلومات التحديث والبلد ورقم تثبيت عشوائي والرقم التسلسلي (يحتفظ الخادم بقيمته المُجزّأة فقط). لا يتم حفظ عنوان IP الخاص بك.</string>
 </resources>

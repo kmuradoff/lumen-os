@@ -99,7 +99,7 @@
     <string name="done_name">Projektör adı</string>
     <string name="done_home">Ana ekran</string>
     <string name="done_stats">Anonim istatistik gönder</string>
-    <string name="done_stats_note">Günde bir kez: model, sürüm, karma (hash) biçiminde seri numarası ve ülke. IP adresiniz saklanmaz.</string>
+    <string name="done_stats_note">Her açılışta ve günde bir kez: model, sürüm, derleme, güncelleme bilgileri, ülke, rastgele bir kurulum numarası ve seri numarası (sunucu yalnızca karma değerini saklar). IP adresiniz saklanmaz.</string>
     <string name="done_start">Başla</string>
     <string name="done_offline_hint">İnternet yok: Google’da oturum açmayı ve saat dilimini daha sonra Ayarlar’dan yapın.</string>
     <string name="done_offline_hint_nogms">İnternet yok: saat dilimini daha sonra Ayarlar’dan seçin.</string>

@@ -19,9 +19,9 @@ News, new versions and answers to questions: the Telegram channel [@projector_lu
 
 | Projector | Status | Latest release | Install guide |
 |---|---|---|---|
-| XGIMI Z9X | stable | [Lumen OS 1.0.8](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-1.0.8) | [English](docs/install/z9x/en.md), [Русский](docs/install/z9x/ru.md) |
+| XGIMI Z9X | stable | [Lumen OS 1.0.9](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-1.0.9) | [English](docs/install/z9x/en.md), [Русский](docs/install/z9x/ru.md) |
 | XGIMI Play 6 | stable | [Lumen OS 1.0.7 for the Play 6](https://github.com/kmuradoff/lumen-os/releases/tag/play6-1.0.7) | [English](docs/install/play6/en.md), [Русский](docs/install/play6/ru.md) |
-| XGIMI Z9X HB | stable | [Lumen OS 1.0.8 for the Z9X HB](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-hb-1.0.8) | [English](docs/install/hb/en.md), [Русский](docs/install/hb/ru.md) |
+| XGIMI Z9X HB | stable | [Lumen OS 1.0.9 for the Z9X HB](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-hb-1.0.9) | [English](docs/install/hb/en.md), [Русский](docs/install/hb/ru.md) |
 
 Each projector has its own release files, signed with its own key. The installer refuses an image for
 another projector and any XGIMI firmware it does not know.
@@ -121,8 +121,8 @@ for the [Z9X](docs/install/z9x/en.md#stock) and for the [Play 6](docs/install/pl
 
 ## Privacy
 
-No ads, no tracking: only an anonymous usage counter that you can turn off. Once a day, when the updater checks
-for updates, it sends the model, the version and the serial number in hashed form, and from your connection the
+No ads, no tracking: only an anonymous usage counter that you can turn off. At every start and once a day it
+sends the model, the version and the serial number (the server keeps only its hash), and from your connection the
 server works out the country; your IP address is not stored. In detail: the projector model (codename
 and XGIMI model), the Lumen OS version, its version code and build id, the update channel, a random install id,
 and after an update the previous version and how it was installed. The serial number and the install id are kept
@@ -130,9 +130,8 @@ only as a keyed hash, rows are deleted after 400 days, and nothing else is sent:
 list of apps, nothing about what you watch. It only counts how many projectors run each version and how many
 have updated. Country: IP Geolocation by [DB-IP](https://db-ip.com).
 
-To turn it off: the switch "Send anonymous statistics" on the last page of the first setup, in the projector
-settings (Diagnostics), or in Lumen OS update. All three are the same switch. Turning it off also deletes the
-install id; turning it on again starts with a new one.
+To turn it off: the switch "Send anonymous statistics" in the projector settings (Diagnostics). Turning it off
+also deletes the install id; turning it on again starts with a new one.
 
 ## Known issues
 

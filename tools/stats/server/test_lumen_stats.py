@@ -82,6 +82,10 @@ class T(unittest.TestCase):
         self.assertEqual({(r["model"], r["xgimi_model"]) for r in a7["by_model"]},
                          {("goat_elegant", "G0130"), ("horse_popular", "G0082")})
         self.assertIn({"country": "DE", "installs": 1}, a7["by_country"])
+        # the reset projector counts once in every breakdown (by its serial), not once per install id
+        self.assertEqual(sum(r["installs"] for r in a7["by_version"] if r["model"] == "goat_elegant"), 1)
+        self.assertEqual(sum(r["installs"] for r in st["daily"] if r["model"] == "goat_elegant"
+                             and r["day"] == st["daily"][-1]["day"]), 0)
         self.assertNotIn("by_city", a7)
         self.assertEqual(st["pairs"], [{"model": "goat_elegant", "from_version": "1.0.7", "to_version": "1.0.8",
                                         "method": "ota_delta", "n": 1}])

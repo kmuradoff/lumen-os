@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0.8 Z9X sweep (2026-11-04): notes of the stock refusal rules (panel/PanelRules) and two stock autofocus
+     tips. Z9X only (not a shared file of apps/common/projector). Our own words with the stock meaning. English base;
+     translations: gsi/apps/i18n/langs/<locale>.txt @projector/strings_rules.xml. Shown under the row title. -->
+<resources>
+    <string name="rules_not_ai">Not available in the AI picture mode</string>
+    <string name="rules_not_performance">Not available in the Performance mode</string>
+    <string name="rules_not_office">Not available in the Office mode</string>
+    <string name="rules_not_top_speed">Not available in the top-speed game mode</string>
+    <string name="rules_not_boost">Not available at the Boost brightness level</string>
+    <string name="rules_not_ultra120">Not available while Ultra 120 Hz is on</string>
+    <string name="rules_not_native_fps">Not available while Original frame rate is on</string>
+    <string name="rules_not_hdr">Not available with HDR video</string>
+    <string name="rules_not_hfr">Not available at a high frame rate</string>
+    <string name="rules_close_hfr">Turn off the high frame rate and try again</string>
+    <string name="rules_dv_active">The Dolby Vision picture mode is in use</string>
+    <!-- Brightness note, the %1$s of panel_lamp_mode_locked when the lumens mode is Custom (IGmpf 175 = 6). -->
+    <string name="rules_custom">Custom</string>
+    <!-- Autofocus could not start (vendor event 7). -->
+    <string name="af_init_failed">Autofocus could not start</string>
+    <!-- After autofocus, when fine-tuning is offered (vendor event 18 AF_Success_Into_Adjust). -->
+    <string name="af_done_fine_tune">Focus done. Hold the focus button to fine-tune it.</string>
+</resources>

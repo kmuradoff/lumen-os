@@ -3,5 +3,5 @@
      v6.1 translate phase; edit the text here or regenerate, keep names/placeholders. -->
 <resources>
     <string name="stats_row">익명 통계 보내기</string>
-    <string name="stats_note">하루 한 번: 모델, 버전, 해시 처리된 일련번호, 국가. IP 주소는 저장되지 않습니다.</string>
+    <string name="stats_note">켤 때마다 그리고 하루 한 번: 모델, 버전, 빌드, 업데이트 정보, 국가, 무작위 설치 번호, 일련번호(서버는 해시만 저장). IP 주소는 저장되지 않습니다.</string>
 </resources>

@@ -26,7 +26,13 @@
     <!-- anonymous statistics (Stats): the row uses beta_on / beta_off for On / Off; stats_hint is the disclosure,
          the same list as the setup wizard (done_stats_note) and the projector settings (stats_note) -->
     <string name="row_stats">Send anonymous statistics</string>
-    <string name="stats_hint">Once a day: model, version, serial number in hashed form and country. Your IP address is not stored.</string>
+    <string name="stats_hint">At every start and once a day: model, version, build, update details, country, a random install number and the serial number (the server keeps only its hash). Your IP address is not stored.</string>
+    <!-- the one-time statistics notice after an update (NoticeActivity); notice_where: %1$s = app_name -->
+    <string name="notice_title">Anonymous statistics</string>
+    <string name="notice_body">At every start and once a day Lumen OS reports the model, version, build, update details and country, plus a random install number and the serial number (the server keeps only its hash). The IP address is not stored, and what you watch is never sent.</string>
+    <string name="notice_where">You can change this under %1$s.</string>
+    <string name="notice_ok">OK</string>
+    <string name="notice_off">Turn off</string>
 
     <!-- update available -->
     <string name="avail_title">Lumen OS %1$s is available</string>
@@ -108,6 +114,10 @@
     <string name="err_signature">The update information is not signed by Lumen OS and was ignored.</string>
     <string name="err_hash">The download was damaged and will be downloaded again.</string>
     <string name="err_install">The update could not be installed (code %1$d). The current version keeps working.</string>
+    <!-- 2026-11-04: an install that ended with no vendor code (bind failed, no callback); no number shown. -->
+    <string name="err_install_unknown">The update could not be installed. The current version keeps working.</string>
+    <!-- update_engine 51 (payload timestamp error): the update is older than the running system. -->
+    <string name="err_downgrade">This update is older than the installed system, so it was not installed.</string>
     <string name="err_space_device">Not enough space on the projector for the update.</string>
     <string name="btn_retry">Try again</string>
 

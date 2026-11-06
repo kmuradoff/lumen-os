@@ -54,13 +54,30 @@ public final class Store {
     }
 
     public void setState(State s) {
-        p.edit().putString("state", s.name()).apply();
+        SharedPreferences.Editor e = p.edit().putString("state", s.name());
+        // 2026-11-04: READY / INSTALLING remember their boot (Outcome.staleBootState)
+        if (s == State.READY || s == State.INSTALLING) e.putString("state_boot", bootId()); else e.remove("state_boot");
+        e.apply();
         changed();
+    }
+
+    /** The boot that saved READY / INSTALLING ("" = none saved). */
+    public String stateBoot() { return p.getString("state_boot", ""); }
+
+    /** /proc/sys/kernel/random/boot_id, "" when unreadable. */
+    public static String bootId() {
+        try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader("/proc/sys/kernel/random/boot_id"))) {
+            String l = r.readLine();
+            return l == null ? "" : l.trim();
+        } catch (Throwable t) {
+            return "";
+        }
     }
 
     /** Error message: string resource name + optional argument (shown in the current language). */
     public void setError(String resName, String arg) {
-        p.edit().putString("state", State.ERROR.name()).putString("err", resName).putString("err_arg", arg).apply();
+        p.edit().putString("state", State.ERROR.name()).putString("err", resName).putString("err_arg", arg)
+                .remove("state_boot").apply();
         changed();
     }
 
@@ -123,6 +140,12 @@ public final class Store {
         changed();
     }
 
+    /** The last check found a verified beta manifest (Checker.probeBeta); false until one is found. */
+    public boolean betaPublished() { return p.getBoolean("beta_published", false); }
+    public void setBetaPublished(boolean on) {
+        if (on != betaPublished()) { p.edit().putBoolean("beta_published", on).apply(); changed(); }
+    }
+
     /** "Send anonymous statistics" (Stats); default Stats.DEFAULT_ON. */
     public boolean statsOn() { return p.getBoolean("stats", Stats.DEFAULT_ON); }
 
@@ -134,6 +157,19 @@ public final class Store {
         changed();
     }
 
+    /**
+     * This install saw the statistics choice: the first setup's Done page (StateProvider "stats_seen") or the
+     * one-time notice after an update (Notice). Not cleared by the switch.
+     */
+    public boolean statsSeen() { return p.getBoolean("stats_seen", false); }
+    public void setStatsSeen(boolean b) { p.edit().putBoolean("stats_seen", b).apply(); }
+
+    /** Version code of the last boot (Notice: a change makes the notice due) and whether it is due. */
+    public int noticeVc() { return p.getInt("notice_vc", 0); }
+    public void setNoticeVc(int vc) { p.edit().putInt("notice_vc", vc).apply(); }
+    public boolean noticeDue() { return p.getBoolean("notice_due", false); }
+    public void setNoticeDue(boolean b) { p.edit().putBoolean("notice_due", b).apply(); }
+
     /** The random install id of Stats, made on first use. */
     public synchronized String statsId() {
         String id = p.getString("stats_id", "");
@@ -144,13 +180,17 @@ public final class Store {
         return id;
     }
 
-    /** UTC day (yyyy-MM-dd) of the last statistics sent, and the time of the last try. */
+    /** UTC day (yyyy-MM-dd) of the last statistics sent. */
     public String statsDay() { return p.getString("stats_day", ""); }
 
     /** After a send: the day, and the version it reported (the next send after a change names it as previous). */
-    public void setStatsSent(String day, int versionCode, String version) {
-        p.edit().putString("stats_day", day).putInt("stats_vc", versionCode).putString("stats_version", version).apply();
+    public void setStatsSent(String day, int versionCode, String version, int boot) {
+        p.edit().putString("stats_day", day).putInt("stats_vc", versionCode).putString("stats_version", version)
+                .putInt("stats_boot", boot).apply();
     }
+
+    /** Settings.Global.BOOT_COUNT of the last send (Stats.due: once per start). */
+    public int statsBoot() { return p.getInt("stats_boot", -1); }
 
     /** Version code and name of the last send; 0 = never sent by this install id. */
     public int statsVc() { return p.getInt("stats_vc", 0); }

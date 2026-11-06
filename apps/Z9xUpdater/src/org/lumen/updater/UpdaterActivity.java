@@ -188,8 +188,9 @@ public final class UpdaterActivity extends Activity {
     }
 
     /**
-     * "Beta updates" on or off: drop an offer of the other channel that is not downloaded yet and check the newly
-     * chosen one. Turning it off never downgrades: the stable channel is offered only once its version_code is
+     * "Beta updates" on or off: drop an offer that is not downloaded yet and check again. On reads the stable and
+     * the beta manifest and offers the higher version (Channels), so stable updates keep coming while no beta is
+     * published. Turning it off never downgrades: the stable channel is offered only once its version_code is
      * above the installed one (Preflight.applicable), until then the check says up to date.
      */
     private void toggleBeta() {
@@ -541,16 +542,18 @@ public final class UpdaterActivity extends Activity {
             st.setAutoMode((st.autoMode() + 1) % 3);
             if (st.autoMode() != Store.AUTO_OFF) CheckJob.schedule(this);
         }, true), Ui.match());
-        // only an edition with a beta channel shows the switch, and not while an update is under way
-        boolean beta = Ota.betaAvailable() && !betaLocked(st.state());
+        // only an edition with a beta channel shows the switch, only while it is on or a beta is published, and
+        // not while an update is under way
+        boolean beta = Ota.betaAvailable() && (Ota.betaOn() || st.betaPublished()) && !betaLocked(st.state());
         betaRow = null;
         if (beta) {
             betaRow = Ui.row(this, getString(R.string.row_beta),
                     getString(Ota.betaOn() ? R.string.beta_on : R.string.beta_off), v -> toggleBeta());
             set.addView(betaRow, Ui.match());
         }
-        // stacked: the long title would push the value out of the row; no row without a statistics server
-        if (Stats.configured()) {
+        // stacked: the long title would push the value out of the row; no row without a statistics server. Not shown
+        // (2026-11-05): the only statistics switch is in the projector settings, Diagnostics
+        if (Stats.configured() && Stats.SWITCH_IN_UPDATER) {
             statsRow = Ui.row(this, getString(R.string.row_stats),
                     getString(st.statsOn() ? R.string.beta_on : R.string.beta_off), v -> st.setStatsOn(!st.statsOn()), true);
             set.addView(statsRow, Ui.match());

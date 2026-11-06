@@ -88,6 +88,17 @@ public final class UpdateService extends Service implements Engine.Listener {
                 if (st.state() == Store.State.INSTALLING) Engine.get().cancel();
                 runWorker(() -> {
                     joinOther();
+                    // 2026-11-04 (M2): Cancel just as update_engine reached NEED_REBOOT: the cancel above failed
+                    // quietly and the slot switch is staged; undo it, or the next restart installs it unasked
+                    try {
+                        if (Engine.get().status() == Ota.UE_NEED_REBOOT) {
+                            Log.i(Ota.TAG, "cancel: update_engine already finished, reverting the staged slot");
+                            Engine.get().revertReady();
+                            st.clearPending();
+                        }
+                    } catch (Throwable t) {
+                        Log.w(Ota.TAG, "cancel revert: " + t);
+                    }
                     deleteFiles(this);
                     st.setState(Store.State.AVAILABLE);
                     Ota.setBusy(this, false, "idle");
@@ -124,34 +135,81 @@ public final class UpdateService extends Service implements Engine.Listener {
                 });
                 break;
             default: // WATCH: re-attach to an install that runs in update_engine
-                runWorker(() -> {
-                    int s = Engine.get().status();
-                    if (st.state() == Store.State.INSTALLING && (s == Ota.UE_IDLE || s < 0)) {
-                        st.setError("err_install", "-1");
-                    } else if (s == Ota.UE_NEED_REBOOT) {
-                        st.setState(Store.State.READY);
-                    }
-                    stopIfIdle();
-                });
+                // 2026-11-04 (M1): the activity sends WATCH at every onResume during an install. A worker that is
+                // already following it must not be stopped (runWorker's join used to end its wait loop, and then
+                // nothing ended the foreground service after READY)
+                Thread w = worker;
+                if (w != null && w.isAlive()) {
+                    Log.i(Ota.TAG, "watch: a worker is already running, nothing to do");
+                    break;
+                }
+                runWorker(this::watch);
         }
         return START_NOT_STICKY;
     }
 
+    /**
+     * Runs {@code r} on a new worker after the previous one ended (asked to stop, joined up to 10 s). 2026-11-04
+     * (M3): the join runs on the new worker, not on the main thread (the activity shares this process: Pause or
+     * Cancel froze the UI for up to 10 s).
+     */
     private void runWorker(Runnable r) {
+        final Thread prev = worker;
+        if (prev != null && prev.isAlive()) stop = true;
         Thread t = new Thread(() -> {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+            if (prev != null && prev.isAlive()) {
+                try {
+                    prev.join(10000);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            stop = false;
             try {
                 r.run();
             } catch (Throwable e) {
                 Log.e(Ota.TAG, "worker", e);
-                Store.get(this).setError("err_install", "-2");
+                Store.get(this).setError("err_install_unknown", "");
                 stopIfIdle();
             }
         }, "updater");
-        joinOther();
-        stop = false;
         worker = t;
         t.start();
+    }
+
+    /**
+     * Worker: follow what update_engine does with an INSTALLING state (finding 5): applying or finished = attach
+     * (the end then goes through onComplete: READY, busy off, the result, the wakelock, the foreground service);
+     * idle = the install is gone; no answer = asked again 5 s later (3 times) before it counts as failed.
+     */
+    private void watch() {
+        BootReceiver.settleIfStale(this, "watch");
+        Store st = Store.get(this);
+        int s = Engine.get().status();
+        for (int i = 0; s < 0 && i < 3 && !stop && st.state() == Store.State.INSTALLING; i++) {
+            Log.i(Ota.TAG, "watch: update_engine status unknown, asking again in 5 s");
+            sleep(5000);
+            s = Engine.get().status();
+        }
+        if (st.state() == Store.State.INSTALLING) {
+            if (engineApplying(s) || s == Ota.UE_NEED_REBOOT) {
+                UpdateManifest m = null;
+                try { m = new UpdateManifest(st.manifestJson()); } catch (JSONException ignored) { }
+                if (m != null) attach(st, m, s);
+                else if (s == Ota.UE_NEED_REBOOT) onComplete(Ota.ERR_SUCCESS);
+            } else {
+                Log.w(Ota.TAG, "watch: INSTALLING but update_engine reports " + s);
+                st.clearPending();
+                st.setError("err_install_unknown", "");
+                Ota.setBusy(this, false, "error");
+                releaseWake();
+            }
+        } else if (s == Ota.UE_NEED_REBOOT && st.state() != Store.State.READY && st.state() != Store.State.AVAILABLE) {
+            st.setState(Store.State.READY);
+            Ota.setBusy(this, false, "ready");
+        }
+        stopIfIdle();
     }
 
     private void joinOther() {
@@ -397,9 +455,17 @@ public final class UpdateService extends Service implements Engine.Listener {
             else st.setError("blk_engine", "");
             return;
         }
-        st.setPending(m.buildId, m.version, Ota.buildId(), Ota.currentVersion());
-        st.setProgress(0f);
-        st.setState(Store.State.INSTALLING);
+        // 2026-11-04: under the Checker lock, so a background check cannot write CHECKING (and then the old state)
+        // between these lines and end the wait loop below; a stop asked meanwhile (Cancel) is honoured here
+        synchronized (Checker.class) {
+            if (stop || st.state() != Store.State.DOWNLOADED) {
+                Log.i(Ota.TAG, "install not started: stop " + stop + ", state " + st.state());
+                return;
+            }
+            st.setPending(m.buildId, m.version, Ota.buildId(), Ota.currentVersion());
+            st.setProgress(0f);
+            st.setState(Store.State.INSTALLING);
+        }
         Ota.setBusy(this, true, "installing");
         acquireWake();
         try {
@@ -415,7 +481,7 @@ public final class UpdateService extends Service implements Engine.Listener {
                 return;
             }
             st.clearPending();
-            st.setError("err_install", "-1");
+            st.setError("err_install_unknown", "");
             Ota.setBusy(this, false, "error");
             releaseWake();
         }
@@ -492,11 +558,18 @@ public final class UpdateService extends Service implements Engine.Listener {
             Ota.setBusy(this, false, "idle");
         } else {
             st.clearPending();
-            st.setError(code == Ota.ERR_NOT_ENOUGH_SPACE ? "err_space_device" : "err_install", String.valueOf(code));
+            switch (Outcome.installError(code)) {
+                case SPACE: st.setError("err_space_device", String.valueOf(code)); break;
+                case DOWNGRADE: st.setError("err_downgrade", String.valueOf(code)); break;
+                case UNKNOWN: st.setError("err_install_unknown", ""); break;
+                default: st.setError("err_install", String.valueOf(code));
+            }
+            Log.w(Ota.TAG, "install ended with update_engine code " + code);
             Ota.setBusy(this, false, "error");
         }
         releaseWake();
         cancelNotif(NOTIF_PROGRESS);
+        stopIfIdle();                                         // finding 5: the foreground service ends here too
     }
 
     private void acquireWake() {

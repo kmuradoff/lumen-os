@@ -20,7 +20,12 @@
     <string name="beta_off">Aus</string>
     <string name="beta_hint">Betaversionen kommen früher, sind aber weniger getestet. Wenn du sie ausschaltest, bleibt deine Version, bis eine neuere reguläre Version erscheint.</string>
     <string name="row_stats">Anonyme Statistik senden</string>
-    <string name="stats_hint">Einmal am Tag: Modell, Version, Seriennummer als Hash und Land. Deine IP-Adresse wird nicht gespeichert.</string>
+    <string name="stats_hint">Bei jedem Start und einmal am Tag: Modell, Version, Build, Update-Angaben, Land, eine zufällige Installationsnummer und die Seriennummer (der Server speichert nur ihren Hash). Deine IP-Adresse wird nicht gespeichert.</string>
+    <string name="notice_title">Anonyme Statistik</string>
+    <string name="notice_body">Bei jedem Start und einmal am Tag meldet Lumen OS Modell, Version, Build, Update-Angaben und Land, dazu eine zufällige Installationsnummer und die Seriennummer (der Server speichert nur ihren Hash). Die IP-Adresse wird nicht gespeichert, und was du ansiehst, wird nicht gesendet.</string>
+    <string name="notice_where">Ändern kannst du das unter „%1$s“.</string>
+    <string name="notice_ok">OK</string>
+    <string name="notice_off">Ausschalten</string>
     <string name="avail_title">Lumen OS %1$s ist verfügbar</string>
     <string name="avail_size_full">Vollständiges Update · %1$s</string>
     <string name="avail_size_delta">Update · %1$s</string>
@@ -83,6 +88,8 @@
     <string name="err_signature">Die Update-Informationen sind nicht von Lumen OS signiert und wurden ignoriert.</string>
     <string name="err_hash">Der Download war beschädigt und wird erneut heruntergeladen.</string>
     <string name="err_install">Das Update konnte nicht installiert werden (Code %1$d). Die aktuelle Version läuft weiter.</string>
+    <string name="err_install_unknown">Das Update konnte nicht installiert werden. Die aktuelle Version läuft weiter.</string>
+    <string name="err_downgrade">Dieses Update ist älter als das installierte System und wurde nicht installiert.</string>
     <string name="err_space_device">Auf dem Projektor ist nicht genug Platz für das Update.</string>
     <string name="btn_retry">Erneut versuchen</string>
     <string name="row_usb">Von einem USB-Stick installieren</string>

@@ -2,7 +2,7 @@
 # script /system/etc/xgimi/z9x_poweroff.sh 0755 root:root).
 # UNVERIFIED on the device: power-off tests T1-T4 must run with the user present.
 #
-# Root cause (research/v62/poweroff): the vendor watchdog driver wdt-mt5896.ko starts the PM-domain
+# Root cause (measured on the device): the vendor watchdog driver wdt-mt5896.ko starts the PM-domain
 # hardware watchdog at probe (30 s, kernel self-ping every 500 ms; counter/control registers at
 # 0x1c020190..0x198, the always-on PM block) and its .shutdown hook stops it only when the watchdog
 # core marks it WDOG_ACTIVE, i.e. only if userspace opened /dev/watchdog0. Nothing opens it on our

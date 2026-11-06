@@ -4,5 +4,5 @@
      setup wizard and the updater show the same switch). stats_note is the disclosure, the same list everywhere. -->
 <resources>
     <string name="stats_row">Send anonymous statistics</string>
-    <string name="stats_note">Once a day: model, version, serial number in hashed form and country. Your IP address is not stored.</string>
+    <string name="stats_note">At every start and once a day: model, version, build, update details, country, a random install number and the serial number (the server keeps only its hash). Your IP address is not stored.</string>
 </resources>

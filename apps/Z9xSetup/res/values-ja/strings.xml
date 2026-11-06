@@ -99,7 +99,7 @@
     <string name="done_name">プロジェクター名</string>
     <string name="done_home">ホーム画面</string>
     <string name="done_stats">匿名の統計情報を送信</string>
-    <string name="done_stats_note">1日1回：モデル、バージョン、ハッシュ化したシリアル番号、国。IP アドレスは保存されません。</string>
+    <string name="done_stats_note">起動するたびと1日1回：モデル、バージョン、ビルド、アップデート情報、国、ランダムなインストール番号、シリアル番号（サーバーはハッシュのみ保存）。IP アドレスは保存されません。</string>
     <string name="done_start">開始</string>
     <string name="done_offline_hint">インターネットなし: Google へのログインとタイムゾーンの設定は、後で設定から行えます。</string>
     <string name="done_offline_hint_nogms">インターネットなし: タイムゾーンは後で設定から指定できます。</string>

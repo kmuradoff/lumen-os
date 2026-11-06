@@ -1,5 +1,5 @@
 # Z9X v6.1 / Lumen OS 1.0 always-on settings (install as /system/etc/init/z9x_base.rc).
-# Replaces v6's z9x_features.rc: there is no kill switch any more (V61_REQUIREMENTS item 13).
+# Replaces v6's z9x_features.rc: there is no kill switch any more.
 # Nothing here reads or writes persist.z9x.featblock / strike / lastfeat / lastboot; values that a
 # v6 boot left in /data/property are ignored by everything in v6.1.
 #
@@ -22,7 +22,7 @@ on early-boot
 
 # ---- v6.5: the v6.4 AFBC workaround is removed (vendor.mtk.disable.layer.afbc /
 # vendor.mtk.enable.framebuffer.afbc are back to the vendor defaults). The block noise after a quick
-# wake came back with linear scan-out too, so GOP AFBC was not the cause (research/v65 decision).
+# wake came back with linear scan-out too, so GOP AFBC was not the cause.
 # v6.5 avoids the display power cycle on a short sleep instead (lamp-only standby in org.lumen.projector).
 
 # ---- Lumen OS 1.0: STR (suspend to RAM) is allowed again (verified on the device 2026-10-06: a short
@@ -34,7 +34,7 @@ on early-boot
 # 20 s later (boot_reason 0xF1). org.lumen.projector therefore stays in the lamp-only standby (no STR)
 # while a USB host is connected; the PM51 wake sources are set at boot by z9x_power*.rc.
 # The kill switch persist.z9x.allow_str (0 = kernel wakelock z9x_no_str held, never STR; 1 / unset =
-# STR allowed) lives in z9x_power.rc (lane L-PROJECTOR, single owner of the power init), next to the
+# STR allowed) lives in z9x_power.rc (the one place of the power init), next to the
 # PM51 wake sources.
 
 # ---- v6.4-fix BUG 2: /vendor/bin/smart_ak_server cannot link (libseg.so needs cv::split and 12 other

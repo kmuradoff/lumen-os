@@ -3684,9 +3684,18 @@ abf_blobs() {
 abf_fbd_check() {  # [rescue]: fastbootd, one getvar all: this projector, its running slot and the known layout; else STOP
   # 'rescue': the slot fastbootd reports may differ from the one this computer saw (an update since) and need not be
   # marked successful (it is the one that does not start); its update state is abf_rescue's to handle
-  local why="" cs k sz
+  local why="" cs k sz s v
   ABF_S=""
   GV=$(fb getvar all 2>&1)
+  # the HB fastbootd answers 'getvar slot-successful:<slot>' but may leave it out of 'getvar all' (2026-11-05, a
+  # user's projector stopped with "slot-successful:a ''"): when 'all' names no slot's mark, ask each slot, read only
+  if ! printf '%s\n' "$GV" | grep -q '^(bootloader) slot-successful:'; then
+    for s in $P_SLOTS; do
+      v=$(fb getvar "slot-successful:$s" 2>&1 | sed -n "s/^slot-successful:$s: *//p" | head -n 1 | tr -d ' \r')
+      case $v in yes|no) GV="$GV
+(bootloader) slot-successful:$s:$v" ;; esac
+    done
+  fi
   [ "$(abf_gv is-userspace)" = yes ] || why=$(t "not fastbootd" "это не fastbootd")
   [ -n "$why" ] || [ "$(abf_gv product)" = "$P_FB_PRODUCT" ] || why="$(t "fastbootd is not the one of the $P_NAME" "fastbootd не от $P_NAME") ($(abf_gv product))"
   [ -n "$why" ] || [ "$(abf_gv serialno)" = "$SERIAL" ] || why="$(t "another projector in fastboot mode" "в режиме fastboot другой проектор") (serialno $(abf_gv serialno), $(t 'expected' 'ожидался') $SERIAL)"

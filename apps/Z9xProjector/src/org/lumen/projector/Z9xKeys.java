@@ -31,7 +31,7 @@ final class Z9xKeys {
     static final int GEAR = KeyEvent.KEYCODE_SETTINGS;                       // 176
     /** Source key (BT 430, IR 88, keypad 225/268/466): input chooser overlay (v6.1, from org.lumen.tvinput). */
     static final int SOURCE = KeyEvent.KEYCODE_TV_INPUT;                     // 178
-    /** App-key slots 1..5 (stock VIDEO0..VIDEO4). Z9X remote: slot 3 = iQIYI key, slot 4 = bilibili key. */
+    /** App-key slots 1..5 (stock VIDEO0..VIDEO4). Z9X remotes: iQIYI key = slot 3 or 2, bilibili key = slot 4 or 5 (AppSlots.keySlot). */
     static final int[] APP_SLOTS = {
             KeyEvent.KEYCODE_TV_TERRESTRIAL_ANALOG,   // 235 slot 1
             KeyEvent.KEYCODE_TV_TERRESTRIAL_DIGITAL,  // 236 slot 2

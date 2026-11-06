@@ -3164,7 +3164,17 @@ function Abf-Fbd-Check([switch]$Rescue) {  # fastbootd, one getvar all: this pro
   # -Rescue: the slot fastbootd reports may differ from the one this computer saw (an update since) and need not be
   # marked successful (it is the one that does not start); its update state is Abf-Rescue's to handle
   $nm = P6-Name; $why = ""; $script:AbfS = ""
-  $gv = @(Fb getvar all); $script:AbfGv = $gv
+  $gv = @(Fb getvar all)
+  # the HB fastbootd answers 'getvar slot-successful:<slot>' but may leave it out of 'getvar all' (2026-11-05, a
+  # user's projector stopped with "slot-successful:a ''"): when 'all' names no slot's mark, ask each slot, read only
+  if (-not @($gv | Where-Object { "$_" -like "(bootloader) slot-successful:*" }).Count) {
+    foreach ($s in (Abf-List SLOTS)) {
+      $l = @(Fb getvar "slot-successful:$s") | Where-Object { "$_" -like "slot-successful:${s}:*" } | Select-Object -First 1
+      $v = if ($l) { ("$l".Substring(("slot-successful:${s}:").Length)).Trim() } else { "" }
+      if ($v -ceq "yes" -or $v -ceq "no") { $gv = @($gv) + "(bootloader) slot-successful:${s}:$v" }
+    }
+  }
+  $script:AbfGv = $gv
   $cs = Gv-Val $gv "current-slot"; $lum = ((State-Get dev_lumen) -eq "1")
   if ((Gv-Val $gv "is-userspace") -ne "yes") { $why = T "not fastbootd" "это не fastbootd" }
   elseif ((Gv-Val $gv "product") -cne $script:Prof["FB_PRODUCT"]) { $why = (T "fastbootd is not the one of the $nm" "fastbootd не от $nm") + " ($(Gv-Val $gv 'product'))" }

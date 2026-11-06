@@ -3,7 +3,7 @@
 # background root services (class main, never 'exec'), so it cannot block init.
 # mksh + toybox only (on the device /system/bin/sh is mksh: 'read -n' and 'print' are mksh builtins).
 #
-# Why (research/v62x RESULT_eye.json, VERIFIED on the device): the stock reader of the vendor
+# Why (verified on the device): the stock reader of the vendor
 # native-UI fifo, /system/bin/nativeui, is not on the GSI. libxgimi Msrv_System_Control::nuiCommand
 # (gmpf_main) does, under one mutex:
 #   open("/data/vendor/tmp/nuififo", O_WRONLY)   BLOCKS until a reader exists (40 x 100 ms retries

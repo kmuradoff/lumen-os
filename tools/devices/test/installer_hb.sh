@@ -178,7 +178,11 @@ case "$1" in
       while read -r p s; do printf '(bootloader) is-logical:%s:yes\n(bootloader) partition-size:%s:0x%X\n' "$p" "$p" "$s" >&2; done < "$FB/parts"
       echo "all: Done" >&2
     else
-      case "$2" in partition-size:*) s=$(size "${2#partition-size:}"); [ -n "$s" ] && printf '%s: 0x%X\n' "$2" "$s" >&2 ;; esac
+      case "$2" in
+        partition-size:*) s=$(size "${2#partition-size:}"); [ -n "$s" ] && printf '%s: 0x%X\n' "$2" "$s" >&2 ;;
+        # the real HB fastbootd may answer a single slot-successful that 'getvar all' leaves out (single_vars)
+        slot-successful:*) v=$(sed -n "s/^${2}: *//p" "$FB/single_vars" 2>/dev/null | head -n 1); [ -n "$v" ] && printf '%s: %s\n' "$2" "$v" >&2 ;;
+      esac
       echo "Finished. Total time: 0.001s" >&2
     fi ;;
   create-logical-partition) { [ -e "$FB/create_fail" ] || [ -e "$FB/create_fail_$2" ]; } && { echo "FAILED (remote: 'Not enough space')" >&2; exit 1; }
@@ -324,7 +328,7 @@ end() {
   fi
   grep -qE "_$COSL( |$)" "$FB/fb.log" && fail "a partition of the other slot: $(tr '\n' ';' < "$FB/fb.log")"
   grep 'delete-logical-partition' "$FB/fb.log" | grep -vqx -- "-s $SER delete-logical-partition z9x_gapps_$CSL" && fail "a delete of another partition than z9x_gapps_$CSL"
-  local allowed="^(--version|devices|-s $SER (getvar all|getvar partition-size:system_$CSL|reboot|create-logical-partition z9x_blobs_$CSL 4194304|resize-logical-partition z9x_blobs_$CSL 4194304|flash z9x_blobs_$CSL [^ ]+|flash system_$CSL [^ ]+|create-logical-partition z9x_gapps_$CSL [0-9]+|resize-logical-partition z9x_gapps_$CSL [0-9]+|flash z9x_gapps_$CSL [^ ]+|delete-logical-partition z9x_gapps_$CSL|format:ext4 ($(echo $WIPEP | tr ' ' '|'))))$"
+  local allowed="^(--version|devices|-s $SER (getvar all|getvar slot-successful:[ab]|getvar partition-size:system_$CSL|reboot|create-logical-partition z9x_blobs_$CSL 4194304|resize-logical-partition z9x_blobs_$CSL 4194304|flash z9x_blobs_$CSL [^ ]+|flash system_$CSL [^ ]+|create-logical-partition z9x_gapps_$CSL [0-9]+|resize-logical-partition z9x_gapps_$CSL [0-9]+|flash z9x_gapps_$CSL [^ ]+|delete-logical-partition z9x_gapps_$CSL|format:ext4 ($(echo $WIPEP | tr ' ' '|'))))$"
   if grep -vqE "$allowed" "$FB/fb.log"; then fail "fastboot command not on the allowed list: $(grep -vE "$allowed" "$FB/fb.log" | head -3 | tr '\n' ';')"; fi
   [ "$NOFORMAT" = 0 ] || ! grep -q 'format' "$FB/fb.log" || fail "a format in 'rescue': $(grep format "$FB/fb.log" | tr '\n' ';')"
   grep -E '(^| )format' "$FB/fb.log" | grep -vqE ' format:ext4 ' && fail "a format without :ext4"
@@ -611,6 +615,22 @@ expect_out "If it hangs with the cable in, pull the cable"
 for p in $WIPEP; do [ -e "$FB/formatted_$p" ] || fail "$p not formatted"; done
 [ "$(cat "$FB/mode")" = lumen ] || fail "mode $(cat "$FB/mode")"
 roundtrip
+end
+
+begin flash_marks_asked_singly
+# a user's projector (2026-11-05): 'getvar all' names no slot-successful, 'getvar slot-successful:<slot>' answers
+dev_stock; sed -i.bak '/^(bootloader) slot-successful:/d' "$FB/vars"
+printf 'slot-successful:%s: yes\nslot-successful:%s: no\n' "$SL" "$OSL" > "$FB/single_vars"
+inst 'ERASE\n\n' --ip "$ADDR" flash
+expect_rc 0
+expect_cmds "$(printf '%s' "$FLASH_FULL" | sed "s|$F getvar all;|$F getvar all;$F getvar slot-successful:a;$F getvar slot-successful:b;|")"
+end
+
+begin flash_marks_missing_everywhere
+# neither 'getvar all' nor a single getvar names the mark: refused as before, nothing written
+dev_stock; sed -i.bak '/^(bootloader) slot-successful:/d' "$FB/vars"; rm -f "$FB/single_vars"
+inst 'ERASE\n\n' --ip "$ADDR" flash
+expect_rc 1; expect_out "slot-successful:$SL ''"
 end
 
 begin flash_vbmeta_not_effective

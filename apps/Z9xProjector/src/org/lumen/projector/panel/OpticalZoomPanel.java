@@ -129,7 +129,23 @@ public final class OpticalZoomPanel extends Panel {
 
     /** Opens the zoom screen (it replaces the quick panel); {@code onBackExit} runs after a BACK exit. */
     static void open(Context ctx, Runnable onBackExit) {
-        Context app = ctx.getApplicationContext();
+        final Context app = ctx.getApplicationContext();
+        if (!Hal.isReady()) { Notify.show(app, R.string.zoom_unavailable); return; }
+        if (Hal.isKeystoneRunning() || AkOverlay.isActive()) { Notify.show(app, R.string.kst_reason_ak_busy); return; }
+        if (sOpen != null) return;
+        // 2026-11-04 (stock pictureZoom, common.json:355, node zoom_and_move): refused in a top-speed game, then in 3D,
+        // before the screen replaces the quick panel. Fresh reads on the HAL thread.
+        Hal.query((g, g2) -> PanelRules.keystone(RuleNotes.readKeystone(app, g, g2)), w -> {
+            if (w != null && w != PanelRules.Why.NONE) {
+                Log.i(TAG, "open refused: " + w);
+                RuleNotes.show(app, app.getString(R.string.panel_optical_zoom), w, false);
+                return;
+            }
+            openNow(app, onBackExit);
+        });
+    }
+
+    private static void openNow(Context app, Runnable onBackExit) {
         if (!Hal.isReady()) { Notify.show(app, R.string.zoom_unavailable); return; }
         if (Hal.isKeystoneRunning() || AkOverlay.isActive()) { Notify.show(app, R.string.kst_reason_ak_busy); return; }
         if (sOpen != null) return;
@@ -185,7 +201,9 @@ public final class OpticalZoomPanel extends Panel {
         setMarker(app, true);
         try {
             session.set(true);
-            Log.i(TAG, "enter: 18(true,2) -> " + g2.setKstPrepareForZoom(true) + ", 121(0) -> " + g.zoomSessionStart());
+            // stock OpticsZoomShiftWind.java:350 / :670: 194 setPushPullScreenState(1) around the screen
+            Log.i(TAG, "enter: 194(1) -> " + g2.setAdjustScreenOpen(true) + ", 18(true,2) -> "
+                    + g2.setKstPrepareForZoom(true) + ", 121(0) -> " + g.zoomSessionStart());
             int[] range = g.getZoomStepRange();
             int lim = g.getZoomLimitTotal();
             Log.i(TAG, "117 -> ret " + range[0] + " optical " + range[1] + ".." + range[2] + " digital " + range[3]
@@ -319,6 +337,7 @@ public final class OpticalZoomPanel extends Panel {
         boolean ok = true;
         try { Log.i(TAG, "120(0) -> " + g.zoomSessionFinish()); } catch (Throwable t) { ok = false; Log.w(TAG, "120: " + t); }
         try { Log.i(TAG, "18(false,2) -> " + g2.setKstPrepareForZoom(false)); } catch (Throwable t) { ok = false; Log.w(TAG, "18(false,2): " + t); }
+        try { Log.i(TAG, "194(0) -> " + g2.setAdjustScreenOpen(false)); } catch (Throwable t) { Log.w(TAG, "194: " + t); }
         if (ok) setMarker(app, false);
     }
 

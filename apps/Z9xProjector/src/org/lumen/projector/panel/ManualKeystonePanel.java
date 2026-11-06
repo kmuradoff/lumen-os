@@ -441,7 +441,17 @@ public final class ManualKeystonePanel extends Panel {
                 }
                 Log.i(TAG, "647 " + o + " but no top-speed game running on HDMI (" + st + "): allowed");
             }
+            // 2026-11-04 (stock manualKeystone, common.json:313; G0082 support_Trapezoid_3D=0): refused in 3D
+            PanelRules.In in3 = new PanelRules.In();
+            try { in3.fmt192 = g.getCurrent3DFormat(); } catch (Throwable t) { Log.w(TAG, "192: " + t); }
+            try { in3.to2d193 = g.is3DTo2DEnabled(); } catch (Throwable t) { Log.w(TAG, "193: " + t); }
+            if (PanelRules.is3d(in3)) {
+                reason = R.string.panel_ultra120_3d;
+                throw new IllegalStateException("3D on (192=" + in3.fmt192 + " 193=" + in3.to2d193 + ")");
+            }
             active = true;                                   // exit() undoes whatever follows
+            // stock KeyStoneWind.java:708 / :1034: 194 setPushPullScreenState(1) while the screen is open
+            try { Log.i(TAG, "194(1) -> " + g2.setAdjustScreenOpen(true)); } catch (Throwable t) { Log.w(TAG, "194(1): " + t); }
             rtPaused = pauseRealtime(app, g, "manual keystone");
 
             KstPoint cur;
@@ -868,6 +878,7 @@ public final class ManualKeystonePanel extends Panel {
         } else {
             Log.i(TAG, "exit: real-time keystone was off (586) or not paused: 573 not sent, nothing re-armed");
         }
+        try { Log.i(TAG, "194(0) -> " + g2.setAdjustScreenOpen(false)); } catch (Throwable t) { Log.w(TAG, "194(0): " + t); }
         if (!ok) scheduleRetry(app, 1);
         Log.i(TAG, "manual keystone left (changed=" + changed + ", confirmed=" + confirmed + ", " + applied + "); "
                 + "185 x" + n185 + (n185 > 0 ? " avg " + sum185 / n185 + " ms max " + max185 + " ms" : "")

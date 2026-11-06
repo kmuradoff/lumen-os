@@ -8,4 +8,11 @@
         <item name="android:navigationBarColor">@color/lu_bg</item>
         <item name="android:windowAnimationStyle">@android:style/Animation.Activity</item>
     </style>
+    <!-- the one-time statistics notice: a card over the home screen (NoticeActivity draws its own dim) -->
+    <style name="Theme.Lumen.Notice" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <item name="android:colorAccent">@color/lu_accent</item>
+    </style>
 </resources>

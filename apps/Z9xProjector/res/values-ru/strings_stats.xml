@@ -3,5 +3,5 @@
      v6.1 translate phase; edit the text here or regenerate, keep names/placeholders. -->
 <resources>
     <string name="stats_row">Отправлять анонимную статистику</string>
-    <string name="stats_note">Раз в день: модель, версия, серийный номер в виде хеша и страна. Ваш IP-адрес не сохраняется.</string>
+    <string name="stats_note">При каждом включении и раз в день: модель, версия, сборка, сведения об обновлении, страна, случайный номер установки и серийный номер (сервер хранит только его хеш). Ваш IP-адрес не сохраняется.</string>
 </resources>

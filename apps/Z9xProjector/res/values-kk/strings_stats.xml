@@ -3,5 +3,5 @@
      v6.1 translate phase; edit the text here or regenerate, keep names/placeholders. -->
 <resources>
     <string name="stats_row">Анонимді статистика жіберу</string>
-    <string name="stats_note">Күніне бір рет: модель, нұсқа, хэштелген сериялық нөмір және ел. IP мекенжайыңыз сақталмайды.</string>
+    <string name="stats_note">Әр қосылған сайын және күніне бір рет: модель, нұсқа, жинақ, жаңарту туралы мәлімет, ел, кездейсоқ орнату нөмірі және сериялық нөмір (сервер тек оның хэшін сақтайды). IP мекенжайыңыз сақталмайды.</string>
 </resources>

@@ -28,6 +28,20 @@ final class AfAfter {
         return type == 5 || type == 7 || type == 2 || type == 18;
     }
 
+    /**
+     * 2026-11-04 (Z9X, stock FocusUIV2 / AutoMaticFA): LEFT / RIGHT on the card open manual focus only in the "new" AF
+     * mode, which only event 8 (stock message 15) starts (FocusUIV2.java:1338-1345, AutoMaticFA.java:491-503). The
+     * Z9X AF event 335 runs the old mode (FocusUIV2.java:645-651), where every key only cancels.
+     */
+    static boolean leftRightOpensManual(int openEvent) {
+        return openEvent == 8;
+    }
+
+    /** The vendor focus motor pseudo-keys 2092..2096 (XKeyEvent.java:7-11): stock lets them through, the card stays. */
+    static boolean isFocusMotorKey(int code) {
+        return code >= 2092 && code <= 2096;
+    }
+
     /** Replaces the queued action ({@code null} clears it). True when the caller should arm its no-card timer. */
     boolean queue(Runnable r) {
         pending = r;

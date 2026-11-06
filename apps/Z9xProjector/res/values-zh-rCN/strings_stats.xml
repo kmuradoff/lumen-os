@@ -3,5 +3,5 @@
      v6.1 translate phase; edit the text here or regenerate, keep names/placeholders. -->
 <resources>
     <string name="stats_row">发送匿名统计信息</string>
-    <string name="stats_note">每天一次：型号、版本、经过哈希处理的序列号和国家。不会保存您的 IP 地址。</string>
+    <string name="stats_note">每次开机时及每天一次：型号、版本、构建、更新信息、国家、随机安装编号和序列号（服务器只保存其哈希值）。不会保存您的 IP 地址。</string>
 </resources>

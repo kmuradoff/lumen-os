@@ -24,6 +24,46 @@
   Если проектор не вернулся после запуска, говорит, что делать, как прислать журнал загрузки и как
   правильно откатиться для вашей партии.
 
+## 1.0.9, ноябрь 2026
+
+Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». С 1.0.7 и с 1.0.8 оно ставится
+сразу, промежуточные версии не нужны. Данные сохраняются.
+
+Приложение «Проектор»:
+- Новое приложение «Проектор»: разделы слева, крупные плитки «Сейчас» (автофокус, трапеция, под экран, ручной
+  фокус) и настройки карточками, у каждой строка с пояснением. Стиль как у главного экрана Lumen Home.
+
+Обновления и статистика:
+- Анонимная статистика. При каждом включении и раз в день Lumen OS сообщает модель, версию, сборку, сведения об обновлении и страну, а
+  также случайный номер установки и серийный номер (сервер хранит только его хеш). IP-адрес не сохраняется, то,
+  что вы смотрите, не отправляется. Выключается строкой «Отправлять анонимную статистику» в настройках проектора,
+  раздел «Диагностика».
+- Кнопки «Китай ТВ» / iQIYI и bilibili открывают приложение, выбранное в настройках проектора, на любой версии пульта.
+- Обновлятор: после перезапуска больше не показывает «Обновление готово» для уже установленной версии; если
+  открыть его во время установки, он продолжает следить за ней; отмена в самом конце установки оставляет
+  текущую систему как была; неудачная проверка больше не прячет уже скачанное обновление; ошибки описаны
+  словами.
+
+Пульт и быстрая панель:
+- Кнопки iQIYI и bilibili: выбранное приложение больше не теряется, если пульт переподключился, пока был открыт
+  список приложений.
+- OK больше не меняет значение в строках выбора, его меняют только стрелки. OK по-прежнему открывает список
+  (режим изображения) и переключает переключатели.
+- Быстрая панель закрывает настройки там же, где сток, и пишет почему: во время игры, в режимах «AI-качество»,
+  «Производительность» и «Офис», в 3D, с Dolby Vision. Строки, которые в стоке скрыты, скрыты и здесь.
+
+Изображение и фокус:
+- AI-сцены как в стоке: изображение больше не застревает на одной сцене после включения проектора и экрана.
+- «Усиление чёрного» больше не выключается само при затемнении заставки и при плавном выключении по таймеру.
+- Мишень автофокуса: кнопки на ней работают как в стоке, после автофокуса появляется подсказка для точной
+  настройки, а если автофокус не смог начаться, проектор об этом пишет.
+- Ручной фокус: колесо мыши двигает объектив, как в стоке.
+
+Звук:
+- eARC: саундбар или ресивер подхватывается и после включения экрана, и после того как его выключили и
+  включили снова.
+- Строка «Вывод звука» показывает выход, на который звук идёт на самом деле.
+
 ## 1.0.8, ноябрь 2026
 
 Обновление придёт по Wi-Fi: «Настройки → Об устройстве → Обновление Lumen OS». Данные сохраняются.
@@ -320,6 +360,45 @@ Newest first. Versions 1.0.x are for the XGIMI Z9X; the XGIMI Play 6 has its own
   them. It asks to keep only a FAT32 stick in the USB port at every power-on and notices a USB Ethernet
   adapter in the port. If the projector does not come back after a start, it says what to do, how to send the
   boot log and the right way back to stock for your batch.
+
+## 1.0.9, November 2026
+
+The update arrives over Wi-Fi: Settings > About > Lumen OS update. It installs straight from 1.0.7 and from 1.0.8,
+no version in between is needed. Your data is kept.
+
+The Projector app:
+- A new Projector app: sections on the left, large "now" tiles (autofocus, keystone, fit to screen, manual
+  focus) and settings in cards, each with a line that explains it. The same style as Lumen Home.
+
+Updates and statistics:
+- Anonymous statistics. At every start and once a day Lumen OS reports the model, version, build, update details and country, plus a
+  random install number and the serial number (the server keeps only its hash). The IP address is not stored, and
+  what you watch is never sent. Turn it off with "Send anonymous statistics" in the projector settings, Diagnostics.
+- The "China TV" / iQIYI and bilibili keys open the app chosen in the projector settings, on every remote version.
+- Updater: after a restart it no longer shows "Update ready" for the version already installed; opened during
+  an install, it keeps following it; cancel at the very end of an install leaves the current system as it was;
+  a failed check no longer hides an update that is already downloaded; errors are explained in words.
+
+Remote and quick panel:
+- iQIYI and bilibili keys: the chosen app is no longer lost when the remote reconnects while the app list is
+  open.
+- OK no longer changes the value of a choice row, only the arrows do. OK still opens a list (picture mode) and
+  flips switches.
+- The quick panel locks settings where stock locks them and says why: during a game, in the AI picture,
+  Performance and Office modes, in 3D, with Dolby Vision. Rows that stock hides are hidden here too.
+
+Picture and focus:
+- AI scenes as on stock: the picture no longer sticks to one scene after the projector or the screen turns on.
+- Dynamic black enhancement no longer turns itself off when the screensaver dims or the sleep timer fades
+  out.
+- Autofocus card: its keys work as on stock, a fine-tune tip shows after the autofocus, and when the autofocus
+  could not start, the projector says so.
+- Manual focus: a mouse wheel moves the lens, as on stock.
+
+Sound:
+- eARC: the soundbar or receiver is picked up again after the screen turns on and after it was switched off and
+  on.
+- The Sound output row shows the output the sound really goes to.
 
 ## 1.0.8, November 2026
 

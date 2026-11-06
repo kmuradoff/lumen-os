@@ -20,7 +20,7 @@ create" only after this prints OK). Fails closed (exit 1) on:
     at or under a tools/lumen/nogms_remove.txt path and no APK whose package is com.google.* / com.mtg.* /
     com.android.vending; an OTA zip needs lumen-edition=nogms in its metadata and -nogms- in its name; an
     update manifest (update-*.json and its .sig) must be update-public-nogms.json, or its beta channel's
-    update-public-beta.json (only on the fixed pre-release tag beta: the updater's Beta updates switch);
+    update-public-beta.json (beside it on the channel tag z9x: the updater's Beta updates switch);
   * an OTA zip whose payload is not bound to such a checked image: the payload manifest's
     new_partition_info SHA-256 (what update_engine verifies after writing) must equal the sha256 of a
     clean *.img given in the same run. A payload's compressed operations cannot be scanned file by
@@ -118,6 +118,35 @@ def personal(data):
     return sorted(ps.close())
 
 
+# the erofs-utils programs the installer zip carries (installer/tools/erofs-utils/<platform>/<file>): their names end
+# in .erofs, but a member at that path whose sha256 is the pinned one of installer/lib/erofs_utils.txt is that
+# program, not an image; any other bytes there are refused as before
+EROFS_UTILS_PINS = os.path.join(os.path.dirname(os.path.dirname(HERE)), "installer", "lib", "erofs_utils.txt")
+
+
+def erofs_utils_pins(path=EROFS_UTILS_PINS):
+    pins = {}
+    if os.path.isfile(path):
+        for line in open(path, encoding="utf-8"):
+            f = line.split()
+            if len(f) == 2 and not line.startswith("#"):
+                pins["tools/erofs-utils/" + f[1]] = f[0]
+    return pins
+
+
+EROFS_UTILS = erofs_utils_pins()
+if os.environ.get("EROFS_UTILS_SELFTEST"):   # the self-test's one extra pinned program, "<sha256> <rel path>"
+    _sha, _rel = os.environ["EROFS_UTILS_SELFTEST"].split()
+    EROFS_UTILS["tools/erofs-utils/" + _rel] = _sha
+
+
+def pinned_erofs_program(path, sha):
+    for rel, want in EROFS_UTILS.items():
+        if (path == rel or path.endswith("/" + rel)) and sha == want:
+            return True
+    return False
+
+
 def nested_kind(name, head):
     """Why a zip member is an archive / image (None = it is not). head = its first 4096+ bytes."""
     low = name.lower()
@@ -148,7 +177,7 @@ def scan_zip_members(zpath, n, errs, skip=()):
                     or path.lower().endswith(NEVER):
                 errs.append(f"{n}: member {zi.filename} must not be published")
                 continue
-            kind = nested_kind(path, data[:4096])
+            kind = None if pinned_erofs_program(path, h) else nested_kind(path, data[:4096])
             if kind:
                 errs.append(f"{n}: member {zi.filename} is an archive / image ({kind}): it cannot be checked "
                             "inside a zip, publish it as its own asset")
@@ -463,6 +492,9 @@ def self_test_images(td):
     return fails
 
 
+PINNED_SELFTEST = b"\x7fELF self-test program bytes"
+
+
 def self_test():
     """Fixtures in a temp dir: every one must be refused, the clean one accepted."""
     mtk = os.path.normpath(os.path.join(HERE, "..", "..", "overlay", "v1", "c2store", "system_ext", "lib64", "libc2plugin_store.so"))
@@ -483,6 +515,7 @@ def self_test():
         with zipfile.ZipFile(inner, "w") as z:
             z.writestr("libc2plugin_store.so.renamed", mtk_bytes)
         inner_bytes = open(inner, "rb").read()
+        os.environ["EROFS_UTILS_SELFTEST"] = hashlib.sha256(PINNED_SELFTEST).hexdigest() + " selftest/mkfs.erofs"
         cases = [
             ("nested zip with an MTK lib", mk("lumen-os-1.0-installer.zip", [("README.md", b"x"), ("inner.zip", inner_bytes)]), False),
             ("nested zip renamed .txt", mk("lumen-os-1.0-tools.zip", [("notes.txt", inner_bytes)]), False),
@@ -491,6 +524,12 @@ def self_test():
             ("OTA under another name", mk("lumen-os-1.0.1-full.zip", [("payload.bin", b"CrAU" + b"\0" * 64),
                                                                      ("META-INF/com/android/metadata", b"ota-type=AB\n")]), False),
             ("MTK lib by hash", mk("lumen-os-1.0-x.zip", [("lib/a.dat2", mtk_bytes)]), not os.path.isfile(mtk)),
+            ("erofs-utils program with other bytes", mk("lumen-os-1.0-installer-e.zip", [
+                ("installer/tools/erofs-utils/darwin/mkfs.erofs", b"\xcf\xfa\xed\xfe not the pinned one")]), False),
+            ("pinned erofs-utils program", mk("lumen-os-1.0-installer-p.zip", [
+                ("installer/tools/erofs-utils/selftest/mkfs.erofs", PINNED_SELFTEST)]), True),
+            ("pinned program bytes under another name", mk("lumen-os-1.0-installer-q.zip", [
+                ("installer/tools/other/mkfs.erofs", PINNED_SELFTEST)]), False),
             ("clean installer", mk("lumen-os-1.0-installer-clean.zip", [("lumen-install.sh", b"#!/bin/sh\necho hi\n"),
                                                                        ("README.md", b"# Lumen OS\n")]), True),
             ("Google edition OTA", mk("lumen-os-1.0.1-full-ota.zip", [("payload.bin", b"CrAU" + b"\0" * 64),

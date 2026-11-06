@@ -7,7 +7,7 @@
 #                         all failed to reach sys.boot_completed -> reboot,fastboot
 #   z9x_rescue.sh ok      background at sys.boot_completed=1: the start completed, counter back to 0
 #
-# Owner decision (2026-10-08): a projector whose system fails to complete boot 3 times in a row
+# Since 2026-10-08: a projector whose system fails to complete boot 3 times in a row
 # restarts into fastbootd (the same 'reboot,fastboot' as 'adb reboot fastboot'), where the installer's
 # 'rescue' command writes the system again without wiping data. Before, a Z9X in a boot loop (lamp off,
 # no adb, no fastboot, e.g. the vendor PWM watchdog loop) could only be saved with the USB-stick stock

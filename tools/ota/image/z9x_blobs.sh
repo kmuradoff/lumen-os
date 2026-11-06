@@ -3,7 +3,7 @@
 # Lumen OS PUBLIC images only (image path /system/etc/z9x/z9x_blobs.sh 0755; z9x_blobs.rc runs it as
 # an exec at post-fs-data, after init.rc's part of that trigger, i.e. in the default mount namespace with
 # the APEXes active, and before 'on boot', where audioserver and the vendor HALs start).
-# The owner's private image keeps these files inside /system (and xgimi_compat.rc binds the audio ones)
+# A private image keeps these files inside /system (and xgimi_compat.rc binds the audio ones)
 # and does not ship this.
 #
 # The user's own MediaTek / XGIMI files live in the logical partition z9x_blobs<slot> in super (made

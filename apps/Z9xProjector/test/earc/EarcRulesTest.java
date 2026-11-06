@@ -31,6 +31,15 @@ public final class EarcRulesTest {
         eq("restart: BT", false, EarcRules.arcRestart("BT", false, true));
         eq("restart: wired", false, EarcRules.arcRestart("WIRED", false, true));
         eq("restart: no audio system", false, EarcRules.arcRestart("AUTO", false, false));
+        // ---- 2026-11-04 (A1): restart only after an eARC event of this process
+        eq("allowed: link 3 seen", true, EarcRules.restartAllowed(999_999, false, true, 30_000));
+        eq("allowed: row pressed 5 s ago", true, EarcRules.restartAllowed(5_000, true, false, 30_000));
+        eq("refused: row pressed 31 s ago", false, EarcRules.restartAllowed(31_000, true, false, 30_000));
+        eq("refused: plain ARC soundbar off, no row press", false, EarcRules.restartAllowed(1_000, false, false, 30_000));
+        eq("refused: clock went back", false, EarcRules.restartAllowed(-1, true, false, 30_000));
+        eq("awake: screen on, soundbar on", true, EarcRules.restartAwake(true, false));
+        eq("awake: screen off", false, EarcRules.restartAwake(false, false));
+        eq("awake: soundbar standby", false, EarcRules.restartAwake(true, true));
         if (fails > 0) {
             System.out.println("EarcRulesTest: " + fails + " of " + checks + " checks failed");
             System.exit(1);

@@ -45,6 +45,9 @@ import java.util.TimeZone;
  * ok, and the offline hint when there was no internet.
  */
 public class DoneStep extends Step {
+    /** The statistics row on this page (off since 2026-11-05: the switch is in the projector settings). */
+    private static final boolean SHOW_STATS = false;
+
     public static final String ID = "done";
     /** The projector's own names when the bridge sends none (the first one is the default name). */
     private static final String[] DEFAULT_NAMES = {"XGIMI Z9X", "Z9X"};
@@ -143,8 +146,9 @@ public class DoneStep extends Step {
             list.addView(home, rowLp());
         }
 
-        // anonymous statistics: the updater owns the switch (default on); shown so it can be turned off here
-        Boolean stats = Sys.statsOn(host);
+        // anonymous statistics: the updater owns the switch (default on). Not shown here (2026-11-05): the only switch
+        // is in the projector settings, Diagnostics
+        Boolean stats = SHOW_STATS ? Sys.statsOn(host) : null;
         if (stats != null) {
             Row r = new Row(ctx(), s(R.string.done_stats)).compact().subtitle(s(R.string.done_stats_note)).subtitleLines(3);
             SwitchView sw = new SwitchView(ctx());
@@ -155,6 +159,7 @@ public class DoneStep extends Step {
                 if (now != null) sw.setOn(now, true);
             });
             list.addView(r, rowLp());
+            Sys.statsSeen(host);
         }
 
         String blobs = Sys.prop("sys.z9x.blobs", "");

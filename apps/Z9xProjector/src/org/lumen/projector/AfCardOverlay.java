@@ -59,6 +59,10 @@ final class AfCardOverlay {
     private static boolean sOpenSent;
     private static int sToken;
     private static long sShownAt;
+    /** The focus event that opened the card shown now. */
+    private static int sOpenType;
+    /** 2026-11-04: the stock key modes of the card (AfAfter.leftRightOpensManual); set by the Z9X App only. */
+    private static volatile boolean sStockKeys;
     private static final Runnable TIMEOUT = () -> close("timeout", false, false);
     /** Runs once the card closed or the AF ended: the quick panel the card dismissed, or the action of runAfterCard. */
     private static final AfAfter AFTER = new AfAfter();
@@ -70,6 +74,9 @@ final class AfCardOverlay {
     };
 
     private AfCardOverlay() {}
+
+    /** Z9X App: LEFT / RIGHT open manual focus only on a card of event 8; the motor keys pass. */
+    static void useStockKeys() { sStockKeys = true; }
 
     /** The card is on screen. Main thread. */
     static boolean isShown() { return sShown; }
@@ -147,6 +154,7 @@ final class AfCardOverlay {
         AFTER.cardShown(restore);
         if (restore != null) Log.i(TAG, "quick panel closed for the card: it comes back after it");
         sShown = true;
+        sOpenType = type;
         sOpenSent = false;
         sShownAt = SystemClock.elapsedRealtime();
         final int token = ++sToken;
@@ -244,8 +252,10 @@ final class AfCardOverlay {
                 default:
                     break;
             }
+            if (sStockKeys && AfAfter.isFocusMotorKey(code)) return true;   // stock: no cancel, the card stays
             if (e.getAction() != KeyEvent.ACTION_DOWN || e.getRepeatCount() != 0) return true;
-            boolean lr = code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT;
+            boolean lr = (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT)
+                    && (!sStockKeys || AfAfter.leftRightOpensManual(sOpenType));
             close("key " + KeyEvent.keyCodeToString(code), true, lr);
             return true;
         }

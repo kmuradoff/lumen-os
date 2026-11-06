@@ -7,17 +7,19 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Host test of the "Beta updates" switch (sh test/run.sh): which manifest is read (Ota.channels, betaOn,
- * manifestUrl, channelFile) and that turning beta off never downgrades (Preflight.applicable). Only the no-Google
- * edition (update-public-nogms.json) has a beta channel, update-public-beta.json on the fixed pre-release tag beta;
- * the private and the Google editions show no switch. Properties come from the SystemProperties stand-in of
- * test/stubs.
+ * Host test of the "Beta updates" switch (sh test/run.sh): which manifests are read (Ota.channels, betaOn,
+ * manifestUrl, channelFile, Channels.read / files / accepts), which one is offered (Channels.pick: the higher
+ * version, a missing or broken beta manifest skipped) and that turning beta off never downgrades
+ * (Preflight.applicable). Only the no-Google edition (update-public-nogms.json) has a beta channel,
+ * update-public-beta.json beside it on the channel tag z9x; the private and the Google editions show no switch.
+ * Properties come from the SystemProperties stand-in of test/stubs.
  */
 public final class BetaTest {
     private static int failed, passed;
-    private static final String LATEST = "https://github.com/kmuradoff/lumen-os/releases/latest/download/";
+    private static final String LATEST = "https://github.com/kmuradoff/lumen-os/releases/download/z9x/";
     private static final String NOGMS = LATEST + "update-public-nogms.json";
-    private static final String BETA = "https://github.com/kmuradoff/lumen-os/releases/download/beta/update-public-beta.json";
+    private static final String BETA = LATEST + "update-public-beta.json";
+    private static final int M = Channels.MISSING;
     private static final List<String> ANY = Collections.emptyList();
 
     private static void eq(String what, Object want, Object got) {
@@ -59,6 +61,29 @@ public final class BetaTest {
         eq("url off", NOGMS, Ota.manifestUrl(NOGMS, false));
         eq("url private on", LATEST + "update-stable.json", Ota.manifestUrl(LATEST + "update-stable.json", true));
         eq("beta file", "update-public-beta.json", Ota.channelFile(BETA));
+        eq("beta beside stable on the tag z9x", BETA, Ota.BETA_MANIFEST_URL);
+
+        // pure: what one check reads, and which manifest it offers
+        eq("read off", NOGMS, String.join(" ", Channels.read(NOGMS, false)));
+        eq("read on: stable and beta", NOGMS + " " + BETA, String.join(" ", Channels.read(NOGMS, true)));
+        eq("read private on", LATEST + "update-stable.json",
+                String.join(" ", Channels.read(LATEST + "update-stable.json", true)));
+        eq("files on", "update-public-nogms.json update-public-beta.json",
+                String.join(" ", Channels.files(Channels.read(NOGMS, true))));
+        String[] on = Channels.files(Channels.read(NOGMS, true)), off = Channels.files(Channels.read(NOGMS, false));
+        eq("on accepts stable", true, Channels.accepts(on, "public-nogms"));
+        eq("on accepts beta", true, Channels.accepts(on, "public-beta"));
+        eq("on refuses Google edition", false, Channels.accepts(on, "public"));
+        eq("off accepts stable", true, Channels.accepts(off, "public-nogms"));
+        eq("off refuses beta", false, Channels.accepts(off, "public-beta"));
+        eq("pick: beta higher", 1, Channels.pick(new int[] {10011, 10012}));
+        eq("pick: stable higher (a final after the beta)", 0, Channels.pick(new int[] {10013, 10012}));
+        eq("pick: tie goes to stable", 0, Channels.pick(new int[] {10012, 10012}));
+        eq("pick: beta missing (404), stable still offered", 0, Channels.pick(new int[] {10011, M}));
+        eq("pick: stable missing, beta offered", 1, Channels.pick(new int[] {M, 10012}));
+        eq("pick: none", -1, Channels.pick(new int[] {M, M}));
+        eq("pick: one channel", 0, Channels.pick(new int[] {10011}));
+        eq("pick: one channel missing", -1, Channels.pick(new int[] {M}));
 
         // the running updater: no choice yet = stable, as before the switch existed
         image(NOGMS, 10009);
@@ -69,12 +94,14 @@ public final class BetaTest {
         eq("stable newer", "ok", res(app("public-nogms", 10010)));
         eq("beta manifest while off", "blk_channel", res(app("public-beta", 10010)));
 
-        // on: the beta channel is read, its manifest counts, the stable one is refused
+        // on: both channels are read and both count; the stable one keeps coming while no beta is published
         Ota.setBeta(true);
         eq("reads beta", BETA, Ota.manifestUrl());
-        eq("USB file", "update-public-beta.json", Ota.channelFile());
+        eq("reads both", NOGMS + " " + BETA, String.join(" ", Channels.read()));
+        eq("USB files", "update-public-nogms.json update-public-beta.json", String.join(" ", Channels.files()));
         eq("beta newer", "ok", res(app("public-beta", 10010)));
-        eq("stable manifest while on", "blk_channel", res(app("public-nogms", 10010)));
+        eq("stable manifest while on", "ok", res(app("public-nogms", 10010)));
+        eq("Google edition manifest while on", "blk_channel", res(app("public", 10010)));
 
         // a beta is installed (10010), then beta is turned off: never a downgrade
         image(NOGMS, 10010);

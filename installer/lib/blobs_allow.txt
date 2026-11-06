@@ -11,7 +11,7 @@
 # <sha256> <path inside the blobs tar> <stock source path> [bind=<path>] [from=<sha256>:<sed>]
 #   path       image path relative to /system/: z9x_blobs.sh binds the file over that 0-byte placeholder,
 #   bind=      or, when given, over this vendor / VNDK APEX file instead (no placeholder; what
-#              xgimi_compat.rc does on the maintainer's private image),
+#              xgimi_compat.rc does on a private image),
 #   from=      the installer may derive the file from the stock file at <stock source path> with that
 #              sha256 by deleting lines (sed 'N,Md' commands only), then checks <sha256> as usual.
 # The installer pulls <stock source path> first, then /system/<path>.

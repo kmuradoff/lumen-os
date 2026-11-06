@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lumen OS 1.0.9: the new Projector settings (design/projector_v2). Section names, tiles and the explanation
+     line under every setting. Our own wording (clean-room). -->
+<resources>
+    <string name="s2_brand_line" translatable="false">%1$s · Lumen OS %2$s</string>
+    <string name="s2_hint_ok">select</string>
+    <string name="s2_hint_nav">sections</string>
+
+    <string name="s2_sec_focus">Focus and keystone</string>
+    <string name="s2_sec_power">Power on</string>
+    <string name="s2_sec_remote">Remote and keys</string>
+    <string name="s2_sec_home">Home screen</string>
+    <string name="s2_sec_help">Help</string>
+
+    <string name="s2_now">Now</string>
+    <string name="s2_now_title">Set up the picture</string>
+    <string name="s2_auto_title">Automatic</string>
+    <string name="s2_t_af">Autofocus</string>
+    <string name="s2_t_af_sub">Sharpen the picture</string>
+    <string name="s2_t_kst">Keystone</string>
+    <string name="s2_t_kst_sub">A straight rectangle</string>
+    <string name="s2_t_fit">Fit to screen</string>
+    <string name="s2_t_fit_sub">To the screen frame</string>
+    <string name="s2_t_manual">Manual focus</string>
+    <string name="s2_t_manual_sub">Focus with the remote</string>
+
+    <string name="s2_d_power_on_af">Sharpens the picture by itself</string>
+    <string name="s2_d_power_on_ak">Straightens the picture by itself</string>
+    <string name="s2_d_move">When the projector has been moved</string>
+    <string name="s2_d_curtain">The picture stays inside the screen</string>
+    <string name="s2_d_obstacle">Makes the picture smaller if something is in the way</string>
+    <string name="s2_d_music">A short tune when the projector starts</string>
+    <string name="s2_d_boot">What opens after the projector turns on</string>
+    <string name="s2_d_slot">The app this key opens</string>
+    <string name="s2_d_pair">A new, second or replacement remote</string>
+    <string name="s2_d_launcher">Lumen Home or classic Android TV</string>
+    <string name="s2_d_voice_lang">The language you speak to the assistant</string>
+    <string name="s2_d_voice_speak">The assistant answers out loud</string>
+    <string name="s2_d_voice_key">Your own Gemini key for a natural voice</string>
+    <string name="s2_d_guide">A QR code to the guide on your phone</string>
+    <string name="s2_d_report">Sends the logs to the developer</string>
+    <string name="s2_d_refresh">Read the projector state again</string>
+    <string name="s2_diag_state">Projector state</string>
+</resources>

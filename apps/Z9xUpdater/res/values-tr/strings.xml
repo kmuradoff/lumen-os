@@ -20,7 +20,12 @@
     <string name="beta_off">Kapalı</string>
     <string name="beta_hint">Beta sürümleri daha erken gelir ancak daha az test edilmiştir. Kapatırsanız, daha yeni bir normal sürüm çıkana kadar mevcut sürümünüz kalır.</string>
     <string name="row_stats">Anonim istatistik gönder</string>
-    <string name="stats_hint">Günde bir kez: model, sürüm, karma (hash) biçiminde seri numarası ve ülke. IP adresiniz saklanmaz.</string>
+    <string name="stats_hint">Her açılışta ve günde bir kez: model, sürüm, derleme, güncelleme bilgileri, ülke, rastgele bir kurulum numarası ve seri numarası (sunucu yalnızca karma değerini saklar). IP adresiniz saklanmaz.</string>
+    <string name="notice_title">Anonim istatistikler</string>
+    <string name="notice_body">Lumen OS her açılışta ve günde bir kez modeli, sürümü, derlemeyi, güncelleme bilgilerini ve ülkeyi, ayrıca rastgele bir kurulum numarasını ve seri numarasını bildirir (sunucu yalnızca karma değerini saklar). IP adresi saklanmaz, izlediğiniz içerik gönderilmez.</string>
+    <string name="notice_where">Bunu “%1$s” bölümünden değiştirebilirsiniz.</string>
+    <string name="notice_ok">Tamam</string>
+    <string name="notice_off">Kapat</string>
     <string name="avail_title">Lumen OS %1$s kullanılabilir</string>
     <string name="avail_size_full">Tam güncelleme · %1$s</string>
     <string name="avail_size_delta">Güncelleme · %1$s</string>
@@ -83,6 +88,8 @@
     <string name="err_signature">Güncelleme bilgileri Lumen OS tarafından imzalanmamış ve yok sayıldı.</string>
     <string name="err_hash">İndirilen dosya bozuktu ve yeniden indirilecek.</string>
     <string name="err_install">Güncelleme yüklenemedi (kod %1$d). Mevcut sürüm çalışmaya devam ediyor.</string>
+    <string name="err_install_unknown">Güncelleme yüklenemedi. Mevcut sürüm çalışmaya devam ediyor.</string>
+    <string name="err_downgrade">Bu güncelleme yüklü sistemden daha eski olduğu için yüklenmedi.</string>
     <string name="err_space_device">Projektörde güncelleme için yeterli alan yok.</string>
     <string name="btn_retry">Tekrar dene</string>
     <string name="row_usb">USB bellekten yükle</string>

@@ -3,5 +3,5 @@
      v6.1 translate phase; edit the text here or regenerate, keep names/placeholders. -->
 <resources>
     <string name="stats_row">Invia statistiche anonime</string>
-    <string name="stats_note">Una volta al giorno: modello, versione, numero di serie in forma di hash e paese. Il tuo indirizzo IP non viene salvato.</string>
+    <string name="stats_note">A ogni accensione e una volta al giorno: modello, versione, build, dati dell\'aggiornamento, paese, un numero di installazione casuale e il numero di serie (il server ne conserva solo l\'hash). Il tuo indirizzo IP non viene salvato.</string>
 </resources>

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Lumen OS OTA gate (image path /system/etc/init/z9x_ota.rc; script /system/etc/z9x/z9x_ota.sh 0755).
-# ota/SPEC.md 3.5 + PLAN.md C16, redesigned in 1.0.1 after the first real OTA (docs/ota.md, "The boot
+# Redesigned in 1.0.1 after the first real OTA (docs/ota.md, "The boot
 # gate"). On a normal boot this costs one 'exec' of < 20 ms at post-fs-data (two file reads + setprop,
 # no boot HAL call) and two short background oneshots; nothing else runs.
 #

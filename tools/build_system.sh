@@ -248,7 +248,7 @@ EDITION_SFX=; [ "$GMS" = 0 ] && EDITION_SFX=-nogms
 MANIFEST_BASE=https://github.com/kmuradoff/lumen-os/releases/download/z9x
 CHANNEL=$([ "$VARIANT" = public ] && echo public || echo stable)$EDITION_SFX
 MANIFEST_URL=$MANIFEST_BASE/update-$CHANNEL.json
-# Lumen OS release (1.0.8, the org.lumen bridge release; 1.0.4 to 1.0.7 were tar patches on the Mac; 1.0.0 shipped 2026-10-08, 1.0.1 and 1.0.2 on 2026-10-10): user-facing version and the updater's version_code.
+# Lumen OS release (1.0.9; 1.0.8 was the org.lumen bridge release; 1.0.4 to 1.0.7 were tar patches on the Mac; 1.0.0 shipped 2026-10-08, 1.0.1 and 1.0.2 on 2026-10-10): user-facing version and the updater's version_code.
 # Scheme (tools/ota/image/ota_props.txt, docs/ota.md): version_code = major*10000 + minor*100 + patch + 1,
 # so 1.0.0 = 10001 is offered over the 1.0 test builds (version_code 10000, build_id lumen-1.0-<date>)
 # 1.0.1 = 10002 over 1.0.0, 1.0.2 = 10003 over 1.0.1 and 1.0.3 = 10004 over 1.0.2.
@@ -256,7 +256,7 @@ MANIFEST_URL=$MANIFEST_BASE/update-$CHANNEL.json
 # re-published 1.0.8 (10010) must be offered to a projector that has it; 1.0.9 = 10011.
 # ro.z9x.version, ro.lumen.version, the build id lumen-$VER-<date>[suffix], the version_code and the APK set's
 # versionName (tools/lumen/lumen_checks.py VERSION_NAME) are all checked against VER in the preflight.
-VER=1.0.8
+VER=1.0.9
 BUILD_ID=lumen-$VER-$BUILD_DATE$BUILD_ID_SUFFIX
 # 1.0.3 system library slot (header, SYSLIBS below): on by default from VER 1.0.3; SYSLIB=0 keeps the base's
 # libraries. Only these two values (an unset or empty SYSLIB takes the default).

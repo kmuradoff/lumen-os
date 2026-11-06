@@ -31,9 +31,33 @@ public final class ChannelTest {
         eq("not a manifest file", "update-stable.json", Ota.channelFile(b + "latest.json"));
         eq("empty", "update-stable.json", Ota.channelFile(""));
         eq("null", "update-stable.json", Ota.channelFile(null));
+        // the fallback when the image has no manifest prop: the channel tag z9x too (1.0.9), never releases/latest
+        // the published edition's file: the tag z9x holds no update-stable.json
+        eq("fallback on the tag z9x", b + "update-public-nogms.json", Ota.DEFAULT_MANIFEST_URL);
+        eq("fallback file", "update-public-nogms.json", Ota.channelFile(Ota.DEFAULT_MANIFEST_URL));
         // Preflight's guard: "update-" + channel + ".json" must be this file
         eq("guard nogms", true, ("update-" + "public-nogms" + ".json").equals(Ota.channelFile(b + "update-public-nogms.json")));
         eq("guard crossed", false, ("update-" + "public" + ".json").equals(Ota.channelFile(b + "update-public-nogms.json")));
+        // the Z9X guide links: docs/install/z9x/<lang>.md with the anchors <a name="vbmeta"> and <a name="rescue">
+        String g = "https://github.com/kmuradoff/lumen-os/blob/main/docs/install/z9x/";
+        eq("guide vbmeta en", g + "en.md#vbmeta", Ota.GUIDE_VBMETA_EN);
+        eq("guide vbmeta ru", g + "ru.md#vbmeta", Ota.GUIDE_VBMETA_RU);
+        eq("guide rescue en", g + "en.md#rescue", Ota.GUIDE_RESCUE_EN);
+        eq("guide rescue ru", g + "ru.md#rescue", Ota.GUIDE_RESCUE_RU);
+        String root = System.getProperty("lumen.gsi");
+        if (root != null) {
+            for (String lang : new String[] {"en", "ru"}) {
+                String md;
+                try {
+                    md = new String(java.nio.file.Files.readAllBytes(
+                            java.nio.file.Paths.get(root, "docs/install/z9x", lang + ".md")), "UTF-8");
+                } catch (java.io.IOException e) {
+                    md = "";
+                }
+                eq("anchor vbmeta in " + lang + ".md", true, md.contains("<a name=\"vbmeta\"></a>"));
+                eq("anchor rescue in " + lang + ".md", true, md.contains("<a name=\"rescue\"></a>"));
+            }
+        }
         System.out.println("channel tests passed=" + passed + " failed=" + failed);
         System.exit(failed == 0 ? 0 : 1);
     }

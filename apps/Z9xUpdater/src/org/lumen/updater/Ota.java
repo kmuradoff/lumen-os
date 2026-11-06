@@ -17,20 +17,28 @@ public final class Ota {
     public static final String AUTHOR = "kmuradoff";
     public static final String REPO = "kmuradoff/lumen-os";
     public static final String PROJECT_URL = "https://github.com/" + REPO;
+    /**
+     * Used only when ro.z9x.ota.manifest_url is missing or not https (every Lumen image sets it): the published
+     * edition's manifest update-public-nogms.json on the update channel, the fixed pre-release tag z9x, as the
+     * images from 1.0.8 on read it (releases/latest only up to 1.0.7). The tag holds no update-stable.json.
+     */
     public static final String DEFAULT_MANIFEST_URL =
-            PROJECT_URL + "/releases/latest/download/update-stable.json";
+            PROJECT_URL + "/releases/download/z9x/update-public-nogms.json";
     /**
      * Beta channel of the published edition (Lumen OS without Google, update-public-nogms.json): its own manifest
-     * on the fixed pre-release tag "beta" (releases/latest stays the stable release). The other editions have no
-     * beta channel.
+     * beside the stable one on the channel tag z9x (packages on the pre-release z9x-&lt;version&gt;, version
+     * x.y.z or x.y.z-betaN). With beta on, a check reads both and offers the higher version (Channels). The other
+     * editions have no beta channel.
      */
-    public static final String BETA_MANIFEST_URL = PROJECT_URL + "/releases/download/beta/update-public-beta.json";
+    public static final String BETA_MANIFEST_URL = PROJECT_URL + "/releases/download/z9x/update-public-beta.json";
+    /** The Z9X install guide (docs/install/z9x/&lt;lang&gt;.md, anchors vbmeta and rescue). */
+    static final String GUIDE = PROJECT_URL + "/blob/main/docs/install/z9x/";
     /** Guide section of the one-time vbmeta step (language picked at runtime). */
-    public static final String GUIDE_VBMETA_EN = PROJECT_URL + "/blob/main/docs/install/en.md#vbmeta";
-    public static final String GUIDE_VBMETA_RU = PROJECT_URL + "/blob/main/docs/install/ru.md#vbmeta";
+    public static final String GUIDE_VBMETA_EN = GUIDE + "en.md#vbmeta";
+    public static final String GUIDE_VBMETA_RU = GUIDE + "ru.md#vbmeta";
     /** Guide section "Rescue" (lumen-install.sh rescue, keeps the data): shown with a gate problem. */
-    public static final String GUIDE_RESCUE_EN = PROJECT_URL + "/blob/main/docs/install/en.md#rescue";
-    public static final String GUIDE_RESCUE_RU = PROJECT_URL + "/blob/main/docs/install/ru.md#rescue";
+    public static final String GUIDE_RESCUE_EN = GUIDE + "en.md#rescue";
+    public static final String GUIDE_RESCUE_RU = GUIDE + "ru.md#rescue";
     public static final String USER_AGENT = "Lumen-OS-Updater/" + VERSION;
     public static final String OTACERTS = "/system/etc/security/otacerts.zip";
 
@@ -101,7 +109,7 @@ public final class Ota {
 
     /**
      * {stable, beta} manifest URLs of the edition an image of manifest URL {@code image} belongs to, or null when the
-     * edition has no beta channel. The no-Google edition: its own file, and update-public-beta.json on the tag beta.
+     * edition has no beta channel. The no-Google edition: its own file, and update-public-beta.json on the tag z9x.
      */
     static String[] channels(String image) {
         return "update-public-nogms.json".equals(channelFile(image)) ? new String[] {image, BETA_MANIFEST_URL} : null;
@@ -120,9 +128,10 @@ public final class Ota {
     }
 
     /**
-     * The manifest to read: the stable or the beta channel of this edition (betaOn), else the image's own. Turning
-     * beta off never downgrades: a manifest is offered only with a version_code above the installed one
-     * (Preflight.applicable), so a beta stays until the stable channel has a newer version.
+     * The main manifest of the chosen channel: the stable or the beta one of this edition (betaOn), else the image's
+     * own. A check with beta on reads the stable one too (Channels.read). Turning beta off never downgrades: a
+     * manifest is offered only with a version_code above the installed one (Preflight.applicable), so a beta stays
+     * until the stable channel has a newer version.
      */
     public static String manifestUrl() { return manifestUrl(imageManifestUrl(), sBeta); }
 
@@ -134,9 +143,10 @@ public final class Ota {
 
     /**
      * The file name of the manifest this updater reads (update-stable.json, update-public.json,
-     * update-public-nogms.json: docs/ota.md "Variants", or the edition's beta update-public-beta.json): the USB
-     * file to look for, and the channel a manifest must carry (an edition never installs another edition's
-     * update, and a beta manifest is refused while beta updates are off).
+     * update-public-nogms.json: docs/ota.md "Variants", or the edition's beta update-public-beta.json). With beta
+     * on a check accepts the stable file too (Channels.files / accepts: the USB files and the channels a manifest
+     * may carry; an edition never installs another edition's update, a beta manifest is refused while beta
+     * updates are off).
      */
     public static String channelFile() {
         return channelFile(manifestUrl());

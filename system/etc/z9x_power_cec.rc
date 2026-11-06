@@ -1,5 +1,5 @@
-# Lumen OS 1.0 HDMI-CEC wake from STR (install as /system/etc/init/z9x_power_cec.rc). Owner: the CEC part of
-# lane L-PROJECTOR (org.lumen.projector cec.CecPolicy). Only init builtins: one sysfs write per trigger.
+# Lumen OS 1.0 HDMI-CEC wake from STR (install as /system/etc/init/z9x_power_cec.rc), driven by the CEC part of
+# org.lumen.projector (cec.CecPolicy). Only init builtins: one sysfs write per trigger.
 #
 # The PM51 wake source cec0 lets an HDMI-CEC device (a console's One Touch Play) wake the SoC from STR.
 # z9x_power.rc writes cec0 = 0 at boot and then the boot default persist.z9x.cec_wake (1 = HDMI-CEC on AND

@@ -82,7 +82,8 @@ public final class PreflightHbTest {
                 arg(Preflight.applicable(1, "hb", "hb-nogms", ANY, 1000901, 1000802)));
         set("ro.lumen.ota.manifest_url", TAG_URL + "update-hb-test.json");
         eq("test image takes hb-test", "ok", res(app("hb", "hb-test", 1000899)));
-        eq("test image refuses hb-nogms", "blk_channel", res(app("hb", "hb-nogms", 1000899)));
+        // a test image starts with beta on: it reads both manifests (Channels), so the stable one counts too
+        eq("test image also takes hb-nogms", "ok", res(app("hb", "hb-nogms", 1000899)));
         eq("USB file of a test image", "update-hb-test.json", Ota.channelFile());
 
         // an empty device prop fails closed: no manifest URL, no USB file, nothing applicable

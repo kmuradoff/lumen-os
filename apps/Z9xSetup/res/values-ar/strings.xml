@@ -99,7 +99,7 @@
     <string name="done_name">اسم جهاز العرض</string>
     <string name="done_home">الشاشة الرئيسية</string>
     <string name="done_stats">إرسال إحصاءات مجهولة الهوية</string>
-    <string name="done_stats_note">مرة واحدة يوميًا: الطراز والإصدار والرقم التسلسلي بصيغة مُجزّأة (hash) والبلد. لا يتم حفظ عنوان IP الخاص بك.</string>
+    <string name="done_stats_note">عند كل تشغيل ومرة واحدة يوميًا: الطراز والإصدار والبنية ومعلومات التحديث والبلد ورقم تثبيت عشوائي والرقم التسلسلي (يحتفظ الخادم بقيمته المُجزّأة فقط). لا يتم حفظ عنوان IP الخاص بك.</string>
     <string name="done_start">ابدأ</string>
     <string name="done_offline_hint">لا يوجد إنترنت: سجّل الدخول إلى Google واضبط المنطقة الزمنية لاحقًا من الإعدادات.</string>
     <string name="done_offline_hint_nogms">لا يوجد إنترنت: اضبط المنطقة الزمنية لاحقًا من الإعدادات.</string>

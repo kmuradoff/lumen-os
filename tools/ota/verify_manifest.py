@@ -14,13 +14,15 @@ of the manifest must be present in DIR (no silent skip). --delta-only accepts a 
 package (a release of clean deltas, make_ota.py --clean-delta). The file name must be
 update-<channel>.json (the file the images of that edition read), and with --zips every package's
 lumen-edition (make_ota.py) must be the channel's edition (nogms for a channel ending in -nogms, and for the
-no-Google edition's beta channel public-beta, whose package URLs must be on the pre-release beta-<version>).
+no-Google edition's beta channel public-beta, whose package URLs must be on the pre-release z9x-<version>, version
+x.y.z or x.y.z-betaN; a -betaN version only in public-beta).
 """
 import argparse
 import hashlib
 import io
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -66,12 +68,16 @@ def main():
     if os.path.basename(a.manifest) != f"update-{m.get('channel')}.json":
         errs.append(f"file name {os.path.basename(a.manifest)} != update-{m.get('channel')}.json (channel field)")
     edition = "nogms" if str(m.get("channel", "")).endswith("-nogms") or m.get("channel") == "public-beta" else "gms"
+    if "-" in str(m.get("version", "")) and m.get("channel") != "public-beta":
+        errs.append(f"version {m.get('version')}: a -betaN version only in the beta channel public-beta")
     if m.get("channel") == "public-beta":
-        want = f"/releases/download/beta-{m.get('version')}/"
+        if not re.fullmatch(r"\d+\.\d{1,2}\.\d{1,2}(-beta[1-9]\d?)?", str(m.get("version", ""))):
+            errs.append(f"version {m.get('version')}: a beta is x.y.z or x.y.z-betaN")
+        want = f"/releases/download/z9x-{m.get('version')}/"
         for p in m.get("packages", []):
             for k in ("url", "metadata_url"):
                 if want not in str(p.get(k, "")):
-                    errs.append(f"package {p.get(k)}: a beta package is on the pre-release beta-{m.get('version')}")
+                    errs.append(f"package {p.get(k)}: a beta package is on the pre-release z9x-{m.get('version')}")
     if not m.get("packages"):
         errs.append("no package")
     elif not any(p.get("type") == "full" for p in m.get("packages", [])) and not a.delta_only:

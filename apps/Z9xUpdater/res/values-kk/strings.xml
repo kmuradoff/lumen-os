@@ -20,7 +20,12 @@
     <string name="beta_off">Өшірулі</string>
     <string name="beta_hint">Бета нұсқалар ертерек шығады, бірақ аз тексерілген. Оларды өшірсеңіз, жаңарақ қалыпты нұсқа шыққанша ағымдағы нұсқа сақталады.</string>
     <string name="row_stats">Анонимді статистика жіберу</string>
-    <string name="stats_hint">Күніне бір рет: модель, нұсқа, хэштелген сериялық нөмір және ел. IP мекенжайыңыз сақталмайды.</string>
+    <string name="stats_hint">Әр қосылған сайын және күніне бір рет: модель, нұсқа, жинақ, жаңарту туралы мәлімет, ел, кездейсоқ орнату нөмірі және сериялық нөмір (сервер тек оның хэшін сақтайды). IP мекенжайыңыз сақталмайды.</string>
+    <string name="notice_title">Анонимді статистика</string>
+    <string name="notice_body">Lumen OS әр қосылған сайын және күніне бір рет модельді, нұсқаны, жинақты, жаңарту туралы мәліметті және елді, сондай-ақ кездейсоқ орнату нөмірі мен сериялық нөмірді хабарлайды (сервер тек оның хэшін сақтайды). IP мекенжайы сақталмайды, ал сіз көретін нәрсе жіберілмейді.</string>
+    <string name="notice_where">Мұны «%1$s» бөлімінде өзгертуге болады.</string>
+    <string name="notice_ok">Жарайды</string>
+    <string name="notice_off">Өшіру</string>
     <string name="avail_title">Lumen OS %1$s қолжетімді</string>
     <string name="avail_size_full">Толық жаңарту · %1$s</string>
     <string name="avail_size_delta">Жаңарту · %1$s</string>
@@ -83,6 +88,8 @@
     <string name="err_signature">Жаңарту туралы ақпаратқа Lumen OS қол қоймаған, ол еленбеді.</string>
     <string name="err_hash">Жүктеу зақымдалған, ол қайта жүктеледі.</string>
     <string name="err_install">Жаңартуды орнату мүмкін болмады (код %1$d). Ағымдағы нұсқа жұмысын жалғастырады.</string>
+    <string name="err_install_unknown">Жаңартуды орнату мүмкін болмады. Ағымдағы нұсқа жұмысын жалғастырады.</string>
+    <string name="err_downgrade">Бұл жаңарту орнатылған жүйеден ескі, сондықтан ол орнатылмады.</string>
     <string name="err_space_device">Проекторда жаңартуға орын жеткіліксіз.</string>
     <string name="btn_retry">Қайталау</string>
     <string name="row_usb">USB жинақтағышынан орнату</string>

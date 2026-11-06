@@ -828,51 +828,63 @@ json.dump({'schema': 1, 'device': 'z9x', 'channel': 'public-nogms', 'version': '
   expect 0 "check_release: only hb-test on the z9x-hb tag before T7 is green" crc
   mv "$WORK/held.json" "$GF/z9x-hb/update-hb-nogms.json"; mv "$WORK/held.sig" "$GF/z9x-hb/update-hb-nogms.json.sig"
   expect 0 "check_release: green again in the tree with T7 passed" cr
-  has "$OUT" "Z9X beta channel: not published" "check_release: no Z9X beta tag is fine"
-  # the Z9X beta channel (Beta updates switch): update-public-beta.json on the tag beta, packages on beta-<version>
-  mkdir -p "$GF/beta" "$GF/beta-1.0.9"
-  printf 'zip-bytes\n' > "$GF/beta-1.0.9/lumen-os-1.0.9-nogms-full-ota.zip"
-  printf 'meta\n' > "$GF/beta-1.0.9/lumen-os-1.0.9-nogms-full-payload_metadata.bin"
-  zbeta() {   # $1 channel, $2 the key that signs
+  # the Z9X beta channel (Beta updates switch): update-public-beta.json beside the stable manifest on the tag z9x,
+  # packages on the pre-release z9x-<version>, a beta version x.y.z-betaN (the updater reads both, offers the higher)
+  meta "$ZGOOD"
+  expect 0 "check_release: the z9x channel without a beta passes" cr
+  has "$OUT" "Z9X beta channel: not published" "check_release: no Z9X beta manifest is fine"
+  BV=1.0.10-beta1
+  mkdir -p "$GF/z9x-$BV"
+  printf 'zip-bytes\n' > "$GF/z9x-$BV/lumen-os-$BV-nogms-full-ota.zip"
+  printf 'meta\n' > "$GF/z9x-$BV/lumen-os-$BV-nogms-full-payload_metadata.bin"
+  zbeta() {   # $1 channel, $2 the key that signs, $3 the version (default $BV)
     py -c "
-import json; b = 'https://github.com/kmuradoff/lumen-os/releases/download/beta-1.0.9/'
-json.dump({'schema': 1, 'device': 'z9x', 'channel': '$1', 'version': '1.0.9', 'version_code': 10010,
-  'build_id': 'lumen-1.0.9-x', 'build_utc': 1, 'requires': {}, 'changelog': {'en': 'x'}, 'packages': [{'type': 'full',
-  'url': b + 'lumen-os-1.0.9-nogms-full-ota.zip', 'size': 10, 'sha256': '0' * 64, 'payload_offset': 1,
-  'payload_size': 1, 'metadata_url': b + 'lumen-os-1.0.9-nogms-full-payload_metadata.bin', 'metadata_size': 5,
-  'payload_properties': []}]}, open('$GF/beta/update-public-beta.json', 'w'), indent=2)"
-    openssl dgst -sha256 -keyform DER -sign "$2/ota.pk8" -out "$GF/beta/update-public-beta.json.sig" "$GF/beta/update-public-beta.json"
+import json; v = '${3:-$BV}'; b = 'https://github.com/kmuradoff/lumen-os/releases/download/z9x-' + v + '/'
+json.dump({'schema': 1, 'device': 'z9x', 'channel': '$1', 'version': v, 'version_code': 10012,
+  'build_id': 'lumen-1.0.10-x', 'build_utc': 1, 'requires': {}, 'changelog': {'en': 'x'}, 'packages': [{'type': 'full',
+  'url': b + 'lumen-os-$BV-nogms-full-ota.zip', 'size': 10, 'sha256': '0' * 64, 'payload_offset': 1,
+  'payload_size': 1, 'metadata_url': b + 'lumen-os-$BV-nogms-full-payload_metadata.bin', 'metadata_size': 5,
+  'payload_properties': []}]}, open('$GF/z9x/update-public-beta.json', 'w'), indent=2)"
+    openssl dgst -sha256 -keyform DER -sign "$2/ota.pk8" -out "$GF/z9x/update-public-beta.json.sig" "$GF/z9x/update-public-beta.json"
   }
   zbeta public-beta "$Z9K"
-  BETA='{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}, "beta": {"prerelease": true}, "beta-1.0.9": {"prerelease": true}}'
+  ZB='"latest": "z9x-1.0.8", "v1.0.7": {"prerelease": false}, "z9x-1.0.8": {"prerelease": false}, "z9x": {"prerelease": true}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}'
+  BETA="{$ZB, \"z9x-$BV\": {\"prerelease\": true}}"
   meta "$BETA"
   expect 0 "check_release: a good Z9X beta channel passes" cr
-  has "$OUT" "Z9X beta channel: beta/update-public-beta.json verifies" "check_release: the Z9X beta manifest checked"
-  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}, "beta": {"prerelease": false}, "beta-1.0.9": {"prerelease": true}}'
-  refuse "check_release: the tag beta not a pre-release is red" "the Z9X beta channel is always a published pre-release" cr
-  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}, "beta": {"prerelease": true}, "beta-1.0.9": {"prerelease": false}}'
-  refuse "check_release: beta-1.0.9 not a pre-release is red" "the Z9X beta channel is always a published pre-release" cr
-  meta '{"latest": "v1.0.7", "v1.0.7": {"prerelease": false}, "z9x-hb": {"prerelease": true}, "z9x-hb-1.0.8-beta1": {"prerelease": true}, "beta": {"prerelease": true}}'
-  refuse "check_release: a Z9X beta without its package release is red" "has no release beta-1.0.9" cr
+  has "$OUT" "Z9X beta channel: z9x/update-public-beta.json verifies" "check_release: the Z9X beta manifest checked"
+  has "$OUT" "Z9X channel: z9x/update-public-nogms.json verifies" "check_release: the stable manifest beside it checked"
+  meta "{$ZB, \"z9x-$BV\": {\"prerelease\": false}}"
+  refuse "check_release: z9x-$BV not a pre-release is red" "a Z9X beta release is always a pre-release" cr
+  meta "{$ZB, \"z9x-$BV\": {\"prerelease\": true, \"draft\": true}}"
+  refuse "check_release: z9x-$BV as a draft is red" "z9x-$BV: a draft" cr
+  meta "{$(printf '%s' "$ZB" | sed 's/"latest": "z9x-1.0.8"/"latest": "z9x-'$BV'"/'), \"z9x-$BV\": {\"prerelease\": false}}"
+  refuse "check_release: z9x-$BV as Latest is red" "it must stay the Z9X" cr
+  meta "$ZGOOD"
+  refuse "check_release: a Z9X beta without its package release is red" "has no release z9x-$BV" cr
   meta "$BETA"
-  cp "$GF/v1.0.7/update-public-nogms.json" "$GF/beta/"
-  refuse "check_release: the stable Z9X manifest on the tag beta is red" "asset update-public-nogms.json is not update-public-beta.json" cr
-  rm "$GF/beta/update-public-nogms.json"
-  mv "$GF/beta/update-public-beta.json.sig" "$WORK/held.sig"
+  mv "$GF/z9x/update-public-beta.json.sig" "$WORK/held.sig"
   refuse "check_release: a Z9X beta manifest without .sig is red" "update-public-beta.json without update-public-beta.json.sig" cr
-  mv "$WORK/held.sig" "$GF/beta/update-public-beta.json.sig"
+  mv "$WORK/held.sig" "$GF/z9x/update-public-beta.json.sig"
   zbeta public-beta "$HBK"
-  refuse "check_release: a Z9X beta manifest signed with the HB key is red" "beta/update-public-beta.json does not verify" cr
+  refuse "check_release: a Z9X beta manifest signed with the HB key is red" "z9x/update-public-beta.json does not verify" cr
   zbeta public-nogms "$Z9K"
   refuse "check_release: a stable channel in the beta file is red" "not the Z9X beta's" cr
+  zbeta public-beta "$Z9K" 1.0.10-rc1
+  refuse "check_release: a beta version outside the scheme is red" "is not x.y.z or x.y.z-betaN" cr
   zbeta public-beta "$Z9K"
-  printf 'longer zip\n' > "$GF/beta-1.0.9/lumen-os-1.0.9-nogms-full-ota.zip"
+  printf 'longer zip\n' > "$GF/z9x-$BV/lumen-os-$BV-nogms-full-ota.zip"
   refuse "check_release: a beta package of another size is red" "the manifest says 10" cr
-  printf 'zip-bytes\n' > "$GF/beta-1.0.9/lumen-os-1.0.9-nogms-full-ota.zip"
+  printf 'zip-bytes\n' > "$GF/z9x-$BV/lumen-os-$BV-nogms-full-ota.zip"
   expect 0 "check_release: green again with the Z9X beta channel" cr
-  cp "$GF/beta/update-public-beta.json" "$GF/z9x-hb/"
+  echo x > "$GF/z9x/notes.txt"
+  refuse "check_release: another asset on the tag z9x is red" "asset notes.txt is not update-public-nogms.json" cr
+  rm "$GF/z9x/notes.txt"
+  cp "$GF/z9x/update-public-beta.json" "$GF/z9x-hb/"
   refuse "check_release: the Z9X beta manifest on the z9x-hb tag is red" "Z9X manifest name" cr
   rm "$GF/z9x-hb/update-public-beta.json"
+  expect 0 "check_release: green at the end of the Z9X beta cases" cr
+  rm -r "$GF/z9x-$BV" "$GF/z9x/update-public-beta.json" "$GF/z9x/update-public-beta.json.sig"
   meta "$GOOD"
 fi
 

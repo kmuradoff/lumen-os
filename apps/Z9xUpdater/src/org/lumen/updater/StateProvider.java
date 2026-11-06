@@ -16,7 +16,8 @@ import org.json.JSONException;
  * error), busy (boolean), ready (boolean), available (boolean), version (offered version or ""),
  * current (running Lumen OS version), progress (0..1 of the current phase).
  * The anonymous statistics switch (Stats; its one owner is this app): call("stats") -> {on, available}, and
- * call("stats_set", "1" | "0") -> the same after the change. The setup wizard and the projector settings use it.
+ * call("stats_set", "1" | "0") -> the same after the change. The setup wizard and the projector settings use it;
+ * the setup's Done page also calls "stats_seen" (no one-time notice after a later update, Notice).
  */
 public final class StateProvider extends ContentProvider {
     @Override
@@ -26,8 +27,9 @@ public final class StateProvider extends ContentProvider {
     public Bundle call(String method, String arg, Bundle extras) {
         getContext().enforceCallingOrSelfPermission(Ota.PERM_STATE, "OTA state");
         Store st = Store.get(getContext());
-        if ("stats".equals(method) || "stats_set".equals(method)) {
+        if ("stats".equals(method) || "stats_set".equals(method) || "stats_seen".equals(method)) {
             if ("stats_set".equals(method) && ("1".equals(arg) || "0".equals(arg))) st.setStatsOn("1".equals(arg));
+            if ("stats_seen".equals(method)) st.setStatsSeen(true);
             Bundle b = new Bundle();
             b.putBoolean("on", st.statsOn());
             // false: no statistics server in this build; Setup and the projector settings then show no switch
@@ -35,6 +37,9 @@ public final class StateProvider extends ContentProvider {
             return b;
         }
         if (!"state".equals(method)) return null;
+        // 2026-11-04: Home asks at its first start after an OTA reboot, before BOOT_COMPLETED reached this app; a
+        // READY of the old boot must not show "Update ready" (binder thread: update_engine may be bound here)
+        try { BootReceiver.settleIfStale(getContext(), "provider"); } catch (Throwable t) { android.util.Log.w(Ota.TAG, "settle: " + t); }
         Store.State s = st.state();
         // the update already runs (the first seconds of its boot, before BootReceiver stored IDLE): not "ready"
         if (Outcome.readyStale(s == Store.State.READY, st.pendingTarget(), st.pendingFrom(), st.pendingVersion(),

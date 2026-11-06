@@ -87,7 +87,12 @@ public final class App extends Application {
         try { org.lumen.projector.panel.ZoomShiftPanel.install(this); } catch (Throwable t) { Log.e(TAG, "ZoomShiftPanel.install", t); }
         try { org.lumen.projector.panel.RotatePanel.install(this); } catch (Throwable t) { Log.e(TAG, "RotatePanel.install", t); }
         // ===== Lumen OS 1.0.2 module "3d": the stock 3D modes on the quick panel's Picture page =====
-        try { org.lumen.projector.display.ThreeD.install(this); } catch (Throwable t) { Log.e(TAG, "ThreeD.install", t); }
+        try {
+            org.lumen.projector.display.ThreeD.useStockRules();      // Z9X: the stock rule order for 3D on
+            org.lumen.projector.display.ThreeD.install(this);
+        } catch (Throwable t) { Log.e(TAG, "ThreeD.install", t); }
+        try { AiScenePolicy.install(this); } catch (Throwable t) { Log.e(TAG, "AiScenePolicy.install", t); }
+        AfCardOverlay.useStockKeys();                                    // Z9X: stock AF card key modes
         // ===== v6.2 module "screensaver": lamp dim/restore guard (marker recovery, SCREEN_OFF restore) =====
         try { org.lumen.projector.dream.DreamLamp.install(this); } catch (Throwable t) { Log.e(TAG, "DreamLamp.install", t); }
         // ===== v6.5: the idle timeout is ours (dream, never an Android sleep; screensaver turn-off -> standby) =====
@@ -109,7 +114,8 @@ public final class App extends Application {
             registerScreenReceiver(hal);
         } catch (Throwable t) {
             Log.e(TAG, "screen receiver", t);
-        }
+        }        // 2026-11-04: a restart within a boot connects before the hooks above were added (HalController.lateStart)
+        try { if (hal != null) hal.runLateConnectHooks(); } catch (Throwable t) { Log.e(TAG, "late connect hooks", t); }
     }
 
     /**
@@ -176,6 +182,7 @@ public final class App extends Application {
                     try { org.lumen.projector.audio.AiSoundEngine.onScreenOn(); } catch (Throwable t) { Log.w(TAG, "AiSoundEngine.onScreenOn: " + t); }
                     try { org.lumen.projector.audio.VendorSoundWatch.onScreenOn(); } catch (Throwable t) { Log.w(TAG, "VendorSoundWatch.onScreenOn: " + t); }
                     try { org.lumen.projector.source.HdmiSource.onScreenOn(); } catch (Throwable t) { Log.w(TAG, "HdmiSource.onScreenOn: " + t); }
+                    try { AiScenePolicy.reassert("screen on"); } catch (Throwable t) { Log.w(TAG, "AiScenePolicy: " + t); }
                     try { org.lumen.projector.source.BootSource.onPowerOn(c, "screen on"); } catch (Throwable t) { Log.w(TAG, "BootSource: " + t); }
                 }
             }
