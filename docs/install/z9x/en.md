@@ -80,14 +80,12 @@ the installer looks for a USB device without a driver and says how to install it
    cannot be installed yet: the installer refuses that firmware.
 2. Turn Wi-Fi off and keep it off until the install is done. Stock installs XGIMI updates into the other
    slot on its own, and the installer only knows the two versions above.
-3. If Settings > Accounts has a Google account, remove it. Otherwise Factory Reset Protection may ask for
-   it if you add Google services later. If there is no account, skip this step.
-4. Turn on USB debugging. XGIMI hides the Developer options menu, so install SystemUI Tuner from a USB
+3. Turn on USB debugging. XGIMI hides the Developer options menu, so install SystemUI Tuner from a USB
    stick and turn on debugging there. If the stock file manager refuses the `.apk`, rename it to
    `.apk1`. The [4PDA thread](https://4pda.to/forum/index.php?showtopic=1121837) (in Russian) shows
    this in detail.
-5. Restart the projector. USB debugging only works after a restart.
-6. Connect the A-to-A cable to the projector's USB 2.0 port and to the computer.
+4. Restart the projector. USB debugging only works after a restart.
+5. Connect the A-to-A cable to the projector's USB 2.0 port and to the computer.
 
 ## 2. Download the files (5 min)
 
