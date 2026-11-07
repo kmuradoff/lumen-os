@@ -221,10 +221,17 @@ pt_run() {  # seconds program args...: runs it; 124 = it did not finish in time 
     st=0; kill -TERM "$p" 2>/dev/null
     "$PT_SLEEP" 3 & s=$!; wait $s; kill -KILL "$p" 2>/dev/null; exit 0 ) </dev/null >/dev/null 2>&1 9>&- &
   w=$!
-  wait "$p" 2>/dev/null; rc=$?
-  kill -TERM "$w" 2>/dev/null; wait "$w" 2>/dev/null; fired=$?
+  pt_reap "$p"; rc=$?
+  kill -TERM "$w" 2>/dev/null; pt_reap "$w"; fired=$?
   [ "$fired" = 0 ] && [ "$rc" -ge 128 ] && return 124
   return "$rc"
+}
+pt_reap() {  # pid: waits for it and returns its exit status. bash 3.2 (macOS /bin/bash) can miss the SIGCHLD of a
+  # child that ends just as 'wait' starts and then sleeps until another child ends: in pt_run the watchdog, minutes
+  # later (seen: a 7 s flash waited 300 s, an adb shell 1800 s). Short sleeps keep children ending, so a missed
+  # signal costs at most a tenth of a second.
+  while kill -0 "$1" 2>/dev/null; do "$PT_SLEEP" 0.1; done
+  wait "$1" 2>/dev/null
 }
 pt_cap() { if [ -n "${LUMEN_TIMEOUT_MAX:-}" ] && [ "$1" -gt "$LUMEN_TIMEOUT_MAX" ]; then echo "$LUMEN_TIMEOUT_MAX"; else echo "$1"; fi; }   # tests only
 pt_sub() {  # args...: the command word after the options (-s SERIAL, --fs-options=...)
