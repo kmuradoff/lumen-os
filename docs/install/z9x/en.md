@@ -570,33 +570,35 @@ restore is what is left.
 
 ## Back to stock (erases everything)
 
-1. Ask XGIMI support for the stock firmware for the Z9X (a `.bin` file). We do not host it.
-2. Format a USB stick as FAT32 with an MBR partition table. Copy the `.bin` and an empty file named
-   `factory.txt` to it.
-3. Unplug the A-to-A cable. Plug the stick into the USB 2.0 port.
-4. Switch the projector on while holding the power button for 6 to 7 seconds.
-5. The restore takes about 4 minutes and erases everything. Then stock starts.
+The stock firmware is installed by XGIMI's own USB update.
 
-There is a second way, but it has not been tested yet. Until you install your first Lumen OS update,
-the other slot still holds XGIMI stock. You can switch to it from fastboot mode (`adb reboot fastboot`),
-within the same 2 minutes. Find the current slot:
+1. Download the official XGIMI firmware V6.15.19 for the Z9X (G0082) from XGIMI's server:
+   [XGIMI_HORSEPOPULAR_XR03D.bin](https://product-library.static.xgimi.com/firmware/release/MTK9681/dapengend/MTK9681_LEO_6.15.19_20251014-012201/XGIMI_HORSEPOPULAR_XR03D.bin)
+   (2,589,266,736 bytes). A file for another model will not work.
+2. A USB stick with an **MBR** partition scheme and **one FAT32 partition**. On macOS: Disk Utility > View >
+   Show All Devices, select the stick itself (not its volume), Erase, format "MS-DOS (FAT)", scheme
+   "Master Boot Record".
+3. Only two files on the stick: `XGIMI_HORSEPOPULAR_XR03D.bin` (exactly this name) and an **empty**
+   `factory.txt`. On macOS copy in the terminal, because Finder adds hidden `._` files:
 
-```
-fastboot getvar current-slot
-```
+   ```
+   cp -X ~/Downloads/XGIMI_HORSEPOPULAR_XR03D.bin /Volumes/STICK/
+   ```
 
-Make the other slot active. If the current one is `b`, use `a`. If it is `a`, use `b`. Then restart:
+   ```
+   touch /Volumes/STICK/factory.txt
+   ```
 
-```
-fastboot --set-active=a
-```
+4. Take the A-to-A cable out of the USB 2.0 port and put the stick into that port. Unplug the power cable.
+5. Hold the projector's power button, plug the power cable in and keep holding the button for 6-7 seconds.
+   Without the button the stick does nothing.
+6. The restore takes about 4 minutes and erases everything. Do not cut the power. If the power did go off,
+   leave the stick in and turn the projector on again. Then the stock system starts, as from the factory.
+7. Take the stick out and delete `factory.txt` from it, so the firmware does not get installed again by accident.
 
-```
-fastboot reboot
-```
-
-With Lumen OS data on it, stock will most likely not start or will ask for a reset. Then the USB stick
-is the way back.
+After the rollback the vbmeta check is on again. To install Lumen OS again, start at
+[step 1](#1-prepare-the-projector-10-min), and before installing reset the previous install's progress:
+`bash lumen-install.sh --device z9x reset` (Windows: `lumen-install.cmd reset -Device z9x`).
 
 ## What changes on the projector
 
