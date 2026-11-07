@@ -457,7 +457,7 @@ back on in Settings > Apps if you want to try yourself.
 What works instead:
 - AirPlay from an iPhone, iPad or Mac: Control Center > Screen Mirroring > the projector, or the AirPlay
   button in a video app.
-- DLNA ("send to TV", from the next Lumen Play version): Lumen Play shows up as a TV in BubbleUPnP, Web Video Cast, VLC, Windows "Cast to
+- DLNA ("send to TV"): Lumen Play shows up as a TV in BubbleUPnP, Web Video Cast, VLC, Windows "Cast to
   device", many torrent clients and browser extensions.
 - YouTube without Cast: in YouTube on the projector open Settings > Link with TV code, then in YouTube on
   the phone Settings > Watch on TV > Enter TV code. After that the phone's cast button finds the projector.
