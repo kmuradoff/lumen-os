@@ -254,7 +254,7 @@ in [Google services](#play6-google).
 10. When the projector shows Lumen OS again, answer `yes` to "Do you see Lumen Home?".
 
 After that, join Wi-Fi and sign in, as in [Google services](#play6-google): Settings > Accounts > Add
-account. If Google refuses the sign-in, register the projector, see [GSF ID](#play6-gsf).
+account. If Google refuses the sign-in, register the projector, see [Google refuses the sign-in](#play6-gsf).
 
 If the run stops anywhere, fix what the installer says and run the same command again: it continues
 where it stopped.
@@ -343,20 +343,7 @@ yet).
 To keep your data, add `--keep-data` and type `WRITE` instead of `ERASE`. But then the phone remote may
 not work properly until a factory reset.
 
-<a name="play6-gsf"></a>
-
-Then join Wi-Fi and sign in: Settings > Accounts > Add account. Usually the sign-in just works. If Google
-refuses it, or Play says the device is not certified, register the projector:
-
-1. Turn debugging on again ([step 6](#play6-verify); the factory reset turned it off).
-2. Get the GSF ID:
-
-   ```
-   bash lumen-install.sh --ip 192.168.x.y gsf
-   ```
-
-3. Register it at [google.com/android/uncertified](https://www.google.com/android/uncertified), wait 10
-   to 30 minutes, then sign in from Settings > Accounts.
+Then join Wi-Fi and sign in: Settings > Accounts > Add account.
 
 Lumen OS updates and factory resets keep the Google services. System, vendor, boot, recovery and the
 calibration do not change; only the `lumen_gapps` partition is added. The stock restore from a stick
@@ -447,6 +434,22 @@ The installer prints these steps when you answer `no` after a start, with the wa
 The Play 6's progress is kept in `~/.lumen-installer/play6/`. `bash lumen-install.sh status` shows it and
 `bash lumen-install.sh --device play6 reset` forgets it. Neither touches the projector. For a report,
 attach the same as for the Z9X, see [If nothing helped](../z9x/en.md#if-nothing-helped).
+
+<a name="play6-gsf"></a>
+
+### Google refuses the sign-in
+
+Usually the Google sign-in just works. If Google refuses it or Play says the device is not certified, register the projector:
+
+1. Turn debugging on again ([step 6](#play6-verify); the factory reset turned it off).
+2. Get the GSF ID:
+
+   ```
+   bash lumen-install.sh --ip 192.168.x.y gsf
+   ```
+
+3. Register it at [google.com/android/uncertified](https://www.google.com/android/uncertified), wait 10
+   to 30 minutes, then sign in from Settings > Accounts.
 
 <a name="play6-rescue"></a>
 

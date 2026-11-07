@@ -4406,9 +4406,9 @@ cmd_all() {
 USB stick: Lumen Home > Apps > Install from USB. Google services can be added later: 'gapps' (guide)." "Готово. На проекторе выберите язык, Wi-Fi и пройдите настройку. Приложения ставятся с
 USB-накопителя: Lumen Home > Приложения > Установить с USB. Сервисы Google можно добавить позже: 'gapps' (инструкция)."; echo
   else
-    t "Done. On the projector: choose the language, Wi-Fi and the rest of the setup. For Google sign-in,
-register the GSF ID first: bash lumen-install.sh gsf" "Готово. На проекторе выберите язык, Wi-Fi и пройдите настройку. Для входа в Google сначала
-зарегистрируйте GSF ID: bash lumen-install.sh gsf"; echo
+    t "Done. On the projector: choose the language, Wi-Fi and the rest of the setup, with the Google sign-in.
+If Google refuses the sign-in: bash lumen-install.sh gsf (guide, 'Something went wrong')." "Готово. На проекторе выберите язык, Wi-Fi и пройдите настройку со входом в Google.
+Если Google не пускает: bash lumen-install.sh gsf (инструкция, «Если что-то пошло не так»)."; echo
   fi
 }
 

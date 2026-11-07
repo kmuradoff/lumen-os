@@ -304,7 +304,7 @@ What the command does:
    files, the Google services partition `z9x_gapps_<slot>`, then the wipe with `format`, the same wipe as
    a clean install. That is the only wipe.
 5. The projector restarts. The first start is clean and the setup has a Google sign-in step. If Google
-   refuses the sign-in, register the projector, see [GSF ID](#gsf).
+   refuses the sign-in, register the projector, see [Google refuses the sign-in](#gsf).
 
 If the Google services do not fit into the system storage or cannot be written, the installer removes
 that partition, wipes as usual and finishes without Google. Add them later with the `gapps` step, see
@@ -410,21 +410,7 @@ TalkBack and the remote in the Google TV phone app. Chromecast built-in does not
 To keep your data, add `--keep-data` and type `WRITE` instead of `ERASE`. But then the phone remote may
 not work properly until a factory reset.
 
-<a name="gsf"></a>
-
-The setup now has a Google sign-in step. Usually the sign-in just works. If Google refuses it, or Play
-says the device is not certified, register the projector:
-
-1. Connect the projector to the internet, turn USB debugging on again (the wipe turned it off) and
-   connect the cable.
-2. Get the GSF ID:
-
-   ```
-   bash lumen-install.sh gsf
-   ```
-
-3. Register it at [google.com/android/uncertified](https://www.google.com/android/uncertified), wait 10
-   to 30 minutes, then sign in from Settings > Accounts.
+The setup now has a Google sign-in step.
 
 Lumen OS updates and factory resets keep the Google services. System, vendor, boot and the calibration do
 not change; only the `z9x_gapps` partition is added.
@@ -534,6 +520,23 @@ Open an [issue on GitHub](https://github.com/kmuradoff/lumen-os/issues) and atta
 - what you did and at which step it stopped;
 - the full terminal text, not a screenshot;
 - the output of `bash lumen-install.sh status`.
+
+<a name="gsf"></a>
+
+### Google refuses the sign-in
+
+Usually the Google sign-in just works. If Google refuses it or Play says the device is not certified, register the projector:
+
+1. Connect the projector to the internet, turn USB debugging on again (the wipe turned it off) and
+   connect the cable.
+2. Get the GSF ID:
+
+   ```
+   bash lumen-install.sh gsf
+   ```
+
+3. Register it at [google.com/android/uncertified](https://www.google.com/android/uncertified), wait 10
+   to 30 minutes, then sign in from Settings > Accounts.
 
 <a name="rescue"></a>
 

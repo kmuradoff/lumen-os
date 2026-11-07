@@ -3847,7 +3847,7 @@ function Cmd-All {
   if ((State-Get image_gms) -eq "0" -and (State-Get step_gapps_fill) -ne "done" -and (State-Get step_gapps_flash) -ne "done") {
     Write-Host (T "Done. Finish the setup on the projector. Install apps from a USB stick: Lumen Home > Apps > Install from USB. Google services can be added later: 'gapps' (guide)." "Готово. Завершите настройку на проекторе. Приложения ставятся с USB-накопителя: Lumen Home > Приложения > Установить с USB. Сервисы Google можно добавить позже: 'gapps' (инструкция).")
   } else {
-    Write-Host (T "Done. Finish the setup on the projector. For Google sign-in register the GSF ID first: lumen-install.cmd gsf" "Готово. Завершите настройку на проекторе. Для входа в Google сначала зарегистрируйте GSF ID: lumen-install.cmd gsf")
+    Write-Host (T "Done. Finish the setup on the projector, with the Google sign-in. If Google refuses the sign-in: lumen-install.cmd gsf (guide, Something went wrong)." "Готово. Завершите настройку на проекторе со входом в Google. Если Google не пускает: lumen-install.cmd gsf (инструкция, «Если что-то пошло не так»).")
   }
 }
 

@@ -302,19 +302,7 @@ Type `ERASE`, and when the installer asks, connect the projector's USB port to t
 cable. In one visit to fastboot mode it writes the partition `z9x_gapps`, erases the data and restarts the
 projector.
 
-Sign in to Google in the first setup or later in "Settings → Accounts". If Google refuses the sign-in or Play
-says that the device is not certified, register the projector:
-
-1. Connect the projector to the internet, turn on debugging ([step 7](#hb-verify), items 1-3), and in
-   "Developer options" also "Rooted debugging".
-2. Get the GSF ID:
-
-   ```
-   bash lumen-install.sh --ip 192.168.x.y gsf
-   ```
-
-3. Register it at [google.com/android/uncertified](https://www.google.com/android/uncertified), wait 10-30
-   minutes and sign in in "Settings → Accounts".
+Sign in to Google in the first setup or later in "Settings → Accounts".
 
 The state of the Google services is shown by `bash lumen-install.sh --ip 192.168.x.y gapps`. To remove them
 (this erases the data too): `bash lumen-install.sh --ip 192.168.x.y gapps --remove`. If Lumen OS failed to
@@ -382,6 +370,23 @@ If nothing helps, write in the [4PDA topic](https://4pda.to/forum/index.php?show
 - what you did and at which step everything stopped;
 - the whole text from the terminal, not a screenshot;
 - the output of `bash lumen-install.sh status`.
+
+<a name="hb-gsf"></a>
+
+### Google refuses the sign-in
+
+Usually the Google sign-in just works. If Google refuses it or Play says the device is not certified, register the projector:
+
+1. Connect the projector to the internet, turn on debugging ([step 7](#hb-verify), items 1-3), and in
+   "Developer options" also "Rooted debugging".
+2. Get the GSF ID:
+
+   ```
+   bash lumen-install.sh --ip 192.168.x.y gsf
+   ```
+
+3. Register it at [google.com/android/uncertified](https://www.google.com/android/uncertified), wait 10-30
+   minutes and sign in in "Settings → Accounts".
 
 <a name="hb-stock"></a>
 
