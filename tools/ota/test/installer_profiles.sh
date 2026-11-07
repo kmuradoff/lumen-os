@@ -304,7 +304,8 @@ bad=$(awk '!/^#/ && !/^$/ && !/^[a-z0-9]+\.[A-Z][A-Z0-9_]*=[A-Za-z0-9 ._:\/-]*$/
 [ "$(conf z9x BOARD)" = "$(sed -n 's/^BOARD=//p' "$INST/lumen-install.sh")" ] || fail "z9x.BOARD differs from BOARD"
 [ "$(conf z9x FB_PRODUCT)" = "$(sed -n 's/^FB_PRODUCT=//p' "$INST/lumen-install.sh")" ] || fail "z9x.FB_PRODUCT differs"
 [ "\"$(conf z9x VENDOR_OK)\"" = "$(sed -n 's/^VENDOR_OK=//p' "$INST/lumen-install.sh")" ] || fail "z9x.VENDOR_OK differs"
-ps=$(sed -n 's/^\$ModelCode = "\([^"]*\)"; \$Board = "\([^"]*\)"; \$FbProduct = "\([^"]*\)"; \$VendorOk = @(\(.*\))$/\1 \2 \3 \4/p' "$INST/lumen-install.ps1" | tr -d '",')
+# the ps1 is checked out with CRLF (.gitattributes: *.ps1 eol=crlf): the \r goes before the line-end match
+ps=$(tr -d '\r' < "$INST/lumen-install.ps1" | sed -n 's/^\$ModelCode = "\([^"]*\)"; \$Board = "\([^"]*\)"; \$FbProduct = "\([^"]*\)"; \$VendorOk = @(\(.*\))$/\1 \2 \3 \4/p' | tr -d '",')
 [ "$ps" = "$(conf z9x MODEL) $(conf z9x BOARD) $(conf z9x FB_PRODUCT) $(conf z9x VENDOR_OK)" ] || fail "the ps1 Z9X constants differ: '$ps'"
 end
 
@@ -401,7 +402,7 @@ begin ps1_own_platform_tools
 # function Adb instead of adb.exe, an endless recursion (fixed 2026-10-29), so no call by name may come back.
 PS1=$INST/lumen-install.ps1
 grep -nE '&[[:space:]]*"?(adb|fastboot)(\.exe)?"?([[:space:]]|$)' "$PS1" && fail "the ps1 calls adb or fastboot by name"
-[ "$(sed -n 's/^\$PtVer = "\(.*\)"$/\1/p' "$PS1")" = "$(sed -n 's/^PT_VER=\([0-9.]*\).*/\1/p' "$INST/lumen-install.sh")" ] || fail "Platform-Tools versions differ"
+[ "$(tr -d '\r' < "$PS1" | sed -n 's/^\$PtVer = "\(.*\)"$/\1/p')" = "$(sed -n 's/^PT_VER=\([0-9.]*\).*/\1/p' "$INST/lumen-install.sh")" ] || fail "Platform-Tools versions differ"   # CRLF, as above
 for os in darwin linux; do
   grep -q "$(sed -n "s/^PT_SHA_$os=//p" "$INST/lumen-install.sh")" "$PS1" || fail "the $os sha256 differs between the scripts"
 done
