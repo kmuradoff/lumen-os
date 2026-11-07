@@ -263,10 +263,6 @@ video. Only do that to look around. Better open a
 
 ### Lumen OS and Google services in one command
 
-> [!NOTE]
-> New: this way has not been tried on a projector yet. If something goes wrong, the installer says how to
-> go on. The proven way is way 1, then way 3.
-
 This is way 2: Lumen OS and Google Play, Google Play services, Google voice search and text-to-speech,
 TalkBack and the remote in the Google TV phone app, with one data wipe in total. What you get and what
 does not work (Chromecast) is the same as in [Adding Google services](#google).
