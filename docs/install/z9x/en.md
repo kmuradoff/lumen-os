@@ -245,6 +245,8 @@ For the clean install:
 4. The rest takes about 2 minutes and needs nothing from you: the installer restarts into fastboot,
    writes the system, wipes the data and restarts the projector. Keep the cable in until you see
    "written. First start takes 2-4 minutes; the setup screen appears on the projector."
+   Right after it the installer prints "Done" and exits: the install is finished, you can unplug the
+   cable, the setup continues on the projector.
 
 ### Sound and protected video
 
