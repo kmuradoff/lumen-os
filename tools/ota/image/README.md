@@ -52,8 +52,8 @@ files exactly like `z9x_ota.{sh,rc}` (`add system/etc/z9x/z9x_rescue.sh "$OTAIMG
 `z9x_ota.sh` matches the bare word `fastboot`, and `z9x_rescue.sh` necessarily runs
 `setprop sys.powerctl reboot,fastboot` (init's reboot into fastbootd, no block device), so use that
 grep without the `fastboot` alternative for it. `shlint` should also run `ksh -n` where ksh exists
-(the device shell, mksh, is a ksh; 1.0.1 review found a pattern only ksh rejects). Host tests: `sh tools/ota/test/run.sh` (gate + rescue, stubbed) and
-`bash tools/ota/test/installer_rescue.sh` (installer `rescue`, fake fastboot).
+(the device shell, mksh, is a ksh; 1.0.1 review found a pattern only ksh rejects). Host test: `sh tools/ota/test/run.sh` (gate + rescue, stubbed). The installer's `rescue` command and its test
+`installer_rescue.sh` were removed (2026-11-07).
 
 `ro.z9x.keys=release` is true only after `tools/sign/sign_tar.py` ran on the Mac; the laptop tar
 is the *input* of signing, the flashed image is always the signed one (`tools/sign/sign_release.sh`).

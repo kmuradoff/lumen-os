@@ -7,7 +7,7 @@
 # SHA256SUMS(.sig) signed by that key. A fake adb answers getprop / pm from a props file, a fake dump.erofs the
 # image's product build.prop (ro.z9x.gms) and the codec placeholder size, a fake fastboot only its version.
 # Cases: two images next to the installer (refused: --image needed), 'check' of a no-Google image (edition
-# shown and saved), file name and image disagreeing either way (refused), 'flash --keep-data' and 'rescue'
+# shown and saved), file name and image disagreeing either way (refused), 'flash --keep-data'
 # with an image of the other edition than the projector runs (refused before anything is written), the same
 # edition (passes the guard), 'gsf' on Lumen OS without Google and without GSF (nothing to register, no adb
 # root), 'verify' of a no-Google system (edition shown, Google packages reported).
@@ -164,13 +164,6 @@ image lumen-os-1.0.1-nogms-system.img "$NOGMS_PROP"
 inst flash --keep-data
 # past the guard: the manual vbmeta question comes (answered no here)
 expect_rc 1; expect_out "do the vbmeta step first"; expect_no_out "switching editions"
-end
-
-begin rescue_other_edition_refused
-image lumen-os-1.0.1-system.img "$GMS_PROP"
-printf 'dev_gms=0\n' > "$C/state/state"
-inst rescue
-expect_rc 1; expect_out "switching editions needs a full install"; expect_no_out "Type WRITE"
 end
 
 begin gsf_on_nogms_nothing_to_register

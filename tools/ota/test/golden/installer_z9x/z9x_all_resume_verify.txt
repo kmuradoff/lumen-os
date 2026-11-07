@@ -15,6 +15,9 @@ USB stick: Lumen Home > Apps > Install from USB. Google services can be added la
 version
 start-server
 devices
+-s ZF62TEST0009 shell getprop ro.boot.slot_suffix
+-s ZF62TEST0009 shell getprop ro.z9x.version
+devices
 -s ZF62TEST0009 shell getprop sys.boot_completed
 -s ZF62TEST0009 shell getprop sys.boot_completed
 -s ZF62TEST0009 shell getprop ro.z9x.version

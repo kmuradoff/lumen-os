@@ -251,8 +251,7 @@ For the clean install:
 We are not allowed to redistribute MediaTek's and XGIMI's codec and audio files. So the installer takes
 nine of them from your own projector, checks each one against a list of checksums and writes them into
 a small partition, `z9x_blobs`. Without them there is no sound and no protected video, such as
-Kinopoisk HD. A copy stays on the computer in `~/Lumen-backup/blobs-<serial>.img`. Keep it, you will
-need it for a repair.
+Kinopoisk HD. A copy stays on the computer in `~/Lumen-backup/blobs-<serial>.img`.
 
 If the installer says a file "does not match the allow-list", it does not know your firmware's files.
 You can still install without them by adding `--no-blobs`, but there will be no sound and no protected
@@ -486,9 +485,9 @@ downloaded, Lumen Home shows an "Update ready" badge.
 | flash | "an XGIMI or Lumen update is still being finished" | Let the projector start, wait 10 minutes and try again. Nothing was written. |
 | flash | "system was not written" | The old system is still there. Check the cable and try again. |
 | flash | "the wipe failed" | Lumen OS starts on the old data. On the projector, do Settings > Device Preferences > Reset > Factory reset. |
-| flash | "switching editions needs a full install" | A repair without a wipe cannot switch between the editions with and without Google. Install without `--keep-data`, which erases data. |
-| first start | Restarts in a loop, the computer does not see it | The vbmeta step was most likely not done for this slot. Do the [stock restore](#stock) and start again at step 1. If the projector went to fastboot mode by itself, try [Rescue](#rescue) first. |
-| later | Lumen OS no longer starts | After 3 failed starts in a row the projector goes to fastboot mode. Run [Rescue](#rescue); your data stays. |
+| flash | "switching editions needs a full install" | An install without a wipe cannot switch between the editions with and without Google. Install without `--keep-data`, which erases data. |
+| first start | Restarts in a loop, the computer does not see it | The vbmeta step was most likely not done for this slot. Do the [stock restore](#stock) and start again at step 1. |
+| later | Lumen OS no longer starts | Do the [stock restore](#stock) and install Lumen OS again. |
 | later | It does not sleep: lamp off, fans running | Unplug the USB cable from the computer. |
 | Files | The stick is not listed | The stick must be FAT32 or exFAT. Take it out and plug it in again. |
 | Installing an `.apk` | "was not installed" | The file is damaged, or the app is not for Android TV 14 (arm64). |
@@ -539,32 +538,6 @@ Usually the Google sign-in just works. If Google refuses it or Play says the dev
    to 30 minutes, then sign in from Settings > Accounts.
 
 <a name="rescue"></a>
-
-## Rescue (keeps your data)
-
-Since 1.0.1, Lumen OS counts failed starts. If the system fails to finish starting 3 times in a row,
-the projector goes to fastboot mode by itself. The picture may stay dark. From fastboot mode the
-installer writes the system again, and your data stays.
-
-1. Connect the A-to-A cable to the projector's USB 2.0 port.
-2. Make sure the installer folder holds the image without Google, the same version or newer, with
-   `SHA256SUMS` and `SHA256SUMS.sig`. Run:
-
-   ```
-   bash lumen-install.sh rescue
-   ```
-
-   Windows: `lumen-install.cmd rescue`
-3. Type `WRITE`. The installer waits up to 15 minutes for the projector in fastboot mode. If the
-   projector left fastboot and failed to start again, it comes back there after 3 more tries.
-4. The installer does the rest by itself. If an unfinished update is left in that slot, it finishes or
-   cancels it. Then it writes the system and your codec files from `~/Lumen-backup/blobs-<serial>.img`
-   and restarts the projector. Your data is not erased.
-
-If an update had to be cancelled, the previous version in the other slot may no longer start. If the
-projector still ends up in fastboot mode after the rescue, the system was not the cause, and the stock
-restore is what is left.
-
 <a name="stock"></a>
 
 ## Back to stock (erases everything)

@@ -403,7 +403,6 @@ bash lumen-install.sh --ip 192.168.x.y gapps --remove
 | after the wipe | The picture stays dark for more than 10 minutes | Press the power button once. If it stays dark, do the [stock restore](#play6-stock). |
 | after the wipe | Lumen Home opens, but the remote's Home key does nothing | Run `verify` (step 6) and report the lines with `!`. |
 | verify | "the data was NOT erased" | Answer `yes` to erase it now, or use Settings > Device Preferences > Reset > Factory reset. |
-| rescue | "this computer last saw this projector on XGIMI's stock system" | `rescue` repairs Lumen OS only. To install, run the installer without a command (step 4). Nothing was written. |
 | stick | Lines with `!` | Fix them as the line says, see [Back to stock](#play6-stock). |
 | gapps | "is not the MindTheGapps file this installer accepts" | Download exactly the file named in [Google services](#play6-google), with its original name. The arm64 file of the Z9X does not fit the Play 6. Nothing was written. |
 | gapps | "has no Google services add-on support" | Install a newer Lumen OS for the Play 6 first (`--keep-data flash`, see [step 5](#play6-wifi)). Nothing was written. |
@@ -452,23 +451,6 @@ Usually the Google sign-in just works. If Google refuses it or Play says the dev
    to 30 minutes, then sign in from Settings > Accounts.
 
 <a name="play6-rescue"></a>
-
-## Rescue from fastboot mode (keeps your data)
-
-When the projector waits in fastboot mode, for example after a write that was cut off, the installer can
-write the system again without erasing data:
-
-```
-bash lumen-install.sh --device play6 rescue
-```
-
-Type `WRITE` and connect the A-to-A cable. If this computer does not know the projector's serial number
-yet, the installer shows the one it finds and asks you to type it, so that it never writes to another
-projector. Unplug the cable when it says so.
-
-Lumen OS on the Play 6 does not go to fastboot mode by itself after failed starts yet. If it does not
-start and does not appear in fastboot mode, the stock restore is the way back.
-
 <a name="play6-stock"></a>
 
 ## Back to stock (erases everything)

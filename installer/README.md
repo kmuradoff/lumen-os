@@ -70,7 +70,6 @@ no Windows build yet: on Windows `-GappsZip` stops before anything is written (i
 | `flash` | writes the system and `z9x_blobs`, then wipes all data | yes, erases data |
 | `flash --keep-data` | repair: writes the system again and keeps the data | yes |
 | `verify` | after the first start, checks the system over USB | no |
-| `rescue` | for Lumen OS that no longer starts: waits for fastboot mode and writes the system again, keeps the data | yes |
 | `gapps --zip FILE` | adds Google services from your own MindTheGapps download, then wipes the data (`--keep-data`: no wipe) | yes |
 | `gapps --remove` | removes the Google services you added, with the same wipe | yes |
 | `gapps` | shows the state of the Google services you added and can turn them back on | only if you agree |
@@ -88,7 +87,6 @@ XGIMI Play 6 (it has no USB debugging: `--ip ADDRESS` is its Wi-Fi address, save
 | `flash` | asks for the A-to-A cable, writes the system and the erase request for XGIMI's recovery in one fastboot session; the recovery erases all data before the first start of Lumen OS (if the request is refused or not carried out: the first start on the old data, then Android's factory reset) | yes, erases data |
 | `flash --keep-data` | repair: writes the system again and keeps the data | yes |
 | `verify` | later, after joining Wi-Fi and turning debugging on again: checks the clean install | only if you agree to a wipe |
-| `rescue` | the projector waits in fastboot mode on the cable: writes the system again, keeps the data (Lumen OS only: a projector this computer last saw on stock is refused) | yes |
 | `stick DIR` | checks a stock-restore USB stick: MBR, one FAT32 partition, the firmware file, an empty `factory.txt` | no (nothing on the computer either) |
 | `gapps --zip FILE` | adds Google services from your own MindTheGapps download: creates `lumen_gapps` in fastboot mode (A-to-A cable), fills it over Wi-Fi, then Android's factory reset (`--keep-data`: no reset) | yes, erases data |
 | `gapps --remove` | removes the Google services you added (fastboot mode, A-to-A cable), with the same factory reset | yes, erases data |
@@ -117,7 +115,7 @@ Options:
 
 Only `system`, `z9x_blobs` and, with `gapps`, `z9x_gapps` of the current slot. It formats `userdata`,
 `metadata` and `cache`, and deletes XGIMI's unused `product` and `system_ext` of the current slot and
-leftover `*-cow` partitions of unfinished updates. `rescue` formats nothing.
+leftover `*-cow` partitions of unfinished updates.
 
 It never touches vbmeta, boot, vendor, dtbo, mboot, persist, xgimi*, tvconfig, misc, frp or the other
 slot, and never runs `fastboot -w` or `fastboot erase`, which hang the Z9X at boot. Every partition
@@ -135,7 +133,7 @@ MBOOT, the env partition (MPOOL), calibration and factory data are never written
 
 ## For developers
 
-Mock tests: `tools/ota/test/installer_rescue.sh`, `installer_blobs.sh`, `installer_edition.sh`,
+Mock tests: `tools/ota/test/installer_blobs.sh`, `installer_edition.sh`,
 `installer_gapps.sh`, `installer_profiles.sh` (lib/devices.conf, and the Z9X command logs compared byte for
 byte with `tools/ota/test/golden/installer_z9x/`), `installer_play6.sh` (a fake Play 6 over Wi-Fi and in
 fastbootd), `installer_play6_gapps.sh`, and the PowerShell host tests `installer_ps1_gapps.sh` and

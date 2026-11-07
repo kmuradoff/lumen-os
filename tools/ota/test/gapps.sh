@@ -207,7 +207,7 @@ cases() {
     end
   fi
   if want off_marker_other_build; then
-    # the same slot, written again with another build (a 'rescue' or a later update): Google services stay
+    # the same slot, written again with another build (a 'flash --keep-data' or a later update): Google services stay
     begin off_marker_other_build; mkdir -p "$R/metadata/z9x_gapps"; echo "3 _b lumen-1.0.0-20261001p" > "$R/metadata/z9x_gapps/off"; run
     expect_prop sys.z9x.gapps ok; expect_log "(_b lumen-1.0.0-20261001p): another slot or build"
     end

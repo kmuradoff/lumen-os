@@ -506,7 +506,7 @@ expect_out "Google services add-on image: $NFILES files checked"
 expect_out "With --gapps-zip the same session also writes the Google services from $NAME"
 expect_out "writing the Google services into $P"; expect_out "  ✓ $P: $NAME"
 expect_out "written. First start takes 2-4 minutes; the setup screen appears on the projector, with the Google sign-in step."
-expect_out "register the GSF ID first: bash lumen-install.sh gsf"
+expect_out "If Google refuses the sign-in: bash lumen-install.sh gsf"
 [ "$(grep -c 'Type ERASE' "$C/out")" = 1 ] || fail "ERASE asked $(grep -c 'Type ERASE' "$C/out") times"
 n_img=$(grep -n "Google services add-on image:" "$C/out" | head -1 | cut -d: -f1); n_er=$(grep -n "Type ERASE" "$C/out" | cut -d: -f1)
 n_bk=$(grep -n "Make a backup" "$C/out" | head -1 | cut -d: -f1)
@@ -514,6 +514,20 @@ n_bk=$(grep -n "Make a backup" "$C/out" | head -1 | cut -d: -f1)
 [ "$(sha256sum "$C/state/gapps/"*.img | cut -d' ' -f1)" = "$GSHA" ] || fail "the flashed image is not the reference one"
 [ ! -e "$C/state/gapps/gapps.tar" ] || fail "the tar was left behind"
 google_on
+end
+
+begin one_pass_again_after_stock   # a finished install, the stock system restored from a USB stick, the same command again
+release
+inst 'no\nyes\nERASE\n' --no-blobs --gapps-zip "$ZIP"
+expect_rc 0
+grep -qx "step_flash=done" "$C/state/state" || fail "first run: $(cat "$C/state/state")"
+rm -f "$FB/noadb_after_wipe" "$FB/noadb"; : > "$FB/fb.log"; : > "$FB/adb.log"; echo android > "$FB/mode"
+printf '%s\n' ro.boot.xgimi.modelname=G0082 ro.boot.hardware=mt9952 ro.vendor.build.version.incremental=v6.15.58 \
+  ro.boot.slot_suffix=_b ro.debuggable=0 sys.boot_completed=1 > "$T/props"
+inst 'no\nERASE\n' --no-blobs --gapps-zip "$ZIP"   # vbmeta stays recorded (and is checked), so no vbmeta question
+expect_rc 0
+expect_out "the projector runs the stock system again: the earlier install is finished, starting a new one"
+expect_cmds "$(one | sed 's/create-logical-partition/resize-logical-partition/')$FMT"   # the fake still has z9x_gapps_b from the first run
 end
 
 begin one_pass_ru

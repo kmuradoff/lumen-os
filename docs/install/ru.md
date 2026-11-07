@@ -17,7 +17,7 @@
 - Z9X: [vbmeta](z9x/ru.md#vbmeta), [установка](z9x/ru.md#flash), [проверка](z9x/ru.md#verify),
   [«Как поставить сервисы Google»](z9x/ru.md#google), [Chromecast](z9x/ru.md#chromecast),
   [«Обновления»](z9x/ru.md#updates), [«Если что-то пошло не так»](z9x/ru.md#problems),
-  [«Ремонт»](z9x/ru.md#rescue), [«Откат на сток»](z9x/ru.md#stock).
+  [«Откат на сток»](z9x/ru.md#stock).
 
 <a name="play6"></a><a name="play6-need"></a><a name="play6-prepare"></a><a name="play6-files"></a><a name="play6-check"></a><a name="play6-install"></a><a name="play6-wifi"></a><a name="play6-verify"></a><a name="play6-google"></a><a name="play6-problems"></a><a name="play6-rescue"></a><a name="play6-stock"></a><a name="play6-changes"></a>
 

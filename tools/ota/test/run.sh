@@ -296,7 +296,7 @@ case_gate_other_not_bootable() {
   expect_reboot ""; expect_no_hal 9; expect_prop sys.z9x.ota.why "no rollback: slot _a is not bootable"
   end
 }
-case_gate_cancelled_no_rollback() {   # 'lumen-install rescue' cancelled the update and re-flashed system
+case_gate_cancelled_no_rollback() {   # the update was cancelled in fastboot mode and system written again
   begin gate_cancelled_no_rollback
   ota_to_b; echo 4 > "$T/hal/merge"; printf '3 _b\n' > "$R/metadata/z9x_ota/attempts"
   boot

@@ -35,7 +35,7 @@
 # or over an older Lumen OS: the next run writes again, an image that names its version differently: a
 # warning), the wipe guards (another projector, ERASE not typed again, no root, no answer after adb root, a
 # reset that does not start, a stale connection, a reset already done by a cut-off run), verify (clean, data
-# still there, not allowed), rescue (saved serial, typed serial, a projector last seen on stock), the commands
+# still there, not allowed), the commands
 # the Play 6 does not need, the stick check, status / reset per projector, which download picks the projector
 # (a Z9X download stays the Z9X with a Play 6 install saved), backup over Wi-Fi, Russian texts, and a
 # later flash over super with the Google services add-on lumen_gapps (passes, its space counted; any other
@@ -1131,56 +1131,6 @@ printf '%s\n' "serial=$SER" "ip=$ADDR" step_check=done step_backup=skipped step_
 echo lumen > "$FB/mode"; : > "$FB/packages3"
 inst ''
 expect_rc 0; expect_cmds ""; expect_out "data erased"; expect_out "Done. On the projector"
-end
-
-# ------------------------------------------------------------------ rescue
-begin rescue_saved_serial
-KEEP=1
-mkdir -p "$C/state/play6"; printf '%s\n' "serial=$SER" "ip=$ADDR" > "$C/state/play6/state"
-echo lumen > "$FB/before_fastboot"; echo fastboot > "$FB/mode"
-inst 'WRITE\n\n' --device play6 rescue
-expect_rc 0
-expect_cmds "$WRITE_KEEP"
-expect_out "RESCUE ($NAME)"; expect_no_out "Type this serial"; expect_out "your data is kept"
-[ -z "$(writes)" ] || fail "adb wrote: $(writes)"
-end
-
-begin rescue_needs_typed_serial
-KEEP=1
-echo lumen > "$FB/before_fastboot"; echo fastboot > "$FB/mode"
-inst "WRITE\n$SER\n\n" --device play6 rescue
-expect_rc 0; expect_out "In fastboot mode: $SER. Type this serial"; expect_cmds "$WRITE_KEEP"
-end
-
-begin rescue_wrong_typed_serial
-echo lumen > "$FB/before_fastboot"; echo fastboot > "$FB/mode"
-inst 'WRITE\nNOPE\n' --device play6 rescue
-expect_rc 1; expect_out "cancelled."; expect_cmds "$S reboot;"
-end
-
-begin rescue_refuses_stock_projector
-# this computer saw the projector on stock and wrote nothing: fastbootd cannot tell, the saved progress can
-mkdir -p "$C/state/play6"; printf '%s\n' "serial=$SER" "ip=$ADDR" dev_lumen=0 step_check=done > "$C/state/play6/state"
-echo stock > "$FB/before_fastboot"; echo fastboot > "$FB/mode"
-inst 'WRITE\n' --device play6 rescue
-expect_rc 1; expect_out "this computer last saw this projector on XGIMI's stock system and has written nothing to it"
-expect_out "Nothing was written."; expect_cmds "$S reboot;"
-end
-
-begin rescue_after_cut_off_write
-KEEP=1
-# the same projector after a write that was cut off (fastboot mode was reached): rescue writes
-mkdir -p "$C/state/play6"; printf '%s\n' "serial=$SER" "ip=$ADDR" dev_lumen=0 step_check=done step_fastboot=x > "$C/state/play6/state"
-echo stock > "$FB/before_fastboot"; echo fastboot > "$FB/mode"
-inst 'WRITE\n\n' --device play6 rescue
-expect_rc 0; expect_cmds "$WRITE_KEEP"
-end
-
-begin rescue_not_confirmed
-echo fastboot > "$FB/mode"
-inst 'no\n' --device play6 rescue
-expect_rc 1; expect_cmds ""
-grep -q '^devices$' "$FB/fb.log" && fail "waited for the projector although not confirmed"
 end
 
 # ------------------------------------------------------------------ the Z9X commands the Play 6 does not need

@@ -7,7 +7,7 @@
 #                                                        installer under test (see below)
 # Part 1, Z9X golden logs: a fake Z9X (adb over the USB cable, fastbootd, getprop, getvar all) runs the Z9X
 # commands that do not need the codec files: check (stock, Lumen OS, refusals), flash (full wipe, --keep-data,
-# --wipe=factory-reset, cancelled), the resumed install, verify, backup, rescue, gsf, gapps, status, reset,
+# --wipe=factory-reset, cancelled), the resumed install, verify, backup, gsf, gapps, status, reset,
 # unknown command / option. For each case the exit status, the whole output and every adb and fastboot
 # command are compared byte for byte with tools/ota/test/golden/installer_z9x/<case>.txt, recorded from the
 # installer as it was before the profiles (2026-10-13). A fake 'date' and 'df' make the output repeatable.
@@ -26,7 +26,9 @@
 # fails or is not Google's file (fake curl), --platform-tools with too old tools or without mke2fs, adb that
 # hangs (a short time limit through LUMEN_TIMEOUT_MAX) and a fastboot flash that hangs.
 # Golden files re-recorded on 2026-10-29 for the own Platform-Tools (start-server/kill-server, one version
-# check per run, the Platform-Tools line); everything else in them is unchanged.
+# check per run, the Platform-Tools line); everything else in them is unchanged. z9x_all_resume_verify.txt
+# re-recorded on 2026-11-07 for z9x_new_install_if_stock: a resumed install first asks adb for the projector and
+# reads ro.boot.slot_suffix and ro.z9x.version (Lumen OS still there: nothing reset); the rest is unchanged.
 # Exit status 0 only when every case passes. Never touches anything outside its temp dir (and, with --record,
 # the golden folder).
 set -u
@@ -266,11 +268,6 @@ printf '%s\n' com.example.player org.example.notes > "$FB/packages3"
 inst '' backup
 golden; end
 
-begin z9x_rescue
-echo fastboot > "$FB/mode"; sed -i.bak -e '/product_b/d' -e '/system_ext_b/d' "$FB/getvar"
-inst 'WRITE\n' --no-blobs rescue
-golden; end
-
 begin z9x_gsf
 lumen; inst '' gsf
 golden; end
@@ -389,7 +386,7 @@ end
 
 begin help_lists_both
 bash "$INST/lumen-install.sh" --help > "$C/out" 2>&1; RC=$?
-expect_rc 0; expect_out "rescue     Lumen OS that does not start any more"; expect_out "--ip ADDR"; expect_out "--device z9x|play6"
+expect_rc 0; expect_out "verify     after the first boot: checks over USB"; expect_out "--ip ADDR"; expect_out "--device z9x|play6"
 grep -q '^set -u' "$C/out" && fail "--help prints past the header"
 end
 
@@ -450,11 +447,6 @@ begin p6pending_z9x_backup
 p6_pending; printf '%s\n' com.example.player org.example.notes > "$FB/packages3"
 inst '' backup
 golden_as z9x_backup; end
-
-begin p6pending_z9x_rescue
-p6_pending; echo fastboot > "$FB/mode"; sed -i.bak -e '/product_b/d' -e '/system_ext_b/d' "$FB/getvar"
-inst 'WRITE\n' --no-blobs rescue
-golden_as z9x_rescue; end
 
 begin p6pending_z9x_gsf
 p6_pending; lumen; inst '' gsf

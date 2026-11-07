@@ -309,23 +309,6 @@ The state of the Google services is shown by `bash lumen-install.sh --ip 192.168
 start twice in a row with the Google services, the next start goes without them; the `gapps` command shows
 that and offers to turn them on again (that needs "Rooted debugging" too).
 
-<a name="hb-rescue"></a>
-
-## Repair: Lumen OS does not start any more (your data stays)
-
-If Lumen OS cannot finish starting, after a few minutes the projector goes into fastboot mode by itself and
-waits there. `rescue` writes Lumen OS again into the slot the projector runs from, without erasing data:
-
-1. Download the image of the newest release for the HB, both `SHA256SUMS` files and the installer archive, as
-   in [step 2](#hb-files). An older system over newer data may not start.
-2. Run `bash lumen-install.sh --device hb rescue` (Windows: `lumen-install.cmd rescue -Device hb`) and type
-   `WRITE`.
-3. When the installer asks, connect the projector's USB port to the computer with the A-to-A cable.
-
-If an update over Wi-Fi is not finished yet, `rescue` writes nothing: a write would then destroy the way back.
-The installer shows the commands that keep everything (most often `fastboot set_active` to the other slot,
-then `fastboot reboot`) and leaves the projector in fastboot mode. Type them as shown.
-
 <a name="hb-problems"></a>
 
 ## If something goes wrong
@@ -355,7 +338,6 @@ then `fastboot reboot`) and leaves the projector in fastboot mode. Type them as 
 | first start | The start hangs with the cable in | Pull the cable and press the power button. |
 | first start | The lamp does not light up, the fans run, the projector restarts about every 20 seconds | Cut the power for 10 seconds and switch it on again. If it goes on like that, go [back to stock](#hb-stock) and write about it. |
 | verify | sys.z9x.blobs=… (a line with `!`) | Send the lines with `!` and the installer's output. |
-| rescue | 'rescue' wrote nothing: an update is not finished on slot … | Type the commands it showed above this line, see ["Repair"](#hb-rescue). The projector stays in fastboot mode. |
 | Google | … is not the MindTheGapps file this installer accepts | Download exactly the file of ["Adding Google services"](#hb-google) and do not change it. Nothing was written. |
 | Google | … and the Google services do not fit together, or not enough free space in super | Install Lumen OS without `--gapps-zip`. Nothing was written. Write about it and attach the installer's output. |
 | Google | this installer has no erofs-utils for this computer | Google services are installed from a Mac or a computer with Linux. Nothing was written. |
@@ -388,6 +370,7 @@ Usually the Google sign-in just works. If Google refuses it or Play says the dev
 3. Register it at [google.com/android/uncertified](https://www.google.com/android/uncertified), wait 10-30
    minutes and sign in in "Settings → Accounts".
 
+<a name="hb-rescue"></a>
 <a name="hb-stock"></a>
 
 ## Back to stock (erases everything)

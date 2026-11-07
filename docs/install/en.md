@@ -17,7 +17,7 @@ This page used to hold both guides. The sections moved:
 - Z9X: [vbmeta](z9x/en.md#vbmeta), [Install](z9x/en.md#flash), [Verify](z9x/en.md#verify),
   [Adding Google services](z9x/en.md#google), [Chromecast](z9x/en.md#chromecast),
   [Updates](z9x/en.md#updates), [Something went wrong](z9x/en.md#problems),
-  [Rescue](z9x/en.md#rescue), [Back to stock](z9x/en.md#stock).
+  [Back to stock](z9x/en.md#stock).
 
 <a name="play6"></a><a name="play6-need"></a><a name="play6-prepare"></a><a name="play6-files"></a><a name="play6-check"></a><a name="play6-install"></a><a name="play6-wifi"></a><a name="play6-verify"></a><a name="play6-google"></a><a name="play6-problems"></a><a name="play6-rescue"></a><a name="play6-stock"></a><a name="play6-changes"></a>
 
