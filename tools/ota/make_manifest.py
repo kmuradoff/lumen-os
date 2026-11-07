@@ -6,7 +6,7 @@
         --build-utc 1792490000 --image system.img --full DIR/lumen-os-1.0.1-full-ota.zip \
         [--delta DIR/lumen-os-1.0.1-from-1.0.0-ota.zip=lumen-1.0.0-20261008 ...] \
         --changelog changelog.json [--vendor v6.15.58 ...] [--blobs-set z9x-v61558-b ...] \
-        [--min-version-code 10000] [--channel public-nogms|public-beta|public|stable] [--repo kmuradoff/lumen-os] --out DIR
+        [--min-version-code 10000] [--channel public-nogms|public-beta|public|stable] [--repo Project-Lumen-OS/lumen-os] --out DIR
 
 Writes DIR/update-<channel>.json and DIR/update-<channel>.json.sig: RSA-4096 PKCS#1 v1.5 SHA-256
 over the exact JSON bytes with ~/.lumen-keys/ota.pk8 (verified before writing). The updater checks
@@ -287,7 +287,7 @@ def main():
     ap.add_argument("--blobs-set", action="append", default=[])
     ap.add_argument("--min-version-code", type=int, default=10000)
     ap.add_argument("--channel", default="stable", choices=CHANNELS)
-    ap.add_argument("--repo", default="kmuradoff/lumen-os")
+    ap.add_argument("--repo", default="Project-Lumen-OS/lumen-os")
     ap.add_argument("--out", required=True)
     ap.add_argument("--keys", default=os.environ.get("KEYS_DIR", os.path.expanduser("~/.lumen-keys")))
     a = ap.parse_args()

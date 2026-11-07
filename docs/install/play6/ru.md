@@ -101,7 +101,7 @@ XGIMI она не трогает.
 
 ## 2. Скачайте файлы (5 мин)
 
-1. Откройте [страницу релизов](https://github.com/kmuradoff/lumen-os/releases) и выберите релиз для
+1. Откройте [страницу релизов](https://github.com/Project-Lumen-OS/lumen-os/releases) и выберите релиз для
    XGIMI Play 6: в его названии есть Play 6, а тег начинается с `play6-`. Релиз с пометкой «Latest» это
    релиз для Z9X.
 2. Скачайте четыре файла: `lumen-os-play6-<версия>-nogms-system.img`, `SHA256SUMS`, `SHA256SUMS.sig` и

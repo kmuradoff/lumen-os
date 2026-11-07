@@ -128,5 +128,5 @@ build/selfbuild/release/installer/lumen-install.sh --image build/selfbuild/relea
   (`libcodec2_vndk`, `libandroid_servers`, TvInput, AirPlay) проверяются ваши. С 1.0.3 сборка ещё проверяет,
   что в вашей `libandroid_servers` есть исправление для HDMI.
 
-Если что-то не собирается, напишите в [Issues](https://github.com/kmuradoff/lumen-os/issues) и
+Если что-то не собирается, напишите в [Issues](https://github.com/Project-Lumen-OS/lumen-os/issues) и
 приложите вывод команды.

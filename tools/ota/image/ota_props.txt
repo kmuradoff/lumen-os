@@ -26,4 +26,4 @@ ro.z9x.ota.gate=1
 ro.z9x.rescue=1
 # update manifest: the update channel, the fixed pre-release tag z9x (since 1.0.8; images up to 1.0.7 read
 # releases/latest/download). VARIANT=public / GMS=0 replace the file name (update-public[-nogms].json).
-ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/z9x/update-stable.json
+ro.z9x.ota.manifest_url=https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x/update-stable.json

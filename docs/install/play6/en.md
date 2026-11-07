@@ -103,7 +103,7 @@ the installer says so when it finds a USB device without a driver.
 
 ## 2. Download the files (5 min)
 
-1. Open the [Releases page](https://github.com/kmuradoff/lumen-os/releases) and choose the release for
+1. Open the [Releases page](https://github.com/Project-Lumen-OS/lumen-os/releases) and choose the release for
    the XGIMI Play 6: its name says Play 6 and its tag starts with `play6-`. The release marked "Latest" is
    the Z9X one.
 2. Download four files: `lumen-os-play6-<version>-nogms-system.img`, `SHA256SUMS`, `SHA256SUMS.sig` and

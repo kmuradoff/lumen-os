@@ -128,5 +128,5 @@ build/selfbuild/release/installer/lumen-install.sh --image build/selfbuild/relea
   AirPlay), yours are checked. Since 1.0.3 the build also checks that your `libandroid_servers` carries the
   HDMI fix.
 
-If something does not build, open an [issue](https://github.com/kmuradoff/lumen-os/issues) with the
+If something does not build, open an [issue](https://github.com/Project-Lumen-OS/lumen-os/issues) with the
 command output.

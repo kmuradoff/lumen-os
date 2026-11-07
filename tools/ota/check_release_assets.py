@@ -447,9 +447,9 @@ def self_test_images(td):
         print("self-test skip: image cases (no mkfs.erofs / dump.erofs)")
         return 0
     good = ("ro.z9x.variant=public\nro.z9x.gms=0\nro.z9x.build_id=lumen-1.0.1-20261009enp\n"
-            "ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/z9x/update-public-nogms.json\n")
+            "ro.z9x.ota.manifest_url=https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x/update-public-nogms.json\n")
     gms = ("ro.z9x.variant=public\nro.z9x.build_id=lumen-1.0.1-20261009ep\n"
-           "ro.z9x.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/z9x/update-public.json\n")
+           "ro.z9x.ota.manifest_url=https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x/update-public.json\n")
     # what images up to 1.0.7 read: no new release image may
     latest = good.replace("/releases/download/z9x/", "/releases/latest/download/")
 
@@ -476,7 +476,7 @@ def self_test_images(td):
         ("no-Google props, name without -nogms-", mkimg("lumen-os-9.9.5-system.img", good), False, "says the other"),
         ("Google edition image", mkimg("lumen-os-9.9.4-system.img", gms), False, "never published"),
         ("no-Google image reading releases/latest", mkimg("lumen-os-9.9.3-nogms-system.img", latest), False,
-         "a published image reads https://github.com/kmuradoff/lumen-os/releases/download/z9x/update-public-nogms.json"),
+         "a published image reads https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x/update-public-nogms.json"),
     ]
     fails = 0
     for what, path, want_ok, why in cases:

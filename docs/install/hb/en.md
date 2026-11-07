@@ -67,7 +67,7 @@ The names of the menu items on stock may differ a little, depending on the langu
 
 ## 2. Download the files (5 min)
 
-1. Open the [releases page](https://github.com/kmuradoff/lumen-os/releases) on GitHub and pick the newest
+1. Open the [releases page](https://github.com/Project-Lumen-OS/lumen-os/releases) on GitHub and pick the newest
    release for the XGIMI Z9X HB: its tag starts with `z9x-hb-`. Download only from there; I do not check
    copies on forums and file hosts.
 2. Download four files from it: the image `lumen-os-hb-<version>-nogms-system.img`, `SHA256SUMS`,
@@ -214,7 +214,7 @@ The files go into a small partition `z9x_blobs` (4 MB); a copy stays on the comp
 `~/Lumen-backup/hb-blobs-<serial number>.img`.
 
 If the installer says that a file does not match its checksum, the files of your firmware are unknown to it.
-Write in the [issues on GitHub](https://github.com/kmuradoff/lumen-os/issues) and attach the installer's
+Write in the [issues on GitHub](https://github.com/Project-Lumen-OS/lumen-os/issues) and attach the installer's
 output. The system can be installed without these files too, with the option `--no-blobs`, but then you do
 not get what is described above.
 
@@ -346,7 +346,7 @@ The installer keeps the install progress in `~/.lumen-installer/hb/`. The comman
 shows it, `bash lumen-install.sh --device hb reset` resets it. They do not touch the projector.
 
 If nothing helps, write in the [4PDA topic](https://4pda.to/forum/index.php?showtopic=1121837) or in the
-[issues on GitHub](https://github.com/kmuradoff/lumen-os/issues) and attach:
+[issues on GitHub](https://github.com/Project-Lumen-OS/lumen-os/issues) and attach:
 
 - the XGIMI firmware version and the Lumen OS version, if it is installed already;
 - what you did and at which step everything stopped;

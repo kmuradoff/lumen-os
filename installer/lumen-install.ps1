@@ -68,7 +68,7 @@ $Here = $PSScriptRoot
 $StateDir = if ($env:LUMEN_STATE_DIR) { $env:LUMEN_STATE_DIR } else { Join-Path $HOME ".lumen-installer" }
 $BackupRoot = if ($env:LUMEN_BACKUP_DIR) { $env:LUMEN_BACKUP_DIR } else { Join-Path $HOME "Lumen-backup" }
 $ModelCode = "G0082"; $Board = "mt9952"; $FbProduct = "mt5877"; $VendorOk = @("v6.15.58", "v6.15.62", "v6.15.19")
-$GuideBase = "https://github.com/kmuradoff/lumen-os/blob/main/docs/install"   # one guide per projector and language
+$GuideBase = "https://github.com/Project-Lumen-OS/lumen-os/blob/main/docs/install"   # one guide per projector and language
 $GuideEn = "$GuideBase/z9x/en.md"
 $GuideRu = "$GuideBase/z9x/ru.md"
 $GoogleGsi = "https://source.android.com/docs/core/tests/vts/gsi#flashing-gsis"

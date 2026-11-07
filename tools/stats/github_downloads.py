@@ -19,7 +19,7 @@ import re
 import subprocess
 import sys
 
-REPO = "kmuradoff/lumen-os"
+REPO = "Project-Lumen-OS/lumen-os"
 KINDS = [
     ("sig", re.compile(r"\.sig$")),
     ("manifest", re.compile(r"^update-.*\.json$")),

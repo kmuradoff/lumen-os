@@ -20,7 +20,7 @@ public final class ChannelTest {
     }
 
     public static void main(String[] a) {
-        String b = "https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/";
+        String b = "https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x-hb/";
         eq("hb public", "update-hb-nogms.json", Ota.channelFile(b + "update-hb-nogms.json"));
         eq("hb test units", "update-hb-test.json", Ota.channelFile(b + "update-hb-test.json"));
         eq("query string", "update-hb-nogms.json", Ota.channelFile(b + "update-hb-nogms.json?x=1"));

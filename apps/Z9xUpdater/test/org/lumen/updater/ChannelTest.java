@@ -19,9 +19,9 @@ public final class ChannelTest {
 
     public static void main(String[] a) {
         // the channel tag z9x (images from 1.0.8 on, tools/lumen_v1.sh MANIFEST_BASE)
-        String b = "https://github.com/kmuradoff/lumen-os/releases/download/z9x/";
+        String b = "https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x/";
         // what images up to 1.0.7 read: the same file names on the Latest release
-        String old = "https://github.com/kmuradoff/lumen-os/releases/latest/download/";
+        String old = "https://github.com/Project-Lumen-OS/lumen-os/releases/latest/download/";
         eq("1.0.7 private", "update-stable.json", Ota.channelFile(old + "update-stable.json"));
         eq("1.0.7 no-Google", "update-public-nogms.json", Ota.channelFile(old + "update-public-nogms.json"));
         eq("private", "update-stable.json", Ota.channelFile(b + "update-stable.json"));
@@ -39,7 +39,7 @@ public final class ChannelTest {
         eq("guard nogms", true, ("update-" + "public-nogms" + ".json").equals(Ota.channelFile(b + "update-public-nogms.json")));
         eq("guard crossed", false, ("update-" + "public" + ".json").equals(Ota.channelFile(b + "update-public-nogms.json")));
         // the Z9X guide links: docs/install/z9x/<lang>.md with the anchors <a name="vbmeta"> and <a name="rescue">
-        String g = "https://github.com/kmuradoff/lumen-os/blob/main/docs/install/z9x/";
+        String g = "https://github.com/Project-Lumen-OS/lumen-os/blob/main/docs/install/z9x/";
         eq("guide vbmeta en", g + "en.md#vbmeta", Ota.GUIDE_VBMETA_EN);
         eq("guide vbmeta ru", g + "ru.md#vbmeta", Ota.GUIDE_VBMETA_RU);
         eq("guide rescue en", g + "en.md#rescue", Ota.GUIDE_RESCUE_EN);

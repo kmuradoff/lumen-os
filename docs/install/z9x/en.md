@@ -18,7 +18,7 @@ firmware from a USB stick, see [Back to stock](#stock).
 > [!CAUTION]
 > Read the whole guide once, then do the steps in order. Do not mix in commands from other guides:
 > some of them can brick a Z9X. If anything is unclear, stop and ask in
-> [GitHub issues](https://github.com/kmuradoff/lumen-os/issues).
+> [GitHub issues](https://github.com/Project-Lumen-OS/lumen-os/issues).
 >
 > Never do these on a Z9X:
 > - `fastboot -w` or `fastboot erase`. The projector then hangs at boot and only the USB-stick stock
@@ -89,9 +89,9 @@ the installer looks for a USB device without a driver and says how to install it
 
 ## 2. Download the files (5 min)
 
-1. Open the [Releases page](https://github.com/kmuradoff/lumen-os/releases) on GitHub. Download only
+1. Open the [Releases page](https://github.com/Project-Lumen-OS/lumen-os/releases) on GitHub. Download only
    from there. We do not check or support copies on forums or file hosts.
-2. From the latest Z9X release (now [Lumen OS 1.0.9](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-1.0.9)),
+2. From the latest Z9X release (now [Lumen OS 1.0.9](https://github.com/Project-Lumen-OS/lumen-os/releases/tag/z9x-1.0.9)),
    download four files: `lumen-os-1.0.9-nogms-system.img`, `SHA256SUMS`, `SHA256SUMS.sig` and
    `lumen-os-1.0.9-installer.zip`.
 3. Unpack the installer zip. Put the image and both `SHA256SUMS` files next to `lumen-install.sh`.
@@ -256,7 +256,7 @@ Kinopoisk HD. A copy stays on the computer in `~/Lumen-backup/blobs-<serial>.img
 If the installer says a file "does not match the allow-list", it does not know your firmware's files.
 You can still install without them by adding `--no-blobs`, but there will be no sound and no protected
 video. Only do that to look around. Better open a
-[GitHub issue](https://github.com/kmuradoff/lumen-os/issues) first and attach the installer output.
+[GitHub issue](https://github.com/Project-Lumen-OS/lumen-os/issues) first and attach the installer output.
 
 <a name="one-pass"></a>
 
@@ -513,7 +513,7 @@ The installer keeps its progress in `~/.lumen-installer/`. `bash lumen-install.s
 
 ### If nothing helped
 
-Open an [issue on GitHub](https://github.com/kmuradoff/lumen-os/issues) and attach:
+Open an [issue on GitHub](https://github.com/Project-Lumen-OS/lumen-os/issues) and attach:
 
 - the XGIMI firmware version, and the Lumen OS version if it is installed;
 - what you did and at which step it stopped;

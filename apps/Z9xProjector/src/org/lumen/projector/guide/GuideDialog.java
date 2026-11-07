@@ -20,7 +20,7 @@ import java.util.Locale;
  * code to open on a phone, and its address. Nothing is downloaded on the projector.
  */
 public final class GuideDialog {
-    private static final String BASE = "https://github.com/kmuradoff/lumen-os/blob/main/docs/guide/";
+    private static final String BASE = "https://github.com/Project-Lumen-OS/lumen-os/blob/main/docs/guide/";
 
     private GuideDialog() {}
 

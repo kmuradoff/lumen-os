@@ -19,9 +19,9 @@ Android TV 14 для проекторов XGIMI на основе LineageOS 21.
 
 | Проектор | Состояние | Последний релиз | Инструкция |
 |---|---|---|---|
-| XGIMI Z9X | стабильная | [Lumen OS 1.0.9](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-1.0.9) | [Русский](docs/install/z9x/ru.md), [English](docs/install/z9x/en.md) |
-| XGIMI Play 6 | стабильная | [Lumen OS 1.0.7 для Play 6](https://github.com/kmuradoff/lumen-os/releases/tag/play6-1.0.7) | [Русский](docs/install/play6/ru.md), [English](docs/install/play6/en.md) |
-| XGIMI Z9X HB | стабильная | [Lumen OS 1.0.9 для Z9X HB](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-hb-1.0.9) | [Русский](docs/install/hb/ru.md), [English](docs/install/hb/en.md) |
+| XGIMI Z9X | стабильная | [Lumen OS 1.0.9](https://github.com/Project-Lumen-OS/lumen-os/releases/tag/z9x-1.0.9) | [Русский](docs/install/z9x/ru.md), [English](docs/install/z9x/en.md) |
+| XGIMI Play 6 | стабильная | [Lumen OS 1.0.7 для Play 6](https://github.com/Project-Lumen-OS/lumen-os/releases/tag/play6-1.0.7) | [Русский](docs/install/play6/ru.md), [English](docs/install/play6/en.md) |
+| XGIMI Z9X HB | стабильная | [Lumen OS 1.0.9 для Z9X HB](https://github.com/Project-Lumen-OS/lumen-os/releases/tag/z9x-hb-1.0.9) | [Русский](docs/install/hb/ru.md), [English](docs/install/hb/en.md) |
 
 У каждого проектора свои файлы релиза, подписанные своим ключом. Установщик не примет образ для другого
 проектора и прошивку XGIMI, которую он не знает.
@@ -105,7 +105,7 @@ Google. Не запустятся приложения, которым нужн�
 - Инструкция по установке: [XGIMI Z9X](docs/install/z9x/ru.md), [XGIMI Play 6](docs/install/play6/ru.md)
 - Install guide (English): [XGIMI Z9X](docs/install/z9x/en.md), [XGIMI Play 6](docs/install/play6/en.md)
 
-Скачивайте только со [страницы релизов](https://github.com/kmuradoff/lumen-os/releases) этого
+Скачивайте только со [страницы релизов](https://github.com/Project-Lumen-OS/lumen-os/releases) этого
 репозитория. Релиз с пометкой «Latest» для Z9X. Тег релиза для Play 6 начинается с `play6-`. В каждом релизе есть `SHA256SUMS` и `SHA256SUMS.sig`, установщик проверяет оба
 и другой образ не примет. Копии на форумах и файлообменниках я не проверяю.
 
@@ -154,7 +154,7 @@ IP Geolocation by [DB-IP](https://db-ip.com).
 ## Помощь и сообщения об ошибках
 
 Пишите в [Telegram-канал](https://t.me/projector_lumenos), в [тему XGIMI Z9X на 4PDA](https://4pda.to/forum/index.php?showtopic=1121837) или в
-[issues на GitHub](https://github.com/kmuradoff/lumen-os/issues). Укажите модель проектора, версию
+[issues на GitHub](https://github.com/Project-Lumen-OS/lumen-os/issues). Укажите модель проектора, версию
 прошивки XGIMI, версию Lumen OS («Настройки → Настройки устройства → Об устройстве») и что вы делали
 перед проблемой, и приложите весь текст из терминала.
 
@@ -172,7 +172,7 @@ Lumen OS собирается из TV GSI LineageOS 21, приложений Lum
 ним пока нет.
 
 ```
-git clone --recurse-submodules https://github.com/kmuradoff/lumen-os.git
+git clone --recurse-submodules https://github.com/Project-Lumen-OS/lumen-os.git
 ```
 
 ## Благодарности

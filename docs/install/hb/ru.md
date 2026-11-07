@@ -68,7 +68,7 @@ Windows может понадобиться [Google USB Driver](https://develope
 
 ## 2. Скачайте файлы (5 мин)
 
-1. Откройте [страницу релизов](https://github.com/kmuradoff/lumen-os/releases) на GitHub и выберите самый
+1. Откройте [страницу релизов](https://github.com/Project-Lumen-OS/lumen-os/releases) на GitHub и выберите самый
    новый релиз для XGIMI Z9X HB: его тег начинается с `z9x-hb-`. Скачивайте только оттуда, копии на форумах
    и файлообменниках я не проверяю.
 2. Скачайте из него четыре файла: образ `lumen-os-hb-<версия>-nogms-system.img`, `SHA256SUMS`,
@@ -214,7 +214,7 @@ bash lumen-install.sh --lang ru --ip 192.168.x.y
 `~/Lumen-backup/hb-blobs-<серийный номер>.img`.
 
 Если установщик пишет, что файл не совпадает с контрольной суммой, значит, файлы вашей прошивки ему
-неизвестны. Напишите в [issues на GitHub](https://github.com/kmuradoff/lumen-os/issues) и приложите вывод
+неизвестны. Напишите в [issues на GitHub](https://github.com/Project-Lumen-OS/lumen-os/issues) и приложите вывод
 установщика. Систему можно поставить и без этих файлов, с параметром `--no-blobs`, но тогда не будет
 того, что написано выше.
 
@@ -345,7 +345,7 @@ bash lumen-install.sh --lang ru --ip 192.168.x.y gapps --zip MindTheGapps-14.0.0
 покажет его, `bash lumen-install.sh --device hb reset` сбросит. Проектор они не трогают.
 
 Если ничего не помогло, напишите в [тему на 4PDA](https://4pda.to/forum/index.php?showtopic=1121837) или в
-[issues на GitHub](https://github.com/kmuradoff/lumen-os/issues) и приложите:
+[issues на GitHub](https://github.com/Project-Lumen-OS/lumen-os/issues) и приложите:
 
 - версию прошивки XGIMI и версию Lumen OS, если она уже стоит;
 - что вы делали и на каком шаге всё остановилось;

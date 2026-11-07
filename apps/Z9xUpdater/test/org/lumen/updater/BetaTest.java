@@ -16,7 +16,7 @@ import java.util.List;
  */
 public final class BetaTest {
     private static int failed, passed;
-    private static final String LATEST = "https://github.com/kmuradoff/lumen-os/releases/download/z9x/";
+    private static final String LATEST = "https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x/";
     private static final String NOGMS = LATEST + "update-public-nogms.json";
     private static final String BETA = LATEST + "update-public-beta.json";
     private static final int M = Channels.MISSING;

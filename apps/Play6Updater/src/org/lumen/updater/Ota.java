@@ -19,7 +19,7 @@ public final class Ota {
     public static final String TAG = "LumenUpdater";
     public static final String VERSION = "1.0";
     public static final String AUTHOR = "kmuradoff";
-    public static final String REPO = "kmuradoff/lumen-os";
+    public static final String REPO = "Project-Lumen-OS/lumen-os";
     public static final String PROJECT_URL = "https://github.com/" + REPO;
     /** A fixed release tag whose assets each Play 6 release replaces (never the Z9X "latest" release). */
     public static final String DEFAULT_MANIFEST_URL =

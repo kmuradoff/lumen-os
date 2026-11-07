@@ -19,9 +19,9 @@ News, new versions and answers to questions: the Telegram channel [@projector_lu
 
 | Projector | Status | Latest release | Install guide |
 |---|---|---|---|
-| XGIMI Z9X | stable | [Lumen OS 1.0.9](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-1.0.9) | [English](docs/install/z9x/en.md), [Русский](docs/install/z9x/ru.md) |
-| XGIMI Play 6 | stable | [Lumen OS 1.0.7 for the Play 6](https://github.com/kmuradoff/lumen-os/releases/tag/play6-1.0.7) | [English](docs/install/play6/en.md), [Русский](docs/install/play6/ru.md) |
-| XGIMI Z9X HB | stable | [Lumen OS 1.0.9 for the Z9X HB](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-hb-1.0.9) | [English](docs/install/hb/en.md), [Русский](docs/install/hb/ru.md) |
+| XGIMI Z9X | stable | [Lumen OS 1.0.9](https://github.com/Project-Lumen-OS/lumen-os/releases/tag/z9x-1.0.9) | [English](docs/install/z9x/en.md), [Русский](docs/install/z9x/ru.md) |
+| XGIMI Play 6 | stable | [Lumen OS 1.0.7 for the Play 6](https://github.com/Project-Lumen-OS/lumen-os/releases/tag/play6-1.0.7) | [English](docs/install/play6/en.md), [Русский](docs/install/play6/ru.md) |
+| XGIMI Z9X HB | stable | [Lumen OS 1.0.9 for the Z9X HB](https://github.com/Project-Lumen-OS/lumen-os/releases/tag/z9x-hb-1.0.9) | [English](docs/install/hb/en.md), [Русский](docs/install/hb/ru.md) |
 
 Each projector has its own release files, signed with its own key. The installer refuses an image for
 another projector and any XGIMI firmware it does not know.
@@ -102,7 +102,7 @@ computer over Wi-Fi and needs the cable only for the write itself.
 - Install guide: [XGIMI Z9X](docs/install/z9x/en.md), [XGIMI Play 6](docs/install/play6/en.md)
 - Инструкция по установке: [XGIMI Z9X](docs/install/z9x/ru.md), [XGIMI Play 6](docs/install/play6/ru.md)
 
-Download only from this repository's [Releases](https://github.com/kmuradoff/lumen-os/releases). The
+Download only from this repository's [Releases](https://github.com/Project-Lumen-OS/lumen-os/releases). The
 release marked Latest is for the Z9X. The Play 6 release has a tag that starts with `play6-`. Every release has `SHA256SUMS` and `SHA256SUMS.sig`; the installer checks both and
 refuses anything else. Copies on forums and file hosts are not ours.
 
@@ -149,7 +149,7 @@ also deletes the install id; turning it on again starts with a new one.
 
 ## Help and bug reports
 
-Open an [issue](https://github.com/kmuradoff/lumen-os/issues) and include the projector model, the XGIMI
+Open an [issue](https://github.com/Project-Lumen-OS/lumen-os/issues) and include the projector model, the XGIMI
 firmware version, the Lumen OS version (Settings > Device Preferences > About), what you did right before
 the problem and the full installer output. Russian-speaking users also talk about Lumen OS in the
 [XGIMI Z9X thread on 4PDA](https://4pda.to/forum/index.php?showtopic=1121837) and in the Telegram channel
@@ -168,7 +168,7 @@ signed image, with your own keys: [docs/selfbuild](docs/selfbuild/en.md). That g
 Play 6 build scripts are in `tools/play6` and `lineage/patches/play6`, without a step-by-step guide yet.
 
 ```
-git clone --recurse-submodules https://github.com/kmuradoff/lumen-os.git
+git clone --recurse-submodules https://github.com/Project-Lumen-OS/lumen-os.git
 ```
 
 ## Thanks

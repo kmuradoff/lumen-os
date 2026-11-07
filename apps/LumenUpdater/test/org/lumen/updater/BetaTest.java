@@ -16,7 +16,7 @@ import java.util.List;
  */
 public final class BetaTest {
     private static int failed, passed;
-    private static final String TAG_URL = "https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/";
+    private static final String TAG_URL = "https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x-hb/";
     private static final String NOGMS = TAG_URL + "update-hb-nogms.json";
     private static final String TEST = TAG_URL + "update-hb-test.json";
     private static final List<String> ANY = Collections.emptyList();

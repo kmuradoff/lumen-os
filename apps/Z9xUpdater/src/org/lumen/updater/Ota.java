@@ -15,7 +15,7 @@ public final class Ota {
     public static final String TAG = "LumenUpdater";
     public static final String VERSION = "1.0";
     public static final String AUTHOR = "kmuradoff";
-    public static final String REPO = "kmuradoff/lumen-os";
+    public static final String REPO = "Project-Lumen-OS/lumen-os";
     public static final String PROJECT_URL = "https://github.com/" + REPO;
     /**
      * Used only when ro.z9x.ota.manifest_url is missing or not https (every Lumen image sets it): the published

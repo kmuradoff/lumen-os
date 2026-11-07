@@ -142,4 +142,4 @@ Wi-Fi, ставится во второй слот и ждёт вашего со
 - Нет звука по HDMI на саундбаре: проверьте «Звук → eARC» и HDMI-CEC в «Все настройки».
 - Нет картинки с HDMI после смены режима: «Изображение → Режим HDMI → Совместимый».
 - Вопросы и ошибки: [тема на 4PDA](https://4pda.to/forum/index.php?showtopic=1121837) или
-  [issues на GitHub](https://github.com/kmuradoff/lumen-os/issues).
+  [issues на GitHub](https://github.com/Project-Lumen-OS/lumen-os/issues).

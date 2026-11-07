@@ -140,4 +140,4 @@ the second slot and waits for your OK. Your data stays.
 - No HDMI sound on a soundbar: check "Sound > eARC" and HDMI-CEC in "All settings".
 - No HDMI picture after changing the mode: "Picture > HDMI mode > Compatible".
 - Questions and bugs: the [4PDA thread](https://4pda.to/forum/index.php?showtopic=1121837) or
-  [GitHub issues](https://github.com/kmuradoff/lumen-os/issues).
+  [GitHub issues](https://github.com/Project-Lumen-OS/lumen-os/issues).

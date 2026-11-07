@@ -150,7 +150,7 @@ if kind == "hb":
     prop = {"ro.adb.secure": "1", "persist.sys.usb.config": "none", "ro.lumen.device": "goat_elegant",
             "ro.lumen.version": ver, "ro.lumen.version_code": str(code), "ro.lumen.build_id": "lumen-hb-%s-%s" % (ver, seed),
             "ro.lumen.ota.device": "hb", "ro.lumen.ota.gate": "1",
-            "ro.lumen.ota.manifest_url": "https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/update-%s.json" % chan,
+            "ro.lumen.ota.manifest_url": "https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x-hb/update-%s.json" % chan,
             "ro.product.ab_ota_partitions": "armfw,boot,bootdata,dtbo,optee,tvconfig,tvservice,vbmeta_system,xgimiconfig"}
     for x in ("system/etc/lumen", "system/etc/xgimi", "system/etc/security", "system/etc/default-permissions",
               "system/bin", "system/app/LumenUpdater", "system/app/Z9xAirPlay"):
@@ -174,7 +174,7 @@ if kind == "hb":
     os.chmod(os.path.join(d, "system/bin/bootctl"), 0o755)
 else:
     prop = {"ro.z9x.variant": "public", "ro.z9x.gms": "0", "ro.z9x.version": ver, "ro.z9x.build_id": "lumen-%s-%s" % (ver, seed),
-            "ro.z9x.ota.manifest_url": "https://github.com/kmuradoff/lumen-os/releases/latest/download/update-public-nogms.json"}
+            "ro.z9x.ota.manifest_url": "https://github.com/Project-Lumen-OS/lumen-os/releases/latest/download/update-public-nogms.json"}
 # /PATH=FILE: put FILE at PATH of the image instead (/PATH=- removes it), for the scanner refusals
 for k in [k for k in extra if k.startswith("/")]:
     v, dst = extra.pop(k), os.path.join(d, k[1:])
@@ -514,7 +514,7 @@ import json; m = json.load(open('$M/update-hb-nogms.json'))
 assert m['device'] == 'hb' and m['channel'] == 'hb-nogms' and m['version'] == '1.0.8-beta1' and m['version_code'] == 1000801, m
 assert m['requires']['vendor_incremental'] == ['v6.16.24'] and m['requires']['min_version_code'] == 1000000
 assert m['requires']['blobs_set'] == ['hb-v61624-a'], m['requires']
-base = 'https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb-1.0.8-beta1/'
+base = 'https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x-hb-1.0.8-beta1/'
 assert all(p['url'].startswith(base) and p['metadata_url'].startswith(base) for p in m['packages'])
 assert [p['type'] for p in m['packages']] == ['delta', 'full']
 " > "$OUT" 2>&1 && ok "the manifest: device hb, O1 code, v6.16.24, blobs set, URLs on z9x-hb-1.0.8-beta1" || bad "manifest content"
@@ -661,7 +661,7 @@ for n in ('ota', 'ota_next'): z.writestr(zipfile.ZipInfo(n + '.x509.pem', (2009,
   py -c "
 import json; json.dump({'schema': 1, 'device': 'z9x', 'channel': 'public-nogms', 'version': '1.0.8', 'version_code': 10010,
   'build_id': 'lumen-1.0.8-x', 'build_utc': 1, 'requires': {}, 'changelog': {'en': 'x'}, 'packages': [{'type': 'full',
-  'url': 'https://github.com/kmuradoff/lumen-os/releases/download/z9x-1.0.8/lumen-os-1.0.8-nogms-full-ota.zip', 'size': 10,
+  'url': 'https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x-1.0.8/lumen-os-1.0.8-nogms-full-ota.zip', 'size': 10,
   'sha256': '0' * 64, 'payload_offset': 1, 'payload_size': 1, 'metadata_url': 'https://x/y', 'payload_properties': []}]},
   open('$WORK/zm/update-public-nogms.json', 'w'), indent=2)"
   openssl dgst -sha256 -keyform DER -sign "$Z9K/ota.pk8" -out "$WORK/zm/update-public-nogms.json.sig" "$WORK/zm/update-public-nogms.json"
@@ -716,7 +716,7 @@ def rel(t):
 a = sys.argv[1:]
 if a[:1] == ["api"]:
     path = [x for x in a[1:] if x.startswith("repos/")][0]
-    if not path.startswith("repos/kmuradoff/lumen-os/"): sys.exit("gh: unknown repo")
+    if not path.startswith("repos/Project-Lumen-OS/lumen-os/"): sys.exit("gh: unknown repo")
     if path.endswith("/releases/latest"):
         print(json.dumps(rel(meta["latest"])))
     elif "/releases?" in path and "--paginate" in a:
@@ -725,7 +725,7 @@ if a[:1] == ["api"]:
     else: sys.exit("gh: unknown api call")
 elif a[:2] == ["release", "download"]:
     tag, d = a[2], a[a.index("--dir") + 1]
-    if a[a.index("--repo") + 1] != "kmuradoff/lumen-os": sys.exit("gh: unknown repo")
+    if a[a.index("--repo") + 1] != "Project-Lumen-OS/lumen-os": sys.exit("gh: unknown repo")
     pats = [a[i + 1] for i, x in enumerate(a) if x == "--pattern"]
     for p in pats:
         if not os.path.isfile(os.path.join(F, tag, p)): sys.exit("gh: no asset %s on %s" % (p, tag))
@@ -779,7 +779,7 @@ EOF
   printf '0123456789' > "$GF/z9x-1.0.8/lumen-os-1.0.8-nogms-full-ota.zip"
   printf 'meta' > "$GF/z9x-1.0.8/lumen-os-1.0.8-nogms-full-payload_metadata.bin"
   py -c "
-import json; b = 'https://github.com/kmuradoff/lumen-os/releases/download/z9x-1.0.8/'
+import json; b = 'https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x-1.0.8/'
 json.dump({'schema': 1, 'device': 'z9x', 'channel': 'public-nogms', 'version': '1.0.8', 'version_code': 10010,
   'build_id': 'lumen-1.0.8-20261105anp', 'build_utc': 1, 'requires': {}, 'changelog': {'en': 'x'}, 'packages': [{'type': 'full',
   'url': b + 'lumen-os-1.0.8-nogms-full-ota.zip', 'size': 10, 'sha256': '0' * 64, 'payload_offset': 1, 'payload_size': 1,
@@ -839,7 +839,7 @@ json.dump({'schema': 1, 'device': 'z9x', 'channel': 'public-nogms', 'version': '
   printf 'meta\n' > "$GF/z9x-$BV/lumen-os-$BV-nogms-full-payload_metadata.bin"
   zbeta() {   # $1 channel, $2 the key that signs, $3 the version (default $BV)
     py -c "
-import json; v = '${3:-$BV}'; b = 'https://github.com/kmuradoff/lumen-os/releases/download/z9x-' + v + '/'
+import json; v = '${3:-$BV}'; b = 'https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x-' + v + '/'
 json.dump({'schema': 1, 'device': 'z9x', 'channel': '$1', 'version': v, 'version_code': 10012,
   'build_id': 'lumen-1.0.10-x', 'build_utc': 1, 'requires': {}, 'changelog': {'en': 'x'}, 'packages': [{'type': 'full',
   'url': b + 'lumen-os-$BV-nogms-full-ota.zip', 'size': 10, 'sha256': '0' * 64, 'payload_offset': 1,

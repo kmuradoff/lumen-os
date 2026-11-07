@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.join(GSI, "tools", "sign"))
 import make_manifest as mm  # noqa: E402
 import make_ota as mo  # noqa: E402
 
-BASE = "https://github.com/kmuradoff/lumen-os/releases/download/z9x/"
+BASE = "https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x/"
 NOGMS = ("ro.z9x.variant=public\nro.z9x.gms=0\nro.z9x.build_id=lumen-1.0.1-20261009enp\n"
          "ro.z9x.ota.manifest_url=" + BASE + "update-public-nogms.json\n")
 GMS = ("ro.z9x.variant=public\nro.z9x.build_id=lumen-1.0.1-20261009ep\n"
@@ -137,7 +137,7 @@ def main():
         expect("make_manifest: gms package in public-beta", dies(mm.check_edition, ng, None, [zg], "public-beta"), True,
                "lumen-edition=gms")
         expect("make_manifest: public-beta is a channel", ("public-beta" not in mm.CHANNELS, str(mm.CHANNELS)), False)
-        r = "kmuradoff/lumen-os"
+        r = "Project-Lumen-OS/lumen-os"
         expect("make_manifest: beta packages on z9x-<version>-betaN",
                (mm.package_base(r, "public-beta", "1.0.10-beta1") != "https://github.com/" + r
                 + "/releases/download/z9x-1.0.10-beta1/", mm.package_base(r, "public-beta", "1.0.10-beta1")), False)

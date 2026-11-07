@@ -18,7 +18,7 @@ public final class ChannelTest {
     }
 
     public static void main(String[] a) {
-        String b = "https://github.com/kmuradoff/lumen-os/releases/latest/download/";
+        String b = "https://github.com/Project-Lumen-OS/lumen-os/releases/latest/download/";
         eq("private", "update-stable.json", Ota.channelFile(b + "update-stable.json"));
         eq("public", "update-public.json", Ota.channelFile(b + "update-public.json"));
         eq("no-Google", "update-public-nogms.json", Ota.channelFile(b + "update-public-nogms.json"));

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """GitHub download counts for the private statistics page on the VPS (tools/stats/server/web): reads the public
-releases of kmuradoff/lumen-os without a token (one request per run, an hourly timer) and writes
+releases of Project-Lumen-OS/lumen-os without a token (one request per run, an hourly timer) and writes
 OUT_DIR/github.json: one row per snapshot day and release (installs, updates, checks), the history kept in the
 same file. Uses the classification of github_downloads.py and refresh.py (copied next to it).
 Usage: github_fetch.py OUT_DIR

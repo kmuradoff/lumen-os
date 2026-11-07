@@ -90,9 +90,9 @@ Google, синтеза речи, TalkBack и пульта в приложени�
 
 ## 2. Скачайте файлы (5 мин)
 
-1. Откройте [страницу релизов](https://github.com/kmuradoff/lumen-os/releases) на GitHub. Скачивайте
+1. Откройте [страницу релизов](https://github.com/Project-Lumen-OS/lumen-os/releases) на GitHub. Скачивайте
    только оттуда: копии на форумах и файлообменниках я не проверяю.
-2. Из последнего релиза для Z9X (сейчас [Lumen OS 1.0.9](https://github.com/kmuradoff/lumen-os/releases/tag/z9x-1.0.9))
+2. Из последнего релиза для Z9X (сейчас [Lumen OS 1.0.9](https://github.com/Project-Lumen-OS/lumen-os/releases/tag/z9x-1.0.9))
    скачайте четыре файла: `lumen-os-1.0.9-nogms-system.img`, `SHA256SUMS`, `SHA256SUMS.sig` и
    `lumen-os-1.0.9-installer.zip`.
 3. Распакуйте архив установщика. Образ и оба файла `SHA256SUMS` положите рядом с `lumen-install.sh`.
@@ -515,7 +515,7 @@ Google выдаёт только моделям, которые он серти�
 ### Если ничего не помогло
 
 Напишите в [тему на 4PDA](https://4pda.to/forum/index.php?showtopic=1121837) или в
-[issues на GitHub](https://github.com/kmuradoff/lumen-os/issues) и приложите:
+[issues на GitHub](https://github.com/Project-Lumen-OS/lumen-os/issues) и приложите:
 
 - версию прошивки XGIMI и версию Lumen OS, если она уже стоит;
 - что вы делали и на каком шаге всё остановилось;

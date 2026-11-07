@@ -353,7 +353,7 @@ if keys != want:
     sys.exit("ERROR: ota props: keys %s, want %s" % (keys, want))
 v = dict(r.split("=", 1) for r in rows)
 LIST = "armfw,boot,bootdata,dtbo,optee,tvconfig,tvservice,vbmeta_system,xgimiconfig"
-BASE = "https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/"
+BASE = "https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x-hb/"
 if v[want[0]] != LIST:
     sys.exit("ERROR: ota props: ab_ota_partitions=%s, want %s (ota.conf, decision O3)" % (v[want[0]], LIST))
 if v[want[1]] != "1" or v[want[2]] != "hb" or v[want[3]] != BASE + "update-hb-nogms.json":

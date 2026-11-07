@@ -70,7 +70,7 @@ OWNER = {}       # added path -> (uid, gid) other than root:root (fs_config: /sy
 # the OTA props of a public image (hb_ota_props.txt; the list is devices/goat_elegant/ota.conf, design decision)
 OTA_PROPS = {"ro.product.ab_ota_partitions": "armfw,boot,bootdata,dtbo,optee,tvconfig,tvservice,vbmeta_system,xgimiconfig",
              "ro.lumen.ota.gate": "1", "ro.lumen.ota.device": "hb"}
-OTA_URL = re.compile(r"https://github\.com/kmuradoff/lumen-os/releases/download/z9x-hb/update-hb-(nogms|test)\.json")
+OTA_URL = re.compile(r"https://github\.com/Project-Lumen-OS/lumen-os/releases/download/z9x-hb/update-hb-(nogms|test)\.json")
 # LumenInfo (t11) is in the test images, not in the public release image that reads update-hb-nogms.json (maintainer
 # 2026-11-04, compose_hb.sh INFO): decided from the new image's own manifest URL, so either way it is checked exactly
 _bp = os.path.join(new, "system/product/etc/build.prop")

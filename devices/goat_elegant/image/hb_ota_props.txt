@@ -13,4 +13,4 @@ ro.lumen.ota.gate=1
 ro.lumen.ota.device=hb
 # the update manifest on the fixed pre-release tag z9x-hb, the HB's update channel (never releases/latest, which is
 # the Z9X's). The test images (compose_hb.sh --ota-test) read update-hb-test.json there instead.
-ro.lumen.ota.manifest_url=https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/update-hb-nogms.json
+ro.lumen.ota.manifest_url=https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x-hb/update-hb-nogms.json

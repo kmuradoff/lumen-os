@@ -16,7 +16,7 @@ import java.util.List;
  */
 public final class PreflightHbTest {
     private static int failed, passed;
-    private static final String TAG_URL = "https://github.com/kmuradoff/lumen-os/releases/download/z9x-hb/";
+    private static final String TAG_URL = "https://github.com/Project-Lumen-OS/lumen-os/releases/download/z9x-hb/";
     private static final List<String> ANY = Collections.emptyList();
 
     private static void eq(String what, Object want, Object got) {

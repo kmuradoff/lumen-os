@@ -151,7 +151,7 @@ FB_PRODUCT=mt5877
 # SELinux, VINTF, blobs and PM51 firmware as v6.15.58; libxgimi.so the same size, only rebuilt files differ
 # (compatibility check of a 4PDA user's dumps, 2026-10-13 / 14).
 VENDOR_OK="v6.15.58 v6.15.62 v6.15.19"
-GUIDE_BASE="https://github.com/kmuradoff/lumen-os/blob/main/docs/install"   # one guide per projector and language
+GUIDE_BASE="https://github.com/Project-Lumen-OS/lumen-os/blob/main/docs/install"   # one guide per projector and language
 GUIDE_EN="$GUIDE_BASE/z9x/en.md"
 GUIDE_RU="$GUIDE_BASE/z9x/ru.md"
 GOOGLE_GSI="https://source.android.com/docs/core/tests/vts/gsi#flashing-gsis"
