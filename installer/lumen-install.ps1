@@ -3831,7 +3831,24 @@ function Abf-Main {  # the commands of a FLOW=ab-fastbootd projector
   }
 }
 
+function Z9x-New-Install-If-Stock {  # progress says Lumen OS was written, but the projector runs XGIMI's stock system again
+  # (restored from a USB stick since): that progress is the earlier install's, start over (vbmeta stays: Cmd-Check proves it)
+  if ((State-Get step_flash) -ne "done") { return }
+  $was = $script:Serial
+  if (-not $script:Serial) {
+    $list = @(Pt-Adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "\tdevice$" } | ForEach-Object { ($_ -split "\t")[0] })
+    if ($list.Count -ne 1) { return }
+    $script:Serial = $list[0]
+  }
+  if ((Prop ro.boot.slot_suffix) -and -not (Prop ro.z9x.version)) {
+    Say (T "the projector runs the stock system again: the earlier install is finished, starting a new one" "на проекторе снова родная система: прошлая установка закончена, начинаю новую")
+    foreach ($k in @("step_check", "step_backup", "step_blobs", "step_flash", "step_wipe", "step_verify", "step_gapps_part", "step_gapps_fill", "step_gapps_flash", "gapps_plan", "gapps_img", "image_ok")) { State-Set $k "" }
+  }
+  $script:Serial = $was
+}
+
 function Cmd-All {
+  Z9x-New-Install-If-Stock
   if ($GappsZip) { Z9x-Gapps-Plan }
   if ((State-Get step_check) -ne "done") { Cmd-Check }
   if ($GappsZip -and (State-Get image_gms) -ne "0") { Die (T "this image has Google services built in: -GappsZip is for Lumen OS without Google. Nothing was written." "в этом образе сервисы Google уже встроены: -GappsZip нужен для Lumen OS без Google. Ничего не записано.") }

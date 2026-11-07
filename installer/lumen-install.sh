@@ -4379,7 +4379,24 @@ abf_main() {  # the commands of a FLOW=ab-fastbootd projector
 }
 
 # ------------------------------------------------------------------ main
+z9x_new_install_if_stock() {  # the saved progress says Lumen OS was written, but the projector runs XGIMI's stock
+  # system again (restored from a USB stick since): that progress belongs to the earlier install, start over.
+  # The vbmeta step stays recorded: the check below (check_vbmeta_effective) still proves it for this slot.
+  [ "$(state_get step_flash)" = done ] || return 0
+  local list was=$SERIAL k
+  list=$(adb devices 2>/dev/null | awk 'NR>1 && $2=="device"{print $1}')
+  [ -n "$SERIAL" ] || { [ "$(printf '%s\n' "$list" | grep -c .)" = 1 ] || return 0; SERIAL=$list; }
+  if [ -n "$(prop ro.boot.slot_suffix)" ] && [ -z "$(prop ro.z9x.version)" ]; then
+    say "$(t "the projector runs the stock system again: the earlier install is finished, starting a new one" "на проекторе снова родная система: прошлая установка закончена, начинаю новую")"
+    for k in step_check step_backup step_blobs step_flash step_wipe step_verify step_gapps_part step_gapps_fill step_gapps_flash gapps_plan gapps_img image_ok; do
+      state_set "$k" ""
+    done
+  fi
+  SERIAL=$was
+}
+
 cmd_all() {
+  z9x_new_install_if_stock
   [ -z "$GAPPS_WITH" ] || z9x_gapps_plan
   [ "$(state_get step_check)" = done ] || cmd_check
   if [ -n "$GAPPS_WITH" ] && [ "$(state_get image_gms)" != 0 ]; then
