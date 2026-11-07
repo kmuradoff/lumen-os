@@ -3841,7 +3841,9 @@ function Cmd-All {
   if ((State-Get step_vbmeta) -ne "done") { Cmd-Vbmeta }
   if ((State-Get step_flash) -ne "done") { Cmd-Flash }
   if ((State-Get step_gapps_part) -eq "done" -and -not (State-Get step_wipe)) { Z9x-Gapps-Finish }
-  if ((State-Get step_verify) -ne "done") { Cmd-Verify }
+  # after a wipe USB debugging is off on the fresh system: waiting for adb only hangs; 'verify' stays a command
+  if ((State-Get step_wipe) -eq "done") { State-Set step_verify "skipped:wiped" }
+  elseif ((State-Get step_verify) -ne "done") { Cmd-Verify }
   if ((State-Get image_gms) -eq "0" -and (State-Get step_gapps_fill) -ne "done" -and (State-Get step_gapps_flash) -ne "done") {
     Write-Host (T "Done. Finish the setup on the projector. Install apps from a USB stick: Lumen Home > Apps > Install from USB. Google services can be added later: 'gapps' (guide)." "Готово. Завершите настройку на проекторе. Приложения ставятся с USB-накопителя: Lumen Home > Приложения > Установить с USB. Сервисы Google можно добавить позже: 'gapps' (инструкция).")
   } else {

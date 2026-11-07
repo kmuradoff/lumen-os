@@ -4393,7 +4393,13 @@ cmd_all() {
   [ "$(state_get step_vbmeta)" = done ] || cmd_vbmeta
   [ "$(state_get step_flash)" = done ] || cmd_flash
   if [ "$(state_get step_gapps_part)" = done ] && [ -z "$(state_get step_wipe)" ]; then z9x_gapps_finish; fi
-  [ "$(state_get step_verify)" = done ] || cmd_verify
+  # After a wipe USB debugging is off on the fresh system, so waiting for adb only hangs for 5 minutes:
+  # the install is finished, the projector shows its setup. 'verify' stays available as its own command.
+  if [ "$(state_get step_wipe)" = done ]; then
+    state_set step_verify skipped:wiped
+  else
+    [ "$(state_get step_verify)" = done ] || cmd_verify
+  fi
   echo
   if [ "$(state_get image_gms)" = 0 ] && [ "$(state_get step_gapps_fill)" != done ] && [ "$(state_get step_gapps_flash)" != done ]; then
     t "Done. On the projector: choose the language, Wi-Fi and the rest of the setup. Install apps from a
