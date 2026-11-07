@@ -56,9 +56,11 @@ Windows may need the [Google USB Driver](https://developer.android.com/studio/ru
 
 1. Connect the projector to your Wi-Fi. If stock offers a system update, do not accept it: a downloaded update
    waits for a restart and gets in the way of the install.
-2. Turn on debugging. In "Settings → About" press OK on the build number item until the "Developer options"
+2. If Settings > Accounts has a Google account, remove it. Otherwise Factory Reset Protection may ask for
+   it if you add Google services later. If there is no account, skip this step.
+3. Turn on debugging. In "Settings → About" press OK on the build number item until the "Developer options"
    menu opens. In it turn on "USB debugging". On the HB's stock this turns on debugging over Wi-Fi (port 5555).
-3. Write down the projector's IP address. It is shown in stock's network settings, on the page of the Wi-Fi
+4. Write down the projector's IP address. It is shown in stock's network settings, on the page of the Wi-Fi
    network the projector is connected to. The device list of your router shows it too.
 
 The names of the menu items on stock may differ a little, depending on the language and the firmware version.
@@ -345,7 +347,7 @@ then `fastboot reboot`) and leaves the projector in fastboot mode. Type them as 
 | Where | What the installer says | What to do |
 |---|---|---|
 | any step | adb did not start (port 5038 busy?) | Usually another program with adb already holds the projector: Android Studio, scrcpy, another adb. Close it (or run `adb kill-server` with its adb) and run the installer again. Nothing was done. |
-| check | no adb connection to … over Wi-Fi | Is debugging on (step 1, item 2), are the projector and the computer on the same network, is the address right? Nothing was done. |
+| check | no adb connection to … over Wi-Fi | Is debugging on (step 1, item 3), are the projector and the computer on the same network, is the address right? Nothing was done. |
 | check | the projector … did not allow debugging from this computer | On the projector allow debugging, tick "Always allow from this computer" and press OK. Run again. |
 | check | this is not an XGIMI Z9X HB (model …, board …) | The installer is only for model G0130. Nothing was done. |
 | check | XGIMI firmware … is not supported | It must be exactly V6.16.24. Nothing was done. If you have another version, write about it. |

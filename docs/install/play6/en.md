@@ -85,7 +85,9 @@ the installer says so when it finds a USB device without a driver.
 2. Connect the projector to your Wi-Fi. If the stock settings have automatic system updates, turn them off,
    so that no XGIMI update is downloaded during the install. If one is already waiting, the installer says
    so: then do not restart the projector yourself until Lumen OS is written.
-3. Turn on debugging with SystemUI Tuner, as on the Z9X:
+3. If Settings > Accounts has a Google account, remove it. Otherwise Factory Reset Protection may ask for
+   it if you add Google services later. If there is no account, skip this step.
+4. Turn on debugging with SystemUI Tuner, as on the Z9X:
    1. Download the SystemUI Tuner APK file and copy it to a USB stick. Rename it so that it ends in
       `.apk1` (for example `SystemUITuner.apk1`): XGIMI's file manager does not open `.apk` files.
    2. Plug the stick into the projector's USB port. Open the stick in XGIMI's file manager, open the file
@@ -93,10 +95,10 @@ the installer says so when it finds a USB device without a driver.
    3. Open SystemUI Tuner. In its first screens it offers to turn on USB debugging: confirm with OK. On the
       Play 6 this turns on debugging over the network at once. No restart is needed and no question
       appears on the screen.
-4. Note the projector's IP address. The stock network settings show it on the page of the Wi-Fi network
+5. Note the projector's IP address. The stock network settings show it on the page of the Wi-Fi network
    it is connected to. Your router's list of devices shows it too. If you do not find it, start the
    installer without `--ip`: it looks for the projector in the network and asks you.
-5. Have the A-to-A cable ready, but do not plug it in yet. The stick may stay in the port: the installer
+6. Have the A-to-A cable ready, but do not plug it in yet. The stick may stay in the port: the installer
    tells you when to take it out.
 
 <a name="play6-files"></a>
@@ -379,7 +381,7 @@ bash lumen-install.sh --ip 192.168.x.y gapps --remove
 | Where | What you see | What to do |
 |---|---|---|
 | check | "give the projector's Wi-Fi address" | Run with `--ip ADDRESS`, see [step 1](#play6-prepare), item 4. Nothing was done. |
-| check | "no adb connection to ... over Wi-Fi" | Is debugging on (step 1, item 3), are the projector and the computer in the same network, is the address right? Nothing was done. |
+| check | "no adb connection to ... over Wi-Fi" | Is debugging on (step 1, item 4), are the projector and the computer in the same network, is the address right? Nothing was done. |
 | any step | "did not allow this computer" | The projector asks whether this computer may use debugging. Tick "Always allow from this computer", press OK and run the same command again. |
 | check | "XGIMI firmware ... is not supported" | Older: let stock update itself to V1.7.116. Newer (V1.8.x, shown as RG0058V1.8xxx): Lumen OS does not support it yet. Do not install V1.7.116 from a stick: on newer Play 6 units Wi-Fi and Bluetooth stop working. Nothing was done. |
 | check | "this projector is not supported" | This guide is only for the Play 6 (G0058). Nothing was done. |

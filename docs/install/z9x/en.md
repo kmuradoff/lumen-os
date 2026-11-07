@@ -81,7 +81,7 @@ the installer looks for a USB device without a driver and says how to install it
 2. Turn Wi-Fi off and keep it off until the install is done. Stock installs XGIMI updates into the other
    slot on its own, and the installer only knows the two versions above.
 3. If Settings > Accounts has a Google account, remove it. Otherwise Factory Reset Protection may ask for
-   it if you add Google services later. The Chinese firmware usually has no account: then skip this step.
+   it if you add Google services later. If there is no account, skip this step.
 4. Turn on USB debugging. XGIMI hides the Developer options menu, so install SystemUI Tuner from a USB
    stick and turn on debugging there. If the stock file manager refuses the `.apk`, rename it to
    `.apk1`. The [4PDA thread](https://4pda.to/forum/index.php?showtopic=1121837) (in Russian) shows
